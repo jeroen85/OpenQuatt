@@ -1,6 +1,6 @@
 # ==============================================================================
 # OpenQuatt – openquatt.yaml
-# Version: v0.12
+# Version: v0.12.1
 # Date: 2026-02-12
 #
 # Purpose:
@@ -162,8 +162,18 @@ text_sensor:
       entity_category: diagnostic
       web_server:
         sorting_group_id: oq_diagnostics
+  - platform: template
+    id: oq_project_version_text
+    name: OpenQuatt Version
+    icon: mdi:tag-text-outline
+    entity_category: diagnostic
+    update_interval: never
+    lambda: |-
+      return {"${project_version}"};
+    web_server:
+      sorting_group_id: oq_diagnostics
   - platform: version
-    name: Version
+    name: ESPHome Version
     icon: mdi:information-outline
     hide_timestamp: true
     entity_category: diagnostic

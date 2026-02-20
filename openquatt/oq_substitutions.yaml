@@ -13,7 +13,7 @@
 device_name: "openquatt"                              # Internal ESPHome device ID / hostname base.
 friendly_name: OpenQuatt                              # Display name in Home Assistant / UI.
 project_name: "openquatt.openquatt"                   # ESPHome project identifier shown in firmware metadata.
-project_version: "0.12.0"                             # ESPHome project version shown in firmware metadata.
+project_version: "0.12.1"                             # ESPHome project version shown in firmware metadata.
 
 # ----------------------------
 # HARDWARE PROFILE - ACTIVE

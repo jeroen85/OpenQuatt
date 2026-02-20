@@ -1,4 +1,4 @@
-# OpenQuatt (ESPHome v0.12)
+# OpenQuatt (ESPHome v0.12.1)
 
 <img src="docs/assets/openquatt_logo.svg" alt="OpenQuatt logo" width="400" />
 

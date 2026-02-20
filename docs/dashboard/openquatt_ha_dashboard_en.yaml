@@ -1351,6 +1351,29 @@ views:
       - type: grid
         cards:
           - type: heading
+            icon: mdi:tag-text
+            heading: Version information
+            heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+
+              <summary><strong>Explanation</strong></summary>
+
+              This value shows the OpenQuatt firmware/project version
+              (`project_version`) that was compiled into the ESPHome config.
+
+              </details>
+            text_only: true
+          - type: entities
+            title: Version
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_openquatt_version
+                name: OpenQuatt Version
+      - type: grid
+        cards:
+          - type: heading
             icon: mdi:thermometer
             heading: Outside temperature sources
             heading_style: title
