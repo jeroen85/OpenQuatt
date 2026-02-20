@@ -1,21 +1,18 @@
 # ==============================================================================
-# OpenQuatt – openquatt.yaml
-# Version: v0.12.1
-#
+# OpenQuatt - Remote Package Bootstrap (example)
+# ==============================================================================
 # Purpose:
-# - Top-level ESPHome config and package includes.
-# - Keeps boot/runtime services and shared diagnostics in one place.
+# - Keep only host-specific settings local (API/OTA/WiFi/secrets).
+# - Pull substitutions + package stack from GitHub.
+#
+# Notes:
+# - Replace `@main` with a fixed tag/commit in production.
+# - This file is an example template; copy/rename for your own environment.
 # ==============================================================================
 
-# ==============================================================================
-# SUBSTITUTIONS
-# ==============================================================================
-substitutions: !include openquatt/oq_substitutions.yaml
-
-# ==============================================================================
-# PACKAGES
-# ==============================================================================
-packages: !include openquatt/oq_packages.yaml
+packages:
+  - github://jeroen85/OpenQuatt/openquatt/oq_substitutions.yaml@main
+  - github://jeroen85/OpenQuatt/openquatt/oq_packages.yaml@main
 
 esphome:
   name: ${device_name}
@@ -27,12 +24,6 @@ esphome:
   name_add_mac_suffix: false
   includes:
     - ${hp_perf_map_header}
-  on_boot:
-    priority: -100
-    then:
-      - text_sensor.template.publish:
-          id: oq_project_version_text
-          state: "${project_version}"
 
 esp32:
   board: ${esp_board}
@@ -41,18 +32,15 @@ esp32:
   framework:
     type: esp-idf
     version: recommended
-    ## Custom sdkconfig options
     sdkconfig_options:
       COMPILER_OPTIMIZATION_SIZE: y
       CONFIG_BT_ENABLED: n
 
-# Enable logging
 logger:
   level: DEBUG
   baud_rate: 0
   runtime_tag_levels: true
 
-# Enable Home Assistant API
 api:
   encryption:
     key: !secret api_key
@@ -62,9 +50,6 @@ ota:
   platform: esphome
   password: !secret ota_password
 
-# ==============================================================================
-# NETWORK
-# ==============================================================================
 wifi:
   manual_ip:
     gateway: !secret wifi_gateway

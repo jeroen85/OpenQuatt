@@ -2,21 +2,11 @@
 # OpenQuatt - Common Platform Runtime
 # ==============================================================================
 # Shared, board-independent runtime blocks:
-# - API / OTA / captive portal
+# - Captive portal
 # - UART + Modbus client base
 # - Generic diagnostics entities
 # - Runtime debug level controls
 # ==============================================================================
-
-# Enable Home Assistant API
-api:
-  encryption:
-    key: !secret api_key
-  reboot_timeout: 0s
-
-ota:
-  platform: esphome
-  password: !secret ota_password
 
 captive_portal:
 
