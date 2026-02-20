@@ -153,4 +153,4 @@ Core docs:
 
 ## License
 
-No license file is currently included. Add a `LICENSE` file before public release if needed.
+This project includes a `LICENSE` file in the repository root.
