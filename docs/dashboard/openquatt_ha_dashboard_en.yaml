@@ -20,23 +20,20 @@ views:
               <summary><strong>Explanation</strong></summary>
 
 
-              Deze waarden geven live de belangrijkste systeemprestatie:
+              These values show the key system performance in real time:
 
-              - `Flow`: actuele volumestroom die als basis dient voor
-              flowbewaking.
+              - `Flow`: current volume flow used as the basis for flow safety.
 
-              - `Power E`: totaal elektrisch ingangsvermogen van de
-              warmtepomp(en).
+              - `Power E`: total electrical input power of the heat pump(s).
 
-              - `Power H`: totaal thermisch afgegeven vermogen.
+              - `Power H`: total delivered thermal output power.
 
-              - `COP`: verhouding `Power H / Power E` (momentane efficientie).
+              - `COP`: ratio `Power H / Power E` (instant efficiency).
 
-              - `Buitentemp`: geselecteerde bron voor buitentemperatuur in de
-              regeling.
+              - `Outside temp`: selected outdoor temperature source used in control.
 
-              - `Aanvoertemperatuur`: geselecteerde bron voor actuele
-              watersupply.
+              - `Supply temperature`: selected source for current water supply
+              temperature.
 
 
               </details>
@@ -341,8 +338,8 @@ views:
         content: |-
           <img src="/local/media/openquatt/openquatt_logo.svg" width="300" />
 
-          ## <ha-icon icon="mdi:view-dashboard"></ha-icon> Overzicht
-          Snel en praktisch zicht op prestaties, status en bediening.
+          ## <ha-icon icon="mdi:view-dashboard"></ha-icon> Overview
+          Quick and practical view of performance, status, and control.
         text_only: true
   - title: Flow
     path: flow
@@ -361,18 +358,17 @@ views:
               <details>
               <summary><strong>Explanation</strong></summary>
 
-              Dit blok combineert snelle statuscontrole en de belangrijkste
-              flow-bediening.
+              This block combines quick status checks and key flow controls.
 
-              - `Flow mode` laat zien hoe de flowregeling actief is (meestal
+              - `Flow mode` shows how flow control is currently active (usually
               `AUTO` / `Flow Setpoint`).
-              - `Control mode` toont in welke bedrijfsfase het systeem draait.
-              - `Lowflow fault` moet in normaal bedrijf `Off` blijven.
-              - `Flow mismatch` hoort `OK` te zijn; bij afwijking zijn HP1 en
-              HP2 hydraulisch niet in balans.
-              - `Flow setpoint`: gewenste flow waar de regeling naartoe stuurt.
-              - `Manual iPWM`: directe pompaansturing voor tests; in normaal
-              bedrijf uit laten.
+              - `Control mode` shows which operating phase the system is in.
+              - `Lowflow fault` should remain `Off` in normal operation.
+              - `Flow mismatch` should be `OK`; if not, HP1 and HP2 are
+              hydraulically unbalanced.
+              - `Flow setpoint`: target flow that the controller drives toward.
+              - `Manual iPWM`: direct pump command for tests; keep disabled in
+              normal operation.
               </details>
             text_only: true
           - type: heading
@@ -452,9 +448,10 @@ views:
 
               <summary><strong>Explanation</strong></summary>
 
-              - `Flowmetingen` vergelijkt actuele flow met setpoint over tijd.
+              - `Flow measurements` compares actual flow versus setpoint over
+              time.
 
-              - `Pompsturing` toont iPWM-uitsturing van HP1 en HP2.
+              - `Pump control` shows iPWM command output for HP1 and HP2.
 
               </details>
             text_only: true
@@ -489,7 +486,7 @@ views:
         type: markdown
         content: |-
           # <ha-icon icon="mdi:waves"></ha-icon> Flow
-          Bediening, status en trends van flowregeling en pompsturing.
+          Control, status, and trends for flow and pump behavior.
       layout: center
       badges_position: bottom
       badges_wrap: wrap
@@ -514,48 +511,47 @@ views:
               <summary><strong>Explanation</strong></summary>
 
 
-              Warmtevraag, heat allocation en compressorbelasting in één
-              overzicht.
+              Heat demand, heat allocation, and compressor loading in one view.
 
 
-              - Hier zie je hoe vraag (`Demand`) wordt omgezet naar
-              compressorbelasting.
+              - Here you can see how demand (`Demand`) is translated into
+              compressor loading.
 
-              - `Heating mode` bepaalt de bron van de warmtevraag (Power House
-              vs stooklijn).
+              - `Heating mode` defines the demand source (Power House vs heating
+              curve).
 
-              - Wijzig geavanceerde parameters vooral in **Advanced settings**,
-              niet tegelijk in meerdere groepen.
+              - Change advanced parameters mainly in **Advanced settings**, not
+              in multiple groups at once.
 
 
               **P_house (`sensor.openquatt_power_house_p_house`)**  
 
-              Schatting van de warmtevraag van het huis op basis van
-              buitentemperatuur (huis-model), zonder kamercorrectie.
+              Estimate of house heat demand based on outdoor temperature
+              (house model), without room correction.
 
 
               **P_req (`sensor.openquatt_power_house_p_req`)**  
 
-              Werkelijke gevraagde warmte in W na ramp-limiter
-              (stijg/daalsnelheid begrensd).
+              Effective requested heat in W after ramp limiting
+              (rise/fall rate constrained).
 
 
               **Demand raw (`sensor.openquatt_demand_raw`)**  
 
-              Ruwe demand-stap (`f`) op schaal 0..20, afgeleid van `P_req` of
-              heating-curve vraag.
+              Raw demand step (`f`) on scale 0..20, derived from `P_req` or
+              heating-curve demand.
 
 
               **Demand filtered (`sensor.openquatt_demand_filtered`)**  
 
-              Gefilterde demand-stap die de compressor-aansturing stabieler
-              maakt en snelle schommelingen dempt.
+              Filtered demand step that stabilizes compressor control and damps
+              rapid oscillations.
 
 
               **Power cap level (`sensor.openquatt_power_cap_level`)**  
 
-              Actieve begrenzingslaag vanuit supervisory/power-cap logica;
-              hogere cap betekent meer toegestaan vermogen. Maximaal 20.
+              Active cap level from supervisory/power-cap logic; higher cap means
+              more allowed power. Maximum is 20.
 
 
               </details>
@@ -632,16 +628,16 @@ views:
               <summary><strong>Explanation</strong></summary>
 
 
-              - `Warmtevraag` toont ruwe en gefilterde vraag plus `P_req`.
+              - `Heat demand` shows raw and filtered demand plus `P_req`.
 
               - `HP input` en `HP output` zijn opgesplitst voor snellere
               diagnose.
 
-              - `Compressorlevels en frequentie` laat setpoint versus echte
-              compressor-Hz zien.
+              - `Compressor levels and frequency` shows setpoint versus actual
+              compressor Hz.
 
-              - `Temperatuurregeling` toont buiten-, supply- en kamertemperatuur
-              tegen target.
+              - `Temperature control` shows outside, supply, and room
+              temperatures against target.
 
 
               </details>
@@ -702,15 +698,15 @@ views:
             refresh_interval: 30
             entities:
               - entity: sensor.openquatt_outside_temperature_selected
-                name: Buiten
+                name: Outside
               - entity: sensor.openquatt_water_supply_temp_selected
-                name: Supply systeem
+                name: System supply
               - entity: sensor.openquatt_heating_curve_supply_target
                 name: Supply target
               - entity: sensor.openquatt_cic_ot_room_temperature
-                name: Kamer temp
+                name: Room temp
               - entity: sensor.openquatt_cic_ot_room_setpoint
-                name: Kamer setpoint
+                name: Room setpoint
             grid_options:
               columns: full
         column_span: 2
@@ -719,8 +715,8 @@ views:
       card:
         type: markdown
         content: |-
-          # <ha-icon icon="mdi:radiator"></ha-icon> Warmtecontrol
-          Warmtevraag, heat allocation en compressorbelasting.
+          # <ha-icon icon="mdi:radiator"></ha-icon> Heat control
+          Heat demand, heat allocation, and compressor loading.
   - title: HPs
     path: HPs
     icon: mdi:heat-pump-outline
@@ -1187,12 +1183,10 @@ views:
         content: >-
           # <ha-icon icon="mdi:heat-pump-outline"></ha-icon> Overview HP1&HP2
 
-          Deze tab toont per HP een technische momentopname van
-          koudemiddel/waterzijde. Gebruik dit vooral voor diagnose en
-          vergelijking tussen HP1 en HP2.
+          This tab shows a per-HP technical snapshot of refrigerant/water-side
+          behavior. Use it mainly for diagnostics and HP1 vs HP2 comparison.
 
-          Voor instellingen: gebruik `Flow`, `Warmtecontrol` en `Advanced
-          settings`.
+          For settings, use `Flow`, `Heat control`, and `Advanced settings`.
   - title: CIC
     path: cic
     icon: mdi:cloud-sync
@@ -1212,23 +1206,22 @@ views:
 
               <summary><strong>Explanation</strong></summary>
 
-              Met de drie switches kies je per signaal welke bron de regeling
-              gebruikt.
+              With these three switches, you select which source the control
+              logic uses per signal.
 
 
               - `Use CIC JSON Water Supply`:
 
-              gebruikt CIC-aanvoertemperatuur in plaats van de lokale DS18B20.
+              use CIC supply temperature instead of the local DS18B20.
 
               - `Use CIC JSON Flow`:
 
-              gebruikt CIC-flow (`flow_rate_cic`) in plaats van lokale
-              flowmeting.
+              use CIC flow (`flow_rate_cic`) instead of local flow measurement.
 
               - `Use CIC JSON Outside Temp`:
 
-              gebruikt CIC-buitentemperatuur in plaats van lokaal geaggregeerde
-              waarde.</details>
+              use CIC outdoor temperature instead of locally aggregated
+              value.</details>
             text_only: true
           - type: entities
             show_header_toggle: false
@@ -1252,15 +1245,15 @@ views:
               <summary><strong>Explanation</strong></summary>
 
 
-              Deze waarden komen uit de CIC JSON-feed en worden gebruikt als
-              input voor regeling, monitoring en bronselectie.
+              These values come from the CIC JSON feed and are used as inputs
+              for control, monitoring, and source selection.
 
 
               - `Water supply temp` en `Flowrate filtered` zijn de primaire
               hydraulische inputs vanuit CIC.
 
               - `HP1 outside temp` en `HP2 outside temp` tonen
-              buitentemperatuur op unitniveau.
+              outdoor temperature at unit level.
 
               - `OT control setpoint`, `OT room setpoint` en `OT room
               temperature` tonen de OpenTherm-gerelateerde comfortvariabelen.
@@ -1306,23 +1299,22 @@ views:
               <summary><strong>Explanation</strong></summary>
 
 
-              Dit blok laat zien of de CIC JSON-feed gezond en bruikbaar is.
+              This block shows whether the CIC JSON feed is healthy and usable.
 
 
-              - `Enable polling` zet het periodiek ophalen van de CIC-feed aan
-              of uit.
+              - `Enable polling` enables or disables periodic CIC feed polling.
 
-              - `JSON feed OK` is de actuele gezondheid van de feed (geslaagde
+              - `JSON feed OK` is the current feed health (successful
               requests/parsing).
 
-              - `Data stale` geeft aan dat de laatst bekende data te oud is
-              geworden.
+              - `Data stale` indicates that the latest known data has become too
+              old.
 
-              - `Last success age` toont hoelang geleden de laatste succesvolle
-              update binnenkwam.
+              - `Last success age` shows how long ago the last successful update
+              arrived.
 
-              - `Polling interval` is het actuele interval/backoff van de
-              CIC-poller.
+              - `Polling interval` is the current interval/backoff of the CIC
+              poller.
 
 
               </details>
@@ -1349,7 +1341,7 @@ views:
           # <ha-icon icon="mdi:cloud-sync"></ha-icon> CiC JSON feed data &
           control
 
-          CIC feed status, OT data en bronselectie voor lokale logica.
+          CIC feed status, OT data, and source selection for local logic.
   - title: Diagnostics
     path: diagnostics
     icon: mdi:stethoscope
@@ -1368,11 +1360,11 @@ views:
 
               <summary><strong>Explanation</strong></summary>
 
-              Vergelijk hier de buiten-temperatuur per bron:
+              Compare outdoor temperature per source:
 
-              - Selected: de daadwerkelijk gebruikte waarde in de regeling
-              - HP1/HP2 (Modbus): ruwe unitmetingen
-              - CIC HP1/HP2: cloud-feed bronwaarden
+              - Selected: the actual value used in control
+              - HP1/HP2 (Modbus): raw unit measurements
+              - CIC HP1/HP2: cloud-feed source values
 
               </details>
             text_only: true
@@ -1402,11 +1394,11 @@ views:
 
               <summary><strong>Explanation</strong></summary>
 
-              Vergelijk de water-aanvoertemperatuur per bron:
+              Compare water supply temperature per source:
 
-              - Selected: bron die actief in de logica gebruikt wordt
+              - Selected: source actively used in logic
               - ESP: DS18B20 direct op de controller
-              - CIC: cloud-feed waarde
+              - CIC: cloud-feed value
 
               </details>
             text_only: true
@@ -1432,12 +1424,12 @@ views:
 
               <summary><strong>Explanation</strong></summary>
 
-              Dit blok laat flow op alle niveaus zien:
+              This block shows flow at all levels:
 
-              - Selected: bron die in de regelingen gebruikt wordt
-              - HP avg local: lokale afgeleide waarde uit HP1/HP2
+              - Selected: source used by control logic
+              - HP avg local: locally derived value from HP1/HP2
               - CIC: cloud-feed flow
-              - HP1/HP2: ruwe flow per unit (Modbus)
+              - HP1/HP2: raw per-unit flow (Modbus)
 
               </details>
             text_only: true
@@ -1462,7 +1454,7 @@ views:
         content: >-
           # <ha-icon icon="mdi:stethoscope"></ha-icon> Diagnostics
 
-          Bronvergelijking voor temperatuur en flow, gericht op troubleshooting.
+          Source comparison for temperature and flow, focused on troubleshooting.
   - title: Energy
     path: energy
     icon: mdi:lightning-bolt-circle
@@ -1481,13 +1473,13 @@ views:
 
               <summary><strong>Explanation</strong></summary>
 
-              HeatPump-statistieken (zonder boiler):
-              - `Heat output power`: thermisch vermogen van HP1+HP2 (W)
-              - `Electricity daily`: elektrische input vandaag (kWh)
+              HeatPump statistics (without boiler):
+              - `Heat output power`: thermal output power of HP1+HP2 (W)
+              - `Electricity daily`: electrical input today (kWh)
               - `COP daily`: verhouding `daily heat kWh / daily electricity kWh`
-              - `Heat daily`: warmteproductie vandaag (kWh)
-              - `Electricity total`: cumulatieve elektrische input (kWh)
-              - `Heat total`: cumulatieve warmteproductie (kWh)
+              - `Heat daily`: heat production today (kWh)
+              - `Electricity total`: cumulative electrical input (kWh)
+              - `Heat total`: cumulative heat production (kWh)
 
               </details>
             text_only: true
@@ -1536,11 +1528,11 @@ views:
 
               <summary><strong>Explanation</strong></summary>
 
-              Boiler-statistieken:
-              - `Boiler active`: toont of de relais-aansturing actief is
-              - `Heat output power`: actuele thermische boilerbijdrage (W)
-              - `Heat daily`: boilerwarmte vandaag (kWh)
-              - `Heat total`: cumulatieve boilerwarmte (kWh)
+              Boiler statistics:
+              - `Boiler active`: shows whether relay control is active
+              - `Heat output power`: current thermal boiler contribution (W)
+              - `Heat daily`: boiler heat today (kWh)
+              - `Heat total`: cumulative boiler heat (kWh)
 
               </details>
             text_only: true
@@ -1583,11 +1575,11 @@ views:
 
               <summary><strong>Explanation</strong></summary>
 
-              Systeemwaarden (HeatPump + Boiler):
-              - `Electricity input power`: totaal elektrisch ingangsvermogen (W)
+              System values (HeatPump + Boiler):
+              - `Electricity input power`: total electrical input power (W)
               - `Heat output power`: totale thermische output (W)
-              - `Heat daily`: systeemwarmte vandaag (kWh)
-              - `Heat total`: cumulatieve systeemwarmte (kWh)
+              - `Heat daily`: system heat today (kWh)
+              - `Heat total`: cumulative system heat (kWh)
 
               </details>
             text_only: true
@@ -1633,9 +1625,9 @@ views:
 
               <summary><strong>Explanation</strong></summary>
 
-              Dagaggregatie voor energie:
-              - Elektriciteit en warmte als dagelijkse kWh (afgeleid uit total-sensoren)
-              - `COP daily` als daggemiddelde
+              Daily aggregation for energy:
+              - Electricity and heat as daily kWh (derived from total sensors)
+              - `COP daily` as daily average
 
               </details>
             text_only: true
@@ -1716,7 +1708,7 @@ views:
           - type: custom:apexcharts-card
             header:
               show: true
-              title: Energy trends (30 dagen)
+              title: Energy trends (30 days)
               show_states: false
             graph_span: 30d
             update_interval: 300s
@@ -1794,7 +1786,7 @@ views:
         content: >-
           # <ha-icon icon="mdi:lightning-bolt-circle"></ha-icon> Energy
 
-          Energie-overzicht van HeatPump, Boiler en totaal System (dag + cumulatief).
+          Energy overview of HeatPump, Boiler, and total System (daily + cumulative).
   - title: Advanced settings
     path: advanced-settings
     icon: mdi:tune-vertical
@@ -1814,19 +1806,19 @@ views:
               <summary><strong>Parameter explanation</strong></summary>
 
 
-              - **Day max level / Silent max level** begrenzen het maximale
-              compressorlevel in normale of stille uren.
+              - **Day max level / Silent max level** limit the maximum
+              compressor level during normal or silent hours.
 
-              - **Silent start/end time** definieert het tijdvenster waarin de
-              silent-begrenzing actief is.
+              - **Silent start/end time** defines the time window in which the
+              silent cap is active.
 
-              - **CM3 deficit ON/OFF thresholds** bepalen wanneer boiler-assist
-              mag inschakelen/uitschakelen.
+              - **CM3 deficit ON/OFF thresholds** define when boiler assist may
+              switch on/off.
 
-              - Houd ON duidelijk hoger dan OFF om schakelen rond de grens te
-              beperken.
+              - Keep ON clearly higher than OFF to reduce toggling around the
+              threshold.
 
-              - Bij te agressief gedrag: ON verhogen of OFF verlagen.
+              - If behavior is too aggressive: increase ON or decrease OFF.
 
 
               </details>
@@ -1859,22 +1851,21 @@ views:
               <summary><strong>Parameter explanation</strong></summary>
 
 
-              - **House cold temp** en **Rated maximum house power (Pr)**
-              bepalen samen de schaal van de warmtevraag bij koude condities.
+              - **House cold temp** and **Rated maximum house power (Pr)**
+              together define heat-demand scale at cold conditions.
 
-              - **Maximum heating outdoor temperature** is het punt waar
-              modelmatig de warmtevraag naar ~0 gaat.
+              - **Maximum heating outdoor temperature** is the point where model
+              heat demand approaches ~0.
 
-              - **Power House Kp** bepaalt hoe sterk kamertemperatuurfout naar
-              warmtevraag (W) wordt vertaald.
+              - **Power House Kp** defines how strongly room temperature error
+              is translated into heat demand (W).
 
               - **Deadband** voorkomt onrust bij kleine afwijkingen.
 
-              - **Ramp up/down** begrenzen stijg-/daalsnelheid van gevraagde
-              warmte.
+              - **Ramp up/down** limit rise/fall rate of requested heat.
 
-              - **Heating strategy transition** bepaalt hoe snel tussen
-              strategiecomponenten wordt overgegaan.
+              - **Heating strategy transition** defines how quickly the strategy
+              components transition.
 
 
               </details>
@@ -1911,20 +1902,19 @@ views:
               <summary><strong>Parameter explanation</strong></summary>
 
 
-              - De **curve Tsupply**-punten vormen de stooklijn: gewenste
-              aanvoertemperatuur bij verschillende buitentemperaturen.
+              - **Curve Tsupply** points form the heating curve: desired supply
+              temperature for different outdoor temperatures.
 
-              - Pas eerst de curvepunten aan voor het juiste basiscomfort,
-              daarna pas PID finetunen.
+              - First tune curve points for baseline comfort, then fine-tune PID.
 
-              - **Fallback Tsupply** wordt gebruikt als buitentemperatuur
-              tijdelijk ontbreekt.
+              - **Fallback Tsupply** is used when outdoor temperature is
+              temporarily unavailable.
 
-              - **PID Kp/Ki/Kd** bepaalt de correctie op de
-              systeem-aanvoertemperatuur:
-                - Kp te hoog: snelle maar nerveuze reactie.
-                - Ki te hoog: traag pendelen/overshoot.
-                - Kd meestal laag houden in trage hydraulische systemen.
+              - **PID Kp/Ki/Kd** defines correction on system supply
+              temperature:
+                - Kp too high: fast but nervous response.
+                - Ki too high: slow oscillation/overshoot.
+                - Keep Kd low in slow hydraulic systems.
 
               </details>
             text_only: true
@@ -1954,7 +1944,7 @@ views:
           - type: custom:apexcharts-card
             header:
               show: true
-              title: Stooklijn (instelpunten)
+              title: Heating curve (setpoints)
               show_states: false
             update_interval: 10s
             apex_config:
@@ -1966,7 +1956,7 @@ views:
                 min: -20
                 max: 15
                 title:
-                  text: Buiten temperatuur (°C)
+                  text: Outdoor temperature (°C)
               yaxis:
                 forceNiceScale: true
                 title:
@@ -2019,19 +2009,17 @@ views:
               <summary><strong>Parameter explanation</strong></summary>
 
 
-              - **Minimum runtime** voorkomt kortcyclen en overmatig
-              start/stop-gedrag.
+              - **Minimum runtime** prevents short-cycling and excessive
+              start/stop behavior.
 
-              - **Single HP assist ON/OFF deficit** bepaalt bij welke thermische
-              tekort-waarde extra HP-assist wordt geactiveerd of weer
-              losgelaten.
+              - **Single HP assist ON/OFF deficit** defines at which thermal
+              deficit extra HP assist is activated or released.
 
-              - **ON/OFF hold** voegt tijdhysterese toe om op en neer schakelen
-              te dempen.
+              - **ON/OFF hold** adds time hysteresis to damp frequent toggling.
 
-              - Lager ON of kortere ON-hold = sneller extra capaciteit.
+              - Lower ON or shorter ON-hold = faster extra capacity.
 
-              - Hoger OFF of langere OFF-hold = langer dual-HP actief.
+              - Higher OFF or longer OFF-hold = dual-HP stays active longer.
 
 
               </details>
@@ -2062,19 +2050,17 @@ views:
               <summary><strong>Parameter explanation</strong></summary>
 
 
-              - Deze switches begrenzen welke compressorlevels per HP gebruikt
-              mogen worden.
+              - These switches limit which compressor levels may be used per HP.
 
-              - `Aan` betekent: level mag door de verdelingslogica gekozen
-              worden.
+              - `On` means: level may be selected by allocation logic.
 
-              - `Uit` betekent: level wordt overgeslagen.
+              - `Off` means: level is skipped.
 
-              - Meestal laat je alle levels aan; schakel alleen uit voor testen,
-              geluid of specifieke beperkingen.
+              - Usually you keep all levels enabled; disable only for testing,
+              noise, or specific constraints.
 
-              - Houd per HP minimaal een aaneengesloten reeks levels actief om
-              onnodige sprongen te voorkomen.
+              - Keep at least one contiguous range of levels enabled per HP to
+              avoid unnecessary jumps.
 
 
               </details>
@@ -2144,19 +2130,18 @@ views:
               <summary><strong>Parameter explanation</strong></summary>
 
 
-              - **Auto start iPWM** bepaalt de initiële pompaansturing bij
-              flowregeling.
+              - **Auto start iPWM** defines initial pump command for flow control.
 
               - **CM98 iPWM** is de circulatiesetting voor anti-freeze context.
 
-              - **Flow PI Kp/Ki** bepaalt de dynamiek van flowregeling; wijzig
-              in kleine stappen.
+              - **Flow PI Kp/Ki** defines flow-control dynamics; adjust in small
+              steps.
 
-              - **Flow mismatch threshold** bepaalt gevoeligheid voor HP1/HP2
-              flow-afwijking.
+              - **Flow mismatch threshold** defines sensitivity for HP1/HP2 flow
+              mismatch.
 
-              - **Sticky pump iPWM** is vooral service/onderhoud en wordt zelden
-              aangepast.
+              - **Sticky pump iPWM** is mainly for service/maintenance and is
+              rarely adjusted.
 
 
               </details>
@@ -2189,14 +2174,13 @@ views:
               <summary><strong>Parameter explanation</strong></summary>
 
 
-              - **Flow autotune** starten bij stabiele installatie en zonder
-              actieve fouten.
+              - Start **Flow autotune** only on a stable installation without
+              active faults.
 
-              - Eerst `u_step` en `max duration` bepalen, daarna pas autotune
-              starten.
+              - Set `u_step` and `max duration` first, then start autotune.
 
-              - `Apply autotune Kp/Ki` alleen toepassen als de voorgestelde
-              waarden logisch zijn.
+              - Apply `Apply autotune Kp/Ki` only if suggested values are
+              sensible.
 
 
               </details>
@@ -2235,11 +2219,11 @@ views:
               <summary><strong>Parameter explanation</strong></summary>
 
 
-              - **Reset runtime counters** alleen gebruiken bij testruns of na
-              grotere tuningwijzigingen.
+              - Use **Reset runtime counters** only for test runs or after major
+              tuning changes.
 
-              - **CIC feed URL** alleen aanpassen als endpoint/poort wijzigt;
-              controleer daarna feed health.
+              - Change **CIC feed URL** only when endpoint/port changes; verify
+              feed health afterwards.
 
 
               </details>
@@ -2257,6 +2241,6 @@ views:
         content: >-
           # <ha-icon icon="mdi:tune-vertical"></ha-icon> Advanced settings
 
-          Geavanceerde tuning van limieten, huismodel, stooklijn,
-          heat-allocation en flow.
+          Advanced tuning for limits, house model, heating curve, heat
+          allocation, and flow.
     cards: []
