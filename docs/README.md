@@ -28,7 +28,7 @@ This documentation set is organized for fast onboarding and professional mainten
 1. [System Overview](system-overview.md)
 2. [Functional Specification](specifications/functional-specification.md)
 3. [Technical Specification](specifications/technical-specification.md)
-4. [Maintenance Guide](/maintenance.md)
+4. [Maintenance Guide](maintenance.md)
 
 ## Documentation Structure
 

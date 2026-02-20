@@ -66,7 +66,7 @@ OpenQuatt is a modular ESPHome controller for a dual heat pump setup with superv
 │   │   └── technical-specification.md
 ├── scripts/
 │   └── validate_local.sh
-└── maintenance.md
+└── docs/maintenance.md
 ```
 
 ## Requirements
@@ -149,7 +149,7 @@ Core docs:
 
 ## Development and Maintenance
 
-- [Maintenance Guide](maintenance.md)
+- [Maintenance Guide](docs/maintenance.md)
 
 ## License
 
