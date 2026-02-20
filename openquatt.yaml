@@ -1,13 +1,21 @@
 # ==============================================================================
 # OpenQuatt – openquatt.yaml
 # Version: v0.12.1
-# Date: 2026-02-12
 #
 # Purpose:
 # - Top-level ESPHome config and package includes.
 # - Keeps boot/runtime services and shared diagnostics in one place.
 # ==============================================================================
+
+# ==============================================================================
+# SUBSTITUTIONS
+# ==============================================================================
 substitutions: !include openquatt/oq_substitutions.yaml
+
+# ==============================================================================
+# PACKAGES
+# ==============================================================================
+packages: !include openquatt/oq_packages.yaml
 
 esphome:
   name: ${device_name}
@@ -19,6 +27,12 @@ esphome:
   name_add_mac_suffix: false
   includes:
     - openquatt/includes/hp_perf_map.h
+  on_boot:
+    priority: -100
+    then:
+      - text_sensor.template.publish:
+          id: oq_project_version_text
+          state: "${project_version}"
 
 esp32:
   board: ${esp_board}
@@ -68,20 +82,6 @@ wifi:
     password: "openquatt"
 
 captive_portal:
-
-# ==============================================================================
-# PACKAGES
-# Package load order is intentional:
-# 1) Supervisory/state
-# 2) Demand strategy
-# 3) Actuation layers (heat/flow/boiler)
-# 4) Aggregation/energy telemetry
-# 5) External inputs (CIC)
-# 6) Local sensors/source selection
-# 7) Web UI
-# 8) Per-HP hardware adapters
-# ==============================================================================
-packages: !include openquatt/oq_packages.yaml
 
 # ==============================================================================
 # MODBUS
