@@ -1,6 +1,6 @@
 # OpenQuatt (ESPHome v0.12)
 
-![OpenQuatt logo](docs/assets/openquatt_logo.svg)
+<img src="docs/assets/openquatt_logo.svg" alt="OpenQuatt logo" width="400" />
 
 OpenQuatt is a modular ESPHome controller for a dual heat pump setup with supervisory control, demand strategy selection, flow regulation, boiler assist gating, and Home Assistant observability.
 
