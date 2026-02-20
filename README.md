@@ -60,7 +60,9 @@ OpenQuatt is a modular ESPHome controller for a dual heat pump setup with superv
 │   ├── assets/
 │   │   └── openquatt_logo.svg
 │   ├── dashboard/
-│   │   └── openquatt_ha_dashboard.yaml
+│   │   ├── README.md
+│   │   ├── openquatt_ha_dashboard_nl.yaml
+│   │   └── openquatt_ha_dashboard_en.yaml
 │   ├── specifications/
 │   │   ├── functional-specification.md
 │   │   └── technical-specification.md
@@ -144,6 +146,7 @@ Core docs:
 - [Settings Reference](docs/settings-reference.md)
 - [Tuning and Troubleshooting](docs/tuning-and-troubleshooting.md)
 - [Home Assistant Dashboard Guide](docs/home-assistant-dashboard.md)
+- [Dashboard Install and NL/EN Variants](docs/dashboard/README.md)
 - [Functional Specification](docs/specifications/functional-specification.md)
 - [Technical Specification](docs/specifications/technical-specification.md)
 

@@ -55,7 +55,8 @@ Compile-time constants:
 
 Dashboard YAML:
 
-- `docs/dashboard/openquatt_ha_dashboard.yaml`
+- `docs/dashboard/openquatt_ha_dashboard_nl.yaml` (recommended default)
+- `docs/dashboard/openquatt_ha_dashboard_en.yaml`
 
 ## 3. Configure Secrets
 
@@ -164,6 +165,6 @@ Check selected flow source and low-flow timer/fault logic states, not only insta
 
 After successful first run:
 
-1. Import `docs/dashboard/openquatt_ha_dashboard.yaml` into Home Assistant.
+1. Import either `docs/dashboard/openquatt_ha_dashboard_nl.yaml` or `docs/dashboard/openquatt_ha_dashboard_en.yaml` into Home Assistant.
 2. Read [Control Modes and Flow](control-modes-and-flow.md).
 3. Tune using [Settings Reference](settings-reference.md) and [Tuning and Troubleshooting](tuning-and-troubleshooting.md).

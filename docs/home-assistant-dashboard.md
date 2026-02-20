@@ -2,7 +2,9 @@
 
 Dashboard source:
 
-- `docs/dashboard/openquatt_ha_dashboard.yaml`
+- `docs/dashboard/openquatt_ha_dashboard_nl.yaml`
+- `docs/dashboard/openquatt_ha_dashboard_en.yaml`
+- `docs/dashboard/README.md`
 
 The dashboard is designed as a practical operations console with the **Sections** layout.
 

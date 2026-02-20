@@ -43,7 +43,8 @@ Companion document:
 
 - `openquatt.yaml`: top-level runtime/platform config
 - `openquatt/`: subsystem packages
-- `docs/dashboard/openquatt_ha_dashboard.yaml`: HA dashboard definition
+- `docs/dashboard/openquatt_ha_dashboard_nl.yaml`: HA dashboard definition (Dutch)
+- `docs/dashboard/openquatt_ha_dashboard_en.yaml`: HA dashboard definition (English)
 
 ### Package include order
 

@@ -45,7 +45,9 @@ docs/
 ├── assets/
 │   └── openquatt_logo.svg
 ├── dashboard/
-│   └── openquatt_ha_dashboard.yaml
+│   ├── README.md
+│   ├── openquatt_ha_dashboard_nl.yaml
+│   └── openquatt_ha_dashboard_en.yaml
 └── specifications/
     ├── functional-specification.md
     └── technical-specification.md
@@ -59,6 +61,7 @@ docs/
 - `settings-reference.md`: compile-time vs runtime settings and tuning intent.
 - `tuning-and-troubleshooting.md`: practical workflows, symptom-driven diagnostics, safe iteration.
 - `home-assistant-dashboard.md`: how the dashboard is organized and how to use each tab.
+- `dashboard/README.md`: dashboard language variants and Home Assistant import instructions.
 - `specifications/functional-specification.md`: what the system must do.
 - `specifications/technical-specification.md`: how the current implementation does it.
 - `adaptive-tuner-design.md`: future design for local adaptive tuning.
