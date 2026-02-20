@@ -2,15 +2,17 @@
 # OpenQuatt - Package Includes
 # ==============================================================================
 # Package load order is intentional:
-# 1) Supervisory/state
-# 2) Demand strategy
-# 3) Actuation layers (heat/flow/boiler)
-# 4) Aggregation/energy telemetry
-# 5) External inputs (CIC)
-# 6) Local sensors/source selection
-# 7) Web UI
-# 8) Per-HP hardware adapters
+# 1) Common platform runtime (API/OTA/UART/diagnostics)
+# 2) Supervisory/state
+# 3) Demand strategy
+# 4) Actuation layers (heat/flow/boiler)
+# 5) Aggregation/energy telemetry
+# 6) External inputs (CIC)
+# 7) Local sensors/source selection
+# 8) Web UI
+# 9) Per-HP hardware adapters
 # ==============================================================================
+oq_common: !include oq_common.yaml
 oq_supervisory_controlmode: !include oq_supervisory_controlmode.yaml
 oq_heating_strategy: !include oq_heating_strategy.yaml
 oq_heat_control: !include oq_heat_control.yaml

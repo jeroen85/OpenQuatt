@@ -1,0 +1,173 @@
+# ==============================================================================
+# OpenQuatt - Common Platform Runtime
+# ==============================================================================
+# Shared, board-independent runtime blocks:
+# - API / OTA / captive portal
+# - UART + Modbus client base
+# - Generic diagnostics entities
+# - Runtime debug level controls
+# ==============================================================================
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_key
+  reboot_timeout: 0s
+
+ota:
+  platform: esphome
+  password: !secret ota_password
+
+captive_portal:
+
+# ==============================================================================
+# MODBUS
+# ==============================================================================
+uart:
+  - id: uart_bus
+    tx_pin: ${uart_tx_pin}
+    rx_pin: ${uart_rx_pin}
+    baud_rate: 19200
+    data_bits: 8
+    stop_bits: 1
+    parity: EVEN
+    rx_full_threshold: 1
+    rx_timeout: 1
+
+modbus:
+  - uart_id: uart_bus
+    id: mod_bus
+    flow_control_pin: ${uart_rts_pin}
+    send_wait_time: 100ms
+
+# ==============================================================================
+# DEFAULT ENTITIES
+# ==============================================================================
+binary_sensor:
+  - platform: status
+    name: Status
+    icon: mdi:check-circle-outline
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+sensor:
+  - platform: uptime
+    name: Uptime
+    id: uptime_sensor
+    icon: mdi:timer-outline
+    update_interval: 60s
+    device_class: duration
+    unit_of_measurement: s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+  - platform: wifi_signal
+    name: WiFi Signal
+    icon: mdi:wifi-arrow-left-right
+    update_interval: 300s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+button:
+  - platform: restart
+    name: Restart
+    icon: mdi:restart
+    id: restart_switch
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+  - platform: safe_mode
+    name: Safe mode
+    icon: mdi:shield-alert
+    id: safe_mode_button
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: IP Address
+      icon: mdi:ip-network-outline
+      entity_category: diagnostic
+      web_server:
+        sorting_group_id: oq_diagnostics
+    ssid:
+      name: WiFi SSID
+      icon: mdi:wifi
+      entity_category: diagnostic
+      web_server:
+        sorting_group_id: oq_diagnostics
+  - platform: template
+    id: oq_project_version_text
+    name: OpenQuatt Version
+    icon: mdi:tag-text-outline
+    entity_category: diagnostic
+    update_interval: never
+    lambda: |-
+      return {"${project_version}"};
+    web_server:
+      sorting_group_id: oq_diagnostics
+  - platform: version
+    name: ESPHome Version
+    icon: mdi:information-outline
+    hide_timestamp: true
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+# ==============================================================================
+# DEBUG LEVEL SELECT
+# ==============================================================================
+select:
+  - platform: template
+    name: "Debug Level"
+    id: debug_level_select
+    icon: mdi:lan
+    web_server:
+      sorting_group_id: oq_diagnostics
+    entity_category: diagnostic
+    optimistic: true
+    restore_value: true
+    options: [NONE, ERROR, WARN, INFO, CONFIG, DEBUG]
+    initial_option: INFO
+    on_value:
+      then:
+        - lambda: |-
+            int lvl =
+              (x == "NONE")    ? 0 :
+              (x == "ERROR")   ? 1 :
+              (x == "WARN")    ? 2 :
+              (x == "INFO")    ? 3 :
+              (x == "CONFIG")  ? 4 :
+                                 5;  // DEBUG
+
+            esphome::logger::global_logger->set_log_level(lvl);
+
+  - platform: template
+    name: "Debug Level Modbus"
+    id: debug_level_modbus_master
+    icon: mdi:lan
+    web_server:
+      sorting_group_id: oq_diagnostics
+    entity_category: diagnostic
+    optimistic: true
+    restore_value: true
+    options: [NONE, ERROR, WARN, INFO, CONFIG, DEBUG]
+    initial_option: WARN
+    on_value:
+      then:
+        - lambda: |-
+            int lvl =
+              (x == "NONE")    ? 0 :
+              (x == "ERROR")   ? 1 :
+              (x == "WARN")    ? 2 :
+              (x == "INFO")    ? 3 :
+              (x == "CONFIG")  ? 4 :
+                                 5;  // DEBUG
+
+            auto *logger = esphome::logger::global_logger;
+
+            logger->set_log_level("modbus", lvl);
+            logger->set_log_level("modbus_controller", lvl);
