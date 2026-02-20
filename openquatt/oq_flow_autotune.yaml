@@ -1,0 +1,457 @@
+# ==============================================================================
+# OpenQuatt - Flow Autotune (Option A: Open-Loop Step Response, IMC-PI)
+# ==============================================================================
+#
+# Goal:
+#   Automatically derives a PI proposal (Kp/Ki) for the flow controller
+#   by executing a short open-loop step test on the pump (iPWM).
+#
+# Important:
+#   - Flow control remains the owner of iPWM.
+#   - This package only requests a temporary PWM override via:
+#       * globals: oq_flow_autotune_active, oq_flow_autotune_pwm (added in flow_control)
+#   - Autotune is only allowed in CM1 (pre/postflow), not in CM0/CM2/CM3/CM98.
+#
+# Operation (high level):
+#   1) Arm: check preconditions + measure baseline (pv0, pwm0)
+#   2) Step: decrease iPWM with u_step (=> stronger pumping) during max_s
+#   3) Measure: determine Δpv_ss and t63 (time to 63% response)
+#   4) Compute: K = Δpv/Δu, τ = t63, θ≈Ts (5s), IMC-PI:
+#        Kp = τ / (K * (λ + θ))
+#        Ti = τ
+#        Ki = Kp / Ti
+#   5) Set suggested values; apply button writes them to oq_flow_kp/oq_flow_ki.
+#
+# Defaults are conservative but responsive: λ = max(10s, 0.5*τ)
+#
+# ==============================================================================
+
+# ----------------------------
+# CONTROL INPUTS
+# ----------------------------
+switch:
+  - platform: template
+    id: oq_flow_autotune_enable
+    name: "Flow Autotune Enable"
+    icon: mdi:auto-fix
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_tuning_flow
+
+button:
+  - platform: template
+    id: oq_flow_autotune_start
+    name: "Flow Autotune Start"
+    icon: mdi:play-circle-outline
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_tuning_flow
+    on_press:
+      - lambda: |-
+          if (id(oq_flow_autotune_state) != 0 || id(oq_flow_autotune_active)) {
+            id(oq_flow_autotune_status).publish_state("REFUSED: BUSY");
+            return;
+          }
+          id(oq_flow_autotune_req) = true;
+
+  - platform: template
+    id: oq_flow_autotune_abort_btn
+    name: "Flow Autotune Abort"
+    icon: mdi:stop-circle-outline
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_tuning_flow
+    on_press:
+      - lambda: |-
+          id(oq_flow_autotune_abort) = true;
+
+  - platform: template
+    id: oq_flow_autotune_apply
+    name: "Apply Flow Autotune Kp-Ki"
+    icon: mdi:check-circle-outline
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_tuning_flow
+    on_press:
+      - lambda: |-
+          const float kp = id(oq_flow_kp_suggested).state;
+          const float ki = id(oq_flow_ki_suggested).state;
+          if (!isnan(kp) && !isnan(ki) && kp > 0.0f && ki >= 0.0f) {
+            auto ckp = id(oq_flow_kp).make_call();
+            ckp.set_value(kp);
+            ckp.perform();
+            auto cki = id(oq_flow_ki).make_call();
+            cki.set_value(ki);
+            cki.perform();
+            id(oq_flow_autotune_status).publish_state("APPLIED");
+          } else {
+            id(oq_flow_autotune_status).publish_state("APPLY_FAILED");
+          }
+
+number:
+  - platform: template
+    id: oq_flow_autotune_u_step
+    name: "Flow Autotune u_step (iPWM)"
+    icon: mdi:arrow-expand-vertical
+    unit_of_measurement: "iPWM"
+    mode: slider
+    min_value: 5
+    max_value: 120
+    step: 1
+    restore_value: true
+    optimistic: true
+    initial_value: 40
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_tuning_flow
+
+  - platform: template
+    id: oq_flow_autotune_max_s
+    name: "Flow Autotune max duration (s)"
+    icon: mdi:timer-outline
+    unit_of_measurement: "s"
+    mode: slider
+    min_value: 30
+    max_value: 240
+    step: 5
+    restore_value: true
+    optimistic: true
+    initial_value: 120
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_tuning_flow
+
+  - platform: template
+    id: oq_flow_kp_suggested
+    name: "Flow Autotune Kp suggested"
+    icon: mdi:alpha-k-circle-outline
+    mode: slider
+    min_value: 0.00
+    max_value: 0.08
+    step: 0.001
+    restore_value: false
+    optimistic: true
+    initial_value: 0.03
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_tuning_flow
+
+  - platform: template
+    id: oq_flow_ki_suggested
+    name: "Flow Autotune Ki suggested"
+    icon: mdi:alpha-i-circle-outline
+    mode: slider
+    min_value: 0.0000
+    max_value: 0.0030
+    step: 0.0001
+    restore_value: false
+    optimistic: true
+    initial_value: 0.0008
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_tuning_flow
+
+text_sensor:
+  - platform: template
+    id: oq_flow_autotune_status
+    name: "Flow Autotune status"
+    icon: mdi:information-outline
+    web_server:
+      sorting_group_id: oq_tuning_flow
+    update_interval: never
+
+# ----------------------------
+# INTERNAL STATE
+# ----------------------------
+globals:
+  - id: oq_flow_autotune_state
+    type: int
+    restore_value: false
+    initial_value: '0'   # 0=IDLE,1=ARM,2=STEP,3=DONE,4=ABORT
+  - id: oq_flow_autotune_req
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: oq_flow_autotune_abort
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+  # Measurement memory
+  - id: oq_flow_at_t
+    type: int
+    restore_value: false
+    initial_value: '0'
+  - id: oq_flow_at_pwm0
+    type: int
+    restore_value: false
+    initial_value: '850'
+  - id: oq_flow_at_pwm_step
+    type: int
+    restore_value: false
+    initial_value: '850'
+  - id: oq_flow_at_pv0_acc
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+  - id: oq_flow_at_pv0_n
+    type: int
+    restore_value: false
+    initial_value: '0'
+  - id: oq_flow_at_pv0
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+  - id: oq_flow_at_pv_ss
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+  - id: oq_flow_at_pv63_time_s
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+  - id: oq_flow_at_pv63
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+  - id: oq_flow_at_w0
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+  - id: oq_flow_at_w1
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+  - id: oq_flow_at_w2
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+
+# ----------------------------
+# MAIN LOOP
+# ----------------------------
+interval:
+  - interval: ${oq_flow_ts}s
+    then:
+      - lambda: |-
+          const float sample_time_s = ${oq_flow_ts}.0f;
+
+          auto clamp_ipwm = [](int value) -> int {
+            if (value < ${oq_flow_pwm_min}) return ${oq_flow_pwm_min};
+            if (value > ${oq_flow_pwm_max}) return ${oq_flow_pwm_max};
+            return value;
+          };
+          auto in_valid_autotune_mode = []() -> bool {
+            return id(oq_control_mode_code) == 1;
+          };
+
+          // Abort button always works
+          if (id(oq_flow_autotune_abort)) {
+            id(oq_flow_autotune_abort) = false;
+            id(oq_flow_autotune_state) = 4;
+          }
+
+          const float pv = id(flow_rate_selected).state;
+          const bool flow_valid = !(isnan(pv) || pv <= 0.0f);
+
+          // Only run when enabled
+          if (!id(oq_flow_autotune_enable).state) {
+            id(oq_flow_autotune_active) = false;
+            id(oq_flow_autotune_req) = false;
+            id(oq_flow_at_w0) = NAN;
+            id(oq_flow_at_w1) = NAN;
+            id(oq_flow_at_w2) = NAN;
+            if (id(oq_flow_autotune_state) != 0) {
+              id(oq_flow_autotune_state) = 0;
+              id(oq_flow_autotune_status).publish_state("DISABLED");
+            }
+            return;
+          }
+
+          int st = id(oq_flow_autotune_state);
+
+          // Never queue a second start while a run is active.
+          if (st != 0 && id(oq_flow_autotune_req)) {
+            id(oq_flow_autotune_req) = false;
+            id(oq_flow_autotune_status).publish_state("REFUSED: BUSY");
+          }
+
+          // IDLE
+          if (st == 0) {
+            if (id(oq_flow_autotune_req)) {
+              id(oq_flow_autotune_req) = false;
+
+              if (!in_valid_autotune_mode()) {
+                id(oq_flow_autotune_status).publish_state("REFUSED: not CM1");
+                return;
+              }
+              if (!flow_valid) {
+                id(oq_flow_autotune_status).publish_state("REFUSED: FLOW_INVALID");
+                return;
+              }
+
+              // baseline: 2 samples
+              id(oq_flow_at_pv0_acc) = 0.0f;
+              id(oq_flow_at_pv0_n) = 0;
+              id(oq_flow_at_pv0) = NAN;
+              id(oq_flow_at_pv_ss) = NAN;
+              id(oq_flow_at_pv63_time_s) = NAN;
+              id(oq_flow_at_pv63) = NAN;
+              id(oq_flow_at_w0) = NAN;
+              id(oq_flow_at_w1) = NAN;
+              id(oq_flow_at_w2) = NAN;
+              id(oq_flow_at_t) = 0;
+
+              id(oq_flow_at_pwm0) = (int) id(oq_flow_last_pwm);
+              id(oq_flow_autotune_status).publish_state("ARMING");
+              id(oq_flow_autotune_state) = 1;
+            }
+            return;
+          }
+
+          // ARM
+          if (st == 1) {
+            if (!in_valid_autotune_mode()) { st = 4; id(oq_flow_autotune_status).publish_state("ABORT: not CM1"); }
+            else if (!flow_valid) { st = 4; id(oq_flow_autotune_status).publish_state("ABORT: FLOW_INVALID"); }
+            else {
+              id(oq_flow_at_pv0_acc) += pv;
+              id(oq_flow_at_pv0_n) += 1;
+
+              if (id(oq_flow_at_pv0_n) >= ${oq_flow_autotune_arm_samples}) {
+                id(oq_flow_at_pv0) = id(oq_flow_at_pv0_acc) / (float) id(oq_flow_at_pv0_n);
+
+                const int pwm0 = clamp_ipwm(id(oq_flow_at_pwm0));
+                int u_step = (int) roundf(id(oq_flow_autotune_u_step).state);
+                if (u_step < ${oq_flow_autotune_min_step}) u_step = ${oq_flow_autotune_min_step};
+
+                const int pwm_step = clamp_ipwm(pwm0 - u_step);
+                id(oq_flow_at_pwm_step) = pwm_step;
+                id(oq_flow_at_t) = 0;
+
+                // Activate override
+                id(oq_flow_autotune_pwm) = pwm_step;
+                id(oq_flow_autotune_active) = true;
+
+                id(oq_flow_autotune_status).publish_state("STEP");
+                id(oq_flow_autotune_state) = 2;
+              }
+            }
+            id(oq_flow_autotune_state) = st;
+            return;
+          }
+
+          // STEP / MEASURE
+          if (st == 2) {
+            if (!in_valid_autotune_mode()) { st = 4; id(oq_flow_autotune_status).publish_state("ABORT: not CM1"); }
+            else if (!flow_valid) { st = 4; id(oq_flow_autotune_status).publish_state("ABORT: FLOW_INVALID"); }
+            else {
+              const float pv0 = id(oq_flow_at_pv0);
+              const int t = id(oq_flow_at_t);
+              const int max_s = (int) roundf(id(oq_flow_autotune_max_s).state);
+
+              // Rolling window for ss-estimate.
+              id(oq_flow_at_w0) = id(oq_flow_at_w1);
+              id(oq_flow_at_w1) = id(oq_flow_at_w2);
+              id(oq_flow_at_w2) = pv;
+              if (!isnan(id(oq_flow_at_w0)) && !isnan(id(oq_flow_at_w1)) && !isnan(id(oq_flow_at_w2)) && ${oq_flow_autotune_ss_window} == 3) {
+                id(oq_flow_at_pv_ss) = (id(oq_flow_at_w0) + id(oq_flow_at_w1) + id(oq_flow_at_w2)) / 3.0f;
+              }
+
+              float pv_ss_est = id(oq_flow_at_pv_ss);
+              if (!isnan(pv_ss_est)) {
+                float dpv = pv_ss_est - pv0;
+                float pv63 = pv0 + 0.632f * dpv;
+                id(oq_flow_at_pv63) = pv63;
+
+                if (isnan(id(oq_flow_at_pv63_time_s))) {
+                  if (dpv >= 0.0f) {
+                    if (pv >= pv63) id(oq_flow_at_pv63_time_s) = (float) t;
+                  } else {
+                    if (pv <= pv63) id(oq_flow_at_pv63_time_s) = (float) t;
+                  }
+                }
+              }
+
+              id(oq_flow_at_t) = t + (int) sample_time_s;
+
+              if (t >= max_s) {
+                id(oq_flow_autotune_state) = 3;
+              } else {
+                id(oq_flow_autotune_state) = 2;
+              }
+              return;
+            }
+            id(oq_flow_autotune_state) = st;
+          }
+
+          // DONE
+          if (id(oq_flow_autotune_state) == 3) {
+            id(oq_flow_autotune_active) = false;
+
+            const float pv0 = id(oq_flow_at_pv0);
+            const float pv_ss = id(oq_flow_at_pv_ss);
+            const float t63 = id(oq_flow_at_pv63_time_s);
+
+            const int pwm0 = clamp_ipwm(id(oq_flow_at_pwm0));
+            const int pwm_step = clamp_ipwm(id(oq_flow_at_pwm_step));
+            const float du = (float)(pwm0 - pwm_step); // >0
+
+            if (isnan(pv0) || isnan(pv_ss) || du <= 0.0f) {
+              id(oq_flow_autotune_status).publish_state("FAILED: NO_RESPONSE");
+              id(oq_flow_autotune_state) = 0;
+              return;
+            }
+
+            const float dpv = pv_ss - pv0;
+            const float K = dpv / du;  // (L/h)/iPWM
+            float tau = t63;
+            if (isnan(tau) || tau < sample_time_s) tau = ${oq_flow_autotune_tau_fallback_s};
+
+            const float theta = sample_time_s;
+            float lambda = 0.5f * tau;
+            if (lambda < ${oq_flow_autotune_lambda_min_s}) lambda = ${oq_flow_autotune_lambda_min_s};
+
+            float Kp = tau / (K * (lambda + theta));
+            float Ti = tau;
+            float Ki = (Ti > 1e-3f) ? (Kp / Ti) : 0.0f;
+
+            // clamp to oq_flow_kp/ki ranges
+            if (Kp < 0.0f) Kp = 0.0f;
+            if (Kp > 0.08f) Kp = 0.08f;
+            if (Ki < 0.0f) Ki = 0.0f;
+            if (Ki > 0.0030f) Ki = 0.0030f;
+
+            auto ckp = id(oq_flow_kp_suggested).make_call();
+            ckp.set_value(Kp);
+            ckp.perform();
+            auto cki = id(oq_flow_ki_suggested).make_call();
+            cki.set_value(Ki);
+            cki.perform();
+
+            char msg[128];
+            snprintf(msg, sizeof(msg), "DONE: K=%.3f tau=%.0fs -> Kp=%.3f Ki=%.4f", K, tau, Kp, Ki);
+            id(oq_flow_autotune_status).publish_state(msg);
+
+            // restore previous pwm best-effort
+            id(oq_flow_autotune_pwm) = pwm0;
+            id(oq_flow_at_w0) = NAN;
+            id(oq_flow_at_w1) = NAN;
+            id(oq_flow_at_w2) = NAN;
+
+            id(oq_flow_autotune_state) = 0;
+            return;
+          }
+
+          // ABORT
+          if (id(oq_flow_autotune_state) == 4) {
+            id(oq_flow_autotune_active) = false;
+            id(oq_flow_autotune_pwm) = clamp_ipwm((int) id(oq_flow_last_pwm));
+            id(oq_flow_at_w0) = NAN;
+            id(oq_flow_at_w1) = NAN;
+            id(oq_flow_at_w2) = NAN;
+            id(oq_flow_autotune_status).publish_state("ABORTED");
+            id(oq_flow_autotune_state) = 0;
+            return;
+          }

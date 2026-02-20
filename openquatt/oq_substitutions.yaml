@@ -1,0 +1,146 @@
+# ==============================================================================
+# OpenQuatt - Central Substitutions
+# ==============================================================================
+#
+# Single source of truth for all substitution defaults used across packages.
+# Keep keys stable and grouped by concern to avoid drift.
+#
+# ==============================================================================
+
+# ----------------------------
+# CORE PROJECT
+# ----------------------------
+device_name: "openquatt"                              # Internal ESPHome device ID / hostname base.
+friendly_name: OpenQuatt                              # Display name in Home Assistant / UI.
+project_name: "openquatt.openquatt"                   # ESPHome project identifier shown in firmware metadata.
+project_version: "0.12.0"                             # ESPHome project version shown in firmware metadata.
+
+# ----------------------------
+# HARDWARE PROFILE - ACTIVE
+# ----------------------------
+# Set active board/pins here by copying values from one profile below.
+esp_board: "esp32-s3-devkitc-1"                       # Active ESP32 board type.
+esp_flash_size: "8MB"                                 # Active ESP flash size.
+esp_variant: "esp32s3"                                # Active ESP variant.
+uart_tx_pin: "GPIO17"                                 # Active RS485 TX pin.
+uart_rx_pin: "GPIO18"                                 # Active RS485 RX pin.
+uart_rts_pin: "GPIO21"                                # Active RS485 DE/RE (flow control) pin.
+ds18b20_pin: "GPIO2"                                  # Active DS18B20 1-Wire pin.
+oq_boiler_relay_pin: "GPIO47"                         # Active boiler relay output pin.
+
+# ----------------------------
+# HARDWARE PROFILE - WAVESHARE ESP32-S3-RELAY-1CH
+# ----------------------------
+waveshare_esp_board: "esp32-s3-devkitc-1"            # ESP32 board type for Waveshare ESP32-S3-Relay-1CH.
+waveshare_esp_flash_size: "8MB"                       # ESP flash size for Waveshare ESP32-S3-Relay-1CH.
+waveshare_esp_variant: "esp32s3"                      # ESP variant for Waveshare ESP32-S3-Relay-1CH.
+waveshare_uart_tx_pin: "GPIO17"                       # RS485 TX pin on Waveshare ESP32-S3-Relay-1CH.
+waveshare_uart_rx_pin: "GPIO18"                       # RS485 RX pin on Waveshare ESP32-S3-Relay-1CH.
+waveshare_uart_rts_pin: "GPIO21"                      # RS485 DE/RE pin on Waveshare ESP32-S3-Relay-1CH.
+waveshare_ds18b20_pin: "GPIO2"                        # DS18B20 1-Wire pin on Waveshare ESP32-S3-Relay-1CH.
+waveshare_oq_boiler_relay_pin: "GPIO47"               # Relay CH1 pin on Waveshare ESP32-S3-Relay-1CH.
+
+# ----------------------------
+# HARDWARE PROFILE - HEATPUMP LISTENER
+# ----------------------------
+heatpump_listener_esp_board: "esp32dev"               # ESP32 board type for Heatpump Listener.
+heatpump_listener_esp_flash_size: "8MB"               # ESP flash size for Heatpump Listener.
+heatpump_listener_esp_variant: "esp32"                # ESP variant for Heatpump Listener.
+heatpump_listener_uart_tx_pin: "GPIO33"               # RS485 TX pin on Heatpump Listener.
+heatpump_listener_uart_rx_pin: "GPIO32"               # RS485 RX pin on Heatpump Listener.
+heatpump_listener_uart_rts_pin: "GPIO14"              # RS485 DE/RE pin on Heatpump Listener.
+heatpump_listener_ds18b20_pin: "GPIO27"               # DS18B20 1-Wire pin on Heatpump Listener.
+heatpump_listener_oq_boiler_relay_pin: "GPIO22"       # Relay 1 pin on Heatpump Listener.
+
+# ----------------------------
+# SUPERVISORY CONTROL MODE
+# ----------------------------
+oq_supervisory_loop_s: "5"                            # Main interval of the supervisory state machine [s].
+oq_power_soft_w: "3400.0"                             # Soft power threshold for cap-down logic [W].
+oq_power_peak_w: "3650.0"                             # Peak power threshold for fast cap-down [W].
+oq_power_recover_w: "3300.0"                          # Power level below which cap can recover [W].
+oq_power_peak_trip_s: "15"                            # Time above peak required for a fast cap step [s].
+oq_power_soft_trip_s: "300"                           # Time above soft required for a mild cap step [s].
+oq_power_recover_s: "60"                              # Time below recover required for cap recovery [s].
+oq_power_cap_max_f: "20"                              # Upper limit of demand-cap factor f.
+oq_power_cap_nan_f: "16"                              # Fail-safe cap factor for invalid power measurement.
+oq_cm_prepost_s: "60"                                 # Duration of CM1 pre/postflow window [s].
+oq_cm_min_flow_lph: "250.0"                           # Minimum valid flow for compressor operation [L/h].
+oq_cm_flow_fault_s: "60"                              # Low-flow duration before fault becomes active [s].
+oq_cm_flow_recover_s: "30"                            # Flow recovery duration before fault is cleared [s].
+oq_cm_frost_on_c: "5.0"                               # Frost protection enable threshold [°C].
+oq_cm_frost_off_c: "6.0"                              # Frost protection disable threshold (hysteresis) [°C].
+oq_cm98_diag_max_s: "1800"                            # Maximum duration of diagnostic Force CM98 override [s].
+oq_cm3_promote_s: "300"                               # Required deficit duration for CM2 -> CM3 promotion [s].
+oq_cm3_demote_s: "120"                                # Required low-deficit duration for CM3 -> CM2 demotion [s].
+oq_cm3_min_run_s: "300"                               # Minimum dwell time in CM3 before demotion [s].
+oq_cm2_min_run_s: "120"                               # Minimum dwell time in CM2 before promotion [s].
+oq_cm0_sticky_wait_s: "86400"                         # Wait time in CM0 before sticky-pump run starts [s].
+oq_cm0_sticky_run_s: "60"                             # Duration of sticky-pump run in CM0 [s].
+oq_cm0_pump_stop_ipwm: "1000.0"                       # iPWM setpoint that forces pump off in CM0.
+
+# ----------------------------
+# HEATING STRATEGY
+# ----------------------------
+oq_strategy_loop_s: "5"                               # Interval for strategy calculations and mode switching [s].
+oq_strategy_demand_max_f: "20.0"                      # Upper bound of demand scale for mapping PID/power -> f.
+oq_temp_guard_delta_c: "0.5"                          # Minimum valid margin between T0 and Tc in the house model [°C].
+
+# ----------------------------
+# HEAT CONTROL
+# ----------------------------
+oq_heat_loop_s: "60"                                  # Main interval of heat-control allocation/filter [s].
+oq_heat_demand_max_f: "20"                            # Legacy alias (kept for backward compatibility); active logic uses oq_strategy_demand_max_f.
+oq_cop_min_input_w: "10.0"                            # Minimum electrical input for a valid COP calculation [W].
+oq_optimizer_soft_w: "3400.0"                         # Soft limit for electrical HP power in optimizer [W]; peak limit follows oq_power_peak_w.
+oq_optimizer_penalty_per_w: "5.0"                     # Cost factor above soft limit [cost/W].
+oq_optimizer_twohp_penalty: "10.4427"                 # Penalty for running both HPs at low load without defrost.
+oq_optimizer_balance_penalty_per_step: "18.7874"      # Penalty per level difference |HP1-HP2| at medium/high load without defrost.
+oq_defrost_power_factor: "0.7639"                     # Thermal derate on defrosting HP in optimizer.
+oq_defrost_comp_min_f: "6"                            # Minimum demand f before single-defrost compensation is applied.
+oq_defrost_comp_boost_steps: "1"                      # Extra level steps on non-defrost HP during single-defrost compensation.
+
+# ----------------------------
+# FLOW CONTROL
+# ----------------------------
+oq_flow_loop_s: "5"                                   # Control interval of the flow-control loop [s].
+oq_flow_mismatch_fallback_lph: "150.0"                # Fallback mismatch threshold when entity value is invalid [L/h].
+oq_flow_mismatch_hyst_lph: "50.0"                     # Hysteresis on mismatch detection to prevent chatter [L/h].
+
+# ----------------------------
+# FLOW AUTOTUNE
+# ----------------------------
+oq_flow_ts: "5"                                       # Autotune/main-loop sample time; must match flow-control [s].
+oq_flow_pwm_min: "50"                                 # Lower pump iPWM bound during autotune.
+oq_flow_pwm_max: "850"                                # Upper pump iPWM bound during autotune.
+oq_flow_autotune_min_step: "5"                        # Minimum iPWM step size for the step test.
+oq_flow_autotune_arm_samples: "2"                     # Number of baseline samples in ARM phase.
+oq_flow_autotune_ss_window: "3"                       # Rolling-window size for steady-state estimation [samples].
+oq_flow_autotune_tau_fallback_s: "30.0"               # Fallback time constant when t63 is invalid [s].
+oq_flow_autotune_lambda_min_s: "10.0"                 # Minimum IMC lambda for conservative PI tuning [s].
+
+# ----------------------------
+# BOILER CONTROL
+# ----------------------------
+oq_boiler_loop_s: "5"                                 # Main interval for boiler gating/safety loop [s].
+oq_boiler_trip_c: "60.0"                              # Supply-water trip threshold for boiler lockout [°C].
+oq_boiler_reset_c: "58.0"                             # Reset threshold (hysteresis) for boiler lockout [°C].
+oq_boiler_cp_j_per_kgk: "4186.0"                      # Specific heat capacity of water [J/(kg*K)].
+
+# ----------------------------
+# CIC FEED
+# ----------------------------
+cic_backoff_start_ms: "5000"                          # Initial polling backoff after success/startup [ms].
+cic_backoff_max_ms: "120000"                          # Maximum exponential backoff on errors [ms].
+cic_poll_tick_ms: "5000"                              # Scheduler tick for CIC main loop [ms].
+cic_min_url_len: "10"                                 # Minimum URL length before starting a request [chars].
+cic_stale_after_ms: "180000"                          # Data becomes stale after this time without a successful fetch [ms].
+cic_feed_error_trip_n: "3"                            # Feed OK becomes false after N consecutive fetch/parse errors.
+
+# ----------------------------
+# HP IO (MODBUS POLLING)
+# ----------------------------
+oq_skip_none: "0"                                     # No skips; poll every 5s (base update_interval).
+oq_skip_10s: "1"                                      # 1 skip; effective polling every 10s.
+oq_skip_30s: "5"                                      # 5 skips; effective polling every 30s.
+oq_skip_60s: "11"                                     # 11 skips; effective polling every 60s.

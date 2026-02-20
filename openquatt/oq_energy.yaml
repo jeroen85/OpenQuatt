@@ -1,0 +1,173 @@
+# ==============================================================================
+# OpenQuatt - Energy Aggregation
+# ==============================================================================
+# Purpose:
+# - Centralize HeatPump / Boiler / System energy and COP metrics.
+# - Keep control packages focused on control logic.
+# ==============================================================================
+
+sensor:
+  # Electrical input energy (daily, kWh).
+  - platform: total_daily_energy
+    id: oq_electrical_energy_daily
+    name: "Electrical Energy Daily"
+    power_id: oq_total_power_input
+    time_id: oq_time
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+    restore: true
+    web_server:
+      sorting_group_id: oq_performance
+
+  # Electrical input energy (cumulative, kWh).
+  - platform: integration
+    id: oq_electrical_energy_total
+    name: "Electrical Energy Total"
+    sensor: oq_total_power_input
+    time_unit: h
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+    restore: true
+    web_server:
+      sorting_group_id: oq_performance
+
+  # Thermal power including HP + boiler contribution (W).
+  - platform: template
+    id: oq_system_heat_power
+    name: "System Heat Power"
+    icon: mdi:fire
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_performance
+    lambda: |-
+      auto nz = [](float value) -> float { return isnan(value) ? 0.0f : value; };
+      const float hp_heat_w = nz(id(oq_total_heat_power).state);
+      const float boiler_w = nz(id(boiler_heat_power).state);
+      return hp_heat_w + boiler_w;
+
+  # HeatPump COP based on daily thermal/electrical energy (kWh/kWh).
+  - platform: template
+    id: oq_heatpump_cop_daily
+    name: "HeatPump COP Daily"
+    icon: mdi:chart-bell-curve-cumulative
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_performance
+    lambda: |-
+      const float heat_kwh = id(oq_heatpump_thermal_energy_daily).state;
+      const float elec_kwh = id(oq_electrical_energy_daily).state;
+
+      if (isnan(heat_kwh) || isnan(elec_kwh)) return NAN;
+      if (elec_kwh < 0.01f) return NAN;
+
+      return heat_kwh / elec_kwh;
+
+  # HeatPump thermal energy (daily, kWh).
+  - platform: total_daily_energy
+    id: oq_heatpump_thermal_energy_daily
+    name: "HeatPump Thermal Energy Daily"
+    power_id: oq_total_heat_power
+    time_id: oq_time
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+    restore: true
+    web_server:
+      sorting_group_id: oq_performance
+
+  # HeatPump thermal energy (cumulative, kWh).
+  - platform: integration
+    id: oq_heatpump_thermal_energy_total
+    name: "HeatPump Thermal Energy Total"
+    sensor: oq_total_heat_power
+    time_unit: h
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+    restore: true
+    web_server:
+      sorting_group_id: oq_performance
+
+  # Boiler thermal energy (daily, kWh).
+  - platform: total_daily_energy
+    id: oq_boiler_thermal_energy_daily
+    name: "Boiler Thermal Energy Daily"
+    power_id: boiler_heat_power
+    time_id: oq_time
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+    restore: true
+    web_server:
+      sorting_group_id: oq_boiler
+
+  # Boiler thermal energy (cumulative, kWh).
+  - platform: integration
+    id: oq_boiler_thermal_energy_total
+    name: "Boiler Thermal Energy Total"
+    sensor: boiler_heat_power
+    time_unit: h
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+    restore: true
+    web_server:
+      sorting_group_id: oq_boiler
+
+  # System thermal energy (daily, kWh): HeatPump + Boiler.
+  - platform: total_daily_energy
+    id: oq_system_thermal_energy_daily
+    name: "System Thermal Energy Daily"
+    power_id: oq_system_heat_power
+    time_id: oq_time
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+    restore: true
+    web_server:
+      sorting_group_id: oq_performance
+
+  # System thermal energy (cumulative, kWh): HeatPump + Boiler.
+  - platform: integration
+    id: oq_system_thermal_energy_total
+    name: "System Thermal Energy Total"
+    sensor: oq_system_heat_power
+    time_unit: h
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+    restore: true
+    web_server:
+      sorting_group_id: oq_performance

@@ -1,0 +1,480 @@
+# ==============================================================================
+# OpenQuatt - CIC / External JSON Data
+# ==============================================================================
+#
+# Goal:
+#   Reads and exposes external heat-demand data (for example CIC feed) as input to the internal demand chain.
+#
+# Role in architecture:
+#   Input-adapter layer: maps external data to internal temperature/flow/OT signals.
+#
+# What this package DOES do:
+#   - Read HTTP/JSON or another external source (CIC)
+#   - Per-field soft validation (type/range) while keeping last-good values
+#   - Debounces feed health (`feed_ok` turns false only after N consecutive errors)
+#   - Backoff + stale detection + fail-safe invalidation on prolonged outages
+#
+# What this package DOES NOT do:
+#   - Does not determine Control Mode
+#   - Does not control actuators directly
+#   - Implements no flow or safety interlocks
+#
+# Key assumptions:
+#   - External source is usually available but may briefly fail/time out
+#   - JSON structure may occasionally miss fields; this should not cause immediate system disruption
+#   - Update interval is matched to system dynamics
+#
+# ==============================================================================
+
+# ----------------------------
+# HTTP CLIENT
+# ----------------------------
+http_request:
+  id: req
+  useragent: esphome/beta-feed
+  timeout: 2s
+
+# ----------------------------
+# INTERNAL STATE
+# ----------------------------
+globals:
+  - id: cic_next_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: cic_backoff_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '${cic_backoff_start_ms}'
+  - id: cic_last_success_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: cic_consecutive_errors
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+# ----------------------------
+# CONTROL INPUTS
+# ----------------------------
+switch:
+  - platform: template
+    id: cic_enable
+    name: "CIC - Enable polling"
+    icon: mdi:cloud-sync
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    web_server:
+      sorting_group_id: oq_cic
+
+# ----------------------------
+# TELEMETRY
+# ----------------------------
+sensor:
+  - platform: template
+    id: water_supply_temp_cic
+    name: "CIC - Water Supply Temp"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    icon: mdi:water-thermometer
+    web_server:
+      sorting_group_id: oq_temperatures
+
+  - platform: template
+    id: hp1_outside_temp_cic
+    name: "CIC - HP1 Outside Temp"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    icon: mdi:thermometer
+    web_server:
+      sorting_group_id: oq_temperatures
+
+  - platform: template
+    id: hp2_outside_temp_cic
+    name: "CIC - HP2 Outside Temp"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    icon: mdi:thermometer
+    web_server:
+      sorting_group_id: oq_temperatures
+
+  - platform: template
+    id: outside_temp_cic
+    name: "CIC - Outside Temp (aggregated)"
+    internal: true
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    icon: mdi:thermometer
+    update_interval: 10s
+    lambda: |-
+      const float hp1_outside_c = id(hp1_outside_temp_cic).state;
+      const float hp2_outside_c = id(hp2_outside_temp_cic).state;
+      const bool hp1_valid = !isnan(hp1_outside_c);
+      const bool hp2_valid = !isnan(hp2_outside_c);
+      if (hp1_valid && hp2_valid) return std::min(hp1_outside_c, hp2_outside_c);
+      if (hp1_valid) return hp1_outside_c;
+      if (hp2_valid) return hp2_outside_c;
+      return NAN;
+    web_server:
+      sorting_group_id: oq_temperatures
+
+  - platform: template
+    id: ot_control_setpoint
+    name: "CIC - OT Control setpoint"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    icon: mdi:thermostat
+    web_server:
+      sorting_group_id: oq_cic
+
+  - platform: template
+    id: ot_room_setpoint
+    name: "CIC - OT Room setpoint"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    icon: mdi:home-thermometer
+    web_server:
+      sorting_group_id: oq_cic
+
+  - platform: template
+    id: ot_room_temp
+    name: "CIC - OT Room temperature"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 3
+    icon: mdi:thermometer
+    web_server:
+      sorting_group_id: oq_cic
+
+  - platform: template
+    id: flow_rate_cic
+    name: "CIC - Flowrate (filtered)"
+    unit_of_measurement: "L/h"
+    device_class: volume_flow_rate
+    state_class: measurement
+    accuracy_decimals: 1
+    icon: mdi:water-pump
+    web_server:
+      sorting_group_id: oq_cic
+  - platform: template
+    id: cic_backoff_s
+    name: "CIC - Polling interval"
+    unit_of_measurement: "s"
+    device_class: duration
+    state_class: measurement
+    accuracy_decimals: 0
+    icon: mdi:timer-sand
+    update_interval: never
+    web_server:
+      sorting_group_id: oq_cic
+  - platform: template
+    id: cic_last_success_age_s
+    name: "CIC - Last success age"
+    unit_of_measurement: "s"
+    device_class: duration
+    state_class: measurement
+    accuracy_decimals: 0
+    icon: mdi:timeline-clock-outline
+    update_interval: never
+    web_server:
+      sorting_group_id: oq_cic
+
+# ----------------------------
+# DIAGNOSTICS
+# ----------------------------
+binary_sensor:
+  - platform: template
+    id: ot_ch_enabled
+    name: "CIC - OT CH enabled"
+    icon: mdi:radiator
+    device_class: heat
+    web_server:
+      sorting_group_id: oq_cic
+
+  - platform: template
+    id: ot_cooling_enabled
+    name: "CIC - OT Cooling enabled"
+    icon: mdi:snowflake
+    device_class: cold
+    web_server:
+      sorting_group_id: oq_cic
+
+  - platform: template
+    id: feed_ok
+    name: "CIC - JSON Feed OK"
+    icon: mdi:cloud-check
+    device_class: connectivity
+    web_server:
+      sorting_group_id: oq_cic
+  - platform: template
+    id: cic_data_stale
+    name: "CIC - Data stale"
+    icon: mdi:cloud-alert
+    device_class: problem
+    web_server:
+      sorting_group_id: oq_cic
+
+# ----------------------------
+# FEED CONFIG
+# ----------------------------
+text:
+  - platform: template
+    id: cic_feed_url
+    name: "CIC - Feed URL"
+    icon: mdi:link-variant
+    mode: text
+    optimistic: true
+    restore_value: true
+    initial_value: "http://192.168.2.117:8080/beta/feed/data.json"
+    web_server:
+      sorting_group_id: oq_cic
+
+# ----------------------------
+# FETCH/STATE SCRIPTS
+# ----------------------------
+script:
+  - id: cic_mark_success
+    mode: restart
+    then:
+      - lambda: |-
+          id(cic_consecutive_errors) = 0;
+          if (!id(feed_ok).state) id(feed_ok).publish_state(true);
+          id(cic_last_success_ms) = millis();
+          const float cur_age = id(cic_last_success_age_s).state;
+          if (isnan(cur_age) || fabsf(cur_age) > 0.001f) {
+            id(cic_last_success_age_s).publish_state(0.0f);
+          }
+          if (id(cic_data_stale).state) id(cic_data_stale).publish_state(false);
+
+  - id: cic_mark_failure
+    mode: restart
+    then:
+      - lambda: |-
+          id(cic_consecutive_errors) += 1;
+          if (id(cic_consecutive_errors) < 0) id(cic_consecutive_errors) = 0;
+          if (id(cic_consecutive_errors) >= ${cic_feed_error_trip_n}) {
+            if (id(feed_ok).state) id(feed_ok).publish_state(false);
+          }
+
+  - id: cic_backoff_reset
+    mode: restart
+    then:
+      - lambda: |-
+          id(cic_backoff_ms) = ${cic_backoff_start_ms};
+          id(cic_next_ms) = millis() + (uint32_t)${cic_backoff_start_ms};
+          id(cic_backoff_s).publish_state((float)${cic_backoff_start_ms} / 1000.0f);
+
+  - id: cic_backoff_increase
+    mode: restart
+    then:
+      - lambda: |-
+          uint32_t next_backoff_ms = id(cic_backoff_ms);
+          if (next_backoff_ms < ${cic_backoff_max_ms}) {
+            next_backoff_ms *= 2U;
+            if (next_backoff_ms > ${cic_backoff_max_ms}) {
+              next_backoff_ms = ${cic_backoff_max_ms};
+            }
+          }
+          id(cic_backoff_ms) = next_backoff_ms;
+          id(cic_next_ms) = millis() + next_backoff_ms;
+          id(cic_backoff_s).publish_state((float) next_backoff_ms / 1000.0f);
+
+  - id: cic_invalidate_feed_signals
+    mode: restart
+    then:
+      - lambda: |-
+          auto publish_binary_if_changed = [](auto *binary, bool value) {
+            if (binary == nullptr) return;
+            if (binary->state != value) binary->publish_state(value);
+          };
+          auto publish_float_if_changed = [](auto *sensor, float value) {
+            if (sensor == nullptr) return;
+            const float cur = sensor->state;
+            const bool cur_nan = isnan(cur);
+            const bool new_nan = isnan(value);
+            if (cur_nan != new_nan || (!new_nan && fabsf(cur - value) > 0.001f)) {
+              sensor->publish_state(value);
+            }
+          };
+          publish_binary_if_changed(id(feed_ok), false);
+          publish_float_if_changed(id(water_supply_temp_cic), NAN);
+          publish_float_if_changed(id(hp1_outside_temp_cic), NAN);
+          publish_float_if_changed(id(hp2_outside_temp_cic), NAN);
+          publish_float_if_changed(id(outside_temp_cic), NAN);
+          publish_float_if_changed(id(flow_rate_cic), NAN);
+          publish_float_if_changed(id(ot_control_setpoint), NAN);
+          publish_float_if_changed(id(ot_room_setpoint), NAN);
+          publish_float_if_changed(id(ot_room_temp), NAN);
+          publish_binary_if_changed(id(ot_ch_enabled), false);
+          publish_binary_if_changed(id(ot_cooling_enabled), false);
+
+  - id: cic_fetch
+    mode: single
+    then:
+      - http_request.get:
+          id: req
+          url: !lambda 'return id(cic_feed_url).state;'
+          capture_response: true
+          max_response_buffer_size: 8192
+          on_response:
+            then:
+              - lambda: |-
+                  const int status_code = response->status_code;
+                  if (status_code != 200) {
+                    // status != 200 counts as an error -> increase backoff (max 120s)
+                    id(cic_mark_failure).execute();
+                    id(cic_backoff_increase).execute();
+                    return;
+                  }
+
+                  bool ok = json::parse_json(body, [](JsonObject root) -> bool {
+                    auto publish_float_if_changed = [](auto *sensor, float value) {
+                      if (sensor == nullptr) return;
+                      const float cur = sensor->state;
+                      const bool cur_nan = isnan(cur);
+                      const bool new_nan = isnan(value);
+                      if (cur_nan != new_nan || (!new_nan && fabsf(cur - value) > 0.001f)) {
+                        sensor->publish_state(value);
+                      }
+                    };
+                    auto publish_binary_if_changed = [](auto *binary, bool value) {
+                      if (binary == nullptr) return;
+                      if (binary->state != value) binary->publish_state(value);
+                    };
+                    auto maybe_publish_float = [&](JsonVariantConst v, float lo, float hi, auto *sensor) {
+                      if (v.isNull()) return;
+                      if (!v.is<float>() && !v.is<int>()) return;
+                      const float x = v.as<float>();
+                      if (isnan(x) || x < lo || x > hi) return;
+                      publish_float_if_changed(sensor, x);
+                    };
+                    auto maybe_publish_bool = [&](JsonVariantConst v, auto *binary) {
+                      if (v.isNull()) return;
+                      if (!v.is<bool>()) return;
+                      publish_binary_if_changed(binary, v.as<bool>());
+                    };
+
+                    if (root["flowMeter"]) {
+                      JsonObject fm = root["flowMeter"];
+                      maybe_publish_float(fm["waterSupplyTemperature"], -20.0f, 90.0f, id(water_supply_temp_cic));
+                    }
+
+                    if (root["hp1"]) {
+                      JsonObject hp1 = root["hp1"];
+                      maybe_publish_float(hp1["temperatureOutside"], -40.0f, 60.0f, id(hp1_outside_temp_cic));
+                    }
+                    if (root["hp2"]) {
+                      JsonObject hp2 = root["hp2"];
+                      maybe_publish_float(hp2["temperatureOutside"], -40.0f, 60.0f, id(hp2_outside_temp_cic));
+                    }
+
+                    if (root["qc"]) {
+                      JsonObject qc = root["qc"];
+                      maybe_publish_float(qc["flowRateFiltered"], 0.0f, 5000.0f, id(flow_rate_cic));
+                    }
+
+                    if (root["thermostat"]) {
+                      JsonObject t = root["thermostat"];
+                      maybe_publish_bool(t["otFtChEnabled"], id(ot_ch_enabled));
+                      maybe_publish_bool(t["otFtCoolingEnabled"], id(ot_cooling_enabled));
+                      maybe_publish_float(t["otFtControlSetpoint"], 5.0f, 80.0f, id(ot_control_setpoint));
+                      maybe_publish_float(t["otFtRoomSetpoint"], 5.0f, 35.0f, id(ot_room_setpoint));
+                      maybe_publish_float(t["otFtRoomTemperature"], -20.0f, 50.0f, id(ot_room_temp));
+                    }
+                    return true;
+                  });
+
+                  if (ok) {
+                    id(cic_mark_success).execute();
+                    // success -> reset backoff to 5s
+                    id(cic_backoff_reset).execute();
+                  } else {
+                    // Invalid JSON/body counts as an error.
+                    id(cic_mark_failure).execute();
+                    id(cic_backoff_increase).execute();
+                  }
+
+          on_error:
+            then:
+              - lambda: |-
+                  id(cic_mark_failure).execute();
+                  id(cic_backoff_increase).execute();
+
+# ----------------------------
+# MAIN LOOP
+# ----------------------------
+interval:
+  - interval: ${cic_poll_tick_ms}ms
+    then:
+      - lambda: |-
+          const uint32_t now = millis();
+          const uint32_t last_success_ms = id(cic_last_success_ms);
+          const bool has_success = (last_success_ms != 0);
+          const bool stale = !has_success || ((int32_t)(now - last_success_ms) >= (int32_t)${cic_stale_after_ms});
+          auto publish_binary_if_changed = [](auto *binary, bool value) {
+            if (binary == nullptr) return;
+            if (binary->state != value) binary->publish_state(value);
+          };
+          auto publish_float_if_changed = [](auto *sensor, float value) {
+            if (sensor == nullptr) return;
+            const float cur = sensor->state;
+            const bool cur_nan = isnan(cur);
+            const bool new_nan = isnan(value);
+            if (cur_nan != new_nan || (!new_nan && fabsf(cur - value) > 0.001f)) {
+              sensor->publish_state(value);
+            }
+          };
+          if (has_success) {
+            publish_float_if_changed(id(cic_last_success_age_s), (float)(now - last_success_ms) / 1000.0f);
+          } else {
+            publish_float_if_changed(id(cic_last_success_age_s), NAN);
+          }
+
+          publish_binary_if_changed(id(cic_data_stale), stale);
+          if (stale) {
+            // Fail-safe: external feed is stale/unreliable -> invalidate CIC measurements.
+            id(cic_invalidate_feed_signals).execute();
+          }
+      - if:
+          condition:
+            switch.is_off: cic_enable
+          then:
+            - lambda: |-
+                if (id(cic_data_stale).state != true) {
+                  id(cic_data_stale).publish_state(true);
+                }
+                const float cur_age = id(cic_last_success_age_s).state;
+                if (!isnan(cur_age)) {
+                  id(cic_last_success_age_s).publish_state(NAN);
+                }
+                id(cic_invalidate_feed_signals).execute();
+            - script.stop: cic_fetch
+          else:
+            - if:
+                condition:
+                  lambda: |-
+                    // Skip request when URL is empty/too short
+                    const size_t url_len = id(cic_feed_url).state.size();
+                    if (url_len <= static_cast<size_t>(${cic_min_url_len})) return false;
+
+                    // Backoff gate
+                    const uint32_t now = millis();
+                    // Wrap-safe deadline compare (millis() overflows ~49d)
+                    // True when now is at/after cic_next_ms.
+                    return (int32_t)(now - id(cic_next_ms)) >= 0;
+                then:
+                  - script.execute: cic_fetch

@@ -1,0 +1,59 @@
+# ==============================================================================
+# OpenQuatt – Webserver Sorting Groups
+# ==============================================================================
+# Goal:
+#   Central layout of web_server groups so all packages use the same UI structure
+#   (consistent in HA/diagnostics workflow).
+# ==============================================================================
+web_server:
+  port: 80
+  version: 3
+  sorting_groups:
+    - id: oq_overview
+      name: "Overview"
+      sorting_weight: 5
+    - id: oq_control
+      name: "Control"
+      sorting_weight: 10
+    - id: oq_temperatures
+      name: "Temperatures"
+      sorting_weight: 20
+    - id: oq_hydraulics
+      name: "Flow & Pump"
+      sorting_weight: 30
+    - id: oq_performance
+      name: "Performance"
+      sorting_weight: 40
+    - id: oq_hp1
+      name: "HP1"
+      sorting_weight: 60
+    - id: oq_hp2
+      name: "HP2"
+      sorting_weight: 65
+    - id: oq_boiler
+      name: "Boiler"
+      sorting_weight: 50
+    - id: oq_cic
+      name: "CIC"
+      sorting_weight: 55
+    - id: oq_tuning_flow
+      name: "Tuning – Flow"
+      sorting_weight: 80
+    - id: oq_tuning_heat
+      name: "Tuning – Heat"
+      sorting_weight: 85
+    - id: oq_advanced_levels_hp1
+      name: "Advanced – Levels HP1"
+      sorting_weight: 90
+    - id: oq_advanced_levels_hp2
+      name: "Advanced – Levels HP2"
+      sorting_weight: 91
+    - id: oq_diagnostics
+      name: "Diagnostics"
+      sorting_weight: 180
+    - id: oq_diagnostics_hp
+      name: "Diagnostics - Heat Pump"
+      sorting_weight: 190
+    - id: oq_raw
+      name: "RAW"
+      sorting_weight: 999
