@@ -862,7 +862,7 @@ views:
               - Compare `P_req` (requested power) with `P_house` (model estimate).
               - Check `Deficit`: above `0 W` means the system is short on delivered heat.
               - Use `Demand raw` and `Demand filtered` to verify damping behavior.
-              - `Power cap level` (0..20) shows how much power the controller currently allows.
+              - `Power cap demand` (0..20 step) is the supervisory demand cap applied before HP split.
 
               Terms:
 
@@ -870,7 +870,7 @@ views:
               - `P_req`: rate-limited live heat request in W after ramp limiter.
               - `Demand raw`: raw demand step for compressor control.
               - `Demand filtered`: damped demand step for more stable control.
-              - `Power cap level`: active power limit from supervisory logic.
+              - `Power cap demand`: active supervisory cap on demand steps.
 
               </details>
             text_only: true
@@ -934,7 +934,7 @@ views:
                 features_position: bottom
               - type: tile
                 entity: sensor.openquatt_power_cap_level
-                name: Power cap level
+                name: Power cap demand
                 vertical: false
                 features_position: bottom
           - type: heading

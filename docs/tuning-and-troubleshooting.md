@@ -150,7 +150,7 @@ What to watch:
 
 - `Control Mode (Label)`
 - `Silent active`
-- cap behavior (`Power Cap Level`)
+- cap behavior (`Power cap demand`, step-based cap)
 
 ## 8. CIC Feed Troubleshooting
 

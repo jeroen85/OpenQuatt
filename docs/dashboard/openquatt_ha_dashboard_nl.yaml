@@ -868,7 +868,7 @@ views:
               - Vergelijk `P_req` (gevraagd vermogen) met `P_house` (modelschatting).
               - Check `Deficit`: boven `0 W` vraagt het systeem meer dan nu geleverd wordt.
               - Bekijk `Ruwe vraag` (`Demand raw`) en `Gefilterde vraag` (`Demand filtered`) om te zien hoe sterk filtering dempt.
-              - `Vermogenslimiet` (`Power cap level`, 0..20) laat zien hoeveel vermogen de regelaar toestaat.
+              - `Vermogenscap vraag` (`Power cap demand`, 0..20 step) is de supervisory vraaglimiet vóór verdeling over HP1/HP2.
 
               Termen:
 
@@ -876,7 +876,7 @@ views:
               - `P_req`: begrensde actuele warmtevraag in W na ramp-limiter.
               - `Demand raw`: ruwe vraagstap voor compressorsturing.
               - `Demand filtered`: gedempte vraagstap voor stabielere regeling.
-              - `Power cap level`: actieve vermogenslimiet vanuit supervisory logica.
+              - `Power cap demand`: actieve supervisory limiet op demand-stappen.
 
               </details>
             text_only: true
@@ -940,7 +940,7 @@ views:
                 features_position: bottom
               - type: tile
                 entity: sensor.openquatt_power_cap_level
-                name: Vermogenslimiet
+                name: Vermogenscap vraag
                 vertical: false
                 features_position: bottom
           - type: heading

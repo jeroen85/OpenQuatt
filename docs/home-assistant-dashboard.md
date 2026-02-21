@@ -91,13 +91,13 @@ Expected content pattern:
 - compact explanation block ("Heat control in 30 seconds")
 - inline heating mode control tile
 - core KPI tile grid (`P_house`, `P_req`, `HP capacity`, `HP deficit`)
-- demand and cap tile row (`Demand raw`, `Demand filtered`, `Power cap level`)
+- demand and cap tile row (`Demand raw`, `Demand filtered`, `Power cap demand`)
 - capacity gauges with visual deficit severity
 - trend charts for demand/power behavior
 
 Operational rule:
 
-- For fast diagnosis, check in order: mode source -> `P_req` vs `P_house` -> `Deficit` and cap level.
+- For fast diagnosis, check in order: mode source -> `P_req` vs `P_house` -> `Deficit` and `Power cap demand` (step cap).
 
 ## 6. HPs View
 

@@ -357,9 +357,9 @@ text_sensor:
 sensor:
   - platform: template
     id: power_cap_level
-    name: "Power Cap Level"
+    name: "Power cap demand"
     icon: mdi:shield-bolt
-    unit_of_measurement: "lvl"
+    unit_of_measurement: "step"
     state_class: measurement
     accuracy_decimals: 0
     update_interval: 5s
