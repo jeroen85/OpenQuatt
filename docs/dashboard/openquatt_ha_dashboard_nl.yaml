@@ -1384,6 +1384,8 @@ views:
                 name: OpenQuatt Version
               - entity: update.openquatt_firmware_update
                 name: Firmware Update
+              - entity: button.openquatt_check_firmware_updates
+                name: Check Firmware Updates
       - type: grid
         cards:
           - type: heading

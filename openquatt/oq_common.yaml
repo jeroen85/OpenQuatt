@@ -87,6 +87,17 @@ button:
     web_server:
       sorting_group_id: oq_diagnostics
 
+  - platform: template
+    id: oq_check_firmware_updates
+    name: Check Firmware Updates
+    icon: mdi:update
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+    on_press:
+      - update.check:
+          id: oq_firmware_update
+
 text_sensor:
   - platform: wifi_info
     ip_address:
