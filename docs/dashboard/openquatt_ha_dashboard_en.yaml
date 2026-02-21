@@ -341,6 +341,353 @@ views:
           ## <ha-icon icon="mdi:view-dashboard"></ha-icon> Overview
           Quick and practical view of performance, status, and control.
         text_only: true
+      layout: center
+      badges_position: top
+      badges_wrap: wrap
+    badges:
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: false
+        entity: sensor.openquatt_openquatt_version
+        name:
+          - type: device
+          - type: entity
+        state_content:
+          - name
+          - state
+  - title: Energy
+    path: energy
+    icon: mdi:lightning-bolt-circle
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:heat-pump
+            heading: HeatPump
+            heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+
+              <summary><strong>Explanation</strong></summary>
+
+              HeatPump statistics (without boiler):
+              - `Heat output power`: thermal output power of HP1+HP2 (W)
+              - `Electricity daily`: electrical input today (kWh)
+              - `COP daily`: verhouding `daily heat kWh / daily electricity kWh`
+              - `Heat daily`: heat production today (kWh)
+              - `Electricity total`: cumulative electrical input (kWh)
+              - `Heat total`: cumulative heat production (kWh)
+
+              </details>
+            text_only: true
+          - type: entities
+            title: Today
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_total_heat_power
+                name: Heat output power
+              - entity: sensor.openquatt_electrical_energy_daily
+                name: Electricity daily
+              - entity: sensor.openquatt_heatpump_thermal_energy_daily
+                name: Heat daily
+              - entity: sensor.openquatt_heatpump_cop_daily
+                name: COP daily
+          - type: entities
+            title: Total
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_electrical_energy_total
+                name: Electricity total
+              - entity: sensor.openquatt_heatpump_thermal_energy_total
+                name: Heat total
+          - type: history-graph
+            title: HeatPump trends (24h)
+            hours_to_show: 24
+            refresh_interval: 60
+            entities:
+              - entity: sensor.openquatt_total_heat_power
+                name: Heat output power
+              - entity: sensor.openquatt_heatpump_cop_daily
+                name: COP daily
+              - entity: sensor.openquatt_heatpump_thermal_energy_daily
+                name: Heat daily
+            grid_options:
+              columns: full
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:water-boiler
+            heading: Boiler
+            heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+
+              <summary><strong>Explanation</strong></summary>
+
+              Boiler statistics:
+              - `Boiler active`: shows whether relay control is active
+              - `Heat output power`: current thermal boiler contribution (W)
+              - `Heat daily`: boiler heat today (kWh)
+              - `Heat total`: cumulative boiler heat (kWh)
+
+              </details>
+            text_only: true
+          - type: entities
+            title: Today
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_boiler_heat_power
+                name: Heat output power
+              - entity: sensor.openquatt_boiler_thermal_energy_daily
+                name: Heat daily
+              - entity: binary_sensor.openquatt_boiler_active
+                name: Boiler active
+          - type: entities
+            title: Total
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_boiler_thermal_energy_total
+                name: Heat total
+          - type: history-graph
+            title: Boiler trends (24h)
+            hours_to_show: 24
+            refresh_interval: 60
+            entities:
+              - entity: sensor.openquatt_boiler_heat_power
+                name: Heat output power
+              - entity: sensor.openquatt_boiler_thermal_energy_daily
+                name: Heat daily
+            grid_options:
+              columns: full
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:sigma
+            heading: System
+            heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+
+              <summary><strong>Explanation</strong></summary>
+
+              System values (HeatPump + Boiler):
+              - `Electricity input power`: total electrical input power (W)
+              - `Heat output power`: totale thermische output (W)
+              - `Heat daily`: system heat today (kWh)
+              - `Heat total`: cumulative system heat (kWh)
+
+              </details>
+            text_only: true
+          - type: entities
+            title: Today
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_total_power_input
+                name: Electricity input power
+              - entity: sensor.openquatt_system_heat_power
+                name: Heat output power
+              - entity: sensor.openquatt_system_thermal_energy_daily
+                name: Heat daily
+          - type: entities
+            title: Total
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_system_thermal_energy_total
+                name: Heat total
+          - type: history-graph
+            title: System trends (24h)
+            hours_to_show: 24
+            refresh_interval: 60
+            entities:
+              - entity: sensor.openquatt_total_power_input
+                name: Electricity input power
+              - entity: sensor.openquatt_system_heat_power
+                name: Heat output power
+              - entity: sensor.openquatt_system_thermal_energy_daily
+                name: Heat daily
+            grid_options:
+              columns: full
+      - type: grid
+        column_span: 3
+        cards:
+          - type: heading
+            icon: mdi:chart-bar
+            heading: Energy trends (7d/30d)
+            heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+
+              <summary><strong>Explanation</strong></summary>
+
+              Daily aggregation for energy:
+              - Electricity and heat as daily kWh (derived from total sensors)
+              - `COP daily` as daily average
+
+              </details>
+            text_only: true
+          - type: custom:apexcharts-card
+            header:
+              show: true
+              title: Energy trends (7 days)
+              show_states: false
+            graph_span: 7d
+            update_interval: 120s
+            apex_config:
+              chart:
+                height: 320
+              legend:
+                show: true
+                position: top
+                clusterGroupedSeries: false
+              yaxis:
+                - id: energy
+                  min: 0
+                  decimalsInFloat: 1
+                  title:
+                    text: kWh/day
+                - id: cop
+                  opposite: true
+                  min: 0
+                  decimalsInFloat: 2
+                  title:
+                    text: COP daily
+              stroke:
+                width: 2
+                curve: smooth
+              tooltip:
+                shared: true
+            series:
+              - entity: sensor.openquatt_electrical_energy_total
+                name: Electricity/day
+                color: '#3B82F6'
+                yaxis_id: energy
+                type: column
+                group_by:
+                  func: delta
+                  duration: 1d
+              - entity: sensor.openquatt_heatpump_thermal_energy_total
+                name: HeatPump heat/day
+                color: '#F59E0B'
+                yaxis_id: energy
+                type: column
+                group_by:
+                  func: delta
+                  duration: 1d
+              - entity: sensor.openquatt_boiler_thermal_energy_total
+                name: Boiler heat/day
+                color: '#EF4444'
+                yaxis_id: energy
+                type: column
+                group_by:
+                  func: delta
+                  duration: 1d
+              - entity: sensor.openquatt_system_thermal_energy_total
+                name: System heat/day
+                color: '#10B981'
+                yaxis_id: energy
+                type: line
+                group_by:
+                  func: delta
+                  duration: 1d
+              - entity: sensor.openquatt_heatpump_cop_daily
+                name: COP daily
+                color: '#A855F7'
+                yaxis_id: cop
+                type: line
+                group_by:
+                  func: avg
+                  duration: 1d
+            grid_options:
+              columns: full
+          - type: custom:apexcharts-card
+            header:
+              show: true
+              title: Energy trends (30 days)
+              show_states: false
+            graph_span: 30d
+            update_interval: 300s
+            apex_config:
+              chart:
+                height: 320
+              legend:
+                show: true
+                position: top
+                clusterGroupedSeries: false
+              yaxis:
+                - id: energy
+                  min: 0
+                  decimalsInFloat: 1
+                  title:
+                    text: kWh/day
+                - id: cop
+                  opposite: true
+                  min: 0
+                  decimalsInFloat: 2
+                  title:
+                    text: COP daily
+              stroke:
+                width: 2
+                curve: smooth
+              tooltip:
+                shared: true
+            series:
+              - entity: sensor.openquatt_electrical_energy_total
+                name: Electricity/day
+                color: '#3B82F6'
+                yaxis_id: energy
+                type: column
+                group_by:
+                  func: delta
+                  duration: 1d
+              - entity: sensor.openquatt_heatpump_thermal_energy_total
+                name: HeatPump heat/day
+                color: '#F59E0B'
+                yaxis_id: energy
+                type: column
+                group_by:
+                  func: delta
+                  duration: 1d
+              - entity: sensor.openquatt_boiler_thermal_energy_total
+                name: Boiler heat/day
+                color: '#EF4444'
+                yaxis_id: energy
+                type: column
+                group_by:
+                  func: delta
+                  duration: 1d
+              - entity: sensor.openquatt_system_thermal_energy_total
+                name: System heat/day
+                color: '#10B981'
+                yaxis_id: energy
+                type: line
+                group_by:
+                  func: delta
+                  duration: 1d
+              - entity: sensor.openquatt_heatpump_cop_daily
+                name: COP daily
+                color: '#A855F7'
+                yaxis_id: cop
+                type: line
+                group_by:
+                  func: avg
+                  duration: 1d
+            grid_options:
+              columns: full
+    cards: []
+    header:
+      card:
+        type: markdown
+        content: >-
+          # <ha-icon icon="mdi:lightning-bolt-circle"></ha-icon> Energy
+
+          Energy overview of HeatPump, Boiler, and total System (daily + cumulative).
   - title: Flow
     path: flow
     icon: mdi:waves
@@ -1342,478 +1689,6 @@ views:
           control
 
           CIC feed status, OT data, and source selection for local logic.
-  - title: Diagnostics
-    path: diagnostics
-    icon: mdi:stethoscope
-    type: sections
-    max_columns: 3
-    sections:
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:tag-text
-            heading: Version information
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-
-              <summary><strong>Explanation</strong></summary>
-
-              This value shows the OpenQuatt firmware/project version
-              (`project_version`) that was compiled into the ESPHome config.
-
-              </details>
-            text_only: true
-          - type: entities
-            title: Version
-            show_header_toggle: false
-            entities:
-              - entity: sensor.openquatt_openquatt_version
-                name: OpenQuatt Version
-              - entity: update.openquatt_firmware_update
-                name: Firmware Update
-              - entity: button.openquatt_check_firmware_updates
-                name: Check Firmware Updates
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:thermometer
-            heading: Outside temperature sources
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-
-              <summary><strong>Explanation</strong></summary>
-
-              Compare outdoor temperature per source:
-
-              - Selected: the actual value used in control
-              - HP1/HP2 (Modbus): raw unit measurements
-              - CIC HP1/HP2: cloud-feed source values
-
-              </details>
-            text_only: true
-          - type: entities
-            title: Outside
-            show_header_toggle: false
-            entities:
-              - entity: sensor.openquatt_outside_temperature_selected
-                name: Selected outside temp
-              - entity: sensor.openquatt_hp1_outside_temperature
-                name: HP1 outside temp (Modbus)
-              - entity: sensor.openquatt_hp2_outside_temperature
-                name: HP2 outside temp (Modbus)
-              - entity: sensor.openquatt_cic_hp1_outside_temp
-                name: HP1 outside temp (CIC)
-              - entity: sensor.openquatt_cic_hp2_outside_temp
-                name: HP2 outside temp (CIC)
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:water-thermometer
-            heading: Water supply sources
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-
-              <summary><strong>Explanation</strong></summary>
-
-              Compare water supply temperature per source:
-
-              - Selected: source actively used in logic
-              - ESP: DS18B20 direct op de controller
-              - CIC: cloud-feed value
-
-              </details>
-            text_only: true
-          - type: entities
-            title: Water supply
-            show_header_toggle: false
-            entities:
-              - entity: sensor.openquatt_water_supply_temp_selected
-                name: Selected water supply temp
-              - entity: sensor.openquatt_water_supply_temp
-                name: Water supply temp (ESP)
-              - entity: sensor.openquatt_cic_water_supply_temp
-                name: Water supply temp (CIC)
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:waves
-            heading: Flow sources
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-
-              <summary><strong>Explanation</strong></summary>
-
-              This block shows flow at all levels:
-
-              - Selected: source used by control logic
-              - HP avg local: locally derived value from HP1/HP2
-              - CIC: cloud-feed flow
-              - HP1/HP2: raw per-unit flow (Modbus)
-
-              </details>
-            text_only: true
-          - type: entities
-            title: Flow
-            show_header_toggle: false
-            entities:
-              - entity: sensor.openquatt_flow_average_selected
-                name: Selected flow rate
-              - entity: sensor.openquatt_flow_average_local
-                name: Local flow avg (HP)
-              - entity: sensor.openquatt_cic_flowrate_filtered
-                name: CIC flow rate
-              - entity: sensor.openquatt_hp1_flow
-                name: HP1 flow (Modbus)
-              - entity: sensor.openquatt_hp2_flow
-                name: HP2 flow (Modbus)
-    cards: []
-    header:
-      card:
-        type: markdown
-        content: >-
-          # <ha-icon icon="mdi:stethoscope"></ha-icon> Diagnostics
-
-          Source comparison for temperature and flow, focused on troubleshooting.
-  - title: Energy
-    path: energy
-    icon: mdi:lightning-bolt-circle
-    type: sections
-    max_columns: 3
-    sections:
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:heat-pump
-            heading: HeatPump
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-
-              <summary><strong>Explanation</strong></summary>
-
-              HeatPump statistics (without boiler):
-              - `Heat output power`: thermal output power of HP1+HP2 (W)
-              - `Electricity daily`: electrical input today (kWh)
-              - `COP daily`: verhouding `daily heat kWh / daily electricity kWh`
-              - `Heat daily`: heat production today (kWh)
-              - `Electricity total`: cumulative electrical input (kWh)
-              - `Heat total`: cumulative heat production (kWh)
-
-              </details>
-            text_only: true
-          - type: entities
-            title: Today
-            show_header_toggle: false
-            entities:
-              - entity: sensor.openquatt_total_heat_power
-                name: Heat output power
-              - entity: sensor.openquatt_electrical_energy_daily
-                name: Electricity daily
-              - entity: sensor.openquatt_heatpump_thermal_energy_daily
-                name: Heat daily
-              - entity: sensor.openquatt_heatpump_cop_daily
-                name: COP daily
-          - type: entities
-            title: Total
-            show_header_toggle: false
-            entities:
-              - entity: sensor.openquatt_electrical_energy_total
-                name: Electricity total
-              - entity: sensor.openquatt_heatpump_thermal_energy_total
-                name: Heat total
-          - type: history-graph
-            title: HeatPump trends (24h)
-            hours_to_show: 24
-            refresh_interval: 60
-            entities:
-              - entity: sensor.openquatt_total_heat_power
-                name: Heat output power
-              - entity: sensor.openquatt_heatpump_cop_daily
-                name: COP daily
-              - entity: sensor.openquatt_heatpump_thermal_energy_daily
-                name: Heat daily
-            grid_options:
-              columns: full
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:water-boiler
-            heading: Boiler
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-
-              <summary><strong>Explanation</strong></summary>
-
-              Boiler statistics:
-              - `Boiler active`: shows whether relay control is active
-              - `Heat output power`: current thermal boiler contribution (W)
-              - `Heat daily`: boiler heat today (kWh)
-              - `Heat total`: cumulative boiler heat (kWh)
-
-              </details>
-            text_only: true
-          - type: entities
-            title: Today
-            show_header_toggle: false
-            entities:
-              - entity: sensor.openquatt_boiler_heat_power
-                name: Heat output power
-              - entity: sensor.openquatt_boiler_thermal_energy_daily
-                name: Heat daily
-              - entity: binary_sensor.openquatt_boiler_active
-                name: Boiler active
-          - type: entities
-            title: Total
-            show_header_toggle: false
-            entities:
-              - entity: sensor.openquatt_boiler_thermal_energy_total
-                name: Heat total
-          - type: history-graph
-            title: Boiler trends (24h)
-            hours_to_show: 24
-            refresh_interval: 60
-            entities:
-              - entity: sensor.openquatt_boiler_heat_power
-                name: Heat output power
-              - entity: sensor.openquatt_boiler_thermal_energy_daily
-                name: Heat daily
-            grid_options:
-              columns: full
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:sigma
-            heading: System
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-
-              <summary><strong>Explanation</strong></summary>
-
-              System values (HeatPump + Boiler):
-              - `Electricity input power`: total electrical input power (W)
-              - `Heat output power`: totale thermische output (W)
-              - `Heat daily`: system heat today (kWh)
-              - `Heat total`: cumulative system heat (kWh)
-
-              </details>
-            text_only: true
-          - type: entities
-            title: Today
-            show_header_toggle: false
-            entities:
-              - entity: sensor.openquatt_total_power_input
-                name: Electricity input power
-              - entity: sensor.openquatt_system_heat_power
-                name: Heat output power
-              - entity: sensor.openquatt_system_thermal_energy_daily
-                name: Heat daily
-          - type: entities
-            title: Total
-            show_header_toggle: false
-            entities:
-              - entity: sensor.openquatt_system_thermal_energy_total
-                name: Heat total
-          - type: history-graph
-            title: System trends (24h)
-            hours_to_show: 24
-            refresh_interval: 60
-            entities:
-              - entity: sensor.openquatt_total_power_input
-                name: Electricity input power
-              - entity: sensor.openquatt_system_heat_power
-                name: Heat output power
-              - entity: sensor.openquatt_system_thermal_energy_daily
-                name: Heat daily
-            grid_options:
-              columns: full
-      - type: grid
-        column_span: 3
-        cards:
-          - type: heading
-            icon: mdi:chart-bar
-            heading: Energy trends (7d/30d)
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-
-              <summary><strong>Explanation</strong></summary>
-
-              Daily aggregation for energy:
-              - Electricity and heat as daily kWh (derived from total sensors)
-              - `COP daily` as daily average
-
-              </details>
-            text_only: true
-          - type: custom:apexcharts-card
-            header:
-              show: true
-              title: Energy trends (7 days)
-              show_states: false
-            graph_span: 7d
-            update_interval: 120s
-            apex_config:
-              chart:
-                height: 320
-              legend:
-                show: true
-                position: top
-                clusterGroupedSeries: false
-              yaxis:
-                - id: energy
-                  min: 0
-                  decimalsInFloat: 1
-                  title:
-                    text: kWh/day
-                - id: cop
-                  opposite: true
-                  min: 0
-                  decimalsInFloat: 2
-                  title:
-                    text: COP daily
-              stroke:
-                width: 2
-                curve: smooth
-              tooltip:
-                shared: true
-            series:
-              - entity: sensor.openquatt_electrical_energy_total
-                name: Electricity/day
-                color: '#3B82F6'
-                yaxis_id: energy
-                type: column
-                group_by:
-                  func: delta
-                  duration: 1d
-              - entity: sensor.openquatt_heatpump_thermal_energy_total
-                name: HeatPump heat/day
-                color: '#F59E0B'
-                yaxis_id: energy
-                type: column
-                group_by:
-                  func: delta
-                  duration: 1d
-              - entity: sensor.openquatt_boiler_thermal_energy_total
-                name: Boiler heat/day
-                color: '#EF4444'
-                yaxis_id: energy
-                type: column
-                group_by:
-                  func: delta
-                  duration: 1d
-              - entity: sensor.openquatt_system_thermal_energy_total
-                name: System heat/day
-                color: '#10B981'
-                yaxis_id: energy
-                type: line
-                group_by:
-                  func: delta
-                  duration: 1d
-              - entity: sensor.openquatt_heatpump_cop_daily
-                name: COP daily
-                color: '#A855F7'
-                yaxis_id: cop
-                type: line
-                group_by:
-                  func: avg
-                  duration: 1d
-            grid_options:
-              columns: full
-          - type: custom:apexcharts-card
-            header:
-              show: true
-              title: Energy trends (30 days)
-              show_states: false
-            graph_span: 30d
-            update_interval: 300s
-            apex_config:
-              chart:
-                height: 320
-              legend:
-                show: true
-                position: top
-                clusterGroupedSeries: false
-              yaxis:
-                - id: energy
-                  min: 0
-                  decimalsInFloat: 1
-                  title:
-                    text: kWh/day
-                - id: cop
-                  opposite: true
-                  min: 0
-                  decimalsInFloat: 2
-                  title:
-                    text: COP daily
-              stroke:
-                width: 2
-                curve: smooth
-              tooltip:
-                shared: true
-            series:
-              - entity: sensor.openquatt_electrical_energy_total
-                name: Electricity/day
-                color: '#3B82F6'
-                yaxis_id: energy
-                type: column
-                group_by:
-                  func: delta
-                  duration: 1d
-              - entity: sensor.openquatt_heatpump_thermal_energy_total
-                name: HeatPump heat/day
-                color: '#F59E0B'
-                yaxis_id: energy
-                type: column
-                group_by:
-                  func: delta
-                  duration: 1d
-              - entity: sensor.openquatt_boiler_thermal_energy_total
-                name: Boiler heat/day
-                color: '#EF4444'
-                yaxis_id: energy
-                type: column
-                group_by:
-                  func: delta
-                  duration: 1d
-              - entity: sensor.openquatt_system_thermal_energy_total
-                name: System heat/day
-                color: '#10B981'
-                yaxis_id: energy
-                type: line
-                group_by:
-                  func: delta
-                  duration: 1d
-              - entity: sensor.openquatt_heatpump_cop_daily
-                name: COP daily
-                color: '#A855F7'
-                yaxis_id: cop
-                type: line
-                group_by:
-                  func: avg
-                  duration: 1d
-            grid_options:
-              columns: full
-    cards: []
-    header:
-      card:
-        type: markdown
-        content: >-
-          # <ha-icon icon="mdi:lightning-bolt-circle"></ha-icon> Energy
-
-          Energy overview of HeatPump, Boiler, and total System (daily + cumulative).
   - title: Advanced settings
     path: advanced-settings
     icon: mdi:tune-vertical
@@ -2271,3 +2146,152 @@ views:
           Advanced tuning for limits, house model, heating curve, heat
           allocation, and flow.
     cards: []
+  - title: Diagnostics
+    path: diagnostics
+    icon: mdi:stethoscope
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:tag-text
+            heading: Version information
+            heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+
+              <summary><strong>Explanation</strong></summary>
+
+              This block shows firmware version and OTA update status:
+
+              - `OpenQuatt Version`: version currently running on the ESP
+              (from build-time `project_version`).
+              - `Firmware Update`: compares your installed firmware with the
+              latest GitHub release and indicates if an update is available.
+              - `Check Firmware Updates`: forces an immediate update check
+              (without waiting for the next scheduled poll).
+
+              Note: after a new release, the update entity may take a short
+              time to reflect the latest version (cache/refresh interval).
+
+              </details>
+            text_only: true
+          - type: entities
+            title: Version
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_openquatt_version
+                name: OpenQuatt Version
+              - entity: update.openquatt_firmware_update
+                name: Firmware Update
+              - entity: button.openquatt_check_firmware_updates
+                name: Check Firmware Updates
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:thermometer
+            heading: Outside temperature sources
+            heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+
+              <summary><strong>Explanation</strong></summary>
+
+              Compare outdoor temperature per source:
+
+              - Selected: the actual value used in control
+              - HP1/HP2 (Modbus): raw unit measurements
+              - CIC HP1/HP2: cloud-feed source values
+
+              </details>
+            text_only: true
+          - type: entities
+            title: Outside
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_outside_temperature_selected
+                name: Selected outside temp
+              - entity: sensor.openquatt_hp1_outside_temperature
+                name: HP1 outside temp (Modbus)
+              - entity: sensor.openquatt_hp2_outside_temperature
+                name: HP2 outside temp (Modbus)
+              - entity: sensor.openquatt_cic_hp1_outside_temp
+                name: HP1 outside temp (CIC)
+              - entity: sensor.openquatt_cic_hp2_outside_temp
+                name: HP2 outside temp (CIC)
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:water-thermometer
+            heading: Water supply sources
+            heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+
+              <summary><strong>Explanation</strong></summary>
+
+              Compare water supply temperature per source:
+
+              - Selected: source actively used in logic
+              - ESP: DS18B20 direct op de controller
+              - CIC: cloud-feed value
+
+              </details>
+            text_only: true
+          - type: entities
+            title: Water supply
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_water_supply_temp_selected
+                name: Selected water supply temp
+              - entity: sensor.openquatt_water_supply_temp
+                name: Water supply temp (ESP)
+              - entity: sensor.openquatt_cic_water_supply_temp
+                name: Water supply temp (CIC)
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:waves
+            heading: Flow sources
+            heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+
+              <summary><strong>Explanation</strong></summary>
+
+              This block shows flow at all levels:
+
+              - Selected: source used by control logic
+              - HP avg local: locally derived value from HP1/HP2
+              - CIC: cloud-feed flow
+              - HP1/HP2: raw per-unit flow (Modbus)
+
+              </details>
+            text_only: true
+          - type: entities
+            title: Flow
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_flow_average_selected
+                name: Selected flow rate
+              - entity: sensor.openquatt_flow_average_local
+                name: Local flow avg (HP)
+              - entity: sensor.openquatt_cic_flowrate_filtered
+                name: CIC flow rate
+              - entity: sensor.openquatt_hp1_flow
+                name: HP1 flow (Modbus)
+              - entity: sensor.openquatt_hp2_flow
+                name: HP2 flow (Modbus)
+    cards: []
+    header:
+      card:
+        type: markdown
+        content: >-
+          # <ha-icon icon="mdi:stethoscope"></ha-icon> Diagnostics
+
+          Source comparison for temperature and flow, focused on troubleshooting.
