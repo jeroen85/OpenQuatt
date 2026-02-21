@@ -939,7 +939,7 @@ views:
                 vertical: false
                 features_position: bottom
               - type: tile
-                entity: sensor.openquatt_power_cap_level
+                entity: sensor.openquatt_power_cap_demand
                 name: Vermogenscap vraag
                 vertical: false
                 features_position: bottom
