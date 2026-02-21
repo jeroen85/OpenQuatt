@@ -4,7 +4,7 @@
 #
 # Purpose:
 # - Top-level ESPHome config and package includes.
-# - Keeps boot/runtime services and shared diagnostics in one place.
+# - Runtime services and shared diagnostics are loaded via `oq_common` package.
 # ==============================================================================
 
 # ==============================================================================
@@ -45,26 +45,3 @@ esp32:
     sdkconfig_options:
       COMPILER_OPTIMIZATION_SIZE: y
       CONFIG_BT_ENABLED: n
-
-# Enable logging
-logger:
-  level: DEBUG
-  baud_rate: 0
-  runtime_tag_levels: true
-
-# Enable Home Assistant API
-api:
-  reboot_timeout: 0s
-
-ota:
-  - platform: esphome
-  - platform: http_request
-
-# ==============================================================================
-# NETWORK
-# ==============================================================================
-wifi:
-  min_auth_mode: wpa2
-  ap:
-    ssid: "OpenQuatt"
-    password: "openquatt"

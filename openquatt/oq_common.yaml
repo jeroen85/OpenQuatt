@@ -2,11 +2,36 @@
 # OpenQuatt - Common Platform Runtime
 # ==============================================================================
 # Shared, board-independent runtime blocks:
-# - Captive portal
-# - UART + Modbus client base
+# - Core runtime services (logging/API/OTA)
+# - Network fallback + HTTP client
+# - RS485 Modbus transport
 # - Generic diagnostics entities
 # - Runtime debug level controls
 # ==============================================================================
+
+# ==============================================================================
+# CORE RUNTIME SERVICES
+# ==============================================================================
+logger:
+  level: DEBUG
+  baud_rate: 0
+  runtime_tag_levels: true
+
+api:
+  reboot_timeout: 0s
+
+ota:
+  - platform: esphome
+  - platform: http_request
+
+# ==============================================================================
+# NETWORK + RECOVERY
+# ==============================================================================
+wifi:
+  min_auth_mode: wpa2
+  ap:
+    ssid: "OpenQuatt"
+    password: "openquatt"
 
 captive_portal:
 
@@ -23,7 +48,7 @@ http_request:
   buffer_size_tx: 1024
 
 # ==============================================================================
-# MODBUS
+# MODBUS (RS485)
 # ==============================================================================
 uart:
   - id: uart_bus
@@ -43,7 +68,7 @@ modbus:
     send_wait_time: 100ms
 
 # ==============================================================================
-# DEFAULT ENTITIES
+# DIAGNOSTIC ENTITIES
 # ==============================================================================
 binary_sensor:
   - platform: status
@@ -141,7 +166,7 @@ update:
       sorting_group_id: oq_diagnostics
 
 # ==============================================================================
-# DEBUG LEVEL SELECT
+# RUNTIME DEBUG LEVEL SELECTS
 # ==============================================================================
 select:
   - platform: template
