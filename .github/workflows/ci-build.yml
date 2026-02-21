@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-and-compile:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ESPHome
+        run: pip install --upgrade esphome==2026.1.5
+
+      - name: Validate config
+        run: esphome config openquatt.yaml
+
+      - name: Compile firmware
+        run: esphome compile openquatt.yaml
+
+      - name: Upload firmware artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: openquatt-firmware-${{ github.sha }}
+          if-no-files-found: error
+          path: |
+            .esphome/build/openquatt/.pioenvs/openquatt/firmware.bin
+            .esphome/build/openquatt/.pioenvs/openquatt/firmware.ota.bin
+            .esphome/build/openquatt/.pioenvs/openquatt/firmware.factory.bin

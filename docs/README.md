@@ -41,6 +41,7 @@ docs/
 ├── settings-reference.md
 ├── tuning-and-troubleshooting.md
 ├── home-assistant-dashboard.md
+├── release-process.md
 ├── adaptive-tuner-design.md
 ├── assets/
 │   └── openquatt_logo.svg
@@ -55,12 +56,13 @@ docs/
 
 ## What Each Document Covers
 
-- `getting-started.md`: hardware prerequisites, secrets, build/flash flow, first validation.
+- `getting-started.md`: hardware prerequisites, baseline runtime, build/flash flow, first validation.
 - `system-overview.md`: package architecture, control ownership, data pipeline, safety model.
 - `control-modes-and-flow.md`: CM behavior, Flow Mode semantics, Heating Strategy modes, and precedence.
 - `settings-reference.md`: compile-time vs runtime settings and tuning intent.
 - `tuning-and-troubleshooting.md`: practical workflows, symptom-driven diagnostics, safe iteration.
 - `home-assistant-dashboard.md`: how the dashboard is organized and how to use each tab.
+- `release-process.md`: GitHub Actions CI/release flow, tag strategy, and release execution steps.
 - `dashboard/README.md`: dashboard language variants and Home Assistant import instructions.
 - `specifications/functional-specification.md`: what the system must do.
 - `specifications/technical-specification.md`: how the current implementation does it.

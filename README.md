@@ -13,6 +13,7 @@ OpenQuatt is a modular ESPHome controller for a dual heat pump setup with superv
 - [Quick Start](#quick-start)
 - [Local Validation Helper](#local-validation-helper)
 - [Hardware Profiles](#hardware-profiles)
+- [Release Process](#release-process)
 - [Documentation](#documentation)
 - [Development and Maintenance](#development-and-maintenance)
 - [License](#license)
@@ -121,6 +122,12 @@ It includes:
 - Active hardware profile values (board, variant, pins)
 - Reference profile: Waveshare ESP32-S3-Relay-1CH
 - Reference profile: [Heatpump Listener](https://electropaultje.nl/product/heatpump-listener/)
+
+## Release Process
+
+- CI workflow (`.github/workflows/ci-build.yml`) runs on push/PR and validates + compiles firmware.
+- Release workflow (`.github/workflows/release-build.yml`) runs on tags `v*` and publishes firmware assets to GitHub Releases.
+- Detailed steps: [Release Process Guide](docs/release-process.md)
 
 ## Documentation
 
