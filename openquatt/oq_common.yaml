@@ -102,6 +102,7 @@ text_sensor:
   - platform: version
     name: ESPHome Version
     icon: mdi:information-outline
+    hide_timestamp: true
     entity_category: diagnostic
     web_server:
       sorting_group_id: oq_diagnostics
