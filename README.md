@@ -47,6 +47,7 @@ OpenQuatt is a modular ESPHome controller for a dual heat pump setup with superv
 ├── openquatt/
 │   ├── oq_substitutions.yaml         # Compile-time constants and hardware profiles
 │   ├── oq_packages.yaml              # Ordered package includes
+│   ├── oq_common.yaml                # Shared runtime (logger/api/ota/wifi/http/modbus/diagnostics)
 │   ├── oq_supervisory_controlmode.yaml
 │   ├── oq_heating_strategy.yaml
 │   ├── oq_heat_control.yaml

@@ -61,7 +61,7 @@ Dashboard YAML:
 ## 3. Baseline Runtime
 
 The repository baseline runs without `secrets.yaml` and starts in AP mode (`OpenQuatt`).
-Adjust `openquatt.yaml` only if you want environment-specific API encryption, OTA passwording, or fixed Wi-Fi client networking.
+Adjust `openquatt/oq_common.yaml` if you want environment-specific API encryption, OTA passwording, or fixed Wi-Fi client networking.
 
 ## 4. Select Hardware Profile
 

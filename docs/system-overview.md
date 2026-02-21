@@ -18,12 +18,16 @@ This document explains the current OpenQuatt architecture as implemented in the 
 
 ## 1. Top-Level Composition
 
-OpenQuatt is driven from `openquatt.yaml`, which includes:
+OpenQuatt is driven from `openquatt.yaml` as the project entrypoint, which includes:
 
-- global platform/runtime config
-- network and API setup
-- Modbus bus configuration
+- global project/board/framework config
 - package includes via `openquatt/oq_packages.yaml`
+
+Shared runtime services are loaded from `openquatt/oq_common.yaml`, including:
+
+- logging, API, and OTA
+- Wi-Fi fallback and captive portal
+- HTTP client and Modbus transport
 
 Package include order is intentional:
 
