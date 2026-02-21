@@ -1,0 +1,12 @@
+# ==============================================================================
+# OpenQuatt - Hardware Profile: Waveshare ESP32-S3-Relay-1CH
+# ==============================================================================
+substitutions:
+  esp_board: "esp32-s3-devkitc-1"                       # Active ESP32 board type.
+  esp_flash_size: "8MB"                                 # Active ESP flash size.
+  esp_variant: "esp32s3"                                # Active ESP variant.
+  uart_tx_pin: "GPIO17"                                 # Active RS485 TX pin.
+  uart_rx_pin: "GPIO18"                                 # Active RS485 RX pin.
+  uart_rts_pin: "GPIO21"                                # Active RS485 DE/RE (flow control) pin.
+  ds18b20_pin: "GPIO2"                                  # Active DS18B20 1-Wire pin.
+  oq_boiler_relay_pin: "GPIO47"                         # Active boiler relay output pin.

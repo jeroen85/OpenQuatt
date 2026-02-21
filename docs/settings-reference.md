@@ -22,7 +22,8 @@ It separates compile-time firmware constants from runtime-operational entities a
 
 File:
 
-- `openquatt/oq_substitutions.yaml`
+- `openquatt/oq_substitutions_common.yaml`
+- `openquatt/profiles/oq_substitutions_waveshare.yaml` or `openquatt/profiles/oq_substitutions_heatpump_listener.yaml`
 
 Characteristics:
 
@@ -56,25 +57,24 @@ Active profile fields used by firmware:
 - `ds18b20_pin`
 - `oq_boiler_relay_pin`
 
-Reference profile blocks included in substitutions:
+Hardware profile files:
 
-- Waveshare ESP32-S3-Relay-1CH
-- [Heatpump Listener](https://electropaultje.nl/product/heatpump-listener/)
+- `openquatt/profiles/oq_substitutions_waveshare.yaml`
+- `openquatt/profiles/oq_substitutions_heatpump_listener.yaml`
 
 ## 3. Compile-Time Parameter Categories
 
-`oq_substitutions.yaml` is grouped into:
+`oq_substitutions_common.yaml` is grouped into:
 
 1. Core project metadata
-2. Hardware profile settings
-3. Supervisory control constants
-4. Heating Strategy constants
-5. Heat control / optimizer constants
-6. Flow control constants
-7. Flow autotune constants
-8. Boiler constants
-9. CIC polling/backoff constants
-10. HP IO Modbus polling skip constants
+2. Supervisory control constants
+3. Heating Strategy constants
+4. Heat control / optimizer constants
+5. Flow control constants
+6. Flow autotune constants
+7. Boiler constants
+8. CIC polling/backoff constants
+9. HP IO Modbus polling skip constants
 
 ## 4. High-Impact Compile-Time Constants
 

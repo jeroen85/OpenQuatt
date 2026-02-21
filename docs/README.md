@@ -71,6 +71,6 @@ docs/
 ## Documentation Rules
 
 - Keep filenames versionless.
-- Keep firmware versioning in `openquatt/oq_substitutions.yaml` (`project_version`).
+- Keep firmware versioning in `openquatt/oq_substitutions_common.yaml` (`project_version`).
 - Update both specifications when changing control behavior.
 - Keep entity names and examples aligned with the current YAML codebase.

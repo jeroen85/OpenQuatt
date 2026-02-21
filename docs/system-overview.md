@@ -200,14 +200,17 @@ Safety is distributed but coordinated:
 
 ## 9. Hardware Profiles and Pin Strategy
 
-`oq_substitutions.yaml` contains an active profile plus reference profiles.
+Hardware profile substitutions are split into dedicated files:
 
-Current reference profiles:
+- `openquatt/profiles/oq_substitutions_waveshare.yaml`
+- `openquatt/profiles/oq_substitutions_heatpump_listener.yaml`
 
-- Waveshare ESP32-S3-Relay-1CH
-- [Heatpump Listener](https://electropaultje.nl/product/heatpump-listener/)
+Shared non-hardware constants are in `openquatt/oq_substitutions_common.yaml`.
 
-Only the active profile is consumed by `openquatt.yaml` at compile time.
+Compile-time profile selection is done by choosing the firmware entrypoint:
+
+- `openquatt_waveshare.yaml`
+- `openquatt_heatpump_listener.yaml`
 
 ## 10. UI and Observability Organization
 

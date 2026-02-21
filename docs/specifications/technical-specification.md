@@ -41,7 +41,10 @@ Companion document:
 
 ### Root
 
-- `openquatt.yaml`: top-level entrypoint (project metadata, board/framework, package wiring)
+- `openquatt.yaml`: default top-level entrypoint (Waveshare profile)
+- `openquatt_waveshare.yaml`: explicit Waveshare entrypoint
+- `openquatt_heatpump_listener.yaml`: Heatpump Listener entrypoint
+- `openquatt_base.yaml`: shared base (project metadata, board/framework, package wiring)
 - `openquatt/`: subsystem packages
 - `docs/dashboard/openquatt_ha_dashboard_nl.yaml`: HA dashboard definition (Dutch)
 - `docs/dashboard/openquatt_ha_dashboard_en.yaml`: HA dashboard definition (English)

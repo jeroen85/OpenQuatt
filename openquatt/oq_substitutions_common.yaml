@@ -1,5 +1,5 @@
 # ==============================================================================
-# OpenQuatt - Central Substitutions
+# OpenQuatt - Common Substitutions
 # ==============================================================================
 #
 # Single source of truth for all substitution defaults used across packages.
@@ -18,41 +18,11 @@ hp_perf_map_header: "openquatt/includes/hp_perf_map.h" # C++ performance-map hea
 release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt.manifest.json" # OTA update manifest URL.
 
 # ----------------------------
-# HARDWARE PROFILE - ACTIVE
+# HARDWARE
 # ----------------------------
-# Set active board/pins here by copying values from one profile below.
-esp_board: "esp32-s3-devkitc-1"                       # Active ESP32 board type.
-esp_flash_size: "8MB"                                 # Active ESP flash size.
-esp_variant: "esp32s3"                                # Active ESP variant.
-uart_tx_pin: "GPIO17"                                 # Active RS485 TX pin.
-uart_rx_pin: "GPIO18"                                 # Active RS485 RX pin.
-uart_rts_pin: "GPIO21"                                # Active RS485 DE/RE (flow control) pin.
-ds18b20_pin: "GPIO2"                                  # Active DS18B20 1-Wire pin.
-oq_boiler_relay_pin: "GPIO47"                         # Active boiler relay output pin.
-
-# ----------------------------
-# HARDWARE PROFILE - WAVESHARE ESP32-S3-RELAY-1CH
-# ----------------------------
-waveshare_esp_board: "esp32-s3-devkitc-1"            # ESP32 board type for Waveshare ESP32-S3-Relay-1CH.
-waveshare_esp_flash_size: "8MB"                       # ESP flash size for Waveshare ESP32-S3-Relay-1CH.
-waveshare_esp_variant: "esp32s3"                      # ESP variant for Waveshare ESP32-S3-Relay-1CH.
-waveshare_uart_tx_pin: "GPIO17"                       # RS485 TX pin on Waveshare ESP32-S3-Relay-1CH.
-waveshare_uart_rx_pin: "GPIO18"                       # RS485 RX pin on Waveshare ESP32-S3-Relay-1CH.
-waveshare_uart_rts_pin: "GPIO21"                      # RS485 DE/RE pin on Waveshare ESP32-S3-Relay-1CH.
-waveshare_ds18b20_pin: "GPIO2"                        # DS18B20 1-Wire pin on Waveshare ESP32-S3-Relay-1CH.
-waveshare_oq_boiler_relay_pin: "GPIO47"               # Relay CH1 pin on Waveshare ESP32-S3-Relay-1CH.
-
-# ----------------------------
-# HARDWARE PROFILE - HEATPUMP LISTENER
-# ----------------------------
-heatpump_listener_esp_board: "esp32dev"               # ESP32 board type for Heatpump Listener.
-heatpump_listener_esp_flash_size: "8MB"               # ESP flash size for Heatpump Listener.
-heatpump_listener_esp_variant: "esp32"                # ESP variant for Heatpump Listener.
-heatpump_listener_uart_tx_pin: "GPIO33"               # RS485 TX pin on Heatpump Listener.
-heatpump_listener_uart_rx_pin: "GPIO32"               # RS485 RX pin on Heatpump Listener.
-heatpump_listener_uart_rts_pin: "GPIO14"              # RS485 DE/RE pin on Heatpump Listener.
-heatpump_listener_ds18b20_pin: "GPIO27"               # DS18B20 1-Wire pin on Heatpump Listener.
-heatpump_listener_oq_boiler_relay_pin: "GPIO22"       # Relay 1 pin on Heatpump Listener.
+# Hardware-specific substitutions are provided by per-profile files:
+# - openquatt/profiles/oq_substitutions_waveshare.yaml
+# - openquatt/profiles/oq_substitutions_heatpump_listener.yaml
 
 # ----------------------------
 # SUPERVISORY CONTROL MODE

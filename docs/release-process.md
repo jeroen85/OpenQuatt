@@ -33,7 +33,7 @@ Recommended increments:
 
 ## How To Cut a Release
 
-1. Update `project_version` in `openquatt/oq_substitutions.yaml`.
+1. Update `project_version` in `openquatt/oq_substitutions_common.yaml`.
 2. Commit and push to `main`.
 3. Create and push a tag:
 

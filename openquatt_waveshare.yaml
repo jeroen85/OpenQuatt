@@ -1,8 +1,5 @@
 # ==============================================================================
-# OpenQuatt - Default Main Config
-# ==============================================================================
-# Default build target used by CI/release and local quick compile.
-# Hardware profile: Waveshare ESP32-S3-Relay-1CH.
+# OpenQuatt - Main Config (Waveshare ESP32-S3-Relay-1CH)
 # ==============================================================================
 substitutions: !include openquatt/oq_substitutions_common.yaml
 

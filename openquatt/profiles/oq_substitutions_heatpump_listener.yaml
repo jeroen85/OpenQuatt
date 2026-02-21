@@ -1,0 +1,12 @@
+# ==============================================================================
+# OpenQuatt - Hardware Profile: Heatpump Listener
+# ==============================================================================
+substitutions:
+  esp_board: "esp32dev"                                 # Active ESP32 board type.
+  esp_flash_size: "8MB"                                 # Active ESP flash size.
+  esp_variant: "esp32"                                  # Active ESP variant.
+  uart_tx_pin: "GPIO33"                                 # Active RS485 TX pin.
+  uart_rx_pin: "GPIO32"                                 # Active RS485 RX pin.
+  uart_rts_pin: "GPIO14"                                # Active RS485 DE/RE (flow control) pin.
+  ds18b20_pin: "GPIO27"                                 # Active DS18B20 1-Wire pin.
+  oq_boiler_relay_pin: "GPIO22"                         # Active boiler relay output pin.

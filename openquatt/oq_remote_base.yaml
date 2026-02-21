@@ -1,2 +1,5 @@
-substitutions: !include oq_substitutions.yaml
-packages: !include oq_packages.yaml
+# Remote package entrypoint (default hardware profile: Waveshare)
+packages:
+  oq_substitutions_common: !include oq_substitutions_common.yaml
+  oq_profile_waveshare: !include profiles/oq_substitutions_waveshare.yaml
+  oq_packages: !include oq_packages.yaml

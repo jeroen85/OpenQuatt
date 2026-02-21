@@ -1,0 +1,8 @@
+# ==============================================================================
+# OpenQuatt - Main Config (Heatpump Listener)
+# ==============================================================================
+substitutions: !include openquatt/oq_substitutions_common.yaml
+
+packages:
+  openquatt_hw_profile: !include openquatt/profiles/oq_substitutions_heatpump_listener.yaml
+  openquatt_base: !include openquatt_base.yaml

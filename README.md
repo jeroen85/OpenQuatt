@@ -43,9 +43,15 @@ OpenQuatt is a modular ESPHome controller for a dual heat pump setup with superv
 
 ```text
 .
-├── openquatt.yaml                    # Top-level ESPHome config
+├── openquatt.yaml                    # Default ESPHome config (Waveshare profile)
+├── openquatt_waveshare.yaml          # Explicit Waveshare profile entrypoint
+├── openquatt_heatpump_listener.yaml  # Heatpump Listener profile entrypoint
+├── openquatt_base.yaml               # Shared ESPHome/ESP32 base config
 ├── openquatt/
-│   ├── oq_substitutions.yaml         # Compile-time constants and hardware profiles
+│   ├── oq_substitutions_common.yaml  # Compile-time constants shared by all profiles
+│   ├── profiles/
+│   │   ├── oq_substitutions_waveshare.yaml
+│   │   └── oq_substitutions_heatpump_listener.yaml
 │   ├── oq_packages.yaml              # Ordered package includes
 │   ├── oq_common.yaml                # Shared runtime (logger/api/ota/wifi/http/modbus/diagnostics)
 │   ├── oq_supervisory_controlmode.yaml
@@ -120,13 +126,15 @@ esphome run openquatt.yaml
 
 Hardware-related compile-time settings are defined in:
 
-- `openquatt/oq_substitutions.yaml`
+- `openquatt/oq_substitutions_common.yaml`
+- `openquatt/profiles/oq_substitutions_waveshare.yaml`
+- `openquatt/profiles/oq_substitutions_heatpump_listener.yaml`
 
 It includes:
 
-- Active hardware profile values (board, variant, pins)
-- Reference profile: Waveshare ESP32-S3-Relay-1CH
-- Reference profile: [Heatpump Listener](https://electropaultje.nl/product/heatpump-listener/)
+- Shared compile-time constants (`project_version`, control constants, CIC/flow/modbus constants)
+- Waveshare ESP32-S3-Relay-1CH hardware mapping
+- [Heatpump Listener](https://electropaultje.nl/product/heatpump-listener/) hardware mapping
 
 ## Release Process
 

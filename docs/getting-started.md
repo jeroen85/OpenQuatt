@@ -25,7 +25,7 @@ This guide gets OpenQuatt from repository clone to a validated first run.
 
 ### Hardware
 
-OpenQuatt currently supports two documented profile templates in `openquatt/oq_substitutions.yaml`:
+OpenQuatt currently supports two documented hardware profiles:
 
 1. **Waveshare ESP32-S3-Relay-1CH** (default active profile)
 2. **Heatpump Listener** ([product page](https://electropaultje.nl/product/heatpump-listener/))
@@ -44,6 +44,8 @@ Both profiles include:
 Main entrypoint:
 
 - `openquatt.yaml`
+- `openquatt_waveshare.yaml`
+- `openquatt_heatpump_listener.yaml`
 
 Package include file:
 
@@ -51,7 +53,9 @@ Package include file:
 
 Compile-time constants:
 
-- `openquatt/oq_substitutions.yaml`
+- `openquatt/oq_substitutions_common.yaml`
+- `openquatt/profiles/oq_substitutions_waveshare.yaml`
+- `openquatt/profiles/oq_substitutions_heatpump_listener.yaml`
 
 Dashboard YAML:
 
@@ -65,23 +69,15 @@ Adjust `openquatt/oq_common.yaml` if you want environment-specific API encryptio
 
 ## 4. Select Hardware Profile
 
-Open `openquatt/oq_substitutions.yaml`.
+Select the firmware entrypoint that matches your hardware:
 
-The active profile fields are:
+1. `openquatt_waveshare.yaml` for Waveshare ESP32-S3-Relay-1CH
+2. `openquatt_heatpump_listener.yaml` for Heatpump Listener
 
-- `esp_board`
-- `esp_flash_size`
-- `esp_variant`
-- `uart_tx_pin`
-- `uart_rx_pin`
-- `uart_rts_pin`
-- `ds18b20_pin`
-- `oq_boiler_relay_pin`
+Each entrypoint loads:
 
-To switch hardware:
-
-1. Copy values from the desired reference profile block.
-2. Paste them into the active profile block.
+- shared constants from `openquatt/oq_substitutions_common.yaml`
+- hardware-specific pin mapping from its profile file
 3. Recompile and flash.
 
 ## 5. Validate and Compile
