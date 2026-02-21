@@ -1,2 +1,6 @@
 substitutions: !include oq_substitutions.yaml
 packages: !include oq_packages.yaml
+
+esphome:
+  includes:
+    - includes/hp_perf_map.h
