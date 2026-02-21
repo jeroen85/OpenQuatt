@@ -365,6 +365,9 @@ interval:
           int f = id(oq_demand_filtered);
           if (raw > f) {
             f = std::min(f + 1, raw);              // increase max +1 per minute
+          } else if (raw == 0 && f == 1) {
+            // Prevent 1-step latch: allow clean idle transition when raw demand is zero.
+            f = 0;
           } else if (raw <= (f - 2)) {
             f = raw;                                // down only at raw <= filtered - 2
           }
