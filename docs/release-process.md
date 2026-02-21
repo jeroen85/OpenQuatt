@@ -25,7 +25,7 @@ This project uses GitHub Actions for automated validation, firmware compilation,
 Use semantic versioning tags:
 
 - `vMAJOR.MINOR.PATCH`
-- Examples: `v0.12.1`, `v0.12.2`
+- Examples: `v0.12.3`, `v0.13.0`
 
 Recommended increments:
 
@@ -40,7 +40,7 @@ Recommended increments:
 3. Create and push a tag:
 
 ```bash
-git tag v0.12.2
+git tag v0.13.0
 git push origin main --tags
 ```
 
