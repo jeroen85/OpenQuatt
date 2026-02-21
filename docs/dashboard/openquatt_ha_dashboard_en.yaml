@@ -2191,6 +2191,45 @@ views:
       - type: grid
         cards:
           - type: heading
+            icon: mdi:chip
+            heading: Controller information
+            heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+
+              <summary><strong>Explanation</strong></summary>
+
+              Basic runtime diagnostics of the controller:
+
+              - `Status`: online/offline state of the ESP node.
+              - `Uptime`: time since last reboot.
+              - `IP Address`: current network address.
+              - `WiFi SSID`: connected wireless network.
+              - `WiFi Signal`: RSSI signal strength in dBm.
+              - `ESPHome Version`: version of the ESPHome runtime.
+
+              </details>
+            text_only: true
+          - type: entities
+            title: Controller
+            show_header_toggle: false
+            entities:
+              - entity: binary_sensor.openquatt_status
+                name: Status
+              - entity: sensor.openquatt_uptime
+                name: Uptime
+              - entity: sensor.openquatt_ip_address
+                name: IP Address
+              - entity: sensor.openquatt_wifi_ssid
+                name: WiFi SSID
+              - entity: sensor.openquatt_wifi_signal
+                name: WiFi Signal
+              - entity: sensor.openquatt_esphome_version
+                name: ESPHome Version
+      - type: grid
+        cards:
+          - type: heading
             icon: mdi:thermometer
             heading: Outside temperature sources
             heading_style: title

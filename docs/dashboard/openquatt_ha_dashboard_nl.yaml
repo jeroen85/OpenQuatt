@@ -2210,6 +2210,45 @@ views:
       - type: grid
         cards:
           - type: heading
+            icon: mdi:chip
+            heading: Controller informatie
+            heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+
+              <summary><strong>Uitleg</strong></summary>
+
+              Basis runtime-diagnostiek van de controller:
+
+              - `Status`: online/offline van de ESP-node.
+              - `Uptime`: tijd sinds laatste reboot.
+              - `IP Address`: huidig netwerkadres.
+              - `WiFi SSID`: verbonden draadloos netwerk.
+              - `WiFi Signal`: RSSI-signaalsterkte in dBm.
+              - `ESPHome Version`: versie van de ESPHome runtime.
+
+              </details>
+            text_only: true
+          - type: entities
+            title: Controller
+            show_header_toggle: false
+            entities:
+              - entity: binary_sensor.openquatt_status
+                name: Status
+              - entity: sensor.openquatt_uptime
+                name: Uptime
+              - entity: sensor.openquatt_ip_address
+                name: IP Address
+              - entity: sensor.openquatt_wifi_ssid
+                name: WiFi SSID
+              - entity: sensor.openquatt_wifi_signal
+                name: WiFi Signal
+              - entity: sensor.openquatt_esphome_version
+                name: ESPHome Version
+      - type: grid
+        cards:
+          - type: heading
             icon: mdi:thermometer
             heading: Buiten temperatuur bronnen
             heading_style: title
