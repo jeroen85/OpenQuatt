@@ -13,7 +13,7 @@
 device_name: "openquatt"                              # Internal ESPHome device ID / hostname base.
 friendly_name: OpenQuatt                              # Display name in Home Assistant / UI.
 project_name: "openquatt.openquatt"                   # ESPHome project identifier shown in firmware metadata.
-project_version: "v0.12.2"                            # ESPHome project version shown in firmware metadata.
+project_version: "v0.12.3"                            # ESPHome project version shown in firmware metadata.
 hp_perf_map_header: "openquatt/includes/hp_perf_map.h" # C++ performance-map header include path.
 release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt.manifest.json" # OTA update manifest URL.
 
