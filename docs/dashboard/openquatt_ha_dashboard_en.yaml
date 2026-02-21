@@ -1371,6 +1371,8 @@ views:
             entities:
               - entity: sensor.openquatt_openquatt_version
                 name: OpenQuatt Version
+              - entity: update.openquatt_firmware_update
+                name: Firmware Update
       - type: grid
         cards:
           - type: heading
