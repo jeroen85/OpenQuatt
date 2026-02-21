@@ -857,67 +857,45 @@ views:
             heading: Warmtecontrol status
             heading_style: title
           - type: markdown
-            content: >-
+            content: |-
               <details>
-
 
               <summary><strong>Uitleg</strong></summary>
 
+              Warmtecontrol in 30 seconden:
 
-              Warmtevraag, heat allocation en compressorbelasting in één
-              overzicht.
+              - Kies met `Heating mode` welke bron de warmtevraag bepaalt.
+              - Vergelijk `P_req` (gevraagd vermogen) met `P_house` (modelschatting).
+              - Check `Deficit`: boven `0 W` vraagt het systeem meer dan nu geleverd wordt.
+              - Bekijk `Ruwe vraag` (`Demand raw`) en `Gefilterde vraag` (`Demand filtered`) om te zien hoe sterk filtering dempt.
+              - `Vermogenslimiet` (`Power cap level`, 0..20) laat zien hoeveel vermogen de regelaar toestaat.
 
+              Termen:
 
-              - Hier zie je hoe vraag (`Demand`) wordt omgezet naar
-              compressorbelasting.
-
-              - `Heating mode` bepaalt de bron van de warmtevraag (Power House
-              vs stooklijn).
-
-              - Wijzig geavanceerde parameters vooral in **Advanced settings**,
-              niet tegelijk in meerdere groepen.
-
-
-              **P_house (`sensor.openquatt_power_house_p_house`)**  
-
-              Schatting van de warmtevraag van het huis op basis van
-              buitentemperatuur (huis-model), zonder kamercorrectie.
-
-
-              **P_req (`sensor.openquatt_power_house_p_req`)**  
-
-              Werkelijke gevraagde warmte in W na ramp-limiter
-              (stijg/daalsnelheid begrensd).
-
-
-              **Demand raw (`sensor.openquatt_demand_raw`)**  
-
-              Ruwe demand-stap (`f`) op schaal 0..20, afgeleid van `P_req` of
-              heating-curve vraag.
-
-
-              **Demand filtered (`sensor.openquatt_demand_filtered`)**  
-
-              Gefilterde demand-stap die de compressor-aansturing stabieler
-              maakt en snelle schommelingen dempt.
-
-
-              **Power cap level (`sensor.openquatt_power_cap_level`)**  
-
-              Actieve begrenzingslaag vanuit supervisory/power-cap logica;
-              hogere cap betekent meer toegestaan vermogen. Maximaal 20.
-
+              - `P_house`: berekende warmtevraag op basis van huismodel en buitentemperatuur.
+              - `P_req`: begrensde actuele warmtevraag in W na ramp-limiter.
+              - `Demand raw`: ruwe vraagstap voor compressorsturing.
+              - `Demand filtered`: gedempte vraagstap voor stabielere regeling.
+              - `Power cap level`: actieve vermogenslimiet vanuit supervisory logica.
 
               </details>
             text_only: true
-          - type: entities
-            title: Regelinstellingen
-            show_header_toggle: false
-            entities:
-              - entity: select.openquatt_heating_control_mode
-                name: Heating mode
-          - type: markdown
-            content: '## <ha-icon icon="mdi:view-dashboard-outline"></ha-icon> Kern KPI'
+          - type: heading
+            icon: mdi:tune-variant
+            heading: Regelinstellingen
+            heading_style: subtitle
+          - type: tile
+            entity: select.openquatt_heating_control_mode
+            name: Regelmodus
+            hide_state: true
+            vertical: false
+            features:
+              - type: select-options
+            features_position: inline
+          - type: heading
+            icon: mdi:view-dashboard-outline
+            heading: Kern KPI
+            heading_style: subtitle
           - type: grid
             square: false
             columns: 2
@@ -942,18 +920,33 @@ views:
                 name: Deficit
                 vertical: false
                 features_position: bottom
-          - type: entities
-            title: Demand & cap
-            show_header_toggle: false
-            entities:
-              - entity: sensor.openquatt_demand_raw
-                name: Demand raw
-              - entity: sensor.openquatt_demand_filtered
-                name: Demand filtered
-              - entity: sensor.openquatt_power_cap_level
-                name: Power cap level
-          - type: markdown
-            content: '## <ha-icon icon="mdi:gauge"></ha-icon> Capaciteit'
+          - type: heading
+            icon: mdi:chart-line
+            heading: Vraag & limiet
+            heading_style: subtitle
+          - type: grid
+            square: false
+            columns: 3
+            cards:
+              - type: tile
+                entity: sensor.openquatt_demand_raw
+                name: Ruwe vraag
+                vertical: false
+                features_position: bottom
+              - type: tile
+                entity: sensor.openquatt_demand_filtered
+                name: Gefilterde vraag
+                vertical: false
+                features_position: bottom
+              - type: tile
+                entity: sensor.openquatt_power_cap_level
+                name: Vermogenslimiet
+                vertical: false
+                features_position: bottom
+          - type: heading
+            icon: mdi:gauge
+            heading: Capaciteit
+            heading_style: subtitle
           - type: horizontal-stack
             cards:
               - type: gauge
@@ -968,6 +961,10 @@ views:
                 min: 0
                 max: 8000
                 needle: true
+                severity:
+                  green: 0
+                  yellow: 800
+                  red: 2000
       - type: grid
         cards:
           - type: heading
@@ -975,24 +972,15 @@ views:
             heading: Trends
             heading_style: title
           - type: markdown
-            content: >-
+            content: |-
               <details>
-
 
               <summary><strong>Uitleg</strong></summary>
 
-
-              - `Warmtevraag` toont ruwe en gefilterde vraag plus `P_req`.
-
-              - `HP input` en `HP output` zijn opgesplitst voor snellere
-              diagnose.
-
-              - `Compressorlevels en frequentie` laat setpoint versus echte
-              compressor-Hz zien.
-
-              - `Temperatuurregeling` toont buiten-, supply- en kamertemperatuur
-              tegen target.
-
+              - `Warmtevraag` vergelijkt gevraagde (`P_req`) met geleverde warmte.
+              - `HP powerinput` en `HP heat output` tonen elektrisch in versus thermisch uit.
+              - `Compressorlevels en frequentie` laat setpoint versus werkelijke compressor-Hz zien.
+              - `Temperatuurregeling` toont buiten-, supply- en kamertemperatuur tegen targets.
 
               </details>
             text_only: true

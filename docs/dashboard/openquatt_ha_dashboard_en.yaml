@@ -851,66 +851,45 @@ views:
             heading: Heat control status
             heading_style: title
           - type: markdown
-            content: >-
+            content: |-
               <details>
-
 
               <summary><strong>Explanation</strong></summary>
 
+              Heat control in 30 seconds:
 
-              Heat demand, heat allocation, and compressor loading in one view.
+              - Use `Heating mode` to choose which source drives heat demand.
+              - Compare `P_req` (requested power) with `P_house` (model estimate).
+              - Check `Deficit`: above `0 W` means the system is short on delivered heat.
+              - Use `Demand raw` and `Demand filtered` to verify damping behavior.
+              - `Power cap level` (0..20) shows how much power the controller currently allows.
 
+              Terms:
 
-              - Here you can see how demand (`Demand`) is translated into
-              compressor loading.
-
-              - `Heating mode` defines the demand source (Power House vs heating
-              curve).
-
-              - Change advanced parameters mainly in **Advanced settings**, not
-              in multiple groups at once.
-
-
-              **P_house (`sensor.openquatt_power_house_p_house`)**  
-
-              Estimate of house heat demand based on outdoor temperature
-              (house model), without room correction.
-
-
-              **P_req (`sensor.openquatt_power_house_p_req`)**  
-
-              Effective requested heat in W after ramp limiting
-              (rise/fall rate constrained).
-
-
-              **Demand raw (`sensor.openquatt_demand_raw`)**  
-
-              Raw demand step (`f`) on scale 0..20, derived from `P_req` or
-              heating-curve demand.
-
-
-              **Demand filtered (`sensor.openquatt_demand_filtered`)**  
-
-              Filtered demand step that stabilizes compressor control and damps
-              rapid oscillations.
-
-
-              **Power cap level (`sensor.openquatt_power_cap_level`)**  
-
-              Active cap level from supervisory/power-cap logic; higher cap means
-              more allowed power. Maximum is 20.
-
+              - `P_house`: modeled heat demand from house model and outdoor temperature.
+              - `P_req`: rate-limited live heat request in W after ramp limiter.
+              - `Demand raw`: raw demand step for compressor control.
+              - `Demand filtered`: damped demand step for more stable control.
+              - `Power cap level`: active power limit from supervisory logic.
 
               </details>
             text_only: true
-          - type: entities
-            title: Control settings
-            show_header_toggle: false
-            entities:
-              - entity: select.openquatt_heating_control_mode
-                name: Heating mode
-          - type: markdown
-            content: '## <ha-icon icon="mdi:view-dashboard-outline"></ha-icon> Kern KPI'
+          - type: heading
+            icon: mdi:tune-variant
+            heading: Control settings
+            heading_style: subtitle
+          - type: tile
+            entity: select.openquatt_heating_control_mode
+            name: Heating mode
+            hide_state: true
+            vertical: false
+            features:
+              - type: select-options
+            features_position: inline
+          - type: heading
+            icon: mdi:view-dashboard-outline
+            heading: Core KPIs
+            heading_style: subtitle
           - type: grid
             square: false
             columns: 2
@@ -927,7 +906,7 @@ views:
                 features_position: bottom
               - type: tile
                 entity: sensor.openquatt_hp_capacity_w
-                name: Max capaciteit
+                name: Max capacity
                 vertical: false
                 features_position: bottom
               - type: tile
@@ -935,23 +914,38 @@ views:
                 name: Deficit
                 vertical: false
                 features_position: bottom
-          - type: entities
-            title: Demand & cap
-            show_header_toggle: false
-            entities:
-              - entity: sensor.openquatt_demand_raw
+          - type: heading
+            icon: mdi:chart-line
+            heading: Demand & cap
+            heading_style: subtitle
+          - type: grid
+            square: false
+            columns: 3
+            cards:
+              - type: tile
+                entity: sensor.openquatt_demand_raw
                 name: Demand raw
-              - entity: sensor.openquatt_demand_filtered
+                vertical: false
+                features_position: bottom
+              - type: tile
+                entity: sensor.openquatt_demand_filtered
                 name: Demand filtered
-              - entity: sensor.openquatt_power_cap_level
+                vertical: false
+                features_position: bottom
+              - type: tile
+                entity: sensor.openquatt_power_cap_level
                 name: Power cap level
-          - type: markdown
-            content: '## <ha-icon icon="mdi:gauge"></ha-icon> Capaciteit'
+                vertical: false
+                features_position: bottom
+          - type: heading
+            icon: mdi:gauge
+            heading: Capacity
+            heading_style: subtitle
           - type: horizontal-stack
             cards:
               - type: gauge
                 entity: sensor.openquatt_hp_capacity_w
-                name: Max capaciteit
+                name: Max capacity
                 min: 0
                 max: 12000
                 needle: true
@@ -961,6 +955,10 @@ views:
                 min: 0
                 max: 8000
                 needle: true
+                severity:
+                  green: 0
+                  yellow: 800
+                  red: 2000
       - type: grid
         cards:
           - type: heading
@@ -968,24 +966,15 @@ views:
             heading: Trends
             heading_style: title
           - type: markdown
-            content: >-
+            content: |-
               <details>
-
 
               <summary><strong>Explanation</strong></summary>
 
-
-              - `Heat demand` shows raw and filtered demand plus `P_req`.
-
-              - `HP input` en `HP output` zijn opgesplitst voor snellere
-              diagnose.
-
-              - `Compressor levels and frequency` shows setpoint versus actual
-              compressor Hz.
-
-              - `Temperature control` shows outside, supply, and room
-              temperatures against target.
-
+              - `Heat demand` compares requested (`P_req`) versus delivered heat.
+              - `HP input` and `HP output` show electrical input versus thermal output.
+              - `Compressor levels and frequency` shows setpoint versus actual compressor Hz.
+              - `Temperature control` shows outside, supply, and room temperatures against targets.
 
               </details>
             text_only: true

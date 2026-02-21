@@ -88,14 +88,16 @@ Operational rule:
 
 Expected content pattern:
 
-- heating mode control
-- demand chain values (`P_house`, `P_req`, demand raw/filtered)
-- allocation indicators (`HP capacity`, `HP deficit`, cap level)
+- compact explanation block ("Heat control in 30 seconds")
+- inline heating mode control tile
+- core KPI tile grid (`P_house`, `P_req`, `HP capacity`, `HP deficit`)
+- demand and cap tile row (`Demand raw`, `Demand filtered`, `Power cap level`)
+- capacity gauges with visual deficit severity
 - trend charts for demand/power behavior
 
 Operational rule:
 
-- Use this tab to verify whether strategy output and allocation response are coherent.
+- For fast diagnosis, check in order: mode source -> `P_req` vs `P_house` -> `Deficit` and cap level.
 
 ## 6. HPs View
 
