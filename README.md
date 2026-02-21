@@ -12,7 +12,6 @@ OpenQuatt is a modular ESPHome controller for a dual heat pump setup with superv
 - [Requirements](#requirements)
 - [Quick Start](#quick-start)
 - [Local Validation Helper](#local-validation-helper)
-- [Required Secrets](#required-secrets)
 - [Hardware Profiles](#hardware-profiles)
 - [Documentation](#documentation)
 - [Development and Maintenance](#development-and-maintenance)
@@ -88,20 +87,18 @@ OpenQuatt is a modular ESPHome controller for a dual heat pump setup with superv
 ## Quick Start
 
 1. Clone the repository.
-2. Create `secrets.yaml` with required keys.
-3. Validate config:
-
+2. Validate config:
 ```bash
 esphome config openquatt.yaml
 ```
 
-4. Compile:
+3. Compile:
 
 ```bash
 esphome compile openquatt.yaml
 ```
 
-5. Flash/run:
+4. Flash/run:
 
 ```bash
 esphome run openquatt.yaml
@@ -111,20 +108,6 @@ esphome run openquatt.yaml
 
 ```bash
 ./scripts/validate_local.sh
-```
-
-## Required Secrets
-
-```yaml
-api_key: "<32-byte API encryption key>"
-ota_password: "<ota-password>"
-
-wifi_ssid: "<ssid>"
-wifi_password: "<wifi-password>"
-
-wifi_gateway: 192.168.1.1
-wifi_subnet: 255.255.255.0
-ip_openquatt: 192.168.1.50
 ```
 
 ## Hardware Profiles

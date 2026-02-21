@@ -6,7 +6,7 @@ This guide gets OpenQuatt from repository clone to a validated first run.
 
 - [1. Prerequisites](#1-prerequisites)
 - [2. Repository Layout You Need to Know](#2-repository-layout-you-need-to-know)
-- [3. Configure Secrets](#3-configure-secrets)
+- [3. Baseline Runtime](#3-baseline-runtime)
 - [4. Select Hardware Profile](#4-select-hardware-profile)
 - [5. Validate and Compile](#5-validate-and-compile)
 - [6. Flash and Boot](#6-flash-and-boot)
@@ -58,21 +58,10 @@ Dashboard YAML:
 - `docs/dashboard/openquatt_ha_dashboard_nl.yaml` (recommended default)
 - `docs/dashboard/openquatt_ha_dashboard_en.yaml`
 
-## 3. Configure Secrets
+## 3. Baseline Runtime
 
-Create `secrets.yaml` with at least:
-
-```yaml
-api_key: "<32-byte API encryption key>"
-ota_password: "<ota-password>"
-
-wifi_ssid: "<ssid>"
-wifi_password: "<wifi-password>"
-
-wifi_gateway: 192.168.1.1
-wifi_subnet: 255.255.255.0
-ip_openquatt: 192.168.1.50
-```
+The repository baseline runs without `secrets.yaml` and starts in AP mode (`OpenQuatt`).
+Adjust `openquatt.yaml` only if you want environment-specific API encryption, OTA passwording, or fixed Wi-Fi client networking.
 
 ## 4. Select Hardware Profile
 
