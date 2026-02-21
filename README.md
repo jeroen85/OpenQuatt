@@ -1,4 +1,4 @@
-# OpenQuatt (ESPHome v0.12.1)
+# OpenQuatt
 
 <img src="docs/assets/openquatt_logo.svg" alt="OpenQuatt logo" width="400" />
 
@@ -7,6 +7,7 @@ OpenQuatt is a modular ESPHome controller for a dual heat pump setup with superv
 ## Table of Contents
 
 - [What This Project Does](#what-this-project-does)
+- [Feature TODO](#feature-todo)
 - [Repository Structure](#repository-structure)
 - [Requirements](#requirements)
 - [Quick Start](#quick-start)
@@ -27,6 +28,12 @@ OpenQuatt is a modular ESPHome controller for a dual heat pump setup with superv
 - Regulates pump flow using PI control and optional autotune tooling.
 - Supports CIC JSON feed ingestion and local-vs-cloud source selection.
 - Publishes dashboards and entities for operations, diagnostics, and tuning.
+
+## Feature TODO
+
+- Add cooling mode support.
+- Add topology profile support for Quatt Single and Quatt Duo.
+- Add hardware revision profile support for v1 and v1.5.
 
 ## Repository Structure
 
