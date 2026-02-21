@@ -11,6 +11,14 @@ permissions:
 jobs:
   validate-and-compile:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        profile:
+          - id: waveshare
+            config: openquatt_waveshare.yaml
+          - id: heatpump-listener
+            config: openquatt_heatpump_listener.yaml
 
     steps:
       - name: Checkout
@@ -25,15 +33,15 @@ jobs:
         run: pip install --upgrade esphome==2026.1.5
 
       - name: Validate config
-        run: esphome config openquatt.yaml
+        run: esphome config ${{ matrix.profile.config }}
 
       - name: Compile firmware
-        run: esphome compile openquatt.yaml
+        run: esphome compile ${{ matrix.profile.config }}
 
       - name: Upload firmware artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: openquatt-firmware-${{ github.sha }}
+          name: openquatt-${{ matrix.profile.id }}-firmware-${{ github.sha }}
           if-no-files-found: error
           path: |
             .esphome/build/openquatt/.pioenvs/openquatt/firmware.bin

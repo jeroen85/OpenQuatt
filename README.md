@@ -138,8 +138,8 @@ It includes:
 
 ## Release Process
 
-- CI workflow (`.github/workflows/ci-build.yml`) runs on push/PR and validates + compiles firmware.
-- Release workflow (`.github/workflows/release-build.yml`) runs on tags `v*` and publishes firmware assets plus `openquatt.manifest.json` to GitHub Releases.
+- CI workflow (`.github/workflows/ci-build.yml`) runs on push/PR and validates + compiles both hardware profiles (`openquatt_waveshare.yaml` and `openquatt_heatpump_listener.yaml`).
+- Release workflow (`.github/workflows/release-build.yml`) runs on tags `v*` and publishes both profile firmware sets plus a multi-build `openquatt.manifest.json` to GitHub Releases.
 - Detailed steps: [Release Process Guide](docs/release-process.md)
 
 ## Documentation

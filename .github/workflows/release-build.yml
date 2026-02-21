@@ -25,16 +25,33 @@ jobs:
       - name: Install ESPHome
         run: pip install --upgrade esphome==2026.1.5
 
-      - name: Validate config
-        run: esphome config openquatt.yaml
+      - name: Validate configs
+        run: |
+          esphome config openquatt_waveshare.yaml
+          esphome config openquatt_heatpump_listener.yaml
 
-      - name: Compile firmware
-        run: esphome compile openquatt.yaml
+      - name: Build Waveshare firmware
+        run: |
+          esphome compile openquatt_waveshare.yaml
+          mkdir -p dist
+          cp .esphome/build/openquatt/.pioenvs/openquatt/firmware.bin dist/openquatt-waveshare.firmware.bin
+          cp .esphome/build/openquatt/.pioenvs/openquatt/firmware.ota.bin dist/openquatt-waveshare.firmware.ota.bin
+          cp .esphome/build/openquatt/.pioenvs/openquatt/firmware.factory.bin dist/openquatt-waveshare.firmware.factory.bin
+
+      - name: Build Heatpump Listener firmware
+        run: |
+          esphome compile openquatt_heatpump_listener.yaml
+          mkdir -p dist
+          cp .esphome/build/openquatt/.pioenvs/openquatt/firmware.bin dist/openquatt-heatpump-listener.firmware.bin
+          cp .esphome/build/openquatt/.pioenvs/openquatt/firmware.ota.bin dist/openquatt-heatpump-listener.firmware.ota.bin
+          cp .esphome/build/openquatt/.pioenvs/openquatt/firmware.factory.bin dist/openquatt-heatpump-listener.firmware.factory.bin
 
       - name: Generate OTA manifest
         run: |
-          OTA_BIN=".esphome/build/openquatt/.pioenvs/openquatt/firmware.ota.bin"
-          OTA_MD5="$(md5sum "$OTA_BIN" | awk '{print $1}')"
+          OTA_S3_BIN="dist/openquatt-waveshare.firmware.ota.bin"
+          OTA_ESP32_BIN="dist/openquatt-heatpump-listener.firmware.ota.bin"
+          OTA_S3_MD5="$(md5sum "$OTA_S3_BIN" | awk '{print $1}')"
+          OTA_ESP32_MD5="$(md5sum "$OTA_ESP32_BIN" | awk '{print $1}')"
           TAG="${GITHUB_REF_NAME}"
           REPO="${GITHUB_REPOSITORY}"
           cat > openquatt.manifest.json << EOF
@@ -45,10 +62,19 @@ jobs:
               {
                 "chipFamily": "ESP32-S3",
                 "ota": {
-                  "path": "https://github.com/${REPO}/releases/download/${TAG}/firmware.ota.bin",
-                  "md5": "${OTA_MD5}",
+                  "path": "https://github.com/${REPO}/releases/download/${TAG}/openquatt-waveshare.firmware.ota.bin",
+                  "md5": "${OTA_S3_MD5}",
                   "release_url": "https://github.com/${REPO}/releases/tag/${TAG}",
-                  "summary": "OpenQuatt firmware ${TAG}"
+                  "summary": "OpenQuatt Waveshare firmware ${TAG}"
+                }
+              },
+              {
+                "chipFamily": "ESP32",
+                "ota": {
+                  "path": "https://github.com/${REPO}/releases/download/${TAG}/openquatt-heatpump-listener.firmware.ota.bin",
+                  "md5": "${OTA_ESP32_MD5}",
+                  "release_url": "https://github.com/${REPO}/releases/tag/${TAG}",
+                  "summary": "OpenQuatt Heatpump Listener firmware ${TAG}"
                 }
               }
             ]
@@ -61,6 +87,9 @@ jobs:
           generate_release_notes: true
           files: |
             openquatt.manifest.json
-            .esphome/build/openquatt/.pioenvs/openquatt/firmware.bin
-            .esphome/build/openquatt/.pioenvs/openquatt/firmware.ota.bin
-            .esphome/build/openquatt/.pioenvs/openquatt/firmware.factory.bin
+            dist/openquatt-waveshare.firmware.bin
+            dist/openquatt-waveshare.firmware.ota.bin
+            dist/openquatt-waveshare.firmware.factory.bin
+            dist/openquatt-heatpump-listener.firmware.bin
+            dist/openquatt-heatpump-listener.firmware.ota.bin
+            dist/openquatt-heatpump-listener.firmware.factory.bin
