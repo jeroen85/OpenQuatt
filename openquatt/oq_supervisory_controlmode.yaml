@@ -561,23 +561,22 @@ interval:
           // -------------------------------------------------
           // 3) Frost condition (hysteresis + fail-safe) [CM98]
           //    Relevant only when there is no heat demand.
+          //    Uses selected outside source to stay aligned with active source selection.
           //    - ON: <5°C
           //    - OFF: >6°C
           //    - FAIL-SAFE: NaN -> frost ON
           // -------------------------------------------------
-          const float hp1_outside_c = id(hp1_outside_temp).state;
-          const float hp2_outside_c = id(hp2_outside_temp).state;
+          const float outside_c = id(outside_temp_selected).state;
 
           bool frost = false;
           if (!heating_req) {
-            if (isnan(hp1_outside_c) || isnan(hp2_outside_c)) {
+            if (isnan(outside_c)) {
               frost = true; // fail-safe
             } else {
-              const float min_outside_c = std::min(hp1_outside_c, hp2_outside_c);
               if (id(oq_cm_frost_prev)) {
-                frost = (min_outside_c < ${oq_cm_frost_off_c});
+                frost = (outside_c < ${oq_cm_frost_off_c});
               } else {
-                frost = (min_outside_c < ${oq_cm_frost_on_c});
+                frost = (outside_c < ${oq_cm_frost_on_c});
               }
             }
           }
