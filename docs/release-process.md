@@ -14,8 +14,9 @@ This project uses GitHub Actions for automated validation, firmware compilation,
   - Trigger: tag push `v*` and manual dispatch
   - Actions:
     - validate + compile
+    - generate `openquatt.manifest.json` for OTA update checks
     - create/update GitHub Release
-    - attach firmware binaries to the release
+    - attach firmware binaries and manifest to the release
 
 ## Release Versioning
 
@@ -48,8 +49,10 @@ git push origin main --tags
    - `firmware.bin`
    - `firmware.ota.bin`
    - `firmware.factory.bin`
+   - `openquatt.manifest.json`
 
 ## Notes
 
 - The baseline `openquatt.yaml` is secrets-free and suitable for CI builds.
+- OTA update entity in firmware reads `${release_manifest_url}` (default points to GitHub `releases/latest` manifest).
 - Workflow files must remain directly under `.github/workflows/` (GitHub does not load workflows from nested subfolders).

@@ -11,6 +11,18 @@
 captive_portal:
 
 # ==============================================================================
+# HTTP REQUEST (shared CIC + OTA update)
+# ==============================================================================
+http_request:
+  id: req
+  useragent: esphome/openquatt
+  timeout: 2s
+  follow_redirects: true
+  redirect_limit: 3
+  buffer_size_rx: 2048
+  buffer_size_tx: 1024
+
+# ==============================================================================
 # MODBUS
 # ==============================================================================
 uart:
@@ -103,6 +115,16 @@ text_sensor:
     name: ESPHome Version
     icon: mdi:information-outline
     hide_timestamp: true
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+update:
+  - platform: http_request
+    id: oq_firmware_update
+    name: Firmware Update
+    source: ${release_manifest_url}
+    icon: mdi:update
     entity_category: diagnostic
     web_server:
       sorting_group_id: oq_diagnostics

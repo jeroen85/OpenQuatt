@@ -57,7 +57,8 @@ api:
   reboot_timeout: 0s
 
 ota:
-  platform: esphome
+  - platform: esphome
+  - platform: http_request
 
 # ==============================================================================
 # NETWORK
