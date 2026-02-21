@@ -4,6 +4,10 @@
 
 OpenQuatt is a modular ESPHome controller for a dual heat pump setup with supervisory control, demand strategy selection, flow regulation, boiler assist gating, and Home Assistant observability.
 
+> [!WARNING]
+> This project is currently in an experimental phase.
+> The current implementation is specifically built and validated for a Quatt Hybrid Duo with outside unit (ODU) hardware revision v1.5.
+
 ## Table of Contents
 
 - [What This Project Does](#what-this-project-does)
