@@ -899,10 +899,15 @@ interval:
               else id(hp2_last_stop_ms) = now_ms;
             }
 
-            // Runtime counting
+            // Runtime counting: only count when the specific unit is measured in Heating mode.
+            // This avoids overcounting during command/mode transition, standby, or fault situations.
             if (new_lvl > 0) {
-              if (is_hp1) id(hp1_minutes)++;
-              else id(hp2_minutes)++;
+              const float working_mode_raw = is_hp1 ? id(hp1_working_mode).state : id(hp2_working_mode).state;
+              const bool heating_now = !isnan(working_mode_raw) && ((int) roundf(working_mode_raw) == 2);
+              if (heating_now) {
+                if (is_hp1) id(hp1_minutes)++;
+                else id(hp2_minutes)++;
+              }
             }
 
             prev = new_lvl;

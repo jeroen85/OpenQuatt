@@ -1652,6 +1652,8 @@ views:
               - `Polling interval` is the current interval/backoff of the CIC
               poller.
 
+              - `CIC feed URL` is the active endpoint used by the poller.
+
 
               </details>
             text_only: true
@@ -1669,6 +1671,8 @@ views:
                 name: Last success age
               - entity: sensor.openquatt_cic_polling_interval
                 name: Polling interval
+              - entity: text.openquatt_cic_feed_url
+                name: CIC feed URL
     cards: []
     header:
       card:
@@ -2101,7 +2105,7 @@ views:
         cards:
           - type: heading
             icon: mdi:tools
-            heading: Maintenance
+            heading: Runtime / hours
             heading_style: title
           - type: markdown
             content: >-
@@ -2113,8 +2117,8 @@ views:
               - Use **Reset runtime counters** only for test runs or after major
               tuning changes.
 
-              - Change **CIC feed URL** only when endpoint/port changes; verify
-              feed health afterwards.
+              - **HP1/HP2 Runtime counters** show the current internal counters
+              used for duo runtime balancing.
 
 
               </details>
@@ -2124,8 +2128,10 @@ views:
             entities:
               - entity: button.openquatt_reset_runtime_counters_hp1_hp2
                 name: Reset runtime counters
-              - entity: text.openquatt_cic_feed_url
-                name: CIC feed URL
+              - entity: sensor.openquatt_hp1_runtime_hours
+                name: HP1 Runtime
+              - entity: sensor.openquatt_hp2_runtime_hours
+                name: HP2 Runtime
     header:
       card:
         type: markdown
