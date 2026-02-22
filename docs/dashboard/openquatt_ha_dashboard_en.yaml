@@ -2114,8 +2114,8 @@ views:
               <summary><strong>Parameter explanation</strong></summary>
 
 
-              - Use **Reset runtime counters** only for test runs or after major
-              tuning changes.
+              - **Reset runtime counters**. Note: it can take up to 1 minute
+              before the effect is visible.
 
               - **HP1/HP2 Runtime counters** show the current internal counters
               used for duo runtime balancing.

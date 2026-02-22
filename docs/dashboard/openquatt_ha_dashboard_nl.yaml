@@ -2132,8 +2132,8 @@ views:
               <summary><strong>Uitleg parameters</strong></summary>
 
 
-              - **Reset runtime counters** alleen gebruiken bij testruns of na
-              grotere tuningwijzigingen.
+              - **Reset runtime counters**. Let op: het kan maximaal 1 minuut
+              duren voordat je effect ziet.
 
               - **HP1/HP2 Runtime counters** tonen de actuele interne teller
               waarop de duo-runtime-balans wordt gebaseerd.
