@@ -80,6 +80,10 @@ globals:
     type: bool
     restore_value: false
     initial_value: 'false'
+  - id: oq_cm2_idle_since_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
 
   # Sticky Pump Protection (CM0-only)
   - id: oq_cm0_since_ms
@@ -509,9 +513,38 @@ interval:
           };
 
           // -------------------------------------------------
-          // 1) Heat demand (baseline: demand_filtered > 0)
+          // 1) Heat demand
+          //    Baseline: demand_filtered > 0
+          //    CM2 idle-exit: if both HPs are commanded/measured idle
+          //    for a while, force demand false to allow CM2->CM1->CM0.
           // -------------------------------------------------
-          const bool heating_req = (id(oq_demand_filtered) > 0);
+          const char* cur_cm_state = id(oq_control_mode).state.c_str();
+          const bool in_cm2 = strcmp(cur_cm_state, "CM2") == 0;
+          const bool heating_req_raw = (id(oq_demand_filtered) > 0);
+
+          const int hp1_lvl = id(hp1_last_applied_level);
+          const int hp2_lvl = id(hp2_last_applied_level);
+          const bool both_levels_off = (hp1_lvl <= 0) && (hp2_lvl <= 0);
+
+          const float hp1_mode_raw = id(hp1_working_mode).state;
+          const float hp2_mode_raw = id(hp2_working_mode).state;
+          const bool hp1_mode_valid = !isnan(hp1_mode_raw);
+          const bool hp2_mode_valid = !isnan(hp2_mode_raw);
+          const bool hp1_heating = hp1_mode_valid && ((int) roundf(hp1_mode_raw) == 2);
+          const bool hp2_heating = hp2_mode_valid && ((int) roundf(hp2_mode_raw) == 2);
+          const bool both_modes_known = hp1_mode_valid && hp2_mode_valid;
+          const bool both_units_idle = both_modes_known && !hp1_heating && !hp2_heating;
+
+          bool heating_req = heating_req_raw;
+          const uint32_t cm2_idle_exit_ms = (uint32_t)(${oq_cm2_idle_exit_s}UL * 1000UL);
+          if (in_cm2 && heating_req_raw && both_levels_off && both_units_idle) {
+            if (id(oq_cm2_idle_since_ms) == 0) id(oq_cm2_idle_since_ms) = now_ms;
+            if ((uint32_t)(now_ms - id(oq_cm2_idle_since_ms)) >= cm2_idle_exit_ms) {
+              heating_req = false;
+            }
+          } else {
+            id(oq_cm2_idle_since_ms) = 0;
+          }
 
           // -------------------------------------------------
           // 2) Flow interlock status + timers

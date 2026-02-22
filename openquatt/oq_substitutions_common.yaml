@@ -40,6 +40,7 @@ oq_cm_prepost_s: "60"                                 # Duration of CM1 pre/post
 oq_cm_min_flow_lph: "250.0"                           # Minimum valid flow for compressor operation [L/h].
 oq_cm_flow_fault_s: "60"                              # Low-flow duration before fault becomes active [s].
 oq_cm_flow_recover_s: "30"                            # Flow recovery duration before fault is cleared [s].
+oq_cm2_idle_exit_s: "90"                              # Exit CM2 if both HPs are idle for this duration while demand remains > 0 [s].
 oq_cm_frost_on_c: "5.0"                               # Frost protection enable threshold [°C].
 oq_cm_frost_off_c: "6.0"                              # Frost protection disable threshold (hysteresis) [°C].
 oq_cm98_diag_max_s: "1800"                            # Maximum duration of diagnostic Force CM98 override [s].
