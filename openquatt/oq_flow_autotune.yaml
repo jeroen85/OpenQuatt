@@ -413,15 +413,19 @@ interval:
             float lambda = 0.5f * tau;
             if (lambda < ${oq_flow_autotune_lambda_min_s}) lambda = ${oq_flow_autotune_lambda_min_s};
 
-            float Kp = tau / (K * (lambda + theta));
-            float Ti = tau;
-            float Ki = (Ti > 1e-3f) ? (Kp / Ti) : 0.0f;
+            const float Kp_raw = tau / (K * (lambda + theta));
+            const float Ti = tau;
+            const float Ki_raw = (Ti > 1e-3f) ? (Kp_raw / Ti) : 0.0f;
+
+            float Kp = Kp_raw;
+            float Ki = Ki_raw;
 
             // clamp to oq_flow_kp/ki ranges
             if (Kp < 0.0f) Kp = 0.0f;
             if (Kp > 0.08f) Kp = 0.08f;
             if (Ki < 0.0f) Ki = 0.0f;
             if (Ki > 0.0030f) Ki = 0.0030f;
+            const bool clamped = (fabsf(Kp - Kp_raw) > 1e-7f) || (fabsf(Ki - Ki_raw) > 1e-7f);
 
             auto ckp = id(oq_flow_kp_suggested).make_call();
             ckp.set_value(Kp);
@@ -430,8 +434,14 @@ interval:
             cki.set_value(Ki);
             cki.perform();
 
-            char msg[128];
-            snprintf(msg, sizeof(msg), "DONE: K=%.3f tau=%.0fs -> Kp=%.3f Ki=%.4f", K, tau, Kp, Ki);
+            char msg[192];
+            if (clamped) {
+              snprintf(msg, sizeof(msg),
+                       "DONE (CLAMPED): K=%.3f tau=%.0fs Kp_raw=%.3f Ki_raw=%.4f -> Kp=%.3f Ki=%.4f",
+                       K, tau, Kp_raw, Ki_raw, Kp, Ki);
+            } else {
+              snprintf(msg, sizeof(msg), "DONE: K=%.3f tau=%.0fs -> Kp=%.3f Ki=%.4f", K, tau, Kp, Ki);
+            }
             id(oq_flow_autotune_status).publish_state(msg);
 
             // restore previous pwm best-effort
