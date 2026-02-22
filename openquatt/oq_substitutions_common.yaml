@@ -79,6 +79,10 @@ oq_defrost_comp_boost_steps: "1"                      # Extra level steps on non
 oq_flow_loop_s: "5"                                   # Control interval of the flow-control loop [s].
 oq_flow_mismatch_fallback_lph: "150.0"                # Fallback mismatch threshold when entity value is invalid [L/h].
 oq_flow_mismatch_hyst_lph: "50.0"                     # Hysteresis on mismatch detection to prevent chatter [L/h].
+oq_flow_kp_min: "0.00"                                # Lower bound for Flow PI Kp.
+oq_flow_kp_max: "0.20"                                # Upper bound for Flow PI Kp (broader for cross-install tuning).
+oq_flow_ki_min: "0.0000"                              # Lower bound for Flow PI Ki.
+oq_flow_ki_max: "0.0100"                              # Upper bound for Flow PI Ki (broader for cross-install tuning).
 
 # ----------------------------
 # FLOW AUTOTUNE

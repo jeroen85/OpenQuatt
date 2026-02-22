@@ -128,8 +128,8 @@ number:
     name: "Flow Autotune Kp suggested"
     icon: mdi:alpha-k-circle-outline
     mode: slider
-    min_value: 0.00
-    max_value: 0.08
+    min_value: ${oq_flow_kp_min}
+    max_value: ${oq_flow_kp_max}
     step: 0.001
     restore_value: false
     optimistic: true
@@ -143,8 +143,8 @@ number:
     name: "Flow Autotune Ki suggested"
     icon: mdi:alpha-i-circle-outline
     mode: slider
-    min_value: 0.0000
-    max_value: 0.0030
+    min_value: ${oq_flow_ki_min}
+    max_value: ${oq_flow_ki_max}
     step: 0.0001
     restore_value: false
     optimistic: true
@@ -447,10 +447,14 @@ interval:
             float Ki = Ki_raw;
 
             // clamp to oq_flow_kp/ki ranges
-            if (Kp < 0.0f) Kp = 0.0f;
-            if (Kp > 0.08f) Kp = 0.08f;
-            if (Ki < 0.0f) Ki = 0.0f;
-            if (Ki > 0.0030f) Ki = 0.0030f;
+            const float Kp_min = ${oq_flow_kp_min};
+            const float Kp_max = ${oq_flow_kp_max};
+            const float Ki_min = ${oq_flow_ki_min};
+            const float Ki_max = ${oq_flow_ki_max};
+            if (Kp < Kp_min) Kp = Kp_min;
+            if (Kp > Kp_max) Kp = Kp_max;
+            if (Ki < Ki_min) Ki = Ki_min;
+            if (Ki > Ki_max) Ki = Ki_max;
             const bool clamped = (fabsf(Kp - Kp_raw) > 1e-7f) || (fabsf(Ki - Ki_raw) > 1e-7f);
 
             auto ckp = id(oq_flow_kp_suggested).make_call();

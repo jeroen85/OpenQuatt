@@ -105,9 +105,9 @@ number:
     mode: slider
     web_server:
       sorting_group_id: oq_tuning_flow
-    min_value: 0.00
-    max_value: 0.08
-    step: 0.002
+    min_value: ${oq_flow_kp_min}
+    max_value: ${oq_flow_kp_max}
+    step: 0.001
     restore_value: true
     optimistic: true
     # Default increased for more robust control in the current hydraulic setup.
@@ -120,8 +120,8 @@ number:
     mode: slider
     web_server:
       sorting_group_id: oq_tuning_flow
-    min_value: 0.0000
-    max_value: 0.0030
+    min_value: ${oq_flow_ki_min}
+    max_value: ${oq_flow_ki_max}
     step: 0.0001
     restore_value: true
     optimistic: true
