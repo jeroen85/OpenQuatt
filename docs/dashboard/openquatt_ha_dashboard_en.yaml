@@ -2141,6 +2141,57 @@ views:
           Advanced tuning for limits, house model, heating curve, heat
           allocation, and flow.
     cards: []
+  - title: Debug & Testing
+    path: debug-testing
+    icon: mdi:flask-outline
+    type: sections
+    max_columns: 2
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:flask-outline
+            heading: Manual Modbus test reader
+            heading_style: title
+          - type: markdown
+            content: >-
+              <details>
+
+              <summary><strong>Explanation</strong></summary>
+
+              One-shot manual register read for debugging/testing:
+
+              - First set the register number.
+              - Then press **Debug Read HP1 register** or **Debug Read HP2 register**.
+              - Result is shown as `U16`, `S16`, and raw bytes.
+
+              </details>
+            text_only: true
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: number.openquatt_debug_modbus_register
+                name: Modbus register
+              - entity: button.openquatt_debug_read_hp1_register
+                name: Debug Read HP1 register
+              - entity: button.openquatt_debug_read_hp2_register
+                name: Debug Read HP2 register
+              - entity: sensor.openquatt_debug_modbus_value_u16
+                name: Result U16
+              - entity: sensor.openquatt_debug_modbus_value_s16
+                name: Result S16
+              - entity: sensor.openquatt_debug_modbus_last_target
+                name: Last target
+              - entity: sensor.openquatt_debug_modbus_last_raw
+                name: Last raw bytes
+    header:
+      card:
+        type: markdown
+        content: >-
+          # <ha-icon icon="mdi:flask-outline"></ha-icon> Debug & Testing
+
+          Manual diagnostic tools for temporary measurements.
+    cards: []
   - title: Diagnostics
     path: diagnostics
     icon: mdi:stethoscope

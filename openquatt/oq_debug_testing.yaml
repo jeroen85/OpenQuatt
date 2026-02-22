@@ -1,0 +1,128 @@
+# ==============================================================================
+# OpenQuatt - Debug / Test Tools
+# ==============================================================================
+#
+# Purpose:
+#   Manual one-shot Modbus register reads for diagnostics.
+#
+# Notes:
+#   - Reads one holding register (U16/S16 decode) from HP1 or HP2 on demand.
+#   - Intended for debugging/testing; not used by control logic.
+# ==============================================================================
+
+number:
+  - platform: template
+    id: oq_debug_modbus_register
+    name: "Debug Modbus register"
+    icon: mdi:numeric
+    min_value: 0
+    max_value: 65535
+    step: 1
+    mode: box
+    optimistic: true
+    restore_value: true
+    initial_value: 2137
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+sensor:
+  - platform: template
+    id: oq_debug_modbus_u16
+    name: "Debug Modbus value U16"
+    icon: mdi:counter
+    accuracy_decimals: 0
+    update_interval: never
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+  - platform: template
+    id: oq_debug_modbus_s16
+    name: "Debug Modbus value S16"
+    icon: mdi:counter
+    accuracy_decimals: 0
+    update_interval: never
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+text_sensor:
+  - platform: template
+    id: oq_debug_modbus_last_target
+    name: "Debug Modbus last target"
+    icon: mdi:target
+    update_interval: never
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+  - platform: template
+    id: oq_debug_modbus_last_raw
+    name: "Debug Modbus last raw"
+    icon: mdi:code-braces
+    update_interval: never
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+button:
+  - platform: template
+    id: oq_debug_modbus_read_hp1
+    name: "Debug Read HP1 register"
+    icon: mdi:database-search
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+    on_press:
+      - lambda: |-
+          using namespace esphome::modbus_controller;
+          const uint16_t reg = (uint16_t) lroundf(id(oq_debug_modbus_register).state);
+          auto cmd = ModbusCommandItem::create_read_command(
+              id(hp1), ModbusRegisterType::HOLDING, reg, 1,
+              [reg](ModbusRegisterType, uint16_t, const std::vector<uint8_t> &data) {
+                if (data.size() < 2) {
+                  id(oq_debug_modbus_last_target).publish_state("HP1 reg " + std::to_string(reg));
+                  id(oq_debug_modbus_last_raw).publish_state("ERR: short response");
+                  return;
+                }
+                const uint16_t u16 = (uint16_t(data[0]) << 8) | uint16_t(data[1]);
+                const int16_t s16 = (int16_t) u16;
+                char raw[20];
+                snprintf(raw, sizeof(raw), "0x%02X 0x%02X", data[0], data[1]);
+                id(oq_debug_modbus_u16).publish_state((float) u16);
+                id(oq_debug_modbus_s16).publish_state((float) s16);
+                id(oq_debug_modbus_last_target).publish_state("HP1 reg " + std::to_string(reg));
+                id(oq_debug_modbus_last_raw).publish_state(raw);
+              });
+          id(hp1)->queue_command(cmd);
+
+  - platform: template
+    id: oq_debug_modbus_read_hp2
+    name: "Debug Read HP2 register"
+    icon: mdi:database-search
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+    on_press:
+      - lambda: |-
+          using namespace esphome::modbus_controller;
+          const uint16_t reg = (uint16_t) lroundf(id(oq_debug_modbus_register).state);
+          auto cmd = ModbusCommandItem::create_read_command(
+              id(hp2), ModbusRegisterType::HOLDING, reg, 1,
+              [reg](ModbusRegisterType, uint16_t, const std::vector<uint8_t> &data) {
+                if (data.size() < 2) {
+                  id(oq_debug_modbus_last_target).publish_state("HP2 reg " + std::to_string(reg));
+                  id(oq_debug_modbus_last_raw).publish_state("ERR: short response");
+                  return;
+                }
+                const uint16_t u16 = (uint16_t(data[0]) << 8) | uint16_t(data[1]);
+                const int16_t s16 = (int16_t) u16;
+                char raw[20];
+                snprintf(raw, sizeof(raw), "0x%02X 0x%02X", data[0], data[1]);
+                id(oq_debug_modbus_u16).publish_state((float) u16);
+                id(oq_debug_modbus_s16).publish_state((float) s16);
+                id(oq_debug_modbus_last_target).publish_state("HP2 reg " + std::to_string(reg));
+                id(oq_debug_modbus_last_raw).publish_state(raw);
+              });
+          id(hp2)->queue_command(cmd);

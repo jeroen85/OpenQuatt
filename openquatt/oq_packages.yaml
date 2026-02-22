@@ -22,6 +22,7 @@ oq_boiler_control: !include oq_boiler_control.yaml
 oq_energy: !include oq_energy.yaml
 oq_cic: !include oq_cic.yaml
 oq_local_sensors: !include oq_local_sensors.yaml
+oq_debug_testing: !include oq_debug_testing.yaml
 oq_webserver: !include oq_webserver.yaml
 heatpump1: !include
   file: oq_HP_io.yaml
