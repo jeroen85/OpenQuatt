@@ -323,17 +323,7 @@ button:
       - lambda: |-
           id(hp1_minutes) = 0;
           id(hp2_minutes) = 0;
-          id(hp1_last_stop_ms) = 0;
-          id(hp2_last_stop_ms) = 0;
-          id(hp1_last_start_ms) = 0;
-          id(hp2_last_start_ms) = 0;
-          id(hp1_last_applied_level) = 0;
-          id(hp2_last_applied_level) = 0;
-          id(oq_demand_filtered) = 0;
-          id(oq_single_hp_assist_active) = false;
-          id(oq_single_hp_assist_on_min) = 0;
-          id(oq_single_hp_assist_off_min) = 0;
-          ESP_LOGW("quatt", "Runtime counters + demand filter + single-HP assist state reset (HP1+HP2).");
+          ESP_LOGW("quatt", "Runtime counters reset (HP1+HP2).");
 # ----------------------------
 # MAIN LOOP
 # ----------------------------
