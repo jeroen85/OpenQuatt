@@ -13,7 +13,7 @@
 #   - Autotune is only allowed in CM1 (pre/postflow), not in CM0/CM2/CM3/CM98.
 #
 # Operation (high level):
-#   1) Arm: check preconditions + measure baseline (pv0, pwm0)
+#   1) Arm/Settle: force baseline PWM (last_good_pwm) and wait for stable flow
 #   2) Step: decrease iPWM with u_step (=> stronger pumping) during max_s
 #   3) Measure: determine Δpv_ss and t63 (time to 63% response)
 #   4) Compute: K = Δpv/Δu, τ = t63, θ≈Ts (5s), IMC-PI:
@@ -304,8 +304,14 @@ interval:
               id(oq_flow_at_w2) = NAN;
               id(oq_flow_at_t) = 0;
 
-              id(oq_flow_at_pwm0) = (int) id(oq_flow_last_pwm);
-              id(oq_flow_autotune_status).publish_state("ARMING");
+              // Start from last known stable PWM (instead of instantaneous last_pwm),
+              // then wait until baseline flow is stable before the step test.
+              const int pwm0 = clamp_ipwm((int) id(oq_flow_last_good_pwm));
+              id(oq_flow_at_pwm0) = pwm0;
+              id(oq_flow_autotune_pwm) = pwm0;
+              id(oq_flow_autotune_active) = true;
+
+              id(oq_flow_autotune_status).publish_state("SETTLING");
               id(oq_flow_autotune_state) = 1;
             }
             return;
@@ -316,26 +322,46 @@ interval:
             if (!in_valid_autotune_mode()) { st = 4; id(oq_flow_autotune_status).publish_state("ABORT: not CM1"); }
             else if (!flow_valid) { st = 4; id(oq_flow_autotune_status).publish_state("ABORT: FLOW_INVALID"); }
             else {
-              id(oq_flow_at_pv0_acc) += pv;
-              id(oq_flow_at_pv0_n) += 1;
+              // Keep baseline override active while settling.
+              const int pwm0 = clamp_ipwm(id(oq_flow_at_pwm0));
+              id(oq_flow_autotune_pwm) = pwm0;
+              id(oq_flow_autotune_active) = true;
 
-              if (id(oq_flow_at_pv0_n) >= ${oq_flow_autotune_arm_samples}) {
-                id(oq_flow_at_pv0) = id(oq_flow_at_pv0_acc) / (float) id(oq_flow_at_pv0_n);
+              // Baseline stability check on rolling 3-sample window.
+              id(oq_flow_at_w0) = id(oq_flow_at_w1);
+              id(oq_flow_at_w1) = id(oq_flow_at_w2);
+              id(oq_flow_at_w2) = pv;
 
-                const int pwm0 = clamp_ipwm(id(oq_flow_at_pwm0));
-                int u_step = (int) roundf(id(oq_flow_autotune_u_step).state);
-                if (u_step < ${oq_flow_autotune_min_step}) u_step = ${oq_flow_autotune_min_step};
+              const int t = id(oq_flow_at_t);
+              id(oq_flow_at_t) = t + (int) sample_time_s;
 
-                const int pwm_step = clamp_ipwm(pwm0 - u_step);
-                id(oq_flow_at_pwm_step) = pwm_step;
-                id(oq_flow_at_t) = 0;
+              const bool win_ready = !isnan(id(oq_flow_at_w0)) && !isnan(id(oq_flow_at_w1)) && !isnan(id(oq_flow_at_w2));
+              if (win_ready) {
+                const float w0 = id(oq_flow_at_w0);
+                const float w1 = id(oq_flow_at_w1);
+                const float w2 = id(oq_flow_at_w2);
+                const float w_min = fminf(w0, fminf(w1, w2));
+                const float w_max = fmaxf(w0, fmaxf(w1, w2));
+                const float spread = w_max - w_min;
+                const float mean = (w0 + w1 + w2) / 3.0f;
 
-                // Activate override
-                id(oq_flow_autotune_pwm) = pwm_step;
-                id(oq_flow_autotune_active) = true;
+                if (t >= ${oq_flow_autotune_settle_s} && spread <= ${oq_flow_autotune_stable_band_lph}) {
+                  id(oq_flow_at_pv0) = mean;
 
-                id(oq_flow_autotune_status).publish_state("STEP");
-                st = 2;
+                  int u_step = (int) roundf(id(oq_flow_autotune_u_step).state);
+                  if (u_step < ${oq_flow_autotune_min_step}) u_step = ${oq_flow_autotune_min_step};
+
+                  const int pwm_step = clamp_ipwm(pwm0 - u_step);
+                  id(oq_flow_at_pwm_step) = pwm_step;
+                  id(oq_flow_at_t) = 0;
+                  id(oq_flow_at_w0) = NAN;
+                  id(oq_flow_at_w1) = NAN;
+                  id(oq_flow_at_w2) = NAN;
+
+                  id(oq_flow_autotune_pwm) = pwm_step;
+                  id(oq_flow_autotune_status).publish_state("STEP");
+                  st = 2;
+                }
               }
             }
             id(oq_flow_autotune_state) = st;
