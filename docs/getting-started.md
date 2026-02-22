@@ -27,7 +27,7 @@ This guide gets OpenQuatt from repository clone to a validated first run.
 
 OpenQuatt currently supports two documented hardware profiles:
 
-1. **Waveshare ESP32-S3-Relay-1CH** (default active profile)
+1. **Waveshare ESP32-S3-Relay-1CH** ([product page](https://www.waveshare.com/esp32-s3-relay-1ch.htm), default active profile)
 2. **Heatpump Listener** ([product page](https://electropaultje.nl/product/heatpump-listener/))
 
 Both profiles include:
@@ -71,7 +71,7 @@ Adjust `openquatt/oq_common.yaml` if you want environment-specific API encryptio
 
 Select the firmware entrypoint that matches your hardware:
 
-1. `openquatt_waveshare.yaml` for Waveshare ESP32-S3-Relay-1CH
+1. `openquatt_waveshare.yaml` for [Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm)
 2. `openquatt_heatpump_listener.yaml` for Heatpump Listener
 
 Each entrypoint loads:

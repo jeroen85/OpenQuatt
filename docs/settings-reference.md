@@ -59,8 +59,8 @@ Active profile fields used by firmware:
 
 Hardware profile files:
 
-- `openquatt/profiles/oq_substitutions_waveshare.yaml`
-- `openquatt/profiles/oq_substitutions_heatpump_listener.yaml`
+- `openquatt/profiles/oq_substitutions_waveshare.yaml` ([Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm))
+- `openquatt/profiles/oq_substitutions_heatpump_listener.yaml` ([Heatpump Listener](https://electropaultje.nl/product/heatpump-listener/))
 
 ## 3. Compile-Time Parameter Categories
 

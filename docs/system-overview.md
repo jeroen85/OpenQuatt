@@ -202,8 +202,8 @@ Safety is distributed but coordinated:
 
 Hardware profile substitutions are split into dedicated files:
 
-- `openquatt/profiles/oq_substitutions_waveshare.yaml`
-- `openquatt/profiles/oq_substitutions_heatpump_listener.yaml`
+- `openquatt/profiles/oq_substitutions_waveshare.yaml` ([Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm))
+- `openquatt/profiles/oq_substitutions_heatpump_listener.yaml` ([Heatpump Listener](https://electropaultje.nl/product/heatpump-listener/))
 
 Shared non-hardware constants are in `openquatt/oq_substitutions_common.yaml`.
 

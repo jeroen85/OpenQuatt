@@ -133,7 +133,7 @@ Hardware-related compile-time settings are defined in:
 It includes:
 
 - Shared compile-time constants (`project_version`, control constants, CIC/flow/modbus constants)
-- Waveshare ESP32-S3-Relay-1CH hardware mapping
+- [Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm) hardware mapping
 - [Heatpump Listener](https://electropaultje.nl/product/heatpump-listener/) hardware mapping
 
 ## Release Process
