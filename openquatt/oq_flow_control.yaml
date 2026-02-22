@@ -322,6 +322,7 @@ interval:
           // - 1000 is reserved for CM0 stop policy in supervisory
           // ============================================================================
           const float dt = ${oq_flow_loop_s};   // seconds per tick
+          static std::string last_mode = "";
 
           static bool was_cm0 = true;
 
@@ -531,7 +532,10 @@ interval:
             pi_failsafe = false;
             write_pump_pwm_if_changed(id(hp1_pump_speed), at_pwm);
             write_pump_pwm_if_changed(id(hp2_pump_speed), at_pwm);
-            id(oq_flow_mode).publish_state("AUTOTUNE");
+            if (last_mode != "AUTOTUNE") {
+              id(oq_flow_mode).publish_state("AUTOTUNE");
+              last_mode = "AUTOTUNE";
+            }
             publish_debug(FLOW_MODE_AUTOTUNE, cm_code, at_pwm);
             return;
           }
@@ -577,7 +581,6 @@ interval:
           write_pump_pwm_if_changed(id(hp2_pump_speed), pwm);
 
           // External mode text has explicit priority and updates only on change.
-          static std::string last_mode = "";
           std::string mode_txt;
           switch (exec_mode) {
             case FLOW_MODE_FROST: mode_txt = "CM98"; break;

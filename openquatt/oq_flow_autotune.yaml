@@ -335,7 +335,7 @@ interval:
                 id(oq_flow_autotune_active) = true;
 
                 id(oq_flow_autotune_status).publish_state("STEP");
-                id(oq_flow_autotune_state) = 2;
+                st = 2;
               }
             }
             id(oq_flow_autotune_state) = st;
