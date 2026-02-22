@@ -411,8 +411,10 @@ interval:
             float sp_target = id(oq_flow_setpoint_lph).state;
             float pv = id(flow_rate_selected).state;
 
-            const bool flow_valid = !(isnan(pv) || pv <= 0.0f);
-            pi_failsafe = (isnan(sp_target) || sp_target <= 0.0f || !flow_valid);
+            // Treat 0 L/h as a valid measurement (no-flow state), not as sensor failure.
+            // This prevents an AUTO(start) deadlock where PI would stay in failsafe and never build flow.
+            const bool flow_signal_valid = !isnan(pv);
+            pi_failsafe = (isnan(sp_target) || sp_target <= 0.0f || !flow_signal_valid);
 
             if (pi_failsafe) {
               constexpr int kFailsafeIpwm = 850;
@@ -445,7 +447,7 @@ interval:
             if (startup_hold <= 0) {
               id(oq_flow_i) += e * dt;
               id(oq_flow_i) = fmaxf(-6000.0f, fminf(6000.0f, id(oq_flow_i)));
-            } else if (flow_valid) {
+            } else if (flow_signal_valid) {
               startup_hold--;
             }
 
