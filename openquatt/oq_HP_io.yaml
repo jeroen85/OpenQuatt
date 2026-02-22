@@ -701,9 +701,9 @@ sensor:
     web_server:
       sorting_group_id: oq_performance
     lambda: |-
-      // Only calculate heat power during active heating modes
-      const int cm = id(oq_control_mode_code);
-      if (cm != 2 && cm != 3) return 0.0f;
+      // Heat power follows measured HP working mode (2 = Heating), not supervisory CM.
+      const float working_mode = id(${hp_id}_working_mode).state;
+      if (working_mode != 2.0f) return 0.0f;
 
       const float t_in_c = id(${hp_id}_water_in_temp).state;
       const float t_out_c = id(${hp_id}_water_out_temp).state;
@@ -714,7 +714,7 @@ sensor:
       const float water_cp_j_per_kgk = 4186.0f;         // J/(kg·K)
       const float mass_flow_kgps = flow_lph / 3600.0f;  // kg/s (≈ L/h)
       const float delta_t_k = t_out_c - t_in_c;         // K
-      return mass_flow_kgps * water_cp_j_per_kgk * delta_t_k;  // W (can theoretically be negative)
+      return mass_flow_kgps * water_cp_j_per_kgk * delta_t_k;
 
   - platform: template
     id: ${hp_id}_cop
