@@ -2309,6 +2309,10 @@ views:
               - `Low-load dynamic thresholds` toont live de `pmin/off/on` drempels.
               - `Heat-enable state (shadow)` toont de shadow arbiter-status
                 (`IDLE/PREHEAT/HEATING/POSTFLOW/LOCKOUT`) voor strategievalidatie.
+              - `CM2 idle-exit reason` laat zien waarom idle-exit in deze cyclus
+                timet, geblokkeerd is, of getript heeft.
+              - `CM2 re-entry block active` toont of tijdelijke CM2-herstartblokkade
+                nu actief is.
 
               Als `P_req` of demand onverwacht hoog/laag is: controleer buitenbron, kamer setpoint/temp en de ramp/deadband instellingen.
 
@@ -2333,6 +2337,10 @@ views:
                 name: Low-load dynamic thresholds
               - entity: sensor.openquatt_heat_enable_state_shadow
                 name: Heat-enable state (shadow)
+              - entity: sensor.openquatt_cm2_idle_exit_reason
+                name: CM2 idle-exit reason
+              - entity: binary_sensor.openquatt_cm2_re_entry_block_active
+                name: CM2 re-entry block active
               - entity: number.openquatt_low_load_off_fallback
                 name: Low-load OFF fallback
               - entity: number.openquatt_low_load_on_fallback
