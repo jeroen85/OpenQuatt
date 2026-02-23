@@ -2218,6 +2218,8 @@ views:
               - Vergelijk eerst `Supply target` met `Supply actual` om de regelafwijking te zien.
               - Controleer daarna de keten: `Demand curve raw (PID)` -> `Demand raw` -> `Demand filtered`.
               - `P_req` wordt in curve mode afgeleid uit demand en helpt bij CM3/tekort-logica.
+              - `Curve Temp Deadband` en `Curve Demand Off Hold` zijn de
+                belangrijkste anti-flip stabilisatie rond de nulvraag-rand.
 
               Let op: als `Supply actual` boven target zit maar demand hoog blijft, kijk dan naar PID-instellingen (`Kp/Ki/Kd`) en gedrag over tijd.
 
@@ -2250,6 +2252,10 @@ views:
                 name: PID Ki
               - entity: number.openquatt_heating_curve_pid_kd
                 name: PID Kd
+              - entity: number.openquatt_curve_temp_deadband
+                name: Curve Temp Deadband
+              - entity: number.openquatt_curve_demand_off_hold
+                name: Curve Demand Off Hold
           - type: history-graph
             title: Heating Curve temperatuur-lus (2 uur)
             hours_to_show: 2
@@ -2295,6 +2301,9 @@ views:
               - `P_req` is de begrensde warmtevraag na deadband/ramp-limiter.
               - `Demand raw` en `Demand filtered` zijn de 0..20 stapsignalen richting compressorregeling.
               - `Power cap demand` toont de actieve vraag na vermogensbegrenzing.
+              - `Low-load dynamic thresholds` toont live de `pmin/off/on` drempels.
+              - `Heat-enable state (shadow)` toont de shadow arbiter-status
+                (`IDLE/PREHEAT/HEATING/POSTFLOW/LOCKOUT`) voor strategievalidatie.
 
               Als `P_req` of demand onverwacht hoog/laag is: controleer buitenbron, kamer setpoint/temp en de ramp/deadband instellingen.
 
@@ -2315,6 +2324,16 @@ views:
                 name: P_house
               - entity: sensor.openquatt_power_house_p_req
                 name: P_req
+              - entity: sensor.openquatt_low_load_dynamic_thresholds
+                name: Low-load dynamic thresholds
+              - entity: sensor.openquatt_heat_enable_state_shadow
+                name: Heat-enable state (shadow)
+              - entity: number.openquatt_low_load_off_fallback
+                name: Low-load OFF fallback
+              - entity: number.openquatt_low_load_on_fallback
+                name: Low-load ON fallback
+              - entity: number.openquatt_low_load_cm2_re_entry_block
+                name: Low-load CM2 re-entry block
               - entity: sensor.openquatt_demand_raw
                 name: Demand raw
               - entity: sensor.openquatt_demand_filtered
