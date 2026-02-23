@@ -92,6 +92,10 @@ globals:
     type: bool
     restore_value: false
     initial_value: 'false'
+  - id: oq_cm2_entered_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
 
   # Sticky Pump Protection (CM0-only)
   - id: oq_cm0_since_ms
@@ -658,6 +662,8 @@ interval:
 
           bool heating_req = heating_req_raw;
           float p_req_w = NAN;
+          float low_load_off_w = NAN;
+          float low_load_on_w = NAN;
           bool reentry_block_active = false;
           if (!curve_mode_active) {
             // Power House low-load hysteresis on P_req to prevent CM1<->CM2 chattering.
@@ -686,6 +692,8 @@ interval:
             if (on_w < off_w + 200.0f) on_w = off_w + 200.0f;
             if (on_w > 2200.0f) on_w = 2200.0f;
             if (off_w > on_w - 200.0f) off_w = fmaxf(500.0f, on_w - 200.0f);
+            low_load_off_w = off_w;
+            low_load_on_w = on_w;
             id(oq_low_load_pmin_dyn_w) = pmin_dyn;
             id(oq_low_load_off_dyn_w) = off_w;
             id(oq_low_load_on_dyn_w) = on_w;
@@ -719,8 +727,15 @@ interval:
           }
 
           const uint32_t cm2_idle_exit_ms = (uint32_t)(${oq_cm2_idle_exit_s}UL * 1000UL);
+          const uint32_t cm2_startup_grace_ms = (uint32_t)(${oq_cm2_min_run_s}UL * 1000UL);
+          const bool cm2_startup_grace_active =
+              in_cm2 && id(oq_cm2_entered_ms) != 0 &&
+              ((uint32_t)(now_ms - id(oq_cm2_entered_ms)) < cm2_startup_grace_ms);
+          const bool ph_high_load_idle_exit_block =
+              (!curve_mode_active) && !isnan(p_req_w) && !isnan(low_load_off_w) && (p_req_w > low_load_off_w);
           bool cm2_idle_exit_trip = false;
-          if (in_cm2 && heating_req && both_levels_off && both_units_idle) {
+          if (in_cm2 && heating_req && both_levels_off && both_units_idle &&
+              !cm2_startup_grace_active && !ph_high_load_idle_exit_block) {
             if (id(oq_cm2_idle_since_ms) == 0) id(oq_cm2_idle_since_ms) = now_ms;
             if ((uint32_t)(now_ms - id(oq_cm2_idle_since_ms)) >= cm2_idle_exit_ms) {
               heating_req = false;
@@ -1075,6 +1090,9 @@ interval:
           // -------------------------------------------------
           if (id(oq_control_mode).state != desired_cm) {
             id(oq_control_mode).publish_state(desired_cm);
+            if (desired == 2) {
+              id(oq_cm2_entered_ms) = now_ms;
+            }
           }
           static std::string last_control_mode_label;
           publish_text_if_changed(id(oq_control_mode_label), cm_code_to_label(desired), last_control_mode_label);
