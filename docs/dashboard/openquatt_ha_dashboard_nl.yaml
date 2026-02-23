@@ -2139,6 +2139,12 @@ views:
               - **Runtime lead HP (internal)** toont direct welke unit intern
               als lead gekozen is op basis van de laagste minuten.
 
+              - **HP1/HP2 req level (internal)** tonen het uiteindelijke
+              allocator-setpoint per unit na guards (allowed levels/min runtime).
+
+              - **Single HP assist active (internal)** toont of low-load assist
+              actief is, waardoor duo-HP in single-range mag worden toegestaan.
+
 
               </details>
             text_only: true
@@ -2157,6 +2163,12 @@ views:
                 name: HP2 Runtime minutes (internal)
               - entity: sensor.openquatt_runtime_lead_hp_internal
                 name: Runtime lead HP (internal)
+              - entity: sensor.openquatt_hp1_req_level_internal
+                name: HP1 req level (internal)
+              - entity: sensor.openquatt_hp2_req_level_internal
+                name: HP2 req level (internal)
+              - entity: binary_sensor.openquatt_single_hp_assist_active_internal
+                name: Single HP assist active (internal)
     header:
       card:
         type: markdown
