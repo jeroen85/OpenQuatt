@@ -2049,7 +2049,6 @@ views:
               - **Flow PI Kp/Ki** bepaalt de dynamiek van flowregeling; wijzig
               in kleine stappen.
 
-
               - **Sticky pump iPWM** is vooral service/onderhoud en wordt zelden
               aangepast.
 
@@ -2134,6 +2133,12 @@ views:
               - **HP1/HP2 Runtime counters** tonen de actuele interne teller
               waarop de duo-runtime-balans wordt gebaseerd.
 
+              - **HP1/HP2 Runtime minutes (internal)** zijn de exacte
+              allocator-counters (minuten) voor lead/assist-keuze.
+
+              - **Runtime lead HP (internal)** toont direct welke unit intern
+              als lead gekozen is op basis van de laagste minuten.
+
 
               </details>
             text_only: true
@@ -2146,6 +2151,12 @@ views:
                 name: HP1 Runtime
               - entity: sensor.openquatt_hp2_runtime_hours
                 name: HP2 Runtime
+              - entity: sensor.openquatt_hp1_runtime_minutes_internal
+                name: HP1 Runtime minutes (internal)
+              - entity: sensor.openquatt_hp2_runtime_minutes_internal
+                name: HP2 Runtime minutes (internal)
+              - entity: sensor.openquatt_runtime_lead_hp_internal
+                name: Runtime lead HP (internal)
     header:
       card:
         type: markdown
