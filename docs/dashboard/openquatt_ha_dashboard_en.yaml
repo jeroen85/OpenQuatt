@@ -1907,6 +1907,9 @@ views:
               - **Minimum runtime** prevents short-cycling and excessive
               start/stop behavior.
 
+              - **Demand filter ramp up** controls how many demand steps per
+              minute `Demand filtered` may rise toward `Demand raw`.
+
               - **Single HP assist ON/OFF deficit** defines at which thermal
               deficit extra HP assist is activated or released.
 
@@ -1924,6 +1927,8 @@ views:
             entities:
               - entity: number.openquatt_minimum_runtime
                 name: Minimum runtime
+              - entity: number.openquatt_demand_filter_ramp_up
+                name: Demand filter ramp up
               - entity: number.openquatt_single_hp_assist_on_deficit
                 name: Single HP assist ON deficit
               - entity: number.openquatt_single_hp_assist_off_deficit
