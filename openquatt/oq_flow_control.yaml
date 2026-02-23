@@ -127,22 +127,6 @@ number:
     optimistic: true
     initial_value: 0.0008
 
-  - platform: template
-    id: oq_flow_mismatch_threshold
-    name: "Flow mismatch threshold"
-    mode: slider
-    icon: mdi:delta
-    unit_of_measurement: "L/h"
-    web_server:
-      sorting_group_id: oq_tuning_flow
-    min_value: 0
-    max_value: 1000
-    step: 10
-    restore_value: true
-    optimistic: true
-    initial_value: 150
-    entity_category: diagnostic
-
 # ----------------------------
 # SENSORS
 # ----------------------------
@@ -165,11 +149,10 @@ sensor:
 
       const bool v1 = !isnan(f1);
       const bool v2 = !isnan(f2);
+      const float thr = ${oq_flow_mismatch_threshold_lph};
 
       if (v1 && v2) {
         const float diff = fabsf(f1 - f2);
-        float thr = id(oq_flow_mismatch_threshold).state;
-        if (isnan(thr) || thr <= 0.0f) thr = ${oq_flow_mismatch_fallback_lph};
 
         // In series, f1 and f2 should be (almost) equal.
         // If they diverge significantly, treat it as a measurement/comms issue and choose a plausible value.
@@ -199,26 +182,45 @@ binary_sensor:
     entity_category: diagnostic
     web_server:
       sorting_group_id: oq_diagnostics
+    update_interval: 1s
     lambda: |-
       static bool state = false;
+      static bool mismatch_timer_running = false;
+      static uint32_t mismatch_start_ms = 0;
 
       float f1 = id(hp1_flow).state;
       float f2 = id(hp2_flow).state;
 
       // Evaluate only when both are valid; otherwise reset indication.
-      if (isnan(f1) || isnan(f2)) { state = false; return false; }
+      if (isnan(f1) || isnan(f2)) {
+        state = false;
+        mismatch_timer_running = false;
+        return false;
+      }
 
       const float diff = fabsf(f1 - f2);
 
-      float thr = id(oq_flow_mismatch_threshold).state;
-      if (isnan(thr) || thr <= 0.0f) thr = ${oq_flow_mismatch_fallback_lph};
+      const float thr = ${oq_flow_mismatch_threshold_lph};
 
       const float h = ${oq_flow_mismatch_hyst_lph};
       const float on_thr  = thr;
       const float off_thr = fmaxf(0.0f, thr - h);
+      const uint32_t now = millis();
+      const uint32_t hold_ms = 30000;
 
       if (!state) {
-        if (diff > on_thr) state = true;
+        if (diff > on_thr) {
+          if (!mismatch_timer_running) {
+            mismatch_timer_running = true;
+            mismatch_start_ms = now;
+          }
+          if ((uint32_t)(now - mismatch_start_ms) >= hold_ms) {
+            state = true;
+            mismatch_timer_running = false;
+          }
+        } else {
+          mismatch_timer_running = false;
+        }
       } else {
         if (diff < off_thr) state = false;
       }

@@ -2049,8 +2049,6 @@ views:
               - **Flow PI Kp/Ki** bepaalt de dynamiek van flowregeling; wijzig
               in kleine stappen.
 
-              - **Flow mismatch threshold** bepaalt gevoeligheid voor HP1/HP2
-              flow-afwijking.
 
               - **Sticky pump iPWM** is vooral service/onderhoud en wordt zelden
               aangepast.
@@ -2069,8 +2067,6 @@ views:
                 name: Flow PI Kp
               - entity: number.openquatt_flow_pi_ki
                 name: Flow PI Ki
-              - entity: number.openquatt_flow_mismatch_threshold
-                name: Flow mismatch threshold
               - entity: number.openquatt_sticky_pump_ipwm
                 name: Sticky pump iPWM
       - type: grid
