@@ -182,7 +182,6 @@ binary_sensor:
     entity_category: diagnostic
     web_server:
       sorting_group_id: oq_diagnostics
-    update_interval: 1s
     lambda: |-
       static bool state = false;
       static bool mismatch_timer_running = false;
