@@ -159,6 +159,12 @@ globals:
     restore_value: false
     initial_value: '0'
 
+  # Diagnostic: last computed lead pump based on runtime minutes.
+  - id: oq_last_lead_hp
+    type: int
+    restore_value: false
+    initial_value: '0'
+
 # ----------------------------
 # SENSORS (energie + status)
 # ----------------------------
@@ -277,6 +283,32 @@ sensor:
       if (!idx.has_value()) return NAN;
       return (float) idx.value();
 
+  - platform: template
+    id: oq_hp1_runtime_minutes_sensor
+    name: "HP1 runtime minutes (internal)"
+    icon: mdi:timer-outline
+    unit_of_measurement: "min"
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return (float) id(hp1_minutes);
+
+  - platform: template
+    id: oq_hp2_runtime_minutes_sensor
+    name: "HP2 runtime minutes (internal)"
+    icon: mdi:timer-outline
+    unit_of_measurement: "min"
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return (float) id(hp2_minutes);
+
 # ----------------------------
 # Extra overview sensors for capacity deficit
 # ----------------------------
@@ -308,6 +340,18 @@ sensor:
       sorting_group_id: oq_overview
     lambda: |-
       return id(oq_P_deficit_w);
+
+text_sensor:
+  - platform: template
+    id: oq_runtime_lead_hp_sensor
+    name: "Runtime lead HP (internal)"
+    icon: mdi:source-branch
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      const bool lead_is_hp1 = (id(hp1_minutes) <= id(hp2_minutes));
+      return std::string(lead_is_hp1 ? "HP1" : "HP2");
 
 # ----------------------------
 # BUTTON
@@ -436,6 +480,13 @@ interval:
 
           // Lead HP = fewest runtime minutes
           const bool lead_is_hp1 = (id(hp1_minutes) <= id(hp2_minutes));
+
+          const int lead_code = lead_is_hp1 ? 1 : 2;
+          if (id(oq_last_lead_hp) != lead_code) {
+            id(oq_last_lead_hp) = lead_code;
+            ESP_LOGI("quatt", "Runtime lead changed: %s (hp1_minutes=%d, hp2_minutes=%d)",
+                     lead_is_hp1 ? "HP1" : "HP2", id(hp1_minutes), id(hp2_minutes));
+          }
 
           int hp1_req = 0;
           int hp2_req = 0;
