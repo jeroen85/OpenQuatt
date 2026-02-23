@@ -2154,9 +2154,8 @@ views:
             heading: Manual Modbus test reader
             heading_style: title
           - type: markdown
-            content: >-
+            content: |-
               <details>
-
               <summary><strong>Explanation</strong></summary>
 
               One-shot manual register read for debugging/testing:
@@ -2184,6 +2183,156 @@ views:
                 name: Last target
               - entity: sensor.openquatt_debug_modbus_last_raw
                 name: Last raw bytes
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:radiator
+            heading: Heating Curve diagnostics
+            heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Explanation</strong></summary>
+
+              Use this block to inspect the heating-curve control loop step by step.
+
+              - This section is most relevant when `Heating mode = Curve`.
+              - First compare `Supply target` and `Supply actual` to see control error.
+              - Then verify the chain: `Demand curve raw (PID)` -> `Demand raw` -> `Demand filtered`.
+              - In curve mode, `P_req` is derived from demand and is used by deficit/CM3 logic.
+
+              Note: if `Supply actual` is above target while demand stays high, check PID tuning (`Kp/Ki/Kd`) and time behavior.
+
+              </details>
+            text_only: true
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: select.openquatt_heating_control_mode
+                name: Heating mode
+              - entity: climate.openquatt_heating_curve_pid
+                name: Heating Curve PID
+              - entity: button.openquatt_reset_heating_curve_pid_integral
+                name: Reset PID integral
+              - entity: sensor.openquatt_heating_curve_supply_target
+                name: Supply target
+              - entity: sensor.openquatt_water_supply_temp_selected
+                name: Supply actual (selected)
+              - entity: sensor.openquatt_demand_curve_raw
+                name: Demand curve raw (PID)
+              - entity: sensor.openquatt_demand_raw
+                name: Demand raw
+              - entity: sensor.openquatt_demand_filtered
+                name: Demand filtered
+              - entity: sensor.openquatt_power_house_p_req
+                name: P_req
+              - entity: number.openquatt_heating_curve_pid_kp
+                name: PID Kp
+              - entity: number.openquatt_heating_curve_pid_ki
+                name: PID Ki
+              - entity: number.openquatt_heating_curve_pid_kd
+                name: PID Kd
+          - type: history-graph
+            title: Heating Curve temperature loop (2h)
+            hours_to_show: 2
+            refresh_interval: 30
+            entities:
+              - entity: sensor.openquatt_heating_curve_supply_target
+                name: Supply target
+              - entity: sensor.openquatt_water_supply_temp_selected
+                name: Supply actual
+              - entity: sensor.openquatt_outside_temperature_selected
+                name: Outside temp
+            grid_options:
+              columns: full
+          - type: history-graph
+            title: Heating Curve demand chain (2h)
+            hours_to_show: 2
+            refresh_interval: 30
+            entities:
+              - entity: sensor.openquatt_demand_curve_raw
+                name: Curve raw
+              - entity: sensor.openquatt_demand_raw
+                name: Demand raw
+              - entity: sensor.openquatt_demand_filtered
+                name: Demand filtered
+            grid_options:
+              columns: full
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:home-lightning-bolt
+            heading: Power House diagnostics
+            heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+
+              <summary><strong>Explanation</strong></summary>
+
+              Use this block to debug the Power House control chain.
+
+              - Relevant when `Heating mode = Power House`.
+              - `P_house` is the model-based demand estimate from outside temperature.
+              - `P_req` is the limited heat request after deadband/ramp limiter.
+              - `Demand raw` and `Demand filtered` are 0..20 step signals towards compressor control.
+              - `Power cap demand` shows active demand after electrical power limiting.
+
+              If `P_req` or demand looks unexpectedly high/low: check outside source, room setpoint/temp, and ramp/deadband tuning.
+
+              </details>
+            text_only: true
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: select.openquatt_heating_control_mode
+                name: Heating mode
+              - entity: sensor.openquatt_outside_temperature_selected
+                name: Outside temp (selected)
+              - entity: sensor.openquatt_cic_ot_room_setpoint
+                name: Room setpoint (CIC)
+              - entity: sensor.openquatt_cic_ot_room_temperature
+                name: Room temp (CIC)
+              - entity: sensor.openquatt_power_house_p_house
+                name: P_house
+              - entity: sensor.openquatt_power_house_p_req
+                name: P_req
+              - entity: sensor.openquatt_demand_raw
+                name: Demand raw
+              - entity: sensor.openquatt_demand_filtered
+                name: Demand filtered
+              - entity: sensor.openquatt_power_cap_demand
+                name: Power cap demand
+          - type: history-graph
+            title: Power House model and inputs (2h)
+            hours_to_show: 2
+            refresh_interval: 30
+            entities:
+              - entity: sensor.openquatt_outside_temperature_selected
+                name: Outside temp
+              - entity: sensor.openquatt_cic_ot_room_setpoint
+                name: Room setpoint
+              - entity: sensor.openquatt_cic_ot_room_temperature
+                name: Room temp
+              - entity: sensor.openquatt_power_house_p_house
+                name: P_house
+            grid_options:
+              columns: full
+          - type: history-graph
+            title: Power House output chain (2h)
+            hours_to_show: 2
+            refresh_interval: 30
+            entities:
+              - entity: sensor.openquatt_power_house_p_req
+                name: P_req
+              - entity: sensor.openquatt_demand_raw
+                name: Demand raw
+              - entity: sensor.openquatt_demand_filtered
+                name: Demand filtered
+              - entity: sensor.openquatt_power_cap_demand
+                name: Power cap demand
+            grid_options:
+              columns: full
     header:
       card:
         type: markdown

@@ -362,7 +362,7 @@ sensor:
   - platform: template
     id: power_cap_level
     name: "Power cap demand"
-    icon: mdi:shield-bolt
+    icon: mdi:speedometer
     unit_of_measurement: "step"
     state_class: measurement
     accuracy_decimals: 0

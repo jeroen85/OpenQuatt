@@ -40,6 +40,10 @@ select:
     initial_option: Power House
     web_server:
       sorting_group_id: oq_control
+    on_value:
+      then:
+        # Reset PID integral when strategy changes to prevent carry-over between modes.
+        - climate.pid.reset_integral_term: oq_heating_curve_pid
 
 # ----------------------------
 # TUNING INPUTS
@@ -342,6 +346,18 @@ number:
     initial_value: 40
     web_server:
       sorting_group_id: oq_tuning_heat
+
+button:
+  - platform: template
+    id: reset_heating_curve_pid_integral
+    name: "Reset Heating Curve PID integral"
+    icon: mdi:restart
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_tuning_heat
+    on_press:
+      then:
+        - climate.pid.reset_integral_term: oq_heating_curve_pid
 
 # ----------------------------
 # GLOBALS
