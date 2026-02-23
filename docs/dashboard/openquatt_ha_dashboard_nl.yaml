@@ -2114,6 +2114,21 @@ views:
                 name: Autotune Ki suggested
               - entity: sensor.openquatt_flow_autotune_status
                 name: Autotune status
+    header:
+      card:
+        type: markdown
+        content: >-
+          # <ha-icon icon="mdi:tune-vertical"></ha-icon> Advanced settings
+
+          Geavanceerde tuning van limieten, huismodel, stooklijn,
+          heat-allocation en flow.
+    cards: []
+  - title: Debug & Testing
+    path: debug-testing
+    icon: mdi:flask-outline
+    type: sections
+    max_columns: 2
+    sections:
       - type: grid
         cards:
           - type: heading
@@ -2142,8 +2157,18 @@ views:
               - **HP1/HP2 req level (internal)** tonen het uiteindelijke
               allocator-setpoint per unit na guards (allowed levels/min runtime).
 
+              - **HP1/HP2 req level pre-guard (internal)** tonen allocator-output
+              vóór allowed-level/min-runtime guards.
+
               - **Single HP assist active (internal)** toont of low-load assist
               actief is, waardoor duo-HP in single-range mag worden toegestaan.
+
+              - **HP1/HP2 mode gate blocked (internal)** geeft aan dat de
+              workmode-overgang (Standby -> Heating) in die cyclus compressor
+              output nog blokkeerde.
+
+              - **HP start delay (internal)** telt seconden vanaf eerste
+              non-zero request terwijl beide HP's idle zijn.
 
 
               </details>
@@ -2167,23 +2192,20 @@ views:
                 name: HP1 req level (internal)
               - entity: sensor.openquatt_hp2_req_level_internal
                 name: HP2 req level (internal)
+              - entity: sensor.openquatt_hp1_req_level_pre_guard_internal
+                name: HP1 req level pre-guard (internal)
+              - entity: sensor.openquatt_hp2_req_level_pre_guard_internal
+                name: HP2 req level pre-guard (internal)
               - entity: binary_sensor.openquatt_single_hp_assist_active_internal
                 name: Single HP assist active (internal)
-    header:
-      card:
-        type: markdown
-        content: >-
-          # <ha-icon icon="mdi:tune-vertical"></ha-icon> Advanced settings
-
-          Geavanceerde tuning van limieten, huismodel, stooklijn,
-          heat-allocation en flow.
-    cards: []
-  - title: Debug & Testing
-    path: debug-testing
-    icon: mdi:flask-outline
-    type: sections
-    max_columns: 2
-    sections:
+              - entity: binary_sensor.openquatt_hp1_mode_gate_blocked_internal
+                name: HP1 mode gate blocked (internal)
+              - entity: binary_sensor.openquatt_hp2_mode_gate_blocked_internal
+                name: HP2 mode gate blocked (internal)
+              - entity: binary_sensor.openquatt_hp_start_delay_active_internal
+                name: HP start delay active (internal)
+              - entity: sensor.openquatt_hp_start_delay_internal
+                name: HP start delay (internal)
       - type: grid
         cards:
           - type: heading

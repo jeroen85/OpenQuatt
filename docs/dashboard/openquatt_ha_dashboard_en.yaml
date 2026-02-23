@@ -2096,6 +2096,21 @@ views:
                 name: Autotune Ki suggested
               - entity: sensor.openquatt_flow_autotune_status
                 name: Autotune status
+    header:
+      card:
+        type: markdown
+        content: >-
+          # <ha-icon icon="mdi:tune-vertical"></ha-icon> Advanced settings
+
+          Advanced tuning for limits, house model, heating curve, heat
+          allocation, and flow.
+    cards: []
+  - title: Debug & Testing
+    path: debug-testing
+    icon: mdi:flask-outline
+    type: sections
+    max_columns: 2
+    sections:
       - type: grid
         cards:
           - type: heading
@@ -2124,8 +2139,18 @@ views:
               - **HP1/HP2 req level (internal)** show the final allocator
               setpoint per unit after guards (allowed levels/min runtime).
 
+              - **HP1/HP2 req level pre-guard (internal)** show allocator output
+              before allowed-level/min-runtime guards.
+
               - **Single HP assist active (internal)** indicates whether low-load
               assist is active, allowing dual-HP support in single-HP range.
+
+              - **HP1/HP2 mode gate blocked (internal)** indicates the
+              workmode transition (Standby -> Heating) still blocked compressor
+              output in that cycle.
+
+              - **HP start delay (internal)** counts seconds from first
+              non-zero request while both HPs are idle.
 
 
               </details>
@@ -2149,23 +2174,20 @@ views:
                 name: HP1 req level (internal)
               - entity: sensor.openquatt_hp2_req_level_internal
                 name: HP2 req level (internal)
+              - entity: sensor.openquatt_hp1_req_level_pre_guard_internal
+                name: HP1 req level pre-guard (internal)
+              - entity: sensor.openquatt_hp2_req_level_pre_guard_internal
+                name: HP2 req level pre-guard (internal)
               - entity: binary_sensor.openquatt_single_hp_assist_active_internal
                 name: Single HP assist active (internal)
-    header:
-      card:
-        type: markdown
-        content: >-
-          # <ha-icon icon="mdi:tune-vertical"></ha-icon> Advanced settings
-
-          Advanced tuning for limits, house model, heating curve, heat
-          allocation, and flow.
-    cards: []
-  - title: Debug & Testing
-    path: debug-testing
-    icon: mdi:flask-outline
-    type: sections
-    max_columns: 2
-    sections:
+              - entity: binary_sensor.openquatt_hp1_mode_gate_blocked_internal
+                name: HP1 mode gate blocked (internal)
+              - entity: binary_sensor.openquatt_hp2_mode_gate_blocked_internal
+                name: HP2 mode gate blocked (internal)
+              - entity: binary_sensor.openquatt_hp_start_delay_active_internal
+                name: HP start delay active (internal)
+              - entity: sensor.openquatt_hp_start_delay_internal
+                name: HP start delay (internal)
       - type: grid
         cards:
           - type: heading
