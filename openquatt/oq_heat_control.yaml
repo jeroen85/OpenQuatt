@@ -165,46 +165,6 @@ globals:
     restore_value: false
     initial_value: '0'
 
-  # DEBUG-RUNTIME START: temporary runtime diagnostics (trace/remove as one block)
-  # Internal allocator output after all guards (allowed levels + min runtime).
-  - id: oq_hp1_req_level_internal
-    type: int
-    restore_value: false
-    initial_value: '0'
-  - id: oq_hp2_req_level_internal
-    type: int
-    restore_value: false
-    initial_value: '0'
-  - id: oq_hp1_req_level_pre_guard_internal
-    type: int
-    restore_value: false
-    initial_value: '0'
-  - id: oq_hp2_req_level_pre_guard_internal
-    type: int
-    restore_value: false
-    initial_value: '0'
-  - id: oq_mode_gate_blocked_hp1_internal
-    type: bool
-    restore_value: false
-    initial_value: 'false'
-  - id: oq_mode_gate_blocked_hp2_internal
-    type: bool
-    restore_value: false
-    initial_value: 'false'
-  - id: oq_req_nonzero_since_ms_internal
-    type: uint32_t
-    restore_value: false
-    initial_value: '0'
-  - id: oq_start_delay_s_internal
-    type: int
-    restore_value: false
-    initial_value: '0'
-  - id: oq_start_delay_active_internal
-    type: bool
-    restore_value: false
-    initial_value: 'false'
-  # DEBUG-RUNTIME END
-
 # ----------------------------
 # SENSORS (energie + status)
 # ----------------------------
@@ -323,99 +283,6 @@ sensor:
       if (!idx.has_value()) return NAN;
       return (float) idx.value();
 
-  - platform: template
-    id: oq_hp1_runtime_minutes_sensor
-    name: "HP1 runtime minutes (internal)"
-    icon: mdi:timer-outline
-    unit_of_measurement: "min"
-    state_class: measurement
-    accuracy_decimals: 0
-    update_interval: 10s
-    web_server:
-      sorting_group_id: oq_diagnostics
-    lambda: |-
-      return (float) id(hp1_minutes);
-
-  - platform: template
-    id: oq_hp2_runtime_minutes_sensor
-    name: "HP2 runtime minutes (internal)"
-    icon: mdi:timer-outline
-    unit_of_measurement: "min"
-    state_class: measurement
-    accuracy_decimals: 0
-    update_interval: 10s
-    web_server:
-      sorting_group_id: oq_diagnostics
-    lambda: |-
-      return (float) id(hp2_minutes);
-
-  # DEBUG-RUNTIME START: temporary runtime diagnostics sensors
-  - platform: template
-    id: oq_hp1_req_level_internal_sensor
-    name: "HP1 req level (internal)"
-    icon: mdi:stairs
-    unit_of_measurement: "lvl"
-    state_class: measurement
-    accuracy_decimals: 0
-    update_interval: 5s
-    web_server:
-      sorting_group_id: oq_diagnostics
-    lambda: |-
-      return (float) id(oq_hp1_req_level_internal);
-
-  - platform: template
-    id: oq_hp2_req_level_internal_sensor
-    name: "HP2 req level (internal)"
-    icon: mdi:stairs
-    unit_of_measurement: "lvl"
-    state_class: measurement
-    accuracy_decimals: 0
-    update_interval: 5s
-    web_server:
-      sorting_group_id: oq_diagnostics
-    lambda: |-
-      return (float) id(oq_hp2_req_level_internal);
-
-  - platform: template
-    id: oq_hp1_req_level_pre_guard_internal_sensor
-    name: "HP1 req level pre-guard (internal)"
-    icon: mdi:stairs
-    unit_of_measurement: "lvl"
-    state_class: measurement
-    accuracy_decimals: 0
-    update_interval: 5s
-    web_server:
-      sorting_group_id: oq_diagnostics
-    lambda: |-
-      return (float) id(oq_hp1_req_level_pre_guard_internal);
-
-  - platform: template
-    id: oq_hp2_req_level_pre_guard_internal_sensor
-    name: "HP2 req level pre-guard (internal)"
-    icon: mdi:stairs
-    unit_of_measurement: "lvl"
-    state_class: measurement
-    accuracy_decimals: 0
-    update_interval: 5s
-    web_server:
-      sorting_group_id: oq_diagnostics
-    lambda: |-
-      return (float) id(oq_hp2_req_level_pre_guard_internal);
-
-  - platform: template
-    id: oq_start_delay_s_internal_sensor
-    name: "HP start delay (internal)"
-    icon: mdi:timer-sand
-    unit_of_measurement: "s"
-    state_class: measurement
-    accuracy_decimals: 0
-    update_interval: 5s
-    web_server:
-      sorting_group_id: oq_diagnostics
-    lambda: |-
-      return (float) id(oq_start_delay_s_internal);
-  # DEBUG-RUNTIME END
-
 # ----------------------------
 # Extra overview sensors for capacity deficit
 # ----------------------------
@@ -451,7 +318,7 @@ sensor:
 text_sensor:
   - platform: template
     id: oq_runtime_lead_hp_sensor
-    name: "Runtime lead HP (internal)"
+    name: "Runtime lead HP"
     icon: mdi:source-branch
     update_interval: 10s
     web_server:
@@ -459,49 +326,6 @@ text_sensor:
     lambda: |-
       const bool lead_is_hp1 = (id(hp1_minutes) <= id(hp2_minutes));
       return std::string(lead_is_hp1 ? "HP1" : "HP2");
-
-binary_sensor:
-  # DEBUG-RUNTIME START: temporary runtime diagnostics binary sensors
-  - platform: template
-    id: oq_single_hp_assist_active_internal_sensor
-    name: "Single HP assist active (internal)"
-    icon: mdi:account-switch
-    entity_category: diagnostic
-    web_server:
-      sorting_group_id: oq_diagnostics
-    lambda: |-
-      return id(oq_single_hp_assist_active);
-
-  - platform: template
-    id: oq_mode_gate_blocked_hp1_internal_sensor
-    name: "HP1 mode gate blocked (internal)"
-    icon: mdi:cancel
-    entity_category: diagnostic
-    web_server:
-      sorting_group_id: oq_diagnostics
-    lambda: |-
-      return id(oq_mode_gate_blocked_hp1_internal);
-
-  - platform: template
-    id: oq_mode_gate_blocked_hp2_internal_sensor
-    name: "HP2 mode gate blocked (internal)"
-    icon: mdi:cancel
-    entity_category: diagnostic
-    web_server:
-      sorting_group_id: oq_diagnostics
-    lambda: |-
-      return id(oq_mode_gate_blocked_hp2_internal);
-
-  - platform: template
-    id: oq_start_delay_active_internal_sensor
-    name: "HP start delay active (internal)"
-    icon: mdi:timer-play-outline
-    entity_category: diagnostic
-    web_server:
-      sorting_group_id: oq_diagnostics
-    lambda: |-
-      return id(oq_start_delay_active_internal);
-  # DEBUG-RUNTIME END
 
 # ----------------------------
 # BUTTON
@@ -951,7 +775,6 @@ interval:
             }
           }
 
-          // DEBUG-RUNTIME: runtime balancing at single-HP start.
           // Runtime balancing at single-HP start:
           // when a single-HP request appears from idle, prefer the runtime lead HP
           // if both units can provide the same requested level.
@@ -973,10 +796,6 @@ interval:
               }
             }
           }
-
-          // DEBUG-RUNTIME: allocator output before guards (allowed levels + min runtime).
-          id(oq_hp1_req_level_pre_guard_internal) = hp1_req;
-          id(oq_hp2_req_level_pre_guard_internal) = hp2_req;
 
           // =========================
           // 4) Allowed levels (1..10)
@@ -1019,31 +838,9 @@ interval:
             }
           }
 
-          // DEBUG-RUNTIME: publish final requested levels after allocator guards.
-          id(oq_hp1_req_level_internal) = hp1_req;
-          id(oq_hp2_req_level_internal) = hp2_req;
-
-          // DEBUG-RUNTIME: start-delay tracking from first non-zero request while idle.
-          // Start-delay tracking: from first non-zero request (while idle) until any HP actually applies >0.
-          const bool any_req = (hp1_req > 0 || hp2_req > 0);
-          const bool any_running_prev = (id(hp1_last_applied_level) > 0 || id(hp2_last_applied_level) > 0);
-          if (any_req && !any_running_prev && !id(oq_start_delay_active_internal)) {
-            id(oq_req_nonzero_since_ms_internal) = now_ms;
-            id(oq_start_delay_s_internal) = 0;
-            id(oq_start_delay_active_internal) = true;
-          } else if (!any_req && !any_running_prev) {
-            id(oq_start_delay_active_internal) = false;
-            id(oq_start_delay_s_internal) = 0;
-          } else if (id(oq_start_delay_active_internal)) {
-            id(oq_start_delay_s_internal) = (int) ((now_ms - id(oq_req_nonzero_since_ms_internal)) / 1000UL);
-          }
-
           // =========================
           // 6) Working mode gate + apply compressor
           // =========================
-          bool mode_gate_blocked_hp1 = false;
-          bool mode_gate_blocked_hp2 = false;
-
           auto set_mode = [&](bool is_hp1, bool heating) {
             const char* opt = heating ? "Heating" : "Standby";
             if (is_hp1) {
@@ -1094,14 +891,8 @@ interval:
 
             // Normative rule: compressor >0 only when heating mode is measured OR command target is already heating.
             // This avoids losing a full control cycle on mode-transition latency.
-            bool blocked_by_mode_gate = false;
             if (req_level > 0 && !mode_is_heating(is_hp1) && !mode_target_is_heating(is_hp1)) {
               applied = 0;
-              blocked_by_mode_gate = true;
-            }
-            if (blocked_by_mode_gate) {
-              if (is_hp1) mode_gate_blocked_hp1 = true;
-              else mode_gate_blocked_hp2 = true;
             }
 
             // writes only on change
@@ -1128,17 +919,6 @@ interval:
 
           int hp1_applied = apply_level(true, hp1_req);
           int hp2_applied = apply_level(false, hp2_req);
-
-          id(oq_mode_gate_blocked_hp1_internal) = mode_gate_blocked_hp1;
-          id(oq_mode_gate_blocked_hp2_internal) = mode_gate_blocked_hp2;
-          if (id(oq_start_delay_active_internal)) {
-            if (hp1_applied > 0 || hp2_applied > 0) {
-              id(oq_start_delay_s_internal) = (int) ((now_ms - id(oq_req_nonzero_since_ms_internal)) / 1000UL);
-              id(oq_start_delay_active_internal) = false;
-            } else {
-              id(oq_start_delay_s_internal) = (int) ((now_ms - id(oq_req_nonzero_since_ms_internal)) / 1000UL);
-            }
-          }
 
           // =========================
           // 7) Start/stop logging + runtime minutes

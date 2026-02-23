@@ -2145,30 +2145,11 @@ views:
               - **Reset runtime counters**. Let op: het kan maximaal 1 minuut
               duren voordat je effect ziet.
 
-              - **HP1/HP2 Runtime counters** tonen de actuele interne teller
-              waarop de duo-runtime-balans wordt gebaseerd.
+              - **HP1/HP2 Runtime counters** tonen de actuele teller waarop de
+              runtime-balans wordt gebaseerd.
 
-              - **HP1/HP2 Runtime minutes (internal)** zijn de exacte
-              allocator-counters (minuten) voor lead/assist-keuze.
-
-              - **Runtime lead HP (internal)** toont direct welke unit intern
-              als lead gekozen is op basis van de laagste minuten.
-
-              - **HP1/HP2 req level (internal)** tonen het uiteindelijke
-              allocator-setpoint per unit na guards (allowed levels/min runtime).
-
-              - **HP1/HP2 req level pre-guard (internal)** tonen allocator-output
-              vóór allowed-level/min-runtime guards.
-
-              - **Single HP assist active (internal)** toont of low-load assist
-              actief is, waardoor duo-HP in single-range mag worden toegestaan.
-
-              - **HP1/HP2 mode gate blocked (internal)** geeft aan dat de
-              workmode-overgang (Standby -> Heating) in die cyclus compressor
-              output nog blokkeerde.
-
-              - **HP start delay (internal)** telt seconden vanaf eerste
-              non-zero request terwijl beide HP's idle zijn.
+              - **Runtime lead HP** toont welke unit momenteel lead is op basis
+              van de laagste runtime.
 
 
               </details>
@@ -2182,30 +2163,8 @@ views:
                 name: HP1 Runtime
               - entity: sensor.openquatt_hp2_runtime_hours
                 name: HP2 Runtime
-              - entity: sensor.openquatt_hp1_runtime_minutes_internal
-                name: HP1 Runtime minutes (internal)
-              - entity: sensor.openquatt_hp2_runtime_minutes_internal
-                name: HP2 Runtime minutes (internal)
               - entity: sensor.openquatt_runtime_lead_hp_internal
-                name: Runtime lead HP (internal)
-              - entity: sensor.openquatt_hp1_req_level_internal
-                name: HP1 req level (internal)
-              - entity: sensor.openquatt_hp2_req_level_internal
-                name: HP2 req level (internal)
-              - entity: sensor.openquatt_hp1_req_level_pre_guard_internal
-                name: HP1 req level pre-guard (internal)
-              - entity: sensor.openquatt_hp2_req_level_pre_guard_internal
-                name: HP2 req level pre-guard (internal)
-              - entity: binary_sensor.openquatt_single_hp_assist_active_internal
-                name: Single HP assist active (internal)
-              - entity: binary_sensor.openquatt_hp1_mode_gate_blocked_internal
-                name: HP1 mode gate blocked (internal)
-              - entity: binary_sensor.openquatt_hp2_mode_gate_blocked_internal
-                name: HP2 mode gate blocked (internal)
-              - entity: binary_sensor.openquatt_hp_start_delay_active_internal
-                name: HP start delay active (internal)
-              - entity: sensor.openquatt_hp_start_delay_internal
-                name: HP start delay (internal)
+                name: Runtime lead HP
       - type: grid
         cards:
           - type: heading
