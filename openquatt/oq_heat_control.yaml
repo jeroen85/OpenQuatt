@@ -309,18 +309,6 @@ sensor:
     lambda: |-
       return (float) id(hp2_minutes);
 
-text_sensor:
-  - platform: template
-    id: oq_runtime_lead_hp_sensor
-    name: "Runtime lead HP (internal)"
-    icon: mdi:source-branch
-    update_interval: 10s
-    web_server:
-      sorting_group_id: oq_diagnostics
-    lambda: |-
-      const bool lead_is_hp1 = (id(hp1_minutes) <= id(hp2_minutes));
-      return std::string(lead_is_hp1 ? "HP1" : "HP2");
-
 # ----------------------------
 # Extra overview sensors for capacity deficit
 # ----------------------------
@@ -352,6 +340,18 @@ text_sensor:
       sorting_group_id: oq_overview
     lambda: |-
       return id(oq_P_deficit_w);
+
+text_sensor:
+  - platform: template
+    id: oq_runtime_lead_hp_sensor
+    name: "Runtime lead HP (internal)"
+    icon: mdi:source-branch
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      const bool lead_is_hp1 = (id(hp1_minutes) <= id(hp2_minutes));
+      return std::string(lead_is_hp1 ? "HP1" : "HP2");
 
 # ----------------------------
 # BUTTON
