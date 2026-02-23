@@ -58,6 +58,21 @@ number:
     web_server:
       sorting_group_id: oq_tuning_heat
 
+  - platform: template
+    id: oq_demand_filter_ramp_up_step_min
+    name: "Demand filter ramp up"
+    icon: mdi:stairs-up
+    unit_of_measurement: "step/min"
+    min_value: 1
+    max_value: 20
+    step: 1
+    mode: slider
+    restore_value: true
+    optimistic: true
+    initial_value: 1
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
   # Single-HP assist ON threshold (W deficit) for enabling dual-HP support at low demand.
   - platform: template
     id: oq_single_hp_assist_on_deficit_w
@@ -370,9 +385,13 @@ interval:
           int raw = id(oq_demand_raw);
           raw = std::max(0, std::min(demand_max_f, raw));
 
+          int ramp_up_step_min = (int) lroundf(id(oq_demand_filter_ramp_up_step_min).state);
+          if (ramp_up_step_min < 1) ramp_up_step_min = 1;
+          if (ramp_up_step_min > demand_max_f) ramp_up_step_min = demand_max_f;
+
           int f = id(oq_demand_filtered);
           if (raw > f) {
-            f = std::min(f + 1, raw);              // increase max +1 per minute
+            f = std::min(f + ramp_up_step_min, raw); // configurable upward ramp (step/min)
           } else if (raw == 0 && f == 1) {
             // Prevent 1-step latch: allow clean idle transition when raw demand is zero.
             f = 0;
