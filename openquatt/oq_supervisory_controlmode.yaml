@@ -166,6 +166,7 @@ globals:
     type: int
     restore_value: false
     initial_value: '0'
+  # DEBUG-RUNTIME START: Power House low-load + shadow heat-enable diagnostics
   # Dynamic low-load diagnostics (Power House)
   - id: oq_low_load_pmin_dyn_w
     type: float
@@ -204,6 +205,7 @@ globals:
     type: uint32_t
     restore_value: false
     initial_value: '0'
+  # DEBUG-RUNTIME END
 
 # ----------------------------
 # CONTROL INPUTS
@@ -410,6 +412,17 @@ binary_sensor:
     web_server:
       sorting_group_id: oq_diagnostics
 
+  # DEBUG-RUNTIME START: CM2 low-load / idle-exit diagnostics
+  - platform: template
+    id: oq_cm2_reentry_block_active_bs
+    name: "CM2 re-entry block active"
+    icon: mdi:timer-lock-outline
+    device_class: running
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+  # DEBUG-RUNTIME END
+
 text_sensor:
   - platform: template
     id: oq_control_mode
@@ -454,6 +467,7 @@ text_sensor:
     web_server:
       sorting_group_id: oq_diagnostics
 
+  # DEBUG-RUNTIME START: Power House low-load + shadow heat-enable diagnostics
   - platform: template
     id: oq_low_load_dyn_status
     name: "Low-load dynamic thresholds"
@@ -482,6 +496,16 @@ text_sensor:
     entity_category: diagnostic
     web_server:
       sorting_group_id: oq_diagnostics
+
+  - platform: template
+    id: oq_cm2_idle_exit_reason_ts
+    name: "CM2 idle-exit reason"
+    icon: mdi:information-outline
+    update_interval: never
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+  # DEBUG-RUNTIME END
 sensor:
   - platform: template
     id: power_cap_level
@@ -666,6 +690,7 @@ interval:
           float low_load_on_w = NAN;
           bool reentry_block_active = false;
           if (!curve_mode_active) {
+            // DEBUG-RUNTIME: dynamic low-load thresholds + latch/re-entry diagnostics (Power House).
             // Power House low-load hysteresis on P_req to prevent CM1<->CM2 chattering.
             // Prefer dynamic thresholds from perf-map level-1 thermal power.
             auto clampf = [](float v, float lo, float hi)->float {
@@ -733,6 +758,16 @@ interval:
               ((uint32_t)(now_ms - id(oq_cm2_entered_ms)) < cm2_startup_grace_ms);
           const bool ph_high_load_idle_exit_block =
               (!curve_mode_active) && !isnan(p_req_w) && !isnan(low_load_off_w) && (p_req_w > low_load_off_w);
+          // DEBUG-RUNTIME: expose why CM2 idle-exit path is armed/blocked/tripped.
+          std::string cm2_idle_exit_reason = "not_in_cm2";
+          if (in_cm2) {
+            if (!heating_req) cm2_idle_exit_reason = "no_heat_req";
+            else if (!both_levels_off) cm2_idle_exit_reason = "levels_on";
+            else if (!both_units_idle) cm2_idle_exit_reason = "units_not_idle";
+            else if (cm2_startup_grace_active) cm2_idle_exit_reason = "blocked_startup_grace";
+            else if (ph_high_load_idle_exit_block) cm2_idle_exit_reason = "blocked_high_load";
+            else cm2_idle_exit_reason = "timing";
+          }
           bool cm2_idle_exit_trip = false;
           if (in_cm2 && heating_req && both_levels_off && both_units_idle &&
               !cm2_startup_grace_active && !ph_high_load_idle_exit_block) {
@@ -740,6 +775,7 @@ interval:
             if ((uint32_t)(now_ms - id(oq_cm2_idle_since_ms)) >= cm2_idle_exit_ms) {
               heating_req = false;
               cm2_idle_exit_trip = true;
+              cm2_idle_exit_reason = "trip";
             }
           } else {
             id(oq_cm2_idle_since_ms) = 0;
@@ -756,12 +792,20 @@ interval:
               heating_req = false;
             }
           }
+          // DEBUG-RUNTIME: publish CM2 idle-exit reason + low-load re-entry block state.
+          static std::string last_cm2_idle_exit_reason;
+          publish_text_if_changed(
+              id(oq_cm2_idle_exit_reason_ts),
+              cm2_idle_exit_reason,
+              last_cm2_idle_exit_reason);
+          publish_binary_if_changed(id(oq_cm2_reentry_block_active_bs), reentry_block_active);
 
           // -------------------------------------------------
           // 1b) Shadow heat-enable arbiter (diagnostics only)
           //     States: IDLE/PREHEAT/HEATING/POSTFLOW/LOCKOUT
           // -------------------------------------------------
           {
+            // DEBUG-RUNTIME: shadow state-machine for stepwise migration to a dedicated heat-enable arbiter.
             const bool heat_req_shadow = heating_req;
             const uint32_t min_run_ms = (uint32_t)(${oq_cm2_min_run_s}UL * 1000UL);
             const uint32_t lockout_ms = curve_mode_active
