@@ -44,8 +44,8 @@ OpenQuatt is a modular ESPHome controller for single and duo heat pump setups wi
 ```text
 .
 ├── openquatt.yaml                    # Default ESPHome config (Waveshare profile)
-├── openquatt_waveshare.yaml          # Explicit Waveshare profile entrypoint
-├── openquatt_heatpump_listener.yaml  # Heatpump Listener profile entrypoint
+├── openquatt_duo_waveshare.yaml          # Explicit Waveshare profile entrypoint
+├── openquatt_duo_heatpump_listener.yaml  # Heatpump Listener profile entrypoint
 ├── openquatt_single_waveshare.yaml   # Single setup + Waveshare profile entrypoint
 ├── openquatt_single_heatpump_listener.yaml # Single setup + Heatpump Listener profile entrypoint
 ├── openquatt_base.yaml               # Shared ESPHome/ESP32 base config
@@ -115,8 +115,8 @@ OpenQuatt is a modular ESPHome controller for single and duo heat pump setups wi
 
 ```bash
 # Duo
-openquatt_waveshare.yaml
-openquatt_heatpump_listener.yaml
+openquatt_duo_waveshare.yaml
+openquatt_duo_heatpump_listener.yaml
 
 # Single
 openquatt_single_waveshare.yaml
@@ -125,19 +125,19 @@ openquatt_single_heatpump_listener.yaml
 
 3. Validate config:
 ```bash
-esphome config openquatt_waveshare.yaml
+esphome config openquatt_duo_waveshare.yaml
 ```
 
 4. Compile:
 
 ```bash
-esphome compile openquatt_waveshare.yaml
+esphome compile openquatt_duo_waveshare.yaml
 ```
 
 5. Flash/run:
 
 ```bash
-esphome run openquatt_waveshare.yaml
+esphome run openquatt_duo_waveshare.yaml
 ```
 
 ## Local Validation Helper

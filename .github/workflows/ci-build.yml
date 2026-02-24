@@ -16,9 +16,9 @@ jobs:
       matrix:
         profile:
           - id: duo-waveshare
-            config: openquatt_waveshare.yaml
+            config: openquatt_duo_waveshare.yaml
           - id: duo-heatpump-listener
-            config: openquatt_heatpump_listener.yaml
+            config: openquatt_duo_heatpump_listener.yaml
           - id: single-waveshare
             config: openquatt_single_waveshare.yaml
           - id: single-heatpump-listener

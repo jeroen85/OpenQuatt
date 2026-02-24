@@ -42,8 +42,8 @@ Companion document:
 ### Root
 
 - `openquatt.yaml`: default top-level entrypoint (Waveshare profile)
-- `openquatt_waveshare.yaml`: explicit [Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm) entrypoint
-- `openquatt_heatpump_listener.yaml`: [Heatpump Listener](https://electropaultje.nl/product/heatpump-listener/) entrypoint
+- `openquatt_duo_waveshare.yaml`: explicit [Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm) entrypoint
+- `openquatt_duo_heatpump_listener.yaml`: [Heatpump Listener](https://electropaultje.nl/product/heatpump-listener/) entrypoint
 - `openquatt_single_waveshare.yaml`: single setup + Waveshare entrypoint
 - `openquatt_single_heatpump_listener.yaml`: single setup + Heatpump Listener entrypoint
 - `openquatt_base.yaml`: shared base (project metadata, board/framework, package wiring)

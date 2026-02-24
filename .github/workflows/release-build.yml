@@ -33,14 +33,14 @@ jobs:
 
       - name: Validate configs
         run: |
-          esphome config openquatt_waveshare.yaml
-          esphome config openquatt_heatpump_listener.yaml
+          esphome config openquatt_duo_waveshare.yaml
+          esphome config openquatt_duo_heatpump_listener.yaml
           esphome config openquatt_single_waveshare.yaml
           esphome config openquatt_single_heatpump_listener.yaml
 
       - name: Build Waveshare firmware
         run: |
-          esphome compile openquatt_waveshare.yaml
+          esphome compile openquatt_duo_waveshare.yaml
           mkdir -p dist
           cp .esphome/build/openquatt/.pioenvs/openquatt/firmware.bin dist/openquatt-waveshare.firmware.bin
           cp .esphome/build/openquatt/.pioenvs/openquatt/firmware.ota.bin dist/openquatt-waveshare.firmware.ota.bin
@@ -48,7 +48,7 @@ jobs:
 
       - name: Build Heatpump Listener firmware
         run: |
-          esphome compile openquatt_heatpump_listener.yaml
+          esphome compile openquatt_duo_heatpump_listener.yaml
           mkdir -p dist
           cp .esphome/build/openquatt/.pioenvs/openquatt/firmware.bin dist/openquatt-heatpump-listener.firmware.bin
           cp .esphome/build/openquatt/.pioenvs/openquatt/firmware.ota.bin dist/openquatt-heatpump-listener.firmware.ota.bin

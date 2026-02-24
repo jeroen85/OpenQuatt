@@ -1,5 +1,5 @@
 # ==============================================================================
-# OpenQuatt - Main Config (Heatpump Listener)
+# OpenQuatt - Main Config (Duo setup, Heatpump Listener)
 # ==============================================================================
 substitutions: !include openquatt/oq_substitutions_common.yaml
 

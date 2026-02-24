@@ -7,10 +7,10 @@ This project uses GitHub Actions for automated validation, firmware compilation,
 - `/.github/workflows/ci-build.yml`
   - Trigger: push to `main`, pull requests
   - Actions:
-    - `esphome config openquatt_waveshare.yaml`
-    - `esphome compile openquatt_waveshare.yaml`
-    - `esphome config openquatt_heatpump_listener.yaml`
-    - `esphome compile openquatt_heatpump_listener.yaml`
+    - `esphome config openquatt_duo_waveshare.yaml`
+    - `esphome compile openquatt_duo_waveshare.yaml`
+    - `esphome config openquatt_duo_heatpump_listener.yaml`
+    - `esphome compile openquatt_duo_heatpump_listener.yaml`
     - `esphome config openquatt_single_waveshare.yaml`
     - `esphome compile openquatt_single_waveshare.yaml`
     - `esphome config openquatt_single_heatpump_listener.yaml`

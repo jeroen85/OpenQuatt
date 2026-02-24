@@ -1,5 +1,5 @@
 # ==============================================================================
-# OpenQuatt - Main Config (Waveshare ESP32-S3-Relay-1CH)
+# OpenQuatt - Main Config (Duo setup, Waveshare ESP32-S3-Relay-1CH)
 # ==============================================================================
 substitutions: !include openquatt/oq_substitutions_common.yaml
 

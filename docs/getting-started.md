@@ -44,8 +44,8 @@ Both profiles include:
 Main entrypoint:
 
 - `openquatt.yaml`
-- `openquatt_waveshare.yaml`
-- `openquatt_heatpump_listener.yaml`
+- `openquatt_duo_waveshare.yaml`
+- `openquatt_duo_heatpump_listener.yaml`
 - `openquatt_single_waveshare.yaml`
 - `openquatt_single_heatpump_listener.yaml`
 
@@ -76,8 +76,8 @@ Adjust `openquatt/oq_common.yaml` if you want environment-specific API encryptio
 
 Select the firmware entrypoint that matches your hardware:
 
-1. Duo + Waveshare: `openquatt_waveshare.yaml`
-2. Duo + Heatpump Listener: `openquatt_heatpump_listener.yaml`
+1. Duo + Waveshare: `openquatt_duo_waveshare.yaml`
+2. Duo + Heatpump Listener: `openquatt_duo_heatpump_listener.yaml`
 3. Single + Waveshare: `openquatt_single_waveshare.yaml`
 4. Single + Heatpump Listener: `openquatt_single_heatpump_listener.yaml`
 
