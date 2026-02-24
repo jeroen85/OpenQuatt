@@ -68,6 +68,8 @@ Primary knobs:
 - `Maximum heating outdoor temperature`
 - `Power House Kp (W-K)`
 - `Power House deadband`
+- `Power House comfort below setpoint`
+- `Power House comfort above setpoint`
 - `Power House ramp up`
 - `Power House ramp down`
 

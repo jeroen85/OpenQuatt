@@ -1767,6 +1767,10 @@ views:
 
               - **Deadband** voorkomt onrust bij kleine afwijkingen.
 
+              - **Comfort onder/boven setpoint** definieert een asymmetrische
+              comfortzone rond de kamersetpoint waarin de room-correctie neutraal
+              blijft. Zo kan elke gebruiker eigen onder-/overshoot instellen.
+
               - **Ramp up/down** begrenzen stijg-/daalsnelheid van gevraagde
               warmte.
 
@@ -1789,6 +1793,10 @@ views:
                 name: Power House Kp (W/K)
               - entity: number.openquatt_power_house_deadband
                 name: Power House deadband
+              - entity: number.openquatt_power_house_comfort_below_setpoint
+                name: Power House comfort below setpoint
+              - entity: number.openquatt_power_house_comfort_above_setpoint
+                name: Power House comfort above setpoint
               - entity: number.openquatt_power_house_ramp_up
                 name: Power House ramp up
               - entity: number.openquatt_power_house_ramp_down

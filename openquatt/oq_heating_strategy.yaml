@@ -132,6 +132,36 @@ number:
       sorting_group_id: oq_tuning_heat
 
   - platform: template
+    id: ph_comfort_band_below_c
+    name: "Power House comfort below setpoint"
+    icon: mdi:thermometer-chevron-down
+    unit_of_measurement: "°C"
+    min_value: 0
+    max_value: 2.0
+    step: 0.05
+    restore_value: true
+    optimistic: true
+    initial_value: 0.1
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+  - platform: template
+    id: ph_comfort_band_above_c
+    name: "Power House comfort above setpoint"
+    icon: mdi:thermometer-chevron-up
+    unit_of_measurement: "°C"
+    min_value: 0
+    max_value: 2.0
+    step: 0.05
+    restore_value: true
+    optimistic: true
+    initial_value: 0.3
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+  - platform: template
     id: ph_ramp_up_w_per_min
     name: "Power House ramp up"
     icon: mdi:chart-line-variant
@@ -807,7 +837,22 @@ interval:
             const float P_house = Pr * x;
 
             // Room correction
-            float e = Trsp - Tr; // K
+            // Asymmetric comfort band around room setpoint:
+            // - below band: lower edge where extra correction starts
+            // - above band: upper edge where negative correction starts
+            // Inside this comfort band, room correction is zero.
+            const float comfort_below = clampf(id(ph_comfort_band_below_c).state, 0.0f, 2.0f);
+            const float comfort_above = clampf(id(ph_comfort_band_above_c).state, 0.0f, 2.0f);
+            const float Tr_low = Trsp - comfort_below;
+            const float Tr_high = Trsp + comfort_above;
+
+            float e = 0.0f; // K
+            if (Tr < Tr_low) {
+              e = Tr_low - Tr;
+            } else if (Tr > Tr_high) {
+              e = Tr_high - Tr;
+            }
+
             const float db = id(ph_deadband_k).state;
             if (!isnan(db) && db > 0.0f && fabsf(e) < db) e = 0.0f;
 

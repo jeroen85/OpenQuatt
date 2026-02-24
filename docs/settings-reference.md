@@ -138,6 +138,8 @@ Key entities:
 - `Maximum heating outdoor temperature`
 - `Power House Kp (W-K)`
 - `Power House deadband`
+- `Power House comfort below setpoint`
+- `Power House comfort above setpoint`
 - `Power House ramp up`
 - `Power House ramp down`
 - `Curve Tsupply @ -20/-10/0/5/10/15°C`

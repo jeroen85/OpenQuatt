@@ -1757,6 +1757,10 @@ views:
 
               - **Deadband** voorkomt onrust bij kleine afwijkingen.
 
+              - **Comfort below/above setpoint** defines an asymmetric comfort
+              zone around room setpoint where room correction stays neutral.
+              This lets users tune how much undershoot/overshoot is acceptable.
+
               - **Ramp up/down** limit rise/fall rate of requested heat.
 
               - **Heating strategy transition** defines how quickly the strategy
@@ -1778,6 +1782,10 @@ views:
                 name: Power House Kp (W/K)
               - entity: number.openquatt_power_house_deadband
                 name: Power House deadband
+              - entity: number.openquatt_power_house_comfort_below_setpoint
+                name: Power House comfort below setpoint
+              - entity: number.openquatt_power_house_comfort_above_setpoint
+                name: Power House comfort above setpoint
               - entity: number.openquatt_power_house_ramp_up
                 name: Power House ramp up
               - entity: number.openquatt_power_house_ramp_down
