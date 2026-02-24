@@ -17,10 +17,11 @@ The dashboard is designed as a practical operations console with the **Sections*
 - [5. Warmtecontrol View](#5-warmtecontrol-view)
 - [6. HPs View](#6-hps-view)
 - [7. CIC View](#7-cic-view)
-- [8. Diagnostics View](#8-diagnostics-view)
-- [9. Energy View](#9-energy-view)
-- [10. Advanced Settings View](#10-advanced-settings-view)
-- [11. Practical Maintenance Checklist](#11-practical-maintenance-checklist)
+- [8. Energy View](#8-energy-view)
+- [9. Advanced Settings View](#9-advanced-settings-view)
+- [10. Debug & Testing View](#10-debug--testing-view)
+- [11. Diagnostics View](#11-diagnostics-view)
+- [12. Practical Maintenance Checklist](#12-practical-maintenance-checklist)
 
 ## 1. Current View Set
 
@@ -31,9 +32,10 @@ The dashboard is designed as a practical operations console with the **Sections*
 | Warmtecontrol | `warmtecontrol` | Demand and heat allocation behavior |
 | HPs | `HPs` | HP1/HP2 deep diagnostics and visualization |
 | CIC | `cic` | Cloud feed health and source selection |
-| Diagnostics | `diagnostics` | Cross-source debug and validation |
 | Energy | `energy` | Daily/cumulative energy and efficiency metrics |
 | Advanced settings | `advanced-settings` | Expert tuning parameters with explanations |
+| Debug & Testing | `debug-testing` | Service utilities, runtime balancing checks, and manual probe tools |
+| Diagnostics | `diagnostics` | Cross-source debug and validation |
 
 ## 2. Design Rules Used
 
@@ -76,7 +78,7 @@ Expected content pattern:
 
 - flow status tiles
 - mode and setpoint controls
-- PI controls and mismatch threshold
+- PI controls and mismatch diagnostics
 - source and measurement trends
 - explanatory markdown for safe usage
 
@@ -123,19 +125,7 @@ Operational rule:
 
 - Use this tab when control values do not match expected cloud/local sources.
 
-## 8. Diagnostics View
-
-Expected content pattern:
-
-- side-by-side comparison of selected/local/CIC sources
-- debug-oriented status entities
-- low-level inspection cards that are too noisy for main operations
-
-Operational rule:
-
-- Prefer this tab when symptoms are ambiguous and source path must be proven.
-
-## 9. Energy View
+## 8. Energy View
 
 Expected content pattern:
 
@@ -151,7 +141,7 @@ Operational rule:
 
 - Validate tuning changes with this tab over full day windows.
 
-## 10. Advanced Settings View
+## 9. Advanced Settings View
 
 Expected content pattern:
 
@@ -163,7 +153,32 @@ Operational rule:
 
 - Treat this as engineering configuration, not a daily operations tab.
 
-## 11. Practical Maintenance Checklist
+## 10. Debug & Testing View
+
+Expected content pattern:
+
+- runtime balancing aids (`Runtime lead HP`, `Reset Runtime Counters (HP1+HP2)`)
+- manual Modbus probe controls (`Debug Modbus register`, `Debug Read HP1 register`, `Debug Read HP2 register`)
+- platform service utilities (`Firmware Update`, `Check Firmware Updates`)
+- runtime logger controls (`Debug Level`, `Debug Level Modbus`)
+
+Operational rule:
+
+- Use this tab for guided diagnostics and service actions, not for daily control tuning.
+
+## 11. Diagnostics View
+
+Expected content pattern:
+
+- side-by-side comparison of selected/local/CIC sources
+- debug-oriented status entities
+- low-level inspection cards that are too noisy for main operations
+
+Operational rule:
+
+- Prefer this tab when symptoms are ambiguous and source path must be proven.
+
+## 12. Practical Maintenance Checklist
 
 When editing the dashboard YAML:
 

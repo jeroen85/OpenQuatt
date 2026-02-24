@@ -32,6 +32,7 @@ OpenQuatt is a modular ESPHome controller for a dual heat pump setup with superv
 - Regulates pump flow using PI control and optional autotune tooling.
 - Supports CIC JSON feed ingestion and local-vs-cloud source selection.
 - Publishes dashboards and entities for operations, diagnostics, and tuning.
+- Includes built-in service utilities (firmware update checks, debug log controls, manual Modbus probe tools).
 
 ## Feature TODO
 
@@ -63,6 +64,7 @@ OpenQuatt is a modular ESPHome controller for a dual heat pump setup with superv
 │   ├── oq_energy.yaml
 │   ├── oq_cic.yaml
 │   ├── oq_local_sensors.yaml
+│   ├── oq_debug_testing.yaml         # Manual diagnostic/testing tools (one-shot Modbus reads)
 │   ├── oq_webserver.yaml
 │   ├── oq_HP_io.yaml
 │   └── includes/hp_perf_map.h

@@ -120,7 +120,13 @@ Primary knobs:
 - `Flow PI Kp`
 - `Flow PI Ki`
 - `Flow AUTO start iPWM`
-- `Flow mismatch threshold`
+
+Compile-time flow mismatch guardrails:
+
+- `oq_flow_mismatch_threshold_lph`
+- `oq_flow_mismatch_hyst_lph`
+
+These are firmware constants in `openquatt/oq_substitutions_common.yaml` and require compile/flash after changes.
 
 What to watch:
 
@@ -175,6 +181,7 @@ If behavior looks contradictory:
 - Check the selected flow source first.
 - Check low-flow fault timers/hysteresis, not only current flow value.
 - Check whether heating demand was active when low-flow state occurred.
+- Use the `Debug & Testing` dashboard view for one-shot Modbus validation if HP flow telemetry looks inconsistent.
 
 Remember: fault state logic is timer-based and mode-context-dependent.
 

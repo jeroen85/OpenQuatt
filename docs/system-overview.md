@@ -31,17 +31,19 @@ Shared runtime services are loaded from `openquatt/oq_common.yaml`, including:
 
 Package include order is intentional:
 
-1. `oq_supervisory_controlmode`
-2. `oq_heating_strategy`
-3. `oq_heat_control`
-4. `oq_flow_control`
-5. `oq_flow_autotune`
-6. `oq_boiler_control`
-7. `oq_energy`
-8. `oq_cic`
-9. `oq_local_sensors`
-10. `oq_webserver`
-11. `oq_HP_io` (HP1 and HP2 instances)
+1. `oq_common`
+2. `oq_supervisory_controlmode`
+3. `oq_heating_strategy`
+4. `oq_heat_control`
+5. `oq_flow_control`
+6. `oq_flow_autotune`
+7. `oq_boiler_control`
+8. `oq_energy`
+9. `oq_cic`
+10. `oq_local_sensors`
+11. `oq_debug_testing`
+12. `oq_webserver`
+13. `oq_HP_io` (HP1 and HP2 instances)
 
 This order mirrors data dependencies and ownership boundaries.
 
@@ -56,6 +58,8 @@ OpenQuatt follows strict subsystem ownership:
 - **Boiler relay control**: `oq_boiler_control`
 - **External feed ingest**: `oq_cic`
 - **Source selection and local DS18B20 ingest**: `oq_local_sensors`
+- **Shared runtime services and service entities**: `oq_common`
+- **Manual debug/testing probes**: `oq_debug_testing`
 
 This prevents hidden control coupling and keeps debugging deterministic.
 
@@ -127,6 +131,15 @@ Three switches decide whether selected values come from CIC or local/controller 
 - boiler thermal energy daily/total
 - system thermal energy daily/total
 - daily heat pump COP metric
+
+### 4.8 Service and diagnostics layer
+
+`oq_common` and `oq_debug_testing` provide:
+
+- firmware update entities and manual check trigger
+- runtime logger level controls
+- one-shot Modbus register read tools (HP1/HP2)
+- runtime balancing service entities (`Runtime lead HP`, runtime counter reset)
 
 ## 5. Heating Strategy Mechanics
 
@@ -220,6 +233,7 @@ Compile-time profile selection is done by choosing the firmware entrypoint:
 - HP1, HP2
 - Tuning groups
 - Diagnostics groups
+- Debug and testing groups surfaced in the dedicated dashboard tab
 
 This keeps ESPHome web UI and Home Assistant mapping coherent.
 

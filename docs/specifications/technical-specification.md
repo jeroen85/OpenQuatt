@@ -57,6 +57,7 @@ Defined in `openquatt/oq_packages.yaml` and must be preserved unless dependencie
 
 | Component | Technical ownership |
 |---|---|
+| `oq_common` | shared runtime services (logger/api/ota/wifi/http/modbus) and service entities |
 | `oq_supervisory_controlmode` | Control Mode state machine, low-flow state, power cap factor |
 | `oq_heating_strategy` | strategy mode selection, demand generation, curve/PID path |
 | `oq_heat_control` | demand filtering, cap application, HP level optimization/application |
@@ -65,6 +66,7 @@ Defined in `openquatt/oq_packages.yaml` and must be preserved unless dependencie
 | `oq_boiler_control` | relay command and temperature lockout |
 | `oq_cic` | polling scheduler, backoff, parse/publish pipeline |
 | `oq_local_sensors` | DS18B20 ingest, selected-source synthesis |
+| `oq_debug_testing` | manual diagnostics helpers (one-shot Modbus register reads, probe entities) |
 | `oq_energy` | integration and daily/total energy entities |
 | `oq_HP_io` | Modbus register mapping and per-unit entities |
 
