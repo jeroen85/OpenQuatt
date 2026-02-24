@@ -56,7 +56,10 @@ Companion document:
 
 ### Package include order
 
-Defined in `openquatt/oq_packages_duo.yaml` and `openquatt/oq_packages_single.yaml` and must be preserved unless dependencies are intentionally reworked.
+Defined via setup wrappers `openquatt/oq_packages_duo.yaml` / `openquatt/oq_packages_single.yaml`
+and shared segments `openquatt/oq_packages_shared_pre_policy.yaml`,
+`openquatt/oq_packages_shared_post_policy.yaml`, `openquatt/oq_packages_shared_tail.yaml`.
+Order must be preserved unless dependencies are intentionally reworked.
 
 ## 4. Core Technical Ownership
 

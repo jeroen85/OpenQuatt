@@ -24,7 +24,9 @@ OpenQuatt is driven from setup+hardware entrypoints (`openquatt.yaml`, `openquat
 
 - global project/board/framework config
 - shared base wiring (`openquatt_base.yaml` for duo, `openquatt_base_single.yaml` for single)
-- package includes via `openquatt/oq_packages_duo.yaml` and `openquatt/oq_packages_single.yaml`
+- setup wrappers via `openquatt/oq_packages_duo.yaml` and `openquatt/oq_packages_single.yaml`
+  using shared segments `oq_packages_shared_pre_policy.yaml`, `oq_packages_shared_post_policy.yaml`,
+  `oq_packages_shared_tail.yaml`
 
 Shared runtime services are loaded from `openquatt/oq_common.yaml`, including:
 

@@ -55,8 +55,11 @@ OpenQuatt is a modular ESPHome controller for single and duo heat pump setups wi
 │   ├── profiles/
 │   │   ├── oq_substitutions_waveshare.yaml
 │   │   └── oq_substitutions_heatpump_listener.yaml
-│   ├── oq_packages_duo.yaml          # Ordered package includes for duo setup
-│   ├── oq_packages_single.yaml       # Ordered package includes for single setup
+│   ├── oq_packages_duo.yaml          # Duo setup package wrapper (setup-specific overlays)
+│   ├── oq_packages_single.yaml       # Single setup package wrapper (setup-specific overlays)
+│   ├── oq_packages_shared_pre_policy.yaml   # Shared package segment before setup policy
+│   ├── oq_packages_shared_post_policy.yaml  # Shared package segment after setup policy
+│   ├── oq_packages_shared_tail.yaml         # Shared package tail (web + HP1 IO)
 │   ├── oq_common.yaml                # Shared runtime (logger/api/ota/wifi/http/modbus/diagnostics)
 │   ├── oq_supervisory_controlmode.yaml
 │   ├── oq_heating_strategy.yaml

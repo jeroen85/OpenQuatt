@@ -1,0 +1,14 @@
+# ==============================================================================
+# OpenQuatt - Shared package segment (post-policy core)
+# ==============================================================================
+# Shared stack loaded after setup-specific heat-control policy and before
+# setup-specific debug/extensions.
+# ==============================================================================
+packages:
+  oq_flow_control: !include oq_flow_control.yaml
+  oq_flow_autotune: !include oq_flow_autotune.yaml
+  oq_boiler_control: !include oq_boiler_control.yaml
+  oq_energy: !include oq_energy.yaml
+  oq_cic: !include oq_cic.yaml
+  oq_local_sensors: !include oq_local_sensors.yaml
+  oq_debug_testing: !include oq_debug_testing.yaml

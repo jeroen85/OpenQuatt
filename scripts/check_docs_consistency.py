@@ -18,6 +18,11 @@ from typing import Iterable
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+SHARED_PACKAGE_SEGMENTS = {
+    "oq_shared_pre_policy": "openquatt/oq_packages_shared_pre_policy.yaml",
+    "oq_shared_post_policy": "openquatt/oq_packages_shared_post_policy.yaml",
+    "oq_shared_tail": "openquatt/oq_packages_shared_tail.yaml",
+}
 
 
 @dataclass
@@ -94,12 +99,30 @@ def parse_dashboard_titles(path: Path) -> list[str]:
 
 def parse_package_keys(path: Path) -> list[str]:
     keys: list[str] = []
-    rx = re.compile(r"^([A-Za-z0-9_]+):\s*!include\b")
+    rx = re.compile(r"^\s*([A-Za-z0-9_]+):\s*!include\b")
     for line in read_text(path).splitlines():
         m = rx.match(line)
         if m:
             keys.append(m.group(1))
     return keys
+
+
+def expand_package_keys(path: Path, *, seen: set[Path] | None = None) -> list[str]:
+    if seen is None:
+        seen = set()
+    resolved = path.resolve()
+    if resolved in seen:
+        return []
+    seen.add(resolved)
+
+    expanded: list[str] = []
+    for key in parse_package_keys(path):
+        segment = SHARED_PACKAGE_SEGMENTS.get(key)
+        if segment is None:
+            expanded.append(key)
+            continue
+        expanded.extend(expand_package_keys(REPO_ROOT / segment, seen=seen))
+    return expanded
 
 
 def parse_doc_package_order(path: Path) -> list[str]:
@@ -246,10 +269,13 @@ def main() -> int:
     package_related = {
         "openquatt/oq_packages_duo.yaml",
         "openquatt/oq_packages_single.yaml",
+        "openquatt/oq_packages_shared_pre_policy.yaml",
+        "openquatt/oq_packages_shared_post_policy.yaml",
+        "openquatt/oq_packages_shared_tail.yaml",
         "docs/system-overview.md",
     }
     if not args.changed_only or any_changed(changed, package_related):
-        package_keys = parse_package_keys(pkg_duo_file)
+        package_keys = expand_package_keys(pkg_duo_file)
         doc_order = parse_doc_package_order(docs_system)
         expected_doc_order: list[str] = []
         for key in package_keys:
@@ -267,13 +293,22 @@ def main() -> int:
                 f"Package order drift: docs={doc_order}, expected={expected_doc_order}",
             )
 
-        single_keys = parse_package_keys(pkg_single_file)
+        single_keys = expand_package_keys(pkg_single_file)
         if "heatpump2" in single_keys:
             add(findings, "openquatt/oq_packages_single.yaml", 1, "Single package file should not include heatpump2.")
 
     # 4) Advisory changed-file guards for likely doc drift.
     if args.changed_only and changed:
-        if any_changed(changed, {"openquatt/oq_packages_duo.yaml", "openquatt/oq_packages_single.yaml"}) and not any_changed(changed, {"docs/system-overview.md"}):
+        if any_changed(
+            changed,
+            {
+                "openquatt/oq_packages_duo.yaml",
+                "openquatt/oq_packages_single.yaml",
+                "openquatt/oq_packages_shared_pre_policy.yaml",
+                "openquatt/oq_packages_shared_post_policy.yaml",
+                "openquatt/oq_packages_shared_tail.yaml",
+            },
+        ) and not any_changed(changed, {"docs/system-overview.md"}):
             add(
                 findings,
                 "docs/system-overview.md",
