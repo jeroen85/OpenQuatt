@@ -124,6 +124,8 @@ Normative safety principles:
 - FR-SUP-004: System shall enforce low-flow safety behavior when heating is requested.
 - FR-SUP-005: System shall support frost protection behavior when appropriate.
 - FR-SUP-006: System shall maintain a power-cap factor derived from electrical limits.
+- FR-SUP-007: In Power House mode, system shall apply low-load hysteresis and temporary CM2 re-entry blocking to reduce CM1<->CM2 chatter.
+- FR-SUP-008: System shall expose diagnostics indicating CM2 idle-exit cause and whether CM2 re-entry block is active.
 
 ### 7.2 Heating Strategy behavior
 
@@ -132,6 +134,7 @@ Normative safety principles:
 - FR-STR-003: Power House path shall include room-error correction and ramp limiting.
 - FR-STR-004: Heating-curve path shall include PID-based demand generation.
 - FR-STR-005: Invalid strategy inputs shall not produce uncontrolled demand.
+- FR-STR-006: Heating-curve path shall include near-zero demand stabilization to reduce rapid toggling around supply-target crossover.
 
 ### 7.3 Heat allocation behavior
 
@@ -141,6 +144,7 @@ Normative safety principles:
 - FR-HEAT-004: Allocation shall honor per-HP allowed-level switches.
 - FR-HEAT-005: Allocation shall enforce minimum-runtime anti-short-cycle behavior.
 - FR-HEAT-006: Allocation shall expose capacity/deficit telemetry.
+- FR-HEAT-007: Allocation shall support configurable upward demand ramp limiting.
 
 ### 7.4 Flow behavior
 

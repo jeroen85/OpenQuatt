@@ -94,6 +94,8 @@ Expected content pattern:
 - demand and cap tile row (`Demand raw`, `Demand filtered`, `Power cap demand`)
 - capacity gauges with visual deficit severity
 - trend charts for demand/power behavior
+- heating-curve anti-flip controls (`Curve Temp Deadband`, `Curve Demand Off Hold`)
+- heat allocation ramp control (`Demand filter ramp up`)
 
 Operational rule:
 
@@ -130,6 +132,13 @@ Expected content pattern:
 - side-by-side comparison of selected/local/CIC sources
 - debug-oriented status entities
 - low-level inspection cards that are too noisy for main operations
+- Power House low-load diagnostics:
+  - `Low-load dynamic thresholds`
+  - `CM2 idle-exit reason`
+  - `CM2 re-entry block active`
+  - `Low-load OFF fallback`, `Low-load ON fallback`, `Low-load CM2 re-entry block`
+- migration diagnostics:
+  - `Heat-enable state (shadow)` (`IDLE/PREHEAT/HEATING/POSTFLOW/LOCKOUT`)
 
 Operational rule:
 

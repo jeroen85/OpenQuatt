@@ -43,6 +43,9 @@ Before changing anything, record:
 - `Power House – P_req`
 - `Demand raw`
 - `Demand filtered`
+- `Low-load dynamic thresholds`
+- `CM2 idle-exit reason`
+- `CM2 re-entry block active`
 - `Total Power Input`
 - `Total Heat Power`
 - `Total COP`
@@ -73,12 +76,21 @@ What to watch:
 - `P_house` vs `P_req`
 - `Demand raw` and `Demand filtered`
 - CM2/CM3 stability
+- `Low-load dynamic thresholds`
+- `CM2 idle-exit reason`
+- `CM2 re-entry block active`
 
 Typical adjustments:
 
 - Too aggressive demand swings: increase deadband or reduce ramp-up.
 - Slow recovery after setback: increase ramp-up or Kp.
 - Overreaction around setpoint: reduce Kp or increase deadband.
+
+Low-load anti-flip controls (Power House):
+
+- `Low-load OFF fallback` and `Low-load ON fallback` are fallback thresholds when dynamic values are unavailable.
+- `Low-load CM2 re-entry block` defines how long CM2 re-entry is blocked after an idle-exit trip.
+- Dynamic thresholds (`pmin/off/on`) are clamped; this is expected and protects portability across installations.
 
 ### 4.2 Heating-curve path
 
@@ -93,12 +105,19 @@ What to watch:
 - `Heating Curve Supply Target`
 - selected supply temperature
 - `Demand Curve (raw)`
+- `Demand raw` and `Demand filtered` near zero edge
+
+Low-demand stabilization controls (Heating Curve):
+
+- `Curve Temp Deadband` reduces hunting around `Supply target`.
+- `Curve Demand Off Hold` delays final `1 -> 0` demand drop to avoid CM1/CM2 flip.
 
 ## 5. Heat Allocation Tuning
 
 Primary knobs:
 
 - `Minimum runtime`
+- `Demand filter ramp up`
 - `Single HP Assist ON Deficit`
 - `Single HP Assist OFF Deficit`
 - `Single HP Assist ON Hold`
@@ -183,6 +202,8 @@ Remember: fault state logic is timer-based and mode-context-dependent.
 | Symptom | First checks | Typical corrective action |
 |---|---|---|
 | Demand jumps too hard | `Demand raw`, strategy params | increase deadband / lower ramp-up |
+| CM1<->CM2 flips at low load | `Low-load dynamic thresholds`, `CM2 idle-exit reason`, `CM2 re-entry block active` | increase re-entry block or retune Power House ramp/deadband; verify `P_req` stays structurally below `off` when no sustained heat is needed |
+| Curve mode drops to 0 demand too quickly | `Curve Temp Deadband`, `Curve Demand Off Hold`, `Supply target` vs actual | increase deadband slightly or extend off-hold |
 | CM3 toggles often | deficit thresholds/timers | widen ON/OFF gap, increase hold times |
 | Flow oscillates | flow PI and setpoint | reduce Kp/Ki, verify hydraulics |
 | COP looks implausible | power and heat inputs | validate source values and power integration |

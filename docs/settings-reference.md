@@ -116,6 +116,9 @@ Key entities:
 - `Silent end time`
 - `CM3 deficit ON threshold`
 - `CM3 deficit OFF threshold`
+- `Low-load OFF fallback`
+- `Low-load ON fallback`
+- `Low-load CM2 re-entry block`
 
 Intent:
 
@@ -138,6 +141,8 @@ Key entities:
 - `Curve Tsupply @ -20/-10/0/5/10/15°C`
 - `Heating Curve PID Kp/Ki/Kd`
 - `Curve Fallback Tsupply (No Outside Temp)`
+- `Curve Temp Deadband`
+- `Curve Demand Off Hold`
 
 Intent:
 
@@ -149,6 +154,7 @@ Intent:
 Key entities:
 
 - `Minimum runtime`
+- `Demand filter ramp up`
 - `Single HP Assist ON Deficit`
 - `Single HP Assist OFF Deficit`
 - `Single HP Assist ON Hold`
@@ -223,6 +229,10 @@ Intent:
 - `Demand raw`
 - `Demand filtered`
 - `Demand Curve (raw)`
+- `Low-load dynamic thresholds`
+- `Heat-enable state (shadow)`
+- `CM2 idle-exit reason`
+- `CM2 re-entry block active`
 
 ### Flow telemetry
 
