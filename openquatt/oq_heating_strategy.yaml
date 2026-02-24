@@ -126,7 +126,7 @@ number:
     step: 0.01
     restore_value: true
     optimistic: true
-    initial_value: 0.1430914729633485
+    initial_value: ${oq_ph_deadband_default_k}
     entity_category: config
     web_server:
       sorting_group_id: oq_tuning_heat
