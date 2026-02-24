@@ -80,4 +80,4 @@ Use a consistent order per package where applicable:
    - `boiler_relay`
    - `hp1_set_working_mode`, `hp2_set_working_mode`
 4. Verify dashboard entity references are still valid.
-5. Run `./scripts/validate_local.sh` for combined config+compile validation.
+5. Run `./scripts/validate_local.sh full` for combined config+compile validation of all setup/profile targets.

@@ -16,6 +16,7 @@ packages: !include openquatt/oq_packages_duo.yaml
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
+  build_path: ${oq_build_path}
   project:
     name: ${project_name}
     version: ${project_version}

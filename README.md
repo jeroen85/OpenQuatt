@@ -144,7 +144,9 @@ esphome run openquatt_duo_waveshare.yaml
 ## Local Validation Helper
 
 ```bash
-./scripts/validate_local.sh
+./scripts/validate_local.sh quick    # default: snel itereren (1 compile)
+./scripts/validate_local.sh changed  # alleen impacted targets (obv git diff)
+./scripts/validate_local.sh full     # volledige 4-target matrix
 ```
 
 ## Hardware Profiles

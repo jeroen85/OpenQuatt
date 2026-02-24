@@ -4,6 +4,7 @@
 substitutions:
   <<: !include openquatt/oq_substitutions_common.yaml
   release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-single.manifest.json"
+  oq_build_path: "build/openquatt_single_heatpump_listener"
 
 packages:
   openquatt_hw_profile: !include openquatt/profiles/oq_substitutions_heatpump_listener.yaml

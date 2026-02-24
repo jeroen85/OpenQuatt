@@ -99,7 +99,9 @@ esphome compile openquatt.yaml
 Or run the helper script:
 
 ```bash
-./scripts/validate_local.sh
+./scripts/validate_local.sh quick
+./scripts/validate_local.sh changed
+./scripts/validate_local.sh full
 ```
 
 ## 6. Flash and Boot

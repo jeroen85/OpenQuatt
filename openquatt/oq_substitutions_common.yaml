@@ -18,6 +18,7 @@ hp_perf_map_header: "openquatt/includes/hp_perf_map.h" # C++ performance-map hea
 oq_setup_mode_header: "openquatt/includes/oq_setup_mode.h" # C++ setup mode include path.
 oq_setup_interface_header: "openquatt/includes/oq_setup_interface.h" # C++ setup interface include path.
 release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt.manifest.json" # OTA update manifest URL.
+oq_build_path: "build/openquatt"                      # ESPHome build cache path (can be overridden per entrypoint).
 
 # ----------------------------
 # HARDWARE
