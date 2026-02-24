@@ -15,10 +15,14 @@ jobs:
       fail-fast: false
       matrix:
         profile:
-          - id: waveshare
+          - id: duo-waveshare
             config: openquatt_waveshare.yaml
-          - id: heatpump-listener
+          - id: duo-heatpump-listener
             config: openquatt_heatpump_listener.yaml
+          - id: single-waveshare
+            config: openquatt_single_waveshare.yaml
+          - id: single-heatpump-listener
+            config: openquatt_single_heatpump_listener.yaml
 
     steps:
       - name: Checkout

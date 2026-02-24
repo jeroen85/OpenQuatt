@@ -46,10 +46,13 @@ Main entrypoint:
 - `openquatt.yaml`
 - `openquatt_waveshare.yaml`
 - `openquatt_heatpump_listener.yaml`
+- `openquatt_single_waveshare.yaml`
+- `openquatt_single_heatpump_listener.yaml`
 
 Package include file:
 
-- `openquatt/oq_packages.yaml`
+- `openquatt/oq_packages_duo.yaml`
+- `openquatt/oq_packages_single.yaml`
 
 Compile-time constants:
 
@@ -59,8 +62,10 @@ Compile-time constants:
 
 Dashboard YAML:
 
-- `docs/dashboard/openquatt_ha_dashboard_nl.yaml` (recommended default)
-- `docs/dashboard/openquatt_ha_dashboard_en.yaml`
+- `docs/dashboard/openquatt_ha_dashboard_nl.yaml` (duo, recommended default)
+- `docs/dashboard/openquatt_ha_dashboard_en.yaml` (duo)
+- `docs/dashboard/openquatt_ha_dashboard_nl_single.yaml` (single)
+- `docs/dashboard/openquatt_ha_dashboard_en_single.yaml` (single)
 
 ## 3. Baseline Runtime
 
@@ -71,8 +76,10 @@ Adjust `openquatt/oq_common.yaml` if you want environment-specific API encryptio
 
 Select the firmware entrypoint that matches your hardware:
 
-1. `openquatt_waveshare.yaml` for [Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm)
-2. `openquatt_heatpump_listener.yaml` for Heatpump Listener
+1. Duo + Waveshare: `openquatt_waveshare.yaml`
+2. Duo + Heatpump Listener: `openquatt_heatpump_listener.yaml`
+3. Single + Waveshare: `openquatt_single_waveshare.yaml`
+4. Single + Heatpump Listener: `openquatt_single_heatpump_listener.yaml`
 
 Each entrypoint loads:
 
@@ -106,7 +113,9 @@ esphome run openquatt.yaml
 After first boot, verify:
 
 1. Device appears in Home Assistant.
-2. Modbus HP entities update for both HP1 and HP2.
+2. Modbus HP entities update for your configured setup:
+   - single: HP1
+   - duo: HP1 and HP2
 3. `Control Mode` has a valid value.
 4. Selected source sensors (`Water Supply Temp (Selected)`, `Flow average (Selected)`, `Outside Temperature (Selected)`) update.
 5. No persistent `unknown` or stale feed state unless expected.
@@ -150,6 +159,8 @@ Check selected flow source and low-flow timer/fault logic states, not only insta
 
 After successful first run:
 
-1. Import either `docs/dashboard/openquatt_ha_dashboard_nl.yaml` or `docs/dashboard/openquatt_ha_dashboard_en.yaml` into Home Assistant.
+1. Import the matching dashboard into Home Assistant:
+   - duo: `docs/dashboard/openquatt_ha_dashboard_nl.yaml` or `docs/dashboard/openquatt_ha_dashboard_en.yaml`
+   - single: `docs/dashboard/openquatt_ha_dashboard_nl_single.yaml` or `docs/dashboard/openquatt_ha_dashboard_en_single.yaml`
 2. Read [Control Modes and Flow](control-modes-and-flow.md).
 3. Tune using [Settings Reference](settings-reference.md) and [Tuning and Troubleshooting](tuning-and-troubleshooting.md).

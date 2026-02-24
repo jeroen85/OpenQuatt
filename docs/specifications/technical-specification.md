@@ -44,14 +44,19 @@ Companion document:
 - `openquatt.yaml`: default top-level entrypoint (Waveshare profile)
 - `openquatt_waveshare.yaml`: explicit [Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm) entrypoint
 - `openquatt_heatpump_listener.yaml`: [Heatpump Listener](https://electropaultje.nl/product/heatpump-listener/) entrypoint
+- `openquatt_single_waveshare.yaml`: single setup + Waveshare entrypoint
+- `openquatt_single_heatpump_listener.yaml`: single setup + Heatpump Listener entrypoint
 - `openquatt_base.yaml`: shared base (project metadata, board/framework, package wiring)
+- `openquatt_base_single.yaml`: shared base for single setup package wiring
 - `openquatt/`: subsystem packages
 - `docs/dashboard/openquatt_ha_dashboard_nl.yaml`: HA dashboard definition (Dutch)
 - `docs/dashboard/openquatt_ha_dashboard_en.yaml`: HA dashboard definition (English)
+- `docs/dashboard/openquatt_ha_dashboard_nl_single.yaml`: HA dashboard definition (Dutch, single)
+- `docs/dashboard/openquatt_ha_dashboard_en_single.yaml`: HA dashboard definition (English, single)
 
 ### Package include order
 
-Defined in `openquatt/oq_packages.yaml` and must be preserved unless dependencies are intentionally reworked.
+Defined in `openquatt/oq_packages_duo.yaml` and `openquatt/oq_packages_single.yaml` and must be preserved unless dependencies are intentionally reworked.
 
 ## 4. Core Technical Ownership
 
@@ -270,7 +275,10 @@ Selected signals are consumed by strategy/flow logic.
 
 ## 14. HP IO Engine (Technical)
 
-`oq_HP_io` is instantiated twice (HP1 and HP2) with per-instance substitutions.
+`oq_HP_io` is instantiated per setup:
+
+- duo: twice (HP1 and HP2)
+- single: once (HP1)
 
 It defines:
 

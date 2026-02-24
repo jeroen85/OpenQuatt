@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-CONFIG_FILE="openquatt.yaml"
+CONFIGS=(
+  "openquatt_waveshare.yaml"
+  "openquatt_heatpump_listener.yaml"
+  "openquatt_single_waveshare.yaml"
+  "openquatt_single_heatpump_listener.yaml"
+)
 
 if ! command -v esphome >/dev/null 2>&1; then
   echo "Error: 'esphome' is niet gevonden in PATH." >&2
@@ -9,10 +14,19 @@ if ! command -v esphome >/dev/null 2>&1; then
   exit 127
 fi
 
-echo "[1/2] Valideren: esphome config ${CONFIG_FILE}"
-esphome config "${CONFIG_FILE}"
+total="${#CONFIGS[@]}"
+for i in "${!CONFIGS[@]}"; do
+  cfg="${CONFIGS[$i]}"
+  n=$((i + 1))
+  echo "[${n}/${total}] Valideren: esphome config ${cfg}"
+  esphome config "${cfg}"
+done
 
-echo "[2/2] Compileren: esphome compile ${CONFIG_FILE}"
-esphome compile "${CONFIG_FILE}"
+for i in "${!CONFIGS[@]}"; do
+  cfg="${CONFIGS[$i]}"
+  n=$((i + 1))
+  echo "[${n}/${total}] Compileren: esphome compile ${cfg}"
+  esphome compile "${cfg}"
+done
 
-echo "Klaar: validatie en compile succesvol."
+echo "Klaar: validatie en compile succesvol voor duo + single setups."

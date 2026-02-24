@@ -1,0 +1,39 @@
+# ==============================================================================
+# OpenQuatt - Package Includes
+# ==============================================================================
+# Package load order is intentional:
+# 1) Common platform runtime (API/OTA/UART/diagnostics)
+# 2) Supervisory/state
+# 3) Demand strategy
+# 4) Actuation layers (heat/flow/boiler)
+# 5) Aggregation/energy telemetry
+# 6) External inputs (CIC)
+# 7) Local sensors/source selection
+# 8) Debug/testing utilities
+# 9) Web UI
+# 10) Per-HP hardware adapters
+# ==============================================================================
+oq_common: !include oq_common.yaml
+oq_supervisory_controlmode: !include oq_supervisory_controlmode.yaml
+oq_heating_strategy: !include oq_heating_strategy.yaml
+oq_heat_control: !include oq_heat_control.yaml
+oq_flow_control: !include oq_flow_control.yaml
+oq_flow_autotune: !include oq_flow_autotune.yaml
+oq_boiler_control: !include oq_boiler_control.yaml
+oq_energy: !include oq_energy.yaml
+oq_cic: !include oq_cic.yaml
+oq_local_sensors: !include oq_local_sensors.yaml
+oq_debug_testing: !include oq_debug_testing.yaml
+oq_webserver: !include oq_webserver.yaml
+heatpump1: !include
+  file: oq_HP_io.yaml
+  vars:
+    hp_id: "hp1"
+    prefix: "HP1 - "
+    device_address: 0x01
+heatpump2: !include
+  file: oq_HP_io.yaml
+  vars:
+    hp_id: "hp2"
+    prefix: "HP2 - "
+    device_address: 0x02

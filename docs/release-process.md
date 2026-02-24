@@ -11,6 +11,10 @@ This project uses GitHub Actions for automated validation, firmware compilation,
     - `esphome compile openquatt_waveshare.yaml`
     - `esphome config openquatt_heatpump_listener.yaml`
     - `esphome compile openquatt_heatpump_listener.yaml`
+    - `esphome config openquatt_single_waveshare.yaml`
+    - `esphome compile openquatt_single_waveshare.yaml`
+    - `esphome config openquatt_single_heatpump_listener.yaml`
+    - `esphome compile openquatt_single_heatpump_listener.yaml`
     - Upload compiled firmware artifacts per profile
 - `/.github/workflows/docs-consistency.yml`
   - Trigger: push to `main`, pull requests
@@ -20,10 +24,10 @@ This project uses GitHub Actions for automated validation, firmware compilation,
 - `/.github/workflows/release-build.yml`
   - Trigger: tag push `v*` and manual dispatch
   - Actions:
-    - validate + compile both hardware profiles
-    - generate multi-build `openquatt.manifest.json` (ESP32-S3 + ESP32) for OTA update checks
+    - validate + compile duo/single across both hardware profiles
+    - generate `openquatt.manifest.json` (duo) and `openquatt-single.manifest.json` (single) for OTA update checks
     - create/update GitHub Release
-    - attach both profile firmware binaries and manifest to the release
+    - attach all setup/profile firmware binaries and manifests to the release
 
 ## Release Versioning
 
@@ -59,10 +63,19 @@ git push origin main --tags
    - `openquatt-heatpump-listener.firmware.bin`
    - `openquatt-heatpump-listener.firmware.ota.bin`
    - `openquatt-heatpump-listener.firmware.factory.bin`
+   - `openquatt-single-waveshare.firmware.bin`
+   - `openquatt-single-waveshare.firmware.ota.bin`
+   - `openquatt-single-waveshare.firmware.factory.bin`
+   - `openquatt-single-heatpump-listener.firmware.bin`
+   - `openquatt-single-heatpump-listener.firmware.ota.bin`
+   - `openquatt-single-heatpump-listener.firmware.factory.bin`
    - `openquatt.manifest.json`
+   - `openquatt-single.manifest.json`
 
 ## Notes
 
 - The baseline `openquatt.yaml` is secrets-free and suitable for CI builds.
-- OTA update entity in firmware reads `${release_manifest_url}` (default points to GitHub `releases/latest` manifest).
+- OTA update entity in firmware reads `${release_manifest_url}`:
+  - duo profile defaults to `openquatt.manifest.json`
+  - single profile overrides this to `openquatt-single.manifest.json`
 - Workflow files must remain directly under `.github/workflows/` (GitHub does not load workflows from nested subfolders).

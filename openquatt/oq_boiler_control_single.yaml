@@ -1,0 +1,137 @@
+# ==============================================================================
+# OpenQuatt – Boiler Control (single setup)
+# ==============================================================================
+#
+# Goal:
+#   Controls the electric inline heater (boiler) as auxiliary heating based on Control Mode (CM3).
+#
+# Role in architecture:
+#   Owner of the boiler relay; boiler control is passive and follows CM status from supervisory.
+#
+# What this package DOES do:
+#   - Switch boiler relay via configured output pin (`oq_boiler_relay_pin`)
+#   - Enables boiler at CM3; disables in all other CMs
+#   - Apply max-temperature protection on `water_supply_temp_selected` (hard limit)
+#   - Publish optional diagnostics (for example boiler status / optionally derived power)
+#
+# What this package DOES NOT do:
+#   - Does not determine Control Mode (supervisory does)
+#   - Does not control heat pumps or flow
+#   - Does not regulate temperature setpoints (only absolute max-temp protection)
+#
+# Key assumptions:
+#   - Boiler is hydraulically in series after HP1; `water_supply_temp_selected` is available for max-temp protection
+#   - Boiler has its own electrical feed; net-power limiter does not apply to boiler
+#
+# Interaction with Control Modes:
+#   - CM3 -> boiler ON (unless max-temp trip is active)
+#   - CM0/CM1/CM2/CM98 → boiler OFF
+#
+# Safety / fail-safe:
+#   - Hard max-temp trip at 60°C with hysteresis (exact values defined in code)
+#   - In CM1 (flow-holding), boiler is always off (via CM gating)
+#
+# ==============================================================================
+
+# ----------------------------
+# INTERNAL STATE
+# ----------------------------
+globals:
+  - id: boiler_max_temp_trip
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+# ----------------------------
+# OUTPUTS
+# ----------------------------
+output:
+  - platform: gpio
+    id: boiler_relay_out
+    pin: ${oq_boiler_relay_pin}
+
+# ----------------------------
+# ENTITIES
+# ----------------------------
+switch:
+  - platform: output
+    id: boiler_relay
+    name: "Boiler relay"
+    output: boiler_relay_out
+    icon: mdi:water-boiler
+    restore_mode: ALWAYS_OFF
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_boiler
+
+binary_sensor:
+  - platform: template
+    id: boiler_active
+    name: "Boiler active"
+    icon: mdi:fire
+    device_class: heat
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_boiler
+    lambda: |-
+      return id(boiler_relay).state;
+
+sensor:
+  - platform: template
+    id: boiler_heat_power
+    name: "Boiler Heat Power"
+    icon: mdi:radiator
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_boiler
+    lambda: |-
+      // Only meaningful in CM3 (boiler operation). Outside CM3, show 0 W.
+      const bool in_cm3 = (id(oq_control_mode_code) == 3);
+      if (!in_cm3) return 0.0f;
+
+      const float hp1_outlet_c = id(hp1_water_out_temp).state;
+      const float supply_c = id(water_supply_temp_selected).state;
+      const float flow_lph = id(flow_rate_selected).state;
+
+      // With missing measurements: return 0 W instead of NaN (cleaner dashboard + CM3 gate already enforced)
+      if (isnan(hp1_outlet_c) || isnan(supply_c) || isnan(flow_lph)) return 0.0f;
+
+      const float cp_j_per_kgk = ${oq_boiler_cp_j_per_kgk};  // J/(kg·K)
+      const float mass_flow_kgps = flow_lph / 3600.0f;       // kg/s (≈ L/h)
+      const float delta_t_k = supply_c - hp1_outlet_c;       // K
+
+      // Non-negative power (only added heat)
+      const float heat_power_w = mass_flow_kgps * cp_j_per_kgk * delta_t_k;
+      return (heat_power_w < 0.0f) ? 0.0f : heat_power_w;
+
+# ----------------------------
+# MAIN LOOP
+# ----------------------------
+interval:
+  - interval: ${oq_boiler_loop_s}s
+    then:
+      - lambda: |-
+          // Boiler follows Control Mode CM3 with max-temperature safety.
+          // OFF outside CM3.
+          const bool in_cm3 = (id(oq_control_mode_code) == 3);
+
+          // Max-temp safety (trip/reset with hysteresis)
+          const float supply_c = id(water_supply_temp_selected).state;
+          if (!isnan(supply_c)) {
+            if (!id(boiler_max_temp_trip) && supply_c >= ${oq_boiler_trip_c}) id(boiler_max_temp_trip) = true;
+            if (id(boiler_max_temp_trip) && supply_c <= ${oq_boiler_reset_c}) id(boiler_max_temp_trip) = false;
+          }
+
+          // Fail-safe: never allow boiler without a valid supply temperature.
+          const bool has_valid_supply_temp = !isnan(supply_c);
+          const bool boiler_allowed = in_cm3 && !id(boiler_max_temp_trip) && has_valid_supply_temp;
+
+          if (boiler_allowed) {
+            if (!id(boiler_relay).state) id(boiler_relay).turn_on();
+          } else {
+            if (id(boiler_relay).state) id(boiler_relay).turn_off();
+          }

@@ -1,0 +1,11 @@
+# ==============================================================================
+# OpenQuatt - Main Config (Single setup, Heatpump Listener)
+# ==============================================================================
+substitutions:
+  <<: !include openquatt/oq_substitutions_common.yaml
+  system_setup: "single"
+  release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-single.manifest.json"
+
+packages:
+  openquatt_hw_profile: !include openquatt/profiles/oq_substitutions_heatpump_listener.yaml
+  openquatt_base: !include openquatt_base_single.yaml

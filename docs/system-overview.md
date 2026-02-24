@@ -21,7 +21,8 @@ This document explains the current OpenQuatt architecture as implemented in the 
 OpenQuatt is driven from `openquatt.yaml` as the project entrypoint, which includes:
 
 - global project/board/framework config
-- package includes via `openquatt/oq_packages.yaml`
+- package includes via `openquatt/oq_packages_${system_setup}.yaml`
+  (`openquatt/oq_packages_duo.yaml` for duo and `openquatt/oq_packages_single.yaml` for single)
 
 Shared runtime services are loaded from `openquatt/oq_common.yaml`, including:
 
@@ -43,7 +44,7 @@ Package include order is intentional:
 10. `oq_local_sensors`
 11. `oq_debug_testing`
 12. `oq_webserver`
-13. `oq_HP_io` (HP1 and HP2 instances)
+13. `oq_HP_io` (duo: HP1 and HP2, single: HP1 only)
 
 This order mirrors data dependencies and ownership boundaries.
 

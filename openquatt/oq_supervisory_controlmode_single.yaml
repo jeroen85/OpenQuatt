@@ -1,0 +1,1255 @@
+# ==============================================================================
+# OpenQuatt – Supervisory Control Modes (single setup)
+# ==============================================================================
+#
+# Goal:
+#   Determines the active Control Mode (CM) as central state machine and publishes the system decision to the other packages.
+#
+# Role in architecture:
+#   Single owner of Control Mode; coordinates subsystems by selecting CM (CM0/CM1/CM2/CM3/CM98).
+#
+# What this package DOES do:
+#   - Determines base mode (idle / heating / frost) based on heat demand and conditions
+#   - Applies flow override: with insufficient flow -> CM1 (holding)
+#   - Supports test override: Force CM0/CM1 and Diagnostic Force CM98 (auto-expire)
+#   - Automatically switches CM2 <-> CM3 based on thermal deficit (`oq_P_deficit_w`) with timers/hysteresis
+#   - Publishes current CM as text_sensor (for example 'CM2', 'CM3')
+#
+# What this package DOES NOT do:
+#   - Does not control compressor levels directly (heat-control does)
+#   - Does not control pump PWM directly (flow-control does)
+#   - Implements no temperature control (handled by climate PID)
+#
+# Key assumptions:
+#   - Heat demand is available as normalized factor `f` (0–20) from strategy (`oq_demand_filtered`)
+#   - Thermal deficit (`oq_P_deficit_w`) is computed by heat-control for CM2<->CM3 promotion/demotion
+#   - Flow signal is available and sufficiently reliable for flow override
+#
+# Interaction with Control Modes:
+#   - CM0: idle (no heat demand)
+#   - CM1: holding (heat demand but insufficient flow)
+#   - CM2: heating (HP only)
+#   - CM3: heating (HP + boiler auxiliary heating)
+#   - CM98: frost
+#
+# Safety / fail-safe:
+#   - Flow override always has priority: at low flow, CM1 is enforced
+#   - Timers/hysteresis prevent oscillation between CM2 and CM3
+#   - Power limiter catches overshoot with conservative demand-cap fallback on NaN power input
+#
+# ==============================================================================
+
+# ----------------------------
+# TIME
+# ----------------------------
+time:
+  - platform: sntp
+    id: oq_time
+    timezone: Europe/Amsterdam
+
+# ----------------------------
+# INTERNAL STATE
+# ----------------------------
+globals:
+  # Frost hysteresis state for CM98 selection
+  - id: oq_cm_frost_prev
+    type: bool
+    restore_value: true
+    initial_value: 'false'
+
+  # Pre/Postflow timer (CM1)
+  - id: oq_cm1_until_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_cm1_next_after
+    type: int
+    restore_value: false
+    initial_value: '0'  # 0=CM0, 2=CM2, 98=CM98
+
+  # Flow interlock timers
+  - id: oq_lowflow_since_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_flow_recover_since_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_lowflow_fault_active
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: oq_cm2_idle_since_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_cm2_reentry_block_until_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_lowload_heat_latch
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: oq_cm2_entered_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
+  # Sticky Pump Protection (CM0-only)
+  - id: oq_cm0_since_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_sticky_until_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  # ----------------------------
+  # Boiler assist (CM3) state machine timers
+  - id: oq_cm_last_change_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_cm_last
+    type: int
+    restore_value: false
+    initial_value: '0'  # 0/1/2/3/98
+
+  - id: oq_cm3_need_since_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_cm3_demote_since_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
+  # ----------------------------
+  # Supervisory override (test/commissioning)
+  # AUTO / FORCE_CM0 / FORCE_CM1 / FORCE_CM98_DIAG (auto-expire)
+  - id: oq_override_last_mode
+    type: int
+    restore_value: false
+    initial_value: '0'  # 0=AUTO,1=CM0,2=CM1,3=CM98_DIAG
+  - id: oq_override_cm98_since_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_cm_override_code
+    type: int
+    restore_value: false
+    initial_value: '0'  # 0=AUTO,1=CM0,2=CM1,3=CM98_DIAG
+  - id: oq_control_mode_code
+    type: int
+    restore_value: false
+    initial_value: '0'  # 0,1,2,3,98
+
+  # ----------------------------
+  # Power limiter (16A guard) - total demand cap
+  # Cap is applied to total filtered demand f (0..20) before HP split.
+  - id: oq_power_cap_f
+    type: int
+    restore_value: false
+    initial_value: '20'
+
+  - id: oq_power_over_soft_s
+    type: int
+    restore_value: false
+    initial_value: '0'
+  - id: oq_power_over_peak_s
+    type: int
+    restore_value: false
+    initial_value: '0'
+  - id: oq_power_under_ok_s
+    type: int
+    restore_value: false
+    initial_value: '0'
+  # DEBUG-RUNTIME START: Power House low-load + shadow heat-enable diagnostics
+  # Dynamic low-load diagnostics (Power House)
+  - id: oq_low_load_pmin_dyn_w
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+  - id: oq_low_load_off_dyn_w
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+  - id: oq_low_load_on_dyn_w
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+  # Shadow heat-enable arbiter state machine (diagnostics only).
+  - id: oq_heat_enable_state_shadow
+    type: int
+    restore_value: false
+    initial_value: '0'  # 0=IDLE,1=PREHEAT,2=HEATING,3=POSTFLOW,4=LOCKOUT
+  - id: oq_heat_enable_preheat_until_ms_shadow
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_heat_enable_postflow_until_ms_shadow
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_heat_enable_lockout_until_ms_shadow
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_heat_enable_last_on_ms_shadow
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_heat_enable_last_off_ms_shadow
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  # DEBUG-RUNTIME END
+
+# ----------------------------
+# CONTROL INPUTS
+# ----------------------------
+select:
+  - platform: template
+    id: oq_cm_override
+    name: "CM Override"
+    icon: mdi:state-machine
+    options:
+      - Auto
+      - Force CM0
+      - Force CM1
+      - Force CM98
+    initial_option: Auto
+    restore_value: false
+    optimistic: true
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_control
+# ----------------------------
+# TUNING
+# ----------------------------
+number:
+  - platform: template
+    id: oq_sticky_pwm
+    name: "Sticky pump iPWM"
+    unit_of_measurement: "iPWM"
+    mode: slider
+    icon: mdi:pump
+    optimistic: true
+    min_value: 50
+    max_value: 850
+    step: 1
+    restore_value: true
+    initial_value: 850
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_tuning_flow
+  - platform: template
+    id: oq_silent_max_level
+    name: "Silent max level"
+    icon: mdi:speedometer-slow
+    min_value: 0
+    max_value: 10
+    step: 1
+    optimistic: true
+    restore_value: true
+    initial_value: 6
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_control
+
+  - platform: template
+    id: oq_day_max_level
+    name: "Day max level"
+    icon: mdi:speedometer
+    min_value: 0
+    max_value: 10
+    step: 1
+    optimistic: true
+    restore_value: true
+    initial_value: 10
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_control
+
+  - platform: template
+    id: oq_cm3_deficit_on_w
+    name: "CM3 deficit ON threshold"
+    icon: mdi:arrow-up-bold
+    unit_of_measurement: "W"
+    min_value: 0
+    max_value: 10000
+    step: 50
+    optimistic: true
+    restore_value: true
+    initial_value: 1000
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_control
+
+  - platform: template
+    id: oq_cm3_deficit_off_w
+    name: "CM3 deficit OFF threshold"
+    icon: mdi:arrow-down-bold
+    unit_of_measurement: "W"
+    min_value: 0
+    max_value: 10000
+    step: 50
+    optimistic: true
+    restore_value: true
+    initial_value: 400
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_control
+
+  - platform: template
+    id: oq_low_load_off_w
+    name: "Low-load OFF fallback"
+    icon: mdi:arrow-collapse-down
+    unit_of_measurement: "W"
+    min_value: 0
+    max_value: 3000
+    step: 25
+    optimistic: true
+    restore_value: true
+    initial_value: 900
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_control
+
+  - platform: template
+    id: oq_low_load_on_w
+    name: "Low-load ON fallback"
+    icon: mdi:arrow-expand-up
+    unit_of_measurement: "W"
+    min_value: 0
+    max_value: 3000
+    step: 25
+    optimistic: true
+    restore_value: true
+    initial_value: 1300
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_control
+
+  - platform: template
+    id: oq_low_load_reentry_block_s
+    name: "Low-load CM2 re-entry block"
+    icon: mdi:timer-lock-outline
+    unit_of_measurement: "s"
+    min_value: 0
+    max_value: 900
+    step: 5
+    optimistic: true
+    restore_value: true
+    initial_value: 300
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_control
+# ----------------------------
+# SCHEDULE INPUTS
+# ----------------------------
+datetime:
+  - platform: template
+    id: oq_silent_start_time
+    name: "Silent start time"
+    type: time
+    optimistic: true
+    restore_value: true
+    initial_value: "19:00:00"
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_control
+
+  - platform: template
+    id: oq_silent_end_time
+    name: "Silent end time"
+    type: time
+    optimistic: true
+    restore_value: true
+    initial_value: "07:00:00"
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_control
+# ----------------------------
+# DIAGNOSTICS
+# ----------------------------
+binary_sensor:
+  - platform: template
+    id: oq_silent_active
+    name: "Silent active"
+    icon: mdi:weather-night
+    device_class: running
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_overview
+
+  - platform: template
+    id: oq_sticky_active
+    name: "Sticky pump active"
+    icon: mdi:timer-cog
+    device_class: running
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_overview
+
+  - platform: template
+    id: oq_lowflow_fault_active_bs
+    name: "Lowflow fault active"
+    icon: mdi:water-alert
+    device_class: problem
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+  - platform: template
+    id: oq_time_valid
+    name: "Time valid"
+    icon: mdi:clock-check
+    device_class: connectivity
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+  # DEBUG-RUNTIME START: CM2 low-load / idle-exit diagnostics
+  - platform: template
+    id: oq_cm2_reentry_block_active_bs
+    name: "CM2 re-entry block active"
+    icon: mdi:timer-lock-outline
+    device_class: running
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+  # DEBUG-RUNTIME END
+
+text_sensor:
+  - platform: template
+    id: oq_control_mode
+    name: "Control Mode"
+    icon: mdi:state-machine
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+  - platform: template
+    id: oq_control_mode_label
+    name: "Control Mode (Label)"
+    icon: mdi:format-list-bulleted
+    update_interval: never
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_overview
+
+  - platform: template
+    id: oq_time_now_hhmm
+    name: "Time now (HH:MM)"
+    icon: mdi:clock-outline
+    update_interval: never
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+  - platform: template
+    id: oq_silent_window_hhmm
+    name: "Silent window (start-end)"
+    icon: mdi:calendar-clock
+    update_interval: never
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+  - platform: template
+    id: oq_silent_status
+    name: "Silent status"
+    icon: mdi:information-outline
+    update_interval: never
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+  # DEBUG-RUNTIME START: Power House low-load + shadow heat-enable diagnostics
+  - platform: template
+    id: oq_low_load_dyn_status
+    name: "Low-load dynamic thresholds"
+    icon: mdi:chart-bell-curve
+    update_interval: 5s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      const float pmin = id(oq_low_load_pmin_dyn_w);
+      const float off  = id(oq_low_load_off_dyn_w);
+      const float on   = id(oq_low_load_on_dyn_w);
+      char b[96];
+      if (isnan(pmin) || isnan(off) || isnan(on)) {
+        snprintf(b, sizeof(b), "dynamic: n/a (fallback in use)");
+      } else {
+        snprintf(b, sizeof(b), "pmin=%.0fW off=%.0fW on=%.0fW", pmin, off, on);
+      }
+      return std::string(b);
+
+  - platform: template
+    id: oq_heat_enable_state_shadow_ts
+    name: "Heat-enable state (shadow)"
+    icon: mdi:state-machine
+    update_interval: never
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+  - platform: template
+    id: oq_cm2_idle_exit_reason_ts
+    name: "CM2 idle-exit reason"
+    icon: mdi:information-outline
+    update_interval: never
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+  # DEBUG-RUNTIME END
+sensor:
+  - platform: template
+    id: power_cap_level
+    name: "Power cap demand"
+    icon: mdi:speedometer
+    unit_of_measurement: "step"
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    web_server:
+      sorting_group_id: oq_overview
+    lambda: |-
+      return (float) id(oq_power_cap_f);
+
+# ----------------------------
+# MAIN LOOP
+# ----------------------------
+interval:
+  - interval: ${oq_supervisory_loop_s}s
+    then:
+      - lambda: |-
+          // -------------------------------------------------
+          // Main phases:
+          // 1) Power limiter (safety net on total input power)
+          // 2) Flow interlock + frost detection
+          // 3) resolve_desired_cm() (override + CM1 timers + CM3 promote/demote)
+          // 4) apply_silent_window() (diagnostics + low-noise mode)
+          // 5) apply_sticky_pump_policy() (CM0 sticky + pump/PWM ownership)
+          // -------------------------------------------------
+          const uint32_t now_ms = (uint32_t) millis();
+          // -------------------------------------------------
+          // -------------------------------------------------
+          // Power Limiter (16A guard) - simplified safety net
+          // - Uses oq_total_power_input (W) from the active HP electrical input
+          // - Primary limiting happens in heat-control optimizer (COP-based).
+          // - Supervisory is only a safety net for measured overshoot.
+          //
+          // Targets:
+          //   Soft: 3400W  (prolonged overshoot -> mild cap)
+          //   Peak: 3650W  (short overshoot allowed; prolonged -> fast cap)
+          // -------------------------------------------------
+          {
+            const int dt_s = ${oq_supervisory_loop_s};
+            const float P_SOFT = ${oq_power_soft_w};
+            const float P_PEAK = ${oq_power_peak_w};
+            const float P_RECOVER = ${oq_power_recover_w};
+
+            // behavior
+            const int PEAK_TRIP_S = ${oq_power_peak_trip_s};
+            const int SOFT_TRIP_S = ${oq_power_soft_trip_s};
+            const int RECOVER_S = ${oq_power_recover_s};
+
+            float p = id(oq_total_power_input).state;
+
+            // Fail-safe: power not available -> cap total demand to 16
+            if (isnan(p)) {
+              id(oq_power_cap_f) = ${oq_power_cap_nan_f};
+              id(oq_power_over_soft_s) = 0;
+              id(oq_power_over_peak_s) = 0;
+              id(oq_power_under_ok_s)  = 0;
+            } else {
+              // Update timers
+              if (p > P_PEAK) id(oq_power_over_peak_s) += dt_s;
+              else id(oq_power_over_peak_s) = 0;
+
+              if (p > P_SOFT) id(oq_power_over_soft_s) += dt_s;
+              else id(oq_power_over_soft_s) = 0;
+
+              if (p < P_RECOVER) id(oq_power_under_ok_s) += dt_s;
+              else id(oq_power_under_ok_s) = 0;
+
+              // Event-based cap down
+              if (id(oq_power_over_peak_s) >= PEAK_TRIP_S) {
+                // fast step down
+                if (id(oq_power_cap_f) > 0) id(oq_power_cap_f) -= 2;
+                id(oq_power_over_peak_s) = 0;
+                id(oq_power_over_soft_s) = 0;
+                id(oq_power_under_ok_s)  = 0;
+              } else if (id(oq_power_over_soft_s) >= SOFT_TRIP_S) {
+                // mild step down
+                if (id(oq_power_cap_f) > 0) id(oq_power_cap_f) -= 1;
+                id(oq_power_over_soft_s) = 0;
+                id(oq_power_under_ok_s)  = 0;
+              }
+
+              // Faster recovery when comfortably below
+              if (id(oq_power_under_ok_s) >= RECOVER_S) {
+                if (id(oq_power_cap_f) < ${oq_power_cap_max_f}) id(oq_power_cap_f) += 1;
+                id(oq_power_under_ok_s) = 0;
+              }
+
+              // Clamp
+              if (id(oq_power_cap_f) < 0) id(oq_power_cap_f) = 0;
+              if (id(oq_power_cap_f) > ${oq_power_cap_max_f}) id(oq_power_cap_f) = ${oq_power_cap_max_f};
+            }
+          }
+
+          const uint32_t prepost_ms = (uint32_t)(${oq_cm_prepost_s}UL * 1000UL);
+          const float min_flow_lph = ${oq_cm_min_flow_lph};
+          const uint32_t flow_fault_ms = (uint32_t)(${oq_cm_flow_fault_s}UL * 1000UL);
+          const uint32_t flow_recover_ms = (uint32_t)(${oq_cm_flow_recover_s}UL * 1000UL);
+          // -------------------------------------------------
+          // Helpers: minimize Modbus writes (write-on-change)
+          // -------------------------------------------------
+          auto set_select_option = [&](auto *sel, const char *opt) {
+            if (sel == nullptr) return;
+            if (!sel->has_state() || sel->current_option() != opt) {
+              auto c = sel->make_call();
+              c.set_option(opt);
+              c.perform();
+            }
+          };
+
+          auto set_number_value = [&](auto *num, float value, float tol) {
+            if (num == nullptr) return;
+            const float cur = num->state;
+            if (isnan(cur) || fabsf(cur - value) > tol) {
+              auto c = num->make_call();
+              c.set_value(value);
+              c.perform();
+            }
+          };
+          auto publish_binary_if_changed = [](auto *bs, bool value) {
+            if (bs == nullptr) return;
+            if (!bs->has_state() || bs->state != value) bs->publish_state(value);
+          };
+          auto publish_text_if_changed = [](auto *ts, const std::string &value, std::string &last_value) {
+            if (ts == nullptr) return;
+            if (value != last_value) {
+              ts->publish_state(value);
+              last_value = value;
+            }
+          };
+          auto cm_code_to_id = [](int cm) -> const char* {
+            if (cm == 98) return "CM98";
+            if (cm == 3) return "CM3";
+            if (cm == 2) return "CM2";
+            if (cm == 1) return "CM1";
+            return "CM0";
+          };
+          auto cm_code_to_label = [&](int cm) -> std::string {
+            const char* cm_id = cm_code_to_id(cm);
+            if (strcmp(cm_id, "CM0") == 0) return std::string("CM0 - Standby");
+            if (strcmp(cm_id, "CM1") == 0) return std::string("CM1 - Preflow/Postflow");
+            if (strcmp(cm_id, "CM2") == 0) return std::string("CM2 - Heating - Heat Pump Only");
+            if (strcmp(cm_id, "CM3") == 0) return std::string("CM3 - Heating - Heat Pump + Boiler");
+            if (strcmp(cm_id, "CM98") == 0) return std::string("CM98 - Anti-Freeze Protection - Water Circulation");
+            return std::string("Unknown");
+          };
+          auto ms_window_active = [&](uint32_t until_ms)->bool {
+            if (until_ms == 0) return false;
+            return static_cast<uint32_t>(until_ms - now_ms) < 0x80000000UL;
+          };
+
+          // -------------------------------------------------
+          // 1) Heat demand
+          //    Baseline: demand_filtered > 0
+          //    CM2 idle-exit: if the HP is commanded/measured idle
+          //    for a while, force demand false to allow CM2->CM1->CM0.
+          // -------------------------------------------------
+          const char* cur_cm_state = id(oq_control_mode).state.c_str();
+          const bool in_cm2 = strcmp(cur_cm_state, "CM2") == 0;
+          const bool heating_req_raw = (id(oq_demand_filtered) > 0);
+          const bool curve_mode_active = (id(oq_heat_mode_code) == 1);
+
+          const int hp1_lvl = id(hp1_last_applied_level);
+          const bool both_levels_off = (hp1_lvl <= 0);
+
+          const float hp1_mode_raw = id(hp1_working_mode).state;
+          const bool hp1_mode_valid = !isnan(hp1_mode_raw);
+          const bool hp1_heating = hp1_mode_valid && ((int) roundf(hp1_mode_raw) == 2);
+          const bool both_modes_known = hp1_mode_valid;
+          const bool both_units_idle = both_modes_known && !hp1_heating;
+
+          bool heating_req = heating_req_raw;
+          float p_req_w = NAN;
+          float low_load_off_w = NAN;
+          float low_load_on_w = NAN;
+          bool reentry_block_active = false;
+          if (!curve_mode_active) {
+            // DEBUG-RUNTIME: dynamic low-load thresholds + latch/re-entry diagnostics (Power House).
+            // Power House low-load hysteresis on P_req to prevent CM1<->CM2 chattering.
+            // Prefer dynamic thresholds from perf-map level-1 thermal power.
+            auto clampf = [](float v, float lo, float hi)->float {
+              if (v < lo) return lo;
+              if (v > hi) return hi;
+              return v;
+            };
+            float off_w = id(oq_low_load_off_w).state; // fallback OFF
+            float on_w  = id(oq_low_load_on_w).state;  // fallback ON
+            if (isnan(off_w) || off_w < 0.0f) off_w = 900.0f;
+            if (isnan(on_w)  || on_w  < 0.0f) on_w  = 1300.0f;
+
+            const float Tamb = id(outside_temp_selected).state;
+            const float Tsup = id(oq_system_supply_temp).state;
+            float pmin_dyn = NAN;
+            if (!isnan(Tamb) && !isnan(Tsup)) {
+              pmin_dyn = oq_perf::interp_power_th_w(1, Tamb, Tsup);
+              if (isnan(pmin_dyn) || pmin_dyn <= 0.0f) pmin_dyn = NAN;
+            }
+            if (!isnan(pmin_dyn)) {
+              off_w = clampf(0.75f * pmin_dyn, 500.0f, 1600.0f);
+              on_w  = clampf(1.00f * pmin_dyn, 700.0f, 2200.0f);
+            }
+            if (on_w < off_w + 200.0f) on_w = off_w + 200.0f;
+            if (on_w > 2200.0f) on_w = 2200.0f;
+            if (off_w > on_w - 200.0f) off_w = fmaxf(500.0f, on_w - 200.0f);
+            low_load_off_w = off_w;
+            low_load_on_w = on_w;
+            id(oq_low_load_pmin_dyn_w) = pmin_dyn;
+            id(oq_low_load_off_dyn_w) = off_w;
+            id(oq_low_load_on_dyn_w) = on_w;
+
+            p_req_w = id(oq_phouse_req_w);
+            bool latch = id(oq_lowload_heat_latch);
+            if (!isnan(p_req_w)) {
+              if (!latch && p_req_w >= on_w) latch = true;
+              else if (latch && p_req_w <= off_w) latch = false;
+            } else {
+              // Fallback when P_req is unavailable.
+              latch = heating_req_raw;
+            }
+            id(oq_lowload_heat_latch) = latch;
+            heating_req = heating_req_raw && latch;
+
+            // Re-entry block: allow early release only when demand recovers clearly (P_req >= on_w).
+            reentry_block_active = ms_window_active(id(oq_cm2_reentry_block_until_ms));
+            if (reentry_block_active && !isnan(p_req_w) && p_req_w >= on_w) {
+              id(oq_cm2_reentry_block_until_ms) = 0;
+              reentry_block_active = false;
+            }
+          } else {
+            // Curve mode keeps original heat-request semantics.
+            id(oq_lowload_heat_latch) = heating_req_raw;
+            id(oq_cm2_reentry_block_until_ms) = 0;
+            reentry_block_active = false;
+            id(oq_low_load_pmin_dyn_w) = NAN;
+            id(oq_low_load_off_dyn_w) = NAN;
+            id(oq_low_load_on_dyn_w) = NAN;
+          }
+
+          const uint32_t cm2_idle_exit_ms = (uint32_t)(${oq_cm2_idle_exit_s}UL * 1000UL);
+          const uint32_t cm2_startup_grace_ms = (uint32_t)(${oq_cm2_min_run_s}UL * 1000UL);
+          const bool cm2_startup_grace_active =
+              in_cm2 && id(oq_cm2_entered_ms) != 0 &&
+              ((uint32_t)(now_ms - id(oq_cm2_entered_ms)) < cm2_startup_grace_ms);
+          const bool ph_high_load_idle_exit_block =
+              (!curve_mode_active) && !isnan(p_req_w) && !isnan(low_load_off_w) && (p_req_w > low_load_off_w);
+          // DEBUG-RUNTIME: expose why CM2 idle-exit path is armed/blocked/tripped.
+          std::string cm2_idle_exit_reason = "not_in_cm2";
+          if (in_cm2) {
+            if (!heating_req) cm2_idle_exit_reason = "no_heat_req";
+            else if (!both_levels_off) cm2_idle_exit_reason = "levels_on";
+            else if (!both_units_idle) cm2_idle_exit_reason = "units_not_idle";
+            else if (cm2_startup_grace_active) cm2_idle_exit_reason = "blocked_startup_grace";
+            else if (ph_high_load_idle_exit_block) cm2_idle_exit_reason = "blocked_high_load";
+            else cm2_idle_exit_reason = "timing";
+          }
+          bool cm2_idle_exit_trip = false;
+          if (in_cm2 && heating_req && both_levels_off && both_units_idle &&
+              !cm2_startup_grace_active && !ph_high_load_idle_exit_block) {
+            if (id(oq_cm2_idle_since_ms) == 0) id(oq_cm2_idle_since_ms) = now_ms;
+            if ((uint32_t)(now_ms - id(oq_cm2_idle_since_ms)) >= cm2_idle_exit_ms) {
+              heating_req = false;
+              cm2_idle_exit_trip = true;
+              cm2_idle_exit_reason = "trip";
+            }
+          } else {
+            id(oq_cm2_idle_since_ms) = 0;
+          }
+          if (!curve_mode_active) {
+            const uint32_t reentry_block_ms = (uint32_t) lroundf(id(oq_low_load_reentry_block_s).state) * 1000UL;
+            // Pad A behavior: set block only when CM2 idle-exit trips.
+            if (cm2_idle_exit_trip && reentry_block_ms > 0) {
+              id(oq_cm2_reentry_block_until_ms) = now_ms + reentry_block_ms;
+              reentry_block_active = true;
+            }
+            // During active block, CM2 may not be re-entered from non-CM2 states.
+            if (!in_cm2 && reentry_block_active) {
+              heating_req = false;
+            }
+          }
+          // DEBUG-RUNTIME: publish CM2 idle-exit reason + low-load re-entry block state.
+          static std::string last_cm2_idle_exit_reason;
+          publish_text_if_changed(
+              id(oq_cm2_idle_exit_reason_ts),
+              cm2_idle_exit_reason,
+              last_cm2_idle_exit_reason);
+          publish_binary_if_changed(id(oq_cm2_reentry_block_active_bs), reentry_block_active);
+
+          // -------------------------------------------------
+          // 1b) Shadow heat-enable arbiter (diagnostics only)
+          //     States: IDLE/PREHEAT/HEATING/POSTFLOW/LOCKOUT
+          // -------------------------------------------------
+          {
+            // DEBUG-RUNTIME: shadow state-machine for stepwise migration to a dedicated heat-enable arbiter.
+            const bool heat_req_shadow = heating_req;
+            const uint32_t min_run_ms = (uint32_t)(${oq_cm2_min_run_s}UL * 1000UL);
+            const uint32_t lockout_ms = curve_mode_active
+                ? 0
+                : (uint32_t) lroundf(id(oq_low_load_reentry_block_s).state) * 1000UL;
+
+            auto shadow_state_to_text = [](int st) -> const char* {
+              if (st == 1) return "PREHEAT";
+              if (st == 2) return "HEATING";
+              if (st == 3) return "POSTFLOW";
+              if (st == 4) return "LOCKOUT";
+              return "IDLE";
+            };
+
+            int st = id(oq_heat_enable_state_shadow);
+            if (st < 0 || st > 4) st = 0;
+
+            switch (st) {
+              case 0: { // IDLE
+                if (heat_req_shadow) {
+                  st = 1;
+                  id(oq_heat_enable_preheat_until_ms_shadow) = now_ms + prepost_ms;
+                }
+                break;
+              }
+              case 1: { // PREHEAT
+                if (!heat_req_shadow) {
+                  st = 0;
+                  id(oq_heat_enable_preheat_until_ms_shadow) = 0;
+                } else if (!ms_window_active(id(oq_heat_enable_preheat_until_ms_shadow))) {
+                  st = 2;
+                  id(oq_heat_enable_last_on_ms_shadow) = now_ms;
+                }
+                break;
+              }
+              case 2: { // HEATING
+                if (!heat_req_shadow &&
+                    (id(oq_heat_enable_last_on_ms_shadow) == 0 ||
+                     (uint32_t) (now_ms - id(oq_heat_enable_last_on_ms_shadow)) >= min_run_ms)) {
+                  st = 3;
+                  id(oq_heat_enable_postflow_until_ms_shadow) = now_ms + prepost_ms;
+                  id(oq_heat_enable_last_off_ms_shadow) = now_ms;
+                }
+                break;
+              }
+              case 3: { // POSTFLOW
+                if (heat_req_shadow) {
+                  st = 1;
+                  id(oq_heat_enable_preheat_until_ms_shadow) = now_ms + prepost_ms;
+                } else if (!ms_window_active(id(oq_heat_enable_postflow_until_ms_shadow))) {
+                  if (lockout_ms > 0) {
+                    st = 4;
+                    id(oq_heat_enable_lockout_until_ms_shadow) = now_ms + lockout_ms;
+                  } else {
+                    st = 0;
+                  }
+                }
+                break;
+              }
+              case 4: { // LOCKOUT
+                if (!ms_window_active(id(oq_heat_enable_lockout_until_ms_shadow))) {
+                  if (heat_req_shadow) {
+                    st = 1;
+                    id(oq_heat_enable_preheat_until_ms_shadow) = now_ms + prepost_ms;
+                  } else {
+                    st = 0;
+                  }
+                }
+                break;
+              }
+              default:
+                st = 0;
+                break;
+            }
+
+            id(oq_heat_enable_state_shadow) = st;
+            static std::string last_heat_enable_shadow_state;
+            publish_text_if_changed(
+                id(oq_heat_enable_state_shadow_ts),
+                std::string(shadow_state_to_text(st)),
+                last_heat_enable_shadow_state);
+          }
+
+          // -------------------------------------------------
+          // 2) Flow interlock status + timers
+          // -------------------------------------------------
+          const float flow = id(flow_rate_selected).state;
+          const bool flow_valid = !isnan(flow);
+          const bool flow_low = (!flow_valid) || (flow < min_flow_lph);
+
+          if (!heating_req) {
+            // No heating: reset flow interlock state
+            id(oq_lowflow_since_ms) = 0;
+            id(oq_flow_recover_since_ms) = 0;
+            id(oq_lowflow_fault_active) = false;
+          } else {
+            if (flow_low) {
+              // Start/continue low-flow timer
+              if (id(oq_lowflow_since_ms) == 0) id(oq_lowflow_since_ms) = now_ms;
+              id(oq_flow_recover_since_ms) = 0;
+
+              // Declare fault if low flow persists >= flow_fault_ms
+              const uint32_t dt = (uint32_t)(now_ms - id(oq_lowflow_since_ms));
+              if (dt >= flow_fault_ms) id(oq_lowflow_fault_active) = true;
+            } else {
+              // Flow OK: start/continue recovery timer if we were in fault
+              id(oq_lowflow_since_ms) = 0;
+              if (id(oq_lowflow_fault_active)) {
+                if (id(oq_flow_recover_since_ms) == 0) id(oq_flow_recover_since_ms) = now_ms;
+                const uint32_t dt = (uint32_t)(now_ms - id(oq_flow_recover_since_ms));
+                if (dt >= flow_recover_ms) {
+                  id(oq_lowflow_fault_active) = false;
+                  id(oq_flow_recover_since_ms) = 0;
+                }
+              } else {
+                id(oq_flow_recover_since_ms) = 0;
+              }
+            }
+          }
+
+          // Flow OK definition for diagnostics: NaN is NOT OK.
+          const bool flow_ok = flow_valid && (flow >= min_flow_lph);
+
+          // Internal interlock: only enforced when heating is requested.
+          const bool min_flow_ok = heating_req ? (!id(oq_lowflow_fault_active) && flow_ok) : true;
+
+          // Publish lowflow fault status (writes-only-on-change)
+          publish_binary_if_changed(id(oq_lowflow_fault_active_bs), id(oq_lowflow_fault_active));
+          // -------------------------------------------------
+          // 3) Frost condition (hysteresis + fail-safe) [CM98]
+          //    Relevant only when there is no heat demand.
+          //    Uses selected outside source to stay aligned with active source selection.
+          //    - ON: <5°C
+          //    - OFF: >6°C
+          //    - FAIL-SAFE: NaN -> frost ON
+          // -------------------------------------------------
+          const float outside_c = id(outside_temp_selected).state;
+
+          bool frost = false;
+          if (!heating_req) {
+            if (isnan(outside_c)) {
+              frost = true; // fail-safe
+            } else {
+              if (id(oq_cm_frost_prev)) {
+                frost = (outside_c < ${oq_cm_frost_off_c});
+              } else {
+                frost = (outside_c < ${oq_cm_frost_on_c});
+              }
+            }
+          }
+          id(oq_cm_frost_prev) = frost;
+
+          // -------------------------------------------------
+          // 4) CM selection with CM1 timer (pre/postflow) + flow interlock
+          // -------------------------------------------------
+          const char* cur_cm = id(oq_control_mode).state.c_str();
+          auto resolve_desired_cm = [&]() -> int {
+            // Helper: start CM1 window
+            auto start_cm1 = [&](int next_after)->void {
+              id(oq_cm1_until_ms) = now_ms + prepost_ms;
+              id(oq_cm1_next_after) = next_after; // 0=CM0, 2=CM2, 98=CM98
+            };
+
+            // Determine base target (without CM1 timer)
+            int base_target = 0; // CM0
+            if (heating_req) base_target = 2;     // CM2 desired
+            else if (frost)  base_target = 98;    // CM98 desired
+            else             base_target = 0;     // CM0
+
+            // Apply flow interlock: if heating requested but low-flow fault => cannot go to CM2
+            if (heating_req && (id(oq_lowflow_fault_active) || flow_low)) {
+              base_target = 1; // force CM1 as safe holding state
+            }
+
+            // Handle CM1 window:
+            // - If we're currently in CM1 and timer is running, keep CM1 until expiry.
+            // - When CM1 expires, move to oq_cm1_next_after (but recompute if heating/frost changed).
+            const bool now_before_until = ms_window_active(id(oq_cm1_until_ms));
+
+            // Supervisory override (test/commissioning)
+            // - Auto (normal logic)
+            // - Force CM0 / Force CM1
+            // - Force CM98 (auto-expire after 30 min)
+            int override_mode = id(oq_cm_override).active_index().value_or(0); // 0=AUTO,1=CM0,2=CM1,3=CM98_DIAG
+            if (override_mode < 0 || override_mode > 3) override_mode = 0;
+            id(oq_cm_override_code) = override_mode;
+            // Track entry into CM98 diagnostic override for auto-expire
+            if (override_mode != id(oq_override_last_mode)) {
+              id(oq_override_last_mode) = override_mode;
+              id(oq_override_cm98_since_ms) = (override_mode == 3) ? now_ms : 0;
+            }
+            // Auto-expire Diagnostic CM98 after 30 minutes
+            if (override_mode == 3) {
+              const uint32_t MAX_MS = (uint32_t)(${oq_cm98_diag_max_s}UL * 1000UL);
+              if (id(oq_override_cm98_since_ms) != 0 && (uint32_t)(now_ms - id(oq_override_cm98_since_ms)) >= MAX_MS) {
+                auto call = id(oq_cm_override).make_call();
+                call.set_option("Auto");
+                call.perform();
+                override_mode = 0;
+                id(oq_cm_override_code) = 0;
+                id(oq_override_last_mode) = 0;
+                id(oq_override_cm98_since_ms) = 0;
+              }
+            }
+
+            int desired_local = 0;
+            if (override_mode != 0) {
+              // Clear transition timers to avoid surprises when returning to Auto
+              id(oq_cm1_until_ms) = 0;
+              id(oq_cm1_next_after) = 0;
+              id(oq_cm3_need_since_ms) = 0;
+              id(oq_cm3_demote_since_ms) = 0;
+              if (override_mode == 1) desired_local = 0;       // CM0
+              else if (override_mode == 2) desired_local = 1;  // CM1
+              else if (override_mode == 3) desired_local = 98; // CM98
+            } else {
+              // Snapshot CM1 timer state (before we touch globals)
+              const bool cm1_timer_active  = (id(oq_cm1_until_ms) != 0);
+              const bool cm1_timer_running = cm1_timer_active && now_before_until;
+              const bool cm1_timer_expired = cm1_timer_active && !now_before_until;
+              const int  cm1_next_after    = id(oq_cm1_next_after);
+
+              // 1) If we're in CM1 and timer is still running -> stay CM1
+              if (cm1_timer_running && strcmp(cur_cm, "CM1") == 0) {
+                desired_local = 1;
+
+              // 2) If we're in CM1 and timer just expired -> advance to next_after
+              } else if (cm1_timer_expired && strcmp(cur_cm, "CM1") == 0) {
+                if (cm1_next_after == 2) {
+                  if (heating_req && base_target == 2) desired_local = 2;
+                  else if (base_target == 98)          desired_local = 98;
+                  else                                 desired_local = 0;
+                } else if (cm1_next_after == 0) {
+                  // Re-evaluate heating/frost when postflow expires.
+                  // If demand recovered during CM1-postflow, resume CM2 directly
+                  // instead of forcing an avoidable CM0 hop (anti-flip/chatter).
+                  // Scope this behavior to heating-curve strategy only; keep
+                  // Power House behavior unchanged.
+                  if (id(oq_heat_mode_code) == 1 && heating_req && base_target == 2) desired_local = 2;
+                  else if (base_target == 98)          desired_local = 98;
+                  else                                 desired_local = 0;
+                } else if (cm1_next_after == 98) {
+                  desired_local = 98;
+                } else {
+                  desired_local = (base_target == 2) ? 2 : (base_target == 98 ? 98 : 0);
+                }
+
+                ESP_LOGI("supervisory", "CM1 expired: next_after=%d, heating_req=%d, base_target=%d -> desired=%d",
+                         cm1_next_after, (int) heating_req, base_target, desired_local);
+
+                // Clear CM1 window only AFTER we have used next_after
+                id(oq_cm1_until_ms) = 0;
+                id(oq_cm1_next_after) = 0;
+              } else {
+                // 3) Not in CM1 (or no CM1 window active) -> normal transition logic
+                if (cm1_timer_expired) {
+                  id(oq_cm1_until_ms) = 0;
+                  id(oq_cm1_next_after) = 0;
+                }
+
+                if (heating_req) {
+                  if (base_target == 2) {
+                    if (strcmp(cur_cm, "CM2") == 0) {
+                      desired_local = 2;
+                    } else {
+                      start_cm1(2);
+                      desired_local = 1;
+                    }
+                  } else {
+                    desired_local = 1; // flow interlock holding state
+                  }
+                } else {
+                  if (strcmp(cur_cm, "CM2") == 0) {
+                    start_cm1(0); // postflow to CM0
+                    desired_local = 1;
+                  } else {
+                    desired_local = (base_target == 98) ? 98 : 0;
+                  }
+                }
+              }
+
+              // CM3 (boiler assist) auto-switching
+              // Promote/Demote: deficit-based (thermal deficit) + timers/hysteresis
+              const float deficit_w = id(oq_P_deficit_w);
+              const float on_th = id(oq_cm3_deficit_on_w).state;
+              const float off_th = id(oq_cm3_deficit_off_w).state;
+              const bool need_on = (!isnan(deficit_w) && deficit_w >= on_th);
+              const bool ok_off  = (isnan(deficit_w) || deficit_w <= off_th);
+
+              const int cm_now = (strcmp(cur_cm, "CM3") == 0) ? 3 : (strcmp(cur_cm, "CM2") == 0) ? 2 : (strcmp(cur_cm, "CM1") == 0) ? 1 : (strcmp(cur_cm, "CM98") == 0) ? 98 : 0;
+              const uint32_t T_ON_MS = (uint32_t)(${oq_cm3_promote_s}UL * 1000UL);
+              const uint32_t T_OFF_MS = (uint32_t)(${oq_cm3_demote_s}UL * 1000UL);
+              const uint32_t MIN_CM3_MS = (uint32_t)(${oq_cm3_min_run_s}UL * 1000UL);
+              const uint32_t MIN_CM2_MS = (uint32_t)(${oq_cm2_min_run_s}UL * 1000UL);
+
+              if (cm_now == 2) {
+                if (now_ms - id(oq_cm_last_change_ms) >= MIN_CM2_MS) {
+                  if (need_on) {
+                    if (id(oq_cm3_need_since_ms) == 0) id(oq_cm3_need_since_ms) = now_ms;
+                    if (now_ms - id(oq_cm3_need_since_ms) >= T_ON_MS) desired_local = 3;
+                  } else {
+                    id(oq_cm3_need_since_ms) = 0;
+                  }
+                }
+              } else if (cm_now == 3) {
+                if (now_ms - id(oq_cm_last_change_ms) >= MIN_CM3_MS) {
+                  if (ok_off) {
+                    if (id(oq_cm3_demote_since_ms) == 0) id(oq_cm3_demote_since_ms) = now_ms;
+                    if (now_ms - id(oq_cm3_demote_since_ms) >= T_OFF_MS) desired_local = 2;
+                  } else {
+                    id(oq_cm3_demote_since_ms) = 0;
+                  }
+                }
+              } else {
+                id(oq_cm3_need_since_ms) = 0;
+                id(oq_cm3_demote_since_ms) = 0;
+              }
+            }
+            return desired_local;
+          };
+          const int desired = resolve_desired_cm();
+          const char* desired_cm = cm_code_to_id(desired);
+          id(oq_control_mode_code) = desired;
+          // -------------------------------------------------
+          // 5) Publish CM (writes-only-on-change)
+          // -------------------------------------------------
+          if (id(oq_control_mode).state != desired_cm) {
+            id(oq_control_mode).publish_state(desired_cm);
+            if (desired == 2) {
+              id(oq_cm2_entered_ms) = now_ms;
+            }
+          }
+          static std::string last_control_mode_label;
+          publish_text_if_changed(id(oq_control_mode_label), cm_code_to_label(desired), last_control_mode_label);
+
+          auto apply_silent_window = [&]() -> void {
+            // Silent window + diagnostics + low-noise mode selection.
+            bool silent_active = false;
+            auto now_time = id(oq_time).now();
+            const bool time_valid = now_time.is_valid();
+
+            static bool last_time_valid_diag = false;
+            if (time_valid != last_time_valid_diag) {
+              id(oq_time_valid).publish_state(time_valid);
+              last_time_valid_diag = time_valid;
+            }
+
+            std::string now_hhmm = "invalid";
+            if (time_valid) {
+              char buf[6];
+              snprintf(buf, sizeof(buf), "%02d:%02d", now_time.hour, now_time.minute);
+              now_hhmm = std::string(buf);
+            }
+            static std::string last_now_hhmm;
+            publish_text_if_changed(id(oq_time_now_hhmm), now_hhmm, last_now_hhmm);
+
+            auto s = id(oq_silent_start_time).state_as_esptime();
+            auto e = id(oq_silent_end_time).state_as_esptime();
+            char win_buf[13];
+            snprintf(win_buf, sizeof(win_buf), "%02d:%02d-%02d:%02d", s.hour, s.minute, e.hour, e.minute);
+            std::string window_hhmm(win_buf);
+            static std::string last_window_hhmm;
+            publish_text_if_changed(id(oq_silent_window_hhmm), window_hhmm, last_window_hhmm);
+
+            std::string silent_status;
+            if (!time_valid) {
+              silent_active = false; // fail-safe
+              silent_status = "time_invalid";
+            } else {
+              const int cur_min = now_time.hour * 60 + now_time.minute;
+              int start_min = s.hour * 60 + s.minute;
+              int end_min   = e.hour * 60 + e.minute;
+              start_min = std::max(0, std::min(1439, start_min));
+              end_min   = std::max(0, std::min(1439, end_min));
+
+              if (start_min == end_min) {
+                silent_active = false; // window disabled
+                silent_status = "window_disabled";
+              } else if (start_min < end_min) {
+                silent_active = (cur_min >= start_min) && (cur_min < end_min);
+                silent_status = silent_active ? "in_window" : "out_of_window";
+              } else {
+                // over midnight
+                silent_active = (cur_min >= start_min) || (cur_min < end_min);
+                silent_status = silent_active ? "in_window" : "out_of_window";
+              }
+            }
+
+            static std::string last_silent_status;
+            publish_text_if_changed(id(oq_silent_status), silent_status, last_silent_status);
+
+            static bool last_time_valid = false;
+            if (time_valid && !last_time_valid) {
+              id(oq_silent_active).publish_state(silent_active);
+            }
+            last_time_valid = time_valid;
+
+            if (id(oq_silent_active).state != silent_active) {
+              id(oq_silent_active).publish_state(silent_active);
+            }
+
+            const char* silent_opt = silent_active ? "On" : "Off";
+            set_select_option(id(hp1_low_noise_mode), silent_opt);
+          };
+
+          auto apply_sticky_pump_policy = [&]() -> void {
+            // Sticky Pump Protection (CM0-only) + pump/PWM ownership.
+            const uint32_t sticky_wait_ms = (uint32_t)(${oq_cm0_sticky_wait_s}UL * 1000UL);
+            const uint32_t sticky_run_ms = (uint32_t)(${oq_cm0_sticky_run_s}UL * 1000UL);
+            const bool in_cm0 = (strcmp(desired_cm, "CM0") == 0);
+
+            if (!in_cm0) {
+              id(oq_cm0_since_ms) = 0;
+              id(oq_sticky_until_ms) = 0;
+            } else {
+              if (id(oq_cm0_since_ms) == 0) id(oq_cm0_since_ms) = now_ms;
+
+              bool sticky_active_local = ms_window_active(id(oq_sticky_until_ms));
+              if (!sticky_active_local) {
+                if (id(oq_sticky_until_ms) != 0) {
+                  id(oq_sticky_until_ms) = 0;
+                  id(oq_cm0_since_ms) = now_ms;
+                }
+                const uint32_t dt = (uint32_t)(now_ms - id(oq_cm0_since_ms));
+                if (dt >= sticky_wait_ms) {
+                  id(oq_sticky_until_ms) = now_ms + sticky_run_ms;
+                  sticky_active_local = true;
+                }
+              }
+
+              const bool cur_st = id(oq_sticky_active).state;
+              if (cur_st != sticky_active_local) {
+                id(oq_sticky_active).publish_state(sticky_active_local);
+              }
+            }
+
+            const bool sticky_active = in_cm0 && ms_window_active(id(oq_sticky_until_ms));
+            const bool pump_on = (strcmp(desired_cm, "CM0") != 0) || sticky_active;
+            set_select_option(id(hp1_set_pump_mode), pump_on ? "On" : "Off");
+
+            if (strcmp(desired_cm, "CM0") == 0) {
+              const float stop_pwm = ${oq_cm0_pump_stop_ipwm};
+              const float target_pwm = sticky_active ? (float) id(oq_sticky_pwm).state : stop_pwm;
+              set_number_value(id(hp1_pump_speed), target_pwm, 1.0f);
+            } else {
+              if (id(oq_sticky_active).state) id(oq_sticky_active).publish_state(false);
+            }
+          };
+
+          apply_silent_window();
+          apply_sticky_pump_policy();

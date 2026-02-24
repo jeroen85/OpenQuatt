@@ -1,0 +1,359 @@
+# ==============================================================================
+# OpenQuatt - Heat Control (single setup)
+# ==============================================================================
+# Purpose:
+# - Consume normalized heat demand (oq_demand_raw, 0..20)
+# - Apply filtering/capping and map demand to HP1 compressor levels
+# - Publish HP capacity/deficit telemetry for supervisory CM3 decisions
+# ==============================================================================
+
+number:
+  - platform: template
+    id: oq_min_runtime_min
+    name: "Minimum runtime"
+    icon: mdi:timer-cog-outline
+    unit_of_measurement: "min"
+    min_value: 0
+    max_value: 240
+    step: 1
+    mode: slider
+    restore_value: true
+    optimistic: true
+    initial_value: 30
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+  - platform: template
+    id: oq_demand_filter_ramp_up_step_min
+    name: "Demand filter ramp up"
+    icon: mdi:stairs-up
+    unit_of_measurement: "step/min"
+    min_value: 1
+    max_value: 20
+    step: 1
+    mode: slider
+    restore_value: true
+    optimistic: true
+    initial_value: 1
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+globals:
+  - id: oq_demand_filtered
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_P_hp_cap_w
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+
+  - id: oq_P_deficit_w
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+
+sensor:
+  - platform: template
+    id: oq_total_power_input
+    name: "Total Power Input"
+    icon: mdi:flash
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_performance
+    lambda: |-
+      const float hp1_power_w = id(hp1_power_input).state;
+      return isnan(hp1_power_w) ? 0.0f : hp1_power_w;
+
+  - platform: template
+    id: oq_total_heat_power
+    name: "Total Heat Power"
+    icon: mdi:radiator
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_performance
+    lambda: |-
+      return id(hp1_heat_power).state;
+
+  - platform: template
+    id: oq_total_cop
+    name: "Total COP"
+    icon: mdi:chart-bell-curve-cumulative
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_performance
+    lambda: |-
+      const float total_input_w = id(oq_total_power_input).state;
+      const float total_heat_w = id(oq_total_heat_power).state;
+
+      if (isnan(total_input_w) || isnan(total_heat_w)) return NAN;
+      if (fabsf(total_input_w) < ${oq_cop_min_input_w}) return NAN;
+      return total_heat_w / total_input_w;
+
+  - platform: template
+    id: oq_demand_raw_sensor
+    name: "Demand raw"
+    icon: mdi:chart-line
+    unit_of_measurement: "step"
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return (float) id(oq_demand_raw);
+
+  - platform: template
+    id: oq_demand_filtered_sensor
+    name: "Demand filtered"
+    icon: mdi:chart-line-variant
+    unit_of_measurement: "step"
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return (float) id(oq_demand_filtered);
+
+  - platform: template
+    id: oq_hp1_compressor_level_sensor
+    name: "HP1 compressor level"
+    icon: mdi:stairs
+    unit_of_measurement: "lvl"
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      if (!id(hp1_compressor_level).has_state()) return NAN;
+      auto idx = id(hp1_compressor_level).active_index();
+      if (!idx.has_value()) return NAN;
+      return (float) idx.value();
+
+  - platform: template
+    id: oq_hp_capacity_w_sensor
+    name: "HP capacity (W)"
+    icon: mdi:radiator
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    web_server:
+      sorting_group_id: oq_overview
+    lambda: |-
+      return id(oq_P_hp_cap_w);
+
+  - platform: template
+    id: oq_hp_deficit_w_sensor
+    name: "HP deficit (W)"
+    icon: mdi:alert-circle-outline
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    web_server:
+      sorting_group_id: oq_overview
+    lambda: |-
+      return id(oq_P_deficit_w);
+
+text_sensor:
+  - platform: template
+    id: oq_runtime_lead_hp_sensor
+    name: "Runtime lead HP"
+    icon: mdi:source-branch
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return std::string("HP1");
+
+button:
+  - platform: template
+    id: oq_reset_runtime
+    name: "Reset Runtime Counter (HP1)"
+    icon: mdi:restart
+    web_server:
+      sorting_group_id: oq_tuning_heat
+    on_press:
+      - lambda: |-
+          id(hp1_minutes) = 0;
+          ESP_LOGW("quatt", "Runtime counter reset (HP1).");
+
+interval:
+  - interval: ${oq_heat_loop_s}s
+    then:
+      - lambda: |-
+          const uint32_t now_ms = (uint32_t) millis();
+          const int demand_max_f = (int) ${oq_strategy_demand_max_f};
+
+          int raw = id(oq_demand_raw);
+          raw = std::max(0, std::min(demand_max_f, raw));
+
+          int ramp_up_step_min = (int) lroundf(id(oq_demand_filter_ramp_up_step_min).state);
+          if (ramp_up_step_min < 1) ramp_up_step_min = 1;
+          if (ramp_up_step_min > demand_max_f) ramp_up_step_min = demand_max_f;
+
+          int f = id(oq_demand_filtered);
+          if (raw > f) {
+            f = std::min(f + ramp_up_step_min, raw);
+          } else if (raw == 0 && f == 1) {
+            f = 0;
+          } else if (raw <= (f - 2)) {
+            f = raw;
+          }
+          f = std::max(0, std::min(demand_max_f, f));
+
+          int f_cap = id(oq_power_cap_f);
+          f_cap = std::max(0, std::min(demand_max_f, f_cap));
+          if (f > f_cap) f = f_cap;
+
+          id(oq_demand_filtered) = f;
+
+          auto level_allowed = [&](int level)->bool {
+            switch (level) {
+              case 1: return id(hp1_lvl_1).state;
+              case 2: return id(hp1_lvl_2).state;
+              case 3: return id(hp1_lvl_3).state;
+              case 4: return id(hp1_lvl_4).state;
+              case 5: return id(hp1_lvl_5).state;
+              case 6: return id(hp1_lvl_6).state;
+              case 7: return id(hp1_lvl_7).state;
+              case 8: return id(hp1_lvl_8).state;
+              case 9: return id(hp1_lvl_9).state;
+              case 10: return id(hp1_lvl_10).state;
+              default: return true;
+            }
+          };
+
+          auto pick_allowed = [&](int req)->int {
+            if (req <= 0) return 0;
+            req = std::max(1, std::min(10, req));
+            if (level_allowed(req)) return req;
+            for (int l = req - 1; l >= 1; l--) if (level_allowed(l)) return l;
+            for (int l = req + 1; l <= 10; l++) if (level_allowed(l)) return l;
+            return 0;
+          };
+
+          int level_cap = (int) roundf(id(oq_day_max_level).state);
+          if (id(oq_silent_active).state) level_cap = (int) roundf(id(oq_silent_max_level).state);
+          level_cap = std::max(0, std::min(10, level_cap));
+
+          const float Tamb = id(outside_temp_selected).state;
+          const float Tsup = id(oq_system_supply_temp).state;
+          float cap_w = 0.0f;
+          if (!isnan(Tamb) && !isnan(Tsup) && level_cap > 0) {
+            for (int lvl = 1; lvl <= level_cap; lvl++) {
+              if (!level_allowed(lvl)) continue;
+              const float p = oq_perf::interp_power_th_w(lvl, Tamb, Tsup);
+              if (!isnan(p) && p > cap_w) cap_w = p;
+            }
+          }
+          id(oq_P_hp_cap_w) = cap_w;
+
+          float req_w = id(oq_phouse_req_w);
+          if (isnan(req_w)) req_w = 0.0f;
+          float deficit_w = req_w - cap_w;
+          if (deficit_w < 0.0f) deficit_w = 0.0f;
+          id(oq_P_deficit_w) = deficit_w;
+
+          const int cm_code = id(oq_control_mode_code);
+          const bool cm_allows_hp = (cm_code == 2 || cm_code == 3);
+          const char* lvl_opts[11] = {"0","1","2","3","4","5","6","7","8","9","10"};
+
+          auto set_mode = [&](bool heating) {
+            const char* opt = heating ? "Heating" : "Standby";
+            if (!id(hp1_set_working_mode).has_state() || id(hp1_set_working_mode).current_option() != opt) {
+              auto c = id(hp1_set_working_mode).make_call();
+              c.set_option(opt);
+              c.perform();
+            }
+          };
+
+          auto mode_is_heating = [&]()->bool {
+            const float m = id(hp1_working_mode).state;
+            return !isnan(m) && ((int) roundf(m) == 2);
+          };
+
+          auto mode_target_is_heating = [&]()->bool {
+            return id(hp1_set_working_mode).has_state() && id(hp1_set_working_mode).current_option() == "Heating";
+          };
+
+          auto apply_level = [&](int req_level)->int {
+            req_level = std::max(0, std::min(10, req_level));
+            if (req_level > 0) set_mode(true);
+            else set_mode(false);
+
+            int applied = req_level;
+            if (applied > level_cap) applied = level_cap;
+
+            if (req_level > 0 && !mode_is_heating() && !mode_target_is_heating()) {
+              applied = 0;
+            }
+
+            auto idx = id(hp1_compressor_level).active_index();
+            const int cur = idx.has_value() ? (int) idx.value() : -1;
+            if (cur != applied) {
+              auto c = id(hp1_compressor_level).make_call();
+              c.set_option(lvl_opts[applied]);
+              c.perform();
+            }
+
+            return applied;
+          };
+
+          if (!cm_allows_hp) {
+            set_mode(false);
+            apply_level(0);
+            if (id(hp1_last_applied_level) > 0) id(hp1_last_stop_ms) = now_ms;
+            id(hp1_last_applied_level) = 0;
+            return;
+          }
+
+          int hp1_req = 0;
+          if (f > 0 && level_cap > 0) {
+            hp1_req = (f * level_cap + demand_max_f - 1) / demand_max_f;
+            hp1_req = std::max(1, std::min(level_cap, hp1_req));
+          }
+
+          hp1_req = pick_allowed(hp1_req);
+
+          const int min_rt = (int) roundf(id(oq_min_runtime_min).state);
+          if (min_rt > 0) {
+            const uint32_t min_rt_ms = (uint32_t) min_rt * 60000UL;
+            const uint32_t hp1_rt_ms = (uint32_t) (now_ms - id(hp1_last_start_ms));
+            if (hp1_req == 0 && id(hp1_last_applied_level) > 0 && hp1_rt_ms < min_rt_ms) {
+              hp1_req = pick_allowed(1);
+            }
+          }
+
+          const int hp1_applied = apply_level(hp1_req);
+          const int prev = id(hp1_last_applied_level);
+
+          if (prev == 0 && hp1_applied > 0) {
+            id(hp1_last_start_ms) = now_ms;
+          } else if (prev > 0 && hp1_applied == 0) {
+            id(hp1_last_stop_ms) = now_ms;
+          }
+
+          if (hp1_applied > 0) {
+            const float mode_raw = id(hp1_working_mode).state;
+            const bool heating_now = !isnan(mode_raw) && ((int) roundf(mode_raw) == 2);
+            if (heating_now) id(hp1_minutes)++;
+          }
+
+          id(hp1_last_applied_level) = hp1_applied;

@@ -153,7 +153,8 @@ def main() -> int:
     docs_settings = REPO_ROOT / "docs/settings-reference.md"
     docs_tuning = REPO_ROOT / "docs/tuning-and-troubleshooting.md"
     docs_system = REPO_ROOT / "docs/system-overview.md"
-    pkg_file = REPO_ROOT / "openquatt/oq_packages.yaml"
+    pkg_duo_file = REPO_ROOT / "openquatt/oq_packages_duo.yaml"
+    pkg_single_file = REPO_ROOT / "openquatt/oq_packages_single.yaml"
     dash_en = REPO_ROOT / "docs/dashboard/openquatt_ha_dashboard_en.yaml"
     dash_nl = REPO_ROOT / "docs/dashboard/openquatt_ha_dashboard_nl.yaml"
 
@@ -241,13 +242,14 @@ def main() -> int:
             if phrase not in home_text:
                 add(findings, "docs/home-assistant-dashboard.md", 1, f"Missing dashboard docs phrase: {phrase}")
 
-    # 3) Package order in docs should mirror oq_packages.yaml.
+    # 3) Package order in docs should mirror the duo package include file.
     package_related = {
-        "openquatt/oq_packages.yaml",
+        "openquatt/oq_packages_duo.yaml",
+        "openquatt/oq_packages_single.yaml",
         "docs/system-overview.md",
     }
     if not args.changed_only or any_changed(changed, package_related):
-        package_keys = parse_package_keys(pkg_file)
+        package_keys = parse_package_keys(pkg_duo_file)
         doc_order = parse_doc_package_order(docs_system)
         expected_doc_order: list[str] = []
         for key in package_keys:
@@ -265,9 +267,13 @@ def main() -> int:
                 f"Package order drift: docs={doc_order}, expected={expected_doc_order}",
             )
 
+        single_keys = parse_package_keys(pkg_single_file)
+        if "heatpump2" in single_keys:
+            add(findings, "openquatt/oq_packages_single.yaml", 1, "Single package file should not include heatpump2.")
+
     # 4) Advisory changed-file guards for likely doc drift.
     if args.changed_only and changed:
-        if any_changed(changed, {"openquatt/oq_packages.yaml"}) and not any_changed(changed, {"docs/system-overview.md"}):
+        if any_changed(changed, {"openquatt/oq_packages_duo.yaml", "openquatt/oq_packages_single.yaml"}) and not any_changed(changed, {"docs/system-overview.md"}):
             add(
                 findings,
                 "docs/system-overview.md",
@@ -302,4 +308,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

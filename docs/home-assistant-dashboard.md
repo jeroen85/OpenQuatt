@@ -4,9 +4,13 @@ Dashboard source:
 
 - `docs/dashboard/openquatt_ha_dashboard_nl.yaml`
 - `docs/dashboard/openquatt_ha_dashboard_en.yaml`
+- `docs/dashboard/openquatt_ha_dashboard_nl_single.yaml`
+- `docs/dashboard/openquatt_ha_dashboard_en_single.yaml`
 - `docs/dashboard/README.md`
 
 The dashboard is designed as a practical operations console with the **Sections** layout.
+
+Single setup variants (`*_single.yaml`) are derived from the same layout but omit HP2-specific cards and entities.
 
 ## Table of Contents
 
