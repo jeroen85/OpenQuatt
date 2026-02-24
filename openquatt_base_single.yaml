@@ -21,8 +21,14 @@ esphome:
     version: ${project_version}
   min_version: 2025.11.0
   name_add_mac_suffix: false
+  platformio_options:
+    build_flags:
+      - -DOQ_SETUP_DUO=0
+      - -DOQ_SETUP_SINGLE=1
   includes:
     - ${hp_perf_map_header}
+    - ${oq_setup_mode_header}
+    - ${oq_setup_facade_header}
   on_boot:
     priority: -100
     then:

@@ -16,6 +16,8 @@ friendly_name: OpenQuatt                              # Display name in Home Ass
 project_name: "openquatt.openquatt"                   # ESPHome project identifier shown in firmware metadata.
 project_version: "v0.13.3"                            # ESPHome project version shown in firmware metadata.
 hp_perf_map_header: "openquatt/includes/hp_perf_map.h" # C++ performance-map header include path.
+oq_setup_mode_header: "openquatt/includes/oq_setup_mode.h" # C++ setup mode include path.
+oq_setup_facade_header: "openquatt/includes/oq_setup_facade.h" # C++ setup facade include path.
 release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt.manifest.json" # OTA update manifest URL.
 
 # ----------------------------
