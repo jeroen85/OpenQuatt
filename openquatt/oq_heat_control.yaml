@@ -1,20 +1,18 @@
 # ==============================================================================
-# OpenQuatt – Heat Control (demand filtering + HP allocation)
+# OpenQuatt – Heat Control Core (shared)
 # ==============================================================================
 #
 # Goal:
-#   Consumes normalized heat demand `f` (from strategy) and maps it to compressor levels for HP1/HP2.
+#   Shared state, telemetry and controls for heat allocation.
 #
 # Role in architecture:
-#   Owns compressor-level control, processes `f` (0-20), and distributes it over two heat pumps.
+#   Provides shared inputs/outputs for setup-specific allocation policies.
 #
 # What this package DOES do:
 #   - Consumes oq_demand_raw (producer in oq_heating_strategy)
 #   - Applies demand filtering to damp noise/jitter in heat demand
-#   - Applies caps/limits on `f` before split
-#   - Distributes `f` over HP1/HP2 (heating curve: single-HP preference with deficit assist hysteresis, power-house: W-based optimizer)
-#   - Computes shared HP capacity/deficit (`oq_P_hp_cap_w`, `oq_P_deficit_w`) for supervisory CM3 logic
-#   - Sets compressor levels via `select` entities
+#   - Defines shared tuning inputs and state (`oq_demand_filtered`, capacity/deficit)
+#   - Publishes setup-agnostic telemetry in diagnostics/overview
 #
 # What this package DOES NOT do:
 #   - Has no dedicated temperature PID loop (strategy owns temperature-loop behavior)
@@ -27,15 +25,7 @@
 #   - Compressor levels are `select` entities with options '0'..'10'
 #
 # Interaction with Control Modes:
-#   - Active in CM2/CM3 (heating)
-#   - In CM0/CM1/CM98, compressor levels are forced to 0
-#
-# Safety / fail-safe:
-#   - With inactive CM: compressor levels 0 (no heat production)
-#   - Heat control is always subordinate to flow interlock via CM1
-#
-# Notes:
-#   - Demand filter and runtime guards intentionally favor stability over fast level changes.
+#   - Policy modules enforce CM gating and actuator writes.
 #
 # ==============================================================================
 
@@ -73,70 +63,6 @@ number:
     web_server:
       sorting_group_id: oq_tuning_heat
 
-  # Single-HP assist ON threshold (W deficit) for enabling dual-HP support at low demand.
-  - platform: template
-    id: oq_single_hp_assist_on_deficit_w
-    name: "Single HP Assist ON Deficit"
-    icon: mdi:arrow-up-bold-hexagon-outline
-    unit_of_measurement: "W"
-    min_value: 0
-    max_value: 4000
-    step: 25
-    mode: slider
-    restore_value: true
-    optimistic: true
-    initial_value: 350
-    web_server:
-      sorting_group_id: oq_tuning_heat
-
-  # Single-HP assist OFF threshold (W deficit) for returning to single-HP mode.
-  - platform: template
-    id: oq_single_hp_assist_off_deficit_w
-    name: "Single HP Assist OFF Deficit"
-    icon: mdi:arrow-down-bold-hexagon-outline
-    unit_of_measurement: "W"
-    min_value: 0
-    max_value: 4000
-    step: 25
-    mode: slider
-    restore_value: true
-    optimistic: true
-    initial_value: 150
-    web_server:
-      sorting_group_id: oq_tuning_heat
-
-  # Deficit hold time before enabling single-HP assist.
-  - platform: template
-    id: oq_single_hp_assist_on_hold_min
-    name: "Single HP Assist ON Hold"
-    icon: mdi:timer-plus-outline
-    unit_of_measurement: "min"
-    min_value: 1
-    max_value: 60
-    step: 1
-    mode: slider
-    restore_value: true
-    optimistic: true
-    initial_value: 3
-    web_server:
-      sorting_group_id: oq_tuning_heat
-
-  # Deficit hold time before disabling single-HP assist.
-  - platform: template
-    id: oq_single_hp_assist_off_hold_min
-    name: "Single HP Assist OFF Hold"
-    icon: mdi:timer-minus-outline
-    unit_of_measurement: "min"
-    min_value: 1
-    max_value: 60
-    step: 1
-    mode: slider
-    restore_value: true
-    optimistic: true
-    initial_value: 5
-    web_server:
-      sorting_group_id: oq_tuning_heat
-
 # ----------------------------
 # GLOBALS
 # ----------------------------
@@ -158,28 +84,6 @@ globals:
     restore_value: false
     initial_value: '0.0'
 
-  # Tracks whether low-demand assist mode is active (dual-HP allowed at f<=5).
-  - id: oq_single_hp_assist_active
-    type: bool
-    restore_value: false
-    initial_value: 'false'
-
-  # Deficit hold counters (minutes in 60s loop).
-  - id: oq_single_hp_assist_on_min
-    type: int
-    restore_value: false
-    initial_value: '0'
-  - id: oq_single_hp_assist_off_min
-    type: int
-    restore_value: false
-    initial_value: '0'
-
-  # Diagnostic: last computed lead pump based on runtime minutes.
-  - id: oq_last_lead_hp
-    type: int
-    restore_value: false
-    initial_value: '0'
-
 # ----------------------------
 # SENSORS (energie + status)
 # ----------------------------
@@ -198,7 +102,7 @@ sensor:
     lambda: |-
       auto nz = [](float value) -> float { return isnan(value) ? 0.0f : value; };
       const float hp1_power_w = nz(id(hp1_power_input).state);
-      const float hp2_power_w = nz(id(hp2_power_input).state);
+      const float hp2_power_w = nz(id(oq_topology_power_secondary).state);
       return hp1_power_w + hp2_power_w;
 
   - platform: template
@@ -214,7 +118,7 @@ sensor:
       sorting_group_id: oq_performance
     lambda: |-
       const float hp1_heat_w = id(hp1_heat_power).state;
-      const float hp2_heat_w = id(hp2_heat_power).state;
+      const float hp2_heat_w = id(oq_topology_heat_secondary).state;
 
       if (isnan(hp1_heat_w) && isnan(hp2_heat_w)) return NAN;
       if (isnan(hp1_heat_w)) return hp2_heat_w;
@@ -284,7 +188,7 @@ sensor:
 
   - platform: template
     id: oq_hp2_compressor_level_sensor
-    name: "HP2 compressor level"
+    name: "Secondary compressor level"
     icon: mdi:stairs
     unit_of_measurement: "lvl"
     state_class: measurement
@@ -293,10 +197,8 @@ sensor:
     web_server:
       sorting_group_id: oq_diagnostics
     lambda: |-
-      if (!id(hp2_compressor_level).has_state()) return NAN;
-      auto idx = id(hp2_compressor_level).active_index();
-      if (!idx.has_value()) return NAN;
-      return (float) idx.value();
+      const float level = id(oq_topology_secondary_last_applied_level).state;
+      return isnan(level) ? NAN : level;
 
 # ----------------------------
 # Extra overview sensors for capacity deficit
@@ -339,7 +241,10 @@ text_sensor:
     web_server:
       sorting_group_id: oq_diagnostics
     lambda: |-
-      const bool lead_is_hp1 = (id(hp1_minutes) <= id(hp2_minutes));
+      const float secondary_minutes_raw = id(oq_topology_runtime_minutes_secondary).state;
+      if (isnan(secondary_minutes_raw)) return std::string("HP1");
+      const int secondary_minutes = (int) lroundf(secondary_minutes_raw);
+      const bool lead_is_hp1 = (id(hp1_minutes) <= secondary_minutes);
       return std::string(lead_is_hp1 ? "HP1" : "HP2");
 
 # ----------------------------
@@ -348,626 +253,9 @@ text_sensor:
 button:
   - platform: template
     id: oq_reset_runtime
-    name: "Reset Runtime Counters (HP1+HP2)"
+    name: "Reset Runtime Counters"
     icon: mdi:restart
     web_server:
       sorting_group_id: oq_tuning_heat
     on_press:
-      - lambda: |-
-          id(hp1_minutes) = 0;
-          id(hp2_minutes) = 0;
-          ESP_LOGW("quatt", "Runtime counters reset (HP1+HP2).");
-# ----------------------------
-# MAIN LOOP
-# ----------------------------
-interval:
-
-# ----------------------------
-# LOOP (60s)
-# Fasen:
-# - demand filtering + power cap
-# - CM-gating (only CM2/CM3)
-# - strategy pad:
-#   heating curve => single-HP/split
-#   power-house => optimizer on thermal/electrical power
-# - shared capacity/deficit publication
-# - allowed-level mapping + min-runtime + apply + runtime bookkeeping
-# ----------------------------
-  - interval: ${oq_heat_loop_s}s
-    then:
-      - lambda: |-
-          const uint32_t now_ms = (uint32_t) millis();
-          const int demand_max_f = (int) ${oq_strategy_demand_max_f};
-
-          // =========================
-          // 1) Demand filtering (0..20)
-          // =========================
-          int raw = id(oq_demand_raw);
-          raw = std::max(0, std::min(demand_max_f, raw));
-
-          int ramp_up_step_min = (int) lroundf(id(oq_demand_filter_ramp_up_step_min).state);
-          if (ramp_up_step_min < 1) ramp_up_step_min = 1;
-          if (ramp_up_step_min > demand_max_f) ramp_up_step_min = demand_max_f;
-
-          int f = id(oq_demand_filtered);
-          if (raw > f) {
-            f = std::min(f + ramp_up_step_min, raw); // configurable upward ramp (step/min)
-          } else if (raw == 0 && f == 1) {
-            // Prevent 1-step latch: allow clean idle transition when raw demand is zero.
-            f = 0;
-          } else if (raw <= (f - 2)) {
-            f = raw;                                // down only at raw <= filtered - 2
-          }
-          f = std::max(0, std::min(demand_max_f, f));
-          id(oq_demand_filtered) = f;
-
-          // =========================
-          // 1a-2) Power limiter cap (total demand)
-          // Cap is applied to total filtered demand BEFORE HP split/load-balancing.
-          // oq_power_cap_f is maintained by supervisory power limiter.
-          int f_cap = id(oq_power_cap_f);
-          f_cap = std::max(0, std::min(demand_max_f, f_cap));
-          if (f > f_cap) f = f_cap;
-
-          // =========================
-          // 1b) Control Mode gating
-          // CM2 and CM3 may activate HPs.
-          // In CM0/CM1/CM98: force Standby + level 0 and stop further HP control.
-          // =========================
-          const int cm_code = id(oq_control_mode_code);
-          const bool cm_allows_hp = (cm_code == 2 || cm_code == 3);
-
-          if (!cm_allows_hp) {
-            // Force both units to Standby + level 0
-            auto force_standby = [&](bool is_hp1)->void {
-              const char* opt = "Standby";
-              if (is_hp1) {
-                if (!id(hp1_set_working_mode).has_state() || id(hp1_set_working_mode).current_option() != opt) {
-                  auto c = id(hp1_set_working_mode).make_call();
-                  c.set_option(opt);
-                  c.perform();
-                }
-                if (!id(hp1_compressor_level).has_state() || id(hp1_compressor_level).active_index().value_or(0) != 0) {
-                  auto c2 = id(hp1_compressor_level).make_call();
-                  c2.set_index(0);
-                  c2.perform();
-                }
-              } else {
-                if (!id(hp2_set_working_mode).has_state() || id(hp2_set_working_mode).current_option() != opt) {
-                  auto c = id(hp2_set_working_mode).make_call();
-                  c.set_option(opt);
-                  c.perform();
-                }
-                if (!id(hp2_compressor_level).has_state() || id(hp2_compressor_level).active_index().value_or(0) != 0) {
-                  auto c2 = id(hp2_compressor_level).make_call();
-                  c2.set_index(0);
-                  c2.perform();
-                }
-              }
-            };
-            force_standby(true);
-            force_standby(false);
-            // Keep internal state aligned with forced 0-level actuation to avoid stale optimizer/min-runtime state.
-            auto sync_forced_stop_state = [&](bool is_hp1)->void {
-              int &prev = is_hp1 ? id(hp1_last_applied_level) : id(hp2_last_applied_level);
-              if (prev > 0) {
-                if (is_hp1) id(hp1_last_stop_ms) = now_ms;
-                else id(hp2_last_stop_ms) = now_ms;
-              }
-              prev = 0;
-            };
-            sync_forced_stop_state(true);
-            sync_forced_stop_state(false);
-            id(oq_single_hp_assist_active) = false;
-            id(oq_single_hp_assist_on_min) = 0;
-            id(oq_single_hp_assist_off_min) = 0;
-            return;
-          }
-          // =========================
-          // 2) HP level selection
-          //    - WATER TEMP: demand split with single-HP preference at low f and deficit-based assist hysteresis
-          //    - POWER HOUSE: level optimization on thermal power (W) via hp_perf_map.h
-          // =========================
-
-          const bool is_power_house = (id(oq_heat_mode_code) != 1);
-
-          // Lead HP = fewest runtime minutes
-          const bool lead_is_hp1 = (id(hp1_minutes) <= id(hp2_minutes));
-
-          const int lead_code = lead_is_hp1 ? 1 : 2;
-          if (id(oq_last_lead_hp) != lead_code) {
-            id(oq_last_lead_hp) = lead_code;
-            ESP_LOGI("quatt", "Runtime lead changed: %s (hp1_minutes=%d, hp2_minutes=%d)",
-                     lead_is_hp1 ? "HP1" : "HP2", id(hp1_minutes), id(hp2_minutes));
-          }
-
-          int hp1_req = 0;
-          int hp2_req = 0;
-          const int min_level = 0;
-          const int max_level = 10;
-
-          // Single source of truth for level enable switches to avoid drift between branches.
-          auto level_allowed = [&](bool is_hp1, int level)->bool {
-            switch (level) {
-              case 1: return is_hp1 ? id(hp1_lvl_1).state : id(hp2_lvl_1).state;
-              case 2: return is_hp1 ? id(hp1_lvl_2).state : id(hp2_lvl_2).state;
-              case 3: return is_hp1 ? id(hp1_lvl_3).state : id(hp2_lvl_3).state;
-              case 4: return is_hp1 ? id(hp1_lvl_4).state : id(hp2_lvl_4).state;
-              case 5: return is_hp1 ? id(hp1_lvl_5).state : id(hp2_lvl_5).state;
-              case 6: return is_hp1 ? id(hp1_lvl_6).state : id(hp2_lvl_6).state;
-              case 7: return is_hp1 ? id(hp1_lvl_7).state : id(hp2_lvl_7).state;
-              case 8: return is_hp1 ? id(hp1_lvl_8).state : id(hp2_lvl_8).state;
-              case 9: return is_hp1 ? id(hp1_lvl_9).state : id(hp2_lvl_9).state;
-              case 10: return is_hp1 ? id(hp1_lvl_10).state : id(hp2_lvl_10).state;
-              default: return true;  // level 0 or out of range
-            }
-          };
-          // Shared telemetry/capacity context for both heat strategies.
-          const float Tamb = id(outside_temp_selected).state;
-          const float Tsup = id(oq_system_supply_temp).state;
-          int level_cap = (int) roundf(id(oq_day_max_level).state);
-          if (id(oq_silent_active).state) level_cap = (int) roundf(id(oq_silent_max_level).state);
-          if (level_cap < 0) level_cap = 0;
-          if (level_cap > max_level) level_cap = max_level;
-          const bool hp1_def = id(hp1_defrost).state;
-          const bool hp2_def = id(hp2_defrost).state;
-          // Command levels may remain active during defrost; model it as thermal derating.
-          const bool hp1_available = true;
-          const bool hp2_available = true;
-          // Defrost behavior is configured via substitutions:
-          // - oq_defrost_power_factor
-          // - oq_defrost_comp_min_f
-          // - oq_defrost_comp_boost_steps
-          float def_fac_cfg = ${oq_defrost_power_factor};
-          if (isnan(def_fac_cfg)) def_fac_cfg = 0.55f;
-          const float def_fac = fmaxf(0.10f, fminf(1.00f, def_fac_cfg));
-          const float hp1_th_fac = hp1_def ? def_fac : 1.0f;
-          const float hp2_th_fac = hp2_def ? def_fac : 1.0f;
-
-          auto max_cap_hp = [&](bool is_hp1)->float {
-            if ((is_hp1 && !hp1_available) || (!is_hp1 && !hp2_available)) return 0.0f;
-            float best = 0.0f;
-            for (int lvl = 1; lvl <= level_cap; lvl++) {
-              if (!level_allowed(is_hp1, lvl)) continue;
-              float p = oq_perf::interp_power_th_w(lvl, Tamb, Tsup);
-              if (!isnan(p)) p *= is_hp1 ? hp1_th_fac : hp2_th_fac;
-              if (!isnan(p) && p > best) best = p;
-            }
-            return best;
-          };
-
-          auto publish_capacity_and_deficit = [&](float requested_w)->float {
-            float cap_total = 0.0f;
-            if (!isnan(Tamb) && !isnan(Tsup)) {
-              cap_total = max_cap_hp(true) + max_cap_hp(false);
-            }
-            id(oq_P_hp_cap_w) = cap_total;
-
-            float req = requested_w;
-            if (isnan(req)) req = 0.0f;
-            float deficit = req - cap_total;
-            if (deficit < 0.0f) deficit = 0.0f;
-            id(oq_P_deficit_w) = deficit;
-            return cap_total;
-          };
-
-          if (!is_power_house) {
-            // ------------------------------------------------------------
-            // HEATING CURVE MODE (demand path from heating-curve strategy)
-            // ------------------------------------------------------------
-            const bool d1_pre = id(hp1_defrost).state;
-            const bool d2_pre = id(hp2_defrost).state;
-
-            // Telemetry + deficit calculation also in heating-curve mode (for CM3 + assist hysteresis).
-            publish_capacity_and_deficit(id(oq_phouse_req_w));
-
-            // Single-HP preferred at low demand unless deficit hysteresis indicates assist is needed.
-            const bool want_single = (f > 0 && f <= 5 && !(d1_pre && d2_pre));
-            if (!want_single) {
-              id(oq_single_hp_assist_active) = false;
-              id(oq_single_hp_assist_on_min) = 0;
-              id(oq_single_hp_assist_off_min) = 0;
-            } else {
-              float on_th = id(oq_single_hp_assist_on_deficit_w).state;
-              float off_th = id(oq_single_hp_assist_off_deficit_w).state;
-              if (isnan(on_th) || on_th < 0.0f) on_th = 0.0f;
-              if (isnan(off_th) || off_th < 0.0f) off_th = 0.0f;
-              if (off_th > on_th) off_th = on_th;
-
-              int on_hold = (int) roundf(id(oq_single_hp_assist_on_hold_min).state);
-              int off_hold = (int) roundf(id(oq_single_hp_assist_off_hold_min).state);
-              if (on_hold < 1) on_hold = 1;
-              if (off_hold < 1) off_hold = 1;
-
-              float deficit_w = id(oq_P_deficit_w);
-              if (isnan(deficit_w)) deficit_w = 0.0f;
-
-              if (deficit_w >= on_th) id(oq_single_hp_assist_on_min) += 1;
-              else id(oq_single_hp_assist_on_min) = 0;
-
-              if (deficit_w <= off_th) id(oq_single_hp_assist_off_min) += 1;
-              else id(oq_single_hp_assist_off_min) = 0;
-
-              if (!id(oq_single_hp_assist_active) && id(oq_single_hp_assist_on_min) >= on_hold) {
-                id(oq_single_hp_assist_active) = true;
-                id(oq_single_hp_assist_off_min) = 0;
-              } else if (id(oq_single_hp_assist_active) && id(oq_single_hp_assist_off_min) >= off_hold) {
-                id(oq_single_hp_assist_active) = false;
-                id(oq_single_hp_assist_on_min) = 0;
-              }
-            }
-
-            const bool need_assist = (f > 5) || (want_single && id(oq_single_hp_assist_active));
-
-            if (want_single && !need_assist) {
-              // One HP carries the full demand (1..5)
-              if (lead_is_hp1) hp1_req = f;
-              else             hp2_req = f;
-            } else {
-              // Baseline split (even/odd)
-              hp1_req = f / 2;
-              hp2_req = f / 2;
-              const bool odd = (f % 2) == 1;
-
-              if (odd) {
-                // extra step to HP with fewer runtime minutes
-                if (lead_is_hp1) hp1_req += 1;
-                else             hp2_req += 1;
-              }
-            }
-
-          } else {
-            // ------------------------------------------------------------
-            // POWER HOUSE MODE
-            // ------------------------------------------------------------
-            // Inputs
-            const float Pr = id(house_rated_power_w).state;              // rated house power (W)
-            float P_req_total = id(oq_phouse_req_w);                     // from heating strategy (W)
-            // Apply (compat) power cap via f (already capped by oq_power_cap_f)
-            float P_cap = NAN;
-            if (!isnan(Pr) && Pr > 0.0f) P_cap = (Pr * ((float)f / (float)demand_max_f));
-            if (!isnan(P_cap)) P_req_total = std::min(P_req_total, P_cap);
-
-            const float cap_total = publish_capacity_and_deficit(P_req_total);
-
-            const bool perf_inputs_valid = !isnan(Tamb) && !isnan(Tsup) && level_cap > 0;
-            if (!perf_inputs_valid) {
-              // Fallback path when perf-map inputs are invalid: keep delivering demand using simple split.
-              const bool want_single = (f > 0 && f <= 5 && !(hp1_def && hp2_def));
-              if (!want_single) {
-                id(oq_single_hp_assist_active) = false;
-                id(oq_single_hp_assist_on_min) = 0;
-                id(oq_single_hp_assist_off_min) = 0;
-              } else {
-                float on_th = id(oq_single_hp_assist_on_deficit_w).state;
-                float off_th = id(oq_single_hp_assist_off_deficit_w).state;
-                if (isnan(on_th) || on_th < 0.0f) on_th = 0.0f;
-                if (isnan(off_th) || off_th < 0.0f) off_th = 0.0f;
-                if (off_th > on_th) off_th = on_th;
-
-                int on_hold = (int) roundf(id(oq_single_hp_assist_on_hold_min).state);
-                int off_hold = (int) roundf(id(oq_single_hp_assist_off_hold_min).state);
-                if (on_hold < 1) on_hold = 1;
-                if (off_hold < 1) off_hold = 1;
-
-                float deficit_w = id(oq_P_deficit_w);
-                if (isnan(deficit_w)) deficit_w = 0.0f;
-
-                if (deficit_w >= on_th) id(oq_single_hp_assist_on_min) += 1;
-                else id(oq_single_hp_assist_on_min) = 0;
-
-                if (deficit_w <= off_th) id(oq_single_hp_assist_off_min) += 1;
-                else id(oq_single_hp_assist_off_min) = 0;
-
-                if (!id(oq_single_hp_assist_active) && id(oq_single_hp_assist_on_min) >= on_hold) {
-                  id(oq_single_hp_assist_active) = true;
-                  id(oq_single_hp_assist_off_min) = 0;
-                } else if (id(oq_single_hp_assist_active) && id(oq_single_hp_assist_off_min) >= off_hold) {
-                  id(oq_single_hp_assist_active) = false;
-                  id(oq_single_hp_assist_on_min) = 0;
-                }
-              }
-              const bool need_assist = (f > 5) || (want_single && id(oq_single_hp_assist_active));
-
-              if (want_single && !need_assist) {
-                if (lead_is_hp1) hp1_req = f;
-                else             hp2_req = f;
-              } else {
-                hp1_req = f / 2;
-                hp2_req = f / 2;
-                if ((f % 2) == 1) {
-                  if (lead_is_hp1) hp1_req += 1;
-                  else             hp2_req += 1;
-                }
-              }
-            } else {
-              // Optimize levels to match min(P_req_total, cap_total)
-              float P_target = P_req_total;
-              if (isnan(P_target)) P_target = 0.0f;
-              if (P_target > cap_total) P_target = cap_total;
-              if (P_target < 0.0f) P_target = 0.0f;
-
-              const int last1 = id(hp1_last_applied_level);
-              const int last2 = id(hp2_last_applied_level);
-
-              float best_cost = 1e12f;
-              int best_l1 = 0;
-              int best_l2 = 0;
-
-              // Penalties
-              const float W_change_penalty_per_step = 50.0f;   // bias to reduce chattering
-              const float W_twohp_penalty = ${oq_optimizer_twohp_penalty};
-              const float W_balance_penalty_per_step = ${oq_optimizer_balance_penalty_per_step};
-              // 16A guard (electrical power) integrated via COP map
-              // - Candidates above peak are excluded
-              // - Candidates above soft get extra penalty to avoid overshoot.
-              const float P_EL_SOFT_W = ${oq_optimizer_soft_w};
-              const float P_EL_PEAK_W = ${oq_power_peak_w};
-              const float W_el_over_soft_penalty_per_W = ${oq_optimizer_penalty_per_w};
-
-              for (int l1=0; l1<=level_cap; l1++) {
-                // allowed / availability
-                if (l1 > 0) {
-                  if (!hp1_available) continue;
-                  if (!level_allowed(true, l1)) continue;
-                }
-                float p1 = (l1==0) ? 0.0f : oq_perf::interp_power_th_w(l1, Tamb, Tsup);
-                if (l1>0 && isnan(p1)) continue;
-                p1 *= hp1_th_fac;
-                float pel1 = (l1==0) ? 0.0f : oq_perf::interp_power_el_w(l1, Tamb, Tsup);
-                if (l1>0 && isnan(pel1)) pel1 = 0.0f;
-
-                for (int l2=0; l2<=level_cap; l2++) {
-                  if (l2 > 0) {
-                    if (!hp2_available) continue;
-                    if (!level_allowed(false, l2)) continue;
-                  }
-                  float p2 = (l2==0) ? 0.0f : oq_perf::interp_power_th_w(l2, Tamb, Tsup);
-                  if (l2>0 && isnan(p2)) continue;
-                  p2 *= hp2_th_fac;
-                  float pel2 = (l2==0) ? 0.0f : oq_perf::interp_power_el_w(l2, Tamb, Tsup);
-                  if (l2>0 && isnan(pel2)) pel2 = 0.0f;
-
-                  float psum = p1 + p2;
-                  float err = fabsf(psum - P_target);
-
-                  float cost = err;
-                  cost += W_change_penalty_per_step * (float)(abs(l1 - last1) + abs(l2 - last2));
-                  // Keep a single-HP preference only at low load without defrost.
-                  if (l1>0 && l2>0 && f<=5 && !(hp1_def || hp2_def)) cost += W_twohp_penalty;
-                  // At medium/high load without defrost, bias toward balanced split.
-                  if (f>=6 && !(hp1_def || hp2_def)) cost += W_balance_penalty_per_step * (float) abs(l1 - l2);
-
-                  // 16A guard: electrical power (W) via COP map
-                  float pel_sum = pel1 + pel2;
-                  if (pel_sum > P_EL_PEAK_W) continue; // never allow above peak
-                  if (pel_sum > P_EL_SOFT_W) cost += (pel_sum - P_EL_SOFT_W) * W_el_over_soft_penalty_per_W;
-
-                  if (cost < best_cost) {
-                    best_cost = cost;
-                    best_l1 = l1;
-                    best_l2 = l2;
-                  }
-                }
-              }
-
-              // Lead/lag preference: if very low power, prefer lead HP only
-              hp1_req = best_l1;
-              hp2_req = best_l2;
-
-              if (P_target <= cap_total * 0.35f) {
-                // try single HP on lead if possible
-                int lead = lead_is_hp1 ? hp1_req : hp2_req;
-                int lag  = lead_is_hp1 ? hp2_req : hp1_req;
-                // Only bias to lead-only when both were active.
-                if (lag > 0 && lead > 0) {
-                  // attempt to move lag to 0 if lead alone can cover close enough
-                  float best_single_cost = best_cost;
-                  int best_single_level = lead;
-                  for (int l=1; l<=level_cap; l++) {
-                    if (!level_allowed(lead_is_hp1, l)) continue;
-                    float p = oq_perf::interp_power_th_w(l, Tamb, Tsup);
-                    if (isnan(p)) continue;
-                    p *= lead_is_hp1 ? hp1_th_fac : hp2_th_fac;
-                    float cost = fabsf(p - P_target) + W_change_penalty_per_step * (float)abs(l - (lead_is_hp1 ? last1 : last2));
-                    if (cost < best_single_cost) {
-                      best_single_cost = cost;
-                      best_single_level = l;
-                    }
-                  }
-                  if (lead_is_hp1) { hp1_req = best_single_level; hp2_req = 0; }
-                  else            { hp2_req = best_single_level; hp1_req = 0; }
-                }
-              }
-
-              // Single-defrost compensation: allow the non-defrost HP to step up.
-              int def_comp_min_f = (int) roundf(${oq_defrost_comp_min_f});
-              if (def_comp_min_f < 0) def_comp_min_f = 0;
-              if (def_comp_min_f > demand_max_f) def_comp_min_f = demand_max_f;
-              int def_comp_boost = (int) roundf(${oq_defrost_comp_boost_steps});
-              if (def_comp_boost < 0) def_comp_boost = 0;
-              if (def_comp_boost > 3) def_comp_boost = 3;
-              if (def_comp_boost > 0 && f >= def_comp_min_f) {
-                if (hp1_def && !hp2_def && hp2_req > 0) hp2_req = std::min(level_cap, hp2_req + def_comp_boost);
-                if (hp2_def && !hp1_def && hp1_req > 0) hp1_req = std::min(level_cap, hp1_req + def_comp_boost);
-              }
-            }
-          }
-
-          // Runtime balancing at single-HP start:
-          // when a single-HP request appears from idle, prefer the runtime lead HP
-          // if both units can provide the same requested level.
-          {
-            const bool single_req = ((hp1_req > 0) != (hp2_req > 0));
-            const bool both_idle_prev = (id(hp1_last_applied_level) <= 0 && id(hp2_last_applied_level) <= 0);
-            if (single_req && both_idle_prev && !(hp1_def || hp2_def)) {
-              const int req_single = (hp1_req > 0) ? hp1_req : hp2_req;
-              const bool lead_can = level_allowed(lead_is_hp1, req_single);
-              const bool lag_can = level_allowed(!lead_is_hp1, req_single);
-              if (lead_can && lag_can) {
-                if (lead_is_hp1) {
-                  hp1_req = req_single;
-                  hp2_req = 0;
-                } else {
-                  hp2_req = req_single;
-                  hp1_req = 0;
-                }
-              }
-            }
-          }
-
-          // =========================
-          // 4) Allowed levels (1..10)
-          //    - level 0 always allowed
-          //    - if requested level is not allowed: search down first, then up
-          // =========================
-          auto pick_allowed = [&](int req, bool is_hp1)->int {
-            if (req <= 0) return 0;
-            req = std::max(1, std::min(max_level, req));
-
-            if (level_allowed(is_hp1, req)) return req;
-
-            // first down
-            for (int l = req - 1; l >= 1; l--) if (level_allowed(is_hp1, l)) return l;
-            // then up
-            for (int l = req + 1; l <= max_level; l++) if (level_allowed(is_hp1, l)) return l;
-
-            return 0;
-          };
-
-          hp1_req = pick_allowed(hp1_req, true);
-          hp2_req = pick_allowed(hp2_req, false);
-
-          // =========================
-          // 5) Minimum runtime (block stop)
-          // =========================
-          const int min_rt = (int) roundf(id(oq_min_runtime_min).state);
-          if (min_rt > 0) {
-            // HP1: if request is 0 but runtime < min -> force >=1
-            const uint32_t min_rt_ms = (uint32_t) min_rt * 60000UL;
-            const uint32_t hp1_rt_ms = (uint32_t)(now_ms - id(hp1_last_start_ms));
-            if (hp1_req == 0 && id(hp1_last_applied_level) > 0 && hp1_rt_ms < min_rt_ms) {
-              hp1_req = pick_allowed(1, true);
-            }
-
-            // HP2
-            const uint32_t hp2_rt_ms = (uint32_t)(now_ms - id(hp2_last_start_ms));
-            if (hp2_req == 0 && id(hp2_last_applied_level) > 0 && hp2_rt_ms < min_rt_ms) {
-              hp2_req = pick_allowed(1, false);
-            }
-          }
-
-          // =========================
-          // 6) Working mode gate + apply compressor
-          // =========================
-          auto set_mode = [&](bool is_hp1, bool heating) {
-            const char* opt = heating ? "Heating" : "Standby";
-            if (is_hp1) {
-              if (id(hp1_set_working_mode).current_option() != opt) {
-                auto c = id(hp1_set_working_mode).make_call();
-                c.set_option(opt);
-                c.perform();
-              }
-            } else {
-              if (id(hp2_set_working_mode).current_option() != opt) {
-                auto c = id(hp2_set_working_mode).make_call();
-                c.set_option(opt);
-                c.perform();
-              }
-            }
-          };
-
-          auto mode_is_heating = [&](bool is_hp1)->bool {
-            float m = is_hp1 ? id(hp1_working_mode).state : id(hp2_working_mode).state;
-            if (isnan(m)) return false;
-            return ((int) roundf(m)) == 2;
-          };
-          auto mode_target_is_heating = [&](bool is_hp1)->bool {
-            if (is_hp1) return id(hp1_set_working_mode).has_state() && id(hp1_set_working_mode).current_option() == "Heating";
-            return id(hp2_set_working_mode).has_state() && id(hp2_set_working_mode).current_option() == "Heating";
-          };
-
-          // Note: options must exactly match the options map in oq_HP_io.yaml (levels 0..10)
-          const char* lvl_opts[11] = {"0","1","2","3","4","5","6","7","8","9","10"};
-
-          auto apply_level = [&](bool is_hp1, int req_level) {
-            req_level = std::max(min_level, std::min(max_level, req_level));
-
-            // at heat demand always switch to heating; with no demand switch to standby
-            if (req_level > 0) set_mode(is_hp1, true);
-            else set_mode(is_hp1, false);
-
-            int applied = req_level;
-
-            // =========================
-            // Silent/day cap
-            // =========================
-            const bool silent_active = id(oq_silent_active).state;
-            int cap = silent_active ? (int) roundf(id(oq_silent_max_level).state)
-                                    : (int) roundf(id(oq_day_max_level).state);
-            cap = std::max(min_level, std::min(max_level, cap));
-            if (applied > cap) applied = cap;
-
-            // Normative rule: compressor >0 only when heating mode is measured OR command target is already heating.
-            // This avoids losing a full control cycle on mode-transition latency.
-            if (req_level > 0 && !mode_is_heating(is_hp1) && !mode_target_is_heating(is_hp1)) {
-              applied = 0;
-            }
-
-            // writes only on change
-            if (is_hp1) {
-              auto idx = id(hp1_compressor_level).active_index();
-              int cur = idx.has_value() ? (int) idx.value() : -1;
-              if (cur != applied) {
-                auto c = id(hp1_compressor_level).make_call();
-                c.set_option(lvl_opts[applied]);
-                c.perform();
-              }
-            } else {
-              auto idx = id(hp2_compressor_level).active_index();
-              int cur = idx.has_value() ? (int) idx.value() : -1;
-              if (cur != applied) {
-                auto c = id(hp2_compressor_level).make_call();
-                c.set_option(lvl_opts[applied]);
-                c.perform();
-              }
-            }
-
-            return applied;
-          };
-
-          int hp1_applied = apply_level(true, hp1_req);
-          int hp2_applied = apply_level(false, hp2_req);
-
-          // =========================
-          // 7) Start/stop logging + runtime minutes
-          // =========================
-          auto log_transition = [&](bool is_hp1, int new_lvl) {
-            int &prev = is_hp1 ? id(hp1_last_applied_level) : id(hp2_last_applied_level);
-
-            if (prev == 0 && new_lvl > 0) {
-              // start
-              if (is_hp1) id(hp1_last_start_ms) = now_ms;
-              else id(hp2_last_start_ms) = now_ms;
-            } else if (prev > 0 && new_lvl == 0) {
-              // stop
-              if (is_hp1) id(hp1_last_stop_ms) = now_ms;
-              else id(hp2_last_stop_ms) = now_ms;
-            }
-
-            // Runtime counting: only count when the specific unit is measured in Heating mode.
-            // This avoids overcounting during command/mode transition, standby, or fault situations.
-            if (new_lvl > 0) {
-              const float working_mode_raw = is_hp1 ? id(hp1_working_mode).state : id(hp2_working_mode).state;
-              const bool heating_now = !isnan(working_mode_raw) && ((int) roundf(working_mode_raw) == 2);
-              if (heating_now) {
-                if (is_hp1) id(hp1_minutes)++;
-                else id(hp2_minutes)++;
-              }
-            }
-
-            prev = new_lvl;
-          };
-
-          log_transition(true, hp1_applied);
-          log_transition(false, hp2_applied);
+      - script.execute: oq_topology_reset_runtime_counters

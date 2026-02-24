@@ -48,6 +48,27 @@ sensor:
     lambda: |-
       return (float) id(hp2_last_applied_level);
 
+  - platform: template
+    id: oq_topology_power_secondary
+    internal: true
+    update_interval: 5s
+    lambda: |-
+      return id(hp2_power_input).state;
+
+  - platform: template
+    id: oq_topology_heat_secondary
+    internal: true
+    update_interval: 5s
+    lambda: |-
+      return id(hp2_heat_power).state;
+
+  - platform: template
+    id: oq_topology_runtime_minutes_secondary
+    internal: true
+    update_interval: 10s
+    lambda: |-
+      return (float) id(hp2_minutes);
+
 script:
   - id: oq_topology_set_low_noise_all
     parameters:
@@ -99,3 +120,10 @@ script:
           };
           apply_number(id(hp1_pump_speed));
           apply_number(id(hp2_pump_speed));
+
+  - id: oq_topology_reset_runtime_counters
+    then:
+      - lambda: |-
+          id(hp1_minutes) = 0;
+          id(hp2_minutes) = 0;
+          ESP_LOGW("quatt", "Runtime counters reset (HP1+HP2).");

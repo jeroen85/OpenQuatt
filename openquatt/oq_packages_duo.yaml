@@ -6,7 +6,7 @@
 # 2) Topology adapter (duo wiring)
 # 3) Supervisory/state
 # 4) Demand strategy
-# 5) Actuation layers (heat/flow/boiler)
+# 5) Actuation layers (heat core + duo policy/flow/boiler)
 # 6) Aggregation/energy telemetry
 # 7) External inputs (CIC)
 # 8) Local sensors/source selection
@@ -19,6 +19,7 @@ oq_topology: !include oq_topology_duo.yaml
 oq_supervisory_controlmode: !include oq_supervisory_controlmode.yaml
 oq_heating_strategy: !include oq_heating_strategy.yaml
 oq_heat_control: !include oq_heat_control.yaml
+oq_heat_control_policy: !include oq_heat_control_duo_policy.yaml
 oq_flow_control: !include oq_flow_control.yaml
 oq_flow_autotune: !include oq_flow_autotune.yaml
 oq_boiler_control: !include oq_boiler_control.yaml

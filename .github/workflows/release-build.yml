@@ -25,6 +25,12 @@ jobs:
       - name: Install ESPHome
         run: pip install --upgrade esphome==2026.1.5
 
+      - name: Validate setup isolation
+        run: python3 scripts/check_setup_isolation.py
+
+      - name: Validate docs consistency
+        run: python3 scripts/check_docs_consistency.py
+
       - name: Validate configs
         run: |
           esphome config openquatt_waveshare.yaml

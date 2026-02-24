@@ -66,7 +66,8 @@ Defined in `openquatt/oq_packages_duo.yaml` and `openquatt/oq_packages_single.ya
 | `oq_topology` | setup abstraction layer (single/duo mapping for secondary HP signals and shared actuator fan-out) |
 | `oq_supervisory_controlmode` | Control Mode state machine, low-flow state, power cap factor |
 | `oq_heating_strategy` | strategy mode selection, demand generation, curve/PID path |
-| `oq_heat_control` | demand filtering, cap application, HP level optimization/application |
+| `oq_heat_control` | shared heat-control state/telemetry and runtime bookkeeping |
+| `oq_heat_control_policy` | setup-specific allocator policy (duo optimizer vs single allocator) |
 | `oq_flow_control` | pump iPWM output logic and mode execution |
 | `oq_flow_autotune` | identification + suggested PI gains |
 | `oq_boiler_control` | relay command and temperature lockout |

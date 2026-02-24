@@ -1879,16 +1879,8 @@ views:
               - **Demand filter ramp up** bepaalt met hoeveel demand-stappen per
               minuut `Demand filtered` maximaal mag stijgen richting `Demand raw`.
 
-              - **Single HP assist ON/OFF deficit** bepaalt bij welke thermische
-              tekort-waarde extra HP-assist wordt geactiveerd of weer
-              losgelaten.
-
-              - **ON/OFF hold** voegt tijdhysterese toe om op en neer schakelen
-              te dempen.
-
-              - Lager ON of kortere ON-hold = sneller extra capaciteit.
-
-              - Hoger OFF of langere OFF-hold = langer dual-HP actief.
+              - Single setup heeft geen dual-HP assist-drempels; de regeling is
+              hier bewust beperkt tot demand filtering en minimum runtime.
 
 
               </details>
@@ -1900,14 +1892,6 @@ views:
                 name: Minimum runtime
               - entity: number.openquatt_demand_filter_ramp_up
                 name: Demand filter ramp up
-              - entity: number.openquatt_single_hp_assist_on_deficit
-                name: Single HP assist ON deficit
-              - entity: number.openquatt_single_hp_assist_off_deficit
-                name: Single HP assist OFF deficit
-              - entity: number.openquatt_single_hp_assist_on_hold
-                name: Single HP assist ON hold
-              - entity: number.openquatt_single_hp_assist_off_hold
-                name: Single HP assist OFF hold
       - type: grid
         cards:
           - type: heading

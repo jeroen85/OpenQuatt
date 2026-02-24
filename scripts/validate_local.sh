@@ -14,6 +14,12 @@ if ! command -v esphome >/dev/null 2>&1; then
   exit 127
 fi
 
+echo "[pre] Controleren setup-isolatie"
+python3 scripts/check_setup_isolation.py
+
+echo "[pre] Controleren docs-consistentie"
+python3 scripts/check_docs_consistency.py
+
 total="${#CONFIGS[@]}"
 for i in "${!CONFIGS[@]}"; do
   cfg="${CONFIGS[$i]}"

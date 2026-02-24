@@ -48,6 +48,27 @@ sensor:
     lambda: |-
       return 0.0f;
 
+  - platform: template
+    id: oq_topology_power_secondary
+    internal: true
+    update_interval: 5s
+    lambda: |-
+      return NAN;
+
+  - platform: template
+    id: oq_topology_heat_secondary
+    internal: true
+    update_interval: 5s
+    lambda: |-
+      return NAN;
+
+  - platform: template
+    id: oq_topology_runtime_minutes_secondary
+    internal: true
+    update_interval: 10s
+    lambda: |-
+      return NAN;
+
 script:
   - id: oq_topology_set_low_noise_all
     parameters:
@@ -84,3 +105,9 @@ script:
             c.set_value(pwm);
             c.perform();
           }
+
+  - id: oq_topology_reset_runtime_counters
+    then:
+      - lambda: |-
+          id(hp1_minutes) = 0;
+          ESP_LOGW("quatt", "Runtime counter reset (HP1).");
