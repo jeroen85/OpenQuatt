@@ -1,0 +1,29 @@
+name: Docs Consistency
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  docs-consistency:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run docs consistency checks (non-blocking)
+        id: docs_consistency
+        continue-on-error: true
+        run: python3 scripts/check_docs_consistency.py --changed-only
+
+      - name: Report warning status
+        if: steps.docs_consistency.outcome == 'failure'
+        run: echo "::warning::Docs consistency warnings found (non-blocking). See logs for details."
+
