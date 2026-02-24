@@ -20,7 +20,9 @@
 #   - Does not regulate temperature setpoints (only absolute max-temp protection)
 #
 # Key assumptions:
-#   - Boiler is hydraulically in series after HP2; `water_supply_temp_selected` is available for max-temp protection
+#   - Boiler is hydraulically in series after the topology-defined upstream outlet source
+#     (duo: HP2 outlet, single: HP1 outlet).
+#   - `water_supply_temp_selected` is available for max-temp protection
 #   - Boiler has its own electrical feed; net-power limiter does not apply to boiler
 #
 # Interaction with Control Modes:
@@ -93,16 +95,16 @@ sensor:
       const bool in_cm3 = (id(oq_control_mode_code) == 3);
       if (!in_cm3) return 0.0f;
 
-      const float hp2_outlet_c = id(hp2_water_out_temp).state;
+      const float upstream_outlet_c = id(oq_topology_boiler_upstream_outlet_temp).state;
       const float supply_c = id(water_supply_temp_selected).state;
       const float flow_lph = id(flow_rate_selected).state;
 
       // With missing measurements: return 0 W instead of NaN (cleaner dashboard + CM3 gate already enforced)
-      if (isnan(hp2_outlet_c) || isnan(supply_c) || isnan(flow_lph)) return 0.0f;
+      if (isnan(upstream_outlet_c) || isnan(supply_c) || isnan(flow_lph)) return 0.0f;
 
       const float cp_j_per_kgk = ${oq_boiler_cp_j_per_kgk};  // J/(kg·K)
       const float mass_flow_kgps = flow_lph / 3600.0f;       // kg/s (≈ L/h)
-      const float delta_t_k = supply_c - hp2_outlet_c;       // K
+      const float delta_t_k = supply_c - upstream_outlet_c;  // K
 
       // Non-negative power (only added heat)
       const float heat_power_w = mass_flow_kgps * cp_j_per_kgk * delta_t_k;

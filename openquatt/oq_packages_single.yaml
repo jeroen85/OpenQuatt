@@ -2,20 +2,21 @@
 # OpenQuatt - Package Includes (single setup)
 # ==============================================================================
 # Package load order is intentional and mirrors the duo stack where possible.
-# Single setup loads only HP1 and single-topology control packages.
+# Single setup keeps shared control modules and swaps only topology + heat control.
 # ==============================================================================
 oq_common: !include oq_common.yaml
-oq_supervisory_controlmode: !include oq_supervisory_controlmode_single.yaml
-oq_heating_strategy: !include oq_heating_strategy_single.yaml
+oq_topology: !include oq_topology_single.yaml
+oq_supervisory_controlmode: !include oq_supervisory_controlmode.yaml
+oq_heating_strategy: !include oq_heating_strategy.yaml
 oq_heat_control: !include oq_heat_control_single.yaml
-oq_flow_control: !include oq_flow_control_single.yaml
+oq_flow_control: !include oq_flow_control.yaml
 oq_flow_autotune: !include oq_flow_autotune.yaml
-oq_boiler_control: !include oq_boiler_control_single.yaml
+oq_boiler_control: !include oq_boiler_control.yaml
 oq_energy: !include oq_energy.yaml
 oq_cic: !include oq_cic.yaml
 oq_local_sensors: !include oq_local_sensors.yaml
-oq_debug_testing: !include oq_debug_testing_single.yaml
-oq_webserver: !include oq_webserver_single.yaml
+oq_debug_testing: !include oq_debug_testing.yaml
+oq_webserver: !include oq_webserver.yaml
 heatpump1: !include
   file: oq_HP_io.yaml
   vars:

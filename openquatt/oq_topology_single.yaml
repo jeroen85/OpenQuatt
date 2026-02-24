@@ -1,0 +1,86 @@
+# ==============================================================================
+# OpenQuatt - Topology Adapter (single)
+# ==============================================================================
+# Exposes setup-agnostic IDs used by shared control packages.
+# Single variant maps "secondary HP" signals to neutral values and writes only HP1.
+# ==============================================================================
+
+sensor:
+  - platform: template
+    id: oq_topology_outside_secondary
+    internal: true
+    update_interval: 5s
+    lambda: |-
+      return NAN;
+
+  - platform: template
+    id: oq_topology_flow_secondary
+    internal: true
+    update_interval: 1s
+    lambda: |-
+      return NAN;
+
+  - platform: template
+    id: oq_topology_supply_fallback_temp
+    internal: true
+    update_interval: 5s
+    lambda: |-
+      return id(hp1_water_out_temp).state;
+
+  - platform: template
+    id: oq_topology_boiler_upstream_outlet_temp
+    internal: true
+    update_interval: 5s
+    lambda: |-
+      return id(hp1_water_out_temp).state;
+
+  - platform: template
+    id: oq_topology_secondary_working_mode
+    internal: true
+    update_interval: 5s
+    lambda: |-
+      return NAN;
+
+  - platform: template
+    id: oq_topology_secondary_last_applied_level
+    internal: true
+    update_interval: 5s
+    lambda: |-
+      return 0.0f;
+
+script:
+  - id: oq_topology_set_low_noise_all
+    parameters:
+      enable: bool
+    then:
+      - lambda: |-
+          const char *opt = enable ? "On" : "Off";
+          if (!id(hp1_low_noise_mode)->has_state() || id(hp1_low_noise_mode)->current_option() != opt) {
+            auto c = id(hp1_low_noise_mode)->make_call();
+            c.set_option(opt);
+            c.perform();
+          }
+
+  - id: oq_topology_set_pump_mode_all
+    parameters:
+      enable: bool
+    then:
+      - lambda: |-
+          const char *opt = enable ? "On" : "Off";
+          if (!id(hp1_set_pump_mode)->has_state() || id(hp1_set_pump_mode)->current_option() != opt) {
+            auto c = id(hp1_set_pump_mode)->make_call();
+            c.set_option(opt);
+            c.perform();
+          }
+
+  - id: oq_topology_set_pump_pwm_all
+    parameters:
+      pwm: float
+    then:
+      - lambda: |-
+          const float cur = id(hp1_pump_speed)->state;
+          if (isnan(cur) || fabsf(cur - pwm) > 1.0f) {
+            auto c = id(hp1_pump_speed)->make_call();
+            c.set_value(pwm);
+            c.perform();
+          }

@@ -287,7 +287,7 @@ def main() -> int:
                 1,
                 "Dashboard YAML changed; consider updating docs/home-assistant-dashboard.md.",
             )
-        if any_changed(changed, {"openquatt/oq_debug_testing.yaml", "openquatt/oq_common.yaml"}) and not any_changed(changed, {"docs/home-assistant-dashboard.md", "docs/settings-reference.md", "docs/system-overview.md"}):
+        if any_changed(changed, {"openquatt/oq_debug_testing.yaml", "openquatt/oq_debug_testing_duo.yaml", "openquatt/oq_common.yaml"}) and not any_changed(changed, {"docs/home-assistant-dashboard.md", "docs/settings-reference.md", "docs/system-overview.md"}):
             add(
                 findings,
                 "docs/home-assistant-dashboard.md",

@@ -18,11 +18,13 @@ This document explains the current OpenQuatt architecture as implemented in the 
 
 ## 1. Top-Level Composition
 
-OpenQuatt is driven from `openquatt.yaml` as the project entrypoint, which includes:
+OpenQuatt is driven from setup+hardware entrypoints (`openquatt.yaml`, `openquatt_waveshare.yaml`,
+`openquatt_heatpump_listener.yaml`, `openquatt_single_waveshare.yaml`,
+`openquatt_single_heatpump_listener.yaml`), which include:
 
 - global project/board/framework config
-- package includes via `openquatt/oq_packages_${system_setup}.yaml`
-  (`openquatt/oq_packages_duo.yaml` for duo and `openquatt/oq_packages_single.yaml` for single)
+- shared base wiring (`openquatt_base.yaml` for duo, `openquatt_base_single.yaml` for single)
+- package includes via `openquatt/oq_packages_duo.yaml` and `openquatt/oq_packages_single.yaml`
 
 Shared runtime services are loaded from `openquatt/oq_common.yaml`, including:
 
@@ -33,18 +35,20 @@ Shared runtime services are loaded from `openquatt/oq_common.yaml`, including:
 Package include order is intentional:
 
 1. `oq_common`
-2. `oq_supervisory_controlmode`
-3. `oq_heating_strategy`
-4. `oq_heat_control`
-5. `oq_flow_control`
-6. `oq_flow_autotune`
-7. `oq_boiler_control`
-8. `oq_energy`
-9. `oq_cic`
-10. `oq_local_sensors`
-11. `oq_debug_testing`
-12. `oq_webserver`
-13. `oq_HP_io` (duo: HP1 and HP2, single: HP1 only)
+2. `oq_topology`
+3. `oq_supervisory_controlmode`
+4. `oq_heating_strategy`
+5. `oq_heat_control`
+6. `oq_flow_control`
+7. `oq_flow_autotune`
+8. `oq_boiler_control`
+9. `oq_energy`
+10. `oq_cic`
+11. `oq_local_sensors`
+12. `oq_debug_testing`
+13. `oq_debug_testing_duo` (duo package only)
+14. `oq_webserver`
+15. `oq_HP_io` (duo: HP1 and HP2, single: HP1 only)
 
 This order mirrors data dependencies and ownership boundaries.
 
@@ -53,6 +57,7 @@ This order mirrors data dependencies and ownership boundaries.
 OpenQuatt follows strict subsystem ownership:
 
 - **Control Mode state machine**: `oq_supervisory_controlmode`
+- **Setup adapter (single/duo abstraction)**: `oq_topology`
 - **Raw demand (`oq_demand_raw`)**: `oq_heating_strategy`
 - **Compressor level allocation**: `oq_heat_control`
 - **Pump iPWM regulation**: `oq_flow_control`
