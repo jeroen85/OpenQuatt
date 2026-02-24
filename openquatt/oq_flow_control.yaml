@@ -145,7 +145,7 @@ sensor:
     update_interval: 1s
     lambda: |-
       float f1 = id(hp1_flow).state;
-      float f2 = ${oq_expr_hp2_flow_lph};
+      float f2 = oq_setup::hp2_flow_lph();
 
       const bool v1 = !isnan(f1);
       const bool v2 = !isnan(f2);
@@ -188,7 +188,7 @@ binary_sensor:
       static uint32_t mismatch_start_ms = 0;
 
       float f1 = id(hp1_flow).state;
-      float f2 = ${oq_expr_hp2_flow_lph};
+      float f2 = oq_setup::hp2_flow_lph();
 
       // Evaluate only when both are valid; otherwise reset indication.
       if (isnan(f1) || isnan(f2)) {
@@ -370,7 +370,7 @@ interval:
           };
           auto apply_pump_pwm_all = [&](float pwm) {
             apply_pump_pwm_number(id(hp1_pump_speed), pwm);
-            ${oq_stmt_hp2_pump_pwm_call}
+            oq_setup::apply_hp2_pump_pwm(pwm);
           };
           // Common AUTO-entry init used for CM0->* and MANUAL->AUTO edges.
           auto start_auto_transition = [&](const char *tag) {

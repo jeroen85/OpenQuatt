@@ -652,15 +652,15 @@ interval:
           const bool in_cm2 = strcmp(cur_cm_state, "CM2") == 0;
           const bool heating_req_raw = (id(oq_demand_filtered) > 0);
           const bool curve_mode_active = (id(oq_heat_mode_code) == 1);
-          const bool has_hp2 = (strcmp("${system_setup}", "duo") == 0);
+          const bool has_hp2 = oq_setup::has_hp2();
 
           const int hp1_lvl = id(hp1_last_applied_level);
-          const float hp2_lvl_raw = ${oq_expr_hp2_last_applied_level};
+          const float hp2_lvl_raw = oq_setup::hp2_applied_level();
           const int hp2_lvl = isnan(hp2_lvl_raw) ? 0 : (int) lroundf(hp2_lvl_raw);
           const bool both_levels_off = has_hp2 ? ((hp1_lvl <= 0) && (hp2_lvl <= 0)) : (hp1_lvl <= 0);
 
           const float hp1_mode_raw = id(hp1_working_mode).state;
-          const float hp2_mode_raw = ${oq_expr_hp2_working_mode};
+          const float hp2_mode_raw = oq_setup::hp2_working_mode_state();
           const bool hp1_mode_valid = !isnan(hp1_mode_raw);
           const bool hp2_mode_valid = has_hp2 ? !isnan(hp2_mode_raw) : true;
           const bool hp1_heating = hp1_mode_valid && ((int) roundf(hp1_mode_raw) == 2);
@@ -1201,7 +1201,7 @@ interval:
               }
             };
             apply_low_noise(id(hp1_low_noise_mode), opt);
-            ${oq_stmt_hp2_low_noise_call}
+            oq_setup::apply_hp2_low_noise_option(opt);
           };
 
           auto apply_sticky_pump_policy = [&]() -> void {
@@ -1247,7 +1247,7 @@ interval:
               }
             };
             apply_pump_mode_select(id(hp1_set_pump_mode), opt);
-            ${oq_stmt_hp2_pump_mode_call}
+            oq_setup::apply_hp2_pump_mode_option(opt);
 
             if (strcmp(desired_cm, "CM0") == 0) {
               const float stop_pwm = ${oq_cm0_pump_stop_ipwm};
@@ -1262,7 +1262,7 @@ interval:
                 }
               };
               apply_pump_pwm_number(id(hp1_pump_speed), pwm);
-              ${oq_stmt_hp2_pump_pwm_call}
+              oq_setup::apply_hp2_pump_pwm(pwm);
             } else {
               if (id(oq_sticky_active).state) id(oq_sticky_active).publish_state(false);
             }

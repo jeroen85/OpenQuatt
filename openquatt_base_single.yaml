@@ -28,7 +28,7 @@ esphome:
   includes:
     - ${hp_perf_map_header}
     - ${oq_setup_mode_header}
-    - ${oq_setup_facade_header}
+    - ${oq_setup_interface_header}
   on_boot:
     priority: -100
     then:

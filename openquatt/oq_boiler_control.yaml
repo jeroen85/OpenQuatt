@@ -95,7 +95,7 @@ sensor:
       const bool in_cm3 = (id(oq_control_mode_code) == 3);
       if (!in_cm3) return 0.0f;
 
-      const float upstream_outlet_c = ${oq_expr_boiler_upstream_outlet_c};
+      const float upstream_outlet_c = oq_setup::boiler_upstream_outlet_c();
       const float supply_c = id(water_supply_temp_selected).state;
       const float flow_lph = id(flow_rate_selected).state;
 

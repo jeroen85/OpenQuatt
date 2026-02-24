@@ -486,7 +486,7 @@ sensor:
       sorting_group_id: oq_temperatures
     lambda: |-
       const float hp1_outside_c = id(hp1_outside_temp).state;
-      const float hp2_outside_c = ${oq_expr_hp2_outside_c};
+      const float hp2_outside_c = oq_setup::hp2_outside_temp_c();
 
       const bool hp1_valid = !isnan(hp1_outside_c);
       const bool hp2_valid = !isnan(hp2_outside_c);
@@ -516,7 +516,7 @@ sensor:
         if (!isnan(selected_supply_c)) supply_c = selected_supply_c;
       }
       if (isnan(supply_c)) {
-        const float fallback_out_c = ${oq_expr_supply_fallback_c};
+        const float fallback_out_c = oq_setup::supply_fallback_outlet_c();
         if (!isnan(fallback_out_c)) supply_c = fallback_out_c;
       }
       return supply_c;
