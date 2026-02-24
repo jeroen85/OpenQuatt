@@ -134,12 +134,12 @@ Three switches decide whether selected values come from CIC or local/controller 
 
 ### 4.8 Service and diagnostics layer
 
-`oq_common` and `oq_debug_testing` provide:
+`oq_common`, `oq_debug_testing`, and `oq_heat_control` provide:
 
 - firmware update entities and manual check trigger
 - runtime logger level controls
 - one-shot Modbus register read tools (HP1/HP2)
-- runtime balancing service entities (`Runtime lead HP`, runtime counter reset)
+- runtime balancing service entities from heat control (`Runtime lead HP`, runtime counter reset)
 
 ## 5. Heating Strategy Mechanics
 
