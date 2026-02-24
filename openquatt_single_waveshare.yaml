@@ -3,7 +3,6 @@
 # ==============================================================================
 substitutions:
   <<: !include openquatt/oq_substitutions_common.yaml
-  system_setup: "single"
   release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-single.manifest.json"
 
 packages:

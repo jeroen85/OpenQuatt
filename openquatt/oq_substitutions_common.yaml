@@ -10,7 +10,6 @@
 # ----------------------------
 # CORE PROJECT
 # ----------------------------
-system_setup: "duo"                                  # System topology: "duo" (2 HPs) or "single" (1 HP).
 device_name: "openquatt"                              # Internal ESPHome device ID / hostname base.
 friendly_name: OpenQuatt                              # Display name in Home Assistant / UI.
 project_name: "openquatt.openquatt"                   # ESPHome project identifier shown in firmware metadata.
