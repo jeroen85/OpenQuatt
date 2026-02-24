@@ -523,7 +523,7 @@ interval:
           }
 
           // Runtime balancing at single-HP start:
-          // when a single-HP request appears from idle, prefer the runtime lead HP
+          // when a single-HP request appears from idle, prefer the runtime lead index (HP1/HP2)
           // if both units can provide the same requested level.
           {
             const bool single_req = ((hp1_req > 0) != (hp2_req > 0));

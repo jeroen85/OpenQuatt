@@ -2158,11 +2158,11 @@ views:
               - **Reset runtime counters**. Let op: het kan maximaal 1 minuut
               duren voordat je effect ziet.
 
-              - **HP1/HP2 Runtime counters** tonen de actuele teller waarop de
-              runtime-balans wordt gebaseerd.
+              - **Runtimetellers per HP-index (HP1/HP2)** tonen de actuele
+              tellerwaarden waarop de runtime-balans wordt gebaseerd.
 
-              - **Runtime lead HP** toont welke unit momenteel lead is op basis
-              van de laagste runtime.
+              - **Runtime lead index** toont welke HP-index (`HP1`/`HP2`)
+              momenteel geselecteerd is op basis van de laagste runtime.
 
 
               </details>
@@ -2177,7 +2177,7 @@ views:
               - entity: sensor.openquatt_hp2_runtime_hours
                 name: HP2 Runtime
               - entity: sensor.openquatt_runtime_lead_hp_internal
-                name: Runtime lead HP
+                name: Runtime lead index
       - type: grid
         cards:
           - type: heading

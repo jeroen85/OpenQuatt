@@ -145,7 +145,7 @@ Three switches decide whether selected values come from CIC or local/controller 
 - firmware update entities and manual check trigger
 - runtime logger level controls
 - one-shot Modbus register read tools (HP1/HP2)
-- runtime balancing service entities from heat control (`Runtime lead HP`, runtime counter reset)
+- runtime balancing service entities from heat control (`Runtime lead index`, runtime counter reset)
 
 ## 5. Heating Strategy Mechanics
 

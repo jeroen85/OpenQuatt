@@ -232,8 +232,8 @@ Key entities:
 - `Check Firmware Updates`
 - `Debug Level`
 - `Debug Level Modbus`
-- `Runtime lead HP`
-- `Reset Runtime Counters (HP1+HP2)`
+- `Runtime lead index`
+- `Reset Runtime Counters`
 - `Debug Modbus register`
 - `Debug Read HP1 register`
 - `Debug Read HP2 register`

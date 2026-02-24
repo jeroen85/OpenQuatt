@@ -235,7 +235,7 @@ sensor:
 text_sensor:
   - platform: template
     id: oq_runtime_lead_hp_sensor
-    name: "Runtime lead HP"
+    name: "Runtime lead index"
     icon: mdi:source-branch
     update_interval: 10s
     web_server:
