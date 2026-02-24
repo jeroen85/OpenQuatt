@@ -3,19 +3,17 @@
 # ==============================================================================
 # Package load order is intentional:
 # 1) Common platform runtime (API/OTA/UART/diagnostics)
-# 2) Topology adapter (duo wiring)
-# 3) Supervisory/state
-# 4) Demand strategy
-# 5) Actuation layers (heat core + duo policy/flow/boiler)
-# 6) Aggregation/energy telemetry
-# 7) External inputs (CIC)
-# 8) Local sensors/source selection
-# 9) Debug/testing utilities (+ duo extensions)
-# 10) Web UI
-# 11) Per-HP hardware adapters
+# 2) Supervisory/state
+# 3) Demand strategy
+# 4) Actuation layers (heat core + duo policy/flow/boiler)
+# 5) Aggregation/energy telemetry
+# 6) External inputs (CIC)
+# 7) Local sensors/source selection
+# 8) Debug/testing utilities (+ duo extensions)
+# 9) Web UI
+# 10) Per-HP hardware adapters
 # ==============================================================================
 oq_common: !include oq_common.yaml
-oq_topology: !include oq_topology_duo.yaml
 oq_supervisory_controlmode: !include oq_supervisory_controlmode.yaml
 oq_heating_strategy: !include oq_heating_strategy.yaml
 oq_heat_control: !include oq_heat_control.yaml

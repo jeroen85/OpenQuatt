@@ -2,10 +2,9 @@
 # OpenQuatt - Package Includes (single setup)
 # ==============================================================================
 # Package load order is intentional and mirrors the duo stack where possible.
-# Single setup keeps shared control modules and swaps topology + allocator policy.
+# Single setup keeps shared control modules and swaps only allocator policy.
 # ==============================================================================
 oq_common: !include oq_common.yaml
-oq_topology: !include oq_topology_single.yaml
 oq_supervisory_controlmode: !include oq_supervisory_controlmode.yaml
 oq_heating_strategy: !include oq_heating_strategy.yaml
 oq_heat_control: !include oq_heat_control.yaml

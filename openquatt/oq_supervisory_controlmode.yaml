@@ -655,12 +655,12 @@ interval:
           const bool has_secondary_hp = (strcmp("${system_setup}", "duo") == 0);
 
           const int hp1_lvl = id(hp1_last_applied_level);
-          const float hp2_lvl_raw = id(oq_topology_secondary_last_applied_level).state;
+          const float hp2_lvl_raw = ${oq_expr_secondary_last_applied_level};
           const int hp2_lvl = isnan(hp2_lvl_raw) ? 0 : (int) lroundf(hp2_lvl_raw);
           const bool both_levels_off = has_secondary_hp ? ((hp1_lvl <= 0) && (hp2_lvl <= 0)) : (hp1_lvl <= 0);
 
           const float hp1_mode_raw = id(hp1_working_mode).state;
-          const float hp2_mode_raw = id(oq_topology_secondary_working_mode).state;
+          const float hp2_mode_raw = ${oq_expr_secondary_working_mode};
           const bool hp1_mode_valid = !isnan(hp1_mode_raw);
           const bool hp2_mode_valid = has_secondary_hp ? !isnan(hp2_mode_raw) : true;
           const bool hp1_heating = hp1_mode_valid && ((int) roundf(hp1_mode_raw) == 2);
@@ -1191,7 +1191,17 @@ interval:
               id(oq_silent_active).publish_state(silent_active);
             }
 
-            id(oq_topology_set_low_noise_all).execute(silent_active);
+            const char *opt = silent_active ? "On" : "Off";
+            auto apply_low_noise = [&](auto *sel, const char *option) {
+              if (sel == nullptr) return;
+              if (!sel->has_state() || sel->current_option() != option) {
+                auto c = sel->make_call();
+                c.set_option(option);
+                c.perform();
+              }
+            };
+            apply_low_noise(id(hp1_low_noise_mode), opt);
+            ${oq_stmt_secondary_low_noise_call}
           };
 
           auto apply_sticky_pump_policy = [&]() -> void {
@@ -1227,12 +1237,32 @@ interval:
 
             const bool sticky_active = in_cm0 && ms_window_active(id(oq_sticky_until_ms));
             const bool pump_on = (strcmp(desired_cm, "CM0") != 0) || sticky_active;
-            id(oq_topology_set_pump_mode_all).execute(pump_on);
+            const char *opt = pump_on ? "On" : "Off";
+            auto apply_pump_mode_select = [&](auto *sel, const char *option) {
+              if (sel == nullptr) return;
+              if (!sel->has_state() || sel->current_option() != option) {
+                auto c = sel->make_call();
+                c.set_option(option);
+                c.perform();
+              }
+            };
+            apply_pump_mode_select(id(hp1_set_pump_mode), opt);
+            ${oq_stmt_secondary_pump_mode_call}
 
             if (strcmp(desired_cm, "CM0") == 0) {
               const float stop_pwm = ${oq_cm0_pump_stop_ipwm};
-              const float target_pwm = sticky_active ? (float) id(oq_sticky_pwm).state : stop_pwm;
-              id(oq_topology_set_pump_pwm_all).execute(target_pwm);
+              const float pwm = sticky_active ? (float) id(oq_sticky_pwm).state : stop_pwm;
+              auto apply_pump_pwm_number = [&](auto *num, float pwm_local) {
+                if (num == nullptr) return;
+                const float cur = num->state;
+                if (isnan(cur) || fabsf(cur - pwm_local) > 1.0f) {
+                  auto c = num->make_call();
+                  c.set_value(pwm_local);
+                  c.perform();
+                }
+              };
+              apply_pump_pwm_number(id(hp1_pump_speed), pwm);
+              ${oq_stmt_secondary_pump_pwm_call}
             } else {
               if (id(oq_sticky_active).state) id(oq_sticky_active).publish_state(false);
             }

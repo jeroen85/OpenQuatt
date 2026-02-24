@@ -486,7 +486,7 @@ sensor:
       sorting_group_id: oq_temperatures
     lambda: |-
       const float hp1_outside_c = id(hp1_outside_temp).state;
-      const float hp2_outside_c = id(oq_topology_outside_secondary).state;
+      const float hp2_outside_c = ${oq_expr_outside_secondary_c};
 
       const bool hp1_valid = !isnan(hp1_outside_c);
       const bool hp2_valid = !isnan(hp2_outside_c);
@@ -509,14 +509,14 @@ sensor:
     web_server:
       sorting_group_id: oq_temperatures
     lambda: |-
-      // Prefer: selected supply source (water_supply_temp_selected). Fallback comes from topology profile.
+      // Prefer: selected supply source (water_supply_temp_selected). Fallback is setup-specific via substitutions.
       float supply_c = NAN;
       if (id(water_supply_temp_selected).has_state()) {
         const float selected_supply_c = id(water_supply_temp_selected).state;
         if (!isnan(selected_supply_c)) supply_c = selected_supply_c;
       }
       if (isnan(supply_c)) {
-        const float fallback_out_c = id(oq_topology_supply_fallback_temp).state;
+        const float fallback_out_c = ${oq_expr_supply_fallback_c};
         if (!isnan(fallback_out_c)) supply_c = fallback_out_c;
       }
       return supply_c;

@@ -145,7 +145,7 @@ sensor:
     update_interval: 1s
     lambda: |-
       float f1 = id(hp1_flow).state;
-      float f2 = id(oq_topology_flow_secondary).state;
+      float f2 = ${oq_expr_flow_secondary_lph};
 
       const bool v1 = !isnan(f1);
       const bool v2 = !isnan(f2);
@@ -188,7 +188,7 @@ binary_sensor:
       static uint32_t mismatch_start_ms = 0;
 
       float f1 = id(hp1_flow).state;
-      float f2 = id(oq_topology_flow_secondary).state;
+      float f2 = ${oq_expr_flow_secondary_lph};
 
       // Evaluate only when both are valid; otherwise reset indication.
       if (isnan(f1) || isnan(f2)) {
@@ -359,6 +359,19 @@ interval:
             if (value > kMaxIpwm) return kMaxIpwm;
             return value;
           };
+          auto apply_pump_pwm_number = [&](auto *num, float pwm) {
+            if (num == nullptr) return;
+            const float cur = num->state;
+            if (isnan(cur) || fabsf(cur - pwm) > 1.0f) {
+              auto c = num->make_call();
+              c.set_value(pwm);
+              c.perform();
+            }
+          };
+          auto apply_pump_pwm_all = [&](float pwm) {
+            apply_pump_pwm_number(id(hp1_pump_speed), pwm);
+            ${oq_stmt_secondary_pump_pwm_call}
+          };
           // Common AUTO-entry init used for CM0->* and MANUAL->AUTO edges.
           auto start_auto_transition = [&](const char *tag) {
             int fallback = (int) roundf(id(oq_flow_auto_start_pwm).state);
@@ -522,7 +535,7 @@ interval:
             id(oq_flow_last_pwm) = at_pwm;
             stable_cnt = 0;
             pi_failsafe = false;
-            id(oq_topology_set_pump_pwm_all).execute((float) at_pwm);
+            apply_pump_pwm_all((float) at_pwm);
             if (last_mode != "AUTOTUNE") {
               id(oq_flow_mode).publish_state("AUTOTUNE");
               last_mode = "AUTOTUNE";
@@ -568,7 +581,7 @@ interval:
           pwm = clamp_iPWM(pwm);
           id(oq_flow_last_pwm) = pwm;
 
-          id(oq_topology_set_pump_pwm_all).execute((float) pwm);
+          apply_pump_pwm_all((float) pwm);
 
           // External mode text has explicit priority and updates only on change.
           std::string mode_txt;

@@ -63,7 +63,6 @@ Defined in `openquatt/oq_packages_duo.yaml` and `openquatt/oq_packages_single.ya
 | Component | Technical ownership |
 |---|---|
 | `oq_common` | shared runtime services (logger/api/ota/wifi/http/modbus) and service entities |
-| `oq_topology` | setup abstraction layer (single/duo mapping for secondary HP signals and shared actuator fan-out) |
 | `oq_supervisory_controlmode` | Control Mode state machine, low-flow state, power cap factor |
 | `oq_heating_strategy` | strategy mode selection, demand generation, curve/PID path |
 | `oq_heat_control` | shared heat-control state/telemetry and runtime bookkeeping |

@@ -35,21 +35,20 @@ Shared runtime services are loaded from `openquatt/oq_common.yaml`, including:
 Package include order is intentional:
 
 1. `oq_common`
-2. `oq_topology`
-3. `oq_supervisory_controlmode`
-4. `oq_heating_strategy`
-5. `oq_heat_control`
-6. `oq_heat_control_policy` (setup-specific allocator policy)
-7. `oq_flow_control`
-8. `oq_flow_autotune`
-9. `oq_boiler_control`
-10. `oq_energy`
-11. `oq_cic`
-12. `oq_local_sensors`
-13. `oq_debug_testing`
-14. `oq_debug_testing_duo` (duo package only)
-15. `oq_webserver`
-16. `oq_HP_io` (duo: HP1 and HP2, single: HP1 only)
+2. `oq_supervisory_controlmode`
+3. `oq_heating_strategy`
+4. `oq_heat_control`
+5. `oq_heat_control_policy` (setup-specific allocator policy)
+6. `oq_flow_control`
+7. `oq_flow_autotune`
+8. `oq_boiler_control`
+9. `oq_energy`
+10. `oq_cic`
+11. `oq_local_sensors`
+12. `oq_debug_testing`
+13. `oq_debug_testing_duo` (duo package only)
+14. `oq_webserver`
+15. `oq_HP_io` (duo: HP1 and HP2, single: HP1 only)
 
 This order mirrors data dependencies and ownership boundaries.
 
@@ -58,7 +57,6 @@ This order mirrors data dependencies and ownership boundaries.
 OpenQuatt follows strict subsystem ownership:
 
 - **Control Mode state machine**: `oq_supervisory_controlmode`
-- **Setup adapter (single/duo abstraction)**: `oq_topology`
 - **Raw demand (`oq_demand_raw`)**: `oq_heating_strategy`
 - **Compressor level allocation**: `oq_heat_control`
 - **Allocator policy (single/duo)**: `oq_heat_control_policy`

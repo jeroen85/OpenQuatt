@@ -17,7 +17,7 @@ ALLOWED_HP2_FILES = {
     "oq_HP_io.yaml",
     "oq_packages.yaml",
     "oq_packages_duo.yaml",
-    "oq_topology_duo.yaml",
+    "oq_substitutions_common.yaml",
     "oq_heat_control_duo_policy.yaml",
     "oq_debug_testing_duo.yaml",
 }
@@ -47,7 +47,7 @@ def main() -> int:
     for rel, line_no, line in violations:
         print(f"- {rel}:{line_no}: {line}")
     print()
-    print("Move hp2 references into topology/duo policy files or extend this guard with intent.")
+    print("Move hp2 references into duo policy/setup substitutions or extend this guard with intent.")
     return 1
 
 
