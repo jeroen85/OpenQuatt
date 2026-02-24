@@ -96,8 +96,10 @@ These are typically most relevant for behavior shaping:
   - `oq_defrost_comp_min_f`
   - `oq_defrost_comp_boost_steps`
 - Flow:
-  - `oq_flow_mismatch_fallback_lph`
+  - `oq_flow_mismatch_threshold_lph`
   - `oq_flow_mismatch_hyst_lph`
+  - `oq_flow_kp_min`, `oq_flow_kp_max`
+  - `oq_flow_ki_min`, `oq_flow_ki_max`
 - Boiler:
   - `oq_boiler_trip_c`, `oq_boiler_reset_c`
 - CIC:
@@ -172,11 +174,11 @@ Key entities:
 - `Flow AUTO start iPWM`
 - `Flow PI Kp`
 - `Flow PI Ki`
-- `Flow mismatch threshold`
 
 Intent:
 
 - regulate hydraulic behavior and pump output stability
+- monitor mismatch with compile-time thresholds (`oq_flow_mismatch_threshold_lph`, `oq_flow_mismatch_hyst_lph`)
 
 ### 5.5 Flow autotune
 
@@ -213,6 +215,24 @@ Key entities:
 Intent:
 
 - control cloud ingest and source arbitration for control inputs
+
+### 5.7 Service and diagnostics utilities
+
+Key entities:
+
+- `Firmware Update`
+- `Check Firmware Updates`
+- `Debug Level`
+- `Debug Level Modbus`
+- `Runtime lead HP`
+- `Reset Runtime Counters (HP1+HP2)`
+- `Debug Modbus register`
+- `Debug Read HP1 register`
+- `Debug Read HP2 register`
+
+Intent:
+
+- provide service operations and low-level diagnostics without changing control ownership
 
 ## 6. Operational Telemetry Entities (Key)
 

@@ -9,8 +9,9 @@
 # 5) Aggregation/energy telemetry
 # 6) External inputs (CIC)
 # 7) Local sensors/source selection
-# 8) Web UI
-# 9) Per-HP hardware adapters
+# 8) Debug/testing utilities
+# 9) Web UI
+# 10) Per-HP hardware adapters
 # ==============================================================================
 oq_common: !include oq_common.yaml
 oq_supervisory_controlmode: !include oq_supervisory_controlmode.yaml

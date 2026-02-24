@@ -30,6 +30,12 @@ This guide keeps the configuration maintainable and predictable while preserving
   - `oq_HP_io`: per-HP Modbus IO entities and actuators
 - Keep one change type per batch: formatting, comments, or logic.
 - Preserve package include order in `openquatt/oq_packages.yaml` unless dependencies are intentionally redesigned.
+- If you add/remove packages or user-facing entities, update the affected docs in the same PR:
+  - `README.md`
+  - `docs/system-overview.md`
+  - `docs/settings-reference.md`
+  - `docs/home-assistant-dashboard.md`
+  - `docs/specifications/technical-specification.md`
 
 ## Package Structure Convention
 
