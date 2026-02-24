@@ -12,6 +12,11 @@ This project uses GitHub Actions for automated validation, firmware compilation,
     - `esphome config openquatt_heatpump_listener.yaml`
     - `esphome compile openquatt_heatpump_listener.yaml`
     - Upload compiled firmware artifacts per profile
+- `/.github/workflows/docs-consistency.yml`
+  - Trigger: push to `main`, pull requests
+  - Actions:
+    - run `scripts/check_docs_consistency.py --changed-only`
+    - emit non-blocking warnings on likely docs drift (does not fail CI)
 - `/.github/workflows/release-build.yml`
   - Trigger: tag push `v*` and manual dispatch
   - Actions:
