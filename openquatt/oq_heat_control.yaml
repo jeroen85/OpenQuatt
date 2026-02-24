@@ -102,7 +102,7 @@ sensor:
     lambda: |-
       auto nz = [](float value) -> float { return isnan(value) ? 0.0f : value; };
       const float hp1_power_w = nz(id(hp1_power_input).state);
-      const float hp2_power_w = nz(${oq_expr_secondary_power_w});
+      const float hp2_power_w = nz(${oq_expr_hp2_power_w});
       return hp1_power_w + hp2_power_w;
 
   - platform: template
@@ -118,7 +118,7 @@ sensor:
       sorting_group_id: oq_performance
     lambda: |-
       const float hp1_heat_w = id(hp1_heat_power).state;
-      const float hp2_heat_w = ${oq_expr_secondary_heat_w};
+      const float hp2_heat_w = ${oq_expr_hp2_heat_w};
 
       if (isnan(hp1_heat_w) && isnan(hp2_heat_w)) return NAN;
       if (isnan(hp1_heat_w)) return hp2_heat_w;
@@ -188,7 +188,7 @@ sensor:
 
   - platform: template
     id: oq_hp2_compressor_level_sensor
-    name: "Secondary compressor level"
+    name: "HP2 compressor level"
     icon: mdi:stairs
     unit_of_measurement: "lvl"
     state_class: measurement
@@ -197,7 +197,7 @@ sensor:
     web_server:
       sorting_group_id: oq_diagnostics
     lambda: |-
-      const float level = ${oq_expr_secondary_last_applied_level};
+      const float level = ${oq_expr_hp2_last_applied_level};
       return isnan(level) ? NAN : level;
 
 # ----------------------------
@@ -241,10 +241,10 @@ text_sensor:
     web_server:
       sorting_group_id: oq_diagnostics
     lambda: |-
-      const float secondary_minutes_raw = ${oq_expr_secondary_runtime_min};
-      if (isnan(secondary_minutes_raw)) return std::string("HP1");
-      const int secondary_minutes = (int) lroundf(secondary_minutes_raw);
-      const bool lead_is_hp1 = (id(hp1_minutes) <= secondary_minutes);
+      const float hp2_minutes_raw = ${oq_expr_hp2_runtime_min};
+      if (isnan(hp2_minutes_raw)) return std::string("HP1");
+      const int hp2_minutes = (int) lroundf(hp2_minutes_raw);
+      const bool lead_is_hp1 = (id(hp1_minutes) <= hp2_minutes);
       return std::string(lead_is_hp1 ? "HP1" : "HP2");
 
 # ----------------------------
@@ -260,5 +260,5 @@ button:
     on_press:
       - lambda: |-
           id(hp1_minutes) = 0;
-          ${oq_stmt_secondary_runtime_reset}
+          ${oq_stmt_hp2_runtime_reset}
           ESP_LOGW("quatt", "Runtime counters reset.");

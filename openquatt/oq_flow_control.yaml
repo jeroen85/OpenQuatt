@@ -131,7 +131,7 @@ number:
 # SENSORS
 # ----------------------------
 sensor:
-  # Average flow across HP1 + optional secondary HP flow.
+  # Average flow across HP1 + optional HP2 flow.
   - platform: template
     id: flow_rate_hp_avg
     name: "Flow average (local)"
@@ -145,7 +145,7 @@ sensor:
     update_interval: 1s
     lambda: |-
       float f1 = id(hp1_flow).state;
-      float f2 = ${oq_expr_flow_secondary_lph};
+      float f2 = ${oq_expr_hp2_flow_lph};
 
       const bool v1 = !isnan(f1);
       const bool v2 = !isnan(f2);
@@ -176,7 +176,7 @@ sensor:
 binary_sensor:
   - platform: template
     id: oq_flow_mismatch
-    name: "Flow mismatch (HP1 vs secondary)"
+    name: "Flow mismatch (HP1 vs HP2)"
     icon: mdi:alert-circle-outline
     device_class: problem
     entity_category: diagnostic
@@ -188,7 +188,7 @@ binary_sensor:
       static uint32_t mismatch_start_ms = 0;
 
       float f1 = id(hp1_flow).state;
-      float f2 = ${oq_expr_flow_secondary_lph};
+      float f2 = ${oq_expr_hp2_flow_lph};
 
       // Evaluate only when both are valid; otherwise reset indication.
       if (isnan(f1) || isnan(f2)) {
@@ -370,7 +370,7 @@ interval:
           };
           auto apply_pump_pwm_all = [&](float pwm) {
             apply_pump_pwm_number(id(hp1_pump_speed), pwm);
-            ${oq_stmt_secondary_pump_pwm_call}
+            ${oq_stmt_hp2_pump_pwm_call}
           };
           // Common AUTO-entry init used for CM0->* and MANUAL->AUTO edges.
           auto start_auto_transition = [&](const char *tag) {

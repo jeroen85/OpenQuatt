@@ -486,7 +486,7 @@ sensor:
       sorting_group_id: oq_temperatures
     lambda: |-
       const float hp1_outside_c = id(hp1_outside_temp).state;
-      const float hp2_outside_c = ${oq_expr_outside_secondary_c};
+      const float hp2_outside_c = ${oq_expr_hp2_outside_c};
 
       const bool hp1_valid = !isnan(hp1_outside_c);
       const bool hp2_valid = !isnan(hp2_outside_c);

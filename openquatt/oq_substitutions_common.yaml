@@ -23,19 +23,19 @@ release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/dow
 # ----------------------------
 # Compile-time expressions/statements to keep shared modules single-source while
 # avoiding direct HP2 references in single setup builds.
-oq_expr_outside_secondary_c: "id(hp2_outside_temp).state"
-oq_expr_flow_secondary_lph: "id(hp2_flow).state"
+oq_expr_hp2_outside_c: "id(hp2_outside_temp).state"
+oq_expr_hp2_flow_lph: "id(hp2_flow).state"
 oq_expr_supply_fallback_c: "id(hp2_water_out_temp).state"
 oq_expr_boiler_upstream_outlet_c: "id(hp2_water_out_temp).state"
-oq_expr_secondary_working_mode: "id(hp2_working_mode).state"
-oq_expr_secondary_last_applied_level: "(float) id(hp2_last_applied_level)"
-oq_expr_secondary_power_w: "id(hp2_power_input).state"
-oq_expr_secondary_heat_w: "id(hp2_heat_power).state"
-oq_expr_secondary_runtime_min: "(float) id(hp2_minutes)"
-oq_stmt_secondary_runtime_reset: "id(hp2_minutes) = 0;"
-oq_stmt_secondary_low_noise_call: "apply_low_noise(id(hp2_low_noise_mode), opt);"
-oq_stmt_secondary_pump_mode_call: "apply_pump_mode_select(id(hp2_set_pump_mode), opt);"
-oq_stmt_secondary_pump_pwm_call: "apply_pump_pwm_number(id(hp2_pump_speed), pwm);"
+oq_expr_hp2_working_mode: "id(hp2_working_mode).state"
+oq_expr_hp2_last_applied_level: "(float) id(hp2_last_applied_level)"
+oq_expr_hp2_power_w: "id(hp2_power_input).state"
+oq_expr_hp2_heat_w: "id(hp2_heat_power).state"
+oq_expr_hp2_runtime_min: "(float) id(hp2_minutes)"
+oq_stmt_hp2_runtime_reset: "id(hp2_minutes) = 0;"
+oq_stmt_hp2_low_noise_call: "apply_low_noise(id(hp2_low_noise_mode), opt);"
+oq_stmt_hp2_pump_mode_call: "apply_pump_mode_select(id(hp2_set_pump_mode), opt);"
+oq_stmt_hp2_pump_pwm_call: "apply_pump_pwm_number(id(hp2_pump_speed), pwm);"
 
 # ----------------------------
 # HARDWARE
