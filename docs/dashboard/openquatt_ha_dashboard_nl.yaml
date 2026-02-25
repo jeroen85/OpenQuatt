@@ -1867,10 +1867,6 @@ views:
               - **Ramp up/down** begrenzen stijg-/daalsnelheid van gevraagde
               warmte.
 
-              - **Heating strategy transition** bepaalt hoe snel tussen
-              strategiecomponenten wordt overgegaan.
-
-
               </details>
             text_only: true
           - type: entities
@@ -1904,8 +1900,6 @@ views:
                 name: Power House ramp up
               - entity: number.openquatt_power_house_ramp_down
                 name: Power House ramp down
-              - entity: number.openquatt_heating_strategy_transition
-                name: Heating strategy transition
       - type: grid
         cards:
           - type: heading

@@ -17,7 +17,7 @@
 #      - PI output is directly translated to demand 0..20
 #
 # Transition:
-#   - Smooth demand crossfade (Power House <-> Heating Curve) with status + remaining timer.
+#   - Mode switch is immediate; on mode change, PID integral and latch states are reset.
 #
 # Ownership:
 #   - Only this package writes oq_demand_raw.
@@ -355,21 +355,6 @@ number:
     restore_value: true
     optimistic: true
     initial_value: 30
-    web_server:
-      sorting_group_id: oq_tuning_heat
-
-  # Crossfade duration (seconds)
-  - platform: template
-    id: strategy_transition_s
-    name: "Heating Strategy Transition"
-    icon: mdi:swap-horizontal
-    unit_of_measurement: "s"
-    min_value: 10
-    max_value: 300
-    step: 5
-    restore_value: true
-    optimistic: true
-    initial_value: 90
     web_server:
       sorting_group_id: oq_tuning_heat
 
