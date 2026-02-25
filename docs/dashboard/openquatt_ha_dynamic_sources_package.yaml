@@ -20,8 +20,7 @@
 # Notes:
 #   - Trigger interval is 15s to support dynamic entity_id references.
 #   - Invalid/missing source values keep last good proxy value.
-#   - If no last-good value exists yet, startup defaults are used:
-#       outside=10.0, setpoint=20.0, room temperature=20.0
+#   - If no last-good value exists yet, the proxy publishes NaN.
 # ==============================================================================
 
 input_text:
@@ -71,7 +70,7 @@ template:
           {% elif prev is not none %}
             {{ prev }}
           {% else %}
-            10.0
+            {{ 'nan' }}
           {% endif %}
         attributes:
           source_entity: >-
@@ -92,7 +91,7 @@ template:
           {% elif prev is not none %}
             {{ prev }}
           {% else %}
-            20.0
+            {{ 'nan' }}
           {% endif %}
         attributes:
           source_entity: >-
@@ -113,7 +112,7 @@ template:
           {% elif prev is not none %}
             {{ prev }}
           {% else %}
-            20.0
+            {{ 'nan' }}
           {% endif %}
         attributes:
           source_entity: >-

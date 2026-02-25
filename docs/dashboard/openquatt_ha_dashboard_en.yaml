@@ -1793,6 +1793,9 @@ views:
               - `sensor.thermostaat_setpoint`
               - `sensor.thermostaat_roomtemperature`
 
+              If a source is invalid, the proxy keeps the last valid value.
+              If there is no last valid value yet, the proxy state is `nan`.
+
               </details>
             text_only: true
           - type: entities
