@@ -20,6 +20,7 @@ sensor:
     id: outside_temp_ha
     name: "HA - Outside Temperature"
     entity_id: ${ha_outside_temp_entity_id}
+    internal: false
     icon: mdi:thermometer
     web_server:
       sorting_group_id: oq_ha
@@ -28,6 +29,7 @@ sensor:
     id: thermostat_setpoint_ha
     name: "HA - Thermostat Setpoint"
     entity_id: ${ha_room_setpoint_entity_id}
+    internal: false
     icon: mdi:thermostat
     web_server:
       sorting_group_id: oq_ha
@@ -36,6 +38,7 @@ sensor:
     id: thermostat_room_temp_ha
     name: "HA - Thermostat Room Temperature"
     entity_id: ${ha_room_temp_entity_id}
+    internal: false
     icon: mdi:home-thermometer
     web_server:
       sorting_group_id: oq_ha

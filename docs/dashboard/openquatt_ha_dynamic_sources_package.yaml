@@ -20,6 +20,8 @@
 # Notes:
 #   - Trigger interval is 15s to support dynamic entity_id references.
 #   - Invalid/missing source values keep last good proxy value.
+#   - If no last-good value exists yet, startup defaults are used:
+#       outside=10.0, setpoint=20.0, room temperature=20.0
 # ==============================================================================
 
 input_text:
@@ -62,14 +64,14 @@ template:
         icon: mdi:thermometer
         state: >-
           {% set entity = states('input_text.openquatt_source_outdoor_temperature') | trim %}
-          {% set raw = states(entity) if entity else none %}
-          {% set val = raw | float(none) %}
+          {% set val = states(entity) | float(none) if entity else none %}
+          {% set prev = this.state | float(none) if this is defined else none %}
           {% if val is not none %}
             {{ val }}
-          {% elif this is defined and this.state not in ['unknown', 'unavailable', 'none', ''] %}
-            {{ this.state }}
+          {% elif prev is not none %}
+            {{ prev }}
           {% else %}
-            unknown
+            10.0
           {% endif %}
         attributes:
           source_entity: >-
@@ -83,14 +85,14 @@ template:
         icon: mdi:thermostat
         state: >-
           {% set entity = states('input_text.openquatt_source_room_setpoint') | trim %}
-          {% set raw = states(entity) if entity else none %}
-          {% set val = raw | float(none) %}
+          {% set val = states(entity) | float(none) if entity else none %}
+          {% set prev = this.state | float(none) if this is defined else none %}
           {% if val is not none %}
             {{ val }}
-          {% elif this is defined and this.state not in ['unknown', 'unavailable', 'none', ''] %}
-            {{ this.state }}
+          {% elif prev is not none %}
+            {{ prev }}
           {% else %}
-            unknown
+            20.0
           {% endif %}
         attributes:
           source_entity: >-
@@ -104,14 +106,14 @@ template:
         icon: mdi:home-thermometer
         state: >-
           {% set entity = states('input_text.openquatt_source_room_temperature') | trim %}
-          {% set raw = states(entity) if entity else none %}
-          {% set val = raw | float(none) %}
+          {% set val = states(entity) | float(none) if entity else none %}
+          {% set prev = this.state | float(none) if this is defined else none %}
           {% if val is not none %}
             {{ val }}
-          {% elif this is defined and this.state not in ['unknown', 'unavailable', 'none', ''] %}
-            {{ this.state }}
+          {% elif prev is not none %}
+            {{ prev }}
           {% else %}
-            unknown
+            20.0
           {% endif %}
         attributes:
           source_entity: >-

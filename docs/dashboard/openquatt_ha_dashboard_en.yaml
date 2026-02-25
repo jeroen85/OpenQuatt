@@ -1819,6 +1819,8 @@ views:
               towards OpenQuatt.
 
               The `Valid` status should be `on` for all three signals.
+              If `Valid` is `off`, the proxy keeps the last valid value
+              (or a startup default).
 
               </details>
             text_only: true
