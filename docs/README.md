@@ -59,9 +59,9 @@ docs/
 - `getting-started.md`: hardware prerequisites, baseline runtime, build/flash flow, first validation.
 - `system-overview.md`: package architecture, control ownership, data pipeline, safety model.
 - `control-modes-and-flow.md`: CM behavior, Flow Mode semantics, Heating Strategy modes, and precedence.
-- `settings-reference.md`: compile-time vs runtime settings and tuning intent.
-- `tuning-and-troubleshooting.md`: practical workflows, symptom-driven diagnostics, safe iteration.
-- `home-assistant-dashboard.md`: how the dashboard is organized and how to use each tab.
+- `settings-reference.md`: compile-time vs runtime settings, including low-load and anti-flip controls.
+- `tuning-and-troubleshooting.md`: practical workflows, symptom-driven diagnostics, and low-load/zero-edge stability tuning.
+- `home-assistant-dashboard.md`: dashboard structure and how to use new low-load and shadow-arbiter debug cards.
 - `release-process.md`: GitHub Actions CI/release flow, tag strategy, and release execution steps.
 - `dashboard/README.md`: dashboard language variants and Home Assistant import instructions.
 - `specifications/functional-specification.md`: what the system must do.

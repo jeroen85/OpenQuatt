@@ -133,6 +133,34 @@ Key globals include:
 - `oq_cm1_until_ms`
 - `oq_cm1_next_after`
 - `oq_power_cap_f`
+- `oq_cm2_idle_since_ms`
+- `oq_cm2_entered_ms`
+- `oq_cm2_reentry_block_until_ms`
+- `oq_lowload_heat_latch`
+
+Supervisory low-load/idle-exit technical behavior (Power House mode):
+
+- dynamic low-load threshold estimation via `oq_perf::interp_power_th_w(1, Tamb, Tsup)`
+- dynamic threshold clamps:
+  - `off`: `0.75 * pmin`, clamped to `500..1600 W`
+  - `on`: `1.00 * pmin`, clamped to `700..2200 W`
+  - enforce minimum hysteresis gap (`on >= off + 200 W`)
+- CM2 idle-exit arming requires:
+  - in CM2
+  - active heat request
+  - both HP levels off
+  - both units idle
+  - startup-grace inactive
+  - high-load idle-exit block inactive
+- startup-grace uses `${oq_cm2_min_run_s}` after CM2 entry.
+- when idle-exit trips, optional re-entry lockout window is applied.
+
+Supervisory diagnostics exposed:
+
+- `Low-load dynamic thresholds` text (`pmin/off/on`)
+- `CM2 idle-exit reason` text
+- `CM2 re-entry block active` binary sensor
+- `Heat-enable state (shadow)` text state machine
 
 ## 8. Heating Strategy Engine (Technical)
 
@@ -149,10 +177,13 @@ Two technical branches:
 - computes `oq_supply_target_temp`
 - drives climate PID (`oq_heating_curve_pid`)
 - maps PID output (`heating_curve_pid_out`) to demand scale
+- applies `Curve Temp Deadband` and `Curve Demand Off Hold` around zero-demand edge
+- applies overtemp latch to reduce demand chatter near supply-target crossover
 
 Technical guard:
 
 - invalid SP/PV triggers demand-safe behavior and PID integral reset.
+- overtemp latch also triggers PID integral reset to avoid continued push during over-target phase.
 
 ## 9. Heat Allocation Engine (Technical)
 
@@ -166,6 +197,11 @@ Execution sequence:
 6. Apply minimum-runtime stop blocking.
 7. Apply mode + level writes with write-on-change discipline.
 8. Update runtime counters and start/stop timestamps.
+
+Demand filtering details:
+
+- upward filtering uses runtime control `Demand filter ramp up` (`step/min`)
+- downward filtering remains immediate to preserve fast demand release
 
 ### Optimizer-specific notes
 

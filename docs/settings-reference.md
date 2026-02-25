@@ -118,6 +118,9 @@ Key entities:
 - `Silent end time`
 - `CM3 deficit ON threshold`
 - `CM3 deficit OFF threshold`
+- `Low-load OFF fallback`
+- `Low-load ON fallback`
+- `Low-load CM2 re-entry block`
 
 Intent:
 
@@ -135,22 +138,55 @@ Key entities:
 - `Maximum heating outdoor temperature`
 - `Power House Kp (W-K)`
 - `Power House deadband`
+- `Power House comfort below setpoint`
+- `Power House comfort above setpoint`
+- `Power House comfort bias base`
+- `Power House comfort bias max`
+- `Power House comfort bias up`
+- `Power House comfort bias down`
+- `Power House room error avg tau`
 - `Power House ramp up`
 - `Power House ramp down`
 - `Curve Tsupply @ -20/-10/0/5/10/15°C`
 - `Heating Curve PID Kp/Ki/Kd`
 - `Curve Fallback Tsupply (No Outside Temp)`
+- `Curve Temp Deadband`
+- `Curve Demand Off Hold`
 
 Intent:
 
 - define demand generation function
 - control aggressiveness and stability
+- tune adaptive warm-bias behavior around room setpoint
+
+Behavior summary (Power House comfort loop):
+
+- `Power House comfort bias` is adaptive and shifts the effective room target:
+  `effective_target = room_setpoint + comfort_bias`.
+- `comfort_bias` adapts from filtered room error (`Power House room error avg`):
+  - ramps up when average room error is sufficiently cold.
+  - ramps down when average room error is sufficiently warm.
+- `comfort_bias` is clamped between:
+  - `Power House comfort bias base` (minimum warm shift)
+  - `Power House comfort bias max` (maximum warm shift)
+- Asymmetric comfort window is built around `effective_target`:
+  - lower edge: `effective_target - comfort below setpoint`
+  - upper edge: `effective_target + comfort above setpoint`
+  - upper edge is additionally capped at `room_setpoint + comfort bias max`.
+- `Power House deadband` then suppresses tiny corrections around these edges.
+
+Interpretation tip:
+
+- `comfort bias max` limits where controller counter-action begins on the warm
+  side. It does not guarantee that room temperature can never exceed that value
+  due to building/system inertia.
 
 ### 5.3 Heat allocation
 
 Key entities:
 
 - `Minimum runtime`
+- `Demand filter ramp up`
 - `Single HP Assist ON Deficit`
 - `Single HP Assist OFF Deficit`
 - `Single HP Assist ON Hold`
@@ -243,6 +279,13 @@ Intent:
 - `Demand raw`
 - `Demand filtered`
 - `Demand Curve (raw)`
+- `Low-load dynamic thresholds`
+- `Heat-enable state (shadow)`
+- `CM2 idle-exit reason`
+- `CM2 re-entry block active`
+- `Power House effective room target`
+- `Power House comfort bias`
+- `Power House room error avg`
 
 ### Flow telemetry
 

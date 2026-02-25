@@ -43,6 +43,9 @@ Before changing anything, record:
 - `Power House – P_req`
 - `Demand raw`
 - `Demand filtered`
+- `Low-load dynamic thresholds`
+- `CM2 idle-exit reason`
+- `CM2 re-entry block active`
 - `Total Power Input`
 - `Total Heat Power`
 - `Total COP`
@@ -65,20 +68,96 @@ Primary knobs:
 - `Maximum heating outdoor temperature`
 - `Power House Kp (W-K)`
 - `Power House deadband`
+- `Power House comfort below setpoint`
+- `Power House comfort above setpoint`
+- `Power House comfort bias base`
+- `Power House comfort bias max`
+- `Power House comfort bias up`
+- `Power House comfort bias down`
+- `Power House room error avg tau`
 - `Power House ramp up`
 - `Power House ramp down`
+
+Generic starting point:
+
+- For mixed/generic installations, start with `Power House Kp (W-K) = 2000`
+  and tune in steps of `200` based on comfort and mode-stability KPIs.
+
+Comfort loop behavior (exact order):
+
+1. Compute instantaneous room error against thermostat setpoint:
+   `room_error_now = room_temp - setpoint`.
+2. Filter this to a moving average (`Power House room error avg`) using
+   `room error avg tau` as the time constant.
+3. Adapt `comfort bias`:
+   - if `room_error_avg < -0.05 C`: bias ramps up with `comfort bias up`.
+   - if `room_error_avg > +0.20 C`: bias ramps down with `comfort bias down`.
+   - bias is always clamped to `[comfort bias base, comfort bias max]`.
+4. Compute effective room target:
+   `effective_target = setpoint + comfort bias`.
+5. Build asymmetric comfort window around that effective target:
+   - lower edge: `effective_target - comfort below setpoint`
+   - upper edge (uncapped): `effective_target + comfort above setpoint`
+   - upper edge (capped): `min(uncapped_upper, setpoint + comfort bias max)`
+6. Convert room deviation outside this window to extra heat correction (`Kp`)
+   and then apply `deadband` + ramp limiter.
+
+Important nuance:
+
+- `comfort bias max` is the cap for where upper room correction starts.
+  It is not a hard physical room-temperature ceiling; thermal inertia can still
+  cause temporary overshoot beyond that point.
+
+What each parameter changes:
+
+- `Power House comfort below setpoint`: how far below target room temperature
+  may drop before positive room correction starts.
+- `Power House comfort above setpoint`: how far above target room temperature
+  may rise before negative room correction starts (subject to cap).
+- `Power House comfort bias base`: minimum warm shift always applied to the
+  effective room target.
+- `Power House comfort bias max`: maximum warm shift and cap for upper
+  correction edge (`setpoint + bias max`).
+- `Power House comfort bias up`: how quickly bias increases during sustained
+  cold average error.
+- `Power House comfort bias down`: how quickly bias decreases during sustained
+  warm average error.
+- `Power House room error avg tau`: smoothing time for room error average
+  (higher = slower adaptation, lower = faster adaptation).
+- `Power House deadband`: zeroes small room-correction error around comfort
+  window edges to reduce micro-hunting.
 
 What to watch:
 
 - `P_house` vs `P_req`
 - `Demand raw` and `Demand filtered`
 - CM2/CM3 stability
+- `Low-load dynamic thresholds`
+- `CM2 idle-exit reason`
+- `CM2 re-entry block active`
+- `Power House effective room target`
+- `Power House comfort bias`
+- `Power House room error avg`
 
 Typical adjustments:
 
 - Too aggressive demand swings: increase deadband or reduce ramp-up.
 - Slow recovery after setback: increase ramp-up or Kp.
 - Overreaction around setpoint: reduce Kp or increase deadband.
+- Persistent undershoot with stable low-load behavior: raise `comfort bias base` or `comfort bias max`.
+- Too warm for prolonged periods: reduce `comfort bias base` or increase `comfort bias down`.
+
+Low-load anti-flip controls (Power House):
+
+- `Low-load OFF fallback` and `Low-load ON fallback` are fallback thresholds when dynamic values are unavailable.
+- `Low-load CM2 re-entry block` defines how long CM2 re-entry is blocked after an idle-exit trip.
+- Dynamic thresholds (`pmin/off/on`) are clamped; this is expected and protects portability across installations.
+
+Adaptive comfort-bias guardrail:
+
+- Upper room correction edge is capped at `setpoint + comfort bias max`.
+  This limits controller biasing, but is not a hard physical room-temperature
+  limit.
 
 ### 4.2 Heating-curve path
 
@@ -93,12 +172,19 @@ What to watch:
 - `Heating Curve Supply Target`
 - selected supply temperature
 - `Demand Curve (raw)`
+- `Demand raw` and `Demand filtered` near zero edge
+
+Low-demand stabilization controls (Heating Curve):
+
+- `Curve Temp Deadband` reduces hunting around `Supply target`.
+- `Curve Demand Off Hold` delays final `1 -> 0` demand drop to avoid CM1/CM2 flip.
 
 ## 5. Heat Allocation Tuning
 
 Primary knobs:
 
 - `Minimum runtime`
+- `Demand filter ramp up`
 - `Single HP Assist ON Deficit`
 - `Single HP Assist OFF Deficit`
 - `Single HP Assist ON Hold`
@@ -190,6 +276,9 @@ Remember: fault state logic is timer-based and mode-context-dependent.
 | Symptom | First checks | Typical corrective action |
 |---|---|---|
 | Demand jumps too hard | `Demand raw`, strategy params | increase deadband / lower ramp-up |
+| CM1<->CM2 flips at low load | `Low-load dynamic thresholds`, `CM2 idle-exit reason`, `CM2 re-entry block active` | increase re-entry block or retune Power House ramp/deadband; verify `P_req` stays structurally below `off` when no sustained heat is needed |
+| Long periods below room setpoint | `Power House effective room target`, `Power House comfort bias`, `Power House room error avg` | increase comfort bias base/max, or lower deadband if correction starts too late |
+| Curve mode drops to 0 demand too quickly | `Curve Temp Deadband`, `Curve Demand Off Hold`, `Supply target` vs actual | increase deadband slightly or extend off-hold |
 | CM3 toggles often | deficit thresholds/timers | widen ON/OFF gap, increase hold times |
 | Flow oscillates | flow PI and setpoint | reduce Kp/Ki, verify hydraulics |
 | COP looks implausible | power and heat inputs | validate source values and power integration |

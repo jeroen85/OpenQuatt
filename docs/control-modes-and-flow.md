@@ -61,6 +61,14 @@ Promotion to CM3 is driven by `oq_P_deficit_w` and ON threshold + timer.
 Demotion back to CM2 is driven by OFF threshold + timer.
 Minimum dwell times avoid rapid toggling.
 
+Additional CM2 anti-flip behavior:
+
+- CM2 idle-exit is only allowed when both HP levels are 0 and both units are idle for `oq_cm2_idle_exit_s`.
+- A CM2 startup-grace window (`oq_cm2_min_run_s`) blocks idle-exit right after entering CM2.
+- In Power House mode, idle-exit is blocked when `P_req` is above low-load OFF threshold (high-load guard).
+- When idle-exit trips in Power House mode, a temporary CM2 re-entry block may hold return to CM2.
+- In heating-curve mode, CM1 postflow can resume directly to CM2 when demand recovered, avoiding unnecessary CM0 hops.
+
 ## 3. Supervisory Override
 
 Runtime entity: `select.openquatt_cm_override`
@@ -96,6 +104,9 @@ Runtime entity: `select.openquatt_heating_mode`
 - Applies room correction (`Trsp - Tr`) with deadband.
 - Applies ramp constraints.
 - Maps to demand `0..20`.
+- Adds low-load OFF/ON hysteresis on `P_req` through a heat-request latch.
+- Uses dynamic low-load thresholds (`pmin/off/on`) derived from performance map level 1, with bounded clamps and fallback values.
+- Exposes diagnostics: `Low-load dynamic thresholds`, `CM2 idle-exit reason`, `CM2 re-entry block active`, and `Heat-enable state (shadow)`.
 
 ### 5.2 Water Temperature Control (heating curve)
 
@@ -103,6 +114,8 @@ Runtime entity: `select.openquatt_heating_mode`
 - Runs PID on selected supply temperature.
 - Maps PID output to demand `0..20`.
 - Resets integral when SP/PV is invalid.
+- Adds near-zero anti-flip guards: `Curve Temp Deadband` and `Curve Demand Off Hold`.
+- Uses an overtemp latch to avoid direct demand hard-drop chatter around the supply-target crossover.
 
 ## 6. Flow Mode
 

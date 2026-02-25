@@ -58,6 +58,7 @@ oq_cm0_pump_stop_ipwm: "1000.0"                       # iPWM setpoint that force
 oq_strategy_loop_s: "5"                               # Interval for strategy calculations and mode switching [s].
 oq_strategy_demand_max_f: "20.0"                      # Upper bound of demand scale for mapping PID/power -> f.
 oq_temp_guard_delta_c: "0.5"                          # Minimum valid margin between T0 and Tc in the house model [°C].
+oq_ph_deadband_default_k: "0.14"                      # Default Power House room-error deadband [K].
 
 # ----------------------------
 # HEAT CONTROL

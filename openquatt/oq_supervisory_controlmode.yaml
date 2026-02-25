@@ -84,6 +84,18 @@ globals:
     type: uint32_t
     restore_value: false
     initial_value: '0'
+  - id: oq_cm2_reentry_block_until_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_lowload_heat_latch
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: oq_cm2_entered_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
 
   # Sticky Pump Protection (CM0-only)
   - id: oq_cm0_since_ms
@@ -154,6 +166,46 @@ globals:
     type: int
     restore_value: false
     initial_value: '0'
+  # DEBUG-RUNTIME START: Power House low-load + shadow heat-enable diagnostics
+  # Dynamic low-load diagnostics (Power House)
+  - id: oq_low_load_pmin_dyn_w
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+  - id: oq_low_load_off_dyn_w
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+  - id: oq_low_load_on_dyn_w
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+  # Shadow heat-enable arbiter state machine (diagnostics only).
+  - id: oq_heat_enable_state_shadow
+    type: int
+    restore_value: false
+    initial_value: '0'  # 0=IDLE,1=PREHEAT,2=HEATING,3=POSTFLOW,4=LOCKOUT
+  - id: oq_heat_enable_preheat_until_ms_shadow
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_heat_enable_postflow_until_ms_shadow
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_heat_enable_lockout_until_ms_shadow
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_heat_enable_last_on_ms_shadow
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_heat_enable_last_off_ms_shadow
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  # DEBUG-RUNTIME END
 
 # ----------------------------
 # CONTROL INPUTS
@@ -250,6 +302,51 @@ number:
     entity_category: config
     web_server:
       sorting_group_id: oq_control
+
+  - platform: template
+    id: oq_low_load_off_w
+    name: "Low-load OFF fallback"
+    icon: mdi:arrow-collapse-down
+    unit_of_measurement: "W"
+    min_value: 0
+    max_value: 3000
+    step: 25
+    optimistic: true
+    restore_value: true
+    initial_value: 900
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_control
+
+  - platform: template
+    id: oq_low_load_on_w
+    name: "Low-load ON fallback"
+    icon: mdi:arrow-expand-up
+    unit_of_measurement: "W"
+    min_value: 0
+    max_value: 3000
+    step: 25
+    optimistic: true
+    restore_value: true
+    initial_value: 1300
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_control
+
+  - platform: template
+    id: oq_low_load_reentry_block_s
+    name: "Low-load CM2 re-entry block"
+    icon: mdi:timer-lock-outline
+    unit_of_measurement: "s"
+    min_value: 0
+    max_value: 900
+    step: 5
+    optimistic: true
+    restore_value: true
+    initial_value: 300
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_control
 # ----------------------------
 # SCHEDULE INPUTS
 # ----------------------------
@@ -315,6 +412,17 @@ binary_sensor:
     web_server:
       sorting_group_id: oq_diagnostics
 
+  # DEBUG-RUNTIME START: CM2 low-load / idle-exit diagnostics
+  - platform: template
+    id: oq_cm2_reentry_block_active_bs
+    name: "CM2 re-entry block active"
+    icon: mdi:timer-lock-outline
+    device_class: running
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+  # DEBUG-RUNTIME END
+
 text_sensor:
   - platform: template
     id: oq_control_mode
@@ -358,6 +466,46 @@ text_sensor:
     entity_category: diagnostic
     web_server:
       sorting_group_id: oq_diagnostics
+
+  # DEBUG-RUNTIME START: Power House low-load + shadow heat-enable diagnostics
+  - platform: template
+    id: oq_low_load_dyn_status
+    name: "Low-load dynamic thresholds"
+    icon: mdi:chart-bell-curve
+    update_interval: 5s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      const float pmin = id(oq_low_load_pmin_dyn_w);
+      const float off  = id(oq_low_load_off_dyn_w);
+      const float on   = id(oq_low_load_on_dyn_w);
+      char b[96];
+      if (isnan(pmin) || isnan(off) || isnan(on)) {
+        snprintf(b, sizeof(b), "dynamic: n/a (fallback in use)");
+      } else {
+        snprintf(b, sizeof(b), "pmin=%.0fW off=%.0fW on=%.0fW", pmin, off, on);
+      }
+      return std::string(b);
+
+  - platform: template
+    id: oq_heat_enable_state_shadow_ts
+    name: "Heat-enable state (shadow)"
+    icon: mdi:state-machine
+    update_interval: never
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+  - platform: template
+    id: oq_cm2_idle_exit_reason_ts
+    name: "CM2 idle-exit reason"
+    icon: mdi:information-outline
+    update_interval: never
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+  # DEBUG-RUNTIME END
 sensor:
   - platform: template
     id: power_cap_level
@@ -521,6 +669,7 @@ interval:
           const char* cur_cm_state = id(oq_control_mode).state.c_str();
           const bool in_cm2 = strcmp(cur_cm_state, "CM2") == 0;
           const bool heating_req_raw = (id(oq_demand_filtered) > 0);
+          const bool curve_mode_active = (id(oq_heat_mode_code) == 1);
 
           const int hp1_lvl = id(hp1_last_applied_level);
           const int hp2_lvl = id(hp2_last_applied_level);
@@ -536,14 +685,208 @@ interval:
           const bool both_units_idle = both_modes_known && !hp1_heating && !hp2_heating;
 
           bool heating_req = heating_req_raw;
+          float p_req_w = NAN;
+          float low_load_off_w = NAN;
+          float low_load_on_w = NAN;
+          bool reentry_block_active = false;
+          if (!curve_mode_active) {
+            // DEBUG-RUNTIME: dynamic low-load thresholds + latch/re-entry diagnostics (Power House).
+            // Power House low-load hysteresis on P_req to prevent CM1<->CM2 chattering.
+            // Prefer dynamic thresholds from perf-map level-1 thermal power.
+            auto clampf = [](float v, float lo, float hi)->float {
+              if (v < lo) return lo;
+              if (v > hi) return hi;
+              return v;
+            };
+            float off_w = id(oq_low_load_off_w).state; // fallback OFF
+            float on_w  = id(oq_low_load_on_w).state;  // fallback ON
+            if (isnan(off_w) || off_w < 0.0f) off_w = 900.0f;
+            if (isnan(on_w)  || on_w  < 0.0f) on_w  = 1300.0f;
+
+            const float Tamb = id(outside_temp_selected).state;
+            const float Tsup = id(oq_system_supply_temp).state;
+            float pmin_dyn = NAN;
+            if (!isnan(Tamb) && !isnan(Tsup)) {
+              pmin_dyn = oq_perf::interp_power_th_w(1, Tamb, Tsup);
+              if (isnan(pmin_dyn) || pmin_dyn <= 0.0f) pmin_dyn = NAN;
+            }
+            if (!isnan(pmin_dyn)) {
+              off_w = clampf(0.75f * pmin_dyn, 500.0f, 1600.0f);
+              on_w  = clampf(1.00f * pmin_dyn, 700.0f, 2200.0f);
+            }
+            if (on_w < off_w + 200.0f) on_w = off_w + 200.0f;
+            if (on_w > 2200.0f) on_w = 2200.0f;
+            if (off_w > on_w - 200.0f) off_w = fmaxf(500.0f, on_w - 200.0f);
+            low_load_off_w = off_w;
+            low_load_on_w = on_w;
+            id(oq_low_load_pmin_dyn_w) = pmin_dyn;
+            id(oq_low_load_off_dyn_w) = off_w;
+            id(oq_low_load_on_dyn_w) = on_w;
+
+            p_req_w = id(oq_phouse_req_w);
+            bool latch = id(oq_lowload_heat_latch);
+            if (!isnan(p_req_w)) {
+              if (!latch && p_req_w >= on_w) latch = true;
+              else if (latch && p_req_w <= off_w) latch = false;
+            } else {
+              // Fallback when P_req is unavailable.
+              latch = heating_req_raw;
+            }
+            id(oq_lowload_heat_latch) = latch;
+            heating_req = heating_req_raw && latch;
+
+            // Re-entry block: allow early release only when demand recovers clearly (P_req >= on_w).
+            reentry_block_active = ms_window_active(id(oq_cm2_reentry_block_until_ms));
+            if (reentry_block_active && !isnan(p_req_w) && p_req_w >= on_w) {
+              id(oq_cm2_reentry_block_until_ms) = 0;
+              reentry_block_active = false;
+            }
+          } else {
+            // Curve mode keeps original heat-request semantics.
+            id(oq_lowload_heat_latch) = heating_req_raw;
+            id(oq_cm2_reentry_block_until_ms) = 0;
+            reentry_block_active = false;
+            id(oq_low_load_pmin_dyn_w) = NAN;
+            id(oq_low_load_off_dyn_w) = NAN;
+            id(oq_low_load_on_dyn_w) = NAN;
+          }
+
           const uint32_t cm2_idle_exit_ms = (uint32_t)(${oq_cm2_idle_exit_s}UL * 1000UL);
-          if (in_cm2 && heating_req_raw && both_levels_off && both_units_idle) {
+          const uint32_t cm2_startup_grace_ms = (uint32_t)(${oq_cm2_min_run_s}UL * 1000UL);
+          const bool cm2_startup_grace_active =
+              in_cm2 && id(oq_cm2_entered_ms) != 0 &&
+              ((uint32_t)(now_ms - id(oq_cm2_entered_ms)) < cm2_startup_grace_ms);
+          const bool ph_high_load_idle_exit_block =
+              (!curve_mode_active) && !isnan(p_req_w) && !isnan(low_load_off_w) && (p_req_w > low_load_off_w);
+          // DEBUG-RUNTIME: expose why CM2 idle-exit path is armed/blocked/tripped.
+          std::string cm2_idle_exit_reason = "not_in_cm2";
+          if (in_cm2) {
+            if (!heating_req) cm2_idle_exit_reason = "no_heat_req";
+            else if (!both_levels_off) cm2_idle_exit_reason = "levels_on";
+            else if (!both_units_idle) cm2_idle_exit_reason = "units_not_idle";
+            else if (cm2_startup_grace_active) cm2_idle_exit_reason = "blocked_startup_grace";
+            else if (ph_high_load_idle_exit_block) cm2_idle_exit_reason = "blocked_high_load";
+            else cm2_idle_exit_reason = "timing";
+          }
+          bool cm2_idle_exit_trip = false;
+          if (in_cm2 && heating_req && both_levels_off && both_units_idle &&
+              !cm2_startup_grace_active && !ph_high_load_idle_exit_block) {
             if (id(oq_cm2_idle_since_ms) == 0) id(oq_cm2_idle_since_ms) = now_ms;
             if ((uint32_t)(now_ms - id(oq_cm2_idle_since_ms)) >= cm2_idle_exit_ms) {
               heating_req = false;
+              cm2_idle_exit_trip = true;
+              cm2_idle_exit_reason = "trip";
             }
           } else {
             id(oq_cm2_idle_since_ms) = 0;
+          }
+          if (!curve_mode_active) {
+            const uint32_t reentry_block_ms = (uint32_t) lroundf(id(oq_low_load_reentry_block_s).state) * 1000UL;
+            // Pad A behavior: set block only when CM2 idle-exit trips.
+            if (cm2_idle_exit_trip && reentry_block_ms > 0) {
+              id(oq_cm2_reentry_block_until_ms) = now_ms + reentry_block_ms;
+              reentry_block_active = true;
+            }
+            // During active block, CM2 may not be re-entered from non-CM2 states.
+            if (!in_cm2 && reentry_block_active) {
+              heating_req = false;
+            }
+          }
+          // DEBUG-RUNTIME: publish CM2 idle-exit reason + low-load re-entry block state.
+          static std::string last_cm2_idle_exit_reason;
+          publish_text_if_changed(
+              id(oq_cm2_idle_exit_reason_ts),
+              cm2_idle_exit_reason,
+              last_cm2_idle_exit_reason);
+          publish_binary_if_changed(id(oq_cm2_reentry_block_active_bs), reentry_block_active);
+
+          // -------------------------------------------------
+          // 1b) Shadow heat-enable arbiter (diagnostics only)
+          //     States: IDLE/PREHEAT/HEATING/POSTFLOW/LOCKOUT
+          // -------------------------------------------------
+          {
+            // DEBUG-RUNTIME: shadow state-machine for stepwise migration to a dedicated heat-enable arbiter.
+            const bool heat_req_shadow = heating_req;
+            const uint32_t min_run_ms = (uint32_t)(${oq_cm2_min_run_s}UL * 1000UL);
+            const uint32_t lockout_ms = curve_mode_active
+                ? 0
+                : (uint32_t) lroundf(id(oq_low_load_reentry_block_s).state) * 1000UL;
+
+            auto shadow_state_to_text = [](int st) -> const char* {
+              if (st == 1) return "PREHEAT";
+              if (st == 2) return "HEATING";
+              if (st == 3) return "POSTFLOW";
+              if (st == 4) return "LOCKOUT";
+              return "IDLE";
+            };
+
+            int st = id(oq_heat_enable_state_shadow);
+            if (st < 0 || st > 4) st = 0;
+
+            switch (st) {
+              case 0: { // IDLE
+                if (heat_req_shadow) {
+                  st = 1;
+                  id(oq_heat_enable_preheat_until_ms_shadow) = now_ms + prepost_ms;
+                }
+                break;
+              }
+              case 1: { // PREHEAT
+                if (!heat_req_shadow) {
+                  st = 0;
+                  id(oq_heat_enable_preheat_until_ms_shadow) = 0;
+                } else if (!ms_window_active(id(oq_heat_enable_preheat_until_ms_shadow))) {
+                  st = 2;
+                  id(oq_heat_enable_last_on_ms_shadow) = now_ms;
+                }
+                break;
+              }
+              case 2: { // HEATING
+                if (!heat_req_shadow &&
+                    (id(oq_heat_enable_last_on_ms_shadow) == 0 ||
+                     (uint32_t) (now_ms - id(oq_heat_enable_last_on_ms_shadow)) >= min_run_ms)) {
+                  st = 3;
+                  id(oq_heat_enable_postflow_until_ms_shadow) = now_ms + prepost_ms;
+                  id(oq_heat_enable_last_off_ms_shadow) = now_ms;
+                }
+                break;
+              }
+              case 3: { // POSTFLOW
+                if (heat_req_shadow) {
+                  st = 1;
+                  id(oq_heat_enable_preheat_until_ms_shadow) = now_ms + prepost_ms;
+                } else if (!ms_window_active(id(oq_heat_enable_postflow_until_ms_shadow))) {
+                  if (lockout_ms > 0) {
+                    st = 4;
+                    id(oq_heat_enable_lockout_until_ms_shadow) = now_ms + lockout_ms;
+                  } else {
+                    st = 0;
+                  }
+                }
+                break;
+              }
+              case 4: { // LOCKOUT
+                if (!ms_window_active(id(oq_heat_enable_lockout_until_ms_shadow))) {
+                  if (heat_req_shadow) {
+                    st = 1;
+                    id(oq_heat_enable_preheat_until_ms_shadow) = now_ms + prepost_ms;
+                  } else {
+                    st = 0;
+                  }
+                }
+                break;
+              }
+              default:
+                st = 0;
+                break;
+            }
+
+            id(oq_heat_enable_state_shadow) = st;
+            static std::string last_heat_enable_shadow_state;
+            publish_text_if_changed(
+                id(oq_heat_enable_state_shadow_ts),
+                std::string(shadow_state_to_text(st)),
+                last_heat_enable_shadow_state);
           }
 
           // -------------------------------------------------
@@ -696,8 +1039,14 @@ interval:
                   else if (base_target == 98)          desired_local = 98;
                   else                                 desired_local = 0;
                 } else if (cm1_next_after == 0) {
-                  if (base_target == 98) desired_local = 98;
-                  else                   desired_local = 0;
+                  // Re-evaluate heating/frost when postflow expires.
+                  // If demand recovered during CM1-postflow, resume CM2 directly
+                  // instead of forcing an avoidable CM0 hop (anti-flip/chatter).
+                  // Scope this behavior to heating-curve strategy only; keep
+                  // Power House behavior unchanged.
+                  if (id(oq_heat_mode_code) == 1 && heating_req && base_target == 2) desired_local = 2;
+                  else if (base_target == 98)          desired_local = 98;
+                  else                                 desired_local = 0;
                 } else if (cm1_next_after == 98) {
                   desired_local = 98;
                 } else {
@@ -785,6 +1134,9 @@ interval:
           // -------------------------------------------------
           if (id(oq_control_mode).state != desired_cm) {
             id(oq_control_mode).publish_state(desired_cm);
+            if (desired == 2) {
+              id(oq_cm2_entered_ms) = now_ms;
+            }
           }
           static std::string last_control_mode_label;
           publish_text_if_changed(id(oq_control_mode_label), cm_code_to_label(desired), last_control_mode_label);

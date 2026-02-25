@@ -1767,6 +1767,17 @@ views:
 
               - **Deadband** voorkomt onrust bij kleine afwijkingen.
 
+              - **Comfort onder/boven setpoint** definieert een asymmetrische
+              comfortzone rond de kamersetpoint waarin de room-correctie neutraal
+              blijft. Zo kan elke gebruiker eigen onder-/overshoot instellen.
+
+              - **Comfort bias base/max** verschuift de effectieve kamertarget
+              omhoog (warmte-voorkeur) en begrenst maximale adaptieve overshoot.
+              De bovenste correctierand is gemaximeerd op `setpoint + bias max`.
+
+              - **Comfort bias up/down** en **room error avg tau** bepalen hoe
+              snel deze warm-bias zich aanpast over de tijd.
+
               - **Ramp up/down** begrenzen stijg-/daalsnelheid van gevraagde
               warmte.
 
@@ -1789,6 +1800,20 @@ views:
                 name: Power House Kp (W/K)
               - entity: number.openquatt_power_house_deadband
                 name: Power House deadband
+              - entity: number.openquatt_power_house_comfort_below_setpoint
+                name: Power House comfort below setpoint
+              - entity: number.openquatt_power_house_comfort_above_setpoint
+                name: Power House comfort above setpoint
+              - entity: number.openquatt_power_house_comfort_bias_base
+                name: Power House comfort bias base
+              - entity: number.openquatt_power_house_comfort_bias_max
+                name: Power House comfort bias max
+              - entity: number.openquatt_power_house_comfort_bias_up
+                name: Power House comfort bias up
+              - entity: number.openquatt_power_house_comfort_bias_down
+                name: Power House comfort bias down
+              - entity: number.openquatt_power_house_room_error_avg_tau
+                name: Power House room error avg tau
               - entity: number.openquatt_power_house_ramp_up
                 name: Power House ramp up
               - entity: number.openquatt_power_house_ramp_down
@@ -1919,6 +1944,9 @@ views:
               - **Minimum runtime** voorkomt kortcyclen en overmatig
               start/stop-gedrag.
 
+              - **Demand filter ramp up** bepaalt met hoeveel demand-stappen per
+              minuut `Demand filtered` maximaal mag stijgen richting `Demand raw`.
+
               - **Single HP assist ON/OFF deficit** bepaalt bij welke thermische
               tekort-waarde extra HP-assist wordt geactiveerd of weer
               losgelaten.
@@ -1938,6 +1966,8 @@ views:
             entities:
               - entity: number.openquatt_minimum_runtime
                 name: Minimum runtime
+              - entity: number.openquatt_demand_filter_ramp_up
+                name: Demand filter ramp up
               - entity: number.openquatt_single_hp_assist_on_deficit
                 name: Single HP assist ON deficit
               - entity: number.openquatt_single_hp_assist_off_deficit
@@ -2218,6 +2248,8 @@ views:
               - Vergelijk eerst `Supply target` met `Supply actual` om de regelafwijking te zien.
               - Controleer daarna de keten: `Demand curve raw (PID)` -> `Demand raw` -> `Demand filtered`.
               - `P_req` wordt in curve mode afgeleid uit demand en helpt bij CM3/tekort-logica.
+              - `Curve Temp Deadband` en `Curve Demand Off Hold` zijn de
+                belangrijkste anti-flip stabilisatie rond de nulvraag-rand.
 
               Let op: als `Supply actual` boven target zit maar demand hoog blijft, kijk dan naar PID-instellingen (`Kp/Ki/Kd`) en gedrag over tijd.
 
@@ -2250,6 +2282,10 @@ views:
                 name: PID Ki
               - entity: number.openquatt_heating_curve_pid_kd
                 name: PID Kd
+              - entity: number.openquatt_curve_temp_deadband
+                name: Curve Temp Deadband
+              - entity: number.openquatt_curve_demand_off_hold
+                name: Curve Demand Off Hold
           - type: history-graph
             title: Heating Curve temperatuur-lus (2 uur)
             hours_to_show: 2
@@ -2293,8 +2329,17 @@ views:
               - Relevant als `Heating mode = Power House`.
               - `P_house` is de modelschatting op basis van buitentemperatuur.
               - `P_req` is de begrensde warmtevraag na deadband/ramp-limiter.
+              - `Effective room target` is kamersetpoint plus adaptieve comfort-bias.
+              - `Comfort bias` en `room error avg` tonen de status van de adaptieve warm-bias regelaar.
               - `Demand raw` en `Demand filtered` zijn de 0..20 stapsignalen richting compressorregeling.
               - `Power cap demand` toont de actieve vraag na vermogensbegrenzing.
+              - `Low-load dynamic thresholds` toont live de `pmin/off/on` drempels.
+              - `Heat-enable state (shadow)` toont de shadow arbiter-status
+                (`IDLE/PREHEAT/HEATING/POSTFLOW/LOCKOUT`) voor strategievalidatie.
+              - `CM2 idle-exit reason` laat zien waarom idle-exit in deze cyclus
+                timet, geblokkeerd is, of getript heeft.
+              - `CM2 re-entry block active` toont of tijdelijke CM2-herstartblokkade
+                nu actief is.
 
               Als `P_req` of demand onverwacht hoog/laag is: controleer buitenbron, kamer setpoint/temp en de ramp/deadband instellingen.
 
@@ -2311,10 +2356,30 @@ views:
                 name: Room setpoint (CIC)
               - entity: sensor.openquatt_cic_ot_room_temperature
                 name: Room temp (CIC)
+              - entity: sensor.openquatt_power_house_effective_room_target
+                name: Effective room target
+              - entity: sensor.openquatt_power_house_comfort_bias
+                name: Comfort bias
+              - entity: sensor.openquatt_power_house_room_error_avg
+                name: Room error avg
               - entity: sensor.openquatt_power_house_p_house
                 name: P_house
               - entity: sensor.openquatt_power_house_p_req
                 name: P_req
+              - entity: sensor.openquatt_low_load_dynamic_thresholds
+                name: Low-load dynamic thresholds
+              - entity: sensor.openquatt_heat_enable_state_shadow
+                name: Heat-enable state (shadow)
+              - entity: sensor.openquatt_cm2_idle_exit_reason
+                name: CM2 idle-exit reason
+              - entity: binary_sensor.openquatt_cm2_re_entry_block_active
+                name: CM2 re-entry block active
+              - entity: number.openquatt_low_load_off_fallback
+                name: Low-load OFF fallback
+              - entity: number.openquatt_low_load_on_fallback
+                name: Low-load ON fallback
+              - entity: number.openquatt_low_load_cm2_re_entry_block
+                name: Low-load CM2 re-entry block
               - entity: sensor.openquatt_demand_raw
                 name: Demand raw
               - entity: sensor.openquatt_demand_filtered

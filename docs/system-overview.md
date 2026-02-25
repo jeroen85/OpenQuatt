@@ -153,6 +153,15 @@ Computes requested power from:
 
 Then maps requested power to demand scale `0..20`.
 
+Power House stability guards in supervisory:
+
+- dynamic low-load thresholds from performance map level-1 thermal power (`pmin/off/on`)
+- fallback low-load OFF/ON thresholds when dynamic input is unavailable
+- low-load heat-request latch (OFF/ON hysteresis on `P_req`)
+- temporary CM2 re-entry block after CM2 idle-exit trip
+- CM2 startup-grace and high-load guard on idle-exit path
+- shadow heat-enable arbiter diagnostics (`IDLE/PREHEAT/HEATING/POSTFLOW/LOCKOUT`)
+
 ### Water Temperature Control mode
 
 Uses:
@@ -162,6 +171,12 @@ Uses:
 - PID output mapped to demand `0..20`
 
 When PID SP/PV is invalid, demand falls back to 0 and integral is reset.
+
+Heating-curve stability guards around zero-demand edge:
+
+- `Curve Temp Deadband`: caps curve demand near supply-target error zero
+- `Curve Demand Off Hold`: holds demand at 1 briefly before allowing 0
+- overtemp latch behavior to avoid direct CM2<->CM1 flip around the cutoff
 
 ## 6. Allocation and Optimization Mechanics
 
@@ -174,6 +189,11 @@ When PID SP/PV is invalid, demand falls back to 0 and integral is reset.
 5. allowed-level switch constraints
 6. min-runtime stop blocking
 7. write-on-change application and runtime counters
+
+Demand filter behavior is asymmetric:
+
+- downward path follows demand immediately
+- upward path is rate-limited by runtime control `Demand filter ramp up` (step/min)
 
 Power House optimizer cost considers:
 
