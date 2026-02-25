@@ -258,6 +258,20 @@ views:
             icon: mdi:chart-line
             heading: Performance (12h)
             heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Explanation</strong></summary>
+
+              This chart combines 12-hour trends for:
+
+              - `Power E`: total electrical input power.
+              - `Power H`: total thermal output power.
+              - `COP`: efficiency ratio (`Power H / Power E`).
+
+              Use this to check whether delivered heat follows input power and whether COP stays in a realistic range.
+              </details>
+            text_only: true
           - type: custom:apexcharts-card
             header:
               show: true
@@ -722,6 +736,20 @@ views:
             icon: ''
             heading: Status
             heading_style: subtitle
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Explanation</strong></summary>
+
+              Flow status at a glance:
+
+              - `Flow mode`: active flow-control behavior.
+              - `Control Mode`: active supervisory control state.
+              - `Low Flow alarm`: safety alarm for insufficient flow.
+              - `Flow (average)`: selected average flow used in control/safety.
+              - `Flow Mismatch`: indicates hydraulic imbalance between HP1 and HP2.
+              </details>
+            text_only: true
           - type: tile
             entity: sensor.openquatt_flow_mode
             name:
@@ -754,6 +782,18 @@ views:
             icon: ''
             heading: Control
             heading_style: subtitle
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Explanation</strong></summary>
+
+              Main flow-control settings:
+
+              - `Flow control mode`: choose automatic flow control or manual behavior.
+              - `Flow setpoint`: target flow in L/h for automatic control.
+              - `Manual iPWM`: direct pump command for testing only (keep disabled in normal operation).
+              </details>
+            text_only: true
           - type: tile
             entity: select.openquatt_flow_control_mode
             name:
@@ -878,6 +918,14 @@ views:
             icon: mdi:tune-variant
             heading: Control settings
             heading_style: subtitle
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Explanation</strong></summary>
+
+              - `Heating mode`: selects which strategy drives heat demand generation (for example Heating Curve or Power House).
+              </details>
+            text_only: true
           - type: tile
             entity: select.openquatt_heating_control_mode
             name: Heating mode
@@ -890,6 +938,19 @@ views:
             icon: mdi:view-dashboard-outline
             heading: Core KPIs
             heading_style: subtitle
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Explanation</strong></summary>
+
+              Core heat-balance indicators:
+
+              - `P_req`: requested heating power after smoothing/ramp limits.
+              - `P_house`: modeled house heat demand.
+              - `Max capacity`: estimated available HP heating capacity.
+              - `Deficit`: positive value means demand is above available/delivered heat.
+              </details>
+            text_only: true
           - type: grid
             square: false
             columns: 2
@@ -918,6 +979,18 @@ views:
             icon: mdi:chart-line
             heading: Demand & cap
             heading_style: subtitle
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Explanation</strong></summary>
+
+              Demand shaping and limiting:
+
+              - `Demand raw`: direct demand step before filtering.
+              - `Demand filtered`: damped demand step used for more stable behavior.
+              - `Power cap demand`: supervisory cap applied to demand (0..20 step scale).
+              </details>
+            text_only: true
           - type: grid
             square: false
             columns: 3
@@ -941,6 +1014,19 @@ views:
             icon: mdi:gauge
             heading: Capacity
             heading_style: subtitle
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Explanation</strong></summary>
+
+              Visual capacity check:
+
+              - Left gauge `Max capacity`: current estimated maximum HP heat output.
+              - Right gauge `Deficit`: how much heat is missing relative to demand.
+
+              A persistent high deficit indicates the system cannot currently keep up with demand.
+              </details>
+            text_only: true
           - type: horizontal-stack
             cards:
               - type: gauge
@@ -2468,6 +2554,7 @@ views:
               - `WiFi SSID`: connected wireless network.
               - `WiFi Signal`: RSSI signal strength in dBm.
               - `ESPHome Version`: version of the ESPHome runtime.
+              - `Restart`: reboots the controller node from Home Assistant.
 
               </details>
             text_only: true
@@ -2487,6 +2574,8 @@ views:
                 name: WiFi Signal
               - entity: sensor.openquatt_esphome_version
                 name: ESPHome Version
+              - entity: button.openquatt_restart
+                name: Restart
       - type: grid
         cards:
           - type: heading

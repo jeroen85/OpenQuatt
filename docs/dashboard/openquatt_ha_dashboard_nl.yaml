@@ -264,6 +264,20 @@ views:
             icon: mdi:chart-line
             heading: Performance (12h)
             heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Uitleg</strong></summary>
+
+              Deze grafiek combineert 12-uurs trends voor:
+
+              - `Power E`: totaal elektrisch ingangsvermogen.
+              - `Power H`: totaal thermisch afgegeven vermogen.
+              - `COP`: efficientieverhouding (`Power H / Power E`).
+
+              Gebruik dit om te controleren of warmteafgifte het opgenomen vermogen volgt en of COP realistisch blijft.
+              </details>
+            text_only: true
           - type: custom:apexcharts-card
             header:
               show: true
@@ -729,6 +743,20 @@ views:
             icon: ''
             heading: Status
             heading_style: subtitle
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Uitleg</strong></summary>
+
+              Flowstatus in een oogopslag:
+
+              - `Flow mode`: actieve werking van de flowregeling.
+              - `Control Mode`: actieve supervisory control state.
+              - `Low Flow alarm`: beveiligingsalarm bij te lage flow.
+              - `Flow (average)`: geselecteerde gemiddelde flow voor regeling/beveiliging.
+              - `Flow Mismatch`: signaleert hydraulische onbalans tussen HP1 en HP2.
+              </details>
+            text_only: true
           - type: tile
             entity: sensor.openquatt_flow_mode
             name:
@@ -761,6 +789,18 @@ views:
             icon: ''
             heading: Control
             heading_style: subtitle
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Uitleg</strong></summary>
+
+              Belangrijkste flow-regelinstellingen:
+
+              - `Flow control mode`: kies automatische flowregeling of handmatige werking.
+              - `Flow setpoint`: doel-flow in L/h voor automatische regeling.
+              - `Manual iPWM`: directe pompaansturing voor tests (in normaal bedrijf uit laten).
+              </details>
+            text_only: true
           - type: tile
             entity: select.openquatt_flow_control_mode
             name:
@@ -884,6 +924,14 @@ views:
             icon: mdi:tune-variant
             heading: Regelinstellingen
             heading_style: subtitle
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Uitleg</strong></summary>
+
+              - `Regelmodus`: kiest welke strategie de warmtevraag opbouwt (bijv. Stooklijn of Power House).
+              </details>
+            text_only: true
           - type: tile
             entity: select.openquatt_heating_control_mode
             name: Regelmodus
@@ -896,6 +944,19 @@ views:
             icon: mdi:view-dashboard-outline
             heading: Kern KPI
             heading_style: subtitle
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Uitleg</strong></summary>
+
+              Kernindicatoren voor warmtebalans:
+
+              - `P_req`: gevraagde verwarmingspower na filtering/ramp-limiet.
+              - `P_house`: gemodelleerde warmtevraag van de woning.
+              - `Max capaciteit`: geschatte beschikbare warmtepompcapaciteit.
+              - `Deficit`: positieve waarde betekent dat vraag boven beschikbare/geleverde warmte ligt.
+              </details>
+            text_only: true
           - type: grid
             square: false
             columns: 2
@@ -924,6 +985,18 @@ views:
             icon: mdi:chart-line
             heading: Vraag & limiet
             heading_style: subtitle
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Uitleg</strong></summary>
+
+              Vraagvorming en begrenzing:
+
+              - `Ruwe vraag`: directe vraagstap zonder filtering.
+              - `Gefilterde vraag`: gedempte vraagstap voor stabieler gedrag.
+              - `Vermogenscap vraag`: supervisory limiet op de vraag (0..20 step schaal).
+              </details>
+            text_only: true
           - type: grid
             square: false
             columns: 3
@@ -947,6 +1020,19 @@ views:
             icon: mdi:gauge
             heading: Capaciteit
             heading_style: subtitle
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Uitleg</strong></summary>
+
+              Visuele capaciteitscheck:
+
+              - Linker meter `Max capaciteit`: huidige geschatte maximale warmteafgifte.
+              - Rechter meter `Deficit`: hoeveel warmte momenteel ontbreekt t.o.v. de vraag.
+
+              Blijvend hoge deficit betekent dat het systeem de warmtevraag nu niet kan bijhouden.
+              </details>
+            text_only: true
           - type: horizontal-stack
             cards:
               - type: gauge
@@ -2486,6 +2572,7 @@ views:
               - `WiFi SSID`: verbonden draadloos netwerk.
               - `WiFi Signal`: RSSI-signaalsterkte in dBm.
               - `ESPHome Version`: versie van de ESPHome runtime.
+              - `Restart`: herstart de controllernode vanuit Home Assistant.
 
               </details>
             text_only: true
@@ -2505,6 +2592,8 @@ views:
                 name: WiFi Signal
               - entity: sensor.openquatt_esphome_version
                 name: ESPHome Version
+              - entity: button.openquatt_restart
+                name: Restart
       - type: grid
         cards:
           - type: heading
