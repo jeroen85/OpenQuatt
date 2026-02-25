@@ -159,6 +159,28 @@ Intent:
 - control aggressiveness and stability
 - tune adaptive warm-bias behavior around room setpoint
 
+Behavior summary (Power House comfort loop):
+
+- `Power House comfort bias` is adaptive and shifts the effective room target:
+  `effective_target = room_setpoint + comfort_bias`.
+- `comfort_bias` adapts from filtered room error (`Power House room error avg`):
+  - ramps up when average room error is sufficiently cold.
+  - ramps down when average room error is sufficiently warm.
+- `comfort_bias` is clamped between:
+  - `Power House comfort bias base` (minimum warm shift)
+  - `Power House comfort bias max` (maximum warm shift)
+- Asymmetric comfort window is built around `effective_target`:
+  - lower edge: `effective_target - comfort below setpoint`
+  - upper edge: `effective_target + comfort above setpoint`
+  - upper edge is additionally capped at `room_setpoint + comfort bias max`.
+- `Power House deadband` then suppresses tiny corrections around these edges.
+
+Interpretation tip:
+
+- `comfort bias max` limits where controller counter-action begins on the warm
+  side. It does not guarantee that room temperature can never exceed that value
+  due to building/system inertia.
+
 ### 5.3 Heat allocation
 
 Key entities:

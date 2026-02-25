@@ -78,6 +78,50 @@ Primary knobs:
 - `Power House ramp up`
 - `Power House ramp down`
 
+Comfort loop behavior (exact order):
+
+1. Compute instantaneous room error against thermostat setpoint:
+   `room_error_now = room_temp - setpoint`.
+2. Filter this to a moving average (`Power House room error avg`) using
+   `room error avg tau` as the time constant.
+3. Adapt `comfort bias`:
+   - if `room_error_avg < -0.05 C`: bias ramps up with `comfort bias up`.
+   - if `room_error_avg > +0.20 C`: bias ramps down with `comfort bias down`.
+   - bias is always clamped to `[comfort bias base, comfort bias max]`.
+4. Compute effective room target:
+   `effective_target = setpoint + comfort bias`.
+5. Build asymmetric comfort window around that effective target:
+   - lower edge: `effective_target - comfort below setpoint`
+   - upper edge (uncapped): `effective_target + comfort above setpoint`
+   - upper edge (capped): `min(uncapped_upper, setpoint + comfort bias max)`
+6. Convert room deviation outside this window to extra heat correction (`Kp`)
+   and then apply `deadband` + ramp limiter.
+
+Important nuance:
+
+- `comfort bias max` is the cap for where upper room correction starts.
+  It is not a hard physical room-temperature ceiling; thermal inertia can still
+  cause temporary overshoot beyond that point.
+
+What each parameter changes:
+
+- `Power House comfort below setpoint`: how far below target room temperature
+  may drop before positive room correction starts.
+- `Power House comfort above setpoint`: how far above target room temperature
+  may rise before negative room correction starts (subject to cap).
+- `Power House comfort bias base`: minimum warm shift always applied to the
+  effective room target.
+- `Power House comfort bias max`: maximum warm shift and cap for upper
+  correction edge (`setpoint + bias max`).
+- `Power House comfort bias up`: how quickly bias increases during sustained
+  cold average error.
+- `Power House comfort bias down`: how quickly bias decreases during sustained
+  warm average error.
+- `Power House room error avg tau`: smoothing time for room error average
+  (higher = slower adaptation, lower = faster adaptation).
+- `Power House deadband`: zeroes small room-correction error around comfort
+  window edges to reduce micro-hunting.
+
 What to watch:
 
 - `P_house` vs `P_req`
@@ -106,7 +150,9 @@ Low-load anti-flip controls (Power House):
 
 Adaptive comfort-bias guardrail:
 
-- Upper room correction edge is capped at `setpoint + comfort bias max`, so the configured max bias is the hard overshoot ceiling for the room loop.
+- Upper room correction edge is capped at `setpoint + comfort bias max`.
+  This limits controller biasing, but is not a hard physical room-temperature
+  limit.
 
 ### 4.2 Heating-curve path
 
