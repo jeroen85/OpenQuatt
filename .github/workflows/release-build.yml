@@ -34,17 +34,17 @@ jobs:
         run: |
           esphome compile openquatt_waveshare.yaml
           mkdir -p dist
-          cp .esphome/build/openquatt/.pioenvs/openquatt/firmware.bin dist/openquatt-waveshare.firmware.bin
-          cp .esphome/build/openquatt/.pioenvs/openquatt/firmware.ota.bin dist/openquatt-waveshare.firmware.ota.bin
-          cp .esphome/build/openquatt/.pioenvs/openquatt/firmware.factory.bin dist/openquatt-waveshare.firmware.factory.bin
+          cp .esphome/build/openquatt_waveshare/.pioenvs/openquatt/firmware.bin dist/openquatt-waveshare.firmware.bin
+          cp .esphome/build/openquatt_waveshare/.pioenvs/openquatt/firmware.ota.bin dist/openquatt-waveshare.firmware.ota.bin
+          cp .esphome/build/openquatt_waveshare/.pioenvs/openquatt/firmware.factory.bin dist/openquatt-waveshare.firmware.factory.bin
 
       - name: Build Heatpump Listener firmware
         run: |
           esphome compile openquatt_heatpump_listener.yaml
           mkdir -p dist
-          cp .esphome/build/openquatt/.pioenvs/openquatt/firmware.bin dist/openquatt-heatpump-listener.firmware.bin
-          cp .esphome/build/openquatt/.pioenvs/openquatt/firmware.ota.bin dist/openquatt-heatpump-listener.firmware.ota.bin
-          cp .esphome/build/openquatt/.pioenvs/openquatt/firmware.factory.bin dist/openquatt-heatpump-listener.firmware.factory.bin
+          cp .esphome/build/openquatt_heatpump_listener/.pioenvs/openquatt/firmware.bin dist/openquatt-heatpump-listener.firmware.bin
+          cp .esphome/build/openquatt_heatpump_listener/.pioenvs/openquatt/firmware.ota.bin dist/openquatt-heatpump-listener.firmware.ota.bin
+          cp .esphome/build/openquatt_heatpump_listener/.pioenvs/openquatt/firmware.factory.bin dist/openquatt-heatpump-listener.firmware.factory.bin
 
       - name: Generate OTA manifest
         run: |

@@ -17,8 +17,10 @@ jobs:
         profile:
           - id: waveshare
             config: openquatt_waveshare.yaml
+            build_path: .esphome/build/openquatt_waveshare
           - id: heatpump-listener
             config: openquatt_heatpump_listener.yaml
+            build_path: .esphome/build/openquatt_heatpump_listener
 
     steps:
       - name: Checkout
@@ -44,6 +46,6 @@ jobs:
           name: openquatt-${{ matrix.profile.id }}-firmware-${{ github.sha }}
           if-no-files-found: error
           path: |
-            .esphome/build/openquatt/.pioenvs/openquatt/firmware.bin
-            .esphome/build/openquatt/.pioenvs/openquatt/firmware.ota.bin
-            .esphome/build/openquatt/.pioenvs/openquatt/firmware.factory.bin
+            ${{ matrix.profile.build_path }}/.pioenvs/openquatt/firmware.bin
+            ${{ matrix.profile.build_path }}/.pioenvs/openquatt/firmware.ota.bin
+            ${{ matrix.profile.build_path }}/.pioenvs/openquatt/firmware.factory.bin
