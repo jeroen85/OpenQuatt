@@ -112,10 +112,6 @@ globals:
     type: uint32_t
     restore_value: false
     initial_value: '0'
-  - id: oq_cm_last
-    type: int
-    restore_value: false
-    initial_value: '0'  # 0/1/2/3/98
 
   - id: oq_cm3_need_since_ms
     type: uint32_t
@@ -137,10 +133,6 @@ globals:
     type: uint32_t
     restore_value: false
     initial_value: '0'
-  - id: oq_cm_override_code
-    type: int
-    restore_value: false
-    initial_value: '0'  # 0=AUTO,1=CM0,2=CM1,3=CM98_DIAG
   - id: oq_control_mode_code
     type: int
     restore_value: false
@@ -198,10 +190,6 @@ globals:
     restore_value: false
     initial_value: '0'
   - id: oq_heat_enable_last_on_ms_shadow
-    type: uint32_t
-    restore_value: false
-    initial_value: '0'
-  - id: oq_heat_enable_last_off_ms_shadow
     type: uint32_t
     restore_value: false
     initial_value: '0'
@@ -847,7 +835,6 @@ interval:
                      (uint32_t) (now_ms - id(oq_heat_enable_last_on_ms_shadow)) >= min_run_ms)) {
                   st = 3;
                   id(oq_heat_enable_postflow_until_ms_shadow) = now_ms + prepost_ms;
-                  id(oq_heat_enable_last_off_ms_shadow) = now_ms;
                 }
                 break;
               }
@@ -991,7 +978,6 @@ interval:
             // - Force CM98 (auto-expire after 30 min)
             int override_mode = id(oq_cm_override).active_index().value_or(0); // 0=AUTO,1=CM0,2=CM1,3=CM98_DIAG
             if (override_mode < 0 || override_mode > 3) override_mode = 0;
-            id(oq_cm_override_code) = override_mode;
             // Track entry into CM98 diagnostic override for auto-expire
             if (override_mode != id(oq_override_last_mode)) {
               id(oq_override_last_mode) = override_mode;
@@ -1005,7 +991,6 @@ interval:
                 call.set_option("Auto");
                 call.perform();
                 override_mode = 0;
-                id(oq_cm_override_code) = 0;
                 id(oq_override_last_mode) = 0;
                 id(oq_override_cm98_since_ms) = 0;
               }
@@ -1134,6 +1119,8 @@ interval:
           // -------------------------------------------------
           if (id(oq_control_mode).state != desired_cm) {
             id(oq_control_mode).publish_state(desired_cm);
+            // DEBUG-RUNTIME: anchor CM dwell timers on actual mode transitions.
+            id(oq_cm_last_change_ms) = now_ms;
             if (desired == 2) {
               id(oq_cm2_entered_ms) = now_ms;
             }

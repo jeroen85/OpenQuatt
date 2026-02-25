@@ -188,7 +188,7 @@ sensor:
     state_class: measurement
     register_type: holding
     address: 2099
-    #skip_updates: ${oq_skip_none}
+    #skip_updates: 0
     web_server:
       sorting_group_id: oq_${hp_id}
 
@@ -209,7 +209,7 @@ sensor:
           min_value: 0
           max_value: 300
           ignore_out_of_range: true
-    #skip_updates: ${oq_skip_none}
+    #skip_updates: 0
     web_server:
       sorting_group_id: oq_${hp_id}
 
@@ -230,7 +230,7 @@ sensor:
           min_value: 0
           max_value: 16
           ignore_out_of_range: true
-    #skip_updates: ${oq_skip_none}
+    #skip_updates: 0
     web_server:
       sorting_group_id: oq_${hp_id}
 
@@ -312,7 +312,7 @@ sensor:
           min_value: 0
           max_value: 1000
           ignore_out_of_range: true
-    #skip_updates: ${oq_skip_none}
+    #skip_updates: 0
     web_server:
       sorting_group_id: oq_${hp_id}
 
@@ -342,7 +342,7 @@ sensor:
     icon: mdi:thermometer
     register_type: holding
     address: 2110
-    #skip_updates: ${oq_skip_none}
+    #skip_updates: 0
     unit_of_measurement: "°C"
     device_class: "temperature"
     state_class: "measurement"
@@ -542,7 +542,7 @@ sensor:
     icon: mdi:thermometer-water
     register_type: holding
     address: 2133
-    #skip_updates: ${oq_skip_none}
+    #skip_updates: 0
     unit_of_measurement: "°C"
     device_class: "temperature"
     state_class: "measurement"
@@ -564,7 +564,7 @@ sensor:
     icon: mdi:thermometer-water
     register_type: holding
     address: 2134
-    #skip_updates: ${oq_skip_none}
+    #skip_updates: 0
     unit_of_measurement: "°C"
     device_class: "temperature"
     state_class: "measurement"
@@ -615,7 +615,7 @@ sensor:
     accuracy_decimals: 2
     filters:
       - multiply: 0.1
-    #skip_updates: ${oq_skip_none}
+    #skip_updates: 0
     web_server:
       sorting_group_id: oq_${hp_id}
 
@@ -626,7 +626,7 @@ sensor:
     icon: mdi:water-pump
     register_type: holding
     address: 2138
-    #skip_updates: ${oq_skip_none}
+    #skip_updates: 0
     unit_of_measurement: "L/h"
     device_class: "volume_flow_rate"
     state_class: "measurement"
@@ -885,7 +885,7 @@ binary_sensor:
     device_class: running
     register_type: holding
     address: 2118
-    #skip_updates: ${oq_skip_none}
+    #skip_updates: 0
     web_server:
       sorting_group_id: oq_${hp_id}
 

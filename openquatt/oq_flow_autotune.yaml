@@ -192,14 +192,6 @@ globals:
     type: int
     restore_value: false
     initial_value: '850'
-  - id: oq_flow_at_pv0_acc
-    type: float
-    restore_value: false
-    initial_value: '0.0'
-  - id: oq_flow_at_pv0_n
-    type: int
-    restore_value: false
-    initial_value: '0'
   - id: oq_flow_at_pv0
     type: float
     restore_value: false
@@ -209,10 +201,6 @@ globals:
     restore_value: false
     initial_value: 'NAN'
   - id: oq_flow_at_pv63_time_s
-    type: float
-    restore_value: false
-    initial_value: 'NAN'
-  - id: oq_flow_at_pv63
     type: float
     restore_value: false
     initial_value: 'NAN'
@@ -292,13 +280,10 @@ interval:
                 return;
               }
 
-              // baseline: 2 samples
-              id(oq_flow_at_pv0_acc) = 0.0f;
-              id(oq_flow_at_pv0_n) = 0;
+              // Baseline window is tracked via w0/w1/w2 rolling samples.
               id(oq_flow_at_pv0) = NAN;
               id(oq_flow_at_pv_ss) = NAN;
               id(oq_flow_at_pv63_time_s) = NAN;
-              id(oq_flow_at_pv63) = NAN;
               id(oq_flow_at_w0) = NAN;
               id(oq_flow_at_w1) = NAN;
               id(oq_flow_at_w2) = NAN;
@@ -389,7 +374,6 @@ interval:
               if (!isnan(pv_ss_est)) {
                 float dpv = pv_ss_est - pv0;
                 float pv63 = pv0 + 0.632f * dpv;
-                id(oq_flow_at_pv63) = pv63;
 
                 if (isnan(id(oq_flow_at_pv63_time_s))) {
                   if (dpv >= 0.0f) {

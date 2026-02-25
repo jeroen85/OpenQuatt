@@ -64,7 +64,6 @@ oq_ph_deadband_default_k: "0.14"                      # Default Power House room
 # HEAT CONTROL
 # ----------------------------
 oq_heat_loop_s: "60"                                  # Main interval of heat-control allocation/filter [s].
-oq_heat_demand_max_f: "20"                            # Legacy alias (kept for backward compatibility); active logic uses oq_strategy_demand_max_f.
 oq_cop_min_input_w: "10.0"                            # Minimum electrical input for a valid COP calculation [W].
 oq_optimizer_soft_w: "3400.0"                         # Soft limit for electrical HP power in optimizer [W]; peak limit follows oq_power_peak_w.
 oq_optimizer_penalty_per_w: "5.0"                     # Cost factor above soft limit [cost/W].
@@ -92,7 +91,6 @@ oq_flow_ts: "5"                                       # Autotune/main-loop sampl
 oq_flow_pwm_min: "50"                                 # Lower pump iPWM bound during autotune.
 oq_flow_pwm_max: "850"                                # Upper pump iPWM bound during autotune.
 oq_flow_autotune_min_step: "5"                        # Minimum iPWM step size for the step test.
-oq_flow_autotune_arm_samples: "2"                     # Number of baseline samples in ARM phase.
 oq_flow_autotune_ss_window: "3"                       # Rolling-window size for steady-state estimation [samples].
 oq_flow_autotune_settle_s: "30"                       # Minimum settle time on baseline PWM before applying the step [s].
 oq_flow_autotune_stable_band_lph: "12.0"              # Max flow spread in baseline window to qualify as stable [L/h].
@@ -120,7 +118,5 @@ cic_feed_error_trip_n: "3"                            # Feed OK becomes false af
 # ----------------------------
 # HP IO (MODBUS POLLING)
 # ----------------------------
-oq_skip_none: "0"                                     # No skips; poll every 5s (base update_interval).
 oq_skip_10s: "1"                                      # 1 skip; effective polling every 10s.
 oq_skip_30s: "5"                                      # 5 skips; effective polling every 30s.
-oq_skip_60s: "11"                                     # 11 skips; effective polling every 60s.
