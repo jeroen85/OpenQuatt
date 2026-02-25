@@ -2279,7 +2279,7 @@ views:
                 name: HP1 Runtime
               - entity: sensor.openquatt_hp2_runtime_hours
                 name: HP2 Runtime
-              - entity: sensor.openquatt_runtime_lead_hp_internal
+              - entity: sensor.openquatt_runtime_lead_hp
                 name: Runtime lead HP
       - type: grid
         cards:
