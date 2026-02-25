@@ -70,6 +70,11 @@ Primary knobs:
 - `Power House deadband`
 - `Power House comfort below setpoint`
 - `Power House comfort above setpoint`
+- `Power House comfort bias base`
+- `Power House comfort bias max`
+- `Power House comfort bias up`
+- `Power House comfort bias down`
+- `Power House room error avg tau`
 - `Power House ramp up`
 - `Power House ramp down`
 
@@ -81,18 +86,27 @@ What to watch:
 - `Low-load dynamic thresholds`
 - `CM2 idle-exit reason`
 - `CM2 re-entry block active`
+- `Power House effective room target`
+- `Power House comfort bias`
+- `Power House room error avg`
 
 Typical adjustments:
 
 - Too aggressive demand swings: increase deadband or reduce ramp-up.
 - Slow recovery after setback: increase ramp-up or Kp.
 - Overreaction around setpoint: reduce Kp or increase deadband.
+- Persistent undershoot with stable low-load behavior: raise `comfort bias base` or `comfort bias max`.
+- Too warm for prolonged periods: reduce `comfort bias base` or increase `comfort bias down`.
 
 Low-load anti-flip controls (Power House):
 
 - `Low-load OFF fallback` and `Low-load ON fallback` are fallback thresholds when dynamic values are unavailable.
 - `Low-load CM2 re-entry block` defines how long CM2 re-entry is blocked after an idle-exit trip.
 - Dynamic thresholds (`pmin/off/on`) are clamped; this is expected and protects portability across installations.
+
+Adaptive comfort-bias guardrail:
+
+- Upper room correction edge is capped at `setpoint + comfort bias max`, so the configured max bias is the hard overshoot ceiling for the room loop.
 
 ### 4.2 Heating-curve path
 
@@ -212,6 +226,7 @@ Remember: fault state logic is timer-based and mode-context-dependent.
 |---|---|---|
 | Demand jumps too hard | `Demand raw`, strategy params | increase deadband / lower ramp-up |
 | CM1<->CM2 flips at low load | `Low-load dynamic thresholds`, `CM2 idle-exit reason`, `CM2 re-entry block active` | increase re-entry block or retune Power House ramp/deadband; verify `P_req` stays structurally below `off` when no sustained heat is needed |
+| Long periods below room setpoint | `Power House effective room target`, `Power House comfort bias`, `Power House room error avg` | increase comfort bias base/max, or lower deadband if correction starts too late |
 | Curve mode drops to 0 demand too quickly | `Curve Temp Deadband`, `Curve Demand Off Hold`, `Supply target` vs actual | increase deadband slightly or extend off-hold |
 | CM3 toggles often | deficit thresholds/timers | widen ON/OFF gap, increase hold times |
 | Flow oscillates | flow PI and setpoint | reduce Kp/Ki, verify hydraulics |

@@ -47,6 +47,8 @@ select:
         - lambda: |-
             id(oq_curve_zero_req_since_ms) = 0;
             id(oq_curve_overtemp_latch) = false;
+            id(oq_ph_comfort_bias_last_ms) = 0;
+            id(oq_ph_room_error_avg_init) = false;
 
 # ----------------------------
 # TUNING INPUTS
@@ -157,6 +159,81 @@ number:
     restore_value: true
     optimistic: true
     initial_value: 0.3
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+  - platform: template
+    id: ph_comfort_bias_base_c
+    name: "Power House comfort bias base"
+    icon: mdi:thermometer-plus
+    unit_of_measurement: "°C"
+    min_value: 0.0
+    max_value: 0.5
+    step: 0.05
+    restore_value: true
+    optimistic: true
+    initial_value: 0.1
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+  - platform: template
+    id: ph_comfort_bias_max_c
+    name: "Power House comfort bias max"
+    icon: mdi:thermometer-high
+    unit_of_measurement: "°C"
+    min_value: 0.0
+    max_value: 0.5
+    step: 0.05
+    restore_value: true
+    optimistic: true
+    initial_value: 0.5
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+  - platform: template
+    id: ph_comfort_bias_up_c_per_h
+    name: "Power House comfort bias up"
+    icon: mdi:arrow-up-bold
+    unit_of_measurement: "°C/h"
+    min_value: 0.0
+    max_value: 0.5
+    step: 0.01
+    restore_value: true
+    optimistic: true
+    initial_value: 0.08
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+  - platform: template
+    id: ph_comfort_bias_down_c_per_h
+    name: "Power House comfort bias down"
+    icon: mdi:arrow-down-bold
+    unit_of_measurement: "°C/h"
+    min_value: 0.0
+    max_value: 1.0
+    step: 0.01
+    restore_value: true
+    optimistic: true
+    initial_value: 0.20
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+  - platform: template
+    id: ph_room_error_avg_tau_min
+    name: "Power House room error avg tau"
+    icon: mdi:chart-timeline-variant
+    unit_of_measurement: "min"
+    min_value: 5
+    max_value: 120
+    step: 5
+    restore_value: true
+    optimistic: true
+    initial_value: 30
     entity_category: config
     web_server:
       sorting_group_id: oq_tuning_heat
@@ -468,6 +545,29 @@ globals:
     restore_value: false
     initial_value: '0'  # 0=Power House, 1=Heating Curve
 
+  # DEBUG-RUNTIME START: Power House adaptive comfort-bias diagnostics
+  - id: oq_ph_comfort_bias_c
+    type: float
+    restore_value: false
+    initial_value: '0.1'
+  - id: oq_ph_room_error_avg_c
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+  - id: oq_ph_room_error_avg_init
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: oq_ph_comfort_bias_last_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_ph_room_target_effective_c
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+  # DEBUG-RUNTIME END
+
 # ----------------------------
 # SENSORS - outdoor temperature aggregation + heating curve target
 # ----------------------------
@@ -625,6 +725,50 @@ sensor:
       sorting_group_id: oq_diagnostics
     lambda: |-
       return (float) id(oq_demand_curve);
+
+  # DEBUG-RUNTIME START: Power House adaptive comfort-bias diagnostics
+  - platform: template
+    id: oq_phouse_room_error_avg_c_sensor
+    name: "Power House room error avg"
+    icon: mdi:chart-timeline-variant
+    unit_of_measurement: "°C"
+    state_class: measurement
+    accuracy_decimals: 3
+    update_interval: 5s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return id(oq_ph_room_error_avg_c);
+
+  - platform: template
+    id: oq_phouse_comfort_bias_c_sensor
+    name: "Power House comfort bias"
+    icon: mdi:thermometer-plus
+    unit_of_measurement: "°C"
+    state_class: measurement
+    accuracy_decimals: 3
+    update_interval: 5s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return id(oq_ph_comfort_bias_c);
+
+  - platform: template
+    id: oq_phouse_room_target_effective_c_sensor
+    name: "Power House effective room target"
+    icon: mdi:target
+    unit_of_measurement: "°C"
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 5s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return id(oq_ph_room_target_effective_c);
+  # DEBUG-RUNTIME END
 
 # ----------------------------
 # STATUS
@@ -810,6 +954,8 @@ interval:
             // Ramp state: force re-init when switching back to Power House
             id(oq_phouse_last_w) = P_req_est;
             id(oq_phouse_last_ms) = 0;
+            id(oq_ph_comfort_bias_last_ms) = 0;
+            id(oq_ph_room_target_effective_c) = id(ot_room_setpoint).state;
           } else {
             // ------------------------------------------------------------
             // POWER HOUSE MODE
@@ -836,15 +982,57 @@ interval:
             x = clampf(x, 0.0f, 1.0f);
             const float P_house = Pr * x;
 
+            // DEBUG-RUNTIME: adaptive comfort-bias governor for warm-leaning behavior.
+            const uint32_t now_ms = (uint32_t) millis();
+            const float bias_base_cfg = clampf(id(ph_comfort_bias_base_c).state, 0.0f, 0.5f);
+            const float bias_max_cfg = clampf(id(ph_comfort_bias_max_c).state, bias_base_cfg, 0.5f);
+            const float bias_up_cfg_per_s = clampf(id(ph_comfort_bias_up_c_per_h).state, 0.0f, 0.5f) / 3600.0f;
+            const float bias_down_cfg_per_s = clampf(id(ph_comfort_bias_down_c_per_h).state, 0.0f, 1.0f) / 3600.0f;
+            const float tau_s = clampf(id(ph_room_error_avg_tau_min).state * seconds_per_minute, 60.0f, 7200.0f);
+            float bias_c = id(oq_ph_comfort_bias_c);
+            if (isnan(bias_c)) bias_c = bias_base_cfg;
+            bias_c = clampf(bias_c, bias_base_cfg, bias_max_cfg);
+
+            const uint32_t bias_last_ms = id(oq_ph_comfort_bias_last_ms);
+            const float dt_bias_s = (bias_last_ms > 0 && now_ms >= bias_last_ms) ? ((now_ms - bias_last_ms) / 1000.0f) : 0.0f;
+            const float room_err_now_c = Tr - Trsp;
+            float room_err_avg_c = id(oq_ph_room_error_avg_c);
+            if (!id(oq_ph_room_error_avg_init) || isnan(room_err_avg_c)) {
+              room_err_avg_c = room_err_now_c;
+              id(oq_ph_room_error_avg_init) = true;
+            } else if (dt_bias_s > 0.0f) {
+              const float alpha = clampf(dt_bias_s / (tau_s + dt_bias_s), 0.0f, 1.0f);
+              room_err_avg_c += alpha * (room_err_now_c - room_err_avg_c);
+            }
+
+            constexpr float cold_err_on_c = -0.05f;
+            constexpr float warm_err_on_c = 0.20f;
+            if (dt_bias_s > 0.0f) {
+              if (room_err_avg_c < cold_err_on_c) {
+                bias_c += bias_up_cfg_per_s * dt_bias_s;
+              } else if (room_err_avg_c > warm_err_on_c) {
+                bias_c -= bias_down_cfg_per_s * dt_bias_s;
+              }
+            }
+            bias_c = clampf(bias_c, bias_base_cfg, bias_max_cfg);
+            id(oq_ph_comfort_bias_c) = bias_c;
+            id(oq_ph_room_error_avg_c) = room_err_avg_c;
+            id(oq_ph_comfort_bias_last_ms) = now_ms;
+
+            const float Trsp_eff = Trsp + bias_c;
+            id(oq_ph_room_target_effective_c) = Trsp_eff;
+
             // Room correction
             // Asymmetric comfort band around room setpoint:
             // - below band: lower edge where extra correction starts
             // - above band: upper edge where negative correction starts
             // Inside this comfort band, room correction is zero.
+            // Hard cap: upper edge never exceeds (setpoint + comfort bias max).
             const float comfort_below = clampf(id(ph_comfort_band_below_c).state, 0.0f, 2.0f);
             const float comfort_above = clampf(id(ph_comfort_band_above_c).state, 0.0f, 2.0f);
-            const float Tr_low = Trsp - comfort_below;
-            const float Tr_high = Trsp + comfort_above;
+            const float Tr_low = Trsp_eff - comfort_below;
+            const float Tr_high_uncapped = Trsp_eff + comfort_above;
+            const float Tr_high = std::min(Tr_high_uncapped, Trsp + bias_max_cfg);
 
             float e = 0.0f; // K
             if (Tr < Tr_low) {
@@ -861,12 +1049,11 @@ interval:
             P_raw = clampf(P_raw, 0.0f, Pr);
 
             // Ramp limiting
-            const uint32_t now = millis();
             uint32_t last = id(oq_phouse_last_ms);
             float lastw = id(oq_phouse_last_w);
-            if (last == 0) { last = now; lastw = P_raw; }
+            if (last == 0) { last = now_ms; lastw = P_raw; }
 
-            const float dt_s = (now >= last) ? ((now - last) / 1000.0f) : 0.0f;
+            const float dt_s = (now_ms >= last) ? ((now_ms - last) / 1000.0f) : 0.0f;
             const float up = id(ph_ramp_up_w_per_min).state / seconds_per_minute;     // W/s
             const float dn = id(ph_ramp_down_w_per_min).state / seconds_per_minute;   // W/s
 
@@ -881,7 +1068,7 @@ interval:
 
             id(oq_phouse_req_w) = P_limited;
             id(oq_phouse_last_w) = P_limited;
-            id(oq_phouse_last_ms) = now;
+            id(oq_phouse_last_ms) = now_ms;
 
             // Compat demand 0..20
             int d = (int) lroundf(${oq_strategy_demand_max_f} * (P_limited / Pr));

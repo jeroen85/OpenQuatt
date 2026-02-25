@@ -140,6 +140,11 @@ Key entities:
 - `Power House deadband`
 - `Power House comfort below setpoint`
 - `Power House comfort above setpoint`
+- `Power House comfort bias base`
+- `Power House comfort bias max`
+- `Power House comfort bias up`
+- `Power House comfort bias down`
+- `Power House room error avg tau`
 - `Power House ramp up`
 - `Power House ramp down`
 - `Curve Tsupply @ -20/-10/0/5/10/15°C`
@@ -152,6 +157,7 @@ Intent:
 
 - define demand generation function
 - control aggressiveness and stability
+- tune adaptive warm-bias behavior around room setpoint
 
 ### 5.3 Heat allocation
 
@@ -255,6 +261,9 @@ Intent:
 - `Heat-enable state (shadow)`
 - `CM2 idle-exit reason`
 - `CM2 re-entry block active`
+- `Power House effective room target`
+- `Power House comfort bias`
+- `Power House room error avg`
 
 ### Flow telemetry
 

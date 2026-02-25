@@ -1761,6 +1761,13 @@ views:
               zone around room setpoint where room correction stays neutral.
               This lets users tune how much undershoot/overshoot is acceptable.
 
+              - **Comfort bias base/max** shifts the effective room target
+              upward (warm-leaning) and limits the maximum adaptive overshoot.
+              The upper correction edge is capped at `setpoint + bias max`.
+
+              - **Comfort bias up/down** and **room error avg tau** control
+              how quickly this warm bias adapts over time.
+
               - **Ramp up/down** limit rise/fall rate of requested heat.
 
               - **Heating strategy transition** defines how quickly the strategy
@@ -1786,6 +1793,16 @@ views:
                 name: Power House comfort below setpoint
               - entity: number.openquatt_power_house_comfort_above_setpoint
                 name: Power House comfort above setpoint
+              - entity: number.openquatt_power_house_comfort_bias_base
+                name: Power House comfort bias base
+              - entity: number.openquatt_power_house_comfort_bias_max
+                name: Power House comfort bias max
+              - entity: number.openquatt_power_house_comfort_bias_up
+                name: Power House comfort bias up
+              - entity: number.openquatt_power_house_comfort_bias_down
+                name: Power House comfort bias down
+              - entity: number.openquatt_power_house_room_error_avg_tau
+                name: Power House room error avg tau
               - entity: number.openquatt_power_house_ramp_up
                 name: Power House ramp up
               - entity: number.openquatt_power_house_ramp_down
@@ -2294,6 +2311,8 @@ views:
               - Relevant when `Heating mode = Power House`.
               - `P_house` is the model-based demand estimate from outside temperature.
               - `P_req` is the limited heat request after deadband/ramp limiter.
+              - `Effective room target` is room setpoint plus adaptive comfort bias.
+              - `Comfort bias` and `room error avg` show the adaptive warm-bias governor state.
               - `Demand raw` and `Demand filtered` are 0..20 step signals towards compressor control.
               - `Power cap demand` shows active demand after electrical power limiting.
               - `Low-load dynamic thresholds` shows live `pmin/off/on` thresholds.
@@ -2319,6 +2338,12 @@ views:
                 name: Room setpoint (CIC)
               - entity: sensor.openquatt_cic_ot_room_temperature
                 name: Room temp (CIC)
+              - entity: sensor.openquatt_power_house_effective_room_target
+                name: Effective room target
+              - entity: sensor.openquatt_power_house_comfort_bias
+                name: Comfort bias
+              - entity: sensor.openquatt_power_house_room_error_avg
+                name: Room error avg
               - entity: sensor.openquatt_power_house_p_house
                 name: P_house
               - entity: sensor.openquatt_power_house_p_req
