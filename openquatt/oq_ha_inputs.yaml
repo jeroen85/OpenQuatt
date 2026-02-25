@@ -22,6 +22,10 @@ sensor:
     entity_id: ${ha_outside_temp_entity_id}
     internal: false
     icon: mdi:thermometer
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
     web_server:
       sorting_group_id: oq_ha
 
@@ -31,6 +35,10 @@ sensor:
     entity_id: ${ha_room_setpoint_entity_id}
     internal: false
     icon: mdi:thermostat
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
     web_server:
       sorting_group_id: oq_ha
 
@@ -40,5 +48,9 @@ sensor:
     entity_id: ${ha_room_temp_entity_id}
     internal: false
     icon: mdi:home-thermometer
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
     web_server:
       sorting_group_id: oq_ha
