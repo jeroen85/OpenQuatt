@@ -682,12 +682,15 @@ sensor:
       const float bottom_plate_w = id(${hp_id}_bottom_plate_heater).state ? bottom_plate_heater_w : 0.0f;
       const float crankcase_w = id(${hp_id}_crankcase_heater).state ? crankcase_heater_w : 0.0f;
 
-      return standby_power_w
-           + (voltage_v * current_a * compressor_calibration)
-           + (fan_speed * fan_calibration)
-           + pump_power_w
-           + bottom_plate_w
-           + crankcase_w;
+      const float p_input_w = standby_power_w
+                            + (voltage_v * current_a * compressor_calibration)
+                            + (fan_speed * fan_calibration)
+                            + pump_power_w
+                            + bottom_plate_w
+                            + crankcase_w;
+
+      // Physical lower bound: electrical input power cannot be negative.
+      return (p_input_w < 0.0f) ? 0.0f : p_input_w;
 
   - platform: template
     id: ${hp_id}_heat_power

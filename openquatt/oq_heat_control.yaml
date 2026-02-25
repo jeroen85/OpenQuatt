@@ -199,7 +199,9 @@ sensor:
       auto nz = [](float value) -> float { return isnan(value) ? 0.0f : value; };
       const float hp1_power_w = nz(id(hp1_power_input).state);
       const float hp2_power_w = nz(id(hp2_power_input).state);
-      return hp1_power_w + hp2_power_w;
+      const float total_input_w = hp1_power_w + hp2_power_w;
+      // Safety clamp against tiny negative noise from upstream math/rounding.
+      return (total_input_w < 0.0f) ? 0.0f : total_input_w;
 
   - platform: template
     id: oq_total_heat_power
