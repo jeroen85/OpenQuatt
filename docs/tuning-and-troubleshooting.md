@@ -78,6 +78,11 @@ Primary knobs:
 - `Power House ramp up`
 - `Power House ramp down`
 
+Generic starting point:
+
+- For mixed/generic installations, start with `Power House Kp (W-K) = 2000`
+  and tune in steps of `200` based on comfort and mode-stability KPIs.
+
 Comfort loop behavior (exact order):
 
 1. Compute instantaneous room error against thermostat setpoint:
