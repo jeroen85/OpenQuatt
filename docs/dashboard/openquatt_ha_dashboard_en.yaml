@@ -1768,6 +1768,99 @@ views:
           control
 
           CIC feed status, OT data, and source selection for local logic.
+  - title: HA Inputs
+    path: ha-inputs
+    icon: mdi:home-assistant
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:form-textbox
+            heading: Dynamic source selectors
+            heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Explanation</strong></summary>
+
+              Enter the source entity IDs that should feed the OpenQuatt HA
+              proxy sensors.
+
+              Example values:
+              - `sensor.buitentemperatuur`
+              - `sensor.thermostaat_setpoint`
+              - `sensor.thermostaat_roomtemperature`
+
+              </details>
+            text_only: true
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: input_text.openquatt_source_outdoor_temperature
+                name: Outside source entity
+              - entity: input_text.openquatt_source_room_setpoint
+                name: Setpoint source entity
+              - entity: input_text.openquatt_source_room_temperature
+                name: Room temperature source entity
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:database-arrow-right
+            heading: HA proxy values and validity
+            heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Explanation</strong></summary>
+
+              These are the stable HA proxy entities used as the contract
+              towards OpenQuatt.
+
+              The `Valid` status should be `on` for all three signals.
+
+              </details>
+            text_only: true
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_ext_outdoor_temperature
+                name: Proxy outside temperature
+              - entity: binary_sensor.openquatt_ext_outdoor_temperature_valid
+                name: Outside source valid
+              - entity: sensor.openquatt_ext_room_setpoint
+                name: Proxy room setpoint
+              - entity: binary_sensor.openquatt_ext_room_setpoint_valid
+                name: Setpoint source valid
+              - entity: sensor.openquatt_ext_room_temperature
+                name: Proxy room temperature
+              - entity: binary_sensor.openquatt_ext_room_temperature_valid
+                name: Room temperature source valid
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:chip
+            heading: OpenQuatt ingest values
+            heading_style: title
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_ha_outside_temperature
+                name: HA - Outside Temperature
+              - entity: sensor.openquatt_ha_thermostat_setpoint
+                name: HA - Thermostat Setpoint
+              - entity: sensor.openquatt_ha_thermostat_room_temperature
+                name: HA - Thermostat Room Temperature
+    cards: []
+    header:
+      card:
+        type: markdown
+        content: |-
+          # HA dynamic source mapping
+
+          Configure dynamic source entity IDs and verify proxy and OpenQuatt
+          ingest values.
   - title: Advanced settings
     path: advanced-settings
     icon: mdi:tune-vertical

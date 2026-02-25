@@ -4,6 +4,7 @@ This folder contains two dashboard variants:
 
 - `openquatt_ha_dashboard_nl.yaml`: Dutch UI labels/text.
 - `openquatt_ha_dashboard_en.yaml`: English UI labels/text.
+- `openquatt_ha_dynamic_sources_package.yaml`: optional HA package for dynamic source proxies.
 
 ## Which One To Use
 
@@ -22,6 +23,30 @@ Both dashboards target the same OpenQuatt entities.
    - `docs/dashboard/openquatt_ha_dashboard_nl.yaml`
    - `docs/dashboard/openquatt_ha_dashboard_en.yaml`
 6. Save and reload the dashboard.
+
+## Optional Dynamic Source Proxies (HA package)
+
+If you want users to choose source entities at runtime, use:
+
+- `docs/dashboard/openquatt_ha_dynamic_sources_package.yaml`
+
+This package creates:
+
+- `input_text.openquatt_source_outdoor_temperature`
+- `input_text.openquatt_source_room_setpoint`
+- `input_text.openquatt_source_room_temperature`
+- proxy sensors consumed by OpenQuatt ESPHome:
+  - `sensor.openquatt_ext_outdoor_temperature`
+  - `sensor.openquatt_ext_room_setpoint`
+  - `sensor.openquatt_ext_room_temperature`
+
+Install in Home Assistant:
+
+1. Enable packages in `/config/configuration.yaml`:
+   - `homeassistant:`
+   - `  packages: !include_dir_named packages`
+2. Copy the package file to `/config/packages/openquatt_dynamic_sources.yaml`.
+3. Reload Template Entities (or restart HA).
 
 ## Notes
 

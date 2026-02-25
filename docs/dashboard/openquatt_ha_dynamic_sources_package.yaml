@@ -1,0 +1,152 @@
+# ==============================================================================
+# OpenQuatt - Home Assistant Dynamic Source Proxies
+# ==============================================================================
+#
+# Purpose:
+#   - User can enter source entity IDs in HA input_text helpers.
+#   - This package publishes stable proxy sensors consumed by OpenQuatt ESPHome:
+#       sensor.openquatt_ext_outdoor_temperature
+#       sensor.openquatt_ext_room_setpoint
+#       sensor.openquatt_ext_room_temperature
+#
+# Install (Home Assistant):
+#   1) Enable packages in configuration.yaml:
+#        homeassistant:
+#          packages: !include_dir_named packages
+#   2) Copy this file to: /config/packages/openquatt_dynamic_sources.yaml
+#   3) Adjust initial input_text values to your own source entity IDs.
+#   4) Reload Template Entities (or restart Home Assistant).
+#
+# Notes:
+#   - Trigger interval is 15s to support dynamic entity_id references.
+#   - Invalid/missing source values keep last good proxy value.
+# ==============================================================================
+
+input_text:
+  openquatt_source_outdoor_temperature:
+    name: OpenQuatt source outdoor temperature
+    icon: mdi:thermometer
+    mode: text
+    max: 100
+    initial: sensor.buitentemperatuur
+
+  openquatt_source_room_setpoint:
+    name: OpenQuatt source room setpoint
+    icon: mdi:thermostat
+    mode: text
+    max: 100
+    initial: sensor.thermostaat_setpoint
+
+  openquatt_source_room_temperature:
+    name: OpenQuatt source room temperature
+    icon: mdi:home-thermometer
+    mode: text
+    max: 100
+    initial: sensor.thermostaat_roomtemperature
+
+template:
+  - trigger:
+      - platform: state
+        entity_id:
+          - input_text.openquatt_source_outdoor_temperature
+          - input_text.openquatt_source_room_setpoint
+          - input_text.openquatt_source_room_temperature
+      - platform: time_pattern
+        seconds: "/15"
+    sensor:
+      - name: OpenQuatt Ext Outdoor Temperature
+        unique_id: openquatt_ext_outdoor_temperature
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        icon: mdi:thermometer
+        state: >-
+          {% set entity = states('input_text.openquatt_source_outdoor_temperature') | trim %}
+          {% set raw = states(entity) if entity else none %}
+          {% set val = raw | float(none) %}
+          {% if val is not none %}
+            {{ val }}
+          {% elif this is defined and this.state not in ['unknown', 'unavailable', 'none', ''] %}
+            {{ this.state }}
+          {% else %}
+            unknown
+          {% endif %}
+        attributes:
+          source_entity: >-
+            {{ states('input_text.openquatt_source_outdoor_temperature') | trim }}
+
+      - name: OpenQuatt Ext Room Setpoint
+        unique_id: openquatt_ext_room_setpoint
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        icon: mdi:thermostat
+        state: >-
+          {% set entity = states('input_text.openquatt_source_room_setpoint') | trim %}
+          {% set raw = states(entity) if entity else none %}
+          {% set val = raw | float(none) %}
+          {% if val is not none %}
+            {{ val }}
+          {% elif this is defined and this.state not in ['unknown', 'unavailable', 'none', ''] %}
+            {{ this.state }}
+          {% else %}
+            unknown
+          {% endif %}
+        attributes:
+          source_entity: >-
+            {{ states('input_text.openquatt_source_room_setpoint') | trim }}
+
+      - name: OpenQuatt Ext Room Temperature
+        unique_id: openquatt_ext_room_temperature
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        icon: mdi:home-thermometer
+        state: >-
+          {% set entity = states('input_text.openquatt_source_room_temperature') | trim %}
+          {% set raw = states(entity) if entity else none %}
+          {% set val = raw | float(none) %}
+          {% if val is not none %}
+            {{ val }}
+          {% elif this is defined and this.state not in ['unknown', 'unavailable', 'none', ''] %}
+            {{ this.state }}
+          {% else %}
+            unknown
+          {% endif %}
+        attributes:
+          source_entity: >-
+            {{ states('input_text.openquatt_source_room_temperature') | trim }}
+
+    binary_sensor:
+      - name: OpenQuatt Ext Outdoor Temperature Valid
+        unique_id: openquatt_ext_outdoor_temperature_valid
+        icon: mdi:check-decagram
+        state: >-
+          {% set entity = states('input_text.openquatt_source_outdoor_temperature') | trim %}
+          {% set val = states(entity) | float(none) if entity else none %}
+          {{ val is not none }}
+        attributes:
+          source_entity: >-
+            {{ states('input_text.openquatt_source_outdoor_temperature') | trim }}
+
+      - name: OpenQuatt Ext Room Setpoint Valid
+        unique_id: openquatt_ext_room_setpoint_valid
+        icon: mdi:check-decagram
+        state: >-
+          {% set entity = states('input_text.openquatt_source_room_setpoint') | trim %}
+          {% set val = states(entity) | float(none) if entity else none %}
+          {{ val is not none }}
+        attributes:
+          source_entity: >-
+            {{ states('input_text.openquatt_source_room_setpoint') | trim }}
+
+      - name: OpenQuatt Ext Room Temperature Valid
+        unique_id: openquatt_ext_room_temperature_valid
+        icon: mdi:check-decagram
+        state: >-
+          {% set entity = states('input_text.openquatt_source_room_temperature') | trim %}
+          {% set val = states(entity) | float(none) if entity else none %}
+          {{ val is not none }}
+        attributes:
+          source_entity: >-
+            {{ states('input_text.openquatt_source_room_temperature') | trim }}

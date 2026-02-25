@@ -25,6 +25,7 @@ This guide keeps the configuration maintainable and predictable while preserving
   - `oq_boiler_control`: boiler relay gate and max-temp safety
   - `oq_energy`: electrical/thermal energy integration (daily + total)
   - `oq_cic`: external CIC JSON feed polling/parsing/publish
+  - `oq_ha_inputs`: fixed Home Assistant proxy sensor ingest
   - `oq_local_sensors`: local and CIC source selection (`*_selected`)
   - `oq_webserver`: grouping/exposure for ESPHome web UI
   - `oq_HP_io`: per-HP Modbus IO entities and actuators
@@ -55,6 +56,7 @@ Use a consistent order per package where applicable:
   - `hp1_*` / `hp2_*` for per-unit entities
   - `*_selected` for canonical inputs used by control logic
   - `*_cic` for CIC cloud-fed source values
+  - `*_ha` for Home Assistant proxy source values
   - `*_esp` for direct controller-local source values
 - Use explicit suffixes:
   - `_ms`, `_s`, `_min` for time

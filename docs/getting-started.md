@@ -153,5 +153,6 @@ Check selected flow source and low-flow timer/fault logic states, not only insta
 After successful first run:
 
 1. Import either `docs/dashboard/openquatt_ha_dashboard_nl.yaml` or `docs/dashboard/openquatt_ha_dashboard_en.yaml` into Home Assistant.
-2. Read [Control Modes and Flow](control-modes-and-flow.md).
-3. Tune using [Settings Reference](settings-reference.md) and [Tuning and Troubleshooting](tuning-and-troubleshooting.md).
+2. Optional: install `docs/dashboard/openquatt_ha_dynamic_sources_package.yaml` as HA package for dynamic source entity selection.
+3. Read [Control Modes and Flow](control-modes-and-flow.md).
+4. Tune using [Settings Reference](settings-reference.md) and [Tuning and Troubleshooting](tuning-and-troubleshooting.md).

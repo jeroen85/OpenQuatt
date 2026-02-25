@@ -13,7 +13,7 @@
 - [9. Heat Allocation Engine (Technical)](#9-heat-allocation-engine-technical)
 - [10. Flow Control Engine (Technical)](#10-flow-control-engine-technical)
 - [11. CIC Engine (Technical)](#11-cic-engine-technical)
-- [12. Local Sensor and Source Selection Engine](#12-local-sensor-and-source-selection-engine)
+- [12. HA Inputs and Local Source Selection Engine](#12-ha-inputs-and-local-source-selection-engine)
 - [13. Boiler Engine (Technical)](#13-boiler-engine-technical)
 - [14. HP IO Engine (Technical)](#14-hp-io-engine-technical)
 - [15. Energy Engine (Technical)](#15-energy-engine-technical)
@@ -65,6 +65,7 @@ Defined in `openquatt/oq_packages.yaml` and must be preserved unless dependencie
 | `oq_flow_autotune` | identification + suggested PI gains |
 | `oq_boiler_control` | relay command and temperature lockout |
 | `oq_cic` | polling scheduler, backoff, parse/publish pipeline |
+| `oq_ha_inputs` | ingest of fixed Home Assistant proxy sensors |
 | `oq_local_sensors` | DS18B20 ingest, selected-source synthesis |
 | `oq_debug_testing` | manual diagnostics helpers (one-shot Modbus register reads, probe entities) |
 | `oq_energy` | integration and daily/total energy entities |
@@ -85,7 +86,7 @@ Defined in `openquatt/oq_packages.yaml` and must be preserved unless dependencie
 
 ### 5.3 Source chain
 
-- Local and CIC sources are published separately.
+- Local, CIC, and HA-proxy sources are published separately.
 - `*_selected` signals are canonical control inputs.
 
 ## 6. Timing and Scheduling
@@ -249,7 +250,15 @@ Technical guarantees:
 - failed parse/request increments failure path
 - stale feed invalidates CIC values and feed health state
 
-## 12. Local Sensor and Source Selection Engine
+## 12. HA Inputs and Local Source Selection Engine
+
+`oq_ha_inputs` provides:
+
+- three fixed Home Assistant proxy input sensors:
+  - outside temperature
+  - thermostat setpoint
+  - thermostat room temperature
+- no direct control wiring in phase 1 (ingest/observability only)
 
 `oq_local_sensors` provides:
 

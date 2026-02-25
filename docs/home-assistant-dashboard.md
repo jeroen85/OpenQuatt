@@ -17,11 +17,12 @@ The dashboard is designed as a practical operations console with the **Sections*
 - [5. Warmtecontrol View](#5-warmtecontrol-view)
 - [6. HPs View](#6-hps-view)
 - [7. CIC View](#7-cic-view)
-- [8. Energy View](#8-energy-view)
-- [9. Advanced Settings View](#9-advanced-settings-view)
-- [10. Debug & Testing View](#10-debug--testing-view)
-- [11. Diagnostics View](#11-diagnostics-view)
-- [12. Practical Maintenance Checklist](#12-practical-maintenance-checklist)
+- [8. HA Inputs View](#8-ha-inputs-view)
+- [9. Energy View](#9-energy-view)
+- [10. Advanced Settings View](#10-advanced-settings-view)
+- [11. Debug & Testing View](#11-debug--testing-view)
+- [12. Diagnostics View](#12-diagnostics-view)
+- [13. Practical Maintenance Checklist](#13-practical-maintenance-checklist)
 
 ## 1. Current View Set
 
@@ -32,6 +33,7 @@ The dashboard is designed as a practical operations console with the **Sections*
 | Warmtecontrol | `warmtecontrol` | Demand and heat allocation behavior |
 | HPs | `HPs` | HP1/HP2 deep diagnostics and visualization |
 | CIC | `cic` | Cloud feed health and source selection |
+| HA Inputs | `ha-inputs` | Dynamic HA entity-id mapping and proxy validation |
 | Energy | `energy` | Daily/cumulative energy and efficiency metrics |
 | Advanced settings | `advanced-settings` | Expert tuning parameters with explanations |
 | Debug & Testing | `debug-testing` | Service utilities, runtime balancing checks, and manual probe tools |
@@ -121,13 +123,30 @@ Expected content pattern:
 
 - source switches (`Use CIC JSON ...`)
 - CIC sensors (temps/flow/OT)
+- HA proxy input sensors (outside/setpoint/room temperature)
 - feed status (OK/stale/age/poll interval)
+
+Optional helper package:
+
+- `docs/dashboard/openquatt_ha_dynamic_sources_package.yaml` provides runtime entity-id input fields and stable proxy sensors.
 
 Operational rule:
 
 - Use this tab when control values do not match expected cloud/local sources.
 
-## 8. Energy View
+## 8. HA Inputs View
+
+Expected content pattern:
+
+- input fields for dynamic source entity IDs
+- proxy values and validity flags
+- OpenQuatt-ingested HA values
+
+Operational rule:
+
+- Use this tab first when dynamic source mapping is wrong or shows stale/invalid values.
+
+## 9. Energy View
 
 Expected content pattern:
 
@@ -143,7 +162,7 @@ Operational rule:
 
 - Validate tuning changes with this tab over full day windows.
 
-## 9. Advanced Settings View
+## 10. Advanced Settings View
 
 Expected content pattern:
 
@@ -155,7 +174,7 @@ Operational rule:
 
 - Treat this as engineering configuration, not a daily operations tab.
 
-## 10. Debug & Testing View
+## 11. Debug & Testing View
 
 Expected content pattern:
 
@@ -168,7 +187,7 @@ Operational rule:
 
 - Use this tab for guided diagnostics and service actions, not for daily control tuning.
 
-## 11. Diagnostics View
+## 12. Diagnostics View
 
 Expected content pattern:
 
@@ -187,12 +206,12 @@ Operational rule:
 
 - Prefer this tab when symptoms are ambiguous and source path must be proven.
 
-## 12. Practical Maintenance Checklist
+## 13. Practical Maintenance Checklist
 
 When editing the dashboard YAML:
 
 1. Keep entity IDs aligned with current codebase names.
-2. Keep source-selection controls centralized (CIC tab).
+2. Keep source-selection controls centralized (CIC/HA Inputs tabs).
 3. Avoid duplicate controls across tabs unless intentional.
 4. Keep warning-prone entities out of primary overview where possible.
 5. Preserve section headings and explanation style consistency.

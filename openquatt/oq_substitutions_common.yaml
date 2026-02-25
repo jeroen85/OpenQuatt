@@ -116,6 +116,13 @@ cic_stale_after_ms: "180000"                          # Data becomes stale after
 cic_feed_error_trip_n: "3"                            # Feed OK becomes false after N consecutive fetch/parse errors.
 
 # ----------------------------
+# HA INPUT ENTITY MAPPING
+# ----------------------------
+ha_outside_temp_entity_id: "sensor.openquatt_ext_outdoor_temperature" # HA proxy entity for outside temperature [degC].
+ha_room_setpoint_entity_id: "sensor.openquatt_ext_room_setpoint"      # HA proxy entity for thermostat room setpoint [degC].
+ha_room_temp_entity_id: "sensor.openquatt_ext_room_temperature"        # HA proxy entity for thermostat room temperature [degC].
+
+# ----------------------------
 # HP IO (MODBUS POLLING)
 # ----------------------------
 oq_skip_10s: "1"                                      # 1 skip; effective polling every 10s.

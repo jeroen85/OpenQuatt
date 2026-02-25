@@ -1778,6 +1778,97 @@ views:
           control
 
           CIC feed status, OT data en bronselectie voor lokale logica.
+  - title: HA Inputs
+    path: ha-inputs
+    icon: mdi:home-assistant
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:form-textbox
+            heading: Dynamische bronselectors
+            heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Uitleg</strong></summary>
+
+              Vul hier de entity IDs in van de bronnen die de OpenQuatt HA
+              proxy-sensoren moeten voeden.
+
+              Voorbeelden:
+              - `sensor.buitentemperatuur`
+              - `sensor.thermostaat_setpoint`
+              - `sensor.thermostaat_roomtemperature`
+              </details>
+            text_only: true
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: input_text.openquatt_source_outdoor_temperature
+                name: Bronentity buitentemperatuur
+              - entity: input_text.openquatt_source_room_setpoint
+                name: Bronentity setpoint
+              - entity: input_text.openquatt_source_room_temperature
+                name: Bronentity ruimtetemperatuur
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:database-arrow-right
+            heading: HA proxywaarden en validiteit
+            heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Uitleg</strong></summary>
+
+              Dit zijn de stabiele HA proxy-entities die als contract naar
+              OpenQuatt dienen.
+
+              De status `Valid` hoort voor alle drie signalen op `on` te staan.
+              </details>
+            text_only: true
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_ext_outdoor_temperature
+                name: Proxy buitentemperatuur
+              - entity: binary_sensor.openquatt_ext_outdoor_temperature_valid
+                name: Buitentemperatuur bron valid
+              - entity: sensor.openquatt_ext_room_setpoint
+                name: Proxy kamer setpoint
+              - entity: binary_sensor.openquatt_ext_room_setpoint_valid
+                name: Setpoint bron valid
+              - entity: sensor.openquatt_ext_room_temperature
+                name: Proxy ruimtetemperatuur
+              - entity: binary_sensor.openquatt_ext_room_temperature_valid
+                name: Ruimtetemperatuur bron valid
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:chip
+            heading: OpenQuatt ingest waarden
+            heading_style: title
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_ha_outside_temperature
+                name: HA - Outside Temperature
+              - entity: sensor.openquatt_ha_thermostat_setpoint
+                name: HA - Thermostat Setpoint
+              - entity: sensor.openquatt_ha_thermostat_room_temperature
+                name: HA - Thermostat Room Temperature
+    cards: []
+    header:
+      card:
+        type: markdown
+        content: |-
+          # HA dynamische bronkoppeling
+
+          Configureer dynamische bron-entity IDs en controleer proxy- en
+          OpenQuatt-ingestwaarden.
   - title: Advanced settings
     path: advanced-settings
     icon: mdi:tune-vertical
