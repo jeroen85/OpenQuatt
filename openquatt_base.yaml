@@ -2,13 +2,9 @@
 # OpenQuatt - Shared Base Config
 # ==============================================================================
 # Common ESPHome/ESP32 runtime shared by all hardware profiles.
-# Hardware-specific pin/board substitutions are provided by profile files.
+# Hardware/setup-specific substitutions are provided by profile files and
+# setup package wiring in the top-level entrypoints.
 # ==============================================================================
-
-# ==============================================================================
-# PACKAGES
-# ==============================================================================
-packages: !include openquatt/oq_packages_duo.yaml
 
 # ==============================================================================
 # ESPHOME CORE
@@ -24,8 +20,8 @@ esphome:
   name_add_mac_suffix: false
   platformio_options:
     build_flags:
-      - -DOQ_SETUP_DUO=1
-      - -DOQ_SETUP_SINGLE=0
+      - -DOQ_SETUP_DUO=${oq_setup_duo_flag}
+      - -DOQ_SETUP_SINGLE=${oq_setup_single_flag}
   includes:
     - ${hp_perf_map_header}
     - ${oq_setup_mode_header}

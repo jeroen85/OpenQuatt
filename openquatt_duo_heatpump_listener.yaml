@@ -2,9 +2,12 @@
 # OpenQuatt - Main Config (Duo setup, Heatpump Listener)
 # ==============================================================================
 substitutions:
-  <<: !include openquatt/oq_substitutions_common.yaml
+  <<:
+    - !include openquatt/profiles/oq_substitutions_setup_duo.yaml
+    - !include openquatt/oq_substitutions_common.yaml
   oq_build_path: "build/openquatt_duo_heatpump_listener"
 
 packages:
   openquatt_hw_profile: !include openquatt/profiles/oq_substitutions_heatpump_listener.yaml
+  openquatt_setup_packages: !include openquatt/oq_packages_duo.yaml
   openquatt_base: !include openquatt_base.yaml

@@ -19,6 +19,8 @@ oq_setup_mode_header: "openquatt/includes/oq_setup_mode.h" # C++ setup mode incl
 oq_setup_interface_header: "openquatt/includes/oq_setup_interface.h" # C++ setup interface include path.
 release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt.manifest.json" # OTA update manifest URL.
 oq_build_path: "build/openquatt"                      # ESPHome build cache path (can be overridden per entrypoint).
+oq_setup_duo_flag: "1"                                # Compile-time setup flag for duo.
+oq_setup_single_flag: "0"                             # Compile-time setup flag for single.
 
 # ----------------------------
 # HARDWARE

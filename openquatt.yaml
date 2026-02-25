@@ -5,10 +5,13 @@
 # Hardware profile: Waveshare ESP32-S3-Relay-1CH.
 # ==============================================================================
 substitutions:
-  <<: !include openquatt/oq_substitutions_common.yaml
+  <<:
+    - !include openquatt/profiles/oq_substitutions_setup_duo.yaml
+    - !include openquatt/oq_substitutions_common.yaml
   # Default entrypoint aliases duo waveshare.
   oq_build_path: "build/openquatt_duo_waveshare"
 
 packages:
   openquatt_hw_profile: !include openquatt/profiles/oq_substitutions_waveshare.yaml
+  openquatt_setup_packages: !include openquatt/oq_packages_duo.yaml
   openquatt_base: !include openquatt_base.yaml

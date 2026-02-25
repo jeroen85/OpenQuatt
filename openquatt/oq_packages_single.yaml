@@ -4,7 +4,8 @@
 # Load order mirrors duo via shared package segments; only setup-specific policy
 # is swapped.
 # ==============================================================================
-oq_shared_pre_policy: !include oq_packages_shared_pre_policy.yaml
-oq_heat_control_policy: !include oq_heat_control_single_policy.yaml
-oq_shared_post_policy: !include oq_packages_shared_post_policy.yaml
-oq_shared_tail: !include oq_packages_shared_tail.yaml
+packages:
+  oq_shared_pre_policy: !include oq_packages_shared_pre_policy.yaml
+  oq_heat_control_policy: !include oq_heat_control_single_policy.yaml
+  oq_shared_post_policy: !include oq_packages_shared_post_policy.yaml
+  oq_shared_tail: !include oq_packages_shared_tail.yaml

@@ -2,10 +2,12 @@
 # OpenQuatt - Main Config (Single setup, Waveshare ESP32-S3-Relay-1CH)
 # ==============================================================================
 substitutions:
-  <<: !include openquatt/oq_substitutions_common.yaml
-  release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-single.manifest.json"
+  <<:
+    - !include openquatt/profiles/oq_substitutions_setup_single.yaml
+    - !include openquatt/oq_substitutions_common.yaml
   oq_build_path: "build/openquatt_single_waveshare"
 
 packages:
   openquatt_hw_profile: !include openquatt/profiles/oq_substitutions_waveshare.yaml
-  openquatt_base: !include openquatt_base_single.yaml
+  openquatt_setup_packages: !include openquatt/oq_packages_single.yaml
+  openquatt_base: !include openquatt_base.yaml

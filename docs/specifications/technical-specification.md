@@ -46,8 +46,10 @@ Companion document:
 - `openquatt_duo_heatpump_listener.yaml`: [Heatpump Listener](https://electropaultje.nl/product/heatpump-listener/) entrypoint
 - `openquatt_single_waveshare.yaml`: single setup + Waveshare entrypoint
 - `openquatt_single_heatpump_listener.yaml`: single setup + Heatpump Listener entrypoint
-- `openquatt_base.yaml`: shared base (project metadata, board/framework, package wiring)
-- `openquatt_base_single.yaml`: shared base for single setup package wiring
+- `openquatt_base.yaml`: shared base (project metadata, board/framework, compile flags)
+- `openquatt_base_single.yaml`: legacy single alias wrapper for compatibility
+- `openquatt/profiles/oq_substitutions_setup_duo.yaml`: setup profile substitutions (duo compile flags + release manifest)
+- `openquatt/profiles/oq_substitutions_setup_single.yaml`: setup profile substitutions (single compile flags + release manifest)
 - `openquatt/`: subsystem packages
 - `docs/dashboard/openquatt_ha_dashboard_nl.yaml`: HA dashboard definition (Dutch)
 - `docs/dashboard/openquatt_ha_dashboard_en.yaml`: HA dashboard definition (English)

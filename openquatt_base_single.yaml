@@ -1,52 +1,11 @@
 # ==============================================================================
-# OpenQuatt - Shared Base Config
+# OpenQuatt - Legacy Single Base Alias
 # ==============================================================================
-# Common ESPHome/ESP32 runtime shared by all hardware profiles.
-# Hardware-specific pin/board substitutions are provided by profile files.
+# Backward-compatible alias; prefer openquatt_base.yaml + setup profile include.
 # ==============================================================================
 
-# ==============================================================================
-# PACKAGES
-# ==============================================================================
-packages: !include openquatt/oq_packages_single.yaml
+substitutions: !include openquatt/profiles/oq_substitutions_setup_single.yaml
 
-# ==============================================================================
-# ESPHOME CORE
-# ==============================================================================
-esphome:
-  name: ${device_name}
-  friendly_name: ${friendly_name}
-  build_path: ${oq_build_path}
-  project:
-    name: ${project_name}
-    version: ${project_version}
-  min_version: 2025.11.0
-  name_add_mac_suffix: false
-  platformio_options:
-    build_flags:
-      - -DOQ_SETUP_DUO=0
-      - -DOQ_SETUP_SINGLE=1
-  includes:
-    - ${hp_perf_map_header}
-    - ${oq_setup_mode_header}
-    - ${oq_setup_interface_header}
-  on_boot:
-    priority: -100
-    then:
-      - text_sensor.template.publish:
-          id: oq_project_version_text
-          state: "${project_version}"
-
-# ==============================================================================
-# PLATFORM
-# ==============================================================================
-esp32:
-  board: ${esp_board}
-  flash_size: ${esp_flash_size}
-  variant: ${esp_variant}
-  framework:
-    type: esp-idf
-    version: recommended
-    sdkconfig_options:
-      COMPILER_OPTIMIZATION_SIZE: y
-      CONFIG_BT_ENABLED: n
+packages:
+  openquatt_setup_packages: !include openquatt/oq_packages_single.yaml
+  openquatt_base: !include openquatt_base.yaml

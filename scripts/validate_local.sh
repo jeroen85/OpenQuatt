@@ -113,10 +113,13 @@ select_changed_compile_configs() {
       openquatt_single_heatpump_listener.yaml)
         append_unique COMPILE_CONFIGS "openquatt_single_heatpump_listener.yaml"
         ;;
-      openquatt_base.yaml|openquatt/oq_packages_duo.yaml|openquatt/oq_heat_control_duo_policy.yaml|openquatt/oq_debug_testing_duo.yaml)
+      openquatt_base.yaml)
+        add_configs COMPILE_CONFIGS "${ALL_CONFIGS[@]}"
+        ;;
+      openquatt/oq_packages_duo.yaml|openquatt/oq_heat_control_duo_policy.yaml|openquatt/oq_debug_testing_duo.yaml|openquatt/profiles/oq_substitutions_setup_duo.yaml)
         add_configs COMPILE_CONFIGS "${DUO_CONFIGS[@]}"
         ;;
-      openquatt_base_single.yaml|openquatt/oq_packages_single.yaml|openquatt/oq_heat_control_single_policy.yaml)
+      openquatt_base_single.yaml|openquatt/oq_packages_single.yaml|openquatt/oq_heat_control_single_policy.yaml|openquatt/profiles/oq_substitutions_setup_single.yaml)
         add_configs COMPILE_CONFIGS "${SINGLE_CONFIGS[@]}"
         ;;
       openquatt/profiles/oq_substitutions_waveshare.yaml)

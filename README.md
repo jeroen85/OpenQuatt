@@ -48,11 +48,13 @@ OpenQuatt is a modular ESPHome controller for single and duo heat pump setups wi
 ├── openquatt_duo_heatpump_listener.yaml  # Heatpump Listener profile entrypoint
 ├── openquatt_single_waveshare.yaml   # Single setup + Waveshare profile entrypoint
 ├── openquatt_single_heatpump_listener.yaml # Single setup + Heatpump Listener profile entrypoint
-├── openquatt_base.yaml               # Shared ESPHome/ESP32 base config
-├── openquatt_base_single.yaml        # Shared ESPHome/ESP32 base config (single setup package wiring)
+├── openquatt_base.yaml               # Shared ESPHome/ESP32 base config (entrypoint selects setup packages)
+├── openquatt_base_single.yaml        # Legacy single base alias (compatibility wrapper)
 ├── openquatt/
 │   ├── oq_substitutions_common.yaml  # Compile-time constants shared by all profiles
 │   ├── profiles/
+│   │   ├── oq_substitutions_setup_duo.yaml     # Setup-specific substitutions (compile flags, release manifest)
+│   │   ├── oq_substitutions_setup_single.yaml  # Setup-specific substitutions (compile flags, release manifest)
 │   │   ├── oq_substitutions_waveshare.yaml
 │   │   └── oq_substitutions_heatpump_listener.yaml
 │   ├── oq_packages_duo.yaml          # Duo setup package wrapper (setup-specific overlays)

@@ -1,0 +1,6 @@
+# ==============================================================================
+# OpenQuatt - Setup Profile Substitutions (Duo)
+# ==============================================================================
+oq_setup_duo_flag: "1"
+oq_setup_single_flag: "0"
+release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt.manifest.json"

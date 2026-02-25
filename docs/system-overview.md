@@ -23,7 +23,8 @@ OpenQuatt is driven from setup+hardware entrypoints (`openquatt.yaml`, `openquat
 `openquatt_single_heatpump_listener.yaml`), which include:
 
 - global project/board/framework config
-- shared base wiring (`openquatt_base.yaml` for duo, `openquatt_base_single.yaml` for single)
+- merged substitutions (`oq_substitutions_common.yaml` + setup profile) and hardware profile substitutions
+- shared base wiring (`openquatt_base.yaml`)
 - setup wrappers via `openquatt/oq_packages_duo.yaml` and `openquatt/oq_packages_single.yaml`
   using shared segments `oq_packages_shared_pre_policy.yaml`, `oq_packages_shared_post_policy.yaml`,
   `oq_packages_shared_tail.yaml`
@@ -252,6 +253,8 @@ Compile-time profile selection is done by choosing the firmware entrypoint:
 
 - `openquatt_duo_waveshare.yaml`
 - `openquatt_duo_heatpump_listener.yaml`
+- `openquatt_single_waveshare.yaml`
+- `openquatt_single_heatpump_listener.yaml`
 
 ## 10. UI and Observability Organization
 
