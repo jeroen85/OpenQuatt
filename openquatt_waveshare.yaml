@@ -3,6 +3,9 @@
 # ==============================================================================
 substitutions: !include openquatt/oq_substitutions_common.yaml
 
+esphome:
+  build_path: build/openquatt_waveshare
+
 packages:
   openquatt_hw_profile: !include openquatt/profiles/oq_substitutions_waveshare.yaml
   openquatt_base: !include openquatt_base.yaml

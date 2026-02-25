@@ -89,6 +89,8 @@ esphome config openquatt.yaml
 esphome compile openquatt.yaml
 ```
 
+Tip: compile each hardware profile via its own entrypoint (`openquatt_waveshare.yaml` or `openquatt_heatpump_listener.yaml`). Each entrypoint has a dedicated `build_path`, which keeps profile caches separate and speeds up repeated profile switching.
+
 Or run the helper script:
 
 ```bash

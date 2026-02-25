@@ -112,6 +112,8 @@ esphome config openquatt.yaml
 esphome compile openquatt.yaml
 ```
 
+Note: each hardware entrypoint now uses its own ESPHome `build_path`, so switching between `openquatt_waveshare.yaml` and `openquatt_heatpump_listener.yaml` no longer invalidates the other profile's build cache.
+
 4. Flash/run:
 
 ```bash
