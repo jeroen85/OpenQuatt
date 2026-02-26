@@ -1789,9 +1789,9 @@ views:
               proxy sensors.
 
               Example values:
-              - `sensor.buitentemperatuur`
-              - `sensor.thermostaat_setpoint`
-              - `sensor.thermostaat_roomtemperature`
+              - `sensor.outdoor_temperature`
+              - `sensor.thermostat_setpoint`
+              - `sensor.thermostat_room_temperature`
 
               If a source is invalid, the proxy keeps the last valid value.
               If there is no last valid value yet, the proxy state is `nan`.
