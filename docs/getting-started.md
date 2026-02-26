@@ -121,7 +121,7 @@ Before enabling full heating behavior, check:
    - `Flow average (Selected)` is realistic.
    - `Lowflow fault active` remains off in normal operation.
 2. **Source selection**:
-   - CIC source switches match your intended setup.
+   - Source selectors match your intended setup (water/flow/outside/room temp/setpoint).
 3. **Mode sanity**:
    - `CM override` is `Auto`.
 4. **Boiler safety**:

@@ -561,7 +561,7 @@ sensor:
     id: outside_temp_hp_avg
     name: "Outside Temperature (Local aggregated)"
     icon: mdi:thermometer
-    internal: true
+    internal: false
     unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement
@@ -940,7 +940,7 @@ interval:
             id(oq_phouse_last_w) = P_req_est;
             id(oq_phouse_last_ms) = 0;
             id(oq_ph_comfort_bias_last_ms) = 0;
-            id(oq_ph_room_target_effective_c) = id(ot_room_setpoint).state;
+            id(oq_ph_room_target_effective_c) = id(room_setpoint_selected).state;
           } else {
             // ------------------------------------------------------------
             // POWER HOUSE MODE
@@ -953,8 +953,8 @@ interval:
             const float T0   = id(house_zero_power_temp_c).state;
             const float Pr   = id(house_rated_power_w).state;
 
-            const float Tr   = id(ot_room_temp).state;
-            const float Trsp = id(ot_room_setpoint).state;
+            const float Tr   = id(room_temp_selected).state;
+            const float Trsp = id(room_setpoint_selected).state;
 
             if (isnan(Tout) || isnan(Tc) || isnan(T0) || isnan(Pr) || (Pr <= 0.0f) || isnan(Tr) || isnan(Trsp) || (T0 <= Tc + ${oq_temp_guard_delta_c}f)) {
               id(oq_phouse_req_w) = 0.0f;

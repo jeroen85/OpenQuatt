@@ -16,13 +16,12 @@ The dashboard is designed as a practical operations console with the **Sections*
 - [4. Flow View](#4-flow-view)
 - [5. Warmtecontrol View](#5-warmtecontrol-view)
 - [6. HPs View](#6-hps-view)
-- [7. CIC View](#7-cic-view)
-- [8. HA Inputs View](#8-ha-inputs-view)
-- [9. Energy View](#9-energy-view)
-- [10. Advanced Settings View](#10-advanced-settings-view)
-- [11. Debug & Testing View](#11-debug--testing-view)
-- [12. Diagnostics View](#12-diagnostics-view)
-- [13. Practical Maintenance Checklist](#13-practical-maintenance-checklist)
+- [7. HA Inputs View](#7-ha-inputs-view)
+- [8. Energy View](#8-energy-view)
+- [9. Advanced Settings View](#9-advanced-settings-view)
+- [10. Debug & Testing View](#10-debug--testing-view)
+- [11. Diagnostics View](#11-diagnostics-view)
+- [12. Practical Maintenance Checklist](#12-practical-maintenance-checklist)
 
 ## 1. Current View Set
 
@@ -32,12 +31,11 @@ The dashboard is designed as a practical operations console with the **Sections*
 | Flow | `flow` | Hydraulic status, flow control, pump tuning |
 | Warmtecontrol | `warmtecontrol` | Demand and heat allocation behavior |
 | HPs | `HPs` | HP1/HP2 deep diagnostics and visualization |
-| CIC | `cic` | Cloud feed health and source selection |
-| HA Inputs | `ha-inputs` | Dynamic HA entity-id mapping and proxy validation |
+| HA Inputs | `ha-inputs` | Source selectors, source-overview blocks, dynamic HA mapping, and feed/proxy checks |
 | Energy | `energy` | Daily/cumulative energy and efficiency metrics |
 | Advanced settings | `advanced-settings` | Expert tuning parameters with explanations |
 | Debug & Testing | `debug-testing` | Service utilities, runtime balancing checks, and manual probe tools |
-| Diagnostics | `diagnostics` | Cross-source debug and validation |
+| Diagnostics | `diagnostics` | Controller and firmware diagnostics |
 
 ## 2. Design Rules Used
 
@@ -45,7 +43,7 @@ The dashboard is designed as a practical operations console with the **Sections*
 - Separate advanced tuning from fast operational controls.
 - Use tile cards for quick scanning and trend snippets.
 - Use markdown details blocks for contextual explanation.
-- Keep CIC/source controls grouped so source origin is always explicit.
+- Keep source controls grouped in the HA Inputs tab so source origin is always explicit.
 
 ## 3. Overview View (Overzicht)
 
@@ -65,8 +63,8 @@ Contains four practical clusters:
    - boiler active
    - silent active
 3. **Thermostaat**
-   - OT room setpoint
-   - OT room temperature
+   - selected room setpoint
+   - selected room temperature
 4. **Dagelijkse bediening**
    - CM override
    - day/silent level caps
@@ -117,13 +115,15 @@ Operational rule:
 
 - Use this tab for unit-specific diagnostics and balancing checks.
 
-## 7. CIC View
+## 7. HA Inputs View
 
 Expected content pattern:
 
-- source switches (`Use CIC JSON ...`)
-- CIC sensors (temps/flow/OT)
+- five control source selectors
+- source overview blocks (selected + each source value per signal)
+- dynamic HA source entity-id inputs
 - HA proxy input sensors (outside/setpoint/room temperature)
+- OpenQuatt-ingested HA values
 - feed status (OK/stale/age/poll interval)
 
 Optional helper package:
@@ -132,21 +132,9 @@ Optional helper package:
 
 Operational rule:
 
-- Use this tab when control values do not match expected cloud/local sources.
+- Use this tab first when selected/source values or dynamic HA mapping look wrong.
 
-## 8. HA Inputs View
-
-Expected content pattern:
-
-- input fields for dynamic source entity IDs
-- proxy values and validity flags
-- OpenQuatt-ingested HA values
-
-Operational rule:
-
-- Use this tab first when dynamic source mapping is wrong or shows stale/invalid values.
-
-## 9. Energy View
+## 8. Energy View
 
 Expected content pattern:
 
@@ -162,7 +150,7 @@ Operational rule:
 
 - Validate tuning changes with this tab over full day windows.
 
-## 10. Advanced Settings View
+## 9. Advanced Settings View
 
 Expected content pattern:
 
@@ -174,7 +162,7 @@ Operational rule:
 
 - Treat this as engineering configuration, not a daily operations tab.
 
-## 11. Debug & Testing View
+## 10. Debug & Testing View
 
 Expected content pattern:
 
@@ -187,11 +175,10 @@ Operational rule:
 
 - Use this tab for guided diagnostics and service actions, not for daily control tuning.
 
-## 12. Diagnostics View
+## 11. Diagnostics View
 
 Expected content pattern:
 
-- side-by-side comparison of selected/local/CIC sources
 - debug-oriented status entities
 - low-level inspection cards that are too noisy for main operations
 - Power House low-load diagnostics:
@@ -206,12 +193,12 @@ Operational rule:
 
 - Prefer this tab when symptoms are ambiguous and source path must be proven.
 
-## 13. Practical Maintenance Checklist
+## 12. Practical Maintenance Checklist
 
 When editing the dashboard YAML:
 
 1. Keep entity IDs aligned with current codebase names.
-2. Keep source-selection controls centralized (CIC/HA Inputs tabs).
+2. Keep source-selection controls centralized in HA Inputs.
 3. Avoid duplicate controls across tabs unless intentional.
 4. Keep warning-prone entities out of primary overview where possible.
 5. Preserve section headings and explanation style consistency.

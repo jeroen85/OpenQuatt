@@ -92,8 +92,10 @@ This prevents hidden control coupling and keeps debugging deterministic.
 - `water_supply_temp_selected`
 - `flow_rate_selected`
 - `outside_temp_selected`
+- `room_temp_selected`
+- `room_setpoint_selected`
 
-Three switches decide whether selected values come from CIC or local/controller sources.
+Runtime selectors decide per signal whether selected values come from local, CIC, or HA-input sources.
 
 ### 4.3 Demand layer
 

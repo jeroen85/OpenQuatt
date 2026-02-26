@@ -174,7 +174,7 @@ views:
               <summary><strong>Explanation</strong></summary>
 
 
-              Thermostat values from the OT/CIC chain:
+              Selected room-control values:
 
               - `Setpoint`: requested room temperature.
 
@@ -186,14 +186,14 @@ views:
               </details>
             text_only: true
           - type: tile
-            entity: sensor.openquatt_cic_ot_room_temperature
+            entity: sensor.openquatt_room_temperature_selected
             name: Current temperature
             vertical: false
             features:
               - type: trend-graph
             features_position: bottom
           - type: tile
-            entity: sensor.openquatt_cic_ot_room_setpoint
+            entity: sensor.openquatt_room_setpoint_selected
             name: Setpoint
             vertical: false
             features:
@@ -1125,9 +1125,9 @@ views:
                 name: System supply
               - entity: sensor.openquatt_heating_curve_supply_target
                 name: Supply target
-              - entity: sensor.openquatt_cic_ot_room_temperature
+              - entity: sensor.openquatt_room_temperature_selected
                 name: Room temp
-              - entity: sensor.openquatt_cic_ot_room_setpoint
+              - entity: sensor.openquatt_room_setpoint_selected
                 name: Room setpoint
             grid_options:
               columns: full
@@ -1609,9 +1609,9 @@ views:
           behavior. Use it mainly for diagnostics and HP1 vs HP2 comparison.
 
           For settings, use `Flow`, `Heat control`, and `Advanced settings`.
-  - title: CIC
-    path: cic
-    icon: mdi:cloud-sync
+  - title: HA Inputs
+    path: ha-inputs
+    icon: mdi:home-assistant
     type: sections
     max_columns: 3
     sections:
@@ -1619,161 +1619,105 @@ views:
         cards:
           - type: heading
             icon: mdi:source-branch
-            heading: Source selection (CIC JSON)
+            heading: Control source selectors
             heading_style: title
           - type: markdown
-            content: >
-
+            content: |-
               <details>
-
               <summary><strong>Explanation</strong></summary>
 
-              With these three switches, you select which source the control
-              logic uses per signal.
-
-
-              - `Use CIC JSON Water Supply`:
-
-              use CIC supply temperature instead of the local DS18B20.
-
-              - `Use CIC JSON Flow`:
-
-              use CIC flow (`flow_rate_cic`) instead of local flow measurement.
-
-              - `Use CIC JSON Outside Temp`:
-
-              use CIC outdoor temperature instead of locally aggregated
-              value.</details>
-            text_only: true
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: switch.openquatt_use_cic_json_water_supply_temp
-                name: Use CIC JSON Water Supply
-              - entity: switch.openquatt_use_cic_json_flow_rate
-                name: Use CIC JSON Flow
-              - entity: switch.openquatt_use_cic_json_outside_temp
-                name: Use CIC JSON Outside Temp
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:database
-            heading: CIC sensors
-            heading_style: title
-          - type: markdown
-            content: >-
-              <details>
-
-              <summary><strong>Explanation</strong></summary>
-
-
-              These values come from the CIC JSON feed and are used as inputs
-              for control, monitoring, and source selection.
-
-
-              - `Water supply temp` en `Flowrate filtered` zijn de primaire
-              hydraulische inputs vanuit CIC.
-
-              - `HP1 outside temp` en `HP2 outside temp` tonen
-              outdoor temperature at unit level.
-
-              - `OT control setpoint`, `OT room setpoint` en `OT room
-              temperature` tonen de OpenTherm-gerelateerde comfortvariabelen.
-
-              - `OT CH enabled` en `OT cooling enabled` tonen de vraagstatus
-              vanuit de OT-kant.
-
+              Select which source is used for each control signal.
 
               </details>
             text_only: true
           - type: entities
-            title: CIC sensors
             show_header_toggle: false
             entities:
+              - entity: select.openquatt_water_supply_source
+                name: Water supply source
+              - entity: select.openquatt_flow_source
+                name: Flow source
+              - entity: select.openquatt_outside_temperature_source
+                name: Outside temperature source
+              - entity: select.openquatt_room_temperature_source
+                name: Room temperature source
+              - entity: select.openquatt_room_setpoint_source
+                name: Room setpoint source
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:water-thermometer
+            heading: Water supply sources
+            heading_style: title
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_water_supply_temp_selected
+                name: Selected water supply temp
+              - entity: sensor.openquatt_water_supply_temp
+                name: Water supply temp (ESP)
               - entity: sensor.openquatt_cic_water_supply_temp
-                name: Water supply temp
-              - entity: sensor.openquatt_cic_flowrate_filtered
-                name: Flowrate filtered
-              - entity: sensor.openquatt_cic_hp1_outside_temp
-                name: HP1 outside temp
-              - entity: sensor.openquatt_cic_hp2_outside_temp
-                name: HP2 outside temp
-              - entity: sensor.openquatt_cic_ot_control_setpoint
-                name: OT control setpoint
-              - entity: sensor.openquatt_cic_ot_room_setpoint
-                name: OT room setpoint
-              - entity: sensor.openquatt_cic_ot_room_temperature
-                name: OT room temperature
-              - entity: binary_sensor.openquatt_cic_ot_ch_enabled
-                name: OT CH enabled
-              - entity: binary_sensor.openquatt_cic_ot_cooling_enabled
-                name: OT cooling enabled
+                name: Water supply temp (CIC)
       - type: grid
         cards:
           - type: heading
-            icon: mdi:cloud-check
-            heading: Feed status
+            icon: mdi:waves
+            heading: Flow sources
             heading_style: title
-          - type: markdown
-            content: >-
-              <details>
-
-              <summary><strong>Explanation</strong></summary>
-
-
-              This block shows whether the CIC JSON feed is healthy and usable.
-
-
-              - `Enable polling` enables or disables periodic CIC feed polling.
-
-              - `JSON feed OK` is the current feed health (successful
-              requests/parsing).
-
-              - `Data stale` indicates that the latest known data has become too
-              old.
-
-              - `Last success age` shows how long ago the last successful update
-              arrived.
-
-              - `Polling interval` is the current interval/backoff of the CIC
-              poller.
-
-              - `CIC feed URL` is the active endpoint used by the poller.
-
-
-              </details>
-            text_only: true
           - type: entities
-            title: Feed status
             show_header_toggle: false
             entities:
-              - entity: switch.openquatt_cic_enable_polling
-                name: Enable polling
-              - entity: binary_sensor.openquatt_cic_json_feed_ok
-                name: JSON feed OK
-              - entity: binary_sensor.openquatt_cic_data_stale
-                name: Data stale
-              - entity: sensor.openquatt_cic_last_success_age
-                name: Last success age
-              - entity: sensor.openquatt_cic_polling_interval
-                name: Polling interval
-              - entity: text.openquatt_cic_feed_url
-                name: CIC feed URL
-    cards: []
-    header:
-      card:
-        type: markdown
-        content: >-
-          # <ha-icon icon="mdi:cloud-sync"></ha-icon> CiC JSON feed data &
-          control
-
-          CIC feed status, OT data, and source selection for local logic.
-  - title: HA Inputs
-    path: ha-inputs
-    icon: mdi:home-assistant
-    type: sections
-    max_columns: 3
-    sections:
+              - entity: sensor.openquatt_flow_average_selected
+                name: Selected flow rate
+              - entity: sensor.openquatt_flow_average_local
+                name: Flow rate (Outdoor unit)
+              - entity: sensor.openquatt_cic_flowrate_filtered
+                name: Flow rate (CIC)
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:thermometer
+            heading: Outside temperature sources
+            heading_style: title
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_outside_temperature_selected
+                name: Selected outside temp
+              - entity: sensor.openquatt_outside_temperature_local_aggregated
+                name: Outside temp (Outdoor unit)
+              - entity: sensor.openquatt_ha_outside_temperature
+                name: Outside temp (HA input)
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:home-thermometer
+            heading: Room temperature sources
+            heading_style: title
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_room_temperature_selected
+                name: Selected room temp
+              - entity: sensor.openquatt_cic_ot_room_temperature
+                name: Room temp (CIC OT)
+              - entity: sensor.openquatt_ha_thermostat_room_temperature
+                name: Room temp (HA input)
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:thermostat
+            heading: Room setpoint sources
+            heading_style: title
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_room_setpoint_selected
+                name: Selected room setpoint
+              - entity: sensor.openquatt_cic_ot_room_setpoint
+                name: Room setpoint (CIC OT)
+              - entity: sensor.openquatt_ha_thermostat_setpoint
+                name: Room setpoint (HA input)
       - type: grid
         cards:
           - type: heading
@@ -1822,7 +1766,7 @@ views:
               towards OpenQuatt.
 
               The `Valid` status should be `on` for all three signals.
-              If `Valid` is `off`, the proxy keeps the last valid value
+              If `Valid` is `off`, the proxy keeps the last valid value.
               If there is no last valid value yet, the proxy state is `nan`.
 
               </details>
@@ -1870,15 +1814,36 @@ views:
                 name: HA - Thermostat Setpoint
               - entity: sensor.openquatt_ha_thermostat_room_temperature
                 name: HA - Thermostat Room Temperature
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:cloud-check
+            heading: CIC feed status
+            heading_style: title
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: switch.openquatt_cic_enable_polling
+                name: Enable polling
+              - entity: binary_sensor.openquatt_cic_json_feed_ok
+                name: JSON feed OK
+              - entity: binary_sensor.openquatt_cic_data_stale
+                name: Data stale
+              - entity: sensor.openquatt_cic_last_success_age
+                name: Last success age
+              - entity: sensor.openquatt_cic_polling_interval
+                name: Polling interval
+              - entity: text.openquatt_cic_feed_url
+                name: CIC feed URL
     cards: []
     header:
       card:
         type: markdown
         content: |-
-          # HA dynamic source mapping
+          # HA source and feed mapping
 
-          Configure dynamic source entity IDs and verify proxy and OpenQuatt
-          HA input values.
+          Configure control sources and dynamic HA source entity IDs, then verify
+          selected values, proxies, and OpenQuatt HA inputs.
   - title: Advanced settings
     path: advanced-settings
     icon: mdi:tune-vertical
@@ -2525,10 +2490,10 @@ views:
                 name: Heating mode
               - entity: sensor.openquatt_outside_temperature_selected
                 name: Outside temp (selected)
-              - entity: sensor.openquatt_cic_ot_room_setpoint
-                name: Room setpoint (CIC)
-              - entity: sensor.openquatt_cic_ot_room_temperature
-                name: Room temp (CIC)
+              - entity: sensor.openquatt_room_setpoint_selected
+                name: Room setpoint (selected)
+              - entity: sensor.openquatt_room_temperature_selected
+                name: Room temp (selected)
               - entity: sensor.openquatt_power_house_effective_room_target
                 name: Effective room target
               - entity: sensor.openquatt_power_house_comfort_bias
@@ -2566,9 +2531,9 @@ views:
             entities:
               - entity: sensor.openquatt_outside_temperature_selected
                 name: Outside temp
-              - entity: sensor.openquatt_cic_ot_room_setpoint
+              - entity: sensor.openquatt_room_setpoint_selected
                 name: Room setpoint
-              - entity: sensor.openquatt_cic_ot_room_temperature
+              - entity: sensor.openquatt_room_temperature_selected
                 name: Room temp
               - entity: sensor.openquatt_power_house_p_house
                 name: P_house
@@ -2681,105 +2646,6 @@ views:
                 name: ESPHome Version
               - entity: button.openquatt_restart
                 name: Restart
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:thermometer
-            heading: Outside temperature sources
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-
-              <summary><strong>Explanation</strong></summary>
-
-              Compare outdoor temperature per source:
-
-              - Selected: the actual value used in control
-              - HP1/HP2 (Modbus): raw unit measurements
-              - CIC HP1/HP2: cloud-feed source values
-
-              </details>
-            text_only: true
-          - type: entities
-            title: Outside
-            show_header_toggle: false
-            entities:
-              - entity: sensor.openquatt_outside_temperature_selected
-                name: Selected outside temp
-              - entity: sensor.openquatt_hp1_outside_temperature
-                name: HP1 outside temp (Modbus)
-              - entity: sensor.openquatt_hp2_outside_temperature
-                name: HP2 outside temp (Modbus)
-              - entity: sensor.openquatt_cic_hp1_outside_temp
-                name: HP1 outside temp (CIC)
-              - entity: sensor.openquatt_cic_hp2_outside_temp
-                name: HP2 outside temp (CIC)
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:water-thermometer
-            heading: Water supply sources
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-
-              <summary><strong>Explanation</strong></summary>
-
-              Compare water supply temperature per source:
-
-              - Selected: source actively used in logic
-              - ESP: DS18B20 direct op de controller
-              - CIC: cloud-feed value
-
-              </details>
-            text_only: true
-          - type: entities
-            title: Water supply
-            show_header_toggle: false
-            entities:
-              - entity: sensor.openquatt_water_supply_temp_selected
-                name: Selected water supply temp
-              - entity: sensor.openquatt_water_supply_temp
-                name: Water supply temp (ESP)
-              - entity: sensor.openquatt_cic_water_supply_temp
-                name: Water supply temp (CIC)
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:waves
-            heading: Flow sources
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-
-              <summary><strong>Explanation</strong></summary>
-
-              This block shows flow at all levels:
-
-              - Selected: source used by control logic
-              - HP avg local: locally derived value from HP1/HP2
-              - CIC: cloud-feed flow
-              - HP1/HP2: raw per-unit flow (Modbus)
-
-              </details>
-            text_only: true
-          - type: entities
-            title: Flow
-            show_header_toggle: false
-            entities:
-              - entity: sensor.openquatt_flow_average_selected
-                name: Selected flow rate
-              - entity: sensor.openquatt_flow_average_local
-                name: Local flow avg (HP)
-              - entity: sensor.openquatt_cic_flowrate_filtered
-                name: CIC flow rate
-              - entity: sensor.openquatt_hp1_flow
-                name: HP1 flow (Modbus)
-              - entity: sensor.openquatt_hp2_flow
-                name: HP2 flow (Modbus)
     cards: []
     header:
       card:
@@ -2787,4 +2653,4 @@ views:
         content: >-
           # <ha-icon icon="mdi:stethoscope"></ha-icon> Diagnostics
 
-          Source comparison for temperature and flow, focused on troubleshooting.
+          Controller and firmware diagnostics, focused on troubleshooting.

@@ -249,9 +249,11 @@ Key entities:
 - `CIC - Data stale`
 - `CIC - Last success age`
 - `CIC - Polling interval`
-- `Use CIC JSON Water Supply Temp`
-- `Use CIC JSON Flow Rate`
-- `Use CIC JSON Outside Temp`
+- `Water Supply Source` (`Local` / `CIC`)
+- `Flow Source` (`Outdoor unit` / `CIC`)
+- `Outside Temperature Source` (`Outdoor unit` / `HA input`)
+- `Room Temperature Source` (`CIC` / `HA input`)
+- `Room Setpoint Source` (`CIC` / `HA input`)
 
 Intent:
 
@@ -271,7 +273,7 @@ Key entities:
 Intent:
 
 - ingest stable Home Assistant proxy signals in ESPHome
-- prepare later source-selection wiring without changing current control behavior
+- support runtime room/outside source selection via HA-backed values
 - optional reference package: `docs/dashboard/openquatt_ha_dynamic_sources_package.yaml`
 
 ### 5.8 Service and diagnostics utilities

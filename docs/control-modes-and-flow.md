@@ -164,7 +164,7 @@ Control behavior relies on selected source values:
 - selected outside temperature (`outside_temp_selected`)
 - selected supply temperature (`water_supply_temp_selected`)
 
-These are controlled with three CIC/local source switches.
+These are controlled with runtime source selectors (Local/CIC/HA input per signal).
 
 ## 10. Practical Mode Matrix
 

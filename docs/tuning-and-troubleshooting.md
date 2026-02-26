@@ -52,11 +52,13 @@ Before changing anything, record:
 - `HP capacity (W)`
 - `HP deficit (W)`
 
-Also note source switch states:
+Also note source selector states:
 
-- `Use CIC JSON Water Supply Temp`
-- `Use CIC JSON Flow Rate`
-- `Use CIC JSON Outside Temp`
+- `Water Supply Source`
+- `Flow Source`
+- `Outside Temperature Source`
+- `Room Temperature Source`
+- `Room Setpoint Source`
 
 ## 4. Heating Strategy Tuning
 
@@ -258,7 +260,7 @@ Common patterns:
 
 - `Feed OK = Off` + rising polling interval: repeated failures with backoff.
 - `Data stale = On`: selected CIC values may be invalidated to NaN/false.
-- Values present in CIC but not used in control: source switches likely still set to local.
+- Values present in CIC but not used in control: source selectors likely point to other sources.
 
 ## 9. Flow Safety Troubleshooting
 

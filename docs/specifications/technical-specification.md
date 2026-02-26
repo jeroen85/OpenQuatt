@@ -258,13 +258,13 @@ Technical guarantees:
   - outside temperature
   - thermostat setpoint
   - thermostat room temperature
-- no direct control wiring in phase 1 (ingest/observability only)
+- runtime-usable HA-backed sources for outside/room signals
 
 `oq_local_sensors` provides:
 
 - DS18B20 sensor (`water_supply_temp_esp`)
-- selected abstractions for water supply, flow, outside temperature
-- three source selector switches for CIC/local arbitration
+- selected abstractions for water supply, flow, outside temperature, room temperature, room setpoint
+- five source selectors for local/CIC/HA-input arbitration (per signal)
 
 Selected signals are consumed by strategy/flow logic.
 
