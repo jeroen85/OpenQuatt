@@ -29,21 +29,21 @@ input_text:
     icon: mdi:thermometer
     mode: text
     max: 100
-    initial: sensor.buitentemperatuur
+    initial: sensor.outdoor_temperature
 
   openquatt_source_room_setpoint:
     name: OpenQuatt source room setpoint
     icon: mdi:thermostat
     mode: text
     max: 100
-    initial: sensor.thermostaat_setpoint
+    initial: sensor.thermostat_setpoint
 
   openquatt_source_room_temperature:
     name: OpenQuatt source room temperature
     icon: mdi:home-thermometer
     mode: text
     max: 100
-    initial: sensor.thermostaat_roomtemperature
+    initial: sensor.thermostat_room_temperature
 
 template:
   - trigger:

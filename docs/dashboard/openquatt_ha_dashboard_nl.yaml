@@ -1799,9 +1799,9 @@ views:
               proxy-sensoren moeten voeden.
 
               Voorbeelden:
-              - `sensor.buitentemperatuur`
-              - `sensor.thermostaat_setpoint`
-              - `sensor.thermostaat_roomtemperature`
+              - `sensor.outdoor_temperature`
+              - `sensor.thermostat_setpoint`
+              - `sensor.thermostat_room_temperature`
               </details>
             text_only: true
           - type: entities
