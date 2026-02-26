@@ -1851,8 +1851,21 @@ views:
         cards:
           - type: heading
             icon: mdi:chip
-            heading: OpenQuatt ingest waarden
+            heading: OpenQuatt HA-invoerwaarden
             heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Uitleg</strong></summary>
+
+              Dit zijn de drie HA-invoerwaarden zoals OpenQuatt ze ontvangt.
+              Deze horen de proxywaarden uit het middelste blok te volgen.
+
+              Blijft een waarde op `Unknown`, controleer dan eerst of de
+              bijbehorende `... bron valid` op `on` staat.
+
+              </details>
+            text_only: true
           - type: entities
             show_header_toggle: false
             entities:
@@ -1870,7 +1883,7 @@ views:
           # HA dynamische bronkoppeling
 
           Configureer dynamische bron-entity IDs en controleer proxy- en
-          OpenQuatt-ingestwaarden.
+          OpenQuatt HA-invoerwaarden.
   - title: Advanced settings
     path: advanced-settings
     icon: mdi:tune-vertical

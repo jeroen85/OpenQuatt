@@ -1823,7 +1823,7 @@ views:
 
               The `Valid` status should be `on` for all three signals.
               If `Valid` is `off`, the proxy keeps the last valid value
-              (or a startup default).
+              If there is no last valid value yet, the proxy state is `nan`.
 
               </details>
             text_only: true
@@ -1846,8 +1846,21 @@ views:
         cards:
           - type: heading
             icon: mdi:chip
-            heading: OpenQuatt ingest values
+            heading: OpenQuatt HA input values
             heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Explanation</strong></summary>
+
+              These are the three HA input values as received by OpenQuatt.
+              They should follow the proxy values shown in the middle panel.
+
+              If a value stays `Unknown`, first check whether the matching
+              `... source valid` sensor is `on`.
+
+              </details>
+            text_only: true
           - type: entities
             show_header_toggle: false
             entities:
@@ -1865,7 +1878,7 @@ views:
           # HA dynamic source mapping
 
           Configure dynamic source entity IDs and verify proxy and OpenQuatt
-          ingest values.
+          HA input values.
   - title: Advanced settings
     path: advanced-settings
     icon: mdi:tune-vertical
