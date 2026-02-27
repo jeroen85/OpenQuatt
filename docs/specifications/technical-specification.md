@@ -66,7 +66,8 @@ Defined in `openquatt/oq_packages.yaml` and must be preserved unless dependencie
 | `oq_boiler_control` | relay command and temperature lockout |
 | `oq_cic` | polling scheduler, backoff, parse/publish pipeline |
 | `oq_ha_inputs` | ingest of fixed Home Assistant proxy sensors |
-| `oq_local_sensors` | DS18B20 ingest, selected-source synthesis |
+| `oq_local_sensors` | DS18B20 ingest |
+| `oq_sensor_sources` | source selectors, selected-source synthesis |
 | `oq_debug_testing` | manual diagnostics helpers (one-shot Modbus register reads, probe entities) |
 | `oq_energy` | integration and daily/total energy entities |
 | `oq_HP_io` | Modbus register mapping and per-unit entities |
@@ -263,6 +264,9 @@ Technical guarantees:
 `oq_local_sensors` provides:
 
 - DS18B20 sensor (`water_supply_temp_esp`)
+
+`oq_sensor_sources` provides:
+
 - selected abstractions for water supply, flow, outside temperature, room temperature, room setpoint
 - five source selectors for local/CIC/HA-input arbitration (per signal)
 

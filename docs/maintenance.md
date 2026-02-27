@@ -26,7 +26,8 @@ This guide keeps the configuration maintainable and predictable while preserving
   - `oq_energy`: electrical/thermal energy integration (daily + total)
   - `oq_cic`: external CIC JSON feed polling/parsing/publish
   - `oq_ha_inputs`: fixed Home Assistant proxy sensor ingest
-  - `oq_local_sensors`: local and CIC source selection (`*_selected`)
+  - `oq_local_sensors`: local DS18B20 ingest
+  - `oq_sensor_sources`: runtime source selectors and selected-source synthesis (`*_selected`)
   - `oq_webserver`: grouping/exposure for ESPHome web UI
   - `oq_HP_io`: per-HP Modbus IO entities and actuators
 - Keep one change type per batch: formatting, comments, or logic.

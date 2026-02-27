@@ -42,9 +42,10 @@ Package include order is intentional:
 9. `oq_cic`
 10. `oq_ha_inputs`
 11. `oq_local_sensors`
-12. `oq_debug_testing`
-13. `oq_webserver`
-14. `oq_HP_io` (HP1 and HP2 instances)
+12. `oq_sensor_sources`
+13. `oq_debug_testing`
+14. `oq_webserver`
+15. `oq_HP_io` (HP1 and HP2 instances)
 
 This order mirrors data dependencies and ownership boundaries.
 
@@ -59,7 +60,8 @@ OpenQuatt follows strict subsystem ownership:
 - **Boiler relay control**: `oq_boiler_control`
 - **External feed ingest**: `oq_cic`
 - **External HA proxy ingest**: `oq_ha_inputs`
-- **Source selection and local DS18B20 ingest**: `oq_local_sensors`
+- **Local DS18B20 ingest**: `oq_local_sensors`
+- **Source selection and selected-source synthesis**: `oq_sensor_sources`
 - **Shared runtime services and service entities**: `oq_common`
 - **Manual debug/testing probes**: `oq_debug_testing`
 
@@ -87,7 +89,7 @@ This prevents hidden control coupling and keeps debugging deterministic.
 
 ### 4.2 Source abstraction layer
 
-`oq_local_sensors` produces selected control inputs:
+`oq_sensor_sources` produces selected control inputs:
 
 - `water_supply_temp_selected`
 - `flow_rate_selected`
