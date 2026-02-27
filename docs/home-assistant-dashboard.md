@@ -16,7 +16,7 @@ The dashboard is designed as a practical operations console with the **Sections*
 - [4. Flow View](#4-flow-view)
 - [5. Warmtecontrol View](#5-warmtecontrol-view)
 - [6. HPs View](#6-hps-view)
-- [7. CIC View](#7-cic-view)
+- [7. Sensor Configuration View](#7-sensor-configuration-view)
 - [8. Energy View](#8-energy-view)
 - [9. Advanced Settings View](#9-advanced-settings-view)
 - [10. Debug & Testing View](#10-debug--testing-view)
@@ -31,11 +31,11 @@ The dashboard is designed as a practical operations console with the **Sections*
 | Flow | `flow` | Hydraulic status, flow control, pump tuning |
 | Warmtecontrol | `warmtecontrol` | Demand and heat allocation behavior |
 | HPs | `HPs` | HP1/HP2 deep diagnostics and visualization |
-| CIC | `cic` | Cloud feed health and source selection |
+| Sensor Configuration | `sensor-configuration` | Source setup (CIC/HA/selectors) plus per-signal diagnostics and feedback |
 | Energy | `energy` | Daily/cumulative energy and efficiency metrics |
 | Advanced settings | `advanced-settings` | Expert tuning parameters with explanations |
 | Debug & Testing | `debug-testing` | Service utilities, runtime balancing checks, and manual probe tools |
-| Diagnostics | `diagnostics` | Cross-source debug and validation |
+| Diagnostics | `diagnostics` | Controller and firmware diagnostics |
 
 ## 2. Design Rules Used
 
@@ -43,7 +43,7 @@ The dashboard is designed as a practical operations console with the **Sections*
 - Separate advanced tuning from fast operational controls.
 - Use tile cards for quick scanning and trend snippets.
 - Use markdown details blocks for contextual explanation.
-- Keep CIC/source controls grouped so source origin is always explicit.
+- Keep source controls grouped in the Sensor Configuration tab so source origin is always explicit.
 
 ## 3. Overview View (Overzicht)
 
@@ -63,8 +63,8 @@ Contains four practical clusters:
    - boiler active
    - silent active
 3. **Thermostaat**
-   - OT room setpoint
-   - OT room temperature
+   - selected room setpoint
+   - selected room temperature
 4. **Dagelijkse bediening**
    - CM override
    - day/silent level caps
@@ -115,17 +115,32 @@ Operational rule:
 
 - Use this tab for unit-specific diagnostics and balancing checks.
 
-## 7. CIC View
+## 7. Sensor Configuration View
 
 Expected content pattern:
 
-- source switches (`Use CIC JSON ...`)
-- CIC sensors (temps/flow/OT)
-- feed status (OK/stale/age/poll interval)
+- configuration blocks:
+  - HA source mapping (`input_text` selectors)
+  - CIC feed settings
+- per-signal diagnostics cards for:
+  - water supply
+  - flow
+  - outside temperature
+  - room temperature
+  - room setpoint
+- each signal card includes:
+  - source selector
+  - selected value
+  - both source values
+  - validity/feed feedback
+
+Optional helper package:
+
+- `docs/dashboard/openquatt_ha_dynamic_sources_package.yaml` provides runtime entity-id input fields and stable proxy sensors.
 
 Operational rule:
 
-- Use this tab when control values do not match expected cloud/local sources.
+- Use this tab first when source selection, mapping, or selected values look wrong.
 
 ## 8. Energy View
 
@@ -172,7 +187,6 @@ Operational rule:
 
 Expected content pattern:
 
-- side-by-side comparison of selected/local/CIC sources
 - debug-oriented status entities
 - low-level inspection cards that are too noisy for main operations
 - Power House low-load diagnostics:
@@ -192,7 +206,7 @@ Operational rule:
 When editing the dashboard YAML:
 
 1. Keep entity IDs aligned with current codebase names.
-2. Keep source-selection controls centralized (CIC tab).
+2. Keep source-selection controls centralized in Sensor Configuration.
 3. Avoid duplicate controls across tabs unless intentional.
 4. Keep warning-prone entities out of primary overview where possible.
 5. Preserve section headings and explanation style consistency.

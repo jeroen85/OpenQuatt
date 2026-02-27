@@ -163,7 +163,7 @@ Normative safety principles:
 ### 7.6 CIC/source behavior
 
 - FR-CIC-001: CIC ingest shall expose feed health and staleness.
-- FR-CIC-002: Source selection switches shall define control input origin.
+- FR-CIC-002: Source selection selectors shall define control input origin.
 - FR-CIC-003: Stale/unhealthy feed data shall not be treated as valid control input.
 
 ### 7.7 Energy behavior
@@ -192,10 +192,11 @@ Normative safety principles:
 
 ### 8.3 Source selection
 
-| Switch state | Selected signal source |
+| Selector option | Selected signal source |
 |---|---|
-| Use CIC switch ON | CIC feed value |
-| Use CIC switch OFF | local/controller-derived value |
+| `Local` / `Outdoor unit` | local/controller-derived value |
+| `CIC` | CIC feed value |
+| `HA input` | Home Assistant proxy ingest value |
 
 ## 9. Functional Acceptance Criteria
 

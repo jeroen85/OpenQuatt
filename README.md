@@ -63,6 +63,7 @@ OpenQuatt is a modular ESPHome controller for a dual heat pump setup with superv
 │   ├── oq_boiler_control.yaml
 │   ├── oq_energy.yaml
 │   ├── oq_cic.yaml
+│   ├── oq_ha_inputs.yaml
 │   ├── oq_local_sensors.yaml
 │   ├── oq_debug_testing.yaml         # Manual diagnostic/testing tools (one-shot Modbus reads)
 │   ├── oq_webserver.yaml
@@ -82,7 +83,8 @@ OpenQuatt is a modular ESPHome controller for a dual heat pump setup with superv
 │   ├── dashboard/
 │   │   ├── README.md
 │   │   ├── openquatt_ha_dashboard_nl.yaml
-│   │   └── openquatt_ha_dashboard_en.yaml
+│   │   ├── openquatt_ha_dashboard_en.yaml
+│   │   └── openquatt_ha_dynamic_sources_package.yaml
 │   ├── specifications/
 │   │   ├── functional-specification.md
 │   │   └── technical-specification.md

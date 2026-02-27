@@ -206,7 +206,7 @@ def main() -> int:
             "Flow",
             "Heat control",
             "HPs",
-            "CIC",
+            "Sensor Configuration",
             "Advanced settings",
             "Debug & Testing",
             "Diagnostics",
@@ -217,7 +217,7 @@ def main() -> int:
             "Flow",
             "Warmtecontrol",
             "HPs",
-            "CIC",
+            "Sensorconfiguratie",
             "Advanced settings",
             "Debug & Testing",
             "Diagnostics",
@@ -302,4 +302,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

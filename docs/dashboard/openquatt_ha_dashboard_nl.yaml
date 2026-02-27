@@ -178,7 +178,7 @@ views:
               <summary><strong>Uitleg</strong></summary>
 
 
-              Thermostaatwaarden uit de OT/CIC-keten:
+              Geselecteerde kamerregelwaarden:
 
               - `Setpoint`: gevraagde ruimtetemperatuur.
 
@@ -191,14 +191,14 @@ views:
               </details>
             text_only: true
           - type: tile
-            entity: sensor.openquatt_cic_ot_room_temperature
+            entity: sensor.openquatt_room_temperature_selected
             name: Huidige temperatuur
             vertical: false
             features:
               - type: trend-graph
             features_position: bottom
           - type: tile
-            entity: sensor.openquatt_cic_ot_room_setpoint
+            entity: sensor.openquatt_room_setpoint_selected
             name: Setpoint
             vertical: false
             features:
@@ -265,17 +265,25 @@ views:
             heading: Performance (12h)
             heading_style: title
           - type: markdown
-            content: |-
+            content: >-
               <details>
+
               <summary><strong>Uitleg</strong></summary>
+
 
               Deze grafiek combineert 12-uurs trends voor:
 
+
               - `Power E`: totaal elektrisch ingangsvermogen.
+
               - `Power H`: totaal thermisch afgegeven vermogen.
+
               - `COP`: efficientieverhouding (`Power H / Power E`).
 
-              Gebruik dit om te controleren of warmteafgifte het opgenomen vermogen volgt en of COP realistisch blijft.
+
+              Gebruik dit om te controleren of warmteafgifte het opgenomen
+              vermogen volgt en of COP realistisch blijft.
+
               </details>
             text_only: true
           - type: custom:apexcharts-card
@@ -541,14 +549,20 @@ views:
             heading: Energy trends (7d/30d)
             heading_style: title
           - type: markdown
-            content: |-
+            content: >-
               <details>
+
 
               <summary><strong>Uitleg</strong></summary>
 
+
               Dagaggregatie voor energie:
-              - Elektriciteit en warmte als dagelijkse kWh (afgeleid uit total-sensoren)
+
+              - Elektriciteit en warmte als dagelijkse kWh (afgeleid uit
+              total-sensoren)
+
               - `COP daily` als daggemiddelde
+
 
               </details>
             text_only: true
@@ -707,7 +721,8 @@ views:
         content: >-
           # <ha-icon icon="mdi:lightning-bolt-circle"></ha-icon> Energy
 
-          Energie-overzicht van HeatPump, Boiler en totaal System (dag + cumulatief).
+          Energie-overzicht van HeatPump, Boiler en totaal System (dag +
+          cumulatief).
   - title: Flow
     path: flow
     icon: mdi:waves
@@ -744,17 +759,27 @@ views:
             heading: Status
             heading_style: subtitle
           - type: markdown
-            content: |-
+            content: >-
               <details>
+
               <summary><strong>Uitleg</strong></summary>
+
 
               Flowstatus in een oogopslag:
 
+
               - `Flow mode`: actieve werking van de flowregeling.
+
               - `Control Mode`: actieve supervisory control state.
+
               - `Low Flow alarm`: beveiligingsalarm bij te lage flow.
-              - `Flow (average)`: geselecteerde gemiddelde flow voor regeling/beveiliging.
-              - `Flow Mismatch`: signaleert hydraulische onbalans tussen HP1 en HP2.
+
+              - `Flow (average)`: geselecteerde gemiddelde flow voor
+              regeling/beveiliging.
+
+              - `Flow Mismatch`: signaleert hydraulische onbalans tussen HP1 en
+              HP2.
+
               </details>
             text_only: true
           - type: tile
@@ -790,15 +815,23 @@ views:
             heading: Control
             heading_style: subtitle
           - type: markdown
-            content: |-
+            content: >-
               <details>
+
               <summary><strong>Uitleg</strong></summary>
+
 
               Belangrijkste flow-regelinstellingen:
 
-              - `Flow control mode`: kies automatische flowregeling of handmatige werking.
+
+              - `Flow control mode`: kies automatische flowregeling of
+              handmatige werking.
+
               - `Flow setpoint`: doel-flow in L/h voor automatische regeling.
-              - `Manual iPWM`: directe pompaansturing voor tests (in normaal bedrijf uit laten).
+
+              - `Manual iPWM`: directe pompaansturing voor tests (in normaal
+              bedrijf uit laten).
+
               </details>
             text_only: true
           - type: tile
@@ -897,26 +930,46 @@ views:
             heading: Warmtecontrol status
             heading_style: title
           - type: markdown
-            content: |-
+            content: >-
               <details>
+
 
               <summary><strong>Uitleg</strong></summary>
 
+
               Warmtecontrol in 30 seconden:
 
+
               - Kies met `Heating mode` welke bron de warmtevraag bepaalt.
-              - Vergelijk `P_req` (gevraagd vermogen) met `P_house` (modelschatting).
-              - Check `Deficit`: boven `0 W` vraagt het systeem meer dan nu geleverd wordt.
-              - Bekijk `Ruwe vraag` (`Demand raw`) en `Gefilterde vraag` (`Demand filtered`) om te zien hoe sterk filtering dempt.
-              - `Vermogenscap vraag` (`Power cap demand`, 0..20 step) is de supervisory vraaglimiet vóór verdeling over HP1/HP2.
+
+              - Vergelijk `P_req` (gevraagd vermogen) met `P_house`
+              (modelschatting).
+
+              - Check `Deficit`: boven `0 W` vraagt het systeem meer dan nu
+              geleverd wordt.
+
+              - Bekijk `Ruwe vraag` (`Demand raw`) en `Gefilterde vraag`
+              (`Demand filtered`) om te zien hoe sterk filtering dempt.
+
+              - `Vermogenscap vraag` (`Power cap demand`, 0..20 step) is de
+              supervisory vraaglimiet vóór verdeling over HP1/HP2.
+
 
               Termen:
 
-              - `P_house`: berekende warmtevraag op basis van huismodel en buitentemperatuur.
+
+              - `P_house`: berekende warmtevraag op basis van huismodel en
+              buitentemperatuur.
+
               - `P_req`: begrensde actuele warmtevraag in W na ramp-limiter.
+
               - `Demand raw`: ruwe vraagstap voor compressorsturing.
+
               - `Demand filtered`: gedempte vraagstap voor stabielere regeling.
-              - `Power cap demand`: actieve supervisory limiet op demand-stappen.
+
+              - `Power cap demand`: actieve supervisory limiet op
+              demand-stappen.
+
 
               </details>
             text_only: true
@@ -925,11 +978,15 @@ views:
             heading: Regelinstellingen
             heading_style: subtitle
           - type: markdown
-            content: |-
+            content: >-
               <details>
+
               <summary><strong>Uitleg</strong></summary>
 
-              - `Regelmodus`: kiest welke strategie de warmtevraag opbouwt (bijv. Stooklijn of Power House).
+
+              - `Regelmodus`: kiest welke strategie de warmtevraag opbouwt
+              (bijv. Stooklijn of Power House).
+
               </details>
             text_only: true
           - type: tile
@@ -945,16 +1002,24 @@ views:
             heading: Kern KPI
             heading_style: subtitle
           - type: markdown
-            content: |-
+            content: >-
               <details>
+
               <summary><strong>Uitleg</strong></summary>
+
 
               Kernindicatoren voor warmtebalans:
 
+
               - `P_req`: gevraagde verwarmingspower na filtering/ramp-limiet.
+
               - `P_house`: gemodelleerde warmtevraag van de woning.
+
               - `Max capaciteit`: geschatte beschikbare warmtepompcapaciteit.
-              - `Deficit`: positieve waarde betekent dat vraag boven beschikbare/geleverde warmte ligt.
+
+              - `Deficit`: positieve waarde betekent dat vraag boven
+              beschikbare/geleverde warmte ligt.
+
               </details>
             text_only: true
           - type: grid
@@ -986,15 +1051,22 @@ views:
             heading: Vraag & limiet
             heading_style: subtitle
           - type: markdown
-            content: |-
+            content: >-
               <details>
+
               <summary><strong>Uitleg</strong></summary>
+
 
               Vraagvorming en begrenzing:
 
+
               - `Ruwe vraag`: directe vraagstap zonder filtering.
+
               - `Gefilterde vraag`: gedempte vraagstap voor stabieler gedrag.
-              - `Vermogenscap vraag`: supervisory limiet op de vraag (0..20 step schaal).
+
+              - `Vermogenscap vraag`: supervisory limiet op de vraag (0..20 step
+              schaal).
+
               </details>
             text_only: true
           - type: grid
@@ -1021,16 +1093,25 @@ views:
             heading: Capaciteit
             heading_style: subtitle
           - type: markdown
-            content: |-
+            content: >-
               <details>
+
               <summary><strong>Uitleg</strong></summary>
+
 
               Visuele capaciteitscheck:
 
-              - Linker meter `Max capaciteit`: huidige geschatte maximale warmteafgifte.
-              - Rechter meter `Deficit`: hoeveel warmte momenteel ontbreekt t.o.v. de vraag.
 
-              Blijvend hoge deficit betekent dat het systeem de warmtevraag nu niet kan bijhouden.
+              - Linker meter `Max capaciteit`: huidige geschatte maximale
+              warmteafgifte.
+
+              - Rechter meter `Deficit`: hoeveel warmte momenteel ontbreekt
+              t.o.v. de vraag.
+
+
+              Blijvend hoge deficit betekent dat het systeem de warmtevraag nu
+              niet kan bijhouden.
+
               </details>
             text_only: true
           - type: horizontal-stack
@@ -1058,15 +1139,25 @@ views:
             heading: Trends
             heading_style: title
           - type: markdown
-            content: |-
+            content: >-
               <details>
+
 
               <summary><strong>Uitleg</strong></summary>
 
-              - `Warmtevraag` vergelijkt gevraagde (`P_req`) met geleverde warmte.
-              - `HP powerinput` en `HP heat output` tonen elektrisch in versus thermisch uit.
-              - `Compressorlevels en frequentie` laat setpoint versus werkelijke compressor-Hz zien.
-              - `Temperatuurregeling` toont buiten-, supply- en kamertemperatuur tegen targets.
+
+              - `Warmtevraag` vergelijkt gevraagde (`P_req`) met geleverde
+              warmte.
+
+              - `HP powerinput` en `HP heat output` tonen elektrisch in versus
+              thermisch uit.
+
+              - `Compressorlevels en frequentie` laat setpoint versus werkelijke
+              compressor-Hz zien.
+
+              - `Temperatuurregeling` toont buiten-, supply- en kamertemperatuur
+              tegen targets.
+
 
               </details>
             text_only: true
@@ -1131,9 +1222,9 @@ views:
                 name: Supply systeem
               - entity: sensor.openquatt_heating_curve_supply_target
                 name: Supply target
-              - entity: sensor.openquatt_cic_ot_room_temperature
+              - entity: sensor.openquatt_room_temperature_selected
                 name: Kamer temp
-              - entity: sensor.openquatt_cic_ot_room_setpoint
+              - entity: sensor.openquatt_room_setpoint_selected
                 name: Kamer setpoint
             grid_options:
               columns: full
@@ -1617,9 +1708,9 @@ views:
 
           Voor instellingen: gebruik `Flow`, `Warmtecontrol` en `Advanced
           settings`.
-  - title: CIC
-    path: cic
-    icon: mdi:cloud-sync
+  - title: Sensorconfiguratie
+    path: sensor-configuration
+    icon: mdi:source-branch
     type: sections
     max_columns: 3
     sections:
@@ -1627,134 +1718,265 @@ views:
         cards:
           - type: heading
             icon: mdi:source-branch
-            heading: Bronselectie (CIC JSON)
+            heading: Sensorselectie
             heading_style: title
           - type: markdown
-            content: >
-
+            content: |-
               <details>
-
               <summary><strong>Uitleg</strong></summary>
 
-              Met de drie switches kies je per signaal welke bron de regeling
-              gebruikt.
+              Kies per signaal de bron die OpenQuatt gebruikt.
+              De `Geselecteerde` waarde hoort de gekozen bron direct te volgen.
 
-
-              - `Use CIC JSON Water Supply`:
-
-              gebruikt CIC-aanvoertemperatuur in plaats van de lokale DS18B20.
-
-              - `Use CIC JSON Flow`:
-
-              gebruikt CIC-flow (`flow_rate_cic`) in plaats van lokale
-              flowmeting.
-
-              - `Use CIC JSON Outside Temp`:
-
-              gebruikt CIC-buitentemperatuur in plaats van lokaal geaggregeerde
-              waarde.</details>
-            text_only: true
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: switch.openquatt_use_cic_json_water_supply_temp
-                name: Use CIC JSON Water Supply
-              - entity: switch.openquatt_use_cic_json_flow_rate
-                name: Use CIC JSON Flow
-              - entity: switch.openquatt_use_cic_json_outside_temp
-                name: Use CIC JSON Outside Temp
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:database
-            heading: CIC sensoren
-            heading_style: title
-          - type: markdown
-            content: >-
-              <details>
-
-              <summary><strong>Uitleg</strong></summary>
-
-
-              Deze waarden komen uit de CIC JSON-feed en worden gebruikt als
-              input voor regeling, monitoring en bronselectie.
-
-
-              - `Water supply temp` en `Flowrate filtered` zijn de primaire
-              hydraulische inputs vanuit CIC.
-
-              - `HP1 outside temp` en `HP2 outside temp` tonen
-              buitentemperatuur op unitniveau.
-
-              - `OT control setpoint`, `OT room setpoint` en `OT room
-              temperature` tonen de OpenTherm-gerelateerde comfortvariabelen.
-
-              - `OT CH enabled` en `OT cooling enabled` tonen de vraagstatus
-              vanuit de OT-kant.
-
+              Gebruik dit blok voor:
+              - bronkeuze tijdens tuning
+              - snelle vergelijking tussen CIC, lokaal en HA input
+              - validatie van de effectieve regelinput
 
               </details>
             text_only: true
-          - type: entities
-            title: CIC sensoren
-            show_header_toggle: false
-            entities:
-              - entity: sensor.openquatt_cic_water_supply_temp
-                name: Water supply temp
-              - entity: sensor.openquatt_cic_flowrate_filtered
-                name: Flowrate filtered
-              - entity: sensor.openquatt_cic_hp1_outside_temp
-                name: HP1 outside temp
-              - entity: sensor.openquatt_cic_hp2_outside_temp
-                name: HP2 outside temp
-              - entity: sensor.openquatt_cic_ot_control_setpoint
-                name: OT control setpoint
-              - entity: sensor.openquatt_cic_ot_room_setpoint
-                name: OT room setpoint
-              - entity: sensor.openquatt_cic_ot_room_temperature
-                name: OT room temperature
-              - entity: binary_sensor.openquatt_cic_ot_ch_enabled
-                name: OT CH enabled
-              - entity: binary_sensor.openquatt_cic_ot_cooling_enabled
-                name: OT cooling enabled
+            grid_options:
+              columns: full
+          - type: vertical-stack
+            cards:
+              - type: heading
+                icon: mdi:home-thermometer
+                heading: Ruimtetemperatuur bronnen
+                heading_style: subtitle
+                grid_options:
+                  columns: 12
+                  rows: 1
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: select.openquatt_room_temperature_source
+                    name: Ruimtetemperatuur bron
+                  - entity: sensor.openquatt_room_temperature_selected
+                    name: Geselecteerde kamertemperatuur
+                  - entity: sensor.openquatt_cic_ot_room_temperature
+                    name: Kamertemperatuur (CIC OT)
+                  - entity: sensor.openquatt_ha_thermostat_room_temperature
+                    name: Kamertemperatuur (HA-invoer)
+          - type: vertical-stack
+            cards:
+              - type: heading
+                icon: mdi:water-thermometer
+                heading: Aanvoertemperatuur bronnen
+                heading_style: subtitle
+                grid_options:
+                  columns: 12
+                  rows: 1
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: select.openquatt_water_supply_source
+                    name: Aanvoertemperatuur bron
+                  - entity: sensor.openquatt_water_supply_temp_selected
+                    name: Geselecteerde aanvoertemperatuur
+                  - entity: sensor.openquatt_water_supply_temp
+                    name: Aanvoertemperatuur (ESP)
+                  - entity: sensor.openquatt_cic_water_supply_temp
+                    name: Aanvoertemperatuur (CIC)
+          - type: vertical-stack
+            cards:
+              - type: heading
+                icon: mdi:waves
+                heading: Flow bronnen
+                heading_style: subtitle
+                grid_options:
+                  columns: 12
+                  rows: 1
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: select.openquatt_flow_source
+                    name: Flow bron
+                  - entity: sensor.openquatt_flow_average_selected
+                    name: Geselecteerde flow
+                  - entity: sensor.openquatt_flow_average_local
+                    name: Flow (buitenunit)
+                  - entity: sensor.openquatt_cic_flowrate_filtered
+                    name: Flow (CIC)
+          - type: vertical-stack
+            cards:
+              - type: heading
+                icon: mdi:thermometer
+                heading: Buitentemperatuur bronnen
+                heading_style: subtitle
+                grid_options:
+                  columns: 12
+                  rows: 1
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: select.openquatt_outside_temperature_source
+                    name: Buitentemperatuur bron
+                  - entity: sensor.openquatt_outside_temperature_selected
+                    name: Geselecteerde buitentemperatuur
+                  - entity: sensor.openquatt_outside_temperature_local_aggregated
+                    name: Buitentemperatuur (buitenunit)
+                  - entity: sensor.openquatt_ha_outside_temperature
+                    name: Buitentemperatuur (HA-invoer)
+          - type: vertical-stack
+            cards:
+              - type: heading
+                icon: mdi:thermostat
+                heading: Kamer setpoint bronnen
+                heading_style: subtitle
+                grid_options:
+                  columns: 12
+                  rows: 1
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: select.openquatt_room_setpoint_source
+                    name: Kamer setpoint bron
+                  - entity: sensor.openquatt_room_setpoint_selected
+                    name: Geselecteerd kamer setpoint
+                  - entity: sensor.openquatt_cic_ot_room_setpoint
+                    name: Kamer setpoint (CIC OT)
+                  - entity: sensor.openquatt_ha_thermostat_setpoint
+                    name: Kamer setpoint (HA-invoer)
+        column_span: 3
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:home-assistant
+            heading: Home Assistant input configuration
+            heading_style: title
+          - type: vertical-stack
+            cards:
+              - type: heading
+                icon: mdi:form-textbox
+                heading: Dynamische bronselectors
+                heading_style: subtitle
+              - type: markdown
+                content: |-
+                  <details>
+                  <summary><strong>Uitleg</strong></summary>
+
+                  Vul hier de entity IDs in van de bronnen die de OpenQuatt HA
+                  proxy-sensoren moeten voeden.
+
+                  Voorbeelden:
+                  - `sensor.outdoor_temperature`
+                  - `sensor.thermostat_setpoint`
+                  - `sensor.thermostat_room_temperature`
+                  - `climate.woonkamer | current_temperature`
+
+                  Optioneel attribuutformaat:
+                  - `entity_id|attribute_name`
+                  Spaties rond `|` worden genegeerd.
+
+                  Is een bron ongeldig, dan wordt de proxywaarde `Unavailable`.
+                  </details>
+                text_only: true
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: input_text.openquatt_source_outdoor_temperature
+                    name: Bronentity buitentemperatuur
+                  - entity: input_text.openquatt_source_room_setpoint
+                    name: Bronentity setpoint
+                  - entity: input_text.openquatt_source_room_temperature
+                    name: Bronentity ruimtetemperatuur
+          - type: vertical-stack
+            cards:
+              - type: heading
+                icon: mdi:database-arrow-right
+                heading: HA proxywaarden en validiteit
+                heading_style: subtitle
+              - type: markdown
+                content: >-
+                  <details>
+
+                  <summary><strong>Uitleg</strong></summary>
+
+
+                  Dit zijn de stabiele HA proxy-entities die als contract naar
+
+                  OpenQuatt dienen.
+
+
+                  De status `Valid` hoort voor alle drie signalen op `on` te
+                  staan.
+
+                  Als `Valid` op `off` staat, is de huidige bron niet numeriek.
+
+                  Dan wordt de proxywaarde `Unavailable` totdat de bron weer
+                  geldig
+
+                  is.
+
+                  </details>
+                text_only: true
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: sensor.openquatt_ext_outdoor_temperature
+                    name: Proxy buitentemperatuur
+                  - entity: binary_sensor.openquatt_ext_outdoor_temperature_valid
+                    name: Buitentemperatuur bron valid
+                  - entity: sensor.openquatt_ext_room_setpoint
+                    name: Proxy kamer setpoint
+                  - entity: binary_sensor.openquatt_ext_room_setpoint_valid
+                    name: Setpoint bron valid
+                  - entity: sensor.openquatt_ext_room_temperature
+                    name: Proxy ruimtetemperatuur
+                  - entity: binary_sensor.openquatt_ext_room_temperature_valid
+                    name: Ruimtetemperatuur bron valid
+          - type: vertical-stack
+            cards:
+              - type: heading
+                icon: mdi:chip
+                heading: OpenQuatt HA-invoerwaarden
+                heading_style: subtitle
+              - type: markdown
+                content: |-
+                  <details>
+                  <summary><strong>Uitleg</strong></summary>
+
+                  Dit zijn de drie HA-invoerwaarden zoals OpenQuatt ze ontvangt.
+                  Deze horen de proxywaarden uit het middelste blok te volgen.
+
+                  Blijft een waarde op `Unknown`, controleer dan eerst of de
+                  bijbehorende `... bron valid` op `on` staat.
+
+                  </details>
+                text_only: true
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: sensor.openquatt_ha_outside_temperature
+                    name: HA - Outside Temperature
+                  - entity: sensor.openquatt_ha_thermostat_setpoint
+                    name: HA - Thermostat Setpoint
+                  - entity: sensor.openquatt_ha_thermostat_room_temperature
+                    name: HA - Thermostat Room Temperature
+        column_span: 3
       - type: grid
         cards:
           - type: heading
             icon: mdi:cloud-check
-            heading: Feed status
             heading_style: title
+            heading: Quatt CiC configuration
           - type: markdown
-            content: >-
+            content: |-
               <details>
-
               <summary><strong>Uitleg</strong></summary>
 
+              Dit blok toont de status van de CiC-feed.
+              Als de feed niet OK is of data stale wordt, kunnen CIC-bronnen
+              onbruikbaar worden voor de geselecteerde signalen.
 
-              Dit blok laat zien of de CIC JSON-feed gezond en bruikbaar is.
-
-
-              - `Enable polling` zet het periodiek ophalen van de CIC-feed aan
-              of uit.
-
-              - `JSON feed OK` is de actuele gezondheid van de feed (geslaagde
-              requests/parsing).
-
-              - `Data stale` geeft aan dat de laatst bekende data te oud is
-              geworden.
-
-              - `Last success age` toont hoelang geleden de laatste succesvolle
-              update binnenkwam.
-
-              - `Polling interval` is het actuele interval/backoff van de
-              CIC-poller.
-
-              - `CIC feed URL` is de actieve endpoint die de poller gebruikt.
-
+              Controleer bij afwijkingen:
+              - `JSON feed OK`
+              - `Data stale`
+              - `Last success age`
 
               </details>
             text_only: true
           - type: entities
-            title: Feed status
             show_header_toggle: false
             entities:
               - entity: switch.openquatt_cic_enable_polling
@@ -1774,10 +1996,15 @@ views:
       card:
         type: markdown
         content: >-
-          # <ha-icon icon="mdi:cloud-sync"></ha-icon> CiC JSON feed data &
-          control
+          # <ha-icon icon="mdi:source-branch"></ha-icon> Sensorconfiguratie
 
-          CIC feed status, OT data en bronselectie voor lokale logica.
+
+          Configureer bronkeuze en bronkoppeling, en verifieer daarna per
+          signaal
+
+          de geselecteerde waarde en bronstatus.
+    top_margin: false
+    dense_section_placement: false
   - title: Advanced settings
     path: advanced-settings
     icon: mdi:tune-vertical
@@ -1854,8 +2081,9 @@ views:
               - **Deadband** voorkomt onrust bij kleine afwijkingen.
 
               - **Comfort onder/boven setpoint** definieert een asymmetrische
-              comfortzone rond de kamersetpoint waarin de room-correctie neutraal
-              blijft. Zo kan elke gebruiker eigen onder-/overshoot instellen.
+              comfortzone rond de kamersetpoint waarin de room-correctie
+              neutraal blijft. Zo kan elke gebruiker eigen onder-/overshoot
+              instellen.
 
               - **Comfort bias base/max** verschuift de effectieve kamertarget
               omhoog (warmte-voorkeur) en begrenst maximale adaptieve overshoot.
@@ -2025,7 +2253,8 @@ views:
               start/stop-gedrag.
 
               - **Demand filter ramp up** bepaalt met hoeveel demand-stappen per
-              minuut `Demand filtered` maximaal mag stijgen richting `Demand raw`.
+              minuut `Demand filtered` maximaal mag stijgen richting `Demand
+              raw`.
 
               - **Single HP assist ON/OFF deficit** bepaalt bij welke thermische
               tekort-waarde extra HP-assist wordt geactiveerd of weer
@@ -2282,15 +2511,22 @@ views:
             heading: Handmatige Modbus testlezer
             heading_style: title
           - type: markdown
-            content: |-
+            content: >-
               <details>
+
               <summary><strong>Uitleg</strong></summary>
+
 
               Eenmalige handmatige register-read voor debug/test:
 
+
               - Kies eerst het registernummer.
-              - Druk daarna op **Debug Read HP1 register** of **Debug Read HP2 register**.
+
+              - Druk daarna op **Debug Read HP1 register** of **Debug Read HP2
+              register**.
+
               - Resultaat verschijnt als `U16`, `S16` en raw bytes.
+
 
               </details>
             text_only: true
@@ -2318,20 +2554,34 @@ views:
             heading: Heating Curve diagnose
             heading_style: title
           - type: markdown
-            content: |-
+            content: >-
               <details>
+
               <summary><strong>Uitleg</strong></summary>
 
-              Gebruik dit blok om de curve-regeling stap voor stap te controleren.
+
+              Gebruik dit blok om de curve-regeling stap voor stap te
+              controleren.
+
 
               - Deze sectie is vooral relevant bij `Heating mode = Curve`.
-              - Vergelijk eerst `Supply target` met `Supply actual` om de regelafwijking te zien.
-              - Controleer daarna de keten: `Demand curve raw (PID)` -> `Demand raw` -> `Demand filtered`.
-              - `P_req` wordt in curve mode afgeleid uit demand en helpt bij CM3/tekort-logica.
+
+              - Vergelijk eerst `Supply target` met `Supply actual` om de
+              regelafwijking te zien.
+
+              - Controleer daarna de keten: `Demand curve raw (PID)` -> `Demand
+              raw` -> `Demand filtered`.
+
+              - `P_req` wordt in curve mode afgeleid uit demand en helpt bij
+              CM3/tekort-logica.
+
               - `Curve Temp Deadband` en `Curve Demand Off Hold` zijn de
                 belangrijkste anti-flip stabilisatie rond de nulvraag-rand.
 
-              Let op: als `Supply actual` boven target zit maar demand hoog blijft, kijk dan naar PID-instellingen (`Kp/Ki/Kd`) en gedrag over tijd.
+              Let op: als `Supply actual` boven target zit maar demand hoog
+              blijft, kijk dan naar PID-instellingen (`Kp/Ki/Kd`) en gedrag over
+              tijd.
+
 
               </details>
             text_only: true
@@ -2399,29 +2649,48 @@ views:
             heading: Power House diagnose
             heading_style: title
           - type: markdown
-            content: |-
+            content: >-
               <details>
+
 
               <summary><strong>Uitleg</strong></summary>
 
+
               Gebruik dit blok om de Power House-regelketen te debuggen.
 
+
               - Relevant als `Heating mode = Power House`.
+
               - `P_house` is de modelschatting op basis van buitentemperatuur.
+
               - `P_req` is de begrensde warmtevraag na deadband/ramp-limiter.
-              - `Effective room target` is kamersetpoint plus adaptieve comfort-bias.
-              - `Comfort bias` en `room error avg` tonen de status van de adaptieve warm-bias regelaar.
-              - `Demand raw` en `Demand filtered` zijn de 0..20 stapsignalen richting compressorregeling.
-              - `Power cap demand` toont de actieve vraag na vermogensbegrenzing.
-              - `Low-load dynamic thresholds` toont live de `pmin/off/on` drempels.
+
+              - `Effective room target` is kamersetpoint plus adaptieve
+              comfort-bias.
+
+              - `Comfort bias` en `room error avg` tonen de status van de
+              adaptieve warm-bias regelaar.
+
+              - `Demand raw` en `Demand filtered` zijn de 0..20 stapsignalen
+              richting compressorregeling.
+
+              - `Power cap demand` toont de actieve vraag na
+              vermogensbegrenzing.
+
+              - `Low-load dynamic thresholds` toont live de `pmin/off/on`
+              drempels.
+
               - `Heat-enable state (shadow)` toont de shadow arbiter-status
                 (`IDLE/PREHEAT/HEATING/POSTFLOW/LOCKOUT`) voor strategievalidatie.
               - `CM2 idle-exit reason` laat zien waarom idle-exit in deze cyclus
                 timet, geblokkeerd is, of getript heeft.
-              - `CM2 re-entry block active` toont of tijdelijke CM2-herstartblokkade
+              - `CM2 re-entry block active` toont of tijdelijke
+              CM2-herstartblokkade
                 nu actief is.
 
-              Als `P_req` of demand onverwacht hoog/laag is: controleer buitenbron, kamer setpoint/temp en de ramp/deadband instellingen.
+              Als `P_req` of demand onverwacht hoog/laag is: controleer
+              buitenbron, kamer setpoint/temp en de ramp/deadband instellingen.
+
 
               </details>
             text_only: true
@@ -2432,10 +2701,10 @@ views:
                 name: Heating mode
               - entity: sensor.openquatt_outside_temperature_selected
                 name: Outside temp (selected)
-              - entity: sensor.openquatt_cic_ot_room_setpoint
-                name: Room setpoint (CIC)
-              - entity: sensor.openquatt_cic_ot_room_temperature
-                name: Room temp (CIC)
+              - entity: sensor.openquatt_room_setpoint_selected
+                name: Room setpoint (selected)
+              - entity: sensor.openquatt_room_temperature_selected
+                name: Room temp (selected)
               - entity: sensor.openquatt_power_house_effective_room_target
                 name: Effective room target
               - entity: sensor.openquatt_power_house_comfort_bias
@@ -2473,9 +2742,9 @@ views:
             entities:
               - entity: sensor.openquatt_outside_temperature_selected
                 name: Outside temp
-              - entity: sensor.openquatt_cic_ot_room_setpoint
+              - entity: sensor.openquatt_room_setpoint_selected
                 name: Room setpoint
-              - entity: sensor.openquatt_cic_ot_room_temperature
+              - entity: sensor.openquatt_room_temperature_selected
                 name: Room temp
               - entity: sensor.openquatt_power_house_p_house
                 name: P_house
@@ -2499,9 +2768,8 @@ views:
     header:
       card:
         type: markdown
-        content: >-
+        content: |-
           # <ha-icon icon="mdi:flask-outline"></ha-icon> Debug & Testing
-
           Handmatige diagnose-tools voor tijdelijke metingen.
     cards: []
   - title: Diagnostics
@@ -2588,110 +2856,10 @@ views:
                 name: ESPHome Version
               - entity: button.openquatt_restart
                 name: Restart
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:thermometer
-            heading: Buiten temperatuur bronnen
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-
-              <summary><strong>Uitleg</strong></summary>
-
-              Vergelijk hier de buiten-temperatuur per bron:
-
-              - Selected: de daadwerkelijk gebruikte waarde in de regeling
-              - HP1/HP2 (Modbus): ruwe unitmetingen
-              - CIC HP1/HP2: cloud-feed bronwaarden
-
-              </details>
-            text_only: true
-          - type: entities
-            title: Outside
-            show_header_toggle: false
-            entities:
-              - entity: sensor.openquatt_outside_temperature_selected
-                name: Selected outside temp
-              - entity: sensor.openquatt_hp1_outside_temperature
-                name: HP1 outside temp (Modbus)
-              - entity: sensor.openquatt_hp2_outside_temperature
-                name: HP2 outside temp (Modbus)
-              - entity: sensor.openquatt_cic_hp1_outside_temp
-                name: HP1 outside temp (CIC)
-              - entity: sensor.openquatt_cic_hp2_outside_temp
-                name: HP2 outside temp (CIC)
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:water-thermometer
-            heading: Water supply bronnen
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-
-              <summary><strong>Uitleg</strong></summary>
-
-              Vergelijk de water-aanvoertemperatuur per bron:
-
-              - Selected: bron die actief in de logica gebruikt wordt
-              - ESP: DS18B20 direct op de controller
-              - CIC: cloud-feed waarde
-
-              </details>
-            text_only: true
-          - type: entities
-            title: Water supply
-            show_header_toggle: false
-            entities:
-              - entity: sensor.openquatt_water_supply_temp_selected
-                name: Selected water supply temp
-              - entity: sensor.openquatt_water_supply_temp
-                name: Water supply temp (ESP)
-              - entity: sensor.openquatt_cic_water_supply_temp
-                name: Water supply temp (CIC)
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:waves
-            heading: Flow bronnen
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-
-              <summary><strong>Uitleg</strong></summary>
-
-              Dit blok laat flow op alle niveaus zien:
-
-              - Selected: bron die in de regelingen gebruikt wordt
-              - HP avg local: lokale afgeleide waarde uit HP1/HP2
-              - CIC: cloud-feed flow
-              - HP1/HP2: ruwe flow per unit (Modbus)
-
-              </details>
-            text_only: true
-          - type: entities
-            title: Flow
-            show_header_toggle: false
-            entities:
-              - entity: sensor.openquatt_flow_average_selected
-                name: Selected flow rate
-              - entity: sensor.openquatt_flow_average_local
-                name: Local flow avg (HP)
-              - entity: sensor.openquatt_cic_flowrate_filtered
-                name: CIC flow rate
-              - entity: sensor.openquatt_hp1_flow
-                name: HP1 flow (Modbus)
-              - entity: sensor.openquatt_hp2_flow
-                name: HP2 flow (Modbus)
     cards: []
     header:
       card:
         type: markdown
-        content: >-
+        content: |-
           # <ha-icon icon="mdi:stethoscope"></ha-icon> Diagnostics
-
-          Bronvergelijking voor temperatuur en flow, gericht op troubleshooting.
+          Controller- en firmwarediagnostiek, gericht op troubleshooting.

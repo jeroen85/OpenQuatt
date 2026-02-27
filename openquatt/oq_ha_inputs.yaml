@@ -1,0 +1,56 @@
+# ==============================================================================
+# OpenQuatt - Home Assistant Inputs (external proxy ingest)
+# ==============================================================================
+#
+# Goal:
+#   Ingest selected Home Assistant proxy sensors as numeric inputs for OpenQuatt.
+#
+# Scope (phase 1):
+#   - Expose three HA-backed sensors in OpenQuatt entities.
+#   - Keep control behavior unchanged; no source-selection wiring yet.
+#
+# Notes:
+#   - Entity IDs are compile-time substitutions in oq_substitutions_common.yaml.
+#   - These sensors are intended as stable HA proxy contracts.
+#
+# ==============================================================================
+
+sensor:
+  - platform: homeassistant
+    id: outside_temp_ha
+    name: "HA - Outside Temperature"
+    entity_id: ${ha_outside_temp_entity_id}
+    internal: false
+    icon: mdi:thermometer
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    web_server:
+      sorting_group_id: oq_ha
+
+  - platform: homeassistant
+    id: thermostat_setpoint_ha
+    name: "HA - Thermostat Setpoint"
+    entity_id: ${ha_room_setpoint_entity_id}
+    internal: false
+    icon: mdi:thermostat
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    web_server:
+      sorting_group_id: oq_ha
+
+  - platform: homeassistant
+    id: thermostat_room_temp_ha
+    name: "HA - Thermostat Room Temperature"
+    entity_id: ${ha_room_temp_entity_id}
+    internal: false
+    icon: mdi:home-thermometer
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    web_server:
+      sorting_group_id: oq_ha

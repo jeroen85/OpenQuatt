@@ -3,50 +3,16 @@
 # ==============================================================================
 #
 # Goal:
-#   Host local physical sensors and provide selector-based merged signals
-#   that can replace external feed values for core control logic.
+#   Host direct on-device physical sensors.
 #
 # Current scope:
 #   - DS18B20 local water supply temperature (1-Wire on configured GPIO)
-#   - Source switches: OFF=local, ON=CIC JSON for selected signals
-#   - Merged outputs consumed by control packages
 #
 # ==============================================================================
 
 one_wire:
   - platform: gpio
     pin: ${ds18b20_pin}
-
-switch:
-  - platform: template
-    name: "Use CIC JSON Water Supply Temp"
-    id: use_cic_json_water_supply_temp
-    icon: mdi:source-branch
-    entity_category: config
-    optimistic: true
-    restore_mode: RESTORE_DEFAULT_OFF
-    web_server:
-      sorting_group_id: oq_cic
-
-  - platform: template
-    name: "Use CIC JSON Flow Rate"
-    id: use_cic_json_flow_rate
-    icon: mdi:source-branch
-    entity_category: config
-    optimistic: true
-    restore_mode: RESTORE_DEFAULT_OFF
-    web_server:
-      sorting_group_id: oq_cic
-
-  - platform: template
-    name: "Use CIC JSON Outside Temp"
-    id: use_cic_json_outside_temp
-    icon: mdi:source-branch
-    entity_category: config
-    optimistic: true
-    restore_mode: RESTORE_DEFAULT_OFF
-    web_server:
-      sorting_group_id: oq_cic
 
 sensor:
   - platform: dallas_temp
@@ -58,62 +24,5 @@ sensor:
     state_class: measurement
     accuracy_decimals: 2
     update_interval: 5s
-    web_server:
-      sorting_group_id: oq_temperatures
-
-  - platform: template
-    id: water_supply_temp_selected
-    name: "Water Supply Temp (Selected)"
-    icon: mdi:water-thermometer
-    unit_of_measurement: "°C"
-    device_class: temperature
-    state_class: measurement
-    accuracy_decimals: 2
-    update_interval: 2s
-    lambda: |-
-      if (id(use_cic_json_water_supply_temp).state) {
-        if (id(water_supply_temp_cic).has_state()) return id(water_supply_temp_cic).state;
-        return NAN;
-      }
-      if (id(water_supply_temp_esp).has_state()) return id(water_supply_temp_esp).state;
-      return NAN;
-    web_server:
-      sorting_group_id: oq_temperatures
-
-  - platform: template
-    id: flow_rate_selected
-    name: "Flow average (Selected)"
-    icon: mdi:waves
-    unit_of_measurement: "L/h"
-    device_class: volume_flow_rate
-    state_class: measurement
-    accuracy_decimals: 1
-    update_interval: 1s
-    lambda: |-
-      if (id(use_cic_json_flow_rate).state) {
-        if (id(flow_rate_cic).has_state()) return id(flow_rate_cic).state;
-        return NAN;
-      }
-      if (id(flow_rate_hp_avg).has_state()) return id(flow_rate_hp_avg).state;
-      return NAN;
-    web_server:
-      sorting_group_id: oq_hydraulics
-
-  - platform: template
-    id: outside_temp_selected
-    name: "Outside Temperature (Selected)"
-    icon: mdi:thermometer
-    unit_of_measurement: "°C"
-    device_class: temperature
-    state_class: measurement
-    accuracy_decimals: 1
-    update_interval: 10s
-    lambda: |-
-      if (id(use_cic_json_outside_temp).state) {
-        if (id(outside_temp_cic).has_state()) return id(outside_temp_cic).state;
-        return NAN;
-      }
-      if (id(outside_temp_hp_avg).has_state()) return id(outside_temp_hp_avg).state;
-      return NAN;
     web_server:
       sorting_group_id: oq_temperatures

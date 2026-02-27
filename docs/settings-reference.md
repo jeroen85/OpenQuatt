@@ -74,7 +74,8 @@ Hardware profile files:
 6. Flow autotune constants
 7. Boiler constants
 8. CIC polling/backoff constants
-9. HP IO Modbus polling skip constants
+9. HA input entity mapping
+10. HP IO Modbus polling skip constants
 
 ## 4. High-Impact Compile-Time Constants
 
@@ -104,6 +105,10 @@ These are typically most relevant for behavior shaping:
   - `oq_boiler_trip_c`, `oq_boiler_reset_c`
 - CIC:
   - `cic_backoff_start_ms`, `cic_backoff_max_ms`, `cic_stale_after_ms`, `cic_feed_error_trip_n`
+- HA input mapping:
+  - `ha_outside_temp_entity_id`
+  - `ha_room_setpoint_entity_id`
+  - `ha_room_temp_entity_id`
 
 ## 5. Runtime Control Entities by Domain
 
@@ -244,15 +249,34 @@ Key entities:
 - `CIC - Data stale`
 - `CIC - Last success age`
 - `CIC - Polling interval`
-- `Use CIC JSON Water Supply Temp`
-- `Use CIC JSON Flow Rate`
-- `Use CIC JSON Outside Temp`
+- `Water Supply Source` (`Local` / `CIC`)
+- `Flow Source` (`Outdoor unit` / `CIC`)
+- `Outside Temperature Source` (`Outdoor unit` / `HA input`)
+- `Room Temperature Source` (`CIC` / `HA input`)
+- `Room Setpoint Source` (`CIC` / `HA input`)
 
 Intent:
 
 - control cloud ingest and source arbitration for control inputs
 
-### 5.7 Service and diagnostics utilities
+### 5.7 HA proxy ingest (phase 1)
+
+Key entities:
+
+- `input_text.openquatt_source_outdoor_temperature` (HA side)
+- `input_text.openquatt_source_room_setpoint` (HA side)
+- `input_text.openquatt_source_room_temperature` (HA side)
+- `HA - Outside Temperature`
+- `HA - Thermostat Setpoint`
+- `HA - Thermostat Room Temperature`
+
+Intent:
+
+- ingest stable Home Assistant proxy signals in ESPHome
+- support runtime room/outside source selection via HA-backed values
+- optional reference package: `docs/dashboard/openquatt_ha_dynamic_sources_package.yaml`
+
+### 5.8 Service and diagnostics utilities
 
 Key entities:
 
@@ -302,6 +326,12 @@ Intent:
 - `Total COP`
 - `HP capacity (W)`
 - `HP deficit (W)`
+
+### External HA input telemetry
+
+- `HA - Outside Temperature`
+- `HA - Thermostat Setpoint`
+- `HA - Thermostat Room Temperature`
 
 ### Energy telemetry
 

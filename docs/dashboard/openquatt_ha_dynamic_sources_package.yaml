@@ -1,0 +1,349 @@
+# ==============================================================================
+# OpenQuatt - Home Assistant Dynamic Source Proxies
+# ==============================================================================
+#
+# Purpose:
+#   - User can enter source entity IDs in HA input_text helpers.
+#   - This package publishes stable proxy sensors consumed by OpenQuatt ESPHome:
+#       sensor.openquatt_ext_outdoor_temperature
+#       sensor.openquatt_ext_room_setpoint
+#       sensor.openquatt_ext_room_temperature
+#
+# Install (Home Assistant):
+#   1) Enable packages in configuration.yaml:
+#        homeassistant:
+#          packages: !include_dir_named packages
+#   2) Copy this file to: /config/packages/openquatt_dynamic_sources.yaml
+#   3) Adjust initial input_text values to your own source entity IDs.
+#   4) Reload Template Entities (or restart Home Assistant).
+#
+# Notes:
+#   - Trigger interval is 15s to support dynamic entity_id references.
+#   - Invalid/missing source values become Unavailable (no sticky fallback cache).
+#   - Optional attribute syntax is supported:
+#       entity_id|attribute_name
+#     Whitespace around "|" is ignored.
+#   - Setpoint/room-temperature proxies also support climate attributes:
+#       temperature / current_temperature
+# ==============================================================================
+
+input_text:
+  openquatt_source_outdoor_temperature:
+    name: OpenQuatt source outdoor temperature
+    icon: mdi:thermometer
+    mode: text
+    max: 100
+    initial: sensor.outdoor_temperature
+
+  openquatt_source_room_setpoint:
+    name: OpenQuatt source room setpoint
+    icon: mdi:thermostat
+    mode: text
+    max: 100
+    initial: sensor.thermostat_setpoint
+
+  openquatt_source_room_temperature:
+    name: OpenQuatt source room temperature
+    icon: mdi:home-thermometer
+    mode: text
+    max: 100
+    initial: sensor.thermostat_room_temperature
+
+template:
+  - trigger:
+      - platform: state
+        entity_id:
+          - input_text.openquatt_source_outdoor_temperature
+          - input_text.openquatt_source_room_setpoint
+          - input_text.openquatt_source_room_temperature
+      - platform: time_pattern
+        seconds: "/15"
+    sensor:
+      - name: OpenQuatt Ext Outdoor Temperature
+        unique_id: openquatt_ext_outdoor_temperature
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        icon: mdi:thermometer
+        availability: >-
+          {% set selector = states('input_text.openquatt_source_outdoor_temperature') | trim %}
+          {% set parts = selector.split('|', 1) %}
+          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
+          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
+          {% set state_raw = states(entity) | trim if entity else '' %}
+          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
+          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
+          {% if attr_raw is number %}
+            {% set attr_val = attr_raw %}
+          {% elif attr_raw is string %}
+            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
+          {% else %}
+            {% set attr_val = none %}
+          {% endif %}
+          {% set val = attr_val if attr_name else state_val %}
+          {{ val is not none }}
+        state: >-
+          {% set selector = states('input_text.openquatt_source_outdoor_temperature') | trim %}
+          {% set parts = selector.split('|', 1) %}
+          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
+          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
+          {% set state_raw = states(entity) | trim if entity else '' %}
+          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
+          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
+          {% if attr_raw is number %}
+            {% set attr_val = attr_raw %}
+          {% elif attr_raw is string %}
+            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
+          {% else %}
+            {% set attr_val = none %}
+          {% endif %}
+          {% set val = attr_val if attr_name else state_val %}
+          {{ val if val is not none else 0 }}
+        attributes:
+          source_entity: >-
+            {% set selector = states('input_text.openquatt_source_outdoor_temperature') | trim %}
+            {% set parts = selector.split('|', 1) %}
+            {{ parts[0] | trim if (parts | length > 0) else '' }}
+          source_attribute: >-
+            {% set selector = states('input_text.openquatt_source_outdoor_temperature') | trim %}
+            {% set parts = selector.split('|', 1) %}
+            {{ parts[1] | trim if (parts | length > 1) else '' }}
+
+      - name: OpenQuatt Ext Room Setpoint
+        unique_id: openquatt_ext_room_setpoint
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        icon: mdi:thermostat
+        availability: >-
+          {% set selector = states('input_text.openquatt_source_room_setpoint') | trim %}
+          {% set parts = selector.split('|', 1) %}
+          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
+          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
+          {% set state_raw = states(entity) | trim if entity else '' %}
+          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
+          {% set custom_attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
+          {% if custom_attr_raw is number %}
+            {% set custom_attr_val = custom_attr_raw %}
+          {% elif custom_attr_raw is string %}
+            {% set custom_attr_val = custom_attr_raw | trim | replace(',', '.') | float(none) %}
+          {% else %}
+            {% set custom_attr_val = none %}
+          {% endif %}
+          {% set fallback_attr_raw = state_attr(entity, 'temperature') if entity and not attr_name else none %}
+          {% if fallback_attr_raw is number %}
+            {% set fallback_attr_val = fallback_attr_raw %}
+          {% elif fallback_attr_raw is string %}
+            {% set fallback_attr_val = fallback_attr_raw | trim | replace(',', '.') | float(none) %}
+          {% else %}
+            {% set fallback_attr_val = none %}
+          {% endif %}
+          {% set val = custom_attr_val if attr_name else (state_val if state_val is not none else fallback_attr_val) %}
+          {{ val is not none }}
+        state: >-
+          {% set selector = states('input_text.openquatt_source_room_setpoint') | trim %}
+          {% set parts = selector.split('|', 1) %}
+          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
+          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
+          {% set state_raw = states(entity) | trim if entity else '' %}
+          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
+          {% set custom_attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
+          {% if custom_attr_raw is number %}
+            {% set custom_attr_val = custom_attr_raw %}
+          {% elif custom_attr_raw is string %}
+            {% set custom_attr_val = custom_attr_raw | trim | replace(',', '.') | float(none) %}
+          {% else %}
+            {% set custom_attr_val = none %}
+          {% endif %}
+          {% set fallback_attr_raw = state_attr(entity, 'temperature') if entity and not attr_name else none %}
+          {% if fallback_attr_raw is number %}
+            {% set fallback_attr_val = fallback_attr_raw %}
+          {% elif fallback_attr_raw is string %}
+            {% set fallback_attr_val = fallback_attr_raw | trim | replace(',', '.') | float(none) %}
+          {% else %}
+            {% set fallback_attr_val = none %}
+          {% endif %}
+          {% set val = custom_attr_val if attr_name else (state_val if state_val is not none else fallback_attr_val) %}
+          {{ val if val is not none else 0 }}
+        attributes:
+          source_entity: >-
+            {% set selector = states('input_text.openquatt_source_room_setpoint') | trim %}
+            {% set parts = selector.split('|', 1) %}
+            {{ parts[0] | trim if (parts | length > 0) else '' }}
+          source_attribute: >-
+            {% set selector = states('input_text.openquatt_source_room_setpoint') | trim %}
+            {% set parts = selector.split('|', 1) %}
+            {{ parts[1] | trim if (parts | length > 1) else '' }}
+
+      - name: OpenQuatt Ext Room Temperature
+        unique_id: openquatt_ext_room_temperature
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        icon: mdi:home-thermometer
+        availability: >-
+          {% set selector = states('input_text.openquatt_source_room_temperature') | trim %}
+          {% set parts = selector.split('|', 1) %}
+          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
+          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
+          {% set state_raw = states(entity) | trim if entity else '' %}
+          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
+          {% set custom_attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
+          {% if custom_attr_raw is number %}
+            {% set custom_attr_val = custom_attr_raw %}
+          {% elif custom_attr_raw is string %}
+            {% set custom_attr_val = custom_attr_raw | trim | replace(',', '.') | float(none) %}
+          {% else %}
+            {% set custom_attr_val = none %}
+          {% endif %}
+          {% set fallback_attr_raw = state_attr(entity, 'current_temperature') if entity and not attr_name else none %}
+          {% if fallback_attr_raw is number %}
+            {% set fallback_attr_val = fallback_attr_raw %}
+          {% elif fallback_attr_raw is string %}
+            {% set fallback_attr_val = fallback_attr_raw | trim | replace(',', '.') | float(none) %}
+          {% else %}
+            {% set fallback_attr_val = none %}
+          {% endif %}
+          {% set val = custom_attr_val if attr_name else (state_val if state_val is not none else fallback_attr_val) %}
+          {{ val is not none }}
+        state: >-
+          {% set selector = states('input_text.openquatt_source_room_temperature') | trim %}
+          {% set parts = selector.split('|', 1) %}
+          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
+          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
+          {% set state_raw = states(entity) | trim if entity else '' %}
+          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
+          {% set custom_attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
+          {% if custom_attr_raw is number %}
+            {% set custom_attr_val = custom_attr_raw %}
+          {% elif custom_attr_raw is string %}
+            {% set custom_attr_val = custom_attr_raw | trim | replace(',', '.') | float(none) %}
+          {% else %}
+            {% set custom_attr_val = none %}
+          {% endif %}
+          {% set fallback_attr_raw = state_attr(entity, 'current_temperature') if entity and not attr_name else none %}
+          {% if fallback_attr_raw is number %}
+            {% set fallback_attr_val = fallback_attr_raw %}
+          {% elif fallback_attr_raw is string %}
+            {% set fallback_attr_val = fallback_attr_raw | trim | replace(',', '.') | float(none) %}
+          {% else %}
+            {% set fallback_attr_val = none %}
+          {% endif %}
+          {% set val = custom_attr_val if attr_name else (state_val if state_val is not none else fallback_attr_val) %}
+          {{ val if val is not none else 0 }}
+        attributes:
+          source_entity: >-
+            {% set selector = states('input_text.openquatt_source_room_temperature') | trim %}
+            {% set parts = selector.split('|', 1) %}
+            {{ parts[0] | trim if (parts | length > 0) else '' }}
+          source_attribute: >-
+            {% set selector = states('input_text.openquatt_source_room_temperature') | trim %}
+            {% set parts = selector.split('|', 1) %}
+            {{ parts[1] | trim if (parts | length > 1) else '' }}
+
+    binary_sensor:
+      - name: OpenQuatt Ext Outdoor Temperature Valid
+        unique_id: openquatt_ext_outdoor_temperature_valid
+        icon: mdi:check-decagram
+        state: >-
+          {% set selector = states('input_text.openquatt_source_outdoor_temperature') | trim %}
+          {% set parts = selector.split('|', 1) %}
+          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
+          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
+          {% set state_raw = states(entity) | trim if entity else '' %}
+          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
+          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
+          {% if attr_raw is number %}
+            {% set attr_val = attr_raw %}
+          {% elif attr_raw is string %}
+            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
+          {% else %}
+            {% set attr_val = none %}
+          {% endif %}
+          {% set val = attr_val if attr_name else state_val %}
+          {{ val is not none }}
+        attributes:
+          source_entity: >-
+            {% set selector = states('input_text.openquatt_source_outdoor_temperature') | trim %}
+            {% set parts = selector.split('|', 1) %}
+            {{ parts[0] | trim if (parts | length > 0) else '' }}
+          source_attribute: >-
+            {% set selector = states('input_text.openquatt_source_outdoor_temperature') | trim %}
+            {% set parts = selector.split('|', 1) %}
+            {{ parts[1] | trim if (parts | length > 1) else '' }}
+
+      - name: OpenQuatt Ext Room Setpoint Valid
+        unique_id: openquatt_ext_room_setpoint_valid
+        icon: mdi:check-decagram
+        state: >-
+          {% set selector = states('input_text.openquatt_source_room_setpoint') | trim %}
+          {% set parts = selector.split('|', 1) %}
+          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
+          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
+          {% set state_raw = states(entity) | trim if entity else '' %}
+          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
+          {% set custom_attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
+          {% if custom_attr_raw is number %}
+            {% set custom_attr_val = custom_attr_raw %}
+          {% elif custom_attr_raw is string %}
+            {% set custom_attr_val = custom_attr_raw | trim | replace(',', '.') | float(none) %}
+          {% else %}
+            {% set custom_attr_val = none %}
+          {% endif %}
+          {% set fallback_attr_raw = state_attr(entity, 'temperature') if entity and not attr_name else none %}
+          {% if fallback_attr_raw is number %}
+            {% set fallback_attr_val = fallback_attr_raw %}
+          {% elif fallback_attr_raw is string %}
+            {% set fallback_attr_val = fallback_attr_raw | trim | replace(',', '.') | float(none) %}
+          {% else %}
+            {% set fallback_attr_val = none %}
+          {% endif %}
+          {% set val = custom_attr_val if attr_name else (state_val if state_val is not none else fallback_attr_val) %}
+          {{ val is not none }}
+        attributes:
+          source_entity: >-
+            {% set selector = states('input_text.openquatt_source_room_setpoint') | trim %}
+            {% set parts = selector.split('|', 1) %}
+            {{ parts[0] | trim if (parts | length > 0) else '' }}
+          source_attribute: >-
+            {% set selector = states('input_text.openquatt_source_room_setpoint') | trim %}
+            {% set parts = selector.split('|', 1) %}
+            {{ parts[1] | trim if (parts | length > 1) else '' }}
+
+      - name: OpenQuatt Ext Room Temperature Valid
+        unique_id: openquatt_ext_room_temperature_valid
+        icon: mdi:check-decagram
+        state: >-
+          {% set selector = states('input_text.openquatt_source_room_temperature') | trim %}
+          {% set parts = selector.split('|', 1) %}
+          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
+          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
+          {% set state_raw = states(entity) | trim if entity else '' %}
+          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
+          {% set custom_attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
+          {% if custom_attr_raw is number %}
+            {% set custom_attr_val = custom_attr_raw %}
+          {% elif custom_attr_raw is string %}
+            {% set custom_attr_val = custom_attr_raw | trim | replace(',', '.') | float(none) %}
+          {% else %}
+            {% set custom_attr_val = none %}
+          {% endif %}
+          {% set fallback_attr_raw = state_attr(entity, 'current_temperature') if entity and not attr_name else none %}
+          {% if fallback_attr_raw is number %}
+            {% set fallback_attr_val = fallback_attr_raw %}
+          {% elif fallback_attr_raw is string %}
+            {% set fallback_attr_val = fallback_attr_raw | trim | replace(',', '.') | float(none) %}
+          {% else %}
+            {% set fallback_attr_val = none %}
+          {% endif %}
+          {% set val = custom_attr_val if attr_name else (state_val if state_val is not none else fallback_attr_val) %}
+          {{ val is not none }}
+        attributes:
+          source_entity: >-
+            {% set selector = states('input_text.openquatt_source_room_temperature') | trim %}
+            {% set parts = selector.split('|', 1) %}
+            {{ parts[0] | trim if (parts | length > 0) else '' }}
+          source_attribute: >-
+            {% set selector = states('input_text.openquatt_source_room_temperature') | trim %}
+            {% set parts = selector.split('|', 1) %}
+            {{ parts[1] | trim if (parts | length > 1) else '' }}

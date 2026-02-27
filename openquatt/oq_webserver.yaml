@@ -36,6 +36,9 @@ web_server:
     - id: oq_cic
       name: "CIC"
       sorting_weight: 55
+    - id: oq_ha
+      name: "HA Inputs"
+      sorting_weight: 56
     - id: oq_tuning_flow
       name: "Tuning – Flow"
       sorting_weight: 80
