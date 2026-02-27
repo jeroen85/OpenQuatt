@@ -1619,7 +1619,7 @@ views:
           settings`.
   - title: Sensorconfiguratie
     path: sensor-configuration
-    icon: mdi:tune-variant
+    icon: mdi:source-branch
     type: sections
     max_columns: 3
     sections:
