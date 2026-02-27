@@ -837,6 +837,23 @@ interval:
             return 0;
           };
 
+          // Like pick_allowed(), but never returns above cap_level.
+          auto pick_allowed_capped = [&](int req, bool is_hp1, int cap_level)->int {
+            if (req <= 0) return 0;
+            cap_level = std::max(min_level, std::min(max_level, cap_level));
+            if (cap_level <= 0) return 0;
+            req = std::max(1, std::min(cap_level, req));
+
+            if (level_allowed(is_hp1, req)) return req;
+
+            // first down within cap
+            for (int l = req - 1; l >= 1; l--) if (level_allowed(is_hp1, l)) return l;
+            // then up within cap
+            for (int l = req + 1; l <= cap_level; l++) if (level_allowed(is_hp1, l)) return l;
+
+            return 0;
+          };
+
           hp1_req = pick_allowed(hp1_req, true);
           hp2_req = pick_allowed(hp2_req, false);
 
@@ -909,6 +926,8 @@ interval:
                                     : (int) roundf(id(oq_day_max_level).state);
             cap = std::max(min_level, std::min(max_level, cap));
             if (applied > cap) applied = cap;
+            // Re-validate allowed levels after cap, otherwise a disabled cap-level can slip through.
+            applied = pick_allowed_capped(applied, is_hp1, cap);
 
             // Normative rule: compressor >0 only when heating mode is measured OR command target is already heating.
             // This avoids losing a full control cycle on mode-transition latency.
