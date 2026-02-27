@@ -1621,6 +1621,21 @@ views:
             icon: mdi:source-branch
             heading: Sensor selection
             heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Explanation</strong></summary>
+
+              Select which source OpenQuatt should use per signal.
+              The `Selected` value should follow the chosen source directly.
+
+              Use this block for:
+              - source selection during tuning
+              - quick comparison between CIC, local, and HA input
+              - validation of the effective control input
+
+              </details>
+            text_only: true
           - type: vertical-stack
             cards:
               - type: heading
@@ -1834,6 +1849,22 @@ views:
             icon: mdi:cloud-check
             heading_style: title
             heading: Quatt CiC configuration
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Explanation</strong></summary>
+
+              This block shows CiC feed health.
+              If feed health degrades or data becomes stale, CIC-backed sources
+              may become unusable for selected signals.
+
+              Check these first when values look wrong:
+              - `JSON feed OK`
+              - `Data stale`
+              - `Last success age`
+
+              </details>
+            text_only: true
           - type: entities
             show_header_toggle: false
             entities:

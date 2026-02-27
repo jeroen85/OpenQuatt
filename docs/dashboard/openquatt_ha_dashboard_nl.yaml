@@ -1629,6 +1629,21 @@ views:
             icon: mdi:source-branch
             heading: Sensorselectie
             heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Uitleg</strong></summary>
+
+              Kies per signaal de bron die OpenQuatt gebruikt.
+              De `Selected` waarde hoort de gekozen bron direct te volgen.
+
+              Gebruik dit blok voor:
+              - bronkeuze tijdens tuning
+              - snelle vergelijking tussen CIC, lokaal en HA input
+              - validatie van de effectieve regelinput
+
+              </details>
+            text_only: true
           - type: vertical-stack
             cards:
               - type: heading
@@ -1842,6 +1857,22 @@ views:
             icon: mdi:cloud-check
             heading_style: title
             heading: Quatt CiC configuration
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Uitleg</strong></summary>
+
+              Dit blok toont de status van de CiC-feed.
+              Als de feed niet OK is of data stale wordt, kunnen CIC-bronnen
+              onbruikbaar worden voor de geselecteerde signalen.
+
+              Controleer bij afwijkingen:
+              - `JSON feed OK`
+              - `Data stale`
+              - `Last success age`
+
+              </details>
+            text_only: true
           - type: entities
             show_header_toggle: false
             entities:
