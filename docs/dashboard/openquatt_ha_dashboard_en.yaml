@@ -1845,10 +1845,10 @@ views:
       card:
         type: markdown
         content: |-
-          # HA source and feed mapping
+          # Sensor configuration
 
-          Configure control sources and dynamic HA source entity IDs, then verify
-          selected values, proxies, and OpenQuatt HA inputs.
+          Configure source selection and source mapping, then validate selected
+          values and source health per signal.
   - title: Advanced settings
     path: advanced-settings
     icon: mdi:tune-vertical

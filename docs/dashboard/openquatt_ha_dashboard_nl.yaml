@@ -1851,10 +1851,10 @@ views:
       card:
         type: markdown
         content: |-
-          # HA bron- en feedkoppeling
+          # Sensorconfiguratie
 
-          Configureer regelbronselectie en dynamische HA bron-entity IDs, en
-          controleer selected waardes, proxies en OpenQuatt HA-invoerwaarden.
+          Configureer bronkeuze en bronkoppeling, en verifieer daarna per signaal
+          de geselecteerde waarde en bronstatus.
   - title: Advanced settings
     path: advanced-settings
     icon: mdi:tune-vertical
