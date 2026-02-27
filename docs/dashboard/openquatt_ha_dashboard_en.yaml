@@ -1618,33 +1618,119 @@ views:
       - type: grid
         cards:
           - type: heading
-            icon: mdi:cog-outline
-            heading: Configuration
+            icon: mdi:source-branch
+            heading: Control source selectors
             heading_style: title
           - type: markdown
             content: |-
               <details>
               <summary><strong>Explanation</strong></summary>
 
-              Configure all control signal sources here:
-              - source selection via 5 selectors
-              - HA source mapping via dynamic entity IDs
-              - CIC feed settings for CIC-based signals
+              Select which source is used for each control signal.
 
               </details>
             text_only: true
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: select.openquatt_water_supply_source
+                name: Water supply source
+              - entity: select.openquatt_flow_source
+                name: Flow source
+              - entity: select.openquatt_outside_temperature_source
+                name: Outside temperature source
+              - entity: select.openquatt_room_temperature_source
+                name: Room temperature source
+              - entity: select.openquatt_room_setpoint_source
+                name: Room setpoint source
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:water-thermometer
+            heading: Water supply sources
+            heading_style: title
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_water_supply_temp_selected
+                name: Selected water supply temp
+              - entity: sensor.openquatt_water_supply_temp
+                name: Water supply temp (ESP)
+              - entity: sensor.openquatt_cic_water_supply_temp
+                name: Water supply temp (CIC)
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:waves
+            heading: Flow sources
+            heading_style: title
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_flow_average_selected
+                name: Selected flow rate
+              - entity: sensor.openquatt_flow_average_local
+                name: Flow rate (Outdoor unit)
+              - entity: sensor.openquatt_cic_flowrate_filtered
+                name: Flow rate (CIC)
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:thermometer
+            heading: Outside temperature sources
+            heading_style: title
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_outside_temperature_selected
+                name: Selected outside temp
+              - entity: sensor.openquatt_outside_temperature_local_aggregated
+                name: Outside temp (Outdoor unit)
+              - entity: sensor.openquatt_ha_outside_temperature
+                name: Outside temp (HA input)
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:home-thermometer
+            heading: Room temperature sources
+            heading_style: title
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_room_temperature_selected
+                name: Selected room temp
+              - entity: sensor.openquatt_cic_ot_room_temperature
+                name: Room temp (CIC OT)
+              - entity: sensor.openquatt_ha_thermostat_room_temperature
+                name: Room temp (HA input)
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:thermostat
+            heading: Room setpoint sources
+            heading_style: title
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_room_setpoint_selected
+                name: Selected room setpoint
+              - entity: sensor.openquatt_cic_ot_room_setpoint
+                name: Room setpoint (CIC OT)
+              - entity: sensor.openquatt_ha_thermostat_setpoint
+                name: Room setpoint (HA input)
       - type: grid
         cards:
           - type: heading
             icon: mdi:form-textbox
-            heading: HA source mapping
+            heading: Dynamic source selectors
             heading_style: title
           - type: markdown
             content: |-
               <details>
               <summary><strong>Explanation</strong></summary>
 
-              Enter source entity IDs for the HA proxy sensors.
+              Enter the source entity IDs that should feed the OpenQuatt HA
+              proxy sensors.
 
               Example values:
               - `sensor.outdoor_temperature`
@@ -1656,7 +1742,7 @@ views:
               - `entity_id|attribute_name`
               Spaces around `|` are ignored.
 
-              Invalid sources become `Unavailable`.
+              If a source is invalid, the proxy state becomes `Unavailable`.
 
               </details>
             text_only: true
@@ -1672,223 +1758,97 @@ views:
       - type: grid
         cards:
           - type: heading
-            icon: mdi:cloud-check
-            heading: CIC feed settings
+            icon: mdi:database-arrow-right
+            heading: HA proxy values and validity
             heading_style: title
           - type: markdown
             content: |-
               <details>
               <summary><strong>Explanation</strong></summary>
 
-              CIC-backed signals depend on this feed.
-              If `JSON feed OK` is `off` or `Data stale` is `on`,
-              CIC values can become invalid.
+              These are the stable HA proxy entities used as the contract
+              towards OpenQuatt.
+
+              The `Valid` status should be `on` for all three signals.
+              If `Valid` is `off`, the current source is not numeric.
+              In that case the proxy state is `Unavailable` until the source
+              becomes valid again.
 
               </details>
             text_only: true
           - type: entities
             show_header_toggle: false
             entities:
+              - entity: sensor.openquatt_ext_outdoor_temperature
+                name: Proxy outside temperature
+              - entity: binary_sensor.openquatt_ext_outdoor_temperature_valid
+                name: Outside source valid
+              - entity: sensor.openquatt_ext_room_setpoint
+                name: Proxy room setpoint
+              - entity: binary_sensor.openquatt_ext_room_setpoint_valid
+                name: Setpoint source valid
+              - entity: sensor.openquatt_ext_room_temperature
+                name: Proxy room temperature
+              - entity: binary_sensor.openquatt_ext_room_temperature_valid
+                name: Room temperature source valid
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:chip
+            heading: OpenQuatt HA input values
+            heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Explanation</strong></summary>
+
+              These are the three HA input values as received by OpenQuatt.
+              They should follow the proxy values shown in the middle panel.
+
+              If a value stays `Unknown`, first check whether the matching
+              `... source valid` sensor is `on`.
+
+              </details>
+            text_only: true
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_ha_outside_temperature
+                name: HA - Outside Temperature
+              - entity: sensor.openquatt_ha_thermostat_setpoint
+                name: HA - Thermostat Setpoint
+              - entity: sensor.openquatt_ha_thermostat_room_temperature
+                name: HA - Thermostat Room Temperature
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:cloud-check
+            heading: CIC feed status
+            heading_style: title
+          - type: entities
+            show_header_toggle: false
+            entities:
               - entity: switch.openquatt_cic_enable_polling
                 name: Enable polling
-              - entity: sensor.openquatt_cic_polling_interval
-                name: Polling interval
-              - entity: text.openquatt_cic_feed_url
-                name: CIC feed URL
               - entity: binary_sensor.openquatt_cic_json_feed_ok
                 name: JSON feed OK
               - entity: binary_sensor.openquatt_cic_data_stale
                 name: Data stale
               - entity: sensor.openquatt_cic_last_success_age
                 name: Last success age
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:stethoscope
-            heading: Diagnostics and feedback
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-              <summary><strong>Explanation</strong></summary>
-
-              Each signal card shows source selection, selected value, both source
-              values, and health/validity feedback.
-
-              </details>
-            text_only: true
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:water-thermometer
-            heading: Water supply signal
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-              <summary><strong>Explanation</strong></summary>
-
-              Select source first, then verify `Selected value` follows that source.
-              Use CIC feed status to validate CIC reliability.
-
-              </details>
-            text_only: true
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: select.openquatt_water_supply_source
-                name: Source selection
-              - entity: sensor.openquatt_water_supply_temp_selected
-                name: Selected value
-              - entity: sensor.openquatt_water_supply_temp
-                name: Local ESP value
-              - entity: sensor.openquatt_cic_water_supply_temp
-                name: CIC value
-              - entity: binary_sensor.openquatt_cic_json_feed_ok
-                name: CIC feed OK
-              - entity: binary_sensor.openquatt_cic_data_stale
-                name: CIC data stale
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:waves
-            heading: Flow signal
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-              <summary><strong>Explanation</strong></summary>
-
-              Compare Outdoor-unit and CIC flow values.
-              `Selected value` should track the active source selection.
-
-              </details>
-            text_only: true
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: select.openquatt_flow_source
-                name: Source selection
-              - entity: sensor.openquatt_flow_average_selected
-                name: Selected value
-              - entity: sensor.openquatt_flow_average_local
-                name: Outdoor unit value
-              - entity: sensor.openquatt_cic_flowrate_filtered
-                name: CIC value
-              - entity: binary_sensor.openquatt_cic_json_feed_ok
-                name: CIC feed OK
-              - entity: binary_sensor.openquatt_cic_data_stale
-                name: CIC data stale
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:thermometer
-            heading: Outside temperature signal
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-              <summary><strong>Explanation</strong></summary>
-
-              For HA input mode, validate both `HA input value` and
-              `HA source valid` before relying on the selected value.
-
-              </details>
-            text_only: true
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: select.openquatt_outside_temperature_source
-                name: Source selection
-              - entity: sensor.openquatt_outside_temperature_selected
-                name: Selected value
-              - entity: sensor.openquatt_outside_temperature_local_aggregated
-                name: Outdoor unit value
-              - entity: sensor.openquatt_ha_outside_temperature
-                name: HA input value
-              - entity: sensor.openquatt_ext_outdoor_temperature
-                name: HA proxy value
-              - entity: binary_sensor.openquatt_ext_outdoor_temperature_valid
-                name: HA source valid
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:home-thermometer
-            heading: Room temperature signal
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-              <summary><strong>Explanation</strong></summary>
-
-              Switch between CIC OT and HA input.
-              Use HA validity and CIC feed status to diagnose mismatches.
-
-              </details>
-            text_only: true
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: select.openquatt_room_temperature_source
-                name: Source selection
-              - entity: sensor.openquatt_room_temperature_selected
-                name: Selected value
-              - entity: sensor.openquatt_cic_ot_room_temperature
-                name: CIC OT value
-              - entity: sensor.openquatt_ha_thermostat_room_temperature
-                name: HA input value
-              - entity: sensor.openquatt_ext_room_temperature
-                name: HA proxy value
-              - entity: binary_sensor.openquatt_ext_room_temperature_valid
-                name: HA source valid
-              - entity: binary_sensor.openquatt_cic_json_feed_ok
-                name: CIC feed OK
-              - entity: binary_sensor.openquatt_cic_data_stale
-                name: CIC data stale
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:thermostat
-            heading: Room setpoint signal
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-              <summary><strong>Explanation</strong></summary>
-
-              Switch between CIC OT and HA input setpoint.
-              If selected and source values diverge, check source health first.
-
-              </details>
-            text_only: true
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: select.openquatt_room_setpoint_source
-                name: Source selection
-              - entity: sensor.openquatt_room_setpoint_selected
-                name: Selected value
-              - entity: sensor.openquatt_cic_ot_room_setpoint
-                name: CIC OT value
-              - entity: sensor.openquatt_ha_thermostat_setpoint
-                name: HA input value
-              - entity: sensor.openquatt_ext_room_setpoint
-                name: HA proxy value
-              - entity: binary_sensor.openquatt_ext_room_setpoint_valid
-                name: HA source valid
-              - entity: binary_sensor.openquatt_cic_json_feed_ok
-                name: CIC feed OK
-              - entity: binary_sensor.openquatt_cic_data_stale
-                name: CIC data stale
+              - entity: sensor.openquatt_cic_polling_interval
+                name: Polling interval
+              - entity: text.openquatt_cic_feed_url
+                name: CIC feed URL
     cards: []
     header:
       card:
         type: markdown
         content: |-
-          # Sensor configuration
+          # HA source and feed mapping
 
-          Configure source selection and source mapping, then validate selected
-          values and source health per signal.
+          Configure control sources and dynamic HA source entity IDs, then verify
+          selected values, proxies, and OpenQuatt HA inputs.
   - title: Advanced settings
     path: advanced-settings
     icon: mdi:tune-vertical

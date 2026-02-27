@@ -1626,33 +1626,119 @@ views:
       - type: grid
         cards:
           - type: heading
-            icon: mdi:cog-outline
-            heading: Configuratie
+            icon: mdi:source-branch
+            heading: Bronselectors regeling
             heading_style: title
           - type: markdown
             content: |-
               <details>
               <summary><strong>Uitleg</strong></summary>
 
-              Configureer hier alle regelbronnen:
-              - bronkeuze via 5 selectors
-              - HA bronkoppeling via dynamische entity IDs
-              - CIC feedinstellingen voor CIC-signalen
+              Kies per signaal welke bron de regeling gebruikt.
 
               </details>
             text_only: true
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: select.openquatt_water_supply_source
+                name: Water supply bron
+              - entity: select.openquatt_flow_source
+                name: Flow bron
+              - entity: select.openquatt_outside_temperature_source
+                name: Buitentemperatuur bron
+              - entity: select.openquatt_room_temperature_source
+                name: Ruimtetemperatuur bron
+              - entity: select.openquatt_room_setpoint_source
+                name: Kamer setpoint bron
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:water-thermometer
+            heading: Water supply bronnen
+            heading_style: title
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_water_supply_temp_selected
+                name: Selected water supply temp
+              - entity: sensor.openquatt_water_supply_temp
+                name: Water supply temp (ESP)
+              - entity: sensor.openquatt_cic_water_supply_temp
+                name: Water supply temp (CIC)
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:waves
+            heading: Flow bronnen
+            heading_style: title
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_flow_average_selected
+                name: Selected flow rate
+              - entity: sensor.openquatt_flow_average_local
+                name: Flow rate (Outdoor unit)
+              - entity: sensor.openquatt_cic_flowrate_filtered
+                name: Flow rate (CIC)
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:thermometer
+            heading: Buiten temperatuur bronnen
+            heading_style: title
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_outside_temperature_selected
+                name: Selected buiten temp
+              - entity: sensor.openquatt_outside_temperature_local_aggregated
+                name: Buiten temp (Outdoor unit)
+              - entity: sensor.openquatt_ha_outside_temperature
+                name: Buiten temp (HA input)
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:home-thermometer
+            heading: Ruimtetemperatuur bronnen
+            heading_style: title
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_room_temperature_selected
+                name: Selected room temp
+              - entity: sensor.openquatt_cic_ot_room_temperature
+                name: Room temp (CIC OT)
+              - entity: sensor.openquatt_ha_thermostat_room_temperature
+                name: Room temp (HA input)
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:thermostat
+            heading: Kamer setpoint bronnen
+            heading_style: title
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_room_setpoint_selected
+                name: Selected room setpoint
+              - entity: sensor.openquatt_cic_ot_room_setpoint
+                name: Room setpoint (CIC OT)
+              - entity: sensor.openquatt_ha_thermostat_setpoint
+                name: Room setpoint (HA input)
       - type: grid
         cards:
           - type: heading
             icon: mdi:form-textbox
-            heading: HA bronkoppeling
+            heading: Dynamische bronselectors
             heading_style: title
           - type: markdown
             content: |-
               <details>
               <summary><strong>Uitleg</strong></summary>
 
-              Vul bron-entity IDs in voor de HA proxy-sensoren.
+              Vul hier de entity IDs in van de bronnen die de OpenQuatt HA
+              proxy-sensoren moeten voeden.
 
               Voorbeelden:
               - `sensor.outdoor_temperature`
@@ -1664,8 +1750,7 @@ views:
               - `entity_id|attribute_name`
               Spaties rond `|` worden genegeerd.
 
-              Ongeldige bronnen worden `Unavailable`.
-
+              Is een bron ongeldig, dan wordt de proxywaarde `Unavailable`.
               </details>
             text_only: true
           - type: entities
@@ -1680,223 +1765,96 @@ views:
       - type: grid
         cards:
           - type: heading
-            icon: mdi:cloud-check
-            heading: CIC feedinstellingen
+            icon: mdi:database-arrow-right
+            heading: HA proxywaarden en validiteit
             heading_style: title
           - type: markdown
             content: |-
               <details>
               <summary><strong>Uitleg</strong></summary>
 
-              CIC-gevoede signalen zijn afhankelijk van deze feed.
-              Als `JSON feed OK` op `off` staat of `Data stale` op `on`,
-              kunnen CIC-waarden ongeldig worden.
+              Dit zijn de stabiele HA proxy-entities die als contract naar
+              OpenQuatt dienen.
+
+              De status `Valid` hoort voor alle drie signalen op `on` te staan.
+              Als `Valid` op `off` staat, is de huidige bron niet numeriek.
+              Dan wordt de proxywaarde `Unavailable` totdat de bron weer geldig
+              is.
+              </details>
+            text_only: true
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_ext_outdoor_temperature
+                name: Proxy buitentemperatuur
+              - entity: binary_sensor.openquatt_ext_outdoor_temperature_valid
+                name: Buitentemperatuur bron valid
+              - entity: sensor.openquatt_ext_room_setpoint
+                name: Proxy kamer setpoint
+              - entity: binary_sensor.openquatt_ext_room_setpoint_valid
+                name: Setpoint bron valid
+              - entity: sensor.openquatt_ext_room_temperature
+                name: Proxy ruimtetemperatuur
+              - entity: binary_sensor.openquatt_ext_room_temperature_valid
+                name: Ruimtetemperatuur bron valid
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:chip
+            heading: OpenQuatt HA-invoerwaarden
+            heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Uitleg</strong></summary>
+
+              Dit zijn de drie HA-invoerwaarden zoals OpenQuatt ze ontvangt.
+              Deze horen de proxywaarden uit het middelste blok te volgen.
+
+              Blijft een waarde op `Unknown`, controleer dan eerst of de
+              bijbehorende `... bron valid` op `on` staat.
 
               </details>
             text_only: true
           - type: entities
             show_header_toggle: false
             entities:
+              - entity: sensor.openquatt_ha_outside_temperature
+                name: HA - Outside Temperature
+              - entity: sensor.openquatt_ha_thermostat_setpoint
+                name: HA - Thermostat Setpoint
+              - entity: sensor.openquatt_ha_thermostat_room_temperature
+                name: HA - Thermostat Room Temperature
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:cloud-check
+            heading: CIC feed status
+            heading_style: title
+          - type: entities
+            show_header_toggle: false
+            entities:
               - entity: switch.openquatt_cic_enable_polling
-                name: Polling inschakelen
-              - entity: sensor.openquatt_cic_polling_interval
-                name: Polling interval
-              - entity: text.openquatt_cic_feed_url
-                name: CIC feed URL
+                name: Enable polling
               - entity: binary_sensor.openquatt_cic_json_feed_ok
                 name: JSON feed OK
               - entity: binary_sensor.openquatt_cic_data_stale
                 name: Data stale
               - entity: sensor.openquatt_cic_last_success_age
-                name: Laatste succes leeftijd
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:stethoscope
-            heading: Diagnostiek en feedback
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-              <summary><strong>Uitleg</strong></summary>
-
-              Elke signaalkaart toont bronkeuze, geselecteerde waarde, beide
-              bronwaarden en status/validiteit.
-
-              </details>
-            text_only: true
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:water-thermometer
-            heading: Water supply signaal
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-              <summary><strong>Uitleg</strong></summary>
-
-              Kies eerst de bron en controleer daarna of de geselecteerde waarde
-              de actieve bron volgt.
-
-              </details>
-            text_only: true
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: select.openquatt_water_supply_source
-                name: Bronkeuze
-              - entity: sensor.openquatt_water_supply_temp_selected
-                name: Geselecteerde waarde
-              - entity: sensor.openquatt_water_supply_temp
-                name: Lokale ESP-waarde
-              - entity: sensor.openquatt_cic_water_supply_temp
-                name: CIC-waarde
-              - entity: binary_sensor.openquatt_cic_json_feed_ok
-                name: CIC feed OK
-              - entity: binary_sensor.openquatt_cic_data_stale
-                name: CIC data stale
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:waves
-            heading: Flow signaal
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-              <summary><strong>Uitleg</strong></summary>
-
-              Vergelijk Outdoor-unit en CIC flowwaarden.
-              De geselecteerde waarde moet de gekozen bron volgen.
-
-              </details>
-            text_only: true
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: select.openquatt_flow_source
-                name: Bronkeuze
-              - entity: sensor.openquatt_flow_average_selected
-                name: Geselecteerde waarde
-              - entity: sensor.openquatt_flow_average_local
-                name: Outdoor unit-waarde
-              - entity: sensor.openquatt_cic_flowrate_filtered
-                name: CIC-waarde
-              - entity: binary_sensor.openquatt_cic_json_feed_ok
-                name: CIC feed OK
-              - entity: binary_sensor.openquatt_cic_data_stale
-                name: CIC data stale
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:thermometer
-            heading: Buitentemperatuur signaal
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-              <summary><strong>Uitleg</strong></summary>
-
-              Bij HA input bron: controleer zowel HA invoerwaarde als
-              HA bron-validiteit voordat je op de geselecteerde waarde stuurt.
-
-              </details>
-            text_only: true
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: select.openquatt_outside_temperature_source
-                name: Bronkeuze
-              - entity: sensor.openquatt_outside_temperature_selected
-                name: Geselecteerde waarde
-              - entity: sensor.openquatt_outside_temperature_local_aggregated
-                name: Outdoor unit-waarde
-              - entity: sensor.openquatt_ha_outside_temperature
-                name: HA invoerwaarde
-              - entity: sensor.openquatt_ext_outdoor_temperature
-                name: HA proxywaarde
-              - entity: binary_sensor.openquatt_ext_outdoor_temperature_valid
-                name: HA bron valid
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:home-thermometer
-            heading: Ruimtetemperatuur signaal
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-              <summary><strong>Uitleg</strong></summary>
-
-              Wissel tussen CIC OT en HA input.
-              Gebruik HA validiteit en CIC feedstatus om afwijkingen te verklaren.
-
-              </details>
-            text_only: true
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: select.openquatt_room_temperature_source
-                name: Bronkeuze
-              - entity: sensor.openquatt_room_temperature_selected
-                name: Geselecteerde waarde
-              - entity: sensor.openquatt_cic_ot_room_temperature
-                name: CIC OT-waarde
-              - entity: sensor.openquatt_ha_thermostat_room_temperature
-                name: HA invoerwaarde
-              - entity: sensor.openquatt_ext_room_temperature
-                name: HA proxywaarde
-              - entity: binary_sensor.openquatt_ext_room_temperature_valid
-                name: HA bron valid
-              - entity: binary_sensor.openquatt_cic_json_feed_ok
-                name: CIC feed OK
-              - entity: binary_sensor.openquatt_cic_data_stale
-                name: CIC data stale
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:thermostat
-            heading: Kamer setpoint signaal
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-              <summary><strong>Uitleg</strong></summary>
-
-              Wissel tussen CIC OT en HA input setpoint.
-              Bij afwijkingen: controleer eerst bronstatus en validiteit.
-
-              </details>
-            text_only: true
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: select.openquatt_room_setpoint_source
-                name: Bronkeuze
-              - entity: sensor.openquatt_room_setpoint_selected
-                name: Geselecteerde waarde
-              - entity: sensor.openquatt_cic_ot_room_setpoint
-                name: CIC OT-waarde
-              - entity: sensor.openquatt_ha_thermostat_setpoint
-                name: HA invoerwaarde
-              - entity: sensor.openquatt_ext_room_setpoint
-                name: HA proxywaarde
-              - entity: binary_sensor.openquatt_ext_room_setpoint_valid
-                name: HA bron valid
-              - entity: binary_sensor.openquatt_cic_json_feed_ok
-                name: CIC feed OK
-              - entity: binary_sensor.openquatt_cic_data_stale
-                name: CIC data stale
+                name: Last success age
+              - entity: sensor.openquatt_cic_polling_interval
+                name: Polling interval
+              - entity: text.openquatt_cic_feed_url
+                name: CIC feed URL
     cards: []
     header:
       card:
         type: markdown
         content: |-
-          # Sensorconfiguratie
+          # HA bron- en feedkoppeling
 
-          Configureer bronkeuze en bronkoppeling, en verifieer daarna per signaal
-          de geselecteerde waarde en bronstatus.
+          Configureer regelbronselectie en dynamische HA bron-entity IDs, en
+          controleer selected waardes, proxies en OpenQuatt HA-invoerwaarden.
   - title: Advanced settings
     path: advanced-settings
     icon: mdi:tune-vertical
