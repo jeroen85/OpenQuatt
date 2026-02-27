@@ -1744,6 +1744,11 @@ views:
               - `sensor.outdoor_temperature`
               - `sensor.thermostat_setpoint`
               - `sensor.thermostat_room_temperature`
+              - `climate.woonkamer | current_temperature`
+
+              Optioneel attribuutformaat:
+              - `entity_id|attribute_name`
+              Spaties rond `|` worden genegeerd.
 
               Is een bron ongeldig, dan wordt de proxywaarde `Unavailable`.
               </details>

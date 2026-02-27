@@ -1736,6 +1736,11 @@ views:
               - `sensor.outdoor_temperature`
               - `sensor.thermostat_setpoint`
               - `sensor.thermostat_room_temperature`
+              - `climate.living_room | current_temperature`
+
+              Optional attribute format:
+              - `entity_id|attribute_name`
+              Spaces around `|` are ignored.
 
               If a source is invalid, the proxy state becomes `Unavailable`.
 
