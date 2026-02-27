@@ -19,8 +19,9 @@
 #
 # Notes:
 #   - Trigger interval is 15s to support dynamic entity_id references.
-#   - Invalid/missing source values keep last good proxy value.
-#   - If no last-good value exists yet, the proxy publishes NaN.
+#   - Invalid/missing source values publish NaN (no sticky fallback cache).
+#   - Setpoint/room-temperature proxies also support climate attributes:
+#       temperature / current_temperature
 # ==============================================================================
 
 input_text:
@@ -63,12 +64,10 @@ template:
         icon: mdi:thermometer
         state: >-
           {% set entity = states('input_text.openquatt_source_outdoor_temperature') | trim %}
-          {% set val = states(entity) | float(none) if entity else none %}
-          {% set prev = this.state | float(none) if this is defined else none %}
+          {% set raw = states(entity) | trim if entity else '' %}
+          {% set val = raw | replace(',', '.') | float(none) if raw else none %}
           {% if val is not none %}
             {{ val }}
-          {% elif prev is not none %}
-            {{ prev }}
           {% else %}
             {{ 'nan' }}
           {% endif %}
@@ -84,12 +83,12 @@ template:
         icon: mdi:thermostat
         state: >-
           {% set entity = states('input_text.openquatt_source_room_setpoint') | trim %}
-          {% set val = states(entity) | float(none) if entity else none %}
-          {% set prev = this.state | float(none) if this is defined else none %}
+          {% set raw = states(entity) | trim if entity else '' %}
+          {% set state_val = raw | replace(',', '.') | float(none) if raw else none %}
+          {% set attr_val = state_attr(entity, 'temperature') | float(none) if entity else none %}
+          {% set val = state_val if state_val is not none else attr_val %}
           {% if val is not none %}
             {{ val }}
-          {% elif prev is not none %}
-            {{ prev }}
           {% else %}
             {{ 'nan' }}
           {% endif %}
@@ -105,12 +104,12 @@ template:
         icon: mdi:home-thermometer
         state: >-
           {% set entity = states('input_text.openquatt_source_room_temperature') | trim %}
-          {% set val = states(entity) | float(none) if entity else none %}
-          {% set prev = this.state | float(none) if this is defined else none %}
+          {% set raw = states(entity) | trim if entity else '' %}
+          {% set state_val = raw | replace(',', '.') | float(none) if raw else none %}
+          {% set attr_val = state_attr(entity, 'current_temperature') | float(none) if entity else none %}
+          {% set val = state_val if state_val is not none else attr_val %}
           {% if val is not none %}
             {{ val }}
-          {% elif prev is not none %}
-            {{ prev }}
           {% else %}
             {{ 'nan' }}
           {% endif %}
@@ -124,7 +123,8 @@ template:
         icon: mdi:check-decagram
         state: >-
           {% set entity = states('input_text.openquatt_source_outdoor_temperature') | trim %}
-          {% set val = states(entity) | float(none) if entity else none %}
+          {% set raw = states(entity) | trim if entity else '' %}
+          {% set val = raw | replace(',', '.') | float(none) if raw else none %}
           {{ val is not none }}
         attributes:
           source_entity: >-
@@ -135,7 +135,10 @@ template:
         icon: mdi:check-decagram
         state: >-
           {% set entity = states('input_text.openquatt_source_room_setpoint') | trim %}
-          {% set val = states(entity) | float(none) if entity else none %}
+          {% set raw = states(entity) | trim if entity else '' %}
+          {% set state_val = raw | replace(',', '.') | float(none) if raw else none %}
+          {% set attr_val = state_attr(entity, 'temperature') | float(none) if entity else none %}
+          {% set val = state_val if state_val is not none else attr_val %}
           {{ val is not none }}
         attributes:
           source_entity: >-
@@ -146,7 +149,10 @@ template:
         icon: mdi:check-decagram
         state: >-
           {% set entity = states('input_text.openquatt_source_room_temperature') | trim %}
-          {% set val = states(entity) | float(none) if entity else none %}
+          {% set raw = states(entity) | trim if entity else '' %}
+          {% set state_val = raw | replace(',', '.') | float(none) if raw else none %}
+          {% set attr_val = state_attr(entity, 'current_temperature') | float(none) if entity else none %}
+          {% set val = state_val if state_val is not none else attr_val %}
           {{ val is not none }}
         attributes:
           source_entity: >-

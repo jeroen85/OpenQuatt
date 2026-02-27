@@ -1737,8 +1737,8 @@ views:
               - `sensor.thermostat_setpoint`
               - `sensor.thermostat_room_temperature`
 
-              If a source is invalid, the proxy keeps the last valid value.
-              If there is no last valid value yet, the proxy state is `nan`.
+              If a source is invalid, the proxy state becomes `nan`
+              (usually shown as `Unavailable`).
 
               </details>
             text_only: true
@@ -1766,8 +1766,9 @@ views:
               towards OpenQuatt.
 
               The `Valid` status should be `on` for all three signals.
-              If `Valid` is `off`, the proxy keeps the last valid value.
-              If there is no last valid value yet, the proxy state is `nan`.
+              If `Valid` is `off`, the current source is not numeric.
+              In that case the proxy state is `nan`/`Unavailable`
+              until the source becomes valid again.
 
               </details>
             text_only: true

@@ -1744,6 +1744,9 @@ views:
               - `sensor.outdoor_temperature`
               - `sensor.thermostat_setpoint`
               - `sensor.thermostat_room_temperature`
+
+              Is een bron ongeldig, dan wordt de proxywaarde `nan`
+              (meestal getoond als `Unavailable`).
               </details>
             text_only: true
           - type: entities
@@ -1770,8 +1773,9 @@ views:
               OpenQuatt dienen.
 
               De status `Valid` hoort voor alle drie signalen op `on` te staan.
-              Als `Valid` op `off` staat, houdt de proxy de laatste geldige
-              waarde aan. Als die nog niet bestaat, wordt `nan` gepubliceerd.
+              Als `Valid` op `off` staat, is de huidige bron niet numeriek.
+              Dan wordt de proxywaarde `nan`/`Unavailable`
+              totdat de bron weer geldig is.
               </details>
             text_only: true
           - type: entities
