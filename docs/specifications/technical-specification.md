@@ -13,7 +13,7 @@
 - [9. Heat Allocation Engine (Technical)](#9-heat-allocation-engine-technical)
 - [10. Flow Control Engine (Technical)](#10-flow-control-engine-technical)
 - [11. CIC Engine (Technical)](#11-cic-engine-technical)
-- [12. HA Inputs and Local Source Selection Engine](#12-ha-inputs-and-local-source-selection-engine)
+- [12. Sensor Configuration and Local Source Selection Engine](#12-sensor-configuration-and-local-source-selection-engine)
 - [13. Boiler Engine (Technical)](#13-boiler-engine-technical)
 - [14. HP IO Engine (Technical)](#14-hp-io-engine-technical)
 - [15. Energy Engine (Technical)](#15-energy-engine-technical)
@@ -250,7 +250,7 @@ Technical guarantees:
 - failed parse/request increments failure path
 - stale feed invalidates CIC values and feed health state
 
-## 12. HA Inputs and Local Source Selection Engine
+## 12. Sensor Configuration and Local Source Selection Engine
 
 `oq_ha_inputs` provides:
 

@@ -16,7 +16,7 @@ The dashboard is designed as a practical operations console with the **Sections*
 - [4. Flow View](#4-flow-view)
 - [5. Warmtecontrol View](#5-warmtecontrol-view)
 - [6. HPs View](#6-hps-view)
-- [7. HA Inputs View](#7-ha-inputs-view)
+- [7. Sensor Configuration View](#7-sensor-configuration-view)
 - [8. Energy View](#8-energy-view)
 - [9. Advanced Settings View](#9-advanced-settings-view)
 - [10. Debug & Testing View](#10-debug--testing-view)
@@ -31,7 +31,7 @@ The dashboard is designed as a practical operations console with the **Sections*
 | Flow | `flow` | Hydraulic status, flow control, pump tuning |
 | Warmtecontrol | `warmtecontrol` | Demand and heat allocation behavior |
 | HPs | `HPs` | HP1/HP2 deep diagnostics and visualization |
-| HA Inputs | `ha-inputs` | Source selectors, source-overview blocks, dynamic HA mapping, and feed/proxy checks |
+| Sensor Configuration | `sensor-configuration` | Source setup (CIC/HA/selectors) plus per-signal diagnostics and feedback |
 | Energy | `energy` | Daily/cumulative energy and efficiency metrics |
 | Advanced settings | `advanced-settings` | Expert tuning parameters with explanations |
 | Debug & Testing | `debug-testing` | Service utilities, runtime balancing checks, and manual probe tools |
@@ -43,7 +43,7 @@ The dashboard is designed as a practical operations console with the **Sections*
 - Separate advanced tuning from fast operational controls.
 - Use tile cards for quick scanning and trend snippets.
 - Use markdown details blocks for contextual explanation.
-- Keep source controls grouped in the HA Inputs tab so source origin is always explicit.
+- Keep source controls grouped in the Sensor Configuration tab so source origin is always explicit.
 
 ## 3. Overview View (Overzicht)
 
@@ -115,16 +115,24 @@ Operational rule:
 
 - Use this tab for unit-specific diagnostics and balancing checks.
 
-## 7. HA Inputs View
+## 7. Sensor Configuration View
 
 Expected content pattern:
 
-- five control source selectors
-- source overview blocks (selected + each source value per signal)
-- dynamic HA source entity-id inputs
-- HA proxy input sensors (outside/setpoint/room temperature)
-- OpenQuatt-ingested HA values
-- feed status (OK/stale/age/poll interval)
+- configuration blocks:
+  - HA source mapping (`input_text` selectors)
+  - CIC feed settings
+- per-signal diagnostics cards for:
+  - water supply
+  - flow
+  - outside temperature
+  - room temperature
+  - room setpoint
+- each signal card includes:
+  - source selector
+  - selected value
+  - both source values
+  - validity/feed feedback
 
 Optional helper package:
 
@@ -132,7 +140,7 @@ Optional helper package:
 
 Operational rule:
 
-- Use this tab first when selected/source values or dynamic HA mapping look wrong.
+- Use this tab first when source selection, mapping, or selected values look wrong.
 
 ## 8. Energy View
 
@@ -198,7 +206,7 @@ Operational rule:
 When editing the dashboard YAML:
 
 1. Keep entity IDs aligned with current codebase names.
-2. Keep source-selection controls centralized in HA Inputs.
+2. Keep source-selection controls centralized in Sensor Configuration.
 3. Avoid duplicate controls across tabs unless intentional.
 4. Keep warning-prone entities out of primary overview where possible.
 5. Preserve section headings and explanation style consistency.
