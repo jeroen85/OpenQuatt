@@ -111,7 +111,8 @@ sensor:
     accuracy_decimals: 2
     update_interval: 2s
     lambda: |-
-      const auto source = id(water_supply_source).state;
+      if (!id(water_supply_source).has_state()) return NAN;
+      const auto source = id(water_supply_source).current_option();
       if (source == "CIC") {
         if (id(water_supply_temp_cic).has_state()) return id(water_supply_temp_cic).state;
         return NAN;
@@ -134,7 +135,8 @@ sensor:
     accuracy_decimals: 1
     update_interval: 1s
     lambda: |-
-      const auto source = id(flow_source).state;
+      if (!id(flow_source).has_state()) return NAN;
+      const auto source = id(flow_source).current_option();
       if (source == "CIC") {
         if (id(flow_rate_cic).has_state()) return id(flow_rate_cic).state;
         return NAN;
@@ -157,7 +159,8 @@ sensor:
     accuracy_decimals: 1
     update_interval: 10s
     lambda: |-
-      const auto source = id(outside_temp_source).state;
+      if (!id(outside_temp_source).has_state()) return NAN;
+      const auto source = id(outside_temp_source).current_option();
       if (source == "HA input") {
         if (id(outside_temp_ha).has_state()) return id(outside_temp_ha).state;
         return NAN;
@@ -180,7 +183,8 @@ sensor:
     accuracy_decimals: 2
     update_interval: 10s
     lambda: |-
-      const auto source = id(room_temp_source).state;
+      if (!id(room_temp_source).has_state()) return NAN;
+      const auto source = id(room_temp_source).current_option();
       if (source == "HA input") {
         if (id(thermostat_room_temp_ha).has_state()) return id(thermostat_room_temp_ha).state;
         return NAN;
@@ -203,7 +207,8 @@ sensor:
     accuracy_decimals: 2
     update_interval: 10s
     lambda: |-
-      const auto source = id(room_setpoint_source).state;
+      if (!id(room_setpoint_source).has_state()) return NAN;
+      const auto source = id(room_setpoint_source).current_option();
       if (source == "HA input") {
         if (id(thermostat_setpoint_ha).has_state()) return id(thermostat_setpoint_ha).state;
         return NAN;
