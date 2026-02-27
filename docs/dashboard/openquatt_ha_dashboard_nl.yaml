@@ -1643,14 +1643,19 @@ views:
             entities:
               - entity: select.openquatt_water_supply_source
                 name: Water supply bron
+                icon: mdi:source-branch
               - entity: select.openquatt_flow_source
                 name: Flow bron
+                icon: mdi:source-branch
               - entity: select.openquatt_outside_temperature_source
                 name: Buitentemperatuur bron
+                icon: mdi:source-branch
               - entity: select.openquatt_room_temperature_source
                 name: Ruimtetemperatuur bron
+                icon: mdi:source-branch
               - entity: select.openquatt_room_setpoint_source
                 name: Kamer setpoint bron
+                icon: mdi:source-branch
       - type: grid
         cards:
           - type: heading
@@ -1662,10 +1667,13 @@ views:
             entities:
               - entity: sensor.openquatt_water_supply_temp_selected
                 name: Selected water supply temp
+                icon: mdi:water-thermometer
               - entity: sensor.openquatt_water_supply_temp
                 name: Water supply temp (ESP)
+                icon: mdi:thermometer
               - entity: sensor.openquatt_cic_water_supply_temp
                 name: Water supply temp (CIC)
+                icon: mdi:water-thermometer
       - type: grid
         cards:
           - type: heading
@@ -1677,10 +1685,13 @@ views:
             entities:
               - entity: sensor.openquatt_flow_average_selected
                 name: Selected flow rate
+                icon: mdi:waves
               - entity: sensor.openquatt_flow_average_local
                 name: Flow rate (Outdoor unit)
+                icon: mdi:waves
               - entity: sensor.openquatt_cic_flowrate_filtered
                 name: Flow rate (CIC)
+                icon: mdi:waves
       - type: grid
         cards:
           - type: heading
@@ -1692,10 +1703,13 @@ views:
             entities:
               - entity: sensor.openquatt_outside_temperature_selected
                 name: Selected buiten temp
+                icon: mdi:thermometer
               - entity: sensor.openquatt_outside_temperature_local_aggregated
                 name: Buiten temp (Outdoor unit)
+                icon: mdi:thermometer
               - entity: sensor.openquatt_ha_outside_temperature
                 name: Buiten temp (HA input)
+                icon: mdi:thermometer
       - type: grid
         cards:
           - type: heading
@@ -1707,10 +1721,13 @@ views:
             entities:
               - entity: sensor.openquatt_room_temperature_selected
                 name: Selected room temp
+                icon: mdi:home-thermometer
               - entity: sensor.openquatt_cic_ot_room_temperature
                 name: Room temp (CIC OT)
+                icon: mdi:thermometer
               - entity: sensor.openquatt_ha_thermostat_room_temperature
                 name: Room temp (HA input)
+                icon: mdi:home-thermometer
       - type: grid
         cards:
           - type: heading
@@ -1722,10 +1739,13 @@ views:
             entities:
               - entity: sensor.openquatt_room_setpoint_selected
                 name: Selected room setpoint
+                icon: mdi:thermostat
               - entity: sensor.openquatt_cic_ot_room_setpoint
                 name: Room setpoint (CIC OT)
+                icon: mdi:thermostat
               - entity: sensor.openquatt_ha_thermostat_setpoint
                 name: Room setpoint (HA input)
+                icon: mdi:thermostat
       - type: grid
         cards:
           - type: heading
@@ -1758,10 +1778,13 @@ views:
             entities:
               - entity: input_text.openquatt_source_outdoor_temperature
                 name: Bronentity buitentemperatuur
+                icon: mdi:thermometer
               - entity: input_text.openquatt_source_room_setpoint
                 name: Bronentity setpoint
+                icon: mdi:thermostat
               - entity: input_text.openquatt_source_room_temperature
                 name: Bronentity ruimtetemperatuur
+                icon: mdi:home-thermometer
       - type: grid
         cards:
           - type: heading
