@@ -19,7 +19,7 @@
 #
 # Notes:
 #   - Trigger interval is 15s to support dynamic entity_id references.
-#   - Invalid/missing source values publish NaN (no sticky fallback cache).
+#   - Invalid/missing source values become Unavailable (no sticky fallback cache).
 #   - Setpoint/room-temperature proxies also support climate attributes:
 #       temperature / current_temperature
 # ==============================================================================
@@ -62,15 +62,16 @@ template:
         device_class: temperature
         state_class: measurement
         icon: mdi:thermometer
+        availability: >-
+          {% set entity = states('input_text.openquatt_source_outdoor_temperature') | trim %}
+          {% set raw = states(entity) | trim if entity else '' %}
+          {% set val = raw | replace(',', '.') | float(none) if raw else none %}
+          {{ val is not none }}
         state: >-
           {% set entity = states('input_text.openquatt_source_outdoor_temperature') | trim %}
           {% set raw = states(entity) | trim if entity else '' %}
           {% set val = raw | replace(',', '.') | float(none) if raw else none %}
-          {% if val is not none %}
-            {{ val }}
-          {% else %}
-            {{ 'nan' }}
-          {% endif %}
+          {{ val if val is not none else 0 }}
         attributes:
           source_entity: >-
             {{ states('input_text.openquatt_source_outdoor_temperature') | trim }}
@@ -81,17 +82,20 @@ template:
         device_class: temperature
         state_class: measurement
         icon: mdi:thermostat
+        availability: >-
+          {% set entity = states('input_text.openquatt_source_room_setpoint') | trim %}
+          {% set raw = states(entity) | trim if entity else '' %}
+          {% set state_val = raw | replace(',', '.') | float(none) if raw else none %}
+          {% set attr_val = state_attr(entity, 'temperature') | float(none) if entity else none %}
+          {% set val = state_val if state_val is not none else attr_val %}
+          {{ val is not none }}
         state: >-
           {% set entity = states('input_text.openquatt_source_room_setpoint') | trim %}
           {% set raw = states(entity) | trim if entity else '' %}
           {% set state_val = raw | replace(',', '.') | float(none) if raw else none %}
           {% set attr_val = state_attr(entity, 'temperature') | float(none) if entity else none %}
           {% set val = state_val if state_val is not none else attr_val %}
-          {% if val is not none %}
-            {{ val }}
-          {% else %}
-            {{ 'nan' }}
-          {% endif %}
+          {{ val if val is not none else 0 }}
         attributes:
           source_entity: >-
             {{ states('input_text.openquatt_source_room_setpoint') | trim }}
@@ -102,17 +106,20 @@ template:
         device_class: temperature
         state_class: measurement
         icon: mdi:home-thermometer
+        availability: >-
+          {% set entity = states('input_text.openquatt_source_room_temperature') | trim %}
+          {% set raw = states(entity) | trim if entity else '' %}
+          {% set state_val = raw | replace(',', '.') | float(none) if raw else none %}
+          {% set attr_val = state_attr(entity, 'current_temperature') | float(none) if entity else none %}
+          {% set val = state_val if state_val is not none else attr_val %}
+          {{ val is not none }}
         state: >-
           {% set entity = states('input_text.openquatt_source_room_temperature') | trim %}
           {% set raw = states(entity) | trim if entity else '' %}
           {% set state_val = raw | replace(',', '.') | float(none) if raw else none %}
           {% set attr_val = state_attr(entity, 'current_temperature') | float(none) if entity else none %}
           {% set val = state_val if state_val is not none else attr_val %}
-          {% if val is not none %}
-            {{ val }}
-          {% else %}
-            {{ 'nan' }}
-          {% endif %}
+          {{ val if val is not none else 0 }}
         attributes:
           source_entity: >-
             {{ states('input_text.openquatt_source_room_temperature') | trim }}

@@ -1745,8 +1745,7 @@ views:
               - `sensor.thermostat_setpoint`
               - `sensor.thermostat_room_temperature`
 
-              Is een bron ongeldig, dan wordt de proxywaarde `nan`
-              (meestal getoond als `Unavailable`).
+              Is een bron ongeldig, dan wordt de proxywaarde `Unavailable`.
               </details>
             text_only: true
           - type: entities
@@ -1774,8 +1773,8 @@ views:
 
               De status `Valid` hoort voor alle drie signalen op `on` te staan.
               Als `Valid` op `off` staat, is de huidige bron niet numeriek.
-              Dan wordt de proxywaarde `nan`/`Unavailable`
-              totdat de bron weer geldig is.
+              Dan wordt de proxywaarde `Unavailable` totdat de bron weer geldig
+              is.
               </details>
             text_only: true
           - type: entities

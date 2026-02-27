@@ -1737,8 +1737,7 @@ views:
               - `sensor.thermostat_setpoint`
               - `sensor.thermostat_room_temperature`
 
-              If a source is invalid, the proxy state becomes `nan`
-              (usually shown as `Unavailable`).
+              If a source is invalid, the proxy state becomes `Unavailable`.
 
               </details>
             text_only: true
@@ -1767,8 +1766,8 @@ views:
 
               The `Valid` status should be `on` for all three signals.
               If `Valid` is `off`, the current source is not numeric.
-              In that case the proxy state is `nan`/`Unavailable`
-              until the source becomes valid again.
+              In that case the proxy state is `Unavailable` until the source
+              becomes valid again.
 
               </details>
             text_only: true
