@@ -1726,7 +1726,7 @@ views:
               <summary><strong>Uitleg</strong></summary>
 
               Kies per signaal de bron die OpenQuatt gebruikt.
-              De `Selected` waarde hoort de gekozen bron direct te volgen.
+              De `Geselecteerde` waarde hoort de gekozen bron direct te volgen.
 
               Gebruik dit blok voor:
               - bronkeuze tijdens tuning
@@ -1752,16 +1752,16 @@ views:
                   - entity: select.openquatt_room_temperature_source
                     name: Ruimtetemperatuur bron
                   - entity: sensor.openquatt_room_temperature_selected
-                    name: Selected room temp
+                    name: Geselecteerde kamertemperatuur
                   - entity: sensor.openquatt_cic_ot_room_temperature
-                    name: Room temp (CIC OT)
+                    name: Kamertemperatuur (CIC OT)
                   - entity: sensor.openquatt_ha_thermostat_room_temperature
-                    name: Room temp (HA input)
+                    name: Kamertemperatuur (HA-invoer)
           - type: vertical-stack
             cards:
               - type: heading
                 icon: mdi:water-thermometer
-                heading: Water supply bronnen
+                heading: Aanvoertemperatuur bronnen
                 heading_style: subtitle
                 grid_options:
                   columns: 12
@@ -1770,13 +1770,13 @@ views:
                 show_header_toggle: false
                 entities:
                   - entity: select.openquatt_water_supply_source
-                    name: Water supply bron
+                    name: Aanvoertemperatuur bron
                   - entity: sensor.openquatt_water_supply_temp_selected
-                    name: Selected water supply temp
+                    name: Geselecteerde aanvoertemperatuur
                   - entity: sensor.openquatt_water_supply_temp
-                    name: Water supply temp (ESP)
+                    name: Aanvoertemperatuur (ESP)
                   - entity: sensor.openquatt_cic_water_supply_temp
-                    name: Water supply temp (CIC)
+                    name: Aanvoertemperatuur (CIC)
           - type: vertical-stack
             cards:
               - type: heading
@@ -1792,16 +1792,16 @@ views:
                   - entity: select.openquatt_flow_source
                     name: Flow bron
                   - entity: sensor.openquatt_flow_average_selected
-                    name: Selected flow rate
+                    name: Geselecteerde flow
                   - entity: sensor.openquatt_flow_average_local
-                    name: Flow rate (Outdoor unit)
+                    name: Flow (buitenunit)
                   - entity: sensor.openquatt_cic_flowrate_filtered
-                    name: Flow rate (CIC)
+                    name: Flow (CIC)
           - type: vertical-stack
             cards:
               - type: heading
                 icon: mdi:thermometer
-                heading: Buiten temperatuur bronnen
+                heading: Buitentemperatuur bronnen
                 heading_style: subtitle
                 grid_options:
                   columns: 12
@@ -1812,11 +1812,11 @@ views:
                   - entity: select.openquatt_outside_temperature_source
                     name: Buitentemperatuur bron
                   - entity: sensor.openquatt_outside_temperature_selected
-                    name: Selected buiten temp
+                    name: Geselecteerde buitentemperatuur
                   - entity: sensor.openquatt_outside_temperature_local_aggregated
-                    name: Buiten temp (Outdoor unit)
+                    name: Buitentemperatuur (buitenunit)
                   - entity: sensor.openquatt_ha_outside_temperature
-                    name: Buiten temp (HA input)
+                    name: Buitentemperatuur (HA-invoer)
           - type: vertical-stack
             cards:
               - type: heading
@@ -1832,11 +1832,11 @@ views:
                   - entity: select.openquatt_room_setpoint_source
                     name: Kamer setpoint bron
                   - entity: sensor.openquatt_room_setpoint_selected
-                    name: Selected room setpoint
+                    name: Geselecteerd kamer setpoint
                   - entity: sensor.openquatt_cic_ot_room_setpoint
-                    name: Room setpoint (CIC OT)
+                    name: Kamer setpoint (CIC OT)
                   - entity: sensor.openquatt_ha_thermostat_setpoint
-                    name: Room setpoint (HA input)
+                    name: Kamer setpoint (HA-invoer)
         column_span: 3
       - type: grid
         cards:

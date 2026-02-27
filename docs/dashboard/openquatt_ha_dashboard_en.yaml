@@ -1627,11 +1627,11 @@ views:
               <summary><strong>Explanation</strong></summary>
 
               Select which source OpenQuatt should use per signal.
-              The `Selected` value should follow the chosen source directly.
+              The `Selected` value should directly follow the chosen source.
 
               Use this block for:
               - source selection during tuning
-              - quick comparison between CIC, local, and HA input
+              - quick comparison between CIC, local, and HA Input
               - validation of the effective control input
 
               </details>
@@ -1655,12 +1655,12 @@ views:
                   - entity: sensor.openquatt_cic_ot_room_temperature
                     name: Room temperature (CIC OT)
                   - entity: sensor.openquatt_ha_thermostat_room_temperature
-                    name: Room temperature (HA input)
+                    name: Room temperature (HA Input)
           - type: vertical-stack
             cards:
               - type: heading
                 icon: mdi:water-thermometer
-                heading: Water supply sources
+                heading: Water supply temperature sources
                 heading_style: subtitle
                 grid_options:
                   columns: 12
@@ -1669,7 +1669,7 @@ views:
                 show_header_toggle: false
                 entities:
                   - entity: select.openquatt_water_supply_source
-                    name: Water supply source
+                    name: Water supply temperature source
                   - entity: sensor.openquatt_water_supply_temp_selected
                     name: Selected water supply temperature
                   - entity: sensor.openquatt_water_supply_temp
@@ -1715,7 +1715,7 @@ views:
                   - entity: sensor.openquatt_outside_temperature_local_aggregated
                     name: Outside temperature (Outdoor unit)
                   - entity: sensor.openquatt_ha_outside_temperature
-                    name: Outside temperature (HA input)
+                    name: Outside temperature (HA Input)
           - type: vertical-stack
             cards:
               - type: heading
@@ -1735,13 +1735,13 @@ views:
                   - entity: sensor.openquatt_cic_ot_room_setpoint
                     name: Room setpoint (CIC OT)
                   - entity: sensor.openquatt_ha_thermostat_setpoint
-                    name: Room setpoint (HA input)
+                    name: Room setpoint (HA Input)
         column_span: 3
       - type: grid
         cards:
           - type: heading
             icon: mdi:home-assistant
-            heading: Home Assistant input configuration
+            heading: Home Assistant source configuration
             heading_style: title
           - type: vertical-stack
             cards:
@@ -1818,14 +1818,14 @@ views:
             cards:
               - type: heading
                 icon: mdi:chip
-                heading: OpenQuatt HA input values
+                heading: OpenQuatt HA input signals
                 heading_style: subtitle
               - type: markdown
                 content: |-
                   <details>
                   <summary><strong>Explanation</strong></summary>
 
-                  These are the three HA input values as received by OpenQuatt.
+                  These are the three HA input signals as received by OpenQuatt.
                   They should follow the proxy values shown in the middle panel.
 
                   If a value stays `Unknown`, first check whether the matching
