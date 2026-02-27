@@ -1893,7 +1893,7 @@ views:
       card:
         type: markdown
         content: |-
-          # Sensorconfiguratie
+          # <ha-icon icon="mdi:source-branch"></ha-icon> Sensorconfiguratie
 
           Configureer bronkeuze en bronkoppeling, en verifieer daarna per signaal
           de geselecteerde waarde en bronstatus.

@@ -1885,7 +1885,7 @@ views:
       card:
         type: markdown
         content: |-
-          # Sensor configuration
+          # <ha-icon icon="mdi:source-branch"></ha-icon> Sensor configuration
 
           Configure source selection and source mapping, then verify per signal
           the selected value and source status.
