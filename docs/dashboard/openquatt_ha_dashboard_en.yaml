@@ -22,13 +22,13 @@ views:
 
               These values show the key system performance in real time:
 
-              - `Flow`: current volume flow used as the basis for flow safety.
-
               - `Power E`: total electrical input power of the heat pump(s).
 
               - `Power H`: total delivered thermal output power.
 
               - `COP`: ratio `Power H / Power E` (instant efficiency).
+
+              - `Flow`: current volume flow used as the basis for flow safety.
 
               - `Outside temp`: selected outdoor temperature source used in control.
 
@@ -38,13 +38,6 @@ views:
 
               </details>
             text_only: true
-          - type: tile
-            entity: sensor.openquatt_flow_average_selected
-            name: Flow
-            vertical: false
-            features:
-              - type: trend-graph
-            features_position: bottom
           - type: tile
             entity: sensor.openquatt_total_power_input
             name: Power E
@@ -62,6 +55,13 @@ views:
           - type: tile
             entity: sensor.openquatt_total_cop
             name: COP
+            vertical: false
+            features:
+              - type: trend-graph
+            features_position: bottom
+          - type: tile
+            entity: sensor.openquatt_flow_average_selected
+            name: Flow
             vertical: false
             features:
               - type: trend-graph
@@ -185,20 +185,28 @@ views:
 
               </details>
             text_only: true
-          - type: tile
-            entity: sensor.openquatt_room_temperature_selected
-            name: Current temperature
-            vertical: false
-            features:
-              - type: trend-graph
-            features_position: bottom
-          - type: tile
-            entity: sensor.openquatt_room_setpoint_selected
-            name: Setpoint
-            vertical: false
-            features:
-              - type: trend-graph
-            features_position: bottom
+          - type: custom:mini-graph-card
+            name: Current room temperature
+            entities:
+              - entity: sensor.openquatt_room_temperature_selected
+                name: Room temperature
+                show_legend_state: true
+              - entity: sensor.openquatt_room_setpoint_selected
+                name: Setpoint
+                show_fill: false
+                show_legend_state: true
+            show:
+              icon: true
+              name: true
+              state: true
+              legend: true
+              labels: false
+            points_per_hour: 30
+            hours_to_show: 2
+            line_width: 2
+            hour24: true
+            height: 80
+            decimals: 1
           - type: heading
             heading_style: title
             heading: Silent mode settings
