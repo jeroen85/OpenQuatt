@@ -16,7 +16,7 @@ sensor:
     unit_of_measurement: "kWh"
     device_class: energy
     state_class: total_increasing
-    accuracy_decimals: 3
+    accuracy_decimals: 1
     filters:
       - multiply: 0.001
     restore: true
@@ -32,7 +32,7 @@ sensor:
     unit_of_measurement: "kWh"
     device_class: energy
     state_class: total_increasing
-    accuracy_decimals: 3
+    accuracy_decimals: 1
     filters:
       - multiply: 0.001
     restore: true
@@ -85,7 +85,7 @@ sensor:
     unit_of_measurement: "kWh"
     device_class: energy
     state_class: total_increasing
-    accuracy_decimals: 3
+    accuracy_decimals: 1
     filters:
       - multiply: 0.001
     restore: true
@@ -101,7 +101,7 @@ sensor:
     unit_of_measurement: "kWh"
     device_class: energy
     state_class: total_increasing
-    accuracy_decimals: 3
+    accuracy_decimals: 1
     filters:
       - multiply: 0.001
     restore: true
@@ -117,7 +117,7 @@ sensor:
     unit_of_measurement: "kWh"
     device_class: energy
     state_class: total_increasing
-    accuracy_decimals: 3
+    accuracy_decimals: 1
     filters:
       - multiply: 0.001
     restore: true
@@ -133,7 +133,7 @@ sensor:
     unit_of_measurement: "kWh"
     device_class: energy
     state_class: total_increasing
-    accuracy_decimals: 3
+    accuracy_decimals: 1
     filters:
       - multiply: 0.001
     restore: true
@@ -149,7 +149,7 @@ sensor:
     unit_of_measurement: "kWh"
     device_class: energy
     state_class: total_increasing
-    accuracy_decimals: 3
+    accuracy_decimals: 1
     filters:
       - multiply: 0.001
     restore: true
@@ -165,7 +165,7 @@ sensor:
     unit_of_measurement: "kWh"
     device_class: energy
     state_class: total_increasing
-    accuracy_decimals: 3
+    accuracy_decimals: 1
     filters:
       - multiply: 0.001
     restore: true
