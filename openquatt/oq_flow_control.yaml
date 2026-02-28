@@ -327,8 +327,9 @@ interval:
 
           static bool was_cm0 = true;
 
-          // One central hold time for all start transitions
-          constexpr int STARTUP_HOLD_S = 10;     // seconds
+          // One central hold time for all start transitions.
+          // During this window we keep start iPWM fixed to let hydraulics settle.
+          constexpr int STARTUP_HOLD_S = 20;     // seconds
           const int STARTUP_HOLD_TICKS = (STARTUP_HOLD_S <= 0) ? 0 : (int) roundf((float)STARTUP_HOLD_S / dt);
           // Note: with interval tick dt, startup_hold counts ticks of "AUTO(starting)".
 
@@ -376,7 +377,7 @@ interval:
             int start_pwm = (int) id(oq_flow_last_good_pwm);
             if (start_pwm < 50 || start_pwm > 850) start_pwm = fallback;
 
-            ESP_LOGI("flow", "AUTO start(%s): iPWM=%d (last_good=%d fallback=%d, hold %ds, I-freeze)",
+            ESP_LOGI("flow", "AUTO start(%s): iPWM=%d (last_good=%d fallback=%d, hold %ds, fixed iPWM)",
                      tag, start_pwm, (int)id(oq_flow_last_good_pwm), fallback, STARTUP_HOLD_S);
 
             id(oq_flow_last_pwm) = start_pwm;
@@ -428,12 +429,19 @@ interval:
               return pwm_local;
             }
 
+            const bool in_startup_hold = (startup_hold > 0);
+            if (in_startup_hold) {
+              // True startup settle: keep iPWM fixed for a short hydraulic delay window.
+              // Keep SP filter aligned to PV so PI starts without a large instantaneous kick.
+              sp_f = pv;
+              startup_hold--;
+              stable_cnt = 0;
+              return clamp_iPWM(pwm_local);
+            }
+
             const float sp_ramp_up = 25.0f;   // L/h per second up
             const float sp_ramp_dn = 15.0f;   // L/h per second down
-            if (isnan(sp_f)) {
-              // On AUTO entry, start ramp from measured PV to avoid a large startup kick.
-              sp_f = flow_signal_valid ? pv : sp_target;
-            }
+            if (isnan(sp_f)) sp_f = flow_signal_valid ? pv : sp_target;
 
             float d = sp_target - sp_f;
             float max_step = ((d >= 0.0f) ? sp_ramp_up : sp_ramp_dn) * dt;
@@ -449,19 +457,14 @@ interval:
             const float kp = id(oq_flow_kp).state;
             const float ki = id(oq_flow_ki).state;
 
-            const bool in_startup_hold = (startup_hold > 0);
-            if (!in_startup_hold) {
-              id(oq_flow_i) += e * dt;
-              id(oq_flow_i) = fmaxf(-6000.0f, fminf(6000.0f, id(oq_flow_i)));
-            } else if (flow_signal_valid) {
-              startup_hold--;
-            }
+            id(oq_flow_i) += e * dt;
+            id(oq_flow_i) = fmaxf(-6000.0f, fminf(6000.0f, id(oq_flow_i)));
 
             float u = kp * e + ki * id(oq_flow_i);
-            // Asymmetric action limit: during startup hold we reduce "pump harder"
-            // authority to avoid overshoot from delayed flow feedback.
-            const float u_up_s = in_startup_hold ? 3.0f : 12.0f;
-            const float u_down_s = in_startup_hold ? 10.0f : 8.0f;
+            // Asymmetric action limit: allow faster "pump harder" corrections (u_up)
+            // than "pump softer" corrections (u_down) to recover low-flow sooner.
+            const float u_up_s = 12.0f;
+            const float u_down_s = 8.0f;
             const float u_up = u_up_s * dt;
             const float u_down = u_down_s * dt;
             const float u_lim = (e >= 0.0f) ? u_up : u_down;
