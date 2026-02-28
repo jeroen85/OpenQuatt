@@ -209,6 +209,8 @@ Primary knobs:
 - `Flow PI Ki`
 - `Flow AUTO start iPWM`
 
+`Flow AUTO start iPWM` is a fallback start value. AUTO restarts first use remembered `last_good_pwm` when valid.
+
 Compile-time flow mismatch guardrails:
 
 - `oq_flow_mismatch_threshold_lph`
