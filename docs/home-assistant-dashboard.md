@@ -92,11 +92,11 @@ Expected content pattern:
 
 - compact explanation block ("Heat control in 30 seconds")
 - inline heating mode control tile
+- inline heating-curve control profile tile
 - core KPI tile grid (`P_house`, `P_req`, `HP capacity`, `HP deficit`)
 - demand and cap tile row (`Demand raw`, `Demand filtered`, `Power cap demand`)
 - capacity gauges with visual deficit severity
 - trend charts for demand/power behavior
-- heating-curve anti-flip controls (`Curve Temp Deadband`, `Curve Demand Off Hold`)
 - heat allocation ramp control (`Demand filter ramp up`)
 
 Operational rule:

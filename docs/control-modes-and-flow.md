@@ -114,8 +114,9 @@ Runtime entity: `select.openquatt_heating_mode`
 - Runs PID on selected supply temperature.
 - Maps PID output to demand `0..20`.
 - Resets integral when SP/PV is invalid.
-- Adds near-zero anti-flip guards: `Curve Temp Deadband` and `Curve Demand Off Hold`.
-- Uses an overtemp latch to avoid direct demand hard-drop chatter around the supply-target crossover.
+- Uses profile-based outside-temp smoothing and target quantization.
+- Uses start/stop temperature hysteresis around supply target to stabilize zero-demand behavior.
+- Applies explicit per-HP level slew-rate limiting (asymmetric up/down timing).
 
 ## 6. Flow Mode
 

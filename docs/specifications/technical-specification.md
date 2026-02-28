@@ -179,13 +179,14 @@ Two technical branches:
 - computes `oq_supply_target_temp`
 - drives climate PID (`oq_heating_curve_pid`)
 - maps PID output (`heating_curve_pid_out`) to demand scale
-- applies `Curve Temp Deadband` and `Curve Demand Off Hold` around zero-demand edge
-- applies overtemp latch to reduce demand chatter near supply-target crossover
+- applies profile-based outside-temp smoothing and target quantization
+- applies start/stop temperature hysteresis around supply target near zero-demand edge
+- applies explicit per-HP level slew limiting in the heat allocator (asymmetric up/down timing)
 
 Technical guard:
 
 - invalid SP/PV triggers demand-safe behavior and PID integral reset.
-- overtemp latch also triggers PID integral reset to avoid continued push during over-target phase.
+- hysteresis gate OFF also triggers PID integral reset to avoid continued push during over-target phase.
 
 ## 9. Heat Allocation Engine (Technical)
 

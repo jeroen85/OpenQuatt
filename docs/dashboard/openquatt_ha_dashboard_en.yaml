@@ -2450,8 +2450,8 @@ views:
               - First compare `Supply target` and `Supply actual` to see control error.
               - Then verify the chain: `Demand curve raw (PID)` -> `Demand raw` -> `Demand filtered`.
               - In curve mode, `P_req` is derived from demand and is used by deficit/CM3 logic.
-              - `Curve Temp Deadband` and `Curve Demand Off Hold` are the main
-                anti-flip stabilizers around the zero-demand edge.
+              - `Heating Curve Control Profile` sets the built-in stability bundle
+                (smoothing, hysteresis, and slew-rate behavior).
 
               Note: if `Supply actual` is above target while demand stays high, check PID tuning (`Kp/Ki/Kd`) and time behavior.
 
@@ -2462,6 +2462,8 @@ views:
             entities:
               - entity: select.openquatt_heating_control_mode
                 name: Heating mode
+              - entity: select.openquatt_heating_curve_control_profile
+                name: Curve control profile
               - entity: climate.openquatt_heating_curve_pid
                 name: Heating Curve PID
               - entity: button.openquatt_reset_heating_curve_pid_integral
@@ -2484,10 +2486,6 @@ views:
                 name: PID Ki
               - entity: number.openquatt_heating_curve_pid_kd
                 name: PID Kd
-              - entity: number.openquatt_curve_temp_deadband
-                name: Curve Temp Deadband
-              - entity: number.openquatt_curve_demand_off_hold
-                name: Curve Demand Off Hold
           - type: history-graph
             title: Heating Curve temperature loop (2h)
             hours_to_show: 2

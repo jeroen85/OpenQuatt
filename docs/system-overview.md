@@ -181,9 +181,9 @@ When PID SP/PV is invalid, demand falls back to 0 and integral is reset.
 
 Heating-curve stability guards around zero-demand edge:
 
-- `Curve Temp Deadband`: caps curve demand near supply-target error zero
-- `Curve Demand Off Hold`: holds demand at 1 briefly before allowing 0
-- overtemp latch behavior to avoid direct CM2<->CM1 flip around the cutoff
+- profile-based outside-temperature smoothing and target quantization
+- start/stop temperature hysteresis around supply target
+- explicit per-HP slew-rate limiting with slower up and faster down behavior
 
 ## 6. Allocation and Optimization Mechanics
 

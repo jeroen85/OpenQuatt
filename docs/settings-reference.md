@@ -153,10 +153,9 @@ Key entities:
 - `Power House ramp up`
 - `Power House ramp down`
 - `Curve Tsupply @ -20/-10/0/5/10/15°C`
+- `Heating Curve Control Profile` (`Comfort` / `Balanced` / `Stable`)
 - `Heating Curve PID Kp/Ki/Kd`
 - `Curve Fallback Tsupply (No Outside Temp)`
-- `Curve Temp Deadband`
-- `Curve Demand Off Hold`
 
 Intent:
 

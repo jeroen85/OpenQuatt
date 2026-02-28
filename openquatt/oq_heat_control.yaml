@@ -180,6 +180,16 @@ globals:
     restore_value: false
     initial_value: '0'
 
+  # Per-HP timestamp for explicit level slew limiting.
+  - id: hp1_last_level_change_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: hp2_last_level_change_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
 # ----------------------------
 # SENSORS (energie + status)
 # ----------------------------
@@ -455,6 +465,8 @@ interval:
               if (prev > 0) {
                 if (is_hp1) id(hp1_last_stop_ms) = now_ms;
                 else id(hp2_last_stop_ms) = now_ms;
+                if (is_hp1) id(hp1_last_level_change_ms) = now_ms;
+                else id(hp2_last_level_change_ms) = now_ms;
               }
               prev = 0;
             };
@@ -858,6 +870,49 @@ interval:
           hp2_req = pick_allowed(hp2_req, false);
 
           // =========================
+          // 4b) Explicit per-HP slew-rate limiting (heating-curve mode)
+          //    - max 1 level step per change
+          //    - asymmetrical hold: slower up, faster down
+          // =========================
+          if (!is_power_house) {
+            int up_hold_s = 120;   // Balanced default
+            int down_hold_s = 60;  // Balanced default
+            if (id(oq_curve_control_profile).has_state()) {
+              const auto profile = id(oq_curve_control_profile).current_option();
+              if (profile == "Comfort") {
+                up_hold_s = 60;
+                down_hold_s = 45;
+              } else if (profile == "Stable") {
+                up_hold_s = 180;
+                down_hold_s = 90;
+              }
+            }
+
+            auto limit_slew = [&](bool is_hp1, int req_level)->int {
+              const int prev = is_hp1 ? id(hp1_last_applied_level) : id(hp2_last_applied_level);
+              uint32_t &last_change_ms = is_hp1 ? id(hp1_last_level_change_ms) : id(hp2_last_level_change_ms);
+
+              if (req_level == prev) return req_level;
+
+              int limited = req_level;
+              if (limited > prev + 1) limited = prev + 1;
+              if (limited < prev - 1) limited = prev - 1;
+              if (limited == prev) return limited;
+
+              const bool moving_up = limited > prev;
+              const uint32_t hold_ms = (uint32_t) ((moving_up ? up_hold_s : down_hold_s) * 1000UL);
+              if (last_change_ms > 0 && now_ms > last_change_ms) {
+                const uint32_t dt_ms = now_ms - last_change_ms;
+                if (dt_ms < hold_ms) return prev;
+              }
+              return limited;
+            };
+
+            hp1_req = limit_slew(true, hp1_req);
+            hp2_req = limit_slew(false, hp2_req);
+          }
+
+          // =========================
           // 5) Minimum runtime (block stop)
           // =========================
           const int min_rt = (int) roundf(id(oq_min_runtime_min).state);
@@ -965,6 +1020,10 @@ interval:
           // =========================
           auto log_transition = [&](bool is_hp1, int new_lvl) {
             int &prev = is_hp1 ? id(hp1_last_applied_level) : id(hp2_last_applied_level);
+            if (prev != new_lvl) {
+              if (is_hp1) id(hp1_last_level_change_ms) = now_ms;
+              else id(hp2_last_level_change_ms) = now_ms;
+            }
 
             if (prev == 0 && new_lvl > 0) {
               // start

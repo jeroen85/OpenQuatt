@@ -2591,8 +2591,8 @@ views:
               - `P_req` wordt in curve mode afgeleid uit demand en helpt bij
               CM3/tekort-logica.
 
-              - `Curve Temp Deadband` en `Curve Demand Off Hold` zijn de
-                belangrijkste anti-flip stabilisatie rond de nulvraag-rand.
+              - `Heating Curve Control Profile` kiest de ingebouwde
+                stabiliteitsbundel (smoothing, hysterese en slew-rate gedrag).
 
               Let op: als `Supply actual` boven target zit maar demand hoog
               blijft, kijk dan naar PID-instellingen (`Kp/Ki/Kd`) en gedrag over
@@ -2606,6 +2606,8 @@ views:
             entities:
               - entity: select.openquatt_heating_control_mode
                 name: Heating mode
+              - entity: select.openquatt_heating_curve_control_profile
+                name: Curve control profile
               - entity: climate.openquatt_heating_curve_pid
                 name: Heating Curve PID
               - entity: button.openquatt_reset_heating_curve_pid_integral
@@ -2628,10 +2630,6 @@ views:
                 name: PID Ki
               - entity: number.openquatt_heating_curve_pid_kd
                 name: PID Kd
-              - entity: number.openquatt_curve_temp_deadband
-                name: Curve Temp Deadband
-              - entity: number.openquatt_curve_demand_off_hold
-                name: Curve Demand Off Hold
           - type: history-graph
             title: Heating Curve temperatuur-lus (2 uur)
             hours_to_show: 2

@@ -181,6 +181,7 @@ Adaptive comfort-bias guardrail:
 Primary knobs:
 
 - curve setpoints (`Curve Tsupply @ ...`)
+- `Heating Curve Control Profile` (`Comfort` / `Balanced` / `Stable`)
 - `Heating Curve PID Kp/Ki/Kd`
 - `Curve Fallback Tsupply`
 
@@ -193,8 +194,9 @@ What to watch:
 
 Low-demand stabilization controls (Heating Curve):
 
-- `Curve Temp Deadband` reduces hunting around `Supply target`.
-- `Curve Demand Off Hold` delays final `1 -> 0` demand drop to avoid CM1/CM2 flip.
+- profile-based outside temperature smoothing and target quantization
+- start/stop temperature hysteresis around supply target
+- explicit per-HP level slew-rate limiting (up slower than down)
 
 ## 5. Heat Allocation Tuning
 
@@ -297,7 +299,7 @@ Remember: fault state logic is timer-based and mode-context-dependent.
 | Demand jumps too hard | `Demand raw`, strategy params | increase deadband / lower ramp-up |
 | CM1<->CM2 flips at low load | `Low-load dynamic thresholds`, `CM2 idle-exit reason`, `CM2 re-entry block active` | increase re-entry block or retune Power House ramp/deadband; verify `P_req` stays structurally below `off` when no sustained heat is needed |
 | Long periods below room setpoint | `Power House effective room target`, `Power House comfort bias`, `Power House room error avg` | increase comfort bias base/max, or lower deadband if correction starts too late |
-| Curve mode drops to 0 demand too quickly | `Curve Temp Deadband`, `Curve Demand Off Hold`, `Supply target` vs actual | increase deadband slightly or extend off-hold |
+| Curve mode drops to 0 demand too quickly | `Heating Curve Control Profile`, `Supply target` vs actual, `Demand curve raw` | move profile toward `Comfort` or retune curve points/PID |
 | CM3 toggles often | deficit thresholds/timers | widen ON/OFF gap, increase hold times |
 | Flow oscillates | flow PI and setpoint | reduce Kp/Ki, verify hydraulics |
 | COP looks implausible | power and heat inputs | validate source values and power integration |
