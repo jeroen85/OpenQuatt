@@ -743,25 +743,6 @@ views:
             icon: mdi:waves-arrow-right
             heading: Flow status & control
             heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-              <summary><strong>Uitleg</strong></summary>
-
-              Dit blok combineert snelle statuscontrole en de belangrijkste
-              flow-bediening.
-
-              - `Flow mode` laat zien hoe de flowregeling actief is (meestal
-              `AUTO` / `Flow Setpoint`).
-              - `Control mode` toont in welke bedrijfsfase het systeem draait.
-              - `Lowflow fault` moet in normaal bedrijf `Off` blijven.
-              - `Flow mismatch` hoort `OK` te zijn; bij afwijking zijn HP1 en
-              HP2 hydraulisch niet in balans.
-              - `Flow setpoint`: gewenste flow waar de regeling naartoe stuurt.
-              - `Manual iPWM`: directe pompaansturing voor tests; in normaal
-              bedrijf uit laten.
-              </details>
-            text_only: true
           - type: heading
             icon: ''
             heading: Status
@@ -837,8 +818,7 @@ views:
 
               - `Flow setpoint`: doel-flow in L/h voor automatische regeling.
 
-              - `Manual iPWM`: directe pompaansturing voor tests (in normaal
-              bedrijf uit laten).
+              - `Manual iPWM`: stel iPWM waarde in voor handbediening.
 
               </details>
             text_only: true

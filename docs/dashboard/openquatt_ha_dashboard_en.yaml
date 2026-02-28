@@ -722,24 +722,6 @@ views:
             icon: mdi:waves-arrow-right
             heading: Flow status & control
             heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-              <summary><strong>Explanation</strong></summary>
-
-              This block combines quick status checks and key flow controls.
-
-              - `Flow mode` shows how flow control is currently active (usually
-              `AUTO` / `Flow Setpoint`).
-              - `Control mode` shows which operating phase the system is in.
-              - `Lowflow fault` should remain `Off` in normal operation.
-              - `Flow mismatch` should be `OK`; if not, HP1 and HP2 are
-              hydraulically unbalanced.
-              - `Flow setpoint`: target flow that the controller drives toward.
-              - `Manual iPWM`: direct pump command for tests; keep disabled in
-              normal operation.
-              </details>
-            text_only: true
           - type: heading
             icon: ''
             heading: Status
@@ -799,7 +781,7 @@ views:
 
               - `Flow control mode`: choose automatic flow control or manual behavior.
               - `Flow setpoint`: target flow in L/h for automatic control.
-              - `Manual iPWM`: direct pump command for testing only (keep disabled in normal operation).
+              - `Manual iPWM`: set iPWM value for manual control.
               </details>
             text_only: true
           - type: tile
