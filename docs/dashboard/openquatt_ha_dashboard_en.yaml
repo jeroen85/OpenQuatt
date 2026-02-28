@@ -2258,7 +2258,7 @@ views:
               <summary><strong>Parameter explanation</strong></summary>
 
 
-              - **Auto start iPWM** defines initial pump command for flow control.
+              - **Auto start iPWM** is fallback start command; AUTO first uses remembered **last good iPWM** when valid.
 
               - **CM98 iPWM** is de circulatiesetting voor anti-freeze context.
 

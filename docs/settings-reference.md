@@ -219,6 +219,7 @@ Key entities:
 Intent:
 
 - regulate hydraulic behavior and pump output stability
+- on AUTO entry, `last_good_pwm` has priority; `Flow AUTO start iPWM` is fallback when no valid `last_good_pwm` is available
 - monitor mismatch with compile-time thresholds (`oq_flow_mismatch_threshold_lph`, `oq_flow_mismatch_hyst_lph`)
 
 ### 5.5 Flow autotune

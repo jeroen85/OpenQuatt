@@ -2380,8 +2380,8 @@ views:
               <summary><strong>Uitleg parameters</strong></summary>
 
 
-              - **Auto start iPWM** bepaalt de initiële pompaansturing bij
-              flowregeling.
+              - **Auto start iPWM** is een fallback startwaarde; AUTO gebruikt
+              eerst de onthouden **last good iPWM** als die geldig is.
 
               - **CM98 iPWM** is de circulatiesetting voor anti-freeze context.
 
