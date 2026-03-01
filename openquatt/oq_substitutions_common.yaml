@@ -63,7 +63,9 @@ oq_ph_deadband_default_k: "0.14"                      # Default Power House room
 # ----------------------------
 # HEAT CONTROL
 # ----------------------------
-oq_heat_loop_s: "5"                                   # Heat-control loop interval [s]; per-minute tuning is elapsed-time scaled.
+oq_heat_loop_tick_s: "5"                              # Scheduler tick for heat-control loop [s].
+oq_heat_loop_curve_s: "30"                            # Effective heat-control cadence in Heating Curve mode [s].
+oq_heat_loop_powerhouse_s: "60"                       # Effective heat-control cadence in Power House mode [s].
 oq_cop_min_input_w: "10.0"                            # Minimum electrical input for a valid COP calculation [W].
 oq_optimizer_soft_w: "3400.0"                         # Soft limit for electrical HP power in optimizer [W]; peak limit follows oq_power_peak_w.
 oq_optimizer_penalty_per_w: "5.0"                     # Cost factor above soft limit [cost/W].

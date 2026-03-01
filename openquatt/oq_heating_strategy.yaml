@@ -872,8 +872,8 @@ climate:
       max_integral: 3.0
       min_integral: -3.0
     deadband_parameters:
-      threshold_low: -0.20
-      threshold_high: 0.20
+      threshold_low: -1.00
+      threshold_high: 1.00
       deadband_output_averaging_samples: 6
     visual:
       min_temperature: 20
@@ -906,6 +906,7 @@ output:
             return;
           }
 
+          const int prev_d = id(oq_demand_curve);
           int d = (int) lroundf(state * ${oq_strategy_demand_max_f});
           if (d < 0) d = 0;
           if (d > demand_max) d = demand_max;
@@ -1010,6 +1011,15 @@ output:
             } else if (err_c <= err_soft_mid_c) {
               d = std::min(d, cap_soft_mid_f);
             }
+
+            // If supply is already above target + margin, never increase demand further.
+            float no_up_margin_c = 0.30f;  // Balanced default
+            if (id(oq_curve_control_profile).has_state()) {
+              const auto profile = id(oq_curve_control_profile).current_option();
+              if (profile == "Comfort") no_up_margin_c = 0.25f;
+              else if (profile == "Stable") no_up_margin_c = 0.40f;
+            }
+            if (pv > (spw + no_up_margin_c) && d > prev_d) d = prev_d;
           }
 
           id(oq_curve_heat_request_active) = heat_request_active;
