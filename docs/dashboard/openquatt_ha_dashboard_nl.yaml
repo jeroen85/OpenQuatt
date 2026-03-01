@@ -1434,6 +1434,12 @@ views:
                 entities:
                   - entity: sensor.openquatt_hp1_working_mode
                     name: Work mode
+                  - entity: sensor.openquatt_hp1_compressor_level
+                    name: Compressor level
+                  - entity: sensor.openquatt_hp1_compressor_frequency_demand
+                    name: Demand Frequency
+                  - entity: sensor.openquatt_hp1_compressor_frequency
+                    name: Actual Frequency
                   - entity: sensor.openquatt_hp1_active_failures_list
                     name: Active failures list
                   - entity: sensor.openquatt_hp1_power_input
@@ -1661,6 +1667,12 @@ views:
                 entities:
                   - entity: sensor.openquatt_hp2_working_mode
                     name: Work mode
+                  - entity: sensor.openquatt_hp2_compressor_level
+                    name: Compressor level
+                  - entity: sensor.openquatt_hp2_compressor_frequency_demand
+                    name: Demand Frequency
+                  - entity: sensor.openquatt_hp2_compressor_frequency
+                    name: Actual Frequency
                   - entity: sensor.openquatt_hp2_active_failures_list
                     name: Active failures list
                   - entity: sensor.openquatt_hp2_power_input
