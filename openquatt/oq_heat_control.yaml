@@ -12,7 +12,7 @@
 #   - Consumes oq_demand_raw (producer in oq_heating_strategy)
 #   - Applies demand filtering to damp noise/jitter in heat demand
 #   - Applies caps/limits on `f` before split
-#   - Distributes `f` over HP1/HP2 (heating curve: single-HP preference with deficit assist hysteresis, power-house: W-based optimizer)
+#   - Distributes `f` over HP1/HP2 (heating curve: single-HP preference with demand/hold assist hysteresis, power-house: W-based optimizer)
 #   - Computes shared HP capacity/deficit (`oq_P_hp_cap_w`, `oq_P_deficit_w`) for supervisory CM3 logic
 #   - Sets compressor levels via `select` entities
 #
@@ -73,39 +73,24 @@ number:
     web_server:
       sorting_group_id: oq_tuning_heat
 
-  # Single-HP assist ON threshold (W deficit) for enabling dual-HP support at low demand.
+  # Single-HP assist ON threshold on filtered demand f (0..20).
+  # OFF threshold is derived internally as max(1, ON - 2) to keep parameter count low.
   - platform: template
-    id: oq_single_hp_assist_on_deficit_w
-    name: "Single HP Assist ON Deficit"
+    id: oq_single_hp_assist_on_level_f
+    name: "Single HP Assist ON Level"
     icon: mdi:arrow-up-bold-hexagon-outline
-    unit_of_measurement: "W"
-    min_value: 0
-    max_value: 4000
-    step: 25
+    unit_of_measurement: "f"
+    min_value: 2
+    max_value: 20
+    step: 1
     mode: slider
     restore_value: true
     optimistic: true
-    initial_value: 350
+    initial_value: 7
     web_server:
       sorting_group_id: oq_tuning_heat
 
-  # Single-HP assist OFF threshold (W deficit) for returning to single-HP mode.
-  - platform: template
-    id: oq_single_hp_assist_off_deficit_w
-    name: "Single HP Assist OFF Deficit"
-    icon: mdi:arrow-down-bold-hexagon-outline
-    unit_of_measurement: "W"
-    min_value: 0
-    max_value: 4000
-    step: 25
-    mode: slider
-    restore_value: true
-    optimistic: true
-    initial_value: 150
-    web_server:
-      sorting_group_id: oq_tuning_heat
-
-  # Deficit hold time before enabling single-HP assist.
+  # Hold time before enabling single-HP assist.
   - platform: template
     id: oq_single_hp_assist_on_hold_min
     name: "Single HP Assist ON Hold"
@@ -121,7 +106,7 @@ number:
     web_server:
       sorting_group_id: oq_tuning_heat
 
-  # Deficit hold time before disabling single-HP assist.
+  # Hold time before disabling single-HP assist.
   - platform: template
     id: oq_single_hp_assist_off_hold_min
     name: "Single HP Assist OFF Hold"
@@ -158,7 +143,7 @@ globals:
     restore_value: false
     initial_value: '0.0'
 
-  # Tracks whether low-demand assist mode is active (dual-HP allowed at f<=5).
+  # Tracks whether low-demand assist mode is active (dual-HP allowed in low-demand band).
   - id: oq_single_hp_assist_active
     type: bool
     restore_value: false
@@ -479,7 +464,7 @@ interval:
           }
           // =========================
           // 2) HP level selection
-          //    - WATER TEMP: demand split with single-HP preference at low f and deficit-based assist hysteresis
+          //    - WATER TEMP: demand split with single-HP preference at low f and demand/hold assist hysteresis
           //    - POWER HOUSE: level optimization on thermal power (W) via hp_perf_map.h
           // =========================
 
@@ -575,31 +560,28 @@ interval:
             // Telemetry + deficit calculation also in heating-curve mode (for CM3 + assist hysteresis).
             publish_capacity_and_deficit(id(oq_phouse_req_w));
 
-            // Single-HP preferred at low demand unless deficit hysteresis indicates assist is needed.
-            const bool want_single = (f > 0 && f <= 5 && !(d1_pre && d2_pre));
+            // Single-HP preferred in low-demand band unless demand/hold hysteresis enables assist.
+            int assist_on_f = (int) roundf(id(oq_single_hp_assist_on_level_f).state);
+            if (assist_on_f < 2) assist_on_f = 2;
+            if (assist_on_f > demand_max_f) assist_on_f = demand_max_f;
+            int assist_off_f = assist_on_f - 2;
+            if (assist_off_f < 1) assist_off_f = 1;
+
+            const bool want_single = (f > 0 && f <= assist_on_f && !(d1_pre && d2_pre));
             if (!want_single) {
               id(oq_single_hp_assist_active) = false;
               id(oq_single_hp_assist_on_min) = 0;
               id(oq_single_hp_assist_off_min) = 0;
             } else {
-              float on_th = id(oq_single_hp_assist_on_deficit_w).state;
-              float off_th = id(oq_single_hp_assist_off_deficit_w).state;
-              if (isnan(on_th) || on_th < 0.0f) on_th = 0.0f;
-              if (isnan(off_th) || off_th < 0.0f) off_th = 0.0f;
-              if (off_th > on_th) off_th = on_th;
-
               int on_hold = (int) roundf(id(oq_single_hp_assist_on_hold_min).state);
               int off_hold = (int) roundf(id(oq_single_hp_assist_off_hold_min).state);
               if (on_hold < 1) on_hold = 1;
               if (off_hold < 1) off_hold = 1;
 
-              float deficit_w = id(oq_P_deficit_w);
-              if (isnan(deficit_w)) deficit_w = 0.0f;
-
-              if (deficit_w >= on_th) id(oq_single_hp_assist_on_min) += 1;
+              if (f >= assist_on_f) id(oq_single_hp_assist_on_min) += 1;
               else id(oq_single_hp_assist_on_min) = 0;
 
-              if (deficit_w <= off_th) id(oq_single_hp_assist_off_min) += 1;
+              if (f <= assist_off_f) id(oq_single_hp_assist_off_min) += 1;
               else id(oq_single_hp_assist_off_min) = 0;
 
               if (!id(oq_single_hp_assist_active) && id(oq_single_hp_assist_on_min) >= on_hold) {
@@ -611,10 +593,10 @@ interval:
               }
             }
 
-            const bool need_assist = (f > 5) || (want_single && id(oq_single_hp_assist_active));
+            const bool need_assist = (f > assist_on_f) || (want_single && id(oq_single_hp_assist_active));
 
             if (want_single && !need_assist) {
-              // One HP carries the full demand (1..5)
+              // One HP carries the full demand (1..assist_on_f)
               if (lead_is_hp1) hp1_req = f;
               else             hp2_req = f;
             } else {
@@ -647,30 +629,27 @@ interval:
             const bool perf_inputs_valid = !isnan(Tamb) && !isnan(Tsup) && level_cap > 0;
             if (!perf_inputs_valid) {
               // Fallback path when perf-map inputs are invalid: keep delivering demand using simple split.
-              const bool want_single = (f > 0 && f <= 5 && !(hp1_def && hp2_def));
+              int assist_on_f = (int) roundf(id(oq_single_hp_assist_on_level_f).state);
+              if (assist_on_f < 2) assist_on_f = 2;
+              if (assist_on_f > demand_max_f) assist_on_f = demand_max_f;
+              int assist_off_f = assist_on_f - 2;
+              if (assist_off_f < 1) assist_off_f = 1;
+
+              const bool want_single = (f > 0 && f <= assist_on_f && !(hp1_def && hp2_def));
               if (!want_single) {
                 id(oq_single_hp_assist_active) = false;
                 id(oq_single_hp_assist_on_min) = 0;
                 id(oq_single_hp_assist_off_min) = 0;
               } else {
-                float on_th = id(oq_single_hp_assist_on_deficit_w).state;
-                float off_th = id(oq_single_hp_assist_off_deficit_w).state;
-                if (isnan(on_th) || on_th < 0.0f) on_th = 0.0f;
-                if (isnan(off_th) || off_th < 0.0f) off_th = 0.0f;
-                if (off_th > on_th) off_th = on_th;
-
                 int on_hold = (int) roundf(id(oq_single_hp_assist_on_hold_min).state);
                 int off_hold = (int) roundf(id(oq_single_hp_assist_off_hold_min).state);
                 if (on_hold < 1) on_hold = 1;
                 if (off_hold < 1) off_hold = 1;
 
-                float deficit_w = id(oq_P_deficit_w);
-                if (isnan(deficit_w)) deficit_w = 0.0f;
-
-                if (deficit_w >= on_th) id(oq_single_hp_assist_on_min) += 1;
+                if (f >= assist_on_f) id(oq_single_hp_assist_on_min) += 1;
                 else id(oq_single_hp_assist_on_min) = 0;
 
-                if (deficit_w <= off_th) id(oq_single_hp_assist_off_min) += 1;
+                if (f <= assist_off_f) id(oq_single_hp_assist_off_min) += 1;
                 else id(oq_single_hp_assist_off_min) = 0;
 
                 if (!id(oq_single_hp_assist_active) && id(oq_single_hp_assist_on_min) >= on_hold) {
@@ -681,7 +660,7 @@ interval:
                   id(oq_single_hp_assist_on_min) = 0;
                 }
               }
-              const bool need_assist = (f > 5) || (want_single && id(oq_single_hp_assist_active));
+              const bool need_assist = (f > assist_on_f) || (want_single && id(oq_single_hp_assist_active));
 
               if (want_single && !need_assist) {
                 if (lead_is_hp1) hp1_req = f;
