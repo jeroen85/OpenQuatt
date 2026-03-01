@@ -48,6 +48,7 @@ select:
             id(oq_curve_heat_request_active) = false;
             id(oq_curve_outside_ema_initialized) = false;
             id(oq_curve_outside_ema_last_ms) = 0;
+            id(oq_curve_startup_until_ms) = 0;
             id(oq_ph_comfort_bias_last_ms) = 0;
             id(oq_ph_room_error_avg_init) = false;
 
@@ -72,6 +73,7 @@ select:
             id(oq_curve_heat_request_active) = false;
             id(oq_curve_outside_ema_initialized) = false;
             id(oq_curve_outside_ema_last_ms) = 0;
+            id(oq_curve_startup_until_ms) = 0;
 
 # ----------------------------
 # TUNING INPUTS
@@ -516,6 +518,12 @@ globals:
     restore_value: false
     initial_value: 'false'
 
+  # Startup demand guard window in curve mode (ms since boot).
+  - id: oq_curve_startup_until_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
   # Curve outside-temperature EMA state.
   - id: oq_curve_outside_ema_c
     type: float
@@ -928,20 +936,83 @@ output:
           }
           if (stop_delta_c < start_delta_c + 0.10f) stop_delta_c = start_delta_c + 0.10f;
 
-          bool heat_request_active = id(oq_curve_heat_request_active);
+          const bool was_heat_request_active = id(oq_curve_heat_request_active);
+          bool heat_request_active = was_heat_request_active;
           if (heat_request_active) {
             if (pv >= (spw + stop_delta_c)) heat_request_active = false;
           } else {
             if (pv <= (spw - start_delta_c)) heat_request_active = true;
           }
 
-          id(oq_curve_heat_request_active) = heat_request_active;
           if (!heat_request_active) {
             d = 0;
-          } else if (d < 1) {
-            d = 1;
+            id(oq_curve_startup_until_ms) = 0;
+          } else {
+            if (d < 1) d = 1;
+
+            // Smooth startup and near-setpoint behavior without adding user-facing knobs.
+            float err_soft_near_c = 1.0f;
+            float err_soft_mid_c = 2.0f;
+            int cap_soft_near_f = 6;
+            int cap_soft_mid_f = 12;
+            int startup_cap_f = 5;
+            uint32_t startup_hold_ms = 90000UL;
+            if (id(oq_curve_control_profile).has_state()) {
+              const auto profile = id(oq_curve_control_profile).current_option();
+              if (profile == "Comfort") {
+                err_soft_near_c = 0.90f;
+                err_soft_mid_c = 1.80f;
+                cap_soft_near_f = 8;
+                cap_soft_mid_f = 14;
+                startup_cap_f = 6;
+                startup_hold_ms = 60000UL;
+              } else if (profile == "Stable") {
+                err_soft_near_c = 1.20f;
+                err_soft_mid_c = 2.20f;
+                cap_soft_near_f = 5;
+                cap_soft_mid_f = 10;
+                startup_cap_f = 4;
+                startup_hold_ms = 120000UL;
+              }
+            }
+            if (cap_soft_near_f < 1) cap_soft_near_f = 1;
+            if (cap_soft_mid_f < cap_soft_near_f) cap_soft_mid_f = cap_soft_near_f;
+            if (cap_soft_mid_f > demand_max) cap_soft_mid_f = demand_max;
+            if (startup_cap_f < 1) startup_cap_f = 1;
+            if (startup_cap_f > demand_max) startup_cap_f = demand_max;
+
+            const uint32_t now_ms = (uint32_t) millis();
+            if (!was_heat_request_active) {
+              id(oq_curve_startup_until_ms) = now_ms + startup_hold_ms;
+            }
+            const uint32_t startup_until_ms = id(oq_curve_startup_until_ms);
+            const bool startup_active =
+                startup_until_ms != 0 && static_cast<uint32_t>(startup_until_ms - now_ms) < 0x80000000UL;
+
+            const bool hp1_level_on = id(hp1_last_applied_level) > 0;
+            const bool hp2_level_on = id(hp2_last_applied_level) > 0;
+            const float hp1_mode_raw = id(hp1_working_mode).state;
+            const float hp2_mode_raw = id(hp2_working_mode).state;
+            const bool hp1_heating = !isnan(hp1_mode_raw) && ((int) roundf(hp1_mode_raw) == 2);
+            const bool hp2_heating = !isnan(hp2_mode_raw) && ((int) roundf(hp2_mode_raw) == 2);
+            const bool hp_delivering =
+                (hp1_level_on && hp1_heating) || (hp2_level_on && hp2_heating);
+
+            // Keep early startup demand conservative until heat delivery is confirmed.
+            if (startup_active || !hp_delivering) {
+              d = std::min(d, startup_cap_f);
+            }
+
+            // Soft demand cap near setpoint to reduce burst/overshoot cycling.
+            const float err_c = spw - pv;
+            if (err_c <= err_soft_near_c) {
+              d = std::min(d, cap_soft_near_f);
+            } else if (err_c <= err_soft_mid_c) {
+              d = std::min(d, cap_soft_mid_f);
+            }
           }
 
+          id(oq_curve_heat_request_active) = heat_request_active;
           id(oq_demand_curve) = d;
 
 # ----------------------------
@@ -1158,6 +1229,17 @@ interval:
               if (id(oq_heat_mode_code) != 1) return false;
               const float spw = id(oq_supply_target_temp).state;
               const float pv  = id(oq_system_supply_temp).state;
-              return isnan(spw) || isnan(pv) || !id(oq_curve_heat_request_active);
+              if (isnan(spw) || isnan(pv) || !id(oq_curve_heat_request_active)) return true;
+
+              // While compressors are not yet really delivering heat, keep integral empty.
+              const bool hp1_level_on = id(hp1_last_applied_level) > 0;
+              const bool hp2_level_on = id(hp2_last_applied_level) > 0;
+              const float hp1_mode_raw = id(hp1_working_mode).state;
+              const float hp2_mode_raw = id(hp2_working_mode).state;
+              const bool hp1_heating = !isnan(hp1_mode_raw) && ((int) roundf(hp1_mode_raw) == 2);
+              const bool hp2_heating = !isnan(hp2_mode_raw) && ((int) roundf(hp2_mode_raw) == 2);
+              const bool hp_delivering =
+                  (hp1_level_on && hp1_heating) || (hp2_level_on && hp2_heating);
+              return !hp_delivering;
           then:
             - climate.pid.reset_integral_term: oq_heating_curve_pid
