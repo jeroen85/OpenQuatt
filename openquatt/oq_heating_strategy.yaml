@@ -390,12 +390,12 @@ number:
     name: "Heating Curve PID Kp"
     icon: mdi:alpha-k-circle-outline
     min_value: 0.000
-    max_value: 2.000
-    step: 0.001
+    max_value: 0.800
+    step: 0.010
     mode: slider
     restore_value: true
     optimistic: true
-    initial_value: 0.100
+    initial_value: 0.350
     web_server:
       sorting_group_id: oq_tuning_heat
     on_value:
@@ -412,12 +412,12 @@ number:
     name: "Heating Curve PID Ki"
     icon: mdi:alpha-i-circle-outline
     min_value: 0.00000
-    max_value: 0.05000
-    step: 0.00001
+    max_value: 0.00300
+    step: 0.00010
     mode: slider
     restore_value: true
     optimistic: true
-    initial_value: 0.00025
+    initial_value: 0.00120
     web_server:
       sorting_group_id: oq_tuning_heat
     on_value:
@@ -434,12 +434,12 @@ number:
     name: "Heating Curve PID Kd"
     icon: mdi:alpha-d-circle-outline
     min_value: 0.000
-    max_value: 1.000
-    step: 0.001
+    max_value: 0.400
+    step: 0.010
     mode: slider
     restore_value: true
     optimistic: true
-    initial_value: 0.000
+    initial_value: 0.200
     web_server:
       sorting_group_id: oq_tuning_heat
     on_value:
@@ -857,9 +857,9 @@ climate:
     default_target_temperature: 35 °C   # is synchronized with oq_supply_target_temp
     heat_output: heating_curve_pid_out
     control_parameters:
-      kp: 0.100
-      ki: 0.00025
-      kd: 0.0
+      kp: 0.350
+      ki: 0.00120
+      kd: 0.200
       max_integral: 3.0
       min_integral: -3.0
     deadband_parameters:
