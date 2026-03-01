@@ -105,7 +105,7 @@ Defined in `openquatt/oq_packages.yaml` and must be preserved unless dependencie
 ### Heat allocation loop
 
 - Interval: `${oq_heat_loop_s}`
-- Intentionally slower for stable level decisions.
+- Fast execution; per-minute controls (for example demand ramp and assist hold) are elapsed-time scaled for stable behavior.
 
 ### Flow loop
 

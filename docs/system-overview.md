@@ -73,7 +73,7 @@ This prevents hidden control coupling and keeps debugging deterministic.
 |---|---:|---|
 | Supervisory | `${oq_supervisory_loop_s}` (default 5s) | Mode decisions, flow interlock, frost logic, power-cap safety net |
 | Heating Strategy | `${oq_strategy_loop_s}` (default 5s) | Demand generation (Power House / heating-curve path) |
-| Heat allocation | `${oq_heat_loop_s}` (default 60s) | Demand filtering, allocation, optimizer, level apply |
+| Heat allocation | `${oq_heat_loop_s}` (default 5s) | Demand filtering, allocation, optimizer, level apply (per-minute tuning is elapsed-time scaled) |
 | Flow control | `${oq_flow_loop_s}` (default 5s) | Pump iPWM control (AUTO/MANUAL/FROST/autotune override) |
 | Boiler control | `${oq_boiler_loop_s}` (default 5s) | CM3 gating and temperature lockout |
 | CIC polling tick | `${cic_poll_tick_ms}` (default 5s) | Poll scheduler, stale detection, feed invalidation |
