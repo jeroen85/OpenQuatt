@@ -1954,18 +1954,33 @@ views:
               - **Power House Kp** defines how strongly room temperature error
               is translated into heat demand (W).
 
-              - **Deadband** voorkomt onrust bij kleine afwijkingen.
+              - **Deadband** suppresses tiny corrections and reduces hunting.
 
-              - **Comfort below/above setpoint** defines an asymmetric comfort
-              zone around room setpoint where room correction stays neutral.
-              This lets users tune how much undershoot/overshoot is acceptable.
+              - `Effective room target = setpoint + comfort bias`.
 
-              - **Comfort bias base/max** shifts the effective room target
-              upward (warm-leaning) and limits the maximum adaptive overshoot.
-              The upper correction edge is capped at `setpoint + bias max`.
+              - **Comfort bias base** is the minimum upward shift and is always
+              active. With `0.1`, control never targets below `setpoint + 0.1`.
+
+              - **Comfort bias max** is the maximum upward shift and also the
+              warm-side correction cap anchor: `setpoint + bias max`.
+
+              - **Comfort above setpoint** is extra warm margin above
+              `effective target` before negative correction starts, but only up
+              to the cap above.
+
+              - **Comfort below setpoint** is the cold-side margin below
+              `effective target` before extra heating correction starts.
+
+              - Warm-side edge:
+              `Tr_high = min(effective_target + comfort_above, setpoint + bias_max)`.
+
+              - Example: setpoint `20.0`, base `0.1`, max `0.4`, above `0.5`
+              yields a maximum warm edge of `20.4`. If this is too warm:
+              lower `comfort above`, then `bias base` (possibly `0.0`), and if
+              needed lower `bias max`.
 
               - **Comfort bias up/down** and **room error avg tau** control
-              how quickly this warm bias adapts over time.
+              how quickly bias adapts over time.
 
               - **Ramp up/down** limit rise/fall rate of requested heat.
 
@@ -2504,7 +2519,15 @@ views:
               - Relevant when `Heating mode = Power House`.
               - `P_house` is the model-based demand estimate from outside temperature.
               - `P_req` is the limited heat request after deadband/ramp limiter.
-              - `Effective room target` is room setpoint plus adaptive comfort bias.
+              - `Effective room target = room setpoint + comfort bias`.
+              - Quick interpretation of comfort knobs:
+                - `bias base` = minimum warm offset (always active)
+                - `bias max` = maximum offset + cap on warm-side correction edge
+                - `comfort above` = extra warm margin above effective target (until cap)
+              - Warm-side edge:
+                `Tr_high = min(effective_target + comfort_above, setpoint + bias_max)`.
+              - If room stays too warm while `P_req` remains high:
+                lower `comfort above` first, then `bias base`, and if needed `bias max`.
               - `Comfort bias` and `room error avg` show the adaptive warm-bias governor state.
               - `Demand raw` and `Demand filtered` are 0..20 step signals towards compressor control.
               - `Power cap demand` shows active demand after electrical power limiting.

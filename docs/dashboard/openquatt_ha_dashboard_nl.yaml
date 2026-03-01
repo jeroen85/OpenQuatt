@@ -2068,17 +2068,33 @@ views:
 
               - **Deadband** voorkomt onrust bij kleine afwijkingen.
 
-              - **Comfort onder/boven setpoint** definieert een asymmetrische
-              comfortzone rond de kamersetpoint waarin de room-correctie
-              neutraal blijft. Zo kan elke gebruiker eigen onder-/overshoot
-              instellen.
+              - `Effective room target = setpoint + comfort bias`.
 
-              - **Comfort bias base/max** verschuift de effectieve kamertarget
-              omhoog (warmte-voorkeur) en begrenst maximale adaptieve overshoot.
-              De bovenste correctierand is gemaximeerd op `setpoint + bias max`.
+              - **Comfort bias base** is de minimale verschuiving omhoog en is
+              dus altijd actief. Bij `0.1` stuurt de regelaar minimaal op
+              `setpoint + 0.1`.
+
+              - **Comfort bias max** is de maximale verschuiving omhoog en ook
+              de bovencap voor de warme correctierand:
+              `setpoint + bias max`.
+
+              - **Comfort above setpoint** is extra marge boven
+              `effective target` voordat warme tegensturing begint, maar alleen
+              tot de bovencap hierboven.
+
+              - **Comfort below setpoint** bepaalt de marge onder
+              `effective target` voordat extra opwarming begint.
+
+              - Warme randformule:
+              `Tr_high = min(effective_target + comfort_above, setpoint + bias_max)`.
+
+              - Voorbeeld: setpoint `20.0`, base `0.1`, max `0.4`, above `0.5`
+              geeft een maximale warme rand van `20.4`. Vind je het te warm:
+              verlaag eerst `comfort above`, daarna `bias base` (eventueel naar
+              `0.0`) en/of `bias max`.
 
               - **Comfort bias up/down** en **room error avg tau** bepalen hoe
-              snel deze warm-bias zich aanpast over de tijd.
+              snel de bias zich over de tijd aanpast.
 
               - **Ramp up/down** begrenzen stijg-/daalsnelheid van gevraagde
               warmte.
@@ -2653,8 +2669,20 @@ views:
 
               - `P_req` is de begrensde warmtevraag na deadband/ramp-limiter.
 
-              - `Effective room target` is kamersetpoint plus adaptieve
-              comfort-bias.
+              - `Effective room target = room setpoint + comfort bias`.
+
+              - Snelle duiding van de comfortknoppen:
+                - `bias base` = minimale warme offset (altijd actief)
+                - `bias max` = maximale offset + cap op warme correctierand
+                - `comfort above` = extra warme marge boven effectieve target
+                  (tot de cap)
+
+              - Warme rand:
+              `Tr_high = min(effective_target + comfort_above, setpoint + bias_max)`.
+
+              - Als kamer langdurig te warm is en `P_req` hoog blijft:
+              verlaag eerst `comfort above`, daarna `bias base`, en zo nodig
+              `bias max`.
 
               - `Comfort bias` en `room error avg` tonen de status van de
               adaptieve warm-bias regelaar.

@@ -110,6 +110,21 @@ Important nuance:
   It is not a hard physical room-temperature ceiling; thermal inertia can still
   cause temporary overshoot beyond that point.
 
+Most important interaction (easy to misread):
+
+- `comfort bias base` = minimum upward shift that is always active.
+- `comfort bias max` = maximum shift and warm-side cap anchor (`setpoint + bias max`).
+- `comfort above setpoint` = extra margin above `effective_target`, but only
+  until the cap is reached.
+
+Concrete example:
+
+- setpoint `20.0`, bias base `0.1`, bias max `0.4`, comfort above `0.5`
+- `effective_target` ranges `20.1 .. 20.4`
+- warm-side edge is `min(effective_target + 0.5, 20.4)`, so it never exceeds `20.4`
+- consequence: controller may keep heating relatively long unless you reduce
+  `comfort above setpoint`, lower `bias base`, or lower `bias max`
+
 What each parameter changes:
 
 - `Power House comfort below setpoint`: how far below target room temperature
@@ -117,7 +132,7 @@ What each parameter changes:
 - `Power House comfort above setpoint`: how far above target room temperature
   may rise before negative room correction starts (subject to cap).
 - `Power House comfort bias base`: minimum warm shift always applied to the
-  effective room target.
+  effective room target. Set to `0` if no permanent warm offset is desired.
 - `Power House comfort bias max`: maximum warm shift and cap for upper
   correction edge (`setpoint + bias max`).
 - `Power House comfort bias up`: how quickly bias increases during sustained

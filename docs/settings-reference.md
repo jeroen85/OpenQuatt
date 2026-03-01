@@ -176,15 +176,27 @@ Behavior summary (Power House comfort loop):
   - `Power House comfort bias max` (maximum warm shift)
 - Asymmetric comfort window is built around `effective_target`:
   - lower edge: `effective_target - comfort below setpoint`
-  - upper edge: `effective_target + comfort above setpoint`
-  - upper edge is additionally capped at `room_setpoint + comfort bias max`.
+  - upper edge (final): `min(effective_target + comfort above setpoint, room_setpoint + comfort bias max)`
 - `Power House deadband` then suppresses tiny corrections around these edges.
 
-Interpretation tip:
+How the three comfort knobs work together:
 
-- `comfort bias max` limits where controller counter-action begins on the warm
-  side. It does not guarantee that room temperature can never exceed that value
-  due to building/system inertia.
+- `Power House comfort bias base`: minimum upward shift that is always active.
+  If this is `0.1`, the controller never targets below `setpoint + 0.1`.
+- `Power House comfort bias max`: maximum upward shift, and also the hard cap
+  for the warm-side correction edge (`setpoint + bias max`).
+- `Power House comfort above setpoint`: extra warm margin above `effective_target`
+  before negative room correction starts, but still subject to the cap above.
+
+Example:
+
+- setpoint `20.0`, bias base `0.1`, bias max `0.4`, comfort above `0.5`
+- `effective_target` can move between `20.1` and `20.4`
+- warm-side edge is:
+  `min(effective_target + 0.5, 20.4)` and therefore never above `20.4`
+- practical effect: warm correction may start relatively late; if this feels
+  too warm, reduce `comfort above setpoint` and/or lower `bias base` and
+  `bias max`.
 
 ### 5.3 Heat allocation
 
