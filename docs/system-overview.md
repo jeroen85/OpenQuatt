@@ -175,7 +175,7 @@ Uses:
 
 - heating-curve interpolation to derive supply target
 - PID climate loop to track supply temperature
-- PID output mapped to demand `0..20`
+- PID output mapped to demand `0..20` with phased output behavior (`HEAT`/`COAST`/`OFF`)
 
 When PID SP/PV is invalid, demand falls back to 0 and integral is reset.
 
@@ -183,6 +183,7 @@ Heating-curve stability guards around zero-demand edge:
 
 - profile-based outside-temperature smoothing and target quantization
 - start/stop temperature hysteresis around supply target
+- near-target `COAST` phase (low modulation instead of immediate drop to `0`)
 - explicit per-HP slew-rate limiting with slower up and faster down behavior
 
 ## 6. Allocation and Optimization Mechanics
@@ -194,13 +195,13 @@ Heating-curve stability guards around zero-demand edge:
 3. Control Mode gating (CM2/CM3 only)
 4. strategy-specific level logic
 5. allowed-level switch constraints
-6. min-runtime stop blocking
+6. min-runtime stop blocking (Power House only)
 7. write-on-change application and runtime counters
 
 Demand filter behavior is asymmetric:
 
 - downward path follows demand immediately
-- upward path is rate-limited by runtime control `Demand filter ramp up` (step/min)
+- upward path is rate-limited by runtime control `Demand filter ramp up` (step/min, Power House path)
 
 Power House optimizer cost considers:
 

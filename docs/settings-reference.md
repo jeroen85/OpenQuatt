@@ -212,6 +212,8 @@ Intent:
 
 - control how demand is split and persisted
 - avoid short-cycling
+- in heating-curve mode: keep actuator changes calm via slew while strategy handles `HEAT/COAST/OFF`
+- in Power House mode: `Minimum runtime` can block fast stop
 - keep dual-HP assist in low-demand band predictable (OFF level is derived as `ON - 2`)
 - optionally restrict level availability
 

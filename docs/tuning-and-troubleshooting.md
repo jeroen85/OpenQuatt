@@ -196,6 +196,7 @@ Low-demand stabilization controls (Heating Curve):
 
 - profile-based outside temperature smoothing and target quantization
 - start/stop temperature hysteresis around supply target
+- near-target `COAST` phase to reduce demand without immediately dropping to `0`
 - explicit per-HP level slew-rate limiting (up slower than down)
 
 ## 5. Heat Allocation Tuning
@@ -215,7 +216,8 @@ What to watch:
 - short-cycling behavior
 
 Use allowed level switches if you need temporary level band limitations per HP.
-In heating-curve mode, PID demand is passed through directly; per-HP slew limiting remains as guardrail.
+In heating-curve mode, PID demand is passed through directly with `HEAT/COAST/OFF` phasing; per-HP slew limiting remains as the actuator guardrail.
+`Minimum runtime` stop-blocking is applied in Power House mode.
 
 ## 6. Flow and Pump Tuning
 
