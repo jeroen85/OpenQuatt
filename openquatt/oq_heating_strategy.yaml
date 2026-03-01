@@ -881,6 +881,14 @@ output:
     type: float
     write_action:
       - lambda: |-
+          // Guardrail: only let PID-path write curve demand in heating-curve mode.
+          // In Power House mode, this output is diagnostic-only and must remain 0.
+          if (id(oq_heat_mode_code) != 1) {
+            id(oq_demand_curve) = 0;
+            id(oq_curve_heat_request_active) = false;
+            return;
+          }
+
           // PID output is 0..1 (heat_output). Map to demand steps 0..20.
           const int demand_max = (int) ${oq_strategy_demand_max_f};
           if (isnan(state)) {
@@ -1019,6 +1027,11 @@ interval:
             // - Ramp limiter in W/min
             // - Compat: oq_demand_raw = round(20 * P_req / house_rated_power)
             // ------------------------------------------------------------
+            if (id(oq_heating_curve_pid).mode != CLIMATE_MODE_OFF) {
+              auto c0 = id(oq_heating_curve_pid).make_call();
+              c0.set_mode(CLIMATE_MODE_OFF);
+              c0.perform();
+            }
             id(oq_curve_heat_request_active) = false;
             const float Tout = id(outside_temp_selected).state;
             const float Tc   = id(house_cold_temp_c).state;
