@@ -727,7 +727,8 @@ sensor:
               else if (profile == "Stable") min_change_c = 0.20f;
             }
             const float current_target_c = id(oq_heating_curve_pid).target_temperature;
-            if (isnan(current_target_c) || fabsf(current_target_c - x) >= min_change_c) {
+            if (id(oq_heating_curve_pid).mode != CLIMATE_MODE_HEAT ||
+                isnan(current_target_c) || fabsf(current_target_c - x) >= min_change_c) {
               auto call = id(oq_heating_curve_pid).make_call();
               call.set_mode(CLIMATE_MODE_HEAT);
               call.set_target_temperature(x);
@@ -987,7 +988,8 @@ interval:
               // Integral reset is handled explicitly in the if/then block below.
             } else {
               const float cur2 = id(oq_heating_curve_pid).target_temperature;
-              if (isnan(cur2) || fabsf(cur2 - spw) >= 0.10f) {
+              if (id(oq_heating_curve_pid).mode != CLIMATE_MODE_HEAT ||
+                  isnan(cur2) || fabsf(cur2 - spw) >= 0.10f) {
                 auto c2 = id(oq_heating_curve_pid).make_call();
 
                 // Set mode only when needed (fewer unnecessary calls)
