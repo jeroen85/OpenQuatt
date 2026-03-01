@@ -728,6 +728,8 @@ sensor:
         - lambda: |-
             // Sync heating curve setpoint to Heating Curve PID
             if (isnan(x)) return;
+            const bool curve_mode_selected = id(oq_heat_control_mode).active_index().value_or(0) == 1;
+            if (!curve_mode_selected) return;
             float min_change_c = 0.10f;  // Balanced default
             if (id(oq_curve_control_profile).has_state()) {
               const auto profile = id(oq_curve_control_profile).current_option();
