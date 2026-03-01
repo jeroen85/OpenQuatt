@@ -510,6 +510,18 @@ globals:
     restore_value: false
     initial_value: '0'
 
+  # Heating-curve diagnostics: demand before output guardrails.
+  - id: oq_curve_demand_pre_guardrail
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  # Heating-curve diagnostics: 0=OFF, 1=HEAT, 2=COAST.
+  - id: oq_curve_phase_code
+    type: int
+    restore_value: false
+    initial_value: '0'
+
   # Curve-mode on/off hysteresis state near zero-demand edge.
   - id: oq_curve_heat_request_active
     type: bool
@@ -769,6 +781,34 @@ sensor:
     lambda: |-
       return (float) id(oq_demand_curve);
 
+  - platform: template
+    id: oq_curve_demand_pre_guardrail_sensor
+    name: "Demand Curve (pre-guardrail)"
+    icon: mdi:counter
+    unit_of_measurement: "step"
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return (float) id(oq_curve_demand_pre_guardrail);
+
+  - platform: template
+    id: oq_curve_demand_post_guardrail_sensor
+    name: "Demand Curve (post-guardrail)"
+    icon: mdi:counter
+    unit_of_measurement: "step"
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return (float) id(oq_demand_curve);
+
   # DEBUG-RUNTIME START: Power House adaptive comfort-bias diagnostics
   - platform: template
     id: oq_phouse_room_error_avg_c_sensor
@@ -827,6 +867,21 @@ text_sensor:
     lambda: |-
       return std::string(id(oq_heat_control_mode).current_option().c_str());
 
+  - platform: template
+    id: oq_curve_phase_sensor
+    name: "Curve Phase"
+    icon: mdi:state-machine
+    update_interval: 5s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      switch (id(oq_curve_phase_code)) {
+        case 1: return std::string("HEAT");
+        case 2: return std::string("COAST");
+        default: return std::string("OFF");
+      }
+
 # ----------------------------
 # TEMPERATURE CONTROLLER (PID climate)
 # ----------------------------
@@ -867,7 +922,9 @@ output:
           // In Power House mode, this output is diagnostic-only and must remain 0.
           if (id(oq_heat_mode_code) != 1) {
             id(oq_demand_curve) = 0;
+            id(oq_curve_demand_pre_guardrail) = 0;
             id(oq_curve_heat_request_active) = false;
+            id(oq_curve_phase_code) = 0;
             return;
           }
 
@@ -875,13 +932,16 @@ output:
           const int demand_max = (int) ${oq_strategy_demand_max_f};
           if (isnan(state)) {
             id(oq_demand_curve) = 0;
+            id(oq_curve_demand_pre_guardrail) = 0;
             id(oq_curve_heat_request_active) = false;
+            id(oq_curve_phase_code) = 0;
             return;
           }
 
           int d = (int) lroundf(state * ${oq_strategy_demand_max_f});
           if (d < 0) d = 0;
           if (d > demand_max) d = demand_max;
+          id(oq_curve_demand_pre_guardrail) = d;
 
           // Start/stop hysteresis near the zero-demand edge:
           // - Start heating when supply is below (SP - start_delta)
@@ -892,6 +952,8 @@ output:
           if (isnan(spw) || isnan(pv)) {
             id(oq_curve_heat_request_active) = false;
             id(oq_demand_curve) = 0;
+            id(oq_curve_demand_pre_guardrail) = 0;
+            id(oq_curve_phase_code) = 0;
             return;
           }
 
@@ -916,8 +978,10 @@ output:
             if (pv <= (spw - start_delta_c)) heat_request_active = true;
           }
 
+          int curve_phase_code = 1;  // HEAT
           if (!heat_request_active) {
             d = 0;
+            curve_phase_code = 0;  // OFF
           } else {
             if (d < 1) d = 1;
             // Three-phase control:
@@ -946,6 +1010,7 @@ output:
 
             const bool coast_phase = pv >= (spw - coast_enter_c);
             if (coast_phase) {
+              curve_phase_code = 2;  // COAST
               if (d < coast_floor_f) d = coast_floor_f;
               if (d > coast_cap_f) d = coast_cap_f;
               // Above setpoint we only allow low steady modulation while waiting for stop hysteresis.
@@ -955,6 +1020,7 @@ output:
 
           id(oq_curve_heat_request_active) = heat_request_active;
           id(oq_demand_curve) = d;
+          id(oq_curve_phase_code) = curve_phase_code;
 
 # ----------------------------
 # INTERVAL (5s)
