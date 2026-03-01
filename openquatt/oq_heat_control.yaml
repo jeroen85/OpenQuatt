@@ -400,8 +400,15 @@ interval:
             f = std::min(f + ramp_up_step_min, raw); // configurable upward ramp (step/min)
           } else if (raw < f) {
             if (is_curve_mode) {
-              const int down_step = std::max(1, std::min(ramp_down_step_min, f - raw));
-              f -= down_step; // profile-based soft rundown in heating-curve mode
+              // Dynamic rundown:
+              // - keep soft decay near target
+              // - accelerate when gap(raw->filtered) grows to avoid lagging overshoot
+              const int gap = f - raw;
+              int down_step = ramp_down_step_min;
+              if (gap >= 3) down_step += 1;
+              if (gap >= 6) down_step += 1;
+              down_step = std::max(1, std::min(down_step, gap));
+              f -= down_step;
             } else if (raw == 0 && f == 1) {
               // Prevent 1-step latch in Power House mode.
               f = 0;
@@ -868,6 +875,7 @@ interval:
           //    - asymmetrical hold: slower up, faster down
           // =========================
           if (!is_power_house) {
+            const bool demand_rundown = (raw < f);
             int up_hold_s = 120;   // Balanced default
             int down_hold_s = 60;  // Balanced default
             if (id(oq_curve_control_profile).has_state()) {
@@ -893,6 +901,8 @@ interval:
               if (limited == prev) return limited;
 
               const bool moving_up = limited > prev;
+              // Guardrail: when demand is already running down, never keep stepping levels up.
+              if (demand_rundown && moving_up) return prev;
               const uint32_t hold_ms = (uint32_t) ((moving_up ? up_hold_s : down_hold_s) * 1000UL);
               if (last_change_ms > 0 && now_ms > last_change_ms) {
                 const uint32_t dt_ms = now_ms - last_change_ms;
