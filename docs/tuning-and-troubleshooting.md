@@ -204,8 +204,7 @@ Primary knobs:
 
 - `Minimum runtime`
 - `Demand filter ramp up`
-- `Single HP Assist ON Deficit`
-- `Single HP Assist OFF Deficit`
+- `Single HP Assist ON Level`
 - `Single HP Assist ON Hold`
 - `Single HP Assist OFF Hold`
 
@@ -216,6 +215,7 @@ What to watch:
 - short-cycling behavior
 
 Use allowed level switches if you need temporary level band limitations per HP.
+In heating-curve mode, demand rundown is profile-based and gradual (Comfort faster, Balanced/Stable softer) to reduce abrupt HP drop-outs.
 
 ## 6. Flow and Pump Tuning
 

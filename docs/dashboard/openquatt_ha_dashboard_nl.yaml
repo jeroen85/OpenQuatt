@@ -2272,9 +2272,11 @@ views:
               minuut `Demand filtered` maximaal mag stijgen richting `Demand
               raw`.
 
-              - **Single HP assist ON/OFF deficit** bepaalt bij welke thermische
-              tekort-waarde extra HP-assist wordt geactiveerd of weer
-              losgelaten.
+              - **Single HP assist ON level (f)** bepaalt boven welk gefilterd
+              demand-level dual-HP-assist mag worden geactiveerd.
+
+              - OFF-level wordt intern afgeleid als `ON - 2` om het aantal
+              instellingen beperkt te houden.
 
               - **ON/OFF hold** voegt tijdhysterese toe om op en neer schakelen
               te dempen.
@@ -2293,10 +2295,8 @@ views:
                 name: Minimum runtime
               - entity: number.openquatt_demand_filter_ramp_up
                 name: Demand filter ramp up
-              - entity: number.openquatt_single_hp_assist_on_deficit
-                name: Single HP assist ON deficit
-              - entity: number.openquatt_single_hp_assist_off_deficit
-                name: Single HP assist OFF deficit
+              - entity: number.openquatt_single_hp_assist_on_level
+                name: Single HP assist ON level
               - entity: number.openquatt_single_hp_assist_on_hold
                 name: Single HP assist ON hold
               - entity: number.openquatt_single_hp_assist_off_hold

@@ -203,8 +203,7 @@ Key entities:
 
 - `Minimum runtime`
 - `Demand filter ramp up`
-- `Single HP Assist ON Deficit`
-- `Single HP Assist OFF Deficit`
+- `Single HP Assist ON Level`
 - `Single HP Assist ON Hold`
 - `Single HP Assist OFF Hold`
 - HP level allow switches (`HP1/HP2 Allowed level 1..10`)
@@ -213,6 +212,7 @@ Intent:
 
 - control how demand is split and persisted
 - avoid short-cycling
+- keep dual-HP assist in low-demand band predictable (OFF level is derived as `ON - 2`)
 - optionally restrict level availability
 
 ### 5.4 Flow and pump

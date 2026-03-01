@@ -149,7 +149,7 @@ globals:
     restore_value: false
     initial_value: 'false'
 
-  # Deficit hold counters (minutes in 60s loop).
+  # Assist hold counters (minutes in 60s loop).
   - id: oq_single_hp_assist_on_min
     type: int
     restore_value: false
@@ -386,14 +386,28 @@ interval:
           if (ramp_up_step_min < 1) ramp_up_step_min = 1;
           if (ramp_up_step_min > demand_max_f) ramp_up_step_min = demand_max_f;
 
+          // Heating-curve mode uses soft downward demand decay to avoid abrupt dual-HP stop.
+          const bool is_curve_mode = (id(oq_heat_mode_code) == 1);
+          int ramp_down_step_min = 1;  // Balanced/Stable default
+          if (is_curve_mode && id(oq_curve_control_profile).has_state()) {
+            const auto profile = id(oq_curve_control_profile).current_option();
+            if (profile == "Comfort") ramp_down_step_min = 2;
+            else ramp_down_step_min = 1;
+          }
+
           int f = id(oq_demand_filtered);
           if (raw > f) {
             f = std::min(f + ramp_up_step_min, raw); // configurable upward ramp (step/min)
-          } else if (raw == 0 && f == 1) {
-            // Prevent 1-step latch: allow clean idle transition when raw demand is zero.
-            f = 0;
-          } else if (raw <= (f - 2)) {
-            f = raw;                                // down only at raw <= filtered - 2
+          } else if (raw < f) {
+            if (is_curve_mode) {
+              const int down_step = std::max(1, std::min(ramp_down_step_min, f - raw));
+              f -= down_step; // profile-based soft rundown in heating-curve mode
+            } else if (raw == 0 && f == 1) {
+              // Prevent 1-step latch in Power House mode.
+              f = 0;
+            } else if (raw <= (f - 2)) {
+              f = raw; // keep Power House demand-down behavior unchanged
+            }
           }
           f = std::max(0, std::min(demand_max_f, f));
           id(oq_demand_filtered) = f;

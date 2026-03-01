@@ -2155,8 +2155,11 @@ views:
               - **Demand filter ramp up** controls how many demand steps per
               minute `Demand filtered` may rise toward `Demand raw`.
 
-              - **Single HP assist ON/OFF deficit** defines at which thermal
-              deficit extra HP assist is activated or released.
+              - **Single HP assist ON level (f)** defines above which filtered
+              demand level dual-HP assist may be activated.
+
+              - OFF level is derived internally as `ON - 2` to keep tuning
+              compact.
 
               - **ON/OFF hold** adds time hysteresis to damp frequent toggling.
 
@@ -2174,10 +2177,8 @@ views:
                 name: Minimum runtime
               - entity: number.openquatt_demand_filter_ramp_up
                 name: Demand filter ramp up
-              - entity: number.openquatt_single_hp_assist_on_deficit
-                name: Single HP assist ON deficit
-              - entity: number.openquatt_single_hp_assist_off_deficit
-                name: Single HP assist OFF deficit
+              - entity: number.openquatt_single_hp_assist_on_level
+                name: Single HP assist ON level
               - entity: number.openquatt_single_hp_assist_on_hold
                 name: Single HP assist ON hold
               - entity: number.openquatt_single_hp_assist_off_hold
