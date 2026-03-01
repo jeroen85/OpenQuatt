@@ -149,13 +149,45 @@ globals:
     restore_value: false
     initial_value: 'false'
 
-  # Assist hold counters (minutes in 60s loop).
+  # Assist hold counters (elapsed minutes, derived from wall-clock time).
   - id: oq_single_hp_assist_on_min
     type: int
     restore_value: false
     initial_value: '0'
   - id: oq_single_hp_assist_off_min
     type: int
+    restore_value: false
+    initial_value: '0'
+
+  # Fractional elapsed minutes for assist hold timing.
+  - id: oq_single_hp_assist_on_accum_min
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+  - id: oq_single_hp_assist_off_accum_min
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+
+  # Fractional ramp budget for demand filter (Power House only).
+  - id: oq_demand_filter_ramp_up_budget
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+
+  # Last loop timestamp for elapsed-time scaling.
+  - id: oq_heat_last_loop_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
+  # Fractional runtime accumulation; converted to whole minutes.
+  - id: hp1_runtime_accum_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: hp2_runtime_accum_ms
+    type: uint32_t
     restore_value: false
     initial_value: '0'
 
@@ -353,6 +385,8 @@ button:
       - lambda: |-
           id(hp1_minutes) = 0;
           id(hp2_minutes) = 0;
+          id(hp1_runtime_accum_ms) = 0;
+          id(hp2_runtime_accum_ms) = 0;
           ESP_LOGW("quatt", "Runtime counters reset (HP1+HP2).");
 # ----------------------------
 # MAIN LOOP
@@ -360,7 +394,7 @@ button:
 interval:
 
 # ----------------------------
-# LOOP (60s)
+# LOOP (${oq_heat_loop_s}s)
 # Fasen:
 # - demand filtering + power cap
 # - CM-gating (only CM2/CM3)
@@ -374,6 +408,14 @@ interval:
     then:
       - lambda: |-
           const uint32_t now_ms = (uint32_t) millis();
+          const uint32_t loop_default_ms = (uint32_t) (${oq_heat_loop_s} * 1000UL);
+          uint32_t dt_ms = loop_default_ms;
+          if (id(oq_heat_last_loop_ms) > 0 && now_ms > id(oq_heat_last_loop_ms)) {
+            dt_ms = now_ms - id(oq_heat_last_loop_ms);
+            if (dt_ms > 60000UL) dt_ms = 60000UL;
+          }
+          id(oq_heat_last_loop_ms) = now_ms;
+          const float dt_s = (float) dt_ms / 1000.0f;
           const int demand_max_f = (int) ${oq_strategy_demand_max_f};
 
           // =========================
@@ -395,10 +437,19 @@ interval:
           if (is_curve_mode) {
             // Keep PID in the lead for heating-curve control.
             f = raw;
+            id(oq_demand_filter_ramp_up_budget) = 0.0f;
           } else {
             // Power House filtered behavior.
+            float ramp_budget = id(oq_demand_filter_ramp_up_budget) + (((float) ramp_up_step_min) / 60.0f) * dt_s;
+            if (ramp_budget > (float) demand_max_f) ramp_budget = (float) demand_max_f;
+            int ramp_steps = (int) floorf(ramp_budget);
+            if (ramp_steps < 0) ramp_steps = 0;
+            id(oq_demand_filter_ramp_up_budget) = ramp_budget - (float) ramp_steps;
+
             if (raw > f) {
-              f = std::min(f + ramp_up_step_min, raw); // configurable upward ramp (step/min)
+              if (ramp_steps > 0) {
+                f = std::min(f + ramp_steps, raw); // configurable upward ramp (step/min), elapsed-time scaled
+              }
             } else if (raw == 0 && f == 1) {
               // Prevent 1-step latch in Power House mode.
               f = 0;
@@ -471,6 +522,8 @@ interval:
             id(oq_single_hp_assist_active) = false;
             id(oq_single_hp_assist_on_min) = 0;
             id(oq_single_hp_assist_off_min) = 0;
+            id(oq_single_hp_assist_on_accum_min) = 0.0f;
+            id(oq_single_hp_assist_off_accum_min) = 0.0f;
             return;
           }
           // =========================
@@ -583,25 +636,30 @@ interval:
               id(oq_single_hp_assist_active) = false;
               id(oq_single_hp_assist_on_min) = 0;
               id(oq_single_hp_assist_off_min) = 0;
+              id(oq_single_hp_assist_on_accum_min) = 0.0f;
+              id(oq_single_hp_assist_off_accum_min) = 0.0f;
             } else {
               int on_hold = (int) roundf(id(oq_single_hp_assist_on_hold_min).state);
               int off_hold = (int) roundf(id(oq_single_hp_assist_off_hold_min).state);
               if (on_hold < 1) on_hold = 1;
               if (off_hold < 1) off_hold = 1;
 
-              if (f >= assist_on_f) id(oq_single_hp_assist_on_min) += 1;
-              else id(oq_single_hp_assist_on_min) = 0;
+              if (f >= assist_on_f) id(oq_single_hp_assist_on_accum_min) += dt_s / 60.0f;
+              else id(oq_single_hp_assist_on_accum_min) = 0.0f;
 
-              if (f <= assist_off_f) id(oq_single_hp_assist_off_min) += 1;
-              else id(oq_single_hp_assist_off_min) = 0;
+              if (f <= assist_off_f) id(oq_single_hp_assist_off_accum_min) += dt_s / 60.0f;
+              else id(oq_single_hp_assist_off_accum_min) = 0.0f;
 
-              if (!id(oq_single_hp_assist_active) && id(oq_single_hp_assist_on_min) >= on_hold) {
+              if (!id(oq_single_hp_assist_active) && id(oq_single_hp_assist_on_accum_min) >= (float) on_hold) {
                 id(oq_single_hp_assist_active) = true;
-                id(oq_single_hp_assist_off_min) = 0;
-              } else if (id(oq_single_hp_assist_active) && id(oq_single_hp_assist_off_min) >= off_hold) {
+                id(oq_single_hp_assist_off_accum_min) = 0.0f;
+              } else if (id(oq_single_hp_assist_active) && id(oq_single_hp_assist_off_accum_min) >= (float) off_hold) {
                 id(oq_single_hp_assist_active) = false;
-                id(oq_single_hp_assist_on_min) = 0;
+                id(oq_single_hp_assist_on_accum_min) = 0.0f;
               }
+
+              id(oq_single_hp_assist_on_min) = (int) floorf(id(oq_single_hp_assist_on_accum_min) + 1e-3f);
+              id(oq_single_hp_assist_off_min) = (int) floorf(id(oq_single_hp_assist_off_accum_min) + 1e-3f);
             }
 
             const bool need_assist = (f > assist_on_f) || (want_single && id(oq_single_hp_assist_active));
@@ -651,25 +709,30 @@ interval:
                 id(oq_single_hp_assist_active) = false;
                 id(oq_single_hp_assist_on_min) = 0;
                 id(oq_single_hp_assist_off_min) = 0;
+                id(oq_single_hp_assist_on_accum_min) = 0.0f;
+                id(oq_single_hp_assist_off_accum_min) = 0.0f;
               } else {
                 int on_hold = (int) roundf(id(oq_single_hp_assist_on_hold_min).state);
                 int off_hold = (int) roundf(id(oq_single_hp_assist_off_hold_min).state);
                 if (on_hold < 1) on_hold = 1;
                 if (off_hold < 1) off_hold = 1;
 
-                if (f >= assist_on_f) id(oq_single_hp_assist_on_min) += 1;
-                else id(oq_single_hp_assist_on_min) = 0;
+                if (f >= assist_on_f) id(oq_single_hp_assist_on_accum_min) += dt_s / 60.0f;
+                else id(oq_single_hp_assist_on_accum_min) = 0.0f;
 
-                if (f <= assist_off_f) id(oq_single_hp_assist_off_min) += 1;
-                else id(oq_single_hp_assist_off_min) = 0;
+                if (f <= assist_off_f) id(oq_single_hp_assist_off_accum_min) += dt_s / 60.0f;
+                else id(oq_single_hp_assist_off_accum_min) = 0.0f;
 
-                if (!id(oq_single_hp_assist_active) && id(oq_single_hp_assist_on_min) >= on_hold) {
+                if (!id(oq_single_hp_assist_active) && id(oq_single_hp_assist_on_accum_min) >= (float) on_hold) {
                   id(oq_single_hp_assist_active) = true;
-                  id(oq_single_hp_assist_off_min) = 0;
-                } else if (id(oq_single_hp_assist_active) && id(oq_single_hp_assist_off_min) >= off_hold) {
+                  id(oq_single_hp_assist_off_accum_min) = 0.0f;
+                } else if (id(oq_single_hp_assist_active) && id(oq_single_hp_assist_off_accum_min) >= (float) off_hold) {
                   id(oq_single_hp_assist_active) = false;
-                  id(oq_single_hp_assist_on_min) = 0;
+                  id(oq_single_hp_assist_on_accum_min) = 0.0f;
                 }
+
+                id(oq_single_hp_assist_on_min) = (int) floorf(id(oq_single_hp_assist_on_accum_min) + 1e-3f);
+                id(oq_single_hp_assist_off_min) = (int) floorf(id(oq_single_hp_assist_off_accum_min) + 1e-3f);
               }
               const bool need_assist = (f > assist_on_f) || (want_single && id(oq_single_hp_assist_active));
 
@@ -1030,12 +1093,19 @@ interval:
 
             // Runtime counting: only count when the specific unit is measured in Heating mode.
             // This avoids overcounting during command/mode transition, standby, or fault situations.
-            if (new_lvl > 0) {
+            if (new_lvl > 0 && dt_ms > 0) {
               const float working_mode_raw = is_hp1 ? id(hp1_working_mode).state : id(hp2_working_mode).state;
               const bool heating_now = !isnan(working_mode_raw) && ((int) roundf(working_mode_raw) == 2);
               if (heating_now) {
-                if (is_hp1) id(hp1_minutes)++;
-                else id(hp2_minutes)++;
+                uint32_t &runtime_accum_ms = is_hp1 ? id(hp1_runtime_accum_ms) : id(hp2_runtime_accum_ms);
+                int &runtime_minutes = is_hp1 ? id(hp1_minutes) : id(hp2_minutes);
+                uint32_t sum_ms = runtime_accum_ms + dt_ms;
+                if (sum_ms < runtime_accum_ms) sum_ms = 60000UL;  // overflow guard
+                runtime_accum_ms = sum_ms;
+                while (runtime_accum_ms >= 60000UL) {
+                  runtime_accum_ms -= 60000UL;
+                  runtime_minutes += 1;
+                }
               }
             }
 
