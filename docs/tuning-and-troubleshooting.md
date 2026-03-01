@@ -205,9 +205,12 @@ Primary knobs:
 
 - `Minimum runtime`
 - `Demand filter ramp up`
-- `Single HP Assist ON Level`
-- `Single HP Assist ON Hold`
-- `Single HP Assist OFF Hold`
+- `Dual HP Enable Level`
+- `Dual HP Enable Hold`
+- `Dual HP Disable Hold`
+
+`Dual HP Enable Level` is interpreted as compressor level (`lvl 1..10`) in the
+single-HP path; dual-HP disable threshold is derived as `enable - 1`.
 
 What to watch:
 
@@ -216,7 +219,7 @@ What to watch:
 - short-cycling behavior
 
 Use allowed level switches if you need temporary level band limitations per HP.
-In heating-curve mode, PID demand is passed through directly with `HEAT/COAST/OFF` phasing; per-HP slew limiting remains as the actuator guardrail.
+In heating-curve mode, PID demand is passed through directly with `HEAT/COAST/OFF` phasing, while allocation is single-HP-first with dual-enable hysteresis and sequential level steps.
 `Minimum runtime` stop-blocking is applied in Power House mode.
 
 ## 6. Flow and Pump Tuning

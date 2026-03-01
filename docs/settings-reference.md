@@ -203,18 +203,18 @@ Key entities:
 
 - `Minimum runtime`
 - `Demand filter ramp up`
-- `Single HP Assist ON Level`
-- `Single HP Assist ON Hold`
-- `Single HP Assist OFF Hold`
+- `Dual HP Enable Level`
+- `Dual HP Enable Hold`
+- `Dual HP Disable Hold`
 - HP level allow switches (`HP1/HP2 Allowed level 1..10`)
 
 Intent:
 
 - control how demand is split and persisted
 - avoid short-cycling
-- in heating-curve mode: keep actuator changes calm via slew while strategy handles `HEAT/COAST/OFF`
+- in heating-curve mode: keep single-HP-first allocation with dual-enable hysteresis and calm actuator steps
 - in Power House mode: `Minimum runtime` can block fast stop
-- keep dual-HP assist in low-demand band predictable (OFF level is derived as `ON - 2`)
+- keep dual-HP enable predictable (disable level is derived as `enable - 1`)
 - optionally restrict level availability
 
 ### 5.4 Flow and pump

@@ -46,6 +46,7 @@ select:
         - climate.pid.reset_integral_term: oq_heating_curve_pid
         - lambda: |-
             id(oq_curve_heat_request_active) = false;
+            id(oq_curve_stop_arm_ms) = 0;
             id(oq_curve_outside_ema_initialized) = false;
             id(oq_curve_outside_ema_last_ms) = 0;
             id(oq_ph_comfort_bias_last_ms) = 0;
@@ -70,6 +71,7 @@ select:
         - climate.pid.reset_integral_term: oq_heating_curve_pid
         - lambda: |-
             id(oq_curve_heat_request_active) = false;
+            id(oq_curve_stop_arm_ms) = 0;
             id(oq_curve_outside_ema_initialized) = false;
             id(oq_curve_outside_ema_last_ms) = 0;
 
@@ -528,6 +530,12 @@ globals:
     restore_value: false
     initial_value: 'false'
 
+  # Timestamp when curve stop condition was first armed (OFF confirm guardrail).
+  - id: oq_curve_stop_arm_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
   # Curve outside-temperature EMA state.
   - id: oq_curve_outside_ema_c
     type: float
@@ -755,6 +763,35 @@ sensor:
         }
       }
 
+      // Room thermostat coupling: when room drifts warm, trim curve target down.
+      // This keeps heating-curve control continuous, but prevents living-room overshoot.
+      const float room_c = id(room_temp_selected).state;
+      const float room_sp_c = id(room_setpoint_selected).state;
+      if (!isnan(target_c) && !isnan(room_c) && !isnan(room_sp_c)) {
+        float warm_err_c = room_c - room_sp_c;
+        float trim_start_c = 0.10f;   // Balanced default
+        float trim_gain = 1.50f;      // Balanced default
+        float trim_max_c = 2.00f;     // Balanced default
+        if (id(oq_curve_control_profile).has_state()) {
+          const auto profile = id(oq_curve_control_profile).current_option();
+          if (profile == "Comfort") {
+            trim_start_c = 0.05f;
+            trim_gain = 2.00f;
+            trim_max_c = 2.00f;
+          } else if (profile == "Stable") {
+            trim_start_c = 0.15f;
+            trim_gain = 1.00f;
+            trim_max_c = 2.50f;
+          }
+        }
+        if (warm_err_c > trim_start_c) {
+          float trim_c = (warm_err_c - trim_start_c) * trim_gain;
+          if (trim_c < 0.0f) trim_c = 0.0f;
+          if (trim_c > trim_max_c) trim_c = trim_max_c;
+          target_c -= trim_c;
+        }
+      }
+
       // Profile-based target quantization keeps supply target calm at low load.
       float quant_step_c = 0.5f;  // Balanced default
       if (id(oq_curve_control_profile).has_state()) {
@@ -924,6 +961,7 @@ output:
             id(oq_demand_curve) = 0;
             id(oq_curve_demand_pre_guardrail) = 0;
             id(oq_curve_heat_request_active) = false;
+            id(oq_curve_stop_arm_ms) = 0;
             id(oq_curve_phase_code) = 0;
             return;
           }
@@ -934,6 +972,7 @@ output:
             id(oq_demand_curve) = 0;
             id(oq_curve_demand_pre_guardrail) = 0;
             id(oq_curve_heat_request_active) = false;
+            id(oq_curve_stop_arm_ms) = 0;
             id(oq_curve_phase_code) = 0;
             return;
           }
@@ -943,14 +982,15 @@ output:
           if (d > demand_max) d = demand_max;
           id(oq_curve_demand_pre_guardrail) = d;
 
-          // Start/stop hysteresis near the zero-demand edge:
-          // - Start heating when supply is below (SP - start_delta)
-          // - Stop heating when supply is above (SP + stop_delta)
-          // This replaces the previous deadband/off-hold pair with a deterministic gate.
+          // Start/stop gating near the zero-demand edge:
+          // - Start when supply is below (SP - start_delta)
+          // - Stop only after sustained overshoot + low PID demand (+ optional room-warm condition)
+          // This avoids burst OFF cycling and keeps COAST as the default way to back off.
           const float spw = id(oq_supply_target_temp).state;
           const float pv = id(oq_system_supply_temp).state;
           if (isnan(spw) || isnan(pv)) {
             id(oq_curve_heat_request_active) = false;
+            id(oq_curve_stop_arm_ms) = 0;
             id(oq_demand_curve) = 0;
             id(oq_curve_demand_pre_guardrail) = 0;
             id(oq_curve_phase_code) = 0;
@@ -959,23 +999,71 @@ output:
 
           float start_delta_c = 0.45f;  // Balanced default
           float stop_delta_c = 0.75f;   // Balanced default
+          float coast_enter_c = 0.35f;  // Balanced default
+          int coast_floor_f = 1;
+          int coast_cap_f = 6;
+          int off_pid_max_f = 2;
+          uint32_t off_confirm_ms = 180000UL;  // 180s
+          float room_overheat_off_c = 0.20f;
+          float room_resume_heat_c = 0.05f;
           if (id(oq_curve_control_profile).has_state()) {
             const auto profile = id(oq_curve_control_profile).current_option();
             if (profile == "Comfort") {
               start_delta_c = 0.30f;
               stop_delta_c = 0.55f;
+              coast_enter_c = 0.25f;
+              coast_floor_f = 2;
+              coast_cap_f = 8;
+              off_pid_max_f = 1;
+              off_confirm_ms = 120000UL;
+              room_overheat_off_c = 0.15f;
+              room_resume_heat_c = 0.03f;
             } else if (profile == "Stable") {
               start_delta_c = 0.65f;
               stop_delta_c = 1.00f;
+              coast_enter_c = 0.55f;
+              coast_floor_f = 1;
+              coast_cap_f = 4;
+              off_pid_max_f = 2;
+              off_confirm_ms = 300000UL;
+              room_overheat_off_c = 0.30f;
+              room_resume_heat_c = 0.08f;
             }
           }
           if (stop_delta_c < start_delta_c + 0.10f) stop_delta_c = start_delta_c + 0.10f;
+          if (off_pid_max_f < 0) off_pid_max_f = 0;
+          if (off_pid_max_f > demand_max) off_pid_max_f = demand_max;
+          if (coast_floor_f < 1) coast_floor_f = 1;
+          if (coast_floor_f > demand_max) coast_floor_f = demand_max;
+          if (coast_cap_f < coast_floor_f) coast_cap_f = coast_floor_f;
+          if (coast_cap_f > demand_max) coast_cap_f = demand_max;
 
+          const float room_c = id(room_temp_selected).state;
+          const float room_sp_c = id(room_setpoint_selected).state;
+          const bool room_valid = !isnan(room_c) && !isnan(room_sp_c);
+          const bool room_warm_for_off = room_valid && (room_c >= (room_sp_c + room_overheat_off_c));
+          const bool room_requests_heat = room_valid && (room_c <= (room_sp_c - room_resume_heat_c));
+          const bool room_allows_off = (!room_valid) || room_warm_for_off;
+
+          const bool above_stop_band = pv >= (spw + stop_delta_c);
+          const bool low_pid_for_off = d <= off_pid_max_f;
+          const uint32_t now_ms = (uint32_t) millis();
           bool heat_request_active = id(oq_curve_heat_request_active);
           if (heat_request_active) {
-            if (pv >= (spw + stop_delta_c)) heat_request_active = false;
+            if (above_stop_band && low_pid_for_off && room_allows_off) {
+              uint32_t armed_ms = id(oq_curve_stop_arm_ms);
+              if (armed_ms == 0 || now_ms <= armed_ms) {
+                id(oq_curve_stop_arm_ms) = now_ms;
+              } else if ((now_ms - armed_ms) >= off_confirm_ms) {
+                heat_request_active = false;
+                id(oq_curve_stop_arm_ms) = 0;
+              }
+            } else {
+              id(oq_curve_stop_arm_ms) = 0;
+            }
           } else {
-            if (pv <= (spw - start_delta_c)) heat_request_active = true;
+            id(oq_curve_stop_arm_ms) = 0;
+            if (pv <= (spw - start_delta_c) || room_requests_heat) heat_request_active = true;
           }
 
           int curve_phase_code = 1;  // HEAT
@@ -988,26 +1076,6 @@ output:
             // - HEAT: PID-led modulation
             // - COAST: keep low modulation near target, avoid hard drop to 0
             // - OFF: only when stop hysteresis is reached
-            float coast_enter_c = 0.35f;  // Balanced default
-            int coast_floor_f = 1;
-            int coast_cap_f = 6;
-            if (id(oq_curve_control_profile).has_state()) {
-              const auto profile = id(oq_curve_control_profile).current_option();
-              if (profile == "Comfort") {
-                coast_enter_c = 0.25f;
-                coast_floor_f = 2;
-                coast_cap_f = 8;
-              } else if (profile == "Stable") {
-                coast_enter_c = 0.55f;
-                coast_floor_f = 1;
-                coast_cap_f = 4;
-              }
-            }
-            if (coast_floor_f < 1) coast_floor_f = 1;
-            if (coast_floor_f > demand_max) coast_floor_f = demand_max;
-            if (coast_cap_f < coast_floor_f) coast_cap_f = coast_floor_f;
-            if (coast_cap_f > demand_max) coast_cap_f = demand_max;
-
             const bool coast_phase = pv >= (spw - coast_enter_c);
             if (coast_phase) {
               curve_phase_code = 2;  // COAST
@@ -1063,6 +1131,7 @@ interval:
               // Fail-safe: no valid PV/SP => no heat demand
               id(oq_demand_curve) = 0;
               id(oq_curve_heat_request_active) = false;
+              id(oq_curve_stop_arm_ms) = 0;
               // Integral reset is handled explicitly in the if/then block below.
             } else {
               const float cur2 = id(oq_heating_curve_pid).target_temperature;
@@ -1113,6 +1182,7 @@ interval:
               c0.perform();
             }
             id(oq_curve_heat_request_active) = false;
+            id(oq_curve_stop_arm_ms) = 0;
             const float Tout = id(outside_temp_selected).state;
             const float Tc   = id(house_cold_temp_c).state;
             const float T0   = id(house_zero_power_temp_c).state;
@@ -1232,11 +1302,11 @@ interval:
             lambda: |-
               // Anti-windup:
               // - if SP/PV drops out in heating-curve mode, reset integral term
-              // - if hysteresis gate is OFF, clear integral to avoid continued push
+              // - while compressors are not yet delivering heat, keep integral empty
               if (id(oq_heat_mode_code) != 1) return false;
               const float spw = id(oq_supply_target_temp).state;
               const float pv  = id(oq_system_supply_temp).state;
-              if (isnan(spw) || isnan(pv) || !id(oq_curve_heat_request_active)) return true;
+              if (isnan(spw) || isnan(pv)) return true;
 
               // While compressors are not yet really delivering heat, keep integral empty.
               const bool hp1_level_on = id(hp1_last_applied_level) > 0;

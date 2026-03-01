@@ -2273,20 +2273,21 @@ views:
               raw` in Power House mode.
 
               - In heating-curve mode wordt PID-demand direct doorgezet; de
-              per-HP slew-limiter blijft de guardrail.
+              allocatie is single-HP-first met dual-enable hysterese en
+              sequentiële levelstappen.
 
-              - **Single HP assist ON level (f)** bepaalt boven welk gefilterd
-              demand-level dual-HP-assist mag worden geactiveerd.
+              - **Dual HP enable level (lvl)** bepaalt bij welk aanhoudend
+              single-HP compressorlevel een tweede HP mag worden geactiveerd.
 
-              - OFF-level wordt intern afgeleid als `ON - 2` om het aantal
+              - Disable-level wordt intern afgeleid als `enable - 1` om het aantal
               instellingen beperkt te houden.
 
-              - **ON/OFF hold** voegt tijdhysterese toe om op en neer schakelen
+              - **Enable/disable hold** voegt tijdhysterese toe om op en neer schakelen
               te dempen.
 
-              - Lager ON of kortere ON-hold = sneller extra capaciteit.
+              - Lager enable-level of kortere enable-hold = sneller 2 HP actief.
 
-              - Hoger OFF of langere OFF-hold = langer dual-HP actief.
+              - Hogere disable-hold = langer dual-HP actief.
 
 
               </details>
@@ -2298,12 +2299,12 @@ views:
                 name: Minimum runtime
               - entity: number.openquatt_demand_filter_ramp_up
                 name: Demand filter ramp up
-              - entity: number.openquatt_single_hp_assist_on_level
-                name: Single HP assist ON level
-              - entity: number.openquatt_single_hp_assist_on_hold
-                name: Single HP assist ON hold
-              - entity: number.openquatt_single_hp_assist_off_hold
-                name: Single HP assist OFF hold
+              - entity: number.openquatt_dual_hp_enable_level
+                name: Dual HP enable level
+              - entity: number.openquatt_dual_hp_enable_hold
+                name: Dual HP enable hold
+              - entity: number.openquatt_dual_hp_disable_hold
+                name: Dual HP disable hold
       - type: grid
         cards:
           - type: heading

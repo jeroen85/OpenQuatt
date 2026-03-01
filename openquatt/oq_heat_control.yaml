@@ -12,7 +12,7 @@
 #   - Consumes oq_demand_raw (producer in oq_heating_strategy)
 #   - Applies demand filtering to damp noise/jitter in heat demand
 #   - Applies caps/limits on `f` before split
-#   - Distributes `f` over HP1/HP2 (heating curve: single-HP preference with demand/hold assist hysteresis, power-house: W-based optimizer)
+#   - Distributes `f` over HP1/HP2 (heating curve: single-HP-first with dual-enable hysteresis, power-house: W-based optimizer)
 #   - Computes shared HP capacity/deficit (`oq_P_hp_cap_w`, `oq_P_deficit_w`) for supervisory CM3 logic
 #   - Sets compressor levels via `select` entities
 #
@@ -73,27 +73,27 @@ number:
     web_server:
       sorting_group_id: oq_tuning_heat
 
-  # Single-HP assist ON threshold on filtered demand f (0..20).
-  # OFF threshold is derived internally as max(1, ON - 2) to keep parameter count low.
+  # Dual-HP enable threshold on single-HP compressor level request (1..10).
+  # Disable threshold is derived internally as max(1, enable - 1) to keep parameter count low.
   - platform: template
-    id: oq_single_hp_assist_on_level_f
-    name: "Single HP Assist ON Level"
+    id: oq_dual_hp_enable_level
+    name: "Dual HP Enable Level"
     icon: mdi:arrow-up-bold-hexagon-outline
-    unit_of_measurement: "f"
-    min_value: 2
-    max_value: 20
+    unit_of_measurement: "lvl"
+    min_value: 1
+    max_value: 10
     step: 1
     mode: slider
     restore_value: true
     optimistic: true
-    initial_value: 7
+    initial_value: 5
     web_server:
       sorting_group_id: oq_tuning_heat
 
-  # Hold time before enabling single-HP assist.
+  # Hold time before enabling dual-HP in curve mode.
   - platform: template
-    id: oq_single_hp_assist_on_hold_min
-    name: "Single HP Assist ON Hold"
+    id: oq_dual_hp_enable_hold_min
+    name: "Dual HP Enable Hold"
     icon: mdi:timer-plus-outline
     unit_of_measurement: "min"
     min_value: 1
@@ -106,10 +106,10 @@ number:
     web_server:
       sorting_group_id: oq_tuning_heat
 
-  # Hold time before disabling single-HP assist.
+  # Hold time before disabling dual-HP in curve mode.
   - platform: template
-    id: oq_single_hp_assist_off_hold_min
-    name: "Single HP Assist OFF Hold"
+    id: oq_dual_hp_disable_hold_min
+    name: "Dual HP Disable Hold"
     icon: mdi:timer-minus-outline
     unit_of_measurement: "min"
     min_value: 1
@@ -143,28 +143,28 @@ globals:
     restore_value: false
     initial_value: '0.0'
 
-  # Tracks whether low-demand assist mode is active (dual-HP allowed in low-demand band).
-  - id: oq_single_hp_assist_active
+  # Tracks whether dual-HP is enabled by sustained curve demand.
+  - id: oq_dual_hp_enabled
     type: bool
     restore_value: false
     initial_value: 'false'
 
-  # Assist hold counters (elapsed minutes, derived from wall-clock time).
-  - id: oq_single_hp_assist_on_min
+  # Dual-enable hold counters (elapsed minutes, derived from wall-clock time).
+  - id: oq_dual_hp_enable_hold_elapsed_min
     type: int
     restore_value: false
     initial_value: '0'
-  - id: oq_single_hp_assist_off_min
+  - id: oq_dual_hp_disable_hold_elapsed_min
     type: int
     restore_value: false
     initial_value: '0'
 
-  # Fractional elapsed minutes for assist hold timing.
-  - id: oq_single_hp_assist_on_accum_min
+  # Fractional elapsed minutes for dual-enable hold timing.
+  - id: oq_dual_hp_enable_hold_elapsed_accum_min
     type: float
     restore_value: false
     initial_value: '0.0'
-  - id: oq_single_hp_assist_off_accum_min
+  - id: oq_dual_hp_disable_hold_elapsed_accum_min
     type: float
     restore_value: false
     initial_value: '0.0'
@@ -536,16 +536,16 @@ interval:
             };
             sync_forced_stop_state(true);
             sync_forced_stop_state(false);
-            id(oq_single_hp_assist_active) = false;
-            id(oq_single_hp_assist_on_min) = 0;
-            id(oq_single_hp_assist_off_min) = 0;
-            id(oq_single_hp_assist_on_accum_min) = 0.0f;
-            id(oq_single_hp_assist_off_accum_min) = 0.0f;
+            id(oq_dual_hp_enabled) = false;
+            id(oq_dual_hp_enable_hold_elapsed_min) = 0;
+            id(oq_dual_hp_disable_hold_elapsed_min) = 0;
+            id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
+            id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
             return;
           }
           // =========================
           // 2) HP level selection
-          //    - WATER TEMP: demand split with single-HP preference at low f and demand/hold assist hysteresis
+          //    - WATER TEMP: single-HP-first with dual-enable hysteresis
           //    - POWER HOUSE: level optimization on thermal power (W) via hp_perf_map.h
           // =========================
 
@@ -638,61 +638,85 @@ interval:
             const bool d1_pre = id(hp1_defrost).state;
             const bool d2_pre = id(hp2_defrost).state;
 
-            // Telemetry + deficit calculation also in heating-curve mode (for CM3 + assist hysteresis).
+            // Telemetry + deficit calculation also in heating-curve mode (for CM3 + dual-enable hysteresis).
             publish_capacity_and_deficit(id(oq_phouse_req_w));
 
-            // Single-HP preferred in low-demand band unless demand/hold hysteresis enables assist.
-            int assist_on_f = (int) roundf(id(oq_single_hp_assist_on_level_f).state);
-            if (assist_on_f < 2) assist_on_f = 2;
-            if (assist_on_f > demand_max_f) assist_on_f = demand_max_f;
-            int assist_off_f = assist_on_f - 2;
-            if (assist_off_f < 1) assist_off_f = 1;
+            // Curve mode: single-HP-first. Dual HP is enabled only by sustained high single-HP level.
+            int dual_on_lvl = (int) roundf(id(oq_dual_hp_enable_level).state);
+            if (dual_on_lvl < 1) dual_on_lvl = 1;
+            if (dual_on_lvl > max_level) dual_on_lvl = max_level;
+            int dual_off_lvl = dual_on_lvl - 1;
+            if (dual_off_lvl < 1) dual_off_lvl = 1;
 
-            const bool want_single = (f > 0 && f <= assist_on_f && !(d1_pre && d2_pre));
-            if (!want_single) {
-              id(oq_single_hp_assist_active) = false;
-              id(oq_single_hp_assist_on_min) = 0;
-              id(oq_single_hp_assist_off_min) = 0;
-              id(oq_single_hp_assist_on_accum_min) = 0.0f;
-              id(oq_single_hp_assist_off_accum_min) = 0.0f;
+            int dual_on_hold_min = (int) roundf(id(oq_dual_hp_enable_hold_min).state);
+            int dual_off_hold_min = (int) roundf(id(oq_dual_hp_disable_hold_min).state);
+            if (dual_on_hold_min < 1) dual_on_hold_min = 1;
+            if (dual_off_hold_min < 1) dual_off_hold_min = 1;
+
+            auto max_allowed_level_for_hp = [&](bool is_hp1)->int {
+              int lvl_max = 0;
+              for (int lvl = level_cap; lvl >= 1; lvl--) {
+                if (level_allowed(is_hp1, lvl)) {
+                  lvl_max = lvl;
+                  break;
+                }
+              }
+              return lvl_max;
+            };
+
+            const int lead_max_single = max_allowed_level_for_hp(lead_is_hp1);
+            const int lag_max_single = max_allowed_level_for_hp(!lead_is_hp1);
+            const int single_limit_lvl = std::max(lead_max_single, lag_max_single);
+            int single_req_lvl = f;
+            if (single_req_lvl < 0) single_req_lvl = 0;
+            if (single_limit_lvl > 0 && single_req_lvl > single_limit_lvl) single_req_lvl = single_limit_lvl;
+
+            const bool demand_active = (f > 0);
+            const bool force_dual_capacity = demand_active && (single_limit_lvl > 0) && (f > single_limit_lvl);
+            const bool force_dual_defrost = demand_active && (d1_pre && d2_pre);
+            const bool dual_on_condition =
+                demand_active && (force_dual_capacity || force_dual_defrost || (single_req_lvl >= dual_on_lvl));
+            const bool dual_off_condition =
+                (!force_dual_capacity) && (!force_dual_defrost) && (single_req_lvl <= dual_off_lvl);
+
+            if (!demand_active) {
+              id(oq_dual_hp_enabled) = false;
+              id(oq_dual_hp_enable_hold_elapsed_min) = 0;
+              id(oq_dual_hp_disable_hold_elapsed_min) = 0;
+              id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
+              id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
             } else {
-              int on_hold = (int) roundf(id(oq_single_hp_assist_on_hold_min).state);
-              int off_hold = (int) roundf(id(oq_single_hp_assist_off_hold_min).state);
-              if (on_hold < 1) on_hold = 1;
-              if (off_hold < 1) off_hold = 1;
+              if (dual_on_condition) id(oq_dual_hp_enable_hold_elapsed_accum_min) += dt_s / 60.0f;
+              else id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
 
-              if (f >= assist_on_f) id(oq_single_hp_assist_on_accum_min) += dt_s / 60.0f;
-              else id(oq_single_hp_assist_on_accum_min) = 0.0f;
+              if (dual_off_condition) id(oq_dual_hp_disable_hold_elapsed_accum_min) += dt_s / 60.0f;
+              else id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
 
-              if (f <= assist_off_f) id(oq_single_hp_assist_off_accum_min) += dt_s / 60.0f;
-              else id(oq_single_hp_assist_off_accum_min) = 0.0f;
-
-              if (!id(oq_single_hp_assist_active) && id(oq_single_hp_assist_on_accum_min) >= (float) on_hold) {
-                id(oq_single_hp_assist_active) = true;
-                id(oq_single_hp_assist_off_accum_min) = 0.0f;
-              } else if (id(oq_single_hp_assist_active) && id(oq_single_hp_assist_off_accum_min) >= (float) off_hold) {
-                id(oq_single_hp_assist_active) = false;
-                id(oq_single_hp_assist_on_accum_min) = 0.0f;
+              if (!id(oq_dual_hp_enabled) &&
+                  id(oq_dual_hp_enable_hold_elapsed_accum_min) >= (float) dual_on_hold_min) {
+                id(oq_dual_hp_enabled) = true;
+                id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
+              } else if (id(oq_dual_hp_enabled) &&
+                         id(oq_dual_hp_disable_hold_elapsed_accum_min) >= (float) dual_off_hold_min) {
+                id(oq_dual_hp_enabled) = false;
+                id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
               }
 
-              id(oq_single_hp_assist_on_min) = (int) floorf(id(oq_single_hp_assist_on_accum_min) + 1e-3f);
-              id(oq_single_hp_assist_off_min) = (int) floorf(id(oq_single_hp_assist_off_accum_min) + 1e-3f);
+              id(oq_dual_hp_enable_hold_elapsed_min) = (int) floorf(id(oq_dual_hp_enable_hold_elapsed_accum_min) + 1e-3f);
+              id(oq_dual_hp_disable_hold_elapsed_min) = (int) floorf(id(oq_dual_hp_disable_hold_elapsed_accum_min) + 1e-3f);
             }
 
-            const bool need_assist = (f > assist_on_f) || (want_single && id(oq_single_hp_assist_active));
+            const bool dual_enabled = demand_active && (force_dual_capacity || force_dual_defrost || id(oq_dual_hp_enabled));
 
-            if (want_single && !need_assist) {
-              // One HP carries the full demand (1..assist_on_f)
+            if (!dual_enabled) {
+              // Single-HP-first: keep demand on runtime lead HP.
               if (lead_is_hp1) hp1_req = f;
               else             hp2_req = f;
             } else {
-              // Baseline split (even/odd)
+              // When dual is enabled, split evenly and keep odd step on runtime lead.
               hp1_req = f / 2;
               hp2_req = f / 2;
-              const bool odd = (f % 2) == 1;
-
-              if (odd) {
-                // extra step to HP with fewer runtime minutes
+              if ((f % 2) == 1) {
                 if (lead_is_hp1) hp1_req += 1;
                 else             hp2_req += 1;
               }
@@ -715,7 +739,7 @@ interval:
             const bool perf_inputs_valid = !isnan(Tamb) && !isnan(Tsup) && level_cap > 0;
             if (!perf_inputs_valid) {
               // Fallback path when perf-map inputs are invalid: keep delivering demand using simple split.
-              int assist_on_f = (int) roundf(id(oq_single_hp_assist_on_level_f).state);
+              int assist_on_f = (int) roundf(id(oq_dual_hp_enable_level).state);
               if (assist_on_f < 2) assist_on_f = 2;
               if (assist_on_f > demand_max_f) assist_on_f = demand_max_f;
               int assist_off_f = assist_on_f - 2;
@@ -723,35 +747,35 @@ interval:
 
               const bool want_single = (f > 0 && f <= assist_on_f && !(hp1_def && hp2_def));
               if (!want_single) {
-                id(oq_single_hp_assist_active) = false;
-                id(oq_single_hp_assist_on_min) = 0;
-                id(oq_single_hp_assist_off_min) = 0;
-                id(oq_single_hp_assist_on_accum_min) = 0.0f;
-                id(oq_single_hp_assist_off_accum_min) = 0.0f;
+                id(oq_dual_hp_enabled) = false;
+                id(oq_dual_hp_enable_hold_elapsed_min) = 0;
+                id(oq_dual_hp_disable_hold_elapsed_min) = 0;
+                id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
+                id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
               } else {
-                int on_hold = (int) roundf(id(oq_single_hp_assist_on_hold_min).state);
-                int off_hold = (int) roundf(id(oq_single_hp_assist_off_hold_min).state);
+                int on_hold = (int) roundf(id(oq_dual_hp_enable_hold_min).state);
+                int off_hold = (int) roundf(id(oq_dual_hp_disable_hold_min).state);
                 if (on_hold < 1) on_hold = 1;
                 if (off_hold < 1) off_hold = 1;
 
-                if (f >= assist_on_f) id(oq_single_hp_assist_on_accum_min) += dt_s / 60.0f;
-                else id(oq_single_hp_assist_on_accum_min) = 0.0f;
+                if (f >= assist_on_f) id(oq_dual_hp_enable_hold_elapsed_accum_min) += dt_s / 60.0f;
+                else id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
 
-                if (f <= assist_off_f) id(oq_single_hp_assist_off_accum_min) += dt_s / 60.0f;
-                else id(oq_single_hp_assist_off_accum_min) = 0.0f;
+                if (f <= assist_off_f) id(oq_dual_hp_disable_hold_elapsed_accum_min) += dt_s / 60.0f;
+                else id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
 
-                if (!id(oq_single_hp_assist_active) && id(oq_single_hp_assist_on_accum_min) >= (float) on_hold) {
-                  id(oq_single_hp_assist_active) = true;
-                  id(oq_single_hp_assist_off_accum_min) = 0.0f;
-                } else if (id(oq_single_hp_assist_active) && id(oq_single_hp_assist_off_accum_min) >= (float) off_hold) {
-                  id(oq_single_hp_assist_active) = false;
-                  id(oq_single_hp_assist_on_accum_min) = 0.0f;
+                if (!id(oq_dual_hp_enabled) && id(oq_dual_hp_enable_hold_elapsed_accum_min) >= (float) on_hold) {
+                  id(oq_dual_hp_enabled) = true;
+                  id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
+                } else if (id(oq_dual_hp_enabled) && id(oq_dual_hp_disable_hold_elapsed_accum_min) >= (float) off_hold) {
+                  id(oq_dual_hp_enabled) = false;
+                  id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
                 }
 
-                id(oq_single_hp_assist_on_min) = (int) floorf(id(oq_single_hp_assist_on_accum_min) + 1e-3f);
-                id(oq_single_hp_assist_off_min) = (int) floorf(id(oq_single_hp_assist_off_accum_min) + 1e-3f);
+                id(oq_dual_hp_enable_hold_elapsed_min) = (int) floorf(id(oq_dual_hp_enable_hold_elapsed_accum_min) + 1e-3f);
+                id(oq_dual_hp_disable_hold_elapsed_min) = (int) floorf(id(oq_dual_hp_disable_hold_elapsed_accum_min) + 1e-3f);
               }
-              const bool need_assist = (f > assist_on_f) || (want_single && id(oq_single_hp_assist_active));
+              const bool need_assist = (f > assist_on_f) || (want_single && id(oq_dual_hp_enabled));
 
               if (want_single && !need_assist) {
                 if (lead_is_hp1) hp1_req = f;
@@ -983,6 +1007,29 @@ interval:
 
             hp1_req = limit_slew(true, hp1_req);
             hp2_req = limit_slew(false, hp2_req);
+
+            // Global guardrail: in curve mode allow at most one HP level change per cycle.
+            // This avoids tandem jumps like 1+1 -> 2+2 that create thermal overshoot.
+            const int prev1 = id(hp1_last_applied_level);
+            const int prev2 = id(hp2_last_applied_level);
+            const int d_hp1 = hp1_req - prev1;
+            const int d_hp2 = hp2_req - prev2;
+            if (d_hp1 != 0 && d_hp2 != 0) {
+              bool apply_hp1_change = true;
+              if (d_hp1 > 0 && d_hp2 > 0) {
+                // Ramp-up: prioritize runtime lead.
+                apply_hp1_change = lead_is_hp1;
+              } else if (d_hp1 < 0 && d_hp2 < 0) {
+                // Ramp-down: shed lag first.
+                apply_hp1_change = !lead_is_hp1;
+              } else {
+                // Mixed direction: prioritize the downward correction.
+                apply_hp1_change = (d_hp1 < 0);
+              }
+
+              if (apply_hp1_change) hp2_req = prev2;
+              else hp1_req = prev1;
+            }
           }
 
           // =========================

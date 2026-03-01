@@ -182,9 +182,11 @@ When PID SP/PV is invalid, demand falls back to 0 and integral is reset.
 Heating-curve stability guards around zero-demand edge:
 
 - profile-based outside-temperature smoothing and target quantization
-- start/stop temperature hysteresis around supply target
+- start/stop gating with OFF-confirmation and low-PID requirement
 - near-target `COAST` phase (low modulation instead of immediate drop to `0`)
+- room-temperature coupling trims supply target when room drifts warm
 - explicit per-HP slew-rate limiting with slower up and faster down behavior
+- single-HP-first allocation with dual-enable hysteresis and sequential HP step changes
 
 ## 6. Allocation and Optimization Mechanics
 
