@@ -2153,7 +2153,11 @@ views:
               start/stop behavior.
 
               - **Demand filter ramp up** controls how many demand steps per
-              minute `Demand filtered` may rise toward `Demand raw`.
+              minute `Demand filtered` may rise toward `Demand raw` in Power
+              House mode.
+
+              - In heating-curve mode, PID demand is passed through directly;
+              per-HP slew limiting remains the guardrail.
 
               - **Single HP assist ON level (f)** defines above which filtered
               demand level dual-HP assist may be activated.

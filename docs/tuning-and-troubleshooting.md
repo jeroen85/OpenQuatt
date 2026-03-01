@@ -215,7 +215,7 @@ What to watch:
 - short-cycling behavior
 
 Use allowed level switches if you need temporary level band limitations per HP.
-In heating-curve mode, demand rundown is profile-based and gradual (Comfort faster, Balanced/Stable softer) to reduce abrupt HP drop-outs.
+In heating-curve mode, PID demand is passed through directly; per-HP slew limiting remains as guardrail.
 
 ## 6. Flow and Pump Tuning
 

@@ -2270,7 +2270,10 @@ views:
 
               - **Demand filter ramp up** bepaalt met hoeveel demand-stappen per
               minuut `Demand filtered` maximaal mag stijgen richting `Demand
-              raw`.
+              raw` in Power House mode.
+
+              - In heating-curve mode wordt PID-demand direct doorgezet; de
+              per-HP slew-limiter blijft de guardrail.
 
               - **Single HP assist ON level (f)** bepaalt boven welk gefilterd
               demand-level dual-HP-assist mag worden geactiveerd.
