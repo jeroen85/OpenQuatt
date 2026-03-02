@@ -213,6 +213,13 @@ globals:
     restore_value: false
     initial_value: '0'
 
+  # Latched single-HP owner in heating-curve mode (0=none, 1=HP1, 2=HP2).
+  # This prevents lead handovers while demand is continuously active.
+  - id: oq_curve_single_owner_hp
+    type: int
+    restore_value: false
+    initial_value: '0'
+
   # Per-HP timestamp for explicit level slew limiting.
   - id: hp1_last_level_change_ms
     type: uint32_t
@@ -553,6 +560,7 @@ interval:
             id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
             id(oq_dual_hp_emergency_hold_elapsed_min) = 0;
             id(oq_dual_hp_emergency_hold_elapsed_accum_min) = 0.0f;
+            id(oq_curve_single_owner_hp) = 0;
             return;
           }
           // =========================
@@ -775,10 +783,28 @@ interval:
             const bool dual_enabled = demand_active && (force_dual_capacity || force_dual_defrost || id(oq_dual_hp_enabled));
 
             if (!dual_enabled) {
-              // Single-HP-first: keep demand on runtime lead HP.
-              if (lead_is_hp1) hp1_req = f;
-              else             hp2_req = f;
+              // Single-HP-first with owner latch: only reselect owner from full idle.
+              int owner = id(oq_curve_single_owner_hp);
+              const bool prev_hp1_on = (id(hp1_last_applied_level) > 0);
+              const bool prev_hp2_on = (id(hp2_last_applied_level) > 0);
+
+              if (!demand_active) {
+                owner = 0;
+              } else if (prev_hp1_on && !prev_hp2_on) {
+                owner = 1;
+              } else if (prev_hp2_on && !prev_hp1_on) {
+                owner = 2;
+              } else if (owner != 1 && owner != 2) {
+                owner = lead_is_hp1 ? 1 : 2;
+              }
+
+              id(oq_curve_single_owner_hp) = owner;
+              if (owner == 1) hp1_req = f;
+              else if (owner == 2) hp2_req = f;
+              else if (lead_is_hp1) hp1_req = f;
+              else hp2_req = f;
             } else {
+              id(oq_curve_single_owner_hp) = 0;
               // When dual is enabled, split evenly and keep odd step on runtime lead.
               hp1_req = f / 2;
               hp2_req = f / 2;
@@ -1099,11 +1125,11 @@ interval:
           }
 
           // =========================
-          // 5) Minimum runtime (Power House only)
-          // In heating-curve mode, OFF/COAST/HEAT logic + slew guardrail are leading.
+          // 5) Minimum runtime (all strategies)
+          // Prevents very short compressor runs in both curve and Power House modes.
           // =========================
           const int min_rt = (int) roundf(id(oq_min_runtime_min).state);
-          if (is_power_house && min_rt > 0) {
+          if (min_rt > 0) {
             // HP1: if request is 0 but runtime < min -> force >=1
             const uint32_t min_rt_ms = (uint32_t) min_rt * 60000UL;
             const uint32_t hp1_rt_ms = (uint32_t)(now_ms - id(hp1_last_start_ms));
