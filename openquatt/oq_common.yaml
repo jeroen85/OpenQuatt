@@ -82,6 +82,7 @@ sensor:
   - platform: uptime
     name: Uptime
     id: uptime_sensor
+    internal: true
     icon: mdi:timer-outline
     update_interval: 60s
     device_class: duration
@@ -152,6 +153,36 @@ text_sensor:
     icon: mdi:information-outline
     hide_timestamp: true
     entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+  - platform: template
+    id: uptime_readable_text
+    name: Uptime
+    icon: mdi:timer-outline
+    entity_category: diagnostic
+    update_interval: 60s
+    lambda: |-
+      if (isnan(id(uptime_sensor).state)) {
+        return {"unknown"};
+      }
+
+      const uint32_t total_seconds = static_cast<uint32_t>(id(uptime_sensor).state);
+      const uint32_t days = total_seconds / 86400U;
+      const uint32_t hours = (total_seconds % 86400U) / 3600U;
+      const uint32_t minutes = (total_seconds % 3600U) / 60U;
+      const uint32_t seconds = total_seconds % 60U;
+
+      char buffer[32];
+      if (days > 0U) {
+        snprintf(buffer, sizeof(buffer), "%ud %uh %um", days, hours, minutes);
+      } else if (hours > 0U) {
+        snprintf(buffer, sizeof(buffer), "%uh %um", hours, minutes);
+      } else if (minutes > 0U) {
+        snprintf(buffer, sizeof(buffer), "%um", minutes);
+      } else {
+        snprintf(buffer, sizeof(buffer), "%us", seconds);
+      }
+      return {buffer};
     web_server:
       sorting_group_id: oq_diagnostics
 
