@@ -169,6 +169,16 @@ globals:
     restore_value: false
     initial_value: '0.0'
 
+  # Emergency dual-enable hold timing (curve mode capacity/deficit override).
+  - id: oq_dual_hp_emergency_hold_elapsed_min
+    type: int
+    restore_value: false
+    initial_value: '0'
+  - id: oq_dual_hp_emergency_hold_elapsed_accum_min
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+
   # Fractional ramp budget for demand filter (Power House only).
   - id: oq_demand_filter_ramp_up_budget
     type: float
@@ -541,6 +551,8 @@ interval:
             id(oq_dual_hp_disable_hold_elapsed_min) = 0;
             id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
             id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
+            id(oq_dual_hp_emergency_hold_elapsed_min) = 0;
+            id(oq_dual_hp_emergency_hold_elapsed_accum_min) = 0.0f;
             return;
           }
           // =========================
@@ -653,6 +665,33 @@ interval:
             if (dual_on_hold_min < 1) dual_on_hold_min = 1;
             if (dual_off_hold_min < 1) dual_off_hold_min = 1;
 
+            // Hydraulic systems react slowly; dual emergency path is intentionally conservative.
+            int startup_grace_s = 480;      // Balanced default: 8 min single-HP settle
+            int emergency_hold_min = 6;     // Balanced default: sustained deficit before forcing dual
+            float emergency_temp_err_c = 1.50f;
+            float dual_disable_temp_err_max_c = 0.50f;
+            if (id(oq_curve_control_profile).has_state()) {
+              const auto profile = id(oq_curve_control_profile).current_option();
+              if (profile == "Comfort") {
+                startup_grace_s = 300;
+                emergency_hold_min = 4;
+                emergency_temp_err_c = 1.20f;
+                dual_disable_temp_err_max_c = 0.70f;
+              } else if (profile == "Stable") {
+                startup_grace_s = 600;
+                emergency_hold_min = 8;
+                emergency_temp_err_c = 1.80f;
+                dual_disable_temp_err_max_c = 0.40f;
+              }
+            }
+            if (startup_grace_s < 0) startup_grace_s = 0;
+            if (emergency_hold_min < 1) emergency_hold_min = 1;
+
+            float temp_err_c = NAN;
+            if (!isnan(id(oq_supply_target_temp).state) && !isnan(id(oq_system_supply_temp).state)) {
+              temp_err_c = id(oq_supply_target_temp).state - id(oq_system_supply_temp).state;
+            }
+
             auto max_allowed_level_for_hp = [&](bool is_hp1)->int {
               int lvl_max = 0;
               for (int lvl = level_cap; lvl >= 1; lvl--) {
@@ -672,12 +711,37 @@ interval:
             if (single_limit_lvl > 0 && single_req_lvl > single_limit_lvl) single_req_lvl = single_limit_lvl;
 
             const bool demand_active = (f > 0);
-            const bool force_dual_capacity = demand_active && (single_limit_lvl > 0) && (f > single_limit_lvl);
+            const bool beyond_single_capacity = demand_active && (single_limit_lvl > 0) && (f > single_limit_lvl);
+            const bool severe_level_pressure =
+                (single_limit_lvl > 0) && (single_req_lvl >= std::min(max_level, dual_on_lvl + 2));
+            const bool severe_temp_deficit = !isnan(temp_err_c) && (temp_err_c >= emergency_temp_err_c);
+            const bool startup_grace_active =
+                (startup_grace_s > 0) &&
+                (((lead_is_hp1 ? id(hp1_last_start_ms) : id(hp2_last_start_ms)) > 0) &&
+                 (now_ms > (lead_is_hp1 ? id(hp1_last_start_ms) : id(hp2_last_start_ms))) &&
+                 ((now_ms - (lead_is_hp1 ? id(hp1_last_start_ms) : id(hp2_last_start_ms))) <
+                  (uint32_t) startup_grace_s * 1000UL));
+
+            bool force_dual_capacity = false;
+            const bool emergency_dual_condition =
+                demand_active && beyond_single_capacity && severe_level_pressure &&
+                (severe_temp_deficit || single_req_lvl >= (max_level - 1)) && !startup_grace_active;
+            if (emergency_dual_condition) {
+              id(oq_dual_hp_emergency_hold_elapsed_accum_min) += dt_s / 60.0f;
+            } else {
+              id(oq_dual_hp_emergency_hold_elapsed_accum_min) = 0.0f;
+            }
+            id(oq_dual_hp_emergency_hold_elapsed_min) =
+                (int) floorf(id(oq_dual_hp_emergency_hold_elapsed_accum_min) + 1e-3f);
+            if (id(oq_dual_hp_emergency_hold_elapsed_accum_min) >= (float) emergency_hold_min) {
+              force_dual_capacity = true;
+            }
             const bool force_dual_defrost = demand_active && (d1_pre && d2_pre);
             const bool dual_on_condition =
                 demand_active && (force_dual_capacity || force_dual_defrost || (single_req_lvl >= dual_on_lvl));
             const bool dual_off_condition =
-                (!force_dual_capacity) && (!force_dual_defrost) && (single_req_lvl <= dual_off_lvl);
+                (!force_dual_capacity) && (!force_dual_defrost) && (single_req_lvl <= dual_off_lvl) &&
+                (isnan(temp_err_c) || temp_err_c <= dual_disable_temp_err_max_c);
 
             if (!demand_active) {
               id(oq_dual_hp_enabled) = false;
@@ -685,6 +749,8 @@ interval:
               id(oq_dual_hp_disable_hold_elapsed_min) = 0;
               id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
               id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
+              id(oq_dual_hp_emergency_hold_elapsed_min) = 0;
+              id(oq_dual_hp_emergency_hold_elapsed_accum_min) = 0.0f;
             } else {
               if (dual_on_condition) id(oq_dual_hp_enable_hold_elapsed_accum_min) += dt_s / 60.0f;
               else id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
