@@ -96,7 +96,7 @@ Threshold model:
 
 ## 5. Heating Strategy Modes
 
-Runtime entity: `select.openquatt_heating_mode`
+Runtime entity: `select.openquatt_heating_control_mode`
 
 ### 5.1 Power House
 
@@ -120,7 +120,7 @@ Runtime entity: `select.openquatt_heating_mode`
 
 ## 6. Flow Mode
 
-Runtime entity: `select.openquatt_flow_mode`
+Runtime entity: `select.openquatt_flow_control_mode`
 
 Options:
 

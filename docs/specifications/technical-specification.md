@@ -104,8 +104,11 @@ Defined in `openquatt/oq_packages.yaml` and must be preserved unless dependencie
 
 ### Heat allocation loop
 
-- Interval: `${oq_heat_loop_s}`
-- Fast execution; per-minute controls (for example demand ramp and assist hold) are elapsed-time scaled for stable behavior.
+- Tick interval: `${oq_heat_loop_tick_s}`
+- Effective control cadence:
+  - Heating Curve: `${oq_heat_loop_curve_s}`
+  - Power House: `${oq_heat_loop_powerhouse_s}`
+- Per-minute controls (for example demand ramp, dual-enable hold, and min-runtime timing) are elapsed-time scaled for stable behavior.
 
 ### Flow loop
 

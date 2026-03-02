@@ -213,7 +213,7 @@ Intent:
 - control how demand is split and persisted
 - avoid short-cycling
 - in heating-curve mode: keep single-HP-first allocation with dual-enable hysteresis and calm actuator steps
-- in Power House mode: `Minimum runtime` can block fast stop
+- in both heating-curve and Power House modes: `Minimum runtime` can block fast stop
 - keep dual-HP enable predictable (disable level is derived as `enable - 1`)
 - optionally restrict level availability
 

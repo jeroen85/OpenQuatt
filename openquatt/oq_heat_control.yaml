@@ -885,14 +885,14 @@ interval:
             const bool perf_inputs_valid = !isnan(Tamb) && !isnan(Tsup) && level_cap > 0;
             if (!perf_inputs_valid) {
               // Fallback path when perf-map inputs are invalid: keep delivering demand using simple split.
-              int assist_on_f = (int) roundf(id(oq_dual_hp_enable_level).state);
-              if (assist_on_f < 2) assist_on_f = 2;
-              if (assist_on_f > demand_max_f) assist_on_f = demand_max_f;
-              int assist_off_f = assist_on_f - 2;
-              if (assist_off_f < 1) assist_off_f = 1;
+              int dual_on_f = (int) roundf(id(oq_dual_hp_enable_level).state);
+              if (dual_on_f < 2) dual_on_f = 2;
+              if (dual_on_f > demand_max_f) dual_on_f = demand_max_f;
+              int dual_off_f = dual_on_f - 2;
+              if (dual_off_f < 1) dual_off_f = 1;
 
-              const bool want_single = (f > 0 && f <= assist_on_f && !(hp1_def && hp2_def));
-              if (!want_single) {
+              const bool prefer_single = (f > 0 && f <= dual_on_f && !(hp1_def && hp2_def));
+              if (!prefer_single) {
                 id(oq_dual_hp_enabled) = false;
                 id(oq_dual_hp_enable_hold_elapsed_min) = 0;
                 id(oq_dual_hp_disable_hold_elapsed_min) = 0;
@@ -904,10 +904,10 @@ interval:
                 if (on_hold < 1) on_hold = 1;
                 if (off_hold < 1) off_hold = 1;
 
-                if (f >= assist_on_f) id(oq_dual_hp_enable_hold_elapsed_accum_min) += dt_s / 60.0f;
+                if (f >= dual_on_f) id(oq_dual_hp_enable_hold_elapsed_accum_min) += dt_s / 60.0f;
                 else id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
 
-                if (f <= assist_off_f) id(oq_dual_hp_disable_hold_elapsed_accum_min) += dt_s / 60.0f;
+                if (f <= dual_off_f) id(oq_dual_hp_disable_hold_elapsed_accum_min) += dt_s / 60.0f;
                 else id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
 
                 if (!id(oq_dual_hp_enabled) && id(oq_dual_hp_enable_hold_elapsed_accum_min) >= (float) on_hold) {
@@ -921,9 +921,9 @@ interval:
                 id(oq_dual_hp_enable_hold_elapsed_min) = (int) floorf(id(oq_dual_hp_enable_hold_elapsed_accum_min) + 1e-3f);
                 id(oq_dual_hp_disable_hold_elapsed_min) = (int) floorf(id(oq_dual_hp_disable_hold_elapsed_accum_min) + 1e-3f);
               }
-              const bool need_assist = (f > assist_on_f) || (want_single && id(oq_dual_hp_enabled));
+              const bool needs_dual = (f > dual_on_f) || (prefer_single && id(oq_dual_hp_enabled));
 
-              if (want_single && !need_assist) {
+              if (prefer_single && !needs_dual) {
                 if (lead_is_hp1) hp1_req = f;
                 else             hp2_req = f;
               } else {

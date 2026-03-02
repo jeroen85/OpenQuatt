@@ -61,7 +61,7 @@ docs/
 - `control-modes-and-flow.md`: CM behavior, Flow Mode semantics, Heating Strategy modes, and precedence.
 - `settings-reference.md`: compile-time vs runtime settings, including low-load and anti-flip controls.
 - `tuning-and-troubleshooting.md`: practical workflows, symptom-driven diagnostics, and low-load/zero-edge stability tuning.
-- `home-assistant-dashboard.md`: dashboard structure and how to use new low-load and shadow-arbiter debug cards.
+- `home-assistant-dashboard.md`: dashboard structure and how to use low-load, shadow-arbiter, and heating-curve debug cards.
 - `release-process.md`: GitHub Actions CI/release flow, tag strategy, and release execution steps.
 - `dashboard/README.md`: dashboard language variants and Home Assistant import instructions.
 - `specifications/functional-specification.md`: what the system must do.

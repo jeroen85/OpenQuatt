@@ -95,6 +95,7 @@ Expected content pattern:
 - inline heating-curve control profile tile
 - core KPI tile grid (`P_house`, `P_req`, `HP capacity`, `HP deficit`)
 - demand and cap tile row (`Demand raw`, `Demand filtered`, `Power cap demand`)
+- heating-curve trace row (`Demand curve pre/post-guardrail`, `Curve phase`, `Curve restart inhibit`)
 - capacity gauges with visual deficit severity
 - trend charts for demand/power behavior
 - heat allocation ramp control (`Demand filter ramp up`)
@@ -178,6 +179,7 @@ Expected content pattern:
 - manual Modbus probe controls (`Debug Modbus register`, `Debug Read HP1 register`, `Debug Read HP2 register`)
 - platform service utilities (`Firmware Update`, `Check Firmware Updates`)
 - runtime logger controls (`Debug Level`, `Debug Level Modbus`)
+- heating-curve loop diagnostics (`Supply target/actual`, demand chain pre/post guardrail, `Curve phase`, `Curve restart inhibit`, `Heating Debug State`)
 
 Operational rule:
 

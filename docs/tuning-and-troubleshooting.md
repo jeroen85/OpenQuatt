@@ -28,7 +28,7 @@ This guide provides a practical workflow for stable tuning and fast fault isolat
 
 1. **Signal and source sanity**
 2. **Heating Strategy behavior**
-3. **Heat allocation and assist thresholds**
+3. **Heat allocation and dual-enable thresholds**
 4. **Flow control PI behavior**
 5. **Supervisory limits and silent windows**
 6. **Energy trend validation**
@@ -190,7 +190,10 @@ What to watch:
 - `Heating Curve Supply Target`
 - selected supply temperature
 - `Demand Curve (raw)`
+- `Demand Curve (pre-guardrail)` and `Demand Curve (post-guardrail)`
+- `Curve Phase` and `Curve restart inhibit`
 - `Demand raw` and `Demand filtered` near zero edge
+- `Heating Debug State` (single-line trace of mode/phase/req/app/current levels)
 
 Low-demand stabilization controls (Heating Curve):
 
@@ -220,7 +223,7 @@ What to watch:
 
 Use allowed level switches if you need temporary level band limitations per HP.
 In heating-curve mode, PID demand is passed through directly with `HEAT/COAST/OFF` phasing, while allocation is single-HP-first with dual-enable hysteresis and sequential level steps.
-`Minimum runtime` stop-blocking is applied in Power House mode.
+`Minimum runtime` stop-blocking is applied in both heating-curve and Power House modes.
 
 ## 6. Flow and Pump Tuning
 
