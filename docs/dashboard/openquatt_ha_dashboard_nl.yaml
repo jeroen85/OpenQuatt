@@ -2270,18 +2270,24 @@ views:
 
               - **Demand filter ramp up** bepaalt met hoeveel demand-stappen per
               minuut `Demand filtered` maximaal mag stijgen richting `Demand
-              raw`.
+              raw` in Power House mode.
 
-              - **Single HP assist ON/OFF deficit** bepaalt bij welke thermische
-              tekort-waarde extra HP-assist wordt geactiveerd of weer
-              losgelaten.
+              - In heating-curve mode wordt PID-demand direct doorgezet; de
+              allocatie is single-HP-first met dual-enable hysterese en
+              sequentiële levelstappen.
 
-              - **ON/OFF hold** voegt tijdhysterese toe om op en neer schakelen
+              - **Dual HP enable level (lvl)** bepaalt bij welk aanhoudend
+              single-HP compressorlevel een tweede HP mag worden geactiveerd.
+
+              - Disable-level wordt intern afgeleid als `enable - 1` om het aantal
+              instellingen beperkt te houden.
+
+              - **Enable/disable hold** voegt tijdhysterese toe om op en neer schakelen
               te dempen.
 
-              - Lager ON of kortere ON-hold = sneller extra capaciteit.
+              - Lager enable-level of kortere enable-hold = sneller 2 HP actief.
 
-              - Hoger OFF of langere OFF-hold = langer dual-HP actief.
+              - Hogere disable-hold = langer dual-HP actief.
 
 
               </details>
@@ -2293,14 +2299,12 @@ views:
                 name: Minimum runtime
               - entity: number.openquatt_demand_filter_ramp_up
                 name: Demand filter ramp up
-              - entity: number.openquatt_single_hp_assist_on_deficit
-                name: Single HP assist ON deficit
-              - entity: number.openquatt_single_hp_assist_off_deficit
-                name: Single HP assist OFF deficit
-              - entity: number.openquatt_single_hp_assist_on_hold
-                name: Single HP assist ON hold
-              - entity: number.openquatt_single_hp_assist_off_hold
-                name: Single HP assist OFF hold
+              - entity: number.openquatt_dual_hp_enable_level
+                name: Dual HP enable level
+              - entity: number.openquatt_dual_hp_enable_hold
+                name: Dual HP enable hold
+              - entity: number.openquatt_dual_hp_disable_hold
+                name: Dual HP disable hold
       - type: grid
         cards:
           - type: heading
@@ -2585,14 +2589,22 @@ views:
               - Vergelijk eerst `Supply target` met `Supply actual` om de
               regelafwijking te zien.
 
-              - Controleer daarna de keten: `Demand curve raw (PID)` -> `Demand
-              raw` -> `Demand filtered`.
+              - Controleer daarna de keten:
+              `Demand curve pre-guardrail` -> `Demand curve post-guardrail` ->
+              `Demand raw` -> `Demand filtered`.
 
               - `P_req` wordt in curve mode afgeleid uit demand en helpt bij
               CM3/tekort-logica.
 
-              - `Curve Temp Deadband` en `Curve Demand Off Hold` zijn de
-                belangrijkste anti-flip stabilisatie rond de nulvraag-rand.
+              - `Curve phase` (`HEAT`/`COAST`/`OFF`) en `Curve restart inhibit`
+                verklaren waarom demand soms niet direct opnieuw start na een OFF-fase.
+
+              - `Heating Curve Control Profile` kiest de ingebouwde
+                stabiliteitsbundel (smoothing, hysterese en slew-rate gedrag).
+
+              - `Heating debug state` geeft een compacte one-line trace
+                (mode/phase/raw/f/req/app/current levels/temps).
+                Blijft deze unavailable, zet de entiteit eerst aan in de HA entity-registry.
 
               Let op: als `Supply actual` boven target zit maar demand hoog
               blijft, kijk dan naar PID-instellingen (`Kp/Ki/Kd`) en gedrag over
@@ -2606,6 +2618,8 @@ views:
             entities:
               - entity: select.openquatt_heating_control_mode
                 name: Heating mode
+              - entity: select.openquatt_heating_curve_control_profile
+                name: Curve control profile
               - entity: climate.openquatt_heating_curve_pid
                 name: Heating Curve PID
               - entity: button.openquatt_reset_heating_curve_pid_integral
@@ -2614,24 +2628,30 @@ views:
                 name: Supply target
               - entity: sensor.openquatt_water_supply_temp_selected
                 name: Supply actual (selected)
+              - entity: sensor.openquatt_demand_curve_pre_guardrail
+                name: Demand curve pre-guardrail
+              - entity: sensor.openquatt_demand_curve_post_guardrail
+                name: Demand curve post-guardrail
               - entity: sensor.openquatt_demand_curve_raw
-                name: Demand curve raw (PID)
+                name: Demand curve raw
+              - entity: sensor.openquatt_curve_phase
+                name: Curve phase
+              - entity: sensor.openquatt_curve_restart_inhibit
+                name: Curve restart inhibit
               - entity: sensor.openquatt_demand_raw
                 name: Demand raw
               - entity: sensor.openquatt_demand_filtered
                 name: Demand filtered
               - entity: sensor.openquatt_power_house_p_req
                 name: P_req
+              - entity: sensor.openquatt_heating_debug_state
+                name: Heating debug state
               - entity: number.openquatt_heating_curve_pid_kp
                 name: PID Kp
               - entity: number.openquatt_heating_curve_pid_ki
                 name: PID Ki
               - entity: number.openquatt_heating_curve_pid_kd
                 name: PID Kd
-              - entity: number.openquatt_curve_temp_deadband
-                name: Curve Temp Deadband
-              - entity: number.openquatt_curve_demand_off_hold
-                name: Curve Demand Off Hold
           - type: history-graph
             title: Heating Curve temperatuur-lus (2 uur)
             hours_to_show: 2

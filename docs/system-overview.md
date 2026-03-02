@@ -73,7 +73,7 @@ This prevents hidden control coupling and keeps debugging deterministic.
 |---|---:|---|
 | Supervisory | `${oq_supervisory_loop_s}` (default 5s) | Mode decisions, flow interlock, frost logic, power-cap safety net |
 | Heating Strategy | `${oq_strategy_loop_s}` (default 5s) | Demand generation (Power House / heating-curve path) |
-| Heat allocation | `${oq_heat_loop_s}` (default 60s) | Demand filtering, allocation, optimizer, level apply |
+| Heat allocation | Tick `${oq_heat_loop_tick_s}` (default 5s), effective cadence `${oq_heat_loop_curve_s}` (Curve) / `${oq_heat_loop_powerhouse_s}` (Power House) | Demand filtering, allocation, optimizer, level apply (per-minute tuning is elapsed-time scaled) |
 | Flow control | `${oq_flow_loop_s}` (default 5s) | Pump iPWM control (AUTO/MANUAL/FROST/autotune override) |
 | Boiler control | `${oq_boiler_loop_s}` (default 5s) | CM3 gating and temperature lockout |
 | CIC polling tick | `${cic_poll_tick_ms}` (default 5s) | Poll scheduler, stale detection, feed invalidation |
@@ -175,15 +175,18 @@ Uses:
 
 - heating-curve interpolation to derive supply target
 - PID climate loop to track supply temperature
-- PID output mapped to demand `0..20`
+- PID output mapped to demand `0..20` with phased output behavior (`HEAT`/`COAST`/`OFF`)
 
 When PID SP/PV is invalid, demand falls back to 0 and integral is reset.
 
 Heating-curve stability guards around zero-demand edge:
 
-- `Curve Temp Deadband`: caps curve demand near supply-target error zero
-- `Curve Demand Off Hold`: holds demand at 1 briefly before allowing 0
-- overtemp latch behavior to avoid direct CM2<->CM1 flip around the cutoff
+- profile-based outside-temperature smoothing and target quantization
+- start/stop gating with OFF-confirmation and low-PID requirement
+- near-target `COAST` phase (low modulation instead of immediate drop to `0`)
+- room-temperature coupling trims supply target when room drifts warm
+- explicit per-HP slew-rate limiting with slower up and faster down behavior
+- single-HP-first allocation with dual-enable hysteresis and sequential HP step changes
 
 ## 6. Allocation and Optimization Mechanics
 
@@ -194,13 +197,13 @@ Heating-curve stability guards around zero-demand edge:
 3. Control Mode gating (CM2/CM3 only)
 4. strategy-specific level logic
 5. allowed-level switch constraints
-6. min-runtime stop blocking
+6. min-runtime stop blocking (all strategies)
 7. write-on-change application and runtime counters
 
 Demand filter behavior is asymmetric:
 
 - downward path follows demand immediately
-- upward path is rate-limited by runtime control `Demand filter ramp up` (step/min)
+- upward path is rate-limited by runtime control `Demand filter ramp up` (step/min, Power House path)
 
 Power House optimizer cost considers:
 

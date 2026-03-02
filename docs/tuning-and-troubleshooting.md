@@ -28,7 +28,7 @@ This guide provides a practical workflow for stable tuning and fast fault isolat
 
 1. **Signal and source sanity**
 2. **Heating Strategy behavior**
-3. **Heat allocation and assist thresholds**
+3. **Heat allocation and dual-enable thresholds**
 4. **Flow control PI behavior**
 5. **Supervisory limits and silent windows**
 6. **Energy trend validation**
@@ -181,6 +181,7 @@ Adaptive comfort-bias guardrail:
 Primary knobs:
 
 - curve setpoints (`Curve Tsupply @ ...`)
+- `Heating Curve Control Profile` (`Comfort` / `Balanced` / `Stable`)
 - `Heating Curve PID Kp/Ki/Kd`
 - `Curve Fallback Tsupply`
 
@@ -189,12 +190,17 @@ What to watch:
 - `Heating Curve Supply Target`
 - selected supply temperature
 - `Demand Curve (raw)`
+- `Demand Curve (pre-guardrail)` and `Demand Curve (post-guardrail)`
+- `Curve Phase` and `Curve restart inhibit`
 - `Demand raw` and `Demand filtered` near zero edge
+- `Heating Debug State` (single-line trace of mode/phase/req/app/current levels)
 
 Low-demand stabilization controls (Heating Curve):
 
-- `Curve Temp Deadband` reduces hunting around `Supply target`.
-- `Curve Demand Off Hold` delays final `1 -> 0` demand drop to avoid CM1/CM2 flip.
+- profile-based outside temperature smoothing and target quantization
+- start/stop temperature hysteresis around supply target
+- near-target `COAST` phase to reduce demand without immediately dropping to `0`
+- explicit per-HP level slew-rate limiting (up slower than down)
 
 ## 5. Heat Allocation Tuning
 
@@ -202,10 +208,12 @@ Primary knobs:
 
 - `Minimum runtime`
 - `Demand filter ramp up`
-- `Single HP Assist ON Deficit`
-- `Single HP Assist OFF Deficit`
-- `Single HP Assist ON Hold`
-- `Single HP Assist OFF Hold`
+- `Dual HP Enable Level`
+- `Dual HP Enable Hold`
+- `Dual HP Disable Hold`
+
+`Dual HP Enable Level` is interpreted as compressor level (`lvl 1..10`) in the
+single-HP path; dual-HP disable threshold is derived as `enable - 1`.
 
 What to watch:
 
@@ -214,6 +222,8 @@ What to watch:
 - short-cycling behavior
 
 Use allowed level switches if you need temporary level band limitations per HP.
+In heating-curve mode, PID demand is passed through directly with `HEAT/COAST/OFF` phasing, while allocation is single-HP-first with dual-enable hysteresis and sequential level steps.
+`Minimum runtime` stop-blocking is applied in both heating-curve and Power House modes.
 
 ## 6. Flow and Pump Tuning
 
@@ -297,7 +307,7 @@ Remember: fault state logic is timer-based and mode-context-dependent.
 | Demand jumps too hard | `Demand raw`, strategy params | increase deadband / lower ramp-up |
 | CM1<->CM2 flips at low load | `Low-load dynamic thresholds`, `CM2 idle-exit reason`, `CM2 re-entry block active` | increase re-entry block or retune Power House ramp/deadband; verify `P_req` stays structurally below `off` when no sustained heat is needed |
 | Long periods below room setpoint | `Power House effective room target`, `Power House comfort bias`, `Power House room error avg` | increase comfort bias base/max, or lower deadband if correction starts too late |
-| Curve mode drops to 0 demand too quickly | `Curve Temp Deadband`, `Curve Demand Off Hold`, `Supply target` vs actual | increase deadband slightly or extend off-hold |
+| Curve mode drops to 0 demand too quickly | `Heating Curve Control Profile`, `Supply target` vs actual, `Demand curve raw` | move profile toward `Comfort` or retune curve points/PID |
 | CM3 toggles often | deficit thresholds/timers | widen ON/OFF gap, increase hold times |
 | Flow oscillates | flow PI and setpoint | reduce Kp/Ki, verify hydraulics |
 | COP looks implausible | power and heat inputs | validate source values and power integration |

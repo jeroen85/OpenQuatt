@@ -153,10 +153,9 @@ Key entities:
 - `Power House ramp up`
 - `Power House ramp down`
 - `Curve Tsupply @ -20/-10/0/5/10/15°C`
+- `Heating Curve Control Profile` (`Comfort` / `Balanced` / `Stable`)
 - `Heating Curve PID Kp/Ki/Kd`
 - `Curve Fallback Tsupply (No Outside Temp)`
-- `Curve Temp Deadband`
-- `Curve Demand Off Hold`
 
 Intent:
 
@@ -204,16 +203,18 @@ Key entities:
 
 - `Minimum runtime`
 - `Demand filter ramp up`
-- `Single HP Assist ON Deficit`
-- `Single HP Assist OFF Deficit`
-- `Single HP Assist ON Hold`
-- `Single HP Assist OFF Hold`
+- `Dual HP Enable Level`
+- `Dual HP Enable Hold`
+- `Dual HP Disable Hold`
 - HP level allow switches (`HP1/HP2 Allowed level 1..10`)
 
 Intent:
 
 - control how demand is split and persisted
 - avoid short-cycling
+- in heating-curve mode: keep single-HP-first allocation with dual-enable hysteresis and calm actuator steps
+- in both heating-curve and Power House modes: `Minimum runtime` can block fast stop
+- keep dual-HP enable predictable (disable level is derived as `enable - 1`)
 - optionally restrict level availability
 
 ### 5.4 Flow and pump

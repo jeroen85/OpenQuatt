@@ -669,8 +669,14 @@ interval:
           const bool hp2_mode_valid = !isnan(hp2_mode_raw);
           const bool hp1_heating = hp1_mode_valid && ((int) roundf(hp1_mode_raw) == 2);
           const bool hp2_heating = hp2_mode_valid && ((int) roundf(hp2_mode_raw) == 2);
-          const bool both_modes_known = hp1_mode_valid && hp2_mode_valid;
-          const bool both_units_idle = both_modes_known && !hp1_heating && !hp2_heating;
+          const bool hp1_target_heating =
+              id(hp1_set_working_mode).has_state() && id(hp1_set_working_mode).current_option() == "Heating";
+          const bool hp2_target_heating =
+              id(hp2_set_working_mode).has_state() && id(hp2_set_working_mode).current_option() == "Heating";
+          const bool hp1_active_guard = hp1_heating || hp1_target_heating || (hp1_lvl > 0);
+          const bool hp2_active_guard = hp2_heating || hp2_target_heating || (hp2_lvl > 0);
+          const bool any_hp_active_guard = hp1_active_guard || hp2_active_guard;
+          const bool both_units_idle = !any_hp_active_guard;
 
           bool heating_req = heating_req_raw;
           float p_req_w = NAN;
@@ -921,6 +927,15 @@ interval:
 
           // Publish lowflow fault status (writes-only-on-change)
           publish_binary_if_changed(id(oq_lowflow_fault_active_bs), id(oq_lowflow_fault_active));
+
+          // Hard safety path: persistent low-flow fault must force both HPs to Standby + level 0.
+          // This runs in supervisory as an explicit emergency override, independent from heat-control timing.
+          if (id(oq_lowflow_fault_active)) {
+            set_select_option(id(hp1_set_working_mode), "Standby");
+            set_select_option(id(hp2_set_working_mode), "Standby");
+            set_select_option(id(hp1_compressor_level), "0");
+            set_select_option(id(hp2_compressor_level), "0");
+          }
           // -------------------------------------------------
           // 3) Frost condition (hysteresis + fail-safe) [CM98]
           //    Relevant only when there is no heat demand.
@@ -1070,6 +1085,12 @@ interval:
                     desired_local = (base_target == 98) ? 98 : 0;
                   }
                 }
+              }
+
+              // Safety: never leave CM1 to CM0 while any HP still reports/targets activity.
+              // Keep CM1 (pump-on holding state) until both HPs are effectively idle.
+              if (strcmp(cur_cm, "CM1") == 0 && !heating_req && base_target == 0 && any_hp_active_guard) {
+                desired_local = 1;
               }
 
               // CM3 (boiler assist) auto-switching
@@ -1231,7 +1252,8 @@ interval:
             }
 
             const bool sticky_active = in_cm0 && ms_window_active(id(oq_sticky_until_ms));
-            const bool pump_on = (strcmp(desired_cm, "CM0") != 0) || sticky_active;
+            // Pump failsafe: never stop circulation while any HP is still active.
+            const bool pump_on = (strcmp(desired_cm, "CM0") != 0) || sticky_active || any_hp_active_guard;
             set_select_option(id(hp1_set_pump_mode), pump_on ? "On" : "Off");
             set_select_option(id(hp2_set_pump_mode), pump_on ? "On" : "Off");
 
