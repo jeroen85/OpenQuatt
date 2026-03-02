@@ -536,6 +536,18 @@ globals:
     restore_value: false
     initial_value: '0'
 
+  # Timestamp when curve phase entered OFF (for restart inhibit timing).
+  - id: oq_curve_off_since_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
+  # Diagnostic flag: restart from OFF is temporarily inhibited.
+  - id: oq_curve_restart_inhibit_active
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
   # Curve outside-temperature EMA state.
   - id: oq_curve_outside_ema_c
     type: float
@@ -846,6 +858,18 @@ sensor:
     lambda: |-
       return (float) id(oq_demand_curve);
 
+  - platform: template
+    id: oq_curve_restart_inhibit_sensor
+    name: "Curve restart inhibit"
+    icon: mdi:timer-sand-paused
+    accuracy_decimals: 0
+    update_interval: 5s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return id(oq_curve_restart_inhibit_active) ? 1.0f : 0.0f;
+
   # DEBUG-RUNTIME START: Power House adaptive comfort-bias diagnostics
   - platform: template
     id: oq_phouse_room_error_avg_c_sensor
@@ -962,6 +986,8 @@ output:
             id(oq_curve_demand_pre_guardrail) = 0;
             id(oq_curve_heat_request_active) = false;
             id(oq_curve_stop_arm_ms) = 0;
+            id(oq_curve_off_since_ms) = 0;
+            id(oq_curve_restart_inhibit_active) = false;
             id(oq_curve_phase_code) = 0;
             return;
           }
@@ -973,6 +999,8 @@ output:
             id(oq_curve_demand_pre_guardrail) = 0;
             id(oq_curve_heat_request_active) = false;
             id(oq_curve_stop_arm_ms) = 0;
+            id(oq_curve_off_since_ms) = 0;
+            id(oq_curve_restart_inhibit_active) = false;
             id(oq_curve_phase_code) = 0;
             return;
           }
@@ -991,6 +1019,8 @@ output:
           if (isnan(spw) || isnan(pv)) {
             id(oq_curve_heat_request_active) = false;
             id(oq_curve_stop_arm_ms) = 0;
+            id(oq_curve_off_since_ms) = 0;
+            id(oq_curve_restart_inhibit_active) = false;
             id(oq_demand_curve) = 0;
             id(oq_curve_demand_pre_guardrail) = 0;
             id(oq_curve_phase_code) = 0;
@@ -998,39 +1028,50 @@ output:
           }
 
           float start_delta_c = 0.45f;  // Balanced default
-          float stop_delta_c = 0.75f;   // Balanced default
+          float stop_delta_c = 0.90f;   // Balanced default (stricter OFF)
           float coast_enter_c = 0.35f;  // Balanced default
           int coast_floor_f = 1;
           int coast_cap_f = 6;
-          int off_pid_max_f = 2;
-          uint32_t off_confirm_ms = 180000UL;  // 180s
-          float room_overheat_off_c = 0.20f;
+          int off_pid_max_f = 1;
+          uint32_t off_confirm_ms = 360000UL;  // 360s
+          float room_overheat_off_c = 0.30f;
           float room_resume_heat_c = 0.05f;
+          float restart_delta_c = 0.80f;
+          float restart_bypass_extra_c = 0.45f;
+          uint32_t off_reentry_min_ms = 480000UL;  // 8 minutes
           if (id(oq_curve_control_profile).has_state()) {
             const auto profile = id(oq_curve_control_profile).current_option();
             if (profile == "Comfort") {
               start_delta_c = 0.30f;
-              stop_delta_c = 0.55f;
+              stop_delta_c = 0.70f;
               coast_enter_c = 0.25f;
               coast_floor_f = 2;
               coast_cap_f = 8;
               off_pid_max_f = 1;
-              off_confirm_ms = 120000UL;
-              room_overheat_off_c = 0.15f;
+              off_confirm_ms = 240000UL;
+              room_overheat_off_c = 0.20f;
               room_resume_heat_c = 0.03f;
+              restart_delta_c = 0.60f;
+              restart_bypass_extra_c = 0.35f;
+              off_reentry_min_ms = 300000UL;
             } else if (profile == "Stable") {
               start_delta_c = 0.65f;
-              stop_delta_c = 1.00f;
+              stop_delta_c = 1.10f;
               coast_enter_c = 0.55f;
               coast_floor_f = 1;
               coast_cap_f = 4;
-              off_pid_max_f = 2;
-              off_confirm_ms = 300000UL;
-              room_overheat_off_c = 0.30f;
+              off_pid_max_f = 1;
+              off_confirm_ms = 420000UL;
+              room_overheat_off_c = 0.35f;
               room_resume_heat_c = 0.08f;
+              restart_delta_c = 1.00f;
+              restart_bypass_extra_c = 0.55f;
+              off_reentry_min_ms = 600000UL;
             }
           }
           if (stop_delta_c < start_delta_c + 0.10f) stop_delta_c = start_delta_c + 0.10f;
+          if (restart_delta_c < start_delta_c + 0.05f) restart_delta_c = start_delta_c + 0.05f;
+          if (restart_bypass_extra_c < 0.20f) restart_bypass_extra_c = 0.20f;
           if (off_pid_max_f < 0) off_pid_max_f = 0;
           if (off_pid_max_f > demand_max) off_pid_max_f = demand_max;
           if (coast_floor_f < 1) coast_floor_f = 1;
@@ -1047,8 +1088,12 @@ output:
 
           const bool above_stop_band = pv >= (spw + stop_delta_c);
           const bool low_pid_for_off = d <= off_pid_max_f;
+          const float restart_bypass_delta_c = restart_delta_c + restart_bypass_extra_c;
           const uint32_t now_ms = (uint32_t) millis();
           bool heat_request_active = id(oq_curve_heat_request_active);
+          bool restart_inhibit_active = false;
+          uint32_t off_since_ms = id(oq_curve_off_since_ms);
+          const bool was_heat_request_active = heat_request_active;
           if (heat_request_active) {
             if (above_stop_band && low_pid_for_off && room_allows_off) {
               uint32_t armed_ms = id(oq_curve_stop_arm_ms);
@@ -1061,9 +1106,27 @@ output:
             } else {
               id(oq_curve_stop_arm_ms) = 0;
             }
+            if (!heat_request_active && was_heat_request_active) {
+              off_since_ms = now_ms;
+            }
           } else {
             id(oq_curve_stop_arm_ms) = 0;
-            if (pv <= (spw - start_delta_c) || room_requests_heat) heat_request_active = true;
+            if (off_since_ms == 0 || now_ms <= off_since_ms) off_since_ms = now_ms;
+            const bool below_restart_band = pv <= (spw - restart_delta_c);
+            const bool deep_undershoot_restart = pv <= (spw - restart_bypass_delta_c);
+            bool off_lock_active = false;
+            if (off_reentry_min_ms > 0 && now_ms > off_since_ms) {
+              off_lock_active = (now_ms - off_since_ms) < off_reentry_min_ms;
+            }
+            restart_inhibit_active = off_lock_active && !deep_undershoot_restart && !room_requests_heat;
+            if ((below_restart_band || room_requests_heat) && !restart_inhibit_active) {
+              heat_request_active = true;
+              off_since_ms = 0;
+            }
+          }
+          if (heat_request_active) {
+            restart_inhibit_active = false;
+            off_since_ms = 0;
           }
 
           int curve_phase_code = 1;  // HEAT
@@ -1087,6 +1150,8 @@ output:
           }
 
           id(oq_curve_heat_request_active) = heat_request_active;
+          id(oq_curve_off_since_ms) = off_since_ms;
+          id(oq_curve_restart_inhibit_active) = restart_inhibit_active;
           id(oq_demand_curve) = d;
           id(oq_curve_phase_code) = curve_phase_code;
 
@@ -1183,6 +1248,8 @@ interval:
             }
             id(oq_curve_heat_request_active) = false;
             id(oq_curve_stop_arm_ms) = 0;
+            id(oq_curve_off_since_ms) = 0;
+            id(oq_curve_restart_inhibit_active) = false;
             const float Tout = id(outside_temp_selected).state;
             const float Tc   = id(house_cold_temp_c).state;
             const float T0   = id(house_zero_power_temp_c).state;

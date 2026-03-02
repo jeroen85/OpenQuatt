@@ -394,6 +394,16 @@ text_sensor:
       const bool lead_is_hp1 = (id(hp1_minutes) <= id(hp2_minutes));
       return std::string(lead_is_hp1 ? "HP1" : "HP2");
 
+  - platform: template
+    id: oq_heating_debug_state
+    name: "Heating Debug State"
+    icon: mdi:bug-outline
+    entity_category: diagnostic
+    disabled_by_default: true
+    update_interval: never
+    web_server:
+      sorting_group_id: oq_diagnostics
+
 # ----------------------------
 # BUTTON
 # ----------------------------
@@ -509,6 +519,49 @@ interval:
           // =========================
           const int cm_code = id(oq_control_mode_code);
           const bool cm_allows_hp = (cm_code == 2 || cm_code == 3);
+          auto publish_debug = [&](int req1, int req2, int app1, int app2)->void {
+            static std::string last_debug = "";
+            const char *mode_s = is_curve_mode ? "CURVE" : "PH";
+            const int phase_code = id(oq_curve_phase_code);
+            const char *phase_s = "OFF";
+            if (phase_code == 1) phase_s = "HEAT";
+            else if (phase_code == 2) phase_s = "COAST";
+            const uint32_t off_since_ms = id(oq_curve_off_since_ms);
+            uint32_t off_age_s = 0;
+            if (off_since_ms > 0 && now_ms > off_since_ms) off_age_s = (now_ms - off_since_ms) / 1000UL;
+            const float spw = id(oq_supply_target_temp).state;
+            const float pv = id(oq_system_supply_temp).state;
+            const float room_c = id(room_temp_selected).state;
+            const float room_sp_c = id(room_setpoint_selected).state;
+            const float tout_c = id(outside_temp_selected).state;
+            const float wm1 = id(hp1_working_mode).state;
+            const float wm2 = id(hp2_working_mode).state;
+            int cur1 = -1;
+            int cur2 = -1;
+            if (id(hp1_compressor_level).has_state()) cur1 = (int) id(hp1_compressor_level).active_index().value_or(-1);
+            if (id(hp2_compressor_level).has_state()) cur2 = (int) id(hp2_compressor_level).active_index().value_or(-1);
+            char buf[640];
+            snprintf(
+              buf, sizeof(buf),
+              "mode=%s cm=%d phase=%s raw=%d f=%d cap=%d pre=%d post=%d dual=%d on=%d off=%d em=%d lead=%d owner=%d req=%d+%d app=%d+%d cur=%d+%d wm=%.0f/%.0f sp=%.2f pv=%.2f room=%.2f/%.2f out=%.2f ri=%d off_age=%lus rt=%d/%d",
+              mode_s, cm_code, phase_s, raw, f, f_cap,
+              id(oq_curve_demand_pre_guardrail), id(oq_demand_curve),
+              (int) id(oq_dual_hp_enabled),
+              id(oq_dual_hp_enable_hold_elapsed_min),
+              id(oq_dual_hp_disable_hold_elapsed_min),
+              id(oq_dual_hp_emergency_hold_elapsed_min),
+              id(oq_last_lead_hp), id(oq_curve_single_owner_hp),
+              req1, req2, app1, app2,
+              cur1, cur2, wm1, wm2, spw, pv, room_c, room_sp_c, tout_c,
+              (int) id(oq_curve_restart_inhibit_active),
+              (unsigned long) off_age_s,
+              id(hp1_minutes), id(hp2_minutes));
+            const std::string s(buf);
+            if (s != last_debug) {
+              id(oq_heating_debug_state).publish_state(s.c_str());
+              last_debug = s;
+            }
+          };
 
           if (!cm_allows_hp) {
             // Force both units to Standby + level 0
@@ -561,6 +614,7 @@ interval:
             id(oq_dual_hp_emergency_hold_elapsed_min) = 0;
             id(oq_dual_hp_emergency_hold_elapsed_accum_min) = 0.0f;
             id(oq_curve_single_owner_hp) = 0;
+            publish_debug(0, 0, 0, 0);
             return;
           }
           // =========================
@@ -1290,3 +1344,4 @@ interval:
 
           log_transition(true, hp1_applied);
           log_transition(false, hp2_applied);
+          publish_debug(hp1_req, hp2_req, hp1_applied, hp2_applied);
