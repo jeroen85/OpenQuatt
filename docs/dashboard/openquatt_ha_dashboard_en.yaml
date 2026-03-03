@@ -399,8 +399,8 @@ views:
               HeatPump statistics (without boiler):
               - `Heat output power`: thermal output power of HP1+HP2 (W)
               - `Electricity daily`: electrical input today (kWh)
-              - `COP daily`: verhouding `daily heat kWh / daily electricity kWh`
               - `Heat daily`: heat production today (kWh)
+              - `COP daily`: ratio `daily heat kWh / daily electricity kWh`
               - `Electricity total`: cumulative electrical input (kWh)
               - `Heat total`: cumulative heat production (kWh)
 
@@ -452,9 +452,9 @@ views:
               <summary><strong>Explanation</strong></summary>
 
               Boiler statistics:
-              - `Boiler active`: shows whether relay control is active
               - `Heat output power`: current thermal boiler contribution (W)
               - `Heat daily`: boiler heat today (kWh)
+              - `Boiler active`: shows whether relay control is active
               - `Heat total`: cumulative boiler heat (kWh)
 
               </details>
@@ -500,7 +500,7 @@ views:
 
               System values (HeatPump + Boiler):
               - `Electricity input power`: total electrical input power (W)
-              - `Heat output power`: totale thermische output (W)
+              - `Heat output power`: total thermal output (W)
               - `Heat daily`: system heat today (kWh)
               - `Heat total`: cumulative system heat (kWh)
 

@@ -413,8 +413,8 @@ views:
               HeatPump-statistieken (zonder boiler):
               - `Heat output power`: thermisch vermogen van HP1+HP2 (W)
               - `Electricity daily`: elektrische input vandaag (kWh)
-              - `COP daily`: verhouding `daily heat kWh / daily electricity kWh`
               - `Heat daily`: warmteproductie vandaag (kWh)
+              - `COP daily`: verhouding `daily heat kWh / daily electricity kWh`
               - `Electricity total`: cumulatieve elektrische input (kWh)
               - `Heat total`: cumulatieve warmteproductie (kWh)
 
@@ -466,9 +466,9 @@ views:
               <summary><strong>Uitleg</strong></summary>
 
               Boiler-statistieken:
-              - `Boiler active`: toont of de relais-aansturing actief is
               - `Heat output power`: actuele thermische boilerbijdrage (W)
               - `Heat daily`: boilerwarmte vandaag (kWh)
+              - `Boiler active`: toont of de relais-aansturing actief is
               - `Heat total`: cumulatieve boilerwarmte (kWh)
 
               </details>
