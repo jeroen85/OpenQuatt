@@ -387,94 +387,129 @@ views:
       - type: grid
         cards:
           - type: heading
-            icon: mdi:heat-pump
-            heading: HeatPump
+            icon: mdi:gauge
+            heading: Current
             heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-
-              <summary><strong>Explanation</strong></summary>
-
-              HeatPump statistics (without boiler):
-              - `Heat output power`: thermal output power of HP1+HP2 (W)
-              - `Electricity daily`: electrical input today (kWh)
-              - `Heat daily`: heat production today (kWh)
-              - `COP daily`: ratio `daily heat kWh / daily electricity kWh`
-              - `Electricity total`: cumulative electrical input (kWh)
-              - `Heat total`: cumulative heat production (kWh)
-
-              </details>
-            text_only: true
+          - type: heading
+            icon: mdi:heat-pump
+            heading: Heat pump
+            heading_style: subtitle
           - type: entities
-            title: Today
             show_header_toggle: false
             entities:
+              - entity: sensor.openquatt_total_power_input
+                name: Electrical input power
               - entity: sensor.openquatt_total_heat_power
                 name: Heat output power
-              - entity: sensor.openquatt_electrical_energy_daily
-                name: Electricity daily
-              - entity: sensor.openquatt_heatpump_thermal_energy_daily
-                name: Heat daily
-              - entity: sensor.openquatt_heatpump_cop_daily
-                name: COP daily
+              - entity: sensor.openquatt_total_cop
+                name: Current COP
+          - type: heading
+            icon: mdi:water-boiler
+            heading: Boiler
+            heading_style: subtitle
           - type: entities
-            title: Total
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_boiler_heat_power
+                name: Heat output power
+          - type: heading
+            icon: mdi:sigma
+            heading: System
+            heading_style: subtitle
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_system_heat_power
+                name: Heat output power
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:calendar-today
+            heading_style: title
+            heading: Today
+          - type: heading
+            icon: mdi:heat-pump
+            heading: Heat pump
+            heading_style: subtitle
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_electrical_energy_daily
+                name: Electricity today
+              - entity: sensor.openquatt_heatpump_thermal_energy_daily
+                name: Heat today
+              - entity: sensor.openquatt_heatpump_cop_daily
+                name: COP today
+          - type: heading
+            icon: mdi:water-boiler
+            heading: Boiler
+            heading_style: subtitle
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_boiler_thermal_energy_daily
+                name: Heat today
+          - type: heading
+            icon: mdi:sigma
+            heading: System
+            heading_style: subtitle
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_system_thermal_energy_daily
+                name: Heat today
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:sigma
+            heading: Total
+            heading_style: title
+          - type: heading
+            icon: mdi:heat-pump
+            heading: Heat pump
+            heading_style: subtitle
+          - type: entities
             show_header_toggle: false
             entities:
               - entity: sensor.openquatt_electrical_energy_total
                 name: Electricity total
               - entity: sensor.openquatt_heatpump_thermal_energy_total
                 name: Heat total
+          - type: heading
+            icon: mdi:water-boiler
+            heading: Boiler
+            heading_style: subtitle
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_boiler_thermal_energy_total
+                name: Heat total
+          - type: heading
+            icon: mdi:sigma
+            heading: System
+            heading_style: subtitle
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_system_thermal_energy_total
+                name: Heat total
+      - type: grid
+        cards:
+          - type: heading
+            heading: Trends (24h)
+            heading_style: title
+            icon: mdi:trending-up
           - type: history-graph
-            title: HeatPump trends (24h)
+            title: Heat pump trends (24h)
             hours_to_show: 24
             refresh_interval: 60
             entities:
               - entity: sensor.openquatt_total_heat_power
                 name: Heat output power
               - entity: sensor.openquatt_heatpump_cop_daily
-                name: COP daily
+                name: COP today
               - entity: sensor.openquatt_heatpump_thermal_energy_daily
-                name: Heat daily
-            grid_options:
-              columns: full
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:water-boiler
-            heading: Boiler
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-
-              <summary><strong>Explanation</strong></summary>
-
-              Boiler statistics:
-              - `Heat output power`: current thermal boiler contribution (W)
-              - `Heat daily`: boiler heat today (kWh)
-              - `Boiler active`: shows whether relay control is active
-              - `Heat total`: cumulative boiler heat (kWh)
-
-              </details>
-            text_only: true
-          - type: entities
-            title: Today
-            show_header_toggle: false
-            entities:
-              - entity: sensor.openquatt_boiler_heat_power
-                name: Heat output power
-              - entity: sensor.openquatt_boiler_thermal_energy_daily
-                name: Heat daily
-              - entity: binary_sensor.openquatt_boiler_active
-                name: Boiler active
-          - type: entities
-            title: Total
-            show_header_toggle: false
-            entities:
-              - entity: sensor.openquatt_boiler_thermal_energy_total
-                name: Heat total
+                name: Heat today
           - type: history-graph
             title: Boiler trends (24h)
             hours_to_show: 24
@@ -483,58 +518,19 @@ views:
               - entity: sensor.openquatt_boiler_heat_power
                 name: Heat output power
               - entity: sensor.openquatt_boiler_thermal_energy_daily
-                name: Heat daily
-            grid_options:
-              columns: full
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:sigma
-            heading: System
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-
-              <summary><strong>Explanation</strong></summary>
-
-              System values (HeatPump + Boiler):
-              - `Electricity input power`: total electrical input power (W)
-              - `Heat output power`: total thermal output (W)
-              - `Heat daily`: system heat today (kWh)
-              - `Heat total`: cumulative system heat (kWh)
-
-              </details>
-            text_only: true
-          - type: entities
-            title: Today
-            show_header_toggle: false
-            entities:
-              - entity: sensor.openquatt_total_power_input
-                name: Electricity input power
-              - entity: sensor.openquatt_system_heat_power
-                name: Heat output power
-              - entity: sensor.openquatt_system_thermal_energy_daily
-                name: Heat daily
-          - type: entities
-            title: Total
-            show_header_toggle: false
-            entities:
-              - entity: sensor.openquatt_system_thermal_energy_total
-                name: Heat total
+                name: Heat today
           - type: history-graph
             title: System trends (24h)
             hours_to_show: 24
             refresh_interval: 60
             entities:
               - entity: sensor.openquatt_total_power_input
-                name: Electricity input power
+                name: Electrical input power
               - entity: sensor.openquatt_system_heat_power
                 name: Heat output power
               - entity: sensor.openquatt_system_thermal_energy_daily
-                name: Heat daily
-            grid_options:
-              columns: full
+                name: Heat today
+        column_span: 3
       - type: grid
         column_span: 3
         cards:
@@ -550,7 +546,7 @@ views:
 
               Daily aggregation for energy:
               - Electricity and heat as daily kWh (derived from total sensors)
-              - `COP daily` as daily average
+              - `COP today` as daily average
 
               </details>
             text_only: true
@@ -561,6 +557,22 @@ views:
               show_states: false
             graph_span: 7d
             update_interval: 120s
+            yaxis:
+              - id: energy
+                min: 0
+                decimals: 1
+                apex_config:
+                  title:
+                    text: kWh/day
+              - id: cop
+                opposite: true
+                min: 0
+                max: 8
+                decimals: 2
+                apex_config:
+                  tickAmount: 4
+                  title:
+                    text: COP today
             apex_config:
               chart:
                 height: 320
@@ -568,18 +580,6 @@ views:
                 show: true
                 position: top
                 clusterGroupedSeries: false
-              yaxis:
-                - id: energy
-                  min: 0
-                  decimalsInFloat: 1
-                  title:
-                    text: kWh/day
-                - id: cop
-                  opposite: true
-                  min: 0
-                  decimalsInFloat: 2
-                  title:
-                    text: COP daily
               stroke:
                 width: 2
                 curve: smooth
@@ -595,7 +595,7 @@ views:
                   func: delta
                   duration: 1d
               - entity: sensor.openquatt_heatpump_thermal_energy_total
-                name: HeatPump heat/day
+                name: Heat pump heat/day
                 color: '#F59E0B'
                 yaxis_id: energy
                 type: column
@@ -619,7 +619,7 @@ views:
                   func: delta
                   duration: 1d
               - entity: sensor.openquatt_heatpump_cop_daily
-                name: COP daily
+                name: COP today
                 color: '#A855F7'
                 yaxis_id: cop
                 type: line
@@ -635,6 +635,22 @@ views:
               show_states: false
             graph_span: 30d
             update_interval: 300s
+            yaxis:
+              - id: energy
+                min: 0
+                decimals: 1
+                apex_config:
+                  title:
+                    text: kWh/day
+              - id: cop
+                opposite: true
+                min: 0
+                max: 8
+                decimals: 2
+                apex_config:
+                  tickAmount: 4
+                  title:
+                    text: COP today
             apex_config:
               chart:
                 height: 320
@@ -642,18 +658,6 @@ views:
                 show: true
                 position: top
                 clusterGroupedSeries: false
-              yaxis:
-                - id: energy
-                  min: 0
-                  decimalsInFloat: 1
-                  title:
-                    text: kWh/day
-                - id: cop
-                  opposite: true
-                  min: 0
-                  decimalsInFloat: 2
-                  title:
-                    text: COP daily
               stroke:
                 width: 2
                 curve: smooth
@@ -669,7 +673,7 @@ views:
                   func: delta
                   duration: 1d
               - entity: sensor.openquatt_heatpump_thermal_energy_total
-                name: HeatPump heat/day
+                name: Heat pump heat/day
                 color: '#F59E0B'
                 yaxis_id: energy
                 type: column
@@ -693,7 +697,7 @@ views:
                   func: delta
                   duration: 1d
               - entity: sensor.openquatt_heatpump_cop_daily
-                name: COP daily
+                name: COP today
                 color: '#A855F7'
                 yaxis_id: cop
                 type: line
@@ -709,7 +713,7 @@ views:
         content: >-
           # <ha-icon icon="mdi:lightning-bolt-circle"></ha-icon> Energy
 
-          Energy overview of HeatPump, Boiler, and total System (daily + cumulative).
+          Energy overview of heat pump, boiler, and total system (daily + cumulative).
   - title: Flow
     path: flow
     icon: mdi:waves
