@@ -1,7 +1,6 @@
 # ==============================================================================
-# OpenQuatt - Single Topology Main Config (Legacy alias)
+# OpenQuatt - Single Topology Main Config (Waveshare ESP32-S3-Relay-1CH)
 # ==============================================================================
-# Prefer `openquatt_single_waveshare.yaml` for explicit profile naming.
 substitutions: !include openquatt/oq_substitutions_common.yaml
 
 esphome:
@@ -10,3 +9,4 @@ esphome:
 packages:
   openquatt_hw_profile: !include openquatt/profiles/oq_substitutions_waveshare.yaml
   openquatt_base: !include openquatt_base_single.yaml
+
