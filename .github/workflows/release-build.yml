@@ -23,7 +23,10 @@ jobs:
           python-version: "3.12"
 
       - name: Install ESPHome
-        run: pip install --upgrade esphome==2026.1.5
+        run: |
+          ESPHOME_VERSION="$(cat .github/requirements-esphome.txt | sed 's/^esphome==//')"
+          pip install --upgrade "esphome==${ESPHOME_VERSION}"
+          esphome version
 
       - name: Validate configs
         run: |

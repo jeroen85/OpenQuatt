@@ -25,6 +25,12 @@ This project uses GitHub Actions for automated validation, firmware compilation,
     - create/update GitHub Release
     - attach both profile firmware binaries and manifest to the release
 
+## ESPHome Version Pinning
+
+- CI/release build with a pinned ESPHome version from `/.github/requirements-esphome.txt`.
+- Keep release builds deterministic by updating this pin via PR (instead of using floating `latest`).
+- A scheduled canary workflow (`/.github/workflows/esphome-canary.yml`) validates compatibility against the latest ESPHome.
+
 ## Release Versioning
 
 Use semantic versioning tags:
