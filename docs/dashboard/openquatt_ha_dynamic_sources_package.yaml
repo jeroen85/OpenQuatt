@@ -14,8 +14,8 @@
 #        homeassistant:
 #          packages: !include_dir_named packages
 #   2) Copy this file to: /config/packages/openquatt_dynamic_sources.yaml
-#   3) Adjust initial input_text values to your own source entity IDs.
-#   4) Reload Template Entities (or restart Home Assistant).
+#   3) Reload Template Entities (or restart Home Assistant).
+#   4) Set the three input_text helpers once to your own source entity IDs.
 #
 # Notes:
 #   - Trigger interval is 15s to support dynamic entity_id references.
@@ -33,21 +33,18 @@ input_text:
     icon: mdi:thermometer
     mode: text
     max: 100
-    initial: sensor.outdoor_temperature
 
   openquatt_source_room_setpoint:
     name: OpenQuatt source room setpoint
     icon: mdi:thermostat
     mode: text
     max: 100
-    initial: sensor.thermostat_setpoint
 
   openquatt_source_room_temperature:
     name: OpenQuatt source room temperature
     icon: mdi:home-thermometer
     mode: text
     max: 100
-    initial: sensor.thermostat_room_temperature
 
 template:
   - trigger:
