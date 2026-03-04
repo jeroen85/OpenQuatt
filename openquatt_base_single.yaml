@@ -24,6 +24,7 @@ esphome:
   includes:
     - ${hp_perf_map_header}
     - openquatt/includes/oq_topology.h
+    - openquatt/includes/oq_supervisory_logic.h
   platformio_options:
     build_flags:
       - -DOQ_TOPOLOGY_DUO=0
@@ -47,4 +48,3 @@ esp32:
     sdkconfig_options:
       COMPILER_OPTIMIZATION_SIZE: y
       CONFIG_BT_ENABLED: n
-

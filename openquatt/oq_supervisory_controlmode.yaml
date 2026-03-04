@@ -538,59 +538,28 @@ interval:
           //   Peak: 3650W  (short overshoot allowed; prolonged -> fast cap)
           // -------------------------------------------------
           {
-            const int dt_s = ${oq_supervisory_loop_s};
-            const float P_SOFT = ${oq_power_soft_w};
-            const float P_PEAK = ${oq_power_peak_w};
-            const float P_RECOVER = ${oq_power_recover_w};
-
-            // behavior
-            const int PEAK_TRIP_S = ${oq_power_peak_trip_s};
-            const int SOFT_TRIP_S = ${oq_power_soft_trip_s};
-            const int RECOVER_S = ${oq_power_recover_s};
-
-            float p = id(oq_total_power_input).state;
-
-            // Fail-safe: power not available -> cap total demand to 16
-            if (isnan(p)) {
-              id(oq_power_cap_f) = ${oq_power_cap_nan_f};
-              id(oq_power_over_soft_s) = 0;
-              id(oq_power_over_peak_s) = 0;
-              id(oq_power_under_ok_s)  = 0;
-            } else {
-              // Update timers
-              if (p > P_PEAK) id(oq_power_over_peak_s) += dt_s;
-              else id(oq_power_over_peak_s) = 0;
-
-              if (p > P_SOFT) id(oq_power_over_soft_s) += dt_s;
-              else id(oq_power_over_soft_s) = 0;
-
-              if (p < P_RECOVER) id(oq_power_under_ok_s) += dt_s;
-              else id(oq_power_under_ok_s) = 0;
-
-              // Event-based cap down
-              if (id(oq_power_over_peak_s) >= PEAK_TRIP_S) {
-                // fast step down
-                if (id(oq_power_cap_f) > 0) id(oq_power_cap_f) -= 2;
-                id(oq_power_over_peak_s) = 0;
-                id(oq_power_over_soft_s) = 0;
-                id(oq_power_under_ok_s)  = 0;
-              } else if (id(oq_power_over_soft_s) >= SOFT_TRIP_S) {
-                // mild step down
-                if (id(oq_power_cap_f) > 0) id(oq_power_cap_f) -= 1;
-                id(oq_power_over_soft_s) = 0;
-                id(oq_power_under_ok_s)  = 0;
-              }
-
-              // Faster recovery when comfortably below
-              if (id(oq_power_under_ok_s) >= RECOVER_S) {
-                if (id(oq_power_cap_f) < ${oq_power_cap_max_f}) id(oq_power_cap_f) += 1;
-                id(oq_power_under_ok_s) = 0;
-              }
-
-              // Clamp
-              if (id(oq_power_cap_f) < 0) id(oq_power_cap_f) = 0;
-              if (id(oq_power_cap_f) > ${oq_power_cap_max_f}) id(oq_power_cap_f) = ${oq_power_cap_max_f};
-            }
+            const oq_supervisory::PowerCapConfig cfg{
+              .dt_s = ${oq_supervisory_loop_s},
+              .p_soft_w = ${oq_power_soft_w},
+              .p_peak_w = ${oq_power_peak_w},
+              .p_recover_w = ${oq_power_recover_w},
+              .peak_trip_s = ${oq_power_peak_trip_s},
+              .soft_trip_s = ${oq_power_soft_trip_s},
+              .recover_s = ${oq_power_recover_s},
+              .cap_max_f = ${oq_power_cap_max_f},
+              .cap_nan_f = ${oq_power_cap_nan_f},
+            };
+            const oq_supervisory::PowerCapState current{
+              .cap_f = id(oq_power_cap_f),
+              .over_soft_s = id(oq_power_over_soft_s),
+              .over_peak_s = id(oq_power_over_peak_s),
+              .under_ok_s = id(oq_power_under_ok_s),
+            };
+            const auto next = oq_supervisory::step_power_cap(current, id(oq_total_power_input).state, cfg);
+            id(oq_power_cap_f) = next.cap_f;
+            id(oq_power_over_soft_s) = next.over_soft_s;
+            id(oq_power_over_peak_s) = next.over_peak_s;
+            id(oq_power_under_ok_s) = next.under_ok_s;
           }
 
           const uint32_t prepost_ms = (uint32_t)(${oq_cm_prepost_s}UL * 1000UL);
