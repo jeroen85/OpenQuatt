@@ -7,10 +7,15 @@ This project uses GitHub Actions for automated validation, firmware compilation,
 - `/.github/workflows/ci-build.yml`
   - Trigger: push to `main`, pull requests
   - Actions:
+    - `./scripts/run_regression_tests.sh`
     - `esphome config openquatt_duo_waveshare.yaml`
     - `esphome compile openquatt_duo_waveshare.yaml`
     - `esphome config openquatt_duo_heatpump_listener.yaml`
     - `esphome compile openquatt_duo_heatpump_listener.yaml`
+    - `esphome config openquatt_single_waveshare.yaml`
+    - `esphome compile openquatt_single_waveshare.yaml`
+    - `esphome config openquatt_single_heatpump_listener.yaml`
+    - `esphome compile openquatt_single_heatpump_listener.yaml`
     - Upload compiled firmware artifacts per profile
 - `/.github/workflows/docs-consistency.yml`
   - Trigger: push to `main`, pull requests
@@ -20,7 +25,7 @@ This project uses GitHub Actions for automated validation, firmware compilation,
 - `/.github/workflows/release-build.yml`
   - Trigger: tag push `v*` and manual dispatch
   - Actions:
-    - validate + compile both hardware profiles
+    - validate + compile both Duo hardware profiles
     - generate multi-build `openquatt.manifest.json` (ESP32-S3 + ESP32) for OTA update checks
     - create/update GitHub Release
     - attach both profile firmware binaries and manifest to the release
@@ -70,5 +75,6 @@ git push origin main --tags
 ## Notes
 
 - The baseline `openquatt_duo_waveshare.yaml` is secrets-free and suitable for CI builds.
+- Release artifacts are currently published for Duo entrypoints; Single remains validated in CI/local gates.
 - OTA update entity in firmware reads `${release_manifest_url}` (default points to GitHub `releases/latest` manifest).
 - Workflow files must remain directly under `.github/workflows/` (GitHub does not load workflows from nested subfolders).

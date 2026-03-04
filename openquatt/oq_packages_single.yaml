@@ -1,11 +1,9 @@
 # ==============================================================================
 # OpenQuatt - Package Includes (Single topology)
 # ==============================================================================
-# Phase 0 note:
-#   This manifest currently mirrors the Duo package graph for safe plumbing-only
-#   introduction of topology build flags/entrypoints.
-#   Single-specific module pruning (for example removing heatpump2 include) is
-#   introduced in later refactor phases after per-module logic is split.
+# Single topology uses the shared package graph and omits Duo-only overlays.
+# HP2 IO include stays present for now while remaining `id(hp2_*)` parser
+# references are migrated out of shared YAML modules.
 # ==============================================================================
 oq_common: !include oq_common.yaml
 oq_supervisory_controlmode: !include oq_supervisory_controlmode.yaml
@@ -33,4 +31,3 @@ heatpump2: !include
     hp_id: "hp2"
     prefix: "HP2 - "
     device_address: 0x02
-

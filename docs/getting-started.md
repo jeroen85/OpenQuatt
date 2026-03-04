@@ -44,12 +44,14 @@ Both profiles include:
 Main entrypoint:
 
 - `openquatt_duo_waveshare.yaml`
-- `openquatt_duo_waveshare.yaml`
 - `openquatt_duo_heatpump_listener.yaml`
+- `openquatt_single_waveshare.yaml`
+- `openquatt_single_heatpump_listener.yaml`
 
 Package include file:
 
 - `openquatt/oq_packages.yaml`
+- `openquatt/oq_packages_single.yaml`
 
 Compile-time constants:
 
@@ -69,16 +71,19 @@ Adjust `openquatt/oq_common.yaml` if you want environment-specific API encryptio
 
 ## 4. Select Hardware Profile
 
-Select the firmware entrypoint that matches your hardware:
+Select the firmware entrypoint that matches your topology + hardware:
 
-1. `openquatt_duo_waveshare.yaml` for [Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm)
-2. `openquatt_duo_heatpump_listener.yaml` for Heatpump Listener
+1. `openquatt_duo_waveshare.yaml` for Duo + [Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm)
+2. `openquatt_duo_heatpump_listener.yaml` for Duo + Heatpump Listener
+3. `openquatt_single_waveshare.yaml` for Single + [Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm)
+4. `openquatt_single_heatpump_listener.yaml` for Single + Heatpump Listener
 
 Each entrypoint loads:
 
 - shared constants from `openquatt/oq_substitutions_common.yaml`
 - hardware-specific pin mapping from its profile file
-3. Recompile and flash.
+
+Then recompile and flash.
 
 ## 5. Validate and Compile
 
@@ -89,7 +94,7 @@ esphome config openquatt_duo_waveshare.yaml
 esphome compile openquatt_duo_waveshare.yaml
 ```
 
-Tip: compile each hardware profile via its own entrypoint (`openquatt_duo_waveshare.yaml` or `openquatt_duo_heatpump_listener.yaml`). Each entrypoint has a dedicated `build_path`, which keeps profile caches separate and speeds up repeated profile switching.
+Tip: compile each topology/hardware profile via its own entrypoint. Each entrypoint has a dedicated `build_path`, which keeps caches separate and speeds up repeated profile switching.
 
 Or run the helper script:
 
@@ -108,7 +113,7 @@ esphome run openquatt_duo_waveshare.yaml
 After first boot, verify:
 
 1. Device appears in Home Assistant.
-2. Modbus HP entities update for both HP1 and HP2.
+2. Modbus HP entities update for HP1 (and HP2 when using Duo topology).
 3. `Control Mode` has a valid value.
 4. Selected source sensors (`Water Supply Temp (Selected)`, `Flow average (Selected)`, `Outside Temperature (Selected)`) update.
 5. No persistent `unknown` or stale feed state unless expected.

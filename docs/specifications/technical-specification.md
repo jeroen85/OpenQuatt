@@ -41,17 +41,19 @@ Companion document:
 
 ### Root
 
-- `openquatt_duo_waveshare.yaml`: default top-level entrypoint (Waveshare profile)
-- `openquatt_duo_waveshare.yaml`: explicit [Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm) entrypoint
-- `openquatt_duo_heatpump_listener.yaml`: [Heatpump Listener](https://electropaultje.nl/product/heatpump-listener/) entrypoint
-- `openquatt_base.yaml`: shared base (project metadata, board/framework, package wiring)
+- `openquatt_duo_waveshare.yaml`: Duo topology + [Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm)
+- `openquatt_duo_heatpump_listener.yaml`: Duo topology + [Heatpump Listener](https://electropaultje.nl/product/heatpump-listener/)
+- `openquatt_single_waveshare.yaml`: Single topology + [Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm)
+- `openquatt_single_heatpump_listener.yaml`: Single topology + [Heatpump Listener](https://electropaultje.nl/product/heatpump-listener/)
+- `openquatt_base.yaml`: shared base (Duo topology wiring)
+- `openquatt_base_single.yaml`: shared base (Single topology wiring)
 - `openquatt/`: subsystem packages
 - `docs/dashboard/openquatt_ha_dashboard_nl.yaml`: HA dashboard definition (Dutch)
 - `docs/dashboard/openquatt_ha_dashboard_en.yaml`: HA dashboard definition (English)
 
 ### Package include order
 
-Defined in `openquatt/oq_packages.yaml` and must be preserved unless dependencies are intentionally reworked.
+Defined in `openquatt/oq_packages.yaml` (Duo) and `openquatt/oq_packages_single.yaml` (Single) and must be preserved unless dependencies are intentionally reworked.
 
 ## 4. Core Technical Ownership
 
@@ -287,7 +289,7 @@ Selected signals are consumed by strategy/flow logic.
 
 ## 14. HP IO Engine (Technical)
 
-`oq_HP_io` is instantiated twice (HP1 and HP2) with per-instance substitutions.
+`oq_HP_io` is instantiated per-HP with substitutions (HP1 always; HP2 on current shared package graph).
 
 It defines:
 
@@ -322,9 +324,16 @@ Integration sources use existing power sensors and shared time source (`oq_time`
 
 After technical changes:
 
-1. `esphome config openquatt_duo_waveshare.yaml`
-2. `esphome compile openquatt_duo_waveshare.yaml`
-3. Verify mode entities and selected sources update.
-4. Verify pump and compressor commands behave as expected.
-5. Verify dashboard entities still resolve.
-6. Verify no unintended source or mode ownership conflicts.
+1. `./scripts/run_regression_tests.sh`
+2. `esphome config openquatt_duo_waveshare.yaml`
+3. `esphome compile openquatt_duo_waveshare.yaml`
+4. `esphome config openquatt_duo_heatpump_listener.yaml`
+5. `esphome compile openquatt_duo_heatpump_listener.yaml`
+6. `esphome config openquatt_single_waveshare.yaml`
+7. `esphome compile openquatt_single_waveshare.yaml`
+8. `esphome config openquatt_single_heatpump_listener.yaml`
+9. `esphome compile openquatt_single_heatpump_listener.yaml`
+10. Verify mode entities and selected sources update.
+11. Verify pump and compressor commands behave as expected.
+12. Verify dashboard entities still resolve.
+13. Verify no unintended source or mode ownership conflicts.

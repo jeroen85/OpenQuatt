@@ -35,7 +35,8 @@ Characteristics:
 
 Files:
 
-- `openquatt_duo_waveshare.yaml`
+- `openquatt_duo_waveshare.yaml` / `openquatt_duo_heatpump_listener.yaml`
+- `openquatt_single_waveshare.yaml` / `openquatt_single_heatpump_listener.yaml`
 - `openquatt/*.yaml`
 
 Characteristics:

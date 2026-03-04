@@ -9,7 +9,17 @@ permissions:
   contents: read
 
 jobs:
+  regression-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run control-logic regression tests
+        run: ./scripts/run_regression_tests.sh
+
   validate-and-compile:
+    needs: regression-tests
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

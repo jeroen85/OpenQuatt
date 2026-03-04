@@ -1,7 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-CONFIG_FILE="openquatt_duo_waveshare.yaml"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "${ROOT_DIR}"
+
+CONFIG_FILES=(
+  "openquatt_duo_waveshare.yaml"
+  "openquatt_duo_heatpump_listener.yaml"
+  "openquatt_single_waveshare.yaml"
+  "openquatt_single_heatpump_listener.yaml"
+)
 
 if ! command -v esphome >/dev/null 2>&1; then
   echo "Error: 'esphome' is niet gevonden in PATH." >&2
@@ -9,10 +17,15 @@ if ! command -v esphome >/dev/null 2>&1; then
   exit 127
 fi
 
-echo "[1/2] Valideren: esphome config ${CONFIG_FILE}"
-esphome config "${CONFIG_FILE}"
+echo "[1/5] Regressietests draaien"
+./scripts/run_regression_tests.sh
 
-echo "[2/2] Compileren: esphome compile ${CONFIG_FILE}"
-esphome compile "${CONFIG_FILE}"
+step=2
+for config in "${CONFIG_FILES[@]}"; do
+  echo "[${step}/5] Valideren en compileren: ${config}"
+  esphome config "${config}"
+  esphome compile "${config}"
+  ((step++))
+done
 
-echo "Klaar: validatie en compile succesvol."
+echo "Klaar: regressie + alle topology/hardware compilaties succesvol."
