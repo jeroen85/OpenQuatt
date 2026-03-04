@@ -1,20 +1,18 @@
 # ==============================================================================
 # OpenQuatt - Package Includes (Single topology)
 # ==============================================================================
-# Single topology uses the shared package graph and omits Duo-only overlays.
-# A lightweight HP2-compat package keeps shared YAML ID contracts intact
-# without instantiating a second Modbus controller.
+# Single topology uses dedicated module variants where HP2-specific parser
+# references are removed at YAML level.
 # ==============================================================================
 oq_common: !include oq_common.yaml
-oq_hp2_single_compat: !include oq_hp2_single_compat.yaml
-oq_supervisory_controlmode: !include oq_supervisory_controlmode.yaml
-oq_heating_strategy: !include oq_heating_strategy.yaml
-oq_heat_control: !include oq_heat_control.yaml
-oq_flow_control: !include oq_flow_control.yaml
+oq_supervisory_controlmode: !include oq_supervisory_controlmode_single.yaml
+oq_heating_strategy: !include oq_heating_strategy_single.yaml
+oq_heat_control: !include oq_heat_control_single.yaml
+oq_flow_control: !include oq_flow_control_single.yaml
 oq_flow_autotune: !include oq_flow_autotune.yaml
-oq_boiler_control: !include oq_boiler_control.yaml
+oq_boiler_control: !include oq_boiler_control_single.yaml
 oq_energy: !include oq_energy.yaml
-oq_cic: !include oq_cic.yaml
+oq_cic: !include oq_cic_single.yaml
 oq_ha_inputs: !include oq_ha_inputs.yaml
 oq_local_sensors: !include oq_local_sensors.yaml
 oq_sensor_sources: !include oq_sensor_sources.yaml
