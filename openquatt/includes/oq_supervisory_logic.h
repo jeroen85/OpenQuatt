@@ -23,6 +23,11 @@ struct PowerCapConfig {
   int cap_nan_f;
 };
 
+struct FrostConfig {
+  float on_c;
+  float off_c;
+};
+
 inline PowerCapState step_power_cap(PowerCapState state, float power_w, const PowerCapConfig &cfg) {
   if (isnan(power_w)) {
     state.cap_f = cfg.cap_nan_f;
@@ -62,4 +67,64 @@ inline PowerCapState step_power_cap(PowerCapState state, float power_w, const Po
   return state;
 }
 
+inline bool compute_frost(bool heating_req, float outside_c, bool prev_frost, bool frost_nan_grace_active, const FrostConfig &cfg) {
+  if (heating_req) return false;
+  if (isnan(outside_c)) return !frost_nan_grace_active;
+  if (prev_frost) return outside_c < cfg.off_c;
+  return outside_c < cfg.on_c;
+}
+
 }  // namespace oq_supervisory
+
+namespace oq_heat {
+
+struct DualHoldState {
+  bool enabled;
+  float enable_elapsed_accum_min;
+  float disable_elapsed_accum_min;
+};
+
+struct DualHoldResult {
+  DualHoldState state;
+  int enable_elapsed_min;
+  int disable_elapsed_min;
+};
+
+inline DualHoldResult step_dual_hold(DualHoldState state,
+                                     bool reset,
+                                     bool enable_condition,
+                                     bool disable_condition,
+                                     float dt_s,
+                                     int enable_hold_min,
+                                     int disable_hold_min) {
+  if (enable_hold_min < 1) enable_hold_min = 1;
+  if (disable_hold_min < 1) disable_hold_min = 1;
+
+  if (reset) {
+    state.enabled = false;
+    state.enable_elapsed_accum_min = 0.0f;
+    state.disable_elapsed_accum_min = 0.0f;
+  } else {
+    if (enable_condition) state.enable_elapsed_accum_min += dt_s / 60.0f;
+    else state.enable_elapsed_accum_min = 0.0f;
+
+    if (disable_condition) state.disable_elapsed_accum_min += dt_s / 60.0f;
+    else state.disable_elapsed_accum_min = 0.0f;
+
+    if (!state.enabled && state.enable_elapsed_accum_min >= (float) enable_hold_min) {
+      state.enabled = true;
+      state.disable_elapsed_accum_min = 0.0f;
+    } else if (state.enabled && state.disable_elapsed_accum_min >= (float) disable_hold_min) {
+      state.enabled = false;
+      state.enable_elapsed_accum_min = 0.0f;
+    }
+  }
+
+  return DualHoldResult{
+      .state = state,
+      .enable_elapsed_min = (int) floorf(state.enable_elapsed_accum_min + 1e-3f),
+      .disable_elapsed_min = (int) floorf(state.disable_elapsed_accum_min + 1e-3f),
+  };
+}
+
+}  // namespace oq_heat

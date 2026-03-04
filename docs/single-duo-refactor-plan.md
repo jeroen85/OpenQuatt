@@ -103,9 +103,15 @@ Aanpak:
 - Pure beslislogica naar kleine headers (zonder ESPHome runtime-afhankelijkheden).
 - Host-side C++ regressierunner met golden outputs.
 - Focus op:
-  - heat allocation kern
-  - supervisory mode transition kern
-  - power cap stepper
+  - power-cap safety stepper
+  - frost hysteresis/fail-safe beslislogica
+  - dual-HP hold state-machine (enable/disable timers)
+
+Baseline (huidig):
+
+- Runner: `./scripts/run_regression_tests.sh`
+- Scenarios in `tests/regression/test_power_cap.cpp`
+- Golden referentie is de huidige expected-state set in deze runner; elke refactorfase moet exact dezelfde uitkomst houden op Duo.
 
 Gate 1:
 
@@ -303,4 +309,3 @@ Aanbevolen commitvolgorde:
 6. Debug/UI/CI/docs afronding.
 
 Elke commitreeks eindigt met gate-checks.
-
