@@ -88,9 +88,9 @@ Wijzigingen:
 Gate 0:
 
 - Duo compile groen op:
-  - `openquatt.yaml`
-  - `openquatt_waveshare.yaml`
-  - `openquatt_heatpump_listener.yaml`
+  - `openquatt_duo_waveshare.yaml`
+  - `openquatt_duo_waveshare.yaml`
+  - `openquatt_duo_heatpump_listener.yaml`
 
 ### Fase 1: Duo baseline regressieharness
 

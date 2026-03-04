@@ -44,9 +44,9 @@ OpenQuatt is a modular ESPHome controller for a dual heat pump setup with superv
 
 ```text
 .
-├── openquatt.yaml                    # Default ESPHome config (Waveshare profile)
-├── openquatt_waveshare.yaml          # Explicit Waveshare profile entrypoint
-├── openquatt_heatpump_listener.yaml  # Heatpump Listener profile entrypoint
+├── openquatt_duo_waveshare.yaml                    # Default ESPHome config (Waveshare profile)
+├── openquatt_duo_waveshare.yaml          # Explicit Waveshare profile entrypoint
+├── openquatt_duo_heatpump_listener.yaml  # Heatpump Listener profile entrypoint
 ├── openquatt_base.yaml               # Shared ESPHome/ESP32 base config
 ├── openquatt/
 │   ├── oq_substitutions_common.yaml  # Compile-time constants shared by all profiles
@@ -105,21 +105,21 @@ OpenQuatt is a modular ESPHome controller for a dual heat pump setup with superv
 1. Clone the repository.
 2. Validate config:
 ```bash
-esphome config openquatt.yaml
+esphome config openquatt_duo_waveshare.yaml
 ```
 
 3. Compile:
 
 ```bash
-esphome compile openquatt.yaml
+esphome compile openquatt_duo_waveshare.yaml
 ```
 
-Note: each hardware entrypoint now uses its own ESPHome `build_path`, so switching between `openquatt_waveshare.yaml` and `openquatt_heatpump_listener.yaml` no longer invalidates the other profile's build cache.
+Note: each hardware entrypoint now uses its own ESPHome `build_path`, so switching between `openquatt_duo_waveshare.yaml` and `openquatt_duo_heatpump_listener.yaml` no longer invalidates the other profile's build cache.
 
 4. Flash/run:
 
 ```bash
-esphome run openquatt.yaml
+esphome run openquatt_duo_waveshare.yaml
 ```
 
 ## Local Validation Helper
@@ -144,7 +144,7 @@ It includes:
 
 ## Release Process
 
-- CI workflow (`.github/workflows/ci-build.yml`) runs on push/PR and validates + compiles both hardware profiles (`openquatt_waveshare.yaml` and `openquatt_heatpump_listener.yaml`).
+- CI workflow (`.github/workflows/ci-build.yml`) runs on push/PR and validates + compiles both hardware profiles (`openquatt_duo_waveshare.yaml` and `openquatt_duo_heatpump_listener.yaml`).
 - Release workflow (`.github/workflows/release-build.yml`) runs on tags `v*` and publishes both profile firmware sets plus a multi-build `openquatt.manifest.json` to GitHub Releases.
 - Detailed steps: [Release Process Guide](docs/release-process.md)
 

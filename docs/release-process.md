@@ -7,10 +7,10 @@ This project uses GitHub Actions for automated validation, firmware compilation,
 - `/.github/workflows/ci-build.yml`
   - Trigger: push to `main`, pull requests
   - Actions:
-    - `esphome config openquatt_waveshare.yaml`
-    - `esphome compile openquatt_waveshare.yaml`
-    - `esphome config openquatt_heatpump_listener.yaml`
-    - `esphome compile openquatt_heatpump_listener.yaml`
+    - `esphome config openquatt_duo_waveshare.yaml`
+    - `esphome compile openquatt_duo_waveshare.yaml`
+    - `esphome config openquatt_duo_heatpump_listener.yaml`
+    - `esphome compile openquatt_duo_heatpump_listener.yaml`
     - Upload compiled firmware artifacts per profile
 - `/.github/workflows/docs-consistency.yml`
   - Trigger: push to `main`, pull requests
@@ -69,6 +69,6 @@ git push origin main --tags
 
 ## Notes
 
-- The baseline `openquatt.yaml` is secrets-free and suitable for CI builds.
+- The baseline `openquatt_duo_waveshare.yaml` is secrets-free and suitable for CI builds.
 - OTA update entity in firmware reads `${release_manifest_url}` (default points to GitHub `releases/latest` manifest).
 - Workflow files must remain directly under `.github/workflows/` (GitHub does not load workflows from nested subfolders).

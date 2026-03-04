@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-CONFIG_FILE="openquatt.yaml"
+CONFIG_FILE="openquatt_duo_waveshare.yaml"
 
 if ! command -v esphome >/dev/null 2>&1; then
   echo "Error: 'esphome' is niet gevonden in PATH." >&2

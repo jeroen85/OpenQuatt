@@ -72,8 +72,8 @@ Use a consistent order per package where applicable:
 
 ## Validation Checklist After Refactor
 
-1. `esphome config openquatt.yaml`
-2. `esphome compile openquatt.yaml`
+1. `esphome config openquatt_duo_waveshare.yaml`
+2. `esphome compile openquatt_duo_waveshare.yaml`
 3. Verify critical IDs still exist and update:
    - `oq_control_mode`
    - `oq_demand_raw`

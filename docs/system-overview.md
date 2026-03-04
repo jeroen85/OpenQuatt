@@ -18,7 +18,7 @@ This document explains the current OpenQuatt architecture as implemented in the 
 
 ## 1. Top-Level Composition
 
-OpenQuatt is driven from `openquatt.yaml` as the project entrypoint, which includes:
+OpenQuatt is driven from `openquatt_duo_waveshare.yaml` as the project entrypoint, which includes:
 
 - global project/board/framework config
 - package includes via `openquatt/oq_packages.yaml`
@@ -252,8 +252,8 @@ Shared non-hardware constants are in `openquatt/oq_substitutions_common.yaml`.
 
 Compile-time profile selection is done by choosing the firmware entrypoint:
 
-- `openquatt_waveshare.yaml`
-- `openquatt_heatpump_listener.yaml`
+- `openquatt_duo_waveshare.yaml`
+- `openquatt_duo_heatpump_listener.yaml`
 
 ## 10. UI and Observability Organization
 

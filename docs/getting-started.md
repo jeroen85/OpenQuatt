@@ -43,9 +43,9 @@ Both profiles include:
 
 Main entrypoint:
 
-- `openquatt.yaml`
-- `openquatt_waveshare.yaml`
-- `openquatt_heatpump_listener.yaml`
+- `openquatt_duo_waveshare.yaml`
+- `openquatt_duo_waveshare.yaml`
+- `openquatt_duo_heatpump_listener.yaml`
 
 Package include file:
 
@@ -71,8 +71,8 @@ Adjust `openquatt/oq_common.yaml` if you want environment-specific API encryptio
 
 Select the firmware entrypoint that matches your hardware:
 
-1. `openquatt_waveshare.yaml` for [Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm)
-2. `openquatt_heatpump_listener.yaml` for Heatpump Listener
+1. `openquatt_duo_waveshare.yaml` for [Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm)
+2. `openquatt_duo_heatpump_listener.yaml` for Heatpump Listener
 
 Each entrypoint loads:
 
@@ -85,11 +85,11 @@ Each entrypoint loads:
 Run:
 
 ```bash
-esphome config openquatt.yaml
-esphome compile openquatt.yaml
+esphome config openquatt_duo_waveshare.yaml
+esphome compile openquatt_duo_waveshare.yaml
 ```
 
-Tip: compile each hardware profile via its own entrypoint (`openquatt_waveshare.yaml` or `openquatt_heatpump_listener.yaml`). Each entrypoint has a dedicated `build_path`, which keeps profile caches separate and speeds up repeated profile switching.
+Tip: compile each hardware profile via its own entrypoint (`openquatt_duo_waveshare.yaml` or `openquatt_duo_heatpump_listener.yaml`). Each entrypoint has a dedicated `build_path`, which keeps profile caches separate and speeds up repeated profile switching.
 
 Or run the helper script:
 
@@ -102,7 +102,7 @@ Or run the helper script:
 Run:
 
 ```bash
-esphome run openquatt.yaml
+esphome run openquatt_duo_waveshare.yaml
 ```
 
 After first boot, verify:

@@ -35,7 +35,7 @@ Characteristics:
 
 Files:
 
-- `openquatt.yaml`
+- `openquatt_duo_waveshare.yaml`
 - `openquatt/*.yaml`
 
 Characteristics:

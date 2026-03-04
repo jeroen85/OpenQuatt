@@ -41,9 +41,9 @@ Companion document:
 
 ### Root
 
-- `openquatt.yaml`: default top-level entrypoint (Waveshare profile)
-- `openquatt_waveshare.yaml`: explicit [Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm) entrypoint
-- `openquatt_heatpump_listener.yaml`: [Heatpump Listener](https://electropaultje.nl/product/heatpump-listener/) entrypoint
+- `openquatt_duo_waveshare.yaml`: default top-level entrypoint (Waveshare profile)
+- `openquatt_duo_waveshare.yaml`: explicit [Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm) entrypoint
+- `openquatt_duo_heatpump_listener.yaml`: [Heatpump Listener](https://electropaultje.nl/product/heatpump-listener/) entrypoint
 - `openquatt_base.yaml`: shared base (project metadata, board/framework, package wiring)
 - `openquatt/`: subsystem packages
 - `docs/dashboard/openquatt_ha_dashboard_nl.yaml`: HA dashboard definition (Dutch)
@@ -322,8 +322,8 @@ Integration sources use existing power sensors and shared time source (`oq_time`
 
 After technical changes:
 
-1. `esphome config openquatt.yaml`
-2. `esphome compile openquatt.yaml`
+1. `esphome config openquatt_duo_waveshare.yaml`
+2. `esphome compile openquatt_duo_waveshare.yaml`
 3. Verify mode entities and selected sources update.
 4. Verify pump and compressor commands behave as expected.
 5. Verify dashboard entities still resolve.
