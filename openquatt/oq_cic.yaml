@@ -109,12 +109,18 @@ sensor:
     update_interval: 10s
     lambda: |-
       const float hp1_outside_c = id(hp1_outside_temp_cic).state;
+      #if OQ_TOPOLOGY_DUO
       const float hp2_outside_c = id(hp2_outside_temp_cic).state;
+      #endif
       const bool hp1_valid = !isnan(hp1_outside_c);
+      #if OQ_TOPOLOGY_DUO
       const bool hp2_valid = !isnan(hp2_outside_c);
       if (hp1_valid && hp2_valid) return std::min(hp1_outside_c, hp2_outside_c);
       if (hp1_valid) return hp1_outside_c;
       if (hp2_valid) return hp2_outside_c;
+      #else
+      if (hp1_valid) return hp1_outside_c;
+      #endif
       return NAN;
     web_server:
       sorting_group_id: oq_temperatures
@@ -305,7 +311,9 @@ script:
           publish_binary_if_changed(id(feed_ok), false);
           publish_float_if_changed(id(water_supply_temp_cic), NAN);
           publish_float_if_changed(id(hp1_outside_temp_cic), NAN);
+          #if OQ_TOPOLOGY_DUO
           publish_float_if_changed(id(hp2_outside_temp_cic), NAN);
+          #endif
           publish_float_if_changed(id(outside_temp_cic), NAN);
           publish_float_if_changed(id(flow_rate_cic), NAN);
           publish_float_if_changed(id(ot_control_setpoint), NAN);
@@ -369,10 +377,12 @@ script:
                       JsonObject hp1 = root["hp1"];
                       maybe_publish_float(hp1["temperatureOutside"], -40.0f, 60.0f, id(hp1_outside_temp_cic));
                     }
+                    #if OQ_TOPOLOGY_DUO
                     if (root["hp2"]) {
                       JsonObject hp2 = root["hp2"];
                       maybe_publish_float(hp2["temperatureOutside"], -40.0f, 60.0f, id(hp2_outside_temp_cic));
                     }
+                    #endif
 
                     if (root["qc"]) {
                       JsonObject qc = root["qc"];
