@@ -36,7 +36,7 @@ oq_power_soft_trip_s: "300"                           # Time above soft required
 oq_power_recover_s: "60"                              # Time below recover required for cap recovery [s].
 oq_power_cap_max_f: "20"                              # Upper limit of demand-cap factor f.
 oq_power_cap_nan_f: "16"                              # Fail-safe cap factor for invalid power measurement.
-oq_cm_prepost_s: "60"                                 # Duration of CM1 pre/postflow window [s].
+oq_cm_prepost_s: "30"                                 # Duration of CM1 pre/postflow window [s].
 oq_cm_min_flow_lph: "250.0"                           # Minimum valid flow for compressor operation [L/h].
 oq_cm_flow_fault_s: "60"                              # Low-flow duration before fault becomes active [s].
 oq_cm_flow_recover_s: "30"                            # Flow recovery duration before fault is cleared [s].
