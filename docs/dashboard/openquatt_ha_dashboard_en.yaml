@@ -484,7 +484,7 @@ views:
           - type: entities
             show_header_toggle: false
             entities:
-              - entity: sensor.openquatt_boiler_thermal_energy_total
+              - entity: sensor.openquatt_boiler_thermal_energy_cumulative
                 name: Heat cumulative
           - type: heading
             icon: mdi:sigma
@@ -493,7 +493,7 @@ views:
           - type: entities
             show_header_toggle: false
             entities:
-              - entity: sensor.openquatt_system_thermal_energy_total
+              - entity: sensor.openquatt_system_thermal_energy_cumulative
                 name: Heat cumulative
       - type: grid
         cards:
@@ -604,7 +604,7 @@ views:
                 group_by:
                   func: delta
                   duration: 1d
-              - entity: sensor.openquatt_boiler_thermal_energy_total
+              - entity: sensor.openquatt_boiler_thermal_energy_cumulative
                 name: Boiler heat/day
                 color: '#EF4444'
                 yaxis_id: energy
@@ -612,7 +612,7 @@ views:
                 group_by:
                   func: delta
                   duration: 1d
-              - entity: sensor.openquatt_system_thermal_energy_total
+              - entity: sensor.openquatt_system_thermal_energy_cumulative
                 name: System heat/day
                 color: '#10B981'
                 yaxis_id: energy
@@ -682,7 +682,7 @@ views:
                 group_by:
                   func: delta
                   duration: 1d
-              - entity: sensor.openquatt_boiler_thermal_energy_total
+              - entity: sensor.openquatt_boiler_thermal_energy_cumulative
                 name: Boiler heat/day
                 color: '#EF4444'
                 yaxis_id: energy
@@ -690,7 +690,7 @@ views:
                 group_by:
                   func: delta
                   duration: 1d
-              - entity: sensor.openquatt_system_thermal_energy_total
+              - entity: sensor.openquatt_system_thermal_energy_cumulative
                 name: System heat/day
                 color: '#10B981'
                 yaxis_id: energy
@@ -2226,6 +2226,9 @@ views:
               - **Reset runtime counters**. Note: it can take up to 1 minute
               before the effect is visible.
 
+              - **Reset cumulative energy counters** sets cumulative electricity
+              and thermal energy counters back to 0.
+
               - **HP1/HP2 Runtime counters** show the current counters used for
               runtime balancing.
 
@@ -2240,6 +2243,8 @@ views:
             entities:
               - entity: button.openquatt_reset_runtime_counters_hp1_hp2
                 name: Reset runtime counters
+              - entity: button.openquatt_reset_cumulative_energy_counters
+                name: Reset cumulative energy counters
               - entity: sensor.openquatt_hp1_runtime_hours
                 name: HP1 Runtime
               - entity: sensor.openquatt_hp2_runtime_hours

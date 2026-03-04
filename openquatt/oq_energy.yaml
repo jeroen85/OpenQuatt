@@ -145,8 +145,8 @@ sensor:
 
   # Boiler thermal energy (cumulative, kWh).
   - platform: integration
-    id: oq_boiler_thermal_energy_total
-    name: "Boiler Thermal Energy Total"
+    id: oq_boiler_thermal_energy_cumulative
+    name: "Boiler Thermal Energy Cumulative"
     sensor: boiler_heat_power
     time_unit: h
     unit_of_measurement: "kWh"
@@ -177,8 +177,8 @@ sensor:
 
   # System thermal energy (cumulative, kWh): HeatPump + Boiler.
   - platform: integration
-    id: oq_system_thermal_energy_total
-    name: "System Thermal Energy Total"
+    id: oq_system_thermal_energy_cumulative
+    name: "System Thermal Energy Cumulative"
     sensor: oq_system_heat_power
     time_unit: h
     unit_of_measurement: "kWh"
@@ -190,3 +190,18 @@ sensor:
     restore: true
     web_server:
       sorting_group_id: oq_performance
+
+button:
+  - platform: template
+    id: oq_reset_cumulative_energy_counters
+    name: "Reset Cumulative Energy Counters"
+    icon: mdi:restart
+    web_server:
+      sorting_group_id: oq_tuning_heat
+    on_press:
+      - lambda: |-
+          id(oq_electrical_energy_cumulative).reset();
+          id(oq_heatpump_thermal_energy_cumulative).reset();
+          id(oq_boiler_thermal_energy_cumulative).reset();
+          id(oq_system_thermal_energy_cumulative).reset();
+          ESP_LOGW("quatt", "Cumulative energy counters reset.");

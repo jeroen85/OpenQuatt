@@ -175,7 +175,7 @@ Operational rule:
 
 Expected content pattern:
 
-- runtime balancing aids (`Runtime lead HP`, `Reset Runtime Counters (HP1+HP2)`)
+- runtime and cumulative reset aids (`Runtime lead HP`, `Reset Runtime Counters (HP1+HP2)`, `Reset Cumulative Energy Counters`)
 - manual Modbus probe controls (`Debug Modbus register`, `Debug Read HP1 register`, `Debug Read HP2 register`)
 - platform service utilities (`Firmware Update`, `Check Firmware Updates`)
 - runtime logger controls (`Debug Level`, `Debug Level Modbus`)
