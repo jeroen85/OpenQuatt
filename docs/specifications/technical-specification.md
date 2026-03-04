@@ -289,7 +289,8 @@ Selected signals are consumed by strategy/flow logic.
 
 ## 14. HP IO Engine (Technical)
 
-`oq_HP_io` is instantiated per-HP with substitutions (HP1 always; HP2 on current shared package graph).
+`oq_HP_io` is instantiated per-HP with substitutions on Duo builds.
+Single builds instantiate only HP1 and provide `oq_hp2_single_compat` to satisfy shared ID contracts without HP2 Modbus polling.
 
 It defines:
 

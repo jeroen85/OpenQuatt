@@ -56,6 +56,7 @@ OpenQuatt is a modular ESPHome controller for Quatt Single and Quatt Duo topolog
 │   │   └── oq_substitutions_heatpump_listener.yaml
 │   ├── oq_packages.yaml              # Ordered package includes (Duo)
 │   ├── oq_packages_single.yaml       # Ordered package includes (Single)
+│   ├── oq_hp2_single_compat.yaml     # Single-only HP2 ID compatibility layer (no HP2 Modbus)
 │   ├── oq_common.yaml                # Shared runtime (logger/api/ota/wifi/http/modbus/diagnostics)
 │   ├── oq_supervisory_controlmode.yaml
 │   ├── oq_heating_strategy.yaml

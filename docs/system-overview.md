@@ -52,7 +52,7 @@ Package include order is intentional:
 12. `oq_sensor_sources`
 13. `oq_debug_testing`
 14. `oq_webserver`
-15. `oq_HP_io` (HP1 always, HP2 on current shared package graph)
+15. `oq_HP_io` (HP1 always; HP2 only on Duo) + `oq_hp2_single_compat` (Single-only ID compatibility layer)
 
 This order mirrors data dependencies and ownership boundaries.
 

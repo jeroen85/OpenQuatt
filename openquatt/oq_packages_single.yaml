@@ -2,10 +2,11 @@
 # OpenQuatt - Package Includes (Single topology)
 # ==============================================================================
 # Single topology uses the shared package graph and omits Duo-only overlays.
-# HP2 IO include stays present for now while remaining `id(hp2_*)` parser
-# references are migrated out of shared YAML modules.
+# A lightweight HP2-compat package keeps shared YAML ID contracts intact
+# without instantiating a second Modbus controller.
 # ==============================================================================
 oq_common: !include oq_common.yaml
+oq_hp2_single_compat: !include oq_hp2_single_compat.yaml
 oq_supervisory_controlmode: !include oq_supervisory_controlmode.yaml
 oq_heating_strategy: !include oq_heating_strategy.yaml
 oq_heat_control: !include oq_heat_control.yaml
@@ -25,9 +26,3 @@ heatpump1: !include
     hp_id: "hp1"
     prefix: "HP1 - "
     device_address: 0x01
-heatpump2: !include
-  file: oq_HP_io.yaml
-  vars:
-    hp_id: "hp2"
-    prefix: "HP2 - "
-    device_address: 0x02
