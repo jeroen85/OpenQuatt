@@ -43,6 +43,7 @@ oq_cm_flow_recover_s: "30"                            # Flow recovery duration b
 oq_cm2_idle_exit_s: "90"                              # Exit CM2 if both HPs are idle for this duration while demand remains > 0 [s].
 oq_cm_frost_on_c: "5.0"                               # Frost protection enable threshold [°C].
 oq_cm_frost_off_c: "6.0"                              # Frost protection disable threshold (hysteresis) [°C].
+oq_cm_frost_nan_grace_s: "30"                         # Startup grace before NaN outside temp triggers frost fail-safe [s].
 oq_cm98_diag_max_s: "1800"                            # Maximum duration of diagnostic Force CM98 override [s].
 oq_cm3_promote_s: "300"                               # Required deficit duration for CM2 -> CM3 promotion [s].
 oq_cm3_demote_s: "120"                                # Required low-deficit duration for CM3 -> CM2 demotion [s].

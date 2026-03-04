@@ -524,6 +524,8 @@ interval:
           // 5) apply_sticky_pump_policy() (CM0 sticky + pump/PWM ownership)
           // -------------------------------------------------
           const uint32_t now_ms = (uint32_t) millis();
+          static uint32_t boot_ms = 0;
+          if (boot_ms == 0) boot_ms = now_ms;
           // -------------------------------------------------
           // -------------------------------------------------
           // Power Limiter (16A guard) - simplified safety net
@@ -592,6 +594,9 @@ interval:
           }
 
           const uint32_t prepost_ms = (uint32_t)(${oq_cm_prepost_s}UL * 1000UL);
+          const uint32_t frost_nan_grace_ms = (uint32_t)(${oq_cm_frost_nan_grace_s}UL * 1000UL);
+          const bool frost_nan_grace_active =
+              (frost_nan_grace_ms > 0) && ((uint32_t)(now_ms - boot_ms) < frost_nan_grace_ms);
           const float min_flow_lph = ${oq_cm_min_flow_lph};
           const uint32_t flow_fault_ms = (uint32_t)(${oq_cm_flow_fault_s}UL * 1000UL);
           const uint32_t flow_recover_ms = (uint32_t)(${oq_cm_flow_recover_s}UL * 1000UL);
@@ -942,14 +947,14 @@ interval:
           //    Uses selected outside source to stay aligned with active source selection.
           //    - ON: <5°C
           //    - OFF: >6°C
-          //    - FAIL-SAFE: NaN -> frost ON
+          //    - FAIL-SAFE: NaN -> frost ON (after startup grace)
           // -------------------------------------------------
           const float outside_c = id(outside_temp_selected).state;
 
           bool frost = false;
           if (!heating_req) {
             if (isnan(outside_c)) {
-              frost = true; // fail-safe
+              frost = !frost_nan_grace_active; // fail-safe after startup grace
             } else {
               if (id(oq_cm_frost_prev)) {
                 frost = (outside_c < ${oq_cm_frost_off_c});
