@@ -109,7 +109,9 @@ Aanpak:
 Baseline (huidig):
 
 - Runner: `./scripts/run_regression_tests.sh`
-- Scenarios in `tests/regression/test_power_cap.cpp`
+- Scenarios in:
+  - `tests/regression/test_power_cap.cpp`
+  - `tests/regression/test_topology_constants.cpp`
 - Golden referentie is de huidige expected-state set in deze runner; elke refactorfase moet exact dezelfde uitkomst houden op Duo.
 
 Gate 1:
