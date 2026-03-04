@@ -479,28 +479,30 @@ views:
         cards:
           - type: heading
             icon: mdi:sigma
-            heading: Totaal
+            heading: Cumulatief
             heading_style: title
           - *ref_0
           - type: entities
             show_header_toggle: false
             entities:
-              - entity: sensor.openquatt_electrical_energy_total
-                name: Elektriciteit totaal
-              - entity: sensor.openquatt_heatpump_thermal_energy_total
-                name: Warmte totaal
+              - entity: sensor.openquatt_electrical_energy_cumulative
+                name: Elektriciteit cumulatief
+              - entity: sensor.openquatt_heatpump_thermal_energy_cumulative
+                name: Warmte cumulatief
+              - entity: sensor.openquatt_heatpump_cop_cumulative
+                name: COP cumulatief
           - *ref_1
           - type: entities
             show_header_toggle: false
             entities:
               - entity: sensor.openquatt_boiler_thermal_energy_total
-                name: Warmte totaal
+                name: Warmte cumulatief
           - *ref_2
           - type: entities
             show_header_toggle: false
             entities:
               - entity: sensor.openquatt_system_thermal_energy_total
-                name: Warmte totaal
+                name: Warmte cumulatief
       - type: grid
         cards:
           - type: heading
@@ -557,7 +559,7 @@ views:
               Dagaggregatie voor energie:
 
               - Elektriciteit en warmte als dagelijkse kWh (afgeleid uit
-              totaalsensoren)
+              cumulatieve sensoren)
 
               - `COP vandaag` als daggemiddelde
 
@@ -600,7 +602,7 @@ views:
               tooltip:
                 shared: true
             series:
-              - entity: sensor.openquatt_electrical_energy_total
+              - entity: sensor.openquatt_electrical_energy_cumulative
                 name: Elektriciteit/dag
                 color: '#3B82F6'
                 yaxis_id: energy
@@ -608,7 +610,7 @@ views:
                 group_by:
                   func: delta
                   duration: 1d
-              - entity: sensor.openquatt_heatpump_thermal_energy_total
+              - entity: sensor.openquatt_heatpump_thermal_energy_cumulative
                 name: Warmtepomp warmte/dag
                 color: '#F59E0B'
                 yaxis_id: energy
@@ -678,7 +680,7 @@ views:
               tooltip:
                 shared: true
             series:
-              - entity: sensor.openquatt_electrical_energy_total
+              - entity: sensor.openquatt_electrical_energy_cumulative
                 name: Elektriciteit/dag
                 color: '#3B82F6'
                 yaxis_id: energy
@@ -686,7 +688,7 @@ views:
                 group_by:
                   func: delta
                   duration: 1d
-              - entity: sensor.openquatt_heatpump_thermal_energy_total
+              - entity: sensor.openquatt_heatpump_thermal_energy_cumulative
                 name: Warmtepomp warmte/dag
                 color: '#F59E0B'
                 yaxis_id: energy

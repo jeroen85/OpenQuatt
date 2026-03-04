@@ -25,8 +25,8 @@ sensor:
 
   # Electrical input energy (cumulative, kWh).
   - platform: integration
-    id: oq_electrical_energy_total
-    name: "Electrical Energy Total"
+    id: oq_electrical_energy_cumulative
+    name: "Electrical Energy Cumulative"
     sensor: oq_total_power_input
     time_unit: h
     unit_of_measurement: "kWh"
@@ -94,8 +94,8 @@ sensor:
 
   # HeatPump thermal energy (cumulative, kWh).
   - platform: integration
-    id: oq_heatpump_thermal_energy_total
-    name: "HeatPump Thermal Energy Total"
+    id: oq_heatpump_thermal_energy_cumulative
+    name: "HeatPump Thermal Energy Cumulative"
     sensor: oq_total_heat_power
     time_unit: h
     unit_of_measurement: "kWh"
@@ -107,6 +107,25 @@ sensor:
     restore: true
     web_server:
       sorting_group_id: oq_performance
+
+  # HeatPump COP based on cumulative thermal/electrical energy (kWh/kWh).
+  - platform: template
+    id: oq_heatpump_cop_cumulative
+    name: "HeatPump COP Cumulative"
+    icon: mdi:chart-bell-curve-cumulative
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_performance
+    lambda: |-
+      const float heat_kwh = id(oq_heatpump_thermal_energy_cumulative).state;
+      const float elec_kwh = id(oq_electrical_energy_cumulative).state;
+
+      if (isnan(heat_kwh) || isnan(elec_kwh)) return NAN;
+      if (elec_kwh < 0.01f) return NAN;
+
+      return heat_kwh / elec_kwh;
 
   # Boiler thermal energy (daily, kWh).
   - platform: total_daily_energy
