@@ -18,8 +18,8 @@ The dashboard is designed as a practical operations console with the **Sections*
 - [6. HPs View](#6-hps-view)
 - [7. Sensor Configuration View](#7-sensor-configuration-view)
 - [8. Energy View](#8-energy-view)
-- [9. Advanced Settings View](#9-advanced-settings-view)
-- [10. Debug & Testing View](#10-debug--testing-view)
+- [9. Tuning View](#9-tuning-view)
+- [10. Service & Test View](#10-service--test-view)
 - [11. Diagnostics View](#11-diagnostics-view)
 - [12. Practical Maintenance Checklist](#12-practical-maintenance-checklist)
 
@@ -33,8 +33,8 @@ The dashboard is designed as a practical operations console with the **Sections*
 | HPs | `HPs` | HP1/HP2 deep diagnostics and visualization |
 | Sensor Configuration | `sensor-configuration` | Source setup (CIC/HA/selectors) plus per-signal diagnostics and feedback |
 | Energy | `energy` | Daily/cumulative energy and efficiency metrics |
-| Advanced settings | `advanced-settings` | Expert tuning parameters with explanations |
-| Debug & Testing | `debug-testing` | Service utilities, runtime balancing checks, and manual probe tools |
+| Tuning | `tuning` | Expert tuning parameters with explanations |
+| Service & Test | `service-test` | Service utilities, runtime balancing checks, and manual probe tools |
 | Diagnostics | `diagnostics` | Controller and firmware diagnostics |
 
 ## 2. Design Rules Used
@@ -159,7 +159,7 @@ Operational rule:
 
 - Validate tuning changes with this tab over full day windows.
 
-## 9. Advanced Settings View
+## 9. Tuning View
 
 Expected content pattern:
 
@@ -171,7 +171,7 @@ Operational rule:
 
 - Treat this as engineering configuration, not a daily operations tab.
 
-## 10. Debug & Testing View
+## 10. Service & Test View
 
 Expected content pattern:
 

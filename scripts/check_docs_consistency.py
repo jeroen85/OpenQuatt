@@ -207,19 +207,19 @@ def main() -> int:
             "Heat control",
             "HPs",
             "Sensor Configuration",
-            "Advanced settings",
-            "Debug & Testing",
+            "Tuning",
+            "Service & Test",
             "Diagnostics",
         ]
         nl_expected = [
             "Overzicht",
-            "Energy",
+            "Energie",
             "Flow",
             "Warmtecontrol",
             "HPs",
             "Sensorconfiguratie",
-            "Advanced settings",
-            "Debug & Testing",
+            "Tuning",
+            "Service & Test",
             "Diagnostics",
         ]
         en_actual = parse_dashboard_titles(dash_en)
@@ -232,10 +232,10 @@ def main() -> int:
 
         home_text = read_text(docs_home)
         required_phrases = [
-            "Debug & Testing View",
-            "`debug-testing`",
+            "Service & Test View",
+            "`service-test`",
             "Diagnostics View",
-            "Advanced Settings View",
+            "Tuning View",
         ]
         for phrase in required_phrases:
             if phrase not in home_text:
