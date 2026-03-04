@@ -391,8 +391,12 @@ text_sensor:
     web_server:
       sorting_group_id: oq_diagnostics
     lambda: |-
+      #if OQ_TOPOLOGY_DUO
       const bool lead_is_hp1 = (id(hp1_minutes) <= id(hp2_minutes));
       return std::string(lead_is_hp1 ? "HP1" : "HP2");
+      #else
+      return std::string("HP1");
+      #endif
 
   - platform: template
     id: oq_heating_debug_state
@@ -417,10 +421,14 @@ button:
     on_press:
       - lambda: |-
           id(hp1_minutes) = 0;
-          id(hp2_minutes) = 0;
           id(hp1_runtime_accum_ms) = 0;
+          #if OQ_TOPOLOGY_DUO
+          id(hp2_minutes) = 0;
           id(hp2_runtime_accum_ms) = 0;
           ESP_LOGW("quatt", "Runtime counters reset (HP1+HP2).");
+          #else
+          ESP_LOGW("quatt", "Runtime counters reset (HP1).");
+          #endif
 # ----------------------------
 # MAIN LOOP
 # ----------------------------
@@ -535,11 +543,16 @@ interval:
             const float room_sp_c = id(room_setpoint_selected).state;
             const float tout_c = id(outside_temp_selected).state;
             const float wm1 = id(hp1_working_mode).state;
-            const float wm2 = id(hp2_working_mode).state;
             int cur1 = -1;
-            int cur2 = -1;
             if (id(hp1_compressor_level).has_state()) cur1 = (int) id(hp1_compressor_level).active_index().value_or(-1);
+            float wm2 = 0.0f;
+            int cur2 = -1;
+            int rt2 = 0;
+            #if OQ_TOPOLOGY_DUO
+            wm2 = id(hp2_working_mode).state;
             if (id(hp2_compressor_level).has_state()) cur2 = (int) id(hp2_compressor_level).active_index().value_or(-1);
+            rt2 = id(hp2_minutes);
+            #endif
             char buf[640];
             snprintf(
               buf, sizeof(buf),
@@ -555,7 +568,7 @@ interval:
               cur1, cur2, wm1, wm2, spw, pv, room_c, room_sp_c, tout_c,
               (int) id(oq_curve_restart_inhibit_active),
               (unsigned long) off_age_s,
-              id(hp1_minutes), id(hp2_minutes));
+              id(hp1_minutes), rt2);
             const std::string s(buf);
             if (s != last_debug) {
               id(oq_heating_debug_state).publish_state(s.c_str());
@@ -579,6 +592,7 @@ interval:
                   c2.perform();
                 }
               } else {
+                #if OQ_TOPOLOGY_DUO
                 if (!id(hp2_set_working_mode).has_state() || id(hp2_set_working_mode).current_option() != opt) {
                   auto c = id(hp2_set_working_mode).make_call();
                   c.set_option(opt);
@@ -589,23 +603,37 @@ interval:
                   c2.set_index(0);
                   c2.perform();
                 }
+                #endif
               }
             };
             force_standby(true);
+            #if OQ_TOPOLOGY_DUO
             force_standby(false);
+            #endif
             // Keep internal state aligned with forced 0-level actuation to avoid stale optimizer/min-runtime state.
             auto sync_forced_stop_state = [&](bool is_hp1)->void {
-              int &prev = is_hp1 ? id(hp1_last_applied_level) : id(hp2_last_applied_level);
-              if (prev > 0) {
-                if (is_hp1) id(hp1_last_stop_ms) = now_ms;
-                else id(hp2_last_stop_ms) = now_ms;
-                if (is_hp1) id(hp1_last_level_change_ms) = now_ms;
-                else id(hp2_last_level_change_ms) = now_ms;
+              if (is_hp1) {
+                int &prev = id(hp1_last_applied_level);
+                if (prev > 0) {
+                  id(hp1_last_stop_ms) = now_ms;
+                  id(hp1_last_level_change_ms) = now_ms;
+                }
+                prev = 0;
+              } else {
+                #if OQ_TOPOLOGY_DUO
+                int &prev = id(hp2_last_applied_level);
+                if (prev > 0) {
+                  id(hp2_last_stop_ms) = now_ms;
+                  id(hp2_last_level_change_ms) = now_ms;
+                }
+                prev = 0;
+                #endif
               }
-              prev = 0;
             };
             sync_forced_stop_state(true);
+            #if OQ_TOPOLOGY_DUO
             sync_forced_stop_state(false);
+            #endif
             id(oq_dual_hp_enabled) = false;
             id(oq_dual_hp_enable_hold_elapsed_min) = 0;
             id(oq_dual_hp_disable_hold_elapsed_min) = 0;
@@ -626,13 +654,21 @@ interval:
           const bool is_power_house = (id(oq_heat_mode_code) != 1);
 
           // Lead HP = fewest runtime minutes
+          #if OQ_TOPOLOGY_DUO
           const bool lead_is_hp1 = (id(hp1_minutes) <= id(hp2_minutes));
+          #else
+          const bool lead_is_hp1 = true;
+          #endif
 
           const int lead_code = lead_is_hp1 ? 1 : 2;
           if (id(oq_last_lead_hp) != lead_code) {
             id(oq_last_lead_hp) = lead_code;
+            #if OQ_TOPOLOGY_DUO
             ESP_LOGI("quatt", "Runtime lead changed: %s (hp1_minutes=%d, hp2_minutes=%d)",
                      lead_is_hp1 ? "HP1" : "HP2", id(hp1_minutes), id(hp2_minutes));
+            #else
+            ESP_LOGI("quatt", "Runtime lead changed: HP1 (single topology)");
+            #endif
           }
 
           int hp1_req = 0;
@@ -643,16 +679,66 @@ interval:
           // Single source of truth for level enable switches to avoid drift between branches.
           auto level_allowed = [&](bool is_hp1, int level)->bool {
             switch (level) {
-              case 1: return is_hp1 ? id(hp1_lvl_1).state : id(hp2_lvl_1).state;
-              case 2: return is_hp1 ? id(hp1_lvl_2).state : id(hp2_lvl_2).state;
-              case 3: return is_hp1 ? id(hp1_lvl_3).state : id(hp2_lvl_3).state;
-              case 4: return is_hp1 ? id(hp1_lvl_4).state : id(hp2_lvl_4).state;
-              case 5: return is_hp1 ? id(hp1_lvl_5).state : id(hp2_lvl_5).state;
-              case 6: return is_hp1 ? id(hp1_lvl_6).state : id(hp2_lvl_6).state;
-              case 7: return is_hp1 ? id(hp1_lvl_7).state : id(hp2_lvl_7).state;
-              case 8: return is_hp1 ? id(hp1_lvl_8).state : id(hp2_lvl_8).state;
-              case 9: return is_hp1 ? id(hp1_lvl_9).state : id(hp2_lvl_9).state;
-              case 10: return is_hp1 ? id(hp1_lvl_10).state : id(hp2_lvl_10).state;
+              case 1:
+                #if OQ_TOPOLOGY_DUO
+                return is_hp1 ? id(hp1_lvl_1).state : id(hp2_lvl_1).state;
+                #else
+                return is_hp1 ? id(hp1_lvl_1).state : false;
+                #endif
+              case 2:
+                #if OQ_TOPOLOGY_DUO
+                return is_hp1 ? id(hp1_lvl_2).state : id(hp2_lvl_2).state;
+                #else
+                return is_hp1 ? id(hp1_lvl_2).state : false;
+                #endif
+              case 3:
+                #if OQ_TOPOLOGY_DUO
+                return is_hp1 ? id(hp1_lvl_3).state : id(hp2_lvl_3).state;
+                #else
+                return is_hp1 ? id(hp1_lvl_3).state : false;
+                #endif
+              case 4:
+                #if OQ_TOPOLOGY_DUO
+                return is_hp1 ? id(hp1_lvl_4).state : id(hp2_lvl_4).state;
+                #else
+                return is_hp1 ? id(hp1_lvl_4).state : false;
+                #endif
+              case 5:
+                #if OQ_TOPOLOGY_DUO
+                return is_hp1 ? id(hp1_lvl_5).state : id(hp2_lvl_5).state;
+                #else
+                return is_hp1 ? id(hp1_lvl_5).state : false;
+                #endif
+              case 6:
+                #if OQ_TOPOLOGY_DUO
+                return is_hp1 ? id(hp1_lvl_6).state : id(hp2_lvl_6).state;
+                #else
+                return is_hp1 ? id(hp1_lvl_6).state : false;
+                #endif
+              case 7:
+                #if OQ_TOPOLOGY_DUO
+                return is_hp1 ? id(hp1_lvl_7).state : id(hp2_lvl_7).state;
+                #else
+                return is_hp1 ? id(hp1_lvl_7).state : false;
+                #endif
+              case 8:
+                #if OQ_TOPOLOGY_DUO
+                return is_hp1 ? id(hp1_lvl_8).state : id(hp2_lvl_8).state;
+                #else
+                return is_hp1 ? id(hp1_lvl_8).state : false;
+                #endif
+              case 9:
+                #if OQ_TOPOLOGY_DUO
+                return is_hp1 ? id(hp1_lvl_9).state : id(hp2_lvl_9).state;
+                #else
+                return is_hp1 ? id(hp1_lvl_9).state : false;
+                #endif
+              case 10:
+                #if OQ_TOPOLOGY_DUO
+                return is_hp1 ? id(hp1_lvl_10).state : id(hp2_lvl_10).state;
+                #else
+                return is_hp1 ? id(hp1_lvl_10).state : false;
+                #endif
               default: return true;  // level 0 or out of range
             }
           };
@@ -664,10 +750,18 @@ interval:
           if (level_cap < 0) level_cap = 0;
           if (level_cap > max_level) level_cap = max_level;
           const bool hp1_def = id(hp1_defrost).state;
+          #if OQ_TOPOLOGY_DUO
           const bool hp2_def = id(hp2_defrost).state;
+          #else
+          const bool hp2_def = false;
+          #endif
           // Command levels may remain active during defrost; model it as thermal derating.
           const bool hp1_available = true;
+          #if OQ_TOPOLOGY_DUO
           const bool hp2_available = true;
+          #else
+          const bool hp2_available = false;
+          #endif
           // Defrost behavior is configured via substitutions:
           // - oq_defrost_power_factor
           // - oq_defrost_comp_min_f
@@ -705,6 +799,7 @@ interval:
             return cap_total;
           };
 
+          #if OQ_TOPOLOGY_DUO
           if (!is_power_house) {
             // ------------------------------------------------------------
             // HEATING CURVE MODE (demand path from heating-curve strategy)
@@ -1052,6 +1147,71 @@ interval:
               }
             }
           }
+          #else
+          // Single topology: no dual split/hold or runtime lead balancing.
+          id(oq_dual_hp_enabled) = false;
+          id(oq_dual_hp_enable_hold_elapsed_min) = 0;
+          id(oq_dual_hp_disable_hold_elapsed_min) = 0;
+          id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
+          id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
+          id(oq_dual_hp_emergency_hold_elapsed_min) = 0;
+          id(oq_dual_hp_emergency_hold_elapsed_accum_min) = 0.0f;
+          id(oq_curve_single_owner_hp) = 1;
+
+          if (!is_power_house) {
+            publish_capacity_and_deficit(id(oq_phouse_req_w));
+            hp1_req = f;
+          } else {
+            const float Pr = id(house_rated_power_w).state;  // rated house power (W)
+            float P_req_total = id(oq_phouse_req_w);         // from heating strategy (W)
+            float P_cap = NAN;
+            if (!isnan(Pr) && Pr > 0.0f) P_cap = (Pr * ((float) f / (float) demand_max_f));
+            if (!isnan(P_cap)) P_req_total = std::min(P_req_total, P_cap);
+
+            const float cap_total = publish_capacity_and_deficit(P_req_total);
+            const bool perf_inputs_valid = !isnan(Tamb) && !isnan(Tsup) && level_cap > 0;
+            if (!perf_inputs_valid) {
+              hp1_req = f;
+            } else {
+              float P_target = P_req_total;
+              if (isnan(P_target)) P_target = 0.0f;
+              if (P_target > cap_total) P_target = cap_total;
+              if (P_target < 0.0f) P_target = 0.0f;
+
+              const int last1 = id(hp1_last_applied_level);
+              float best_cost = 1e12f;
+              int best_l1 = 0;
+
+              const float W_change_penalty_per_step = 50.0f;
+              const float P_EL_SOFT_W = ${oq_optimizer_soft_w};
+              const float P_EL_PEAK_W = ${oq_power_peak_w};
+              const float W_el_over_soft_penalty_per_W = ${oq_optimizer_penalty_per_w};
+
+              for (int l1 = 0; l1 <= level_cap; l1++) {
+                if (l1 > 0 && !level_allowed(true, l1)) continue;
+
+                float p1 = (l1 == 0) ? 0.0f : oq_perf::interp_power_th_w(l1, Tamb, Tsup);
+                if (l1 > 0 && isnan(p1)) continue;
+                p1 *= hp1_th_fac;
+
+                float pel1 = (l1 == 0) ? 0.0f : oq_perf::interp_power_el_w(l1, Tamb, Tsup);
+                if (l1 > 0 && isnan(pel1)) pel1 = 0.0f;
+                if (pel1 > P_EL_PEAK_W) continue;
+
+                float cost = fabsf(p1 - P_target);
+                cost += W_change_penalty_per_step * (float) abs(l1 - last1);
+                if (pel1 > P_EL_SOFT_W) cost += (pel1 - P_EL_SOFT_W) * W_el_over_soft_penalty_per_W;
+
+                if (cost < best_cost) {
+                  best_cost = cost;
+                  best_l1 = l1;
+                }
+              }
+              hp1_req = best_l1;
+            }
+          }
+          hp2_req = 0;
+          #endif
 
           // =========================
           // 4) Allowed levels (1..10)
@@ -1090,7 +1250,11 @@ interval:
           };
 
           hp1_req = pick_allowed(hp1_req, true);
+          #if OQ_TOPOLOGY_DUO
           hp2_req = pick_allowed(hp2_req, false);
+          #else
+          hp2_req = 0;
+          #endif
 
           // =========================
           // 4b) Explicit per-HP slew-rate limiting (heating-curve mode)
@@ -1098,6 +1262,7 @@ interval:
           //    - asymmetrical hold: slower up, faster down
           // =========================
           if (!is_power_house) {
+            #if OQ_TOPOLOGY_DUO
             const bool demand_rundown = (raw < prev_f);
             int up_hold_s = 180;  // Balanced default
             int down_hold_s = 15; // Balanced default
@@ -1159,6 +1324,45 @@ interval:
               if (apply_hp1_change) hp2_req = prev2;
               else hp1_req = prev1;
             }
+            #else
+            const bool demand_rundown = (raw < prev_f);
+            int up_hold_s = 180;  // Balanced default
+            int down_hold_s = 15; // Balanced default
+            if (id(oq_curve_control_profile).has_state()) {
+              const auto profile = id(oq_curve_control_profile).current_option();
+              if (profile == "Comfort") {
+                up_hold_s = 90;
+                down_hold_s = 10;
+              } else if (profile == "Stable") {
+                up_hold_s = 300;
+                down_hold_s = 30;
+              }
+            }
+
+            auto limit_slew_hp1 = [&](int req_level)->int {
+              const int prev = id(hp1_last_applied_level);
+              uint32_t &last_change_ms = id(hp1_last_level_change_ms);
+
+              if (req_level == prev) return req_level;
+
+              int limited = req_level;
+              if (limited > prev + 1) limited = prev + 1;
+              if (limited < prev - 1) limited = prev - 1;
+              if (limited == prev) return limited;
+
+              const bool moving_up = limited > prev;
+              if (demand_rundown && moving_up) return prev;
+              const uint32_t hold_ms = (uint32_t) ((moving_up ? up_hold_s : down_hold_s) * 1000UL);
+              if (last_change_ms > 0 && now_ms > last_change_ms) {
+                const uint32_t dt_change_ms = now_ms - last_change_ms;
+                if (dt_change_ms < hold_ms) return prev;
+              }
+              return limited;
+            };
+
+            hp1_req = limit_slew_hp1(hp1_req);
+            hp2_req = 0;
+            #endif
           }
 
           // =========================
@@ -1175,15 +1379,20 @@ interval:
             }
 
             // HP2
+            #if OQ_TOPOLOGY_DUO
             const uint32_t hp2_rt_ms = (uint32_t)(now_ms - id(hp2_last_start_ms));
             if (hp2_req == 0 && id(hp2_last_applied_level) > 0 && hp2_rt_ms < min_rt_ms) {
               hp2_req = pick_allowed(1, false);
             }
+            #else
+            hp2_req = 0;
+            #endif
           }
 
           // =========================
           // 6) Working mode gate + apply compressor
           // =========================
+          #if OQ_TOPOLOGY_DUO
           auto set_mode = [&](bool is_hp1, bool heating) {
             const char* opt = heating ? "Heating" : "Standby";
             if (is_hp1) {
@@ -1328,3 +1537,103 @@ interval:
           log_transition(true, hp1_applied);
           log_transition(false, hp2_applied);
           publish_debug(hp1_req, hp2_req, hp1_applied, hp2_applied);
+          #else
+          auto set_mode_hp1 = [&](bool heating) {
+            const char* opt = heating ? "Heating" : "Standby";
+            if (id(hp1_set_working_mode).current_option() != opt) {
+              auto c = id(hp1_set_working_mode).make_call();
+              c.set_option(opt);
+              c.perform();
+            }
+          };
+
+          auto mode_is_heating_hp1 = [&]() -> bool {
+            const float m = id(hp1_working_mode).state;
+            return !isnan(m) && ((int) roundf(m) == 2);
+          };
+          auto mode_target_is_heating_hp1 = [&]() -> bool {
+            return id(hp1_set_working_mode).has_state() && id(hp1_set_working_mode).current_option() == "Heating";
+          };
+
+          // Note: options must exactly match the options map in oq_HP_io.yaml (levels 0..10)
+          const char* lvl_opts[11] = {"0","1","2","3","4","5","6","7","8","9","10"};
+
+          auto apply_level_hp1 = [&](int req_level)->int {
+            req_level = std::max(min_level, std::min(max_level, req_level));
+            const int prev_applied = id(hp1_last_applied_level);
+
+            if (!is_power_house && req_level > 0 && prev_applied == 0) {
+              int min_off_s = 120;  // Balanced default
+              if (id(oq_curve_control_profile).has_state()) {
+                const auto profile = id(oq_curve_control_profile).current_option();
+                if (profile == "Comfort") min_off_s = 60;
+                else if (profile == "Stable") min_off_s = 180;
+              }
+              if (min_off_s < 0) min_off_s = 0;
+
+              const uint32_t last_stop_ms = id(hp1_last_stop_ms);
+              if (min_off_s > 0 && last_stop_ms > 0 && now_ms > last_stop_ms) {
+                const uint32_t elapsed_off_ms = now_ms - last_stop_ms;
+                const uint32_t min_off_ms = (uint32_t) min_off_s * 1000UL;
+                if (elapsed_off_ms < min_off_ms) req_level = 0;
+              }
+            }
+
+            if (req_level > 0) set_mode_hp1(true);
+            else set_mode_hp1(false);
+
+            int applied = req_level;
+            const bool silent_active = id(oq_silent_active).state;
+            int cap = silent_active ? (int) roundf(id(oq_silent_max_level).state)
+                                    : (int) roundf(id(oq_day_max_level).state);
+            cap = std::max(min_level, std::min(max_level, cap));
+            if (applied > cap) applied = cap;
+            applied = pick_allowed_capped(applied, true, cap);
+
+            if (req_level > 0 && !mode_is_heating_hp1() && !mode_target_is_heating_hp1()) {
+              applied = 0;
+            }
+
+            auto idx = id(hp1_compressor_level).active_index();
+            int cur = idx.has_value() ? (int) idx.value() : -1;
+            if (cur != applied) {
+              auto c = id(hp1_compressor_level).make_call();
+              c.set_option(lvl_opts[applied]);
+              c.perform();
+            }
+            return applied;
+          };
+
+          int hp1_applied = apply_level_hp1(hp1_req);
+          const int hp2_applied = 0;
+
+          auto log_transition_hp1 = [&](int new_lvl) {
+            int &prev = id(hp1_last_applied_level);
+            if (prev != new_lvl) id(hp1_last_level_change_ms) = now_ms;
+
+            if (prev == 0 && new_lvl > 0) {
+              id(hp1_last_start_ms) = now_ms;
+            } else if (prev > 0 && new_lvl == 0) {
+              id(hp1_last_stop_ms) = now_ms;
+            }
+
+            if (new_lvl > 0 && dt_ms > 0) {
+              const float working_mode_raw = id(hp1_working_mode).state;
+              const bool heating_now = !isnan(working_mode_raw) && ((int) roundf(working_mode_raw) == 2);
+              if (heating_now) {
+                uint32_t sum_ms = id(hp1_runtime_accum_ms) + dt_ms;
+                if (sum_ms < id(hp1_runtime_accum_ms)) sum_ms = 60000UL;  // overflow guard
+                id(hp1_runtime_accum_ms) = sum_ms;
+                while (id(hp1_runtime_accum_ms) >= 60000UL) {
+                  id(hp1_runtime_accum_ms) -= 60000UL;
+                  id(hp1_minutes) += 1;
+                }
+              }
+            }
+
+            prev = new_lvl;
+          };
+
+          log_transition_hp1(hp1_applied);
+          publish_debug(hp1_req, 0, hp1_applied, hp2_applied);
+          #endif
