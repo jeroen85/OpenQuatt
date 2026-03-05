@@ -30,6 +30,24 @@ while IFS= read -r line; do
       # variant against main baseline.
       actual_hash="$(sed 's/${heatpump_outlet_temp_id}/hp2_water_out_temp/g' "${abs_path}" | shasum -a 256 | awk '{print $1}')"
       ;;
+    "openquatt/oq_flow_control.yaml")
+      # Flow control is templated for single/duo secondary HP flow/pump wiring.
+      # Render to Duo form before hashing for parity against main.
+      actual_hash="$(
+        perl -0pe '
+          s/\$\{flow_secondary_enabled\}/1/g;
+          s/\$\{flow_secondary_flow_sensor_id\}/hp2_flow/g;
+          s/\$\{flow_secondary_pump_speed_id\}/hp2_pump_speed/g;
+          s/^\s*const bool secondary_enabled = \(1 != 0\);\n//mg;
+          s/float f2 = secondary_enabled \? id\(hp2_flow\)\.state : NAN;/float f2 = id(hp2_flow).state;/g;
+          s/^\s*if \(!secondary_enabled\) \{\n\s*if \(v1\) return f1;\n\s*return NAN;\n\s*\}\n\n//m;
+          s/^\s*if \(!secondary_enabled\) \{\n\s*state = false;\n\s*mismatch_timer_running = false;\n\s*mismatch_start_ms = 0;\n\s*return false;\n\s*\}\n\n//m;
+          s/(static uint32_t mismatch_start_ms = 0;\n)(\s*float f1 = id\(hp1_flow\)\.state;)/$1\n$2/g;
+          s/if \(1 != 0\) \{\n\s*write_pump_pwm_if_changed\(id\(hp2_pump_speed\), at_pwm\);\n\s*\}/write_pump_pwm_if_changed(id(hp2_pump_speed), at_pwm);/g;
+          s/if \(1 != 0\) \{\n\s*write_pump_pwm_if_changed\(id\(hp2_pump_speed\), pwm\);\n\s*\}/write_pump_pwm_if_changed(id(hp2_pump_speed), pwm);/g;
+        ' "${abs_path}" | shasum -a 256 | awk '{print $1}'
+      )"
+      ;;
     "openquatt/oq_heating_strategy.yaml")
       # Heating strategy is templated for single/duo topology IDs; normalize to Duo.
       actual_hash="$(
