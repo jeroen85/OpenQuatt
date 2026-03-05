@@ -121,7 +121,7 @@ esphome config openquatt_duo_waveshare.yaml
 4. Compile (example):
 
 ```bash
-esphome compile openquatt_duo_waveshare.yaml
+PLATFORMIO_CORE_DIR="$PWD/.cache/platformio" esphome compile openquatt_duo_waveshare.yaml
 ```
 
 Note: each entrypoint has its own ESPHome `build_path`, so switching between topology/hardware combinations does not invalidate the other profile caches.
@@ -137,6 +137,9 @@ esphome run openquatt_duo_waveshare.yaml
 ```bash
 ./scripts/validate_local.sh
 ```
+
+`validate_local.sh` uses a repository-local PlatformIO core directory by default:
+`$PWD/.cache/platformio` (override via `PLATFORMIO_CORE_DIR` if needed).
 
 ## Hardware Profiles
 
