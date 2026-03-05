@@ -894,16 +894,12 @@ interval:
           //    - FAIL-SAFE: NaN -> frost ON (after startup grace)
           // -------------------------------------------------
           const float outside_c = id(outside_temp_selected).state;
-          const oq_supervisory::FrostConfig frost_cfg{
-            .on_c = ${oq_cm_frost_on_c},
-            .off_c = ${oq_cm_frost_off_c},
-          };
-          const bool frost = oq_supervisory::compute_frost(
-              heating_req,
-              outside_c,
-              id(oq_cm_frost_prev),
-              frost_nan_grace_active,
-              frost_cfg);
+          const bool frost = [&]() -> bool {
+            if (heating_req) return false;
+            if (isnan(outside_c)) return !frost_nan_grace_active;
+            if (id(oq_cm_frost_prev)) return outside_c < ${oq_cm_frost_off_c};
+            return outside_c < ${oq_cm_frost_on_c};
+          }();
           id(oq_cm_frost_prev) = frost;
 
           // -------------------------------------------------

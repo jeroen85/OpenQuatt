@@ -23,8 +23,6 @@ esphome:
   name_add_mac_suffix: false
   includes:
     - ${hp_perf_map_header}
-    - ${oq_topology_header}
-    - ${oq_supervisory_logic_header}
   platformio_options:
     build_flags:
       - -DOQ_TOPOLOGY_DUO=${oq_topology_duo}
