@@ -47,8 +47,9 @@ docs/
 │   └── openquatt_logo.svg
 ├── dashboard/
 │   ├── README.md
-│   ├── openquatt_ha_dashboard_nl.yaml
-│   └── openquatt_ha_dashboard_en.yaml
+│   ├── openquatt_ha_dashboard_duo_nl.yaml
+│   ├── openquatt_ha_dashboard_duo_en.yaml
+│   └── openquatt_ha_dashboard_single_nl.yaml
 └── specifications/
     ├── functional-specification.md
     └── technical-specification.md
@@ -63,7 +64,7 @@ docs/
 - `tuning-and-troubleshooting.md`: practical workflows, symptom-driven diagnostics, and low-load/zero-edge stability tuning.
 - `home-assistant-dashboard.md`: dashboard structure and how to use low-load, shadow-arbiter, and heating-curve debug cards.
 - `release-process.md`: GitHub Actions CI/release flow, tag strategy, and release execution steps.
-- `dashboard/README.md`: dashboard language variants and Home Assistant import instructions.
+- `dashboard/README.md`: dashboard topology/language variants and Home Assistant import instructions.
 - `specifications/functional-specification.md`: what the system must do.
 - `specifications/technical-specification.md`: how the current implementation does it.
 - `adaptive-tuner-design.md`: future design for local adaptive tuning.

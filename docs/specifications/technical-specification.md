@@ -48,8 +48,9 @@ Companion document:
 - `openquatt_base.yaml`: shared base (Duo topology wiring)
 - `openquatt_base_single.yaml`: shared base (Single topology wiring)
 - `openquatt/`: subsystem packages
-- `docs/dashboard/openquatt_ha_dashboard_nl.yaml`: HA dashboard definition (Dutch)
-- `docs/dashboard/openquatt_ha_dashboard_en.yaml`: HA dashboard definition (English)
+- `docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml`: HA dashboard definition (Dutch, Duo)
+- `docs/dashboard/openquatt_ha_dashboard_duo_en.yaml`: HA dashboard definition (English, Duo)
+- `docs/dashboard/openquatt_ha_dashboard_single_nl.yaml`: HA dashboard definition (Dutch, Single)
 
 ### Package include order
 

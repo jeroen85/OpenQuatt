@@ -91,8 +91,9 @@ OpenQuatt is a modular ESPHome controller for Quatt Single and Quatt Duo topolog
 │   │   └── openquatt_logo.svg
 │   ├── dashboard/
 │   │   ├── README.md
-│   │   ├── openquatt_ha_dashboard_nl.yaml
-│   │   ├── openquatt_ha_dashboard_en.yaml
+│   │   ├── openquatt_ha_dashboard_duo_nl.yaml
+│   │   ├── openquatt_ha_dashboard_duo_en.yaml
+│   │   ├── openquatt_ha_dashboard_single_nl.yaml
 │   │   └── openquatt_ha_dynamic_sources_package.yaml
 │   ├── specifications/
 │   │   ├── functional-specification.md
@@ -178,7 +179,7 @@ Core docs:
 - [Settings Reference](docs/settings-reference.md)
 - [Tuning and Troubleshooting](docs/tuning-and-troubleshooting.md)
 - [Home Assistant Dashboard Guide](docs/home-assistant-dashboard.md)
-- [Dashboard Install and NL/EN Variants](docs/dashboard/README.md)
+- [Dashboard Install and Topology/Language Variants](docs/dashboard/README.md)
 - [Functional Specification](docs/specifications/functional-specification.md)
 - [Technical Specification](docs/specifications/technical-specification.md)
 

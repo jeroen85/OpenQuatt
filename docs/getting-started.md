@@ -61,8 +61,9 @@ Compile-time constants:
 
 Dashboard YAML:
 
-- `docs/dashboard/openquatt_ha_dashboard_nl.yaml` (recommended default)
-- `docs/dashboard/openquatt_ha_dashboard_en.yaml`
+- `docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml` (recommended default for Duo)
+- `docs/dashboard/openquatt_ha_dashboard_duo_en.yaml`
+- `docs/dashboard/openquatt_ha_dashboard_single_nl.yaml` (for Single topology)
 
 ## 3. Baseline Runtime
 
@@ -157,7 +158,9 @@ Check selected flow source and low-flow timer/fault logic states, not only insta
 
 After successful first run:
 
-1. Import either `docs/dashboard/openquatt_ha_dashboard_nl.yaml` or `docs/dashboard/openquatt_ha_dashboard_en.yaml` into Home Assistant.
+1. Import the matching dashboard into Home Assistant:
+   - Duo: `docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml` or `docs/dashboard/openquatt_ha_dashboard_duo_en.yaml`
+   - Single: `docs/dashboard/openquatt_ha_dashboard_single_nl.yaml`
 2. Optional: install `docs/dashboard/openquatt_ha_dynamic_sources_package.yaml` as HA package for dynamic source entity selection.
 3. Read [Control Modes and Flow](control-modes-and-flow.md).
 4. Tune using [Settings Reference](settings-reference.md) and [Tuning and Troubleshooting](tuning-and-troubleshooting.md).
