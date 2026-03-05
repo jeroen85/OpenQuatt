@@ -34,6 +34,11 @@ compile_and_run \
   "${ROOT_DIR}/tests/regression/test_power_cap.cpp" \
   "${BUILD_DIR}/test_power_cap"
 
+echo "[regression] supervisory refactor equivalence vs main"
+compile_and_run \
+  "${ROOT_DIR}/tests/regression/test_supervisory_equivalence.cpp" \
+  "${BUILD_DIR}/test_supervisory_equivalence"
+
 echo "[regression] topology constants (duo)"
 compile_and_run \
   "${ROOT_DIR}/tests/regression/test_topology_constants.cpp" \
