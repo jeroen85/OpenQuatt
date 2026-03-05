@@ -372,7 +372,7 @@ views:
       card:
         type: markdown
         content: |-
-          <img src="/local/media/openquatt/openquatt_logo.svg" width="300" />
+          <img src="https://raw.githubusercontent.com/jeroen85/OpenQuatt/main/docs/assets/openquatt_logo.svg" width="300" />
 
           ## <ha-icon icon="mdi:view-dashboard"></ha-icon> Overzicht
           Snel en praktisch zicht op prestaties, status en bediening.
@@ -1113,7 +1113,7 @@ views:
             cards:
               - type: picture-elements
                 title: Quatt HP1
-                image: /local/media/quatt_dashboard/Quatt.png
+                image: https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Quatt.png
                 elements:
                   - type: image
                     style:
@@ -1122,10 +1122,10 @@ views:
                       transform: translate(0,0)
                     entity: binary_sensor.openquatt_hp1_4_way_valve
                     state_image:
-                      'on': /local/media/quatt_dashboard/Cool.png
-                      'off': /local/media/quatt_dashboard/Heat.png
-                      unknown: /local/media/quatt_dashboard/Heat.png
-                      unavailable: /local/media/quatt_dashboard/Heat.png
+                      'on': https://raw.githubusercontent.com/jeroen85/OpenQuatt/main/docs/dashboard/heatpump/Cool.png
+                      'off': https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Heat.png
+                      unknown: https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Heat.png
+                      unavailable: https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Heat.png
                     tap_action:
                       action: none
                     hold_action:

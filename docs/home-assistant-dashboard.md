@@ -5,11 +5,12 @@ Dashboard source:
 - `docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml`
 - `docs/dashboard/openquatt_ha_dashboard_duo_en.yaml`
 - `docs/dashboard/openquatt_ha_dashboard_single_nl.yaml`
+- `docs/dashboard/openquatt_ha_dashboard_single_en.yaml`
 - `docs/dashboard/README.md`
 
 The dashboard is designed as a practical operations console with the **Sections** layout.
 
-Note: this document describes the full Duo view set; the Single variant keeps the same structure and removes HP2-specific cards/entities.
+Note: this document describes the full Duo view set; the Single variants keep the same structure and remove HP2-specific cards/entities.
 
 ## Table of Contents
 

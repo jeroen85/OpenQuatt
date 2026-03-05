@@ -51,6 +51,7 @@ Companion document:
 - `docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml`: HA dashboard definition (Dutch, Duo)
 - `docs/dashboard/openquatt_ha_dashboard_duo_en.yaml`: HA dashboard definition (English, Duo)
 - `docs/dashboard/openquatt_ha_dashboard_single_nl.yaml`: HA dashboard definition (Dutch, Single)
+- `docs/dashboard/openquatt_ha_dashboard_single_en.yaml`: HA dashboard definition (English, Single)
 
 ### Package include order
 

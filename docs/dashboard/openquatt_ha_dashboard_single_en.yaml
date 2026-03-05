@@ -743,7 +743,6 @@ views:
               - `Control Mode`: active supervisory control state.
               - `Low Flow alarm`: safety alarm for insufficient flow.
               - `Flow (average)`: selected average flow used in control/safety.
-              - `Flow Mismatch`: indicates hydraulic imbalance between HP1 and HP2.
               </details>
             text_only: true
           - type: tile
@@ -767,11 +766,6 @@ views:
           - type: tile
             entity: sensor.openquatt_flow_average_selected
             name: Flow (average)
-            vertical: false
-            features_position: bottom
-          - type: tile
-            entity: binary_sensor.openquatt_flow_mismatch_hp1_vs_hp2
-            name: Flow Mismatch
             vertical: false
             features_position: bottom
           - type: heading
@@ -834,7 +828,7 @@ views:
               - `Flow measurements` compares actual flow versus setpoint over
               time.
 
-              - `Pump control` shows iPWM command output for HP1 and HP2.
+              - `Pump control` shows iPWM command output for HP1.
 
               </details>
             text_only: true
@@ -858,8 +852,6 @@ views:
             entities:
               - entity: number.openquatt_hp1_set_pump_speed
                 name: HP1 iPWM
-              - entity: number.openquatt_hp2_set_pump_speed
-                name: HP2 iPWM
             grid_options:
               columns: full
         column_span: 2
@@ -1009,8 +1001,6 @@ views:
             entities:
               - entity: sensor.openquatt_hp1_power_input
                 name: HP1 powerinput
-              - entity: sensor.openquatt_hp2_power_input
-                name: HP2 powerinput
             grid_options:
               columns: full
           - type: history-graph
@@ -1020,8 +1010,6 @@ views:
             entities:
               - entity: sensor.openquatt_hp1_heat_power
                 name: HP1 heating power
-              - entity: sensor.openquatt_hp2_heat_power
-                name: HP2 heating power
             grid_options:
               columns: full
           - type: history-graph
@@ -1049,8 +1037,8 @@ views:
         content: |-
           # <ha-icon icon="mdi:radiator"></ha-icon> Heat control
           Heat demand, heat allocation, and compressor loading.
-  - title: HPs
-    path: HPs
+  - title: HP1
+    path: hp1
     icon: mdi:heat-pump-outline
     type: sections
     sections:
@@ -1287,248 +1275,14 @@ views:
               columns: 12
               rows: auto
         column_span: 1
-      - type: grid
-        cards:
-          - square: false
-            type: grid
-            columns: 1
-            cards:
-              - type: picture-elements
-                title: Quatt HP2
-                image: https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Quatt.png
-                elements:
-                  - type: image
-                    style:
-                      left: 0%
-                      top: 0%
-                      transform: translate(0,0)
-                    entity: binary_sensor.openquatt_hp2_4_way_valve
-                    state_image:
-                      'on': https://raw.githubusercontent.com/jeroen85/OpenQuatt/main/docs/dashboard/heatpump/Cool.png
-                      'off': https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Heat.png
-                      unknown: https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Heat.png
-                      unavailable: https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Heat.png
-                    tap_action:
-                      action: none
-                    hold_action:
-                      action: none
-                  - type: state-label
-                    entity: sensor.openquatt_hp2_outside_temperature
-                    style:
-                      top: 3%
-                      left: 8%
-                      font-weight: bold
-                      color: black
-                      font-size: 0.75em
-                      transform: none
-                    prefix: 'Outside: '
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_gas_discharge_temperature
-                    style:
-                      top: 22%
-                      left: 58%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_inner_coil_temperature
-                    style:
-                      top: 70%
-                      left: 60%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_eev_steps
-                    style:
-                      top: 70%
-                      left: 42%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_gas_return_temperature
-                    style:
-                      top: 22%
-                      left: 26%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_evaporating_temperature
-                    style:
-                      top: 70%
-                      left: 25%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_evaporator_coil_temperature
-                    style:
-                      top: 58%
-                      left: 6%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_condenser_pressure
-                    style:
-                      top: 11%
-                      left: 55%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_evaporator_pressure
-                    style:
-                      top: 11%
-                      left: 30%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_fan_speed
-                    style:
-                      top: 53%
-                      left: 25%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_compressor_frequency
-                    style:
-                      top: 18%
-                      left: 40%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_water_out_temperature
-                    style:
-                      top: 43%
-                      left: 92%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_water_in_temperature
-                    style:
-                      top: 63%
-                      left: 92%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_flow
-                    style:
-                      top: 76%
-                      left: 81%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-label
-                    entity: sensor.openquatt_hp2_working_mode
-                    style:
-                      top: 8%
-                      left: 8%
-                      font-weight: bold
-                      color: white
-                      font-size: 0.75em
-                      transform: none
-                    prefix: 'Mode: '
-                  - type: state-label
-                    entity: sensor.openquatt_hp2_power_input
-                    style:
-                      top: 11%
-                      left: 8%
-                      font-weight: bold
-                      color: white
-                      font-size: 0.75em
-                      transform: none
-                    prefix: 'Power In: '
-                  - type: state-label
-                    entity: sensor.openquatt_hp2_heat_power
-                    style:
-                      top: 14%
-                      left: 8%
-                      font-weight: bold
-                      color: white
-                      font-size: 0.75em
-                      transform: none
-                    prefix: 'Power Out: '
-                  - type: state-label
-                    entity: sensor.openquatt_hp2_cop
-                    style:
-                      top: 17%
-                      left: 8%
-                      font-weight: bold
-                      color: white
-                      font-size: 0.75em
-                      transform: none
-                    prefix: 'COP: '
-            grid_options:
-              columns: 12
-              rows: auto
-          - square: false
-            type: grid
-            columns: 1
-            cards:
-              - type: entities
-                title: HP2 key values
-                show_header_toggle: false
-                entities:
-                  - entity: sensor.openquatt_hp2_working_mode
-                    name: Work mode
-                  - entity: sensor.openquatt_hp2_compressor_level
-                    name: Compressor level
-                  - entity: sensor.openquatt_hp2_compressor_frequency_demand
-                    name: Demand Frequency
-                  - entity: sensor.openquatt_hp2_compressor_frequency
-                    name: Actual Frequency
-                  - entity: sensor.openquatt_hp2_active_failures_list
-                    name: Active failures list
-                  - entity: sensor.openquatt_hp2_power_input
-                    name: Power input
-                  - entity: sensor.openquatt_hp2_heat_power
-                    name: Heat power
-                  - entity: sensor.openquatt_hp2_cop
-                    name: COP
-                  - entity: sensor.openquatt_hp2_flow
-                    name: Flow
-                  - entity: sensor.openquatt_hp2_water_in_temperature
-                    name: Water in temp
-                  - entity: sensor.openquatt_hp2_water_out_temperature
-                    name: Water out temp
-                  - entity: binary_sensor.openquatt_hp2_defrost
-                    name: Defrost
-                  - entity: binary_sensor.openquatt_hp2_4_way_valve
-                    name: 4-way valve
-            grid_options:
-              columns: 12
-              rows: auto
-        column_span: 1
-    max_columns: 4
+    max_columns: 2
     header:
       card:
         type: markdown
         content: >-
-          # <ha-icon icon="mdi:heat-pump-outline"></ha-icon> Overview HP1&HP2
+          # <ha-icon icon="mdi:heat-pump-outline"></ha-icon> Overview HP1
 
-          This tab shows a per-HP technical snapshot of refrigerant/water-side
-          behavior. Use it mainly for diagnostics and HP1 vs HP2 comparison.
+          This tab shows a technical snapshot of HP1 refrigerant/water-side behavior. Use it mainly for diagnostics.
 
           For settings, use `Flow`, `Heat control`, and `Advanced settings`.
   - title: Sensor Configuration
@@ -2014,21 +1768,6 @@ views:
               minute `Demand filtered` may rise toward `Demand raw` in Power
               House mode.
 
-              - In heating-curve mode, PID demand is passed through directly;
-              allocation is single-HP-first with dual-enable hysteresis and
-              sequential level steps.
-
-              - **Dual HP enable level (lvl)** defines at which sustained
-              single-HP compressor level a second HP may be enabled.
-
-              - Disable level is derived internally as `enable - 1` to keep tuning
-              compact.
-
-              - **Enable/disable hold** adds time hysteresis to damp frequent toggling.
-
-              - Lower enable level or shorter enable-hold = faster second-HP activation.
-
-              - Longer disable-hold = dual-HP stays active longer.
 
 
               </details>
@@ -2040,12 +1779,6 @@ views:
                 name: Minimum runtime
               - entity: number.openquatt_demand_filter_ramp_up
                 name: Demand filter ramp up
-              - entity: number.openquatt_dual_hp_enable_level
-                name: Dual HP enable level
-              - entity: number.openquatt_dual_hp_enable_hold
-                name: Dual HP enable hold
-              - entity: number.openquatt_dual_hp_disable_hold
-                name: Dual HP disable hold
       - type: grid
         cards:
           - type: heading
@@ -2171,30 +1904,6 @@ views:
                 name: L9 (H85/C71)
               - entity: switch.openquatt_hp1_allowed_level_10_h_90hz_c_74hz
                 name: L10 (H90/C74)
-          - type: entities
-            title: HP2 allowed levels
-            show_header_toggle: false
-            entities:
-              - entity: switch.openquatt_hp2_allowed_level_1_h_30hz_c_30hz
-                name: L1 (H30/C30)
-              - entity: switch.openquatt_hp2_allowed_level_2_h_39hz_c_36hz
-                name: L2 (H39/C36)
-              - entity: switch.openquatt_hp2_allowed_level_3_h_49hz_c_42hz
-                name: L3 (H49/C42)
-              - entity: switch.openquatt_hp2_allowed_level_4_h_55hz_c_47hz
-                name: L4 (H55/C47)
-              - entity: switch.openquatt_hp2_allowed_level_5_h_61hz_c_52hz
-                name: L5 (H61/C52)
-              - entity: switch.openquatt_hp2_allowed_level_6_h_67hz_c_56hz
-                name: L6 (H67/C56)
-              - entity: switch.openquatt_hp2_allowed_level_7_h_72hz_c_61hz
-                name: L7 (H72/C61)
-              - entity: switch.openquatt_hp2_allowed_level_8_h_79hz_c_66hz
-                name: L8 (H79/C66)
-              - entity: switch.openquatt_hp2_allowed_level_9_h_85hz_c_71hz
-                name: L9 (H85/C71)
-              - entity: switch.openquatt_hp2_allowed_level_10_h_90hz_c_74hz
-                name: L10 (H90/C74)
     header:
       card:
         type: markdown
@@ -2228,8 +1937,7 @@ views:
 
               - **Reset cumulative energy counters** sets cumulative electricity
               and thermal energy counters back to 0.
-
-              - **HP1/HP2 Runtime counters** show the current counters used for
+              - **HP1 Runtime counter** shows the current counter used for
               runtime balancing.
 
               - **Runtime lead HP** shows which unit is currently selected as
@@ -2247,8 +1955,6 @@ views:
                 name: Reset cumulative energy counters
               - entity: sensor.openquatt_hp1_runtime_hours
                 name: HP1 Runtime
-              - entity: sensor.openquatt_hp2_runtime_hours
-                name: HP2 Runtime
               - entity: sensor.openquatt_runtime_lead_hp
                 name: Runtime lead HP
       - type: grid
@@ -2310,7 +2016,7 @@ views:
               One-shot manual register read for debugging/testing:
 
               - First set the register number.
-              - Then press **Debug Read HP1 register** or **Debug Read HP2 register**.
+              - Then press **Debug Read HP1 register**.
               - Result is shown as `U16` and `S16`.
 
               </details>
@@ -2322,8 +2028,6 @@ views:
                 name: Modbus register
               - entity: button.openquatt_debug_read_hp1_register
                 name: Debug Read HP1 register
-              - entity: button.openquatt_debug_read_hp2_register
-                name: Debug Read HP2 register
               - entity: sensor.openquatt_debug_modbus_value_u16
                 name: Result U16
               - entity: sensor.openquatt_debug_modbus_value_s16

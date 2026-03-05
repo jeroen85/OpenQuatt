@@ -94,6 +94,7 @@ OpenQuatt is a modular ESPHome controller for Quatt Single and Quatt Duo topolog
 │   │   ├── openquatt_ha_dashboard_duo_nl.yaml
 │   │   ├── openquatt_ha_dashboard_duo_en.yaml
 │   │   ├── openquatt_ha_dashboard_single_nl.yaml
+│   │   ├── openquatt_ha_dashboard_single_en.yaml
 │   │   └── openquatt_ha_dynamic_sources_package.yaml
 │   ├── specifications/
 │   │   ├── functional-specification.md

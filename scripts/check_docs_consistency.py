@@ -157,6 +157,7 @@ def main() -> int:
     dash_en = REPO_ROOT / "docs/dashboard/openquatt_ha_dashboard_duo_en.yaml"
     dash_nl = REPO_ROOT / "docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml"
     dash_single_nl = REPO_ROOT / "docs/dashboard/openquatt_ha_dashboard_single_nl.yaml"
+    dash_single_en = REPO_ROOT / "docs/dashboard/openquatt_ha_dashboard_single_en.yaml"
 
     # 1) Known drift guard: flow mismatch threshold is compile-time, not runtime.
     flow_related = {
@@ -168,6 +169,7 @@ def main() -> int:
         "docs/dashboard/openquatt_ha_dashboard_duo_en.yaml",
         "docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml",
         "docs/dashboard/openquatt_ha_dashboard_single_nl.yaml",
+        "docs/dashboard/openquatt_ha_dashboard_single_en.yaml",
     }
     if not args.changed_only or any_changed(changed, flow_related):
         for rel in [
@@ -201,6 +203,7 @@ def main() -> int:
         "docs/dashboard/openquatt_ha_dashboard_duo_en.yaml",
         "docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml",
         "docs/dashboard/openquatt_ha_dashboard_single_nl.yaml",
+        "docs/dashboard/openquatt_ha_dashboard_single_en.yaml",
     }
     if not args.changed_only or any_changed(changed, dashboard_related):
         en_expected = [
@@ -236,9 +239,21 @@ def main() -> int:
             "Service & Test",
             "Diagnostics",
         ]
+        single_en_expected = [
+            "Overview",
+            "Energy",
+            "Flow",
+            "Heat control",
+            "HP1",
+            "Sensor Configuration",
+            "Tuning",
+            "Service & Test",
+            "Diagnostics",
+        ]
         en_actual = parse_dashboard_titles(dash_en)
         nl_actual = parse_dashboard_titles(dash_nl)
         single_nl_actual = parse_dashboard_titles(dash_single_nl)
+        single_en_actual = parse_dashboard_titles(dash_single_en)
 
         if en_actual != en_expected:
             add(findings, "docs/dashboard/openquatt_ha_dashboard_duo_en.yaml", 1, f"View titles differ from expected: {en_actual}")
@@ -246,6 +261,8 @@ def main() -> int:
             add(findings, "docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml", 1, f"View titles differ from expected: {nl_actual}")
         if single_nl_actual != single_nl_expected:
             add(findings, "docs/dashboard/openquatt_ha_dashboard_single_nl.yaml", 1, f"View titles differ from expected: {single_nl_actual}")
+        if single_en_actual != single_en_expected:
+            add(findings, "docs/dashboard/openquatt_ha_dashboard_single_en.yaml", 1, f"View titles differ from expected: {single_en_actual}")
 
         home_text = read_text(docs_home)
         required_phrases = [
@@ -297,6 +314,7 @@ def main() -> int:
                 "docs/dashboard/openquatt_ha_dashboard_duo_en.yaml",
                 "docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml",
                 "docs/dashboard/openquatt_ha_dashboard_single_nl.yaml",
+                "docs/dashboard/openquatt_ha_dashboard_single_en.yaml",
             },
         ) and not any_changed(changed, {"docs/home-assistant-dashboard.md"}):
             add(

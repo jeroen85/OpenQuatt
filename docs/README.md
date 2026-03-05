@@ -49,7 +49,8 @@ docs/
 │   ├── README.md
 │   ├── openquatt_ha_dashboard_duo_nl.yaml
 │   ├── openquatt_ha_dashboard_duo_en.yaml
-│   └── openquatt_ha_dashboard_single_nl.yaml
+│   ├── openquatt_ha_dashboard_single_nl.yaml
+│   └── openquatt_ha_dashboard_single_en.yaml
 └── specifications/
     ├── functional-specification.md
     └── technical-specification.md

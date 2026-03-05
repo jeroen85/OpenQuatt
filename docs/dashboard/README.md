@@ -5,13 +5,14 @@ This folder contains dashboard variants per topology/language:
 - `openquatt_ha_dashboard_duo_nl.yaml`: Dutch UI labels/text (Duo).
 - `openquatt_ha_dashboard_duo_en.yaml`: English UI labels/text (Duo).
 - `openquatt_ha_dashboard_single_nl.yaml`: Dutch UI labels/text (Single).
+- `openquatt_ha_dashboard_single_en.yaml`: English UI labels/text (Single).
 - `openquatt_ha_dynamic_sources_package.yaml`: optional HA package for dynamic source proxies.
 
 ## Which One To Use
 
 - Use a `duo` file for Duo firmware entrypoints.
-- Use `openquatt_ha_dashboard_single_nl.yaml` for Single firmware entrypoints.
-- Choose `NL` or `EN` based on preferred UI language (Single is currently NL only).
+- Use a `single` file for Single firmware entrypoints.
+- Choose `NL` or `EN` based on preferred UI language.
 
 ## Home Assistant Installation
 
@@ -23,6 +24,7 @@ This folder contains dashboard variants per topology/language:
    - `docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml`
    - `docs/dashboard/openquatt_ha_dashboard_duo_en.yaml`
    - `docs/dashboard/openquatt_ha_dashboard_single_nl.yaml`
+   - `docs/dashboard/openquatt_ha_dashboard_single_en.yaml`
 6. Save and reload the dashboard.
 
 ## Optional Dynamic Source Proxies (HA package)
