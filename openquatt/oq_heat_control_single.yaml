@@ -623,6 +623,8 @@ interval:
               default: return true;  // level 0 or out of range
             }
           };
+
+          ${hp_perf_map_lambda_helpers}
           // Shared telemetry/capacity context for both heat strategies.
           const float Tamb = id(outside_temp_selected).state;
           const float Tsup = id(oq_system_supply_temp).state;
@@ -650,7 +652,7 @@ interval:
             float best = 0.0f;
             for (int lvl = 1; lvl <= level_cap; lvl++) {
               if (!level_allowed(is_hp1, lvl)) continue;
-              float p = oq_perf::interp_power_th_w(lvl, Tamb, Tsup);
+              float p = oq_perf_interp_power_th_w(lvl, Tamb, Tsup);
               if (!isnan(p)) p *= is_hp1 ? hp1_th_fac : hp2_th_fac;
               if (!isnan(p) && p > best) best = p;
             }
@@ -714,11 +716,11 @@ interval:
               for (int l1 = 0; l1 <= level_cap; l1++) {
                 if (l1 > 0 && !level_allowed(true, l1)) continue;
 
-                float p1 = (l1 == 0) ? 0.0f : oq_perf::interp_power_th_w(l1, Tamb, Tsup);
+                float p1 = (l1 == 0) ? 0.0f : oq_perf_interp_power_th_w(l1, Tamb, Tsup);
                 if (l1 > 0 && isnan(p1)) continue;
                 p1 *= hp1_th_fac;
 
-                float pel1 = (l1 == 0) ? 0.0f : oq_perf::interp_power_el_w(l1, Tamb, Tsup);
+                float pel1 = (l1 == 0) ? 0.0f : oq_perf_interp_power_el_w(l1, Tamb, Tsup);
                 if (l1 > 0 && isnan(pel1)) pel1 = 0.0f;
                 if (pel1 > P_EL_PEAK_W) continue;
 

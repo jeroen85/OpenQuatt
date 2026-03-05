@@ -652,6 +652,7 @@ interval:
             if (until_ms == 0) return false;
             return static_cast<uint32_t>(until_ms - now_ms) < 0x80000000UL;
           };
+          ${hp_perf_map_lambda_helpers}
 
           // -------------------------------------------------
           // 1) Heat demand
@@ -706,7 +707,7 @@ interval:
             const float Tsup = id(oq_system_supply_temp).state;
             float pmin_dyn = NAN;
             if (!isnan(Tamb) && !isnan(Tsup)) {
-              pmin_dyn = oq_perf::interp_power_th_w(1, Tamb, Tsup);
+              pmin_dyn = oq_perf_interp_power_th_w(1, Tamb, Tsup);
               if (isnan(pmin_dyn) || pmin_dyn <= 0.0f) pmin_dyn = NAN;
             }
             if (!isnan(pmin_dyn)) {

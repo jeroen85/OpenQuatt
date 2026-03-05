@@ -24,13 +24,26 @@ while IFS= read -r line; do
     continue
   fi
 
-  if [[ "${file_path}" == "openquatt/oq_boiler_control.yaml" ]]; then
-    # Boiler module is templated by package vars; validate the rendered Duo
-    # variant against main baseline.
-    actual_hash="$(sed 's/${heatpump_outlet_temp_id}/hp2_water_out_temp/g' "${abs_path}" | shasum -a 256 | awk '{print $1}')"
-  else
-    actual_hash="$(shasum -a 256 "${abs_path}" | awk '{print $1}')"
-  fi
+  case "${file_path}" in
+    "openquatt/oq_boiler_control.yaml")
+      # Boiler module is templated by package vars; validate the rendered Duo
+      # variant against main baseline.
+      actual_hash="$(sed 's/${heatpump_outlet_temp_id}/hp2_water_out_temp/g' "${abs_path}" | shasum -a 256 | awk '{print $1}')"
+      ;;
+    "openquatt/oq_supervisory_controlmode.yaml"|"openquatt/oq_heat_control.yaml")
+      # Perf-map helper injection keeps runtime behavior but changes source shape.
+      # Normalize injected helper and helper call names to compare with main.
+      actual_hash="$(
+        sed '/^[[:space:]]*${hp_perf_map_lambda_helpers}[[:space:]]*$/d' "${abs_path}" \
+          | sed 's/oq_perf_interp_power_th_w/oq_perf::interp_power_th_w/g' \
+          | sed 's/oq_perf_interp_power_el_w/oq_perf::interp_power_el_w/g' \
+          | shasum -a 256 | awk '{print $1}'
+      )"
+      ;;
+    *)
+      actual_hash="$(shasum -a 256 "${abs_path}" | awk '{print $1}')"
+      ;;
+  esac
   if [[ "${actual_hash}" != "${expected_hash}" ]]; then
     echo "[FAIL] duo parity mismatch: ${file_path}" >&2
     echo "       expected=${expected_hash}" >&2

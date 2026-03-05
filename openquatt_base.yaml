@@ -21,8 +21,6 @@ esphome:
     version: ${project_version}
   min_version: 2025.11.0
   name_add_mac_suffix: false
-  includes:
-    - ${hp_perf_map_header}
   platformio_options:
     build_flags:
       - -DOQ_TOPOLOGY_DUO=${oq_topology_duo}

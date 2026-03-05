@@ -14,7 +14,7 @@ device_name: "openquatt"                              # Internal ESPHome device 
 friendly_name: OpenQuatt                              # Display name in Home Assistant / UI.
 project_name: "openquatt.openquatt"                   # ESPHome project identifier shown in firmware metadata.
 project_version: "v0.15.0"                            # ESPHome project version shown in firmware metadata.
-hp_perf_map_header: "openquatt/includes/hp_perf_map.h" # C++ performance-map header include path.
+hp_perf_map_lambda_helpers: !include includes/hp_perf_map_lambda_helpers.yaml # Inline perf-map helper code for lambda-only builds.
 oq_topology_duo: "1"                                  # Compile-time topology flag: 1=Duo, 0=Single.
 release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt.manifest.json" # OTA update manifest URL.
 
