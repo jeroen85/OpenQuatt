@@ -51,8 +51,9 @@ Package include order is intentional:
 11. `oq_local_sensors`
 12. `oq_sensor_sources`
 13. `oq_debug_testing`
-14. `oq_webserver`
-15. `oq_HP_io` (HP1 always; HP2 only on Duo) and Single-specific `_single` module variants
+14. `oq_debug_testing_duo` (Duo only)
+15. `oq_webserver`
+16. `oq_HP_io` (HP1 always; HP2 only on Duo)
 
 This order mirrors data dependencies and ownership boundaries.
 
