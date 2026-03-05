@@ -11,7 +11,10 @@ oq_heating_strategy: !include oq_heating_strategy_single.yaml
 oq_heat_control: !include oq_heat_control_single.yaml
 oq_flow_control: !include oq_flow_control_single.yaml
 oq_flow_autotune: !include oq_flow_autotune.yaml
-oq_boiler_control: !include oq_boiler_control.yaml
+oq_boiler_control: !include
+  file: oq_boiler_control.yaml
+  vars:
+    heatpump_outlet_temp_id: "hp1_water_out_temp"
 oq_energy: !include oq_energy.yaml
 oq_cic: !include oq_cic_single.yaml
 oq_ha_inputs: !include oq_ha_inputs.yaml
@@ -19,15 +22,6 @@ oq_local_sensors: !include oq_local_sensors.yaml
 oq_sensor_sources: !include oq_sensor_sources.yaml
 oq_debug_testing: !include oq_debug_testing.yaml
 oq_webserver: !include oq_webserver.yaml
-oq_single_aliases:
-  sensor:
-    - platform: template
-      id: hp2_water_out_temp
-      internal: true
-      update_interval: 1s
-      lambda: |-
-        if (id(hp1_water_out_temp).has_state()) return id(hp1_water_out_temp).state;
-        return NAN;
 heatpump1: !include
   file: oq_HP_io.yaml
   vars:

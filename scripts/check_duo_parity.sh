@@ -24,7 +24,13 @@ while IFS= read -r line; do
     continue
   fi
 
-  actual_hash="$(shasum -a 256 "${abs_path}" | awk '{print $1}')"
+  if [[ "${file_path}" == "openquatt/oq_boiler_control.yaml" ]]; then
+    # Boiler module is templated by package vars; validate the rendered Duo
+    # variant against main baseline.
+    actual_hash="$(sed 's/${heatpump_outlet_temp_id}/hp2_water_out_temp/g' "${abs_path}" | shasum -a 256 | awk '{print $1}')"
+  else
+    actual_hash="$(shasum -a 256 "${abs_path}" | awk '{print $1}')"
+  fi
   if [[ "${actual_hash}" != "${expected_hash}" ]]; then
     echo "[FAIL] duo parity mismatch: ${file_path}" >&2
     echo "       expected=${expected_hash}" >&2
