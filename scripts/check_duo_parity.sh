@@ -93,10 +93,34 @@ while IFS= read -r line; do
       )"
       ;;
     "openquatt/oq_heat_control.yaml")
-      # Perf-map helper injection keeps runtime behavior but changes source shape.
-      # Normalize injected helper and helper call names to compare with main.
+      # Heat control is templated for single/duo secondary IDs and contains
+      # topology-gated preprocessor blocks. Render to Duo + normalize helpers.
       actual_hash="$(
-        sed '/^[[:space:]]*${hp_perf_map_lambda_helpers}[[:space:]]*$/d' "${abs_path}" \
+        perl -0pe '
+          s/\$\{hc_secondary_power_input_id\}/hp2_power_input/g;
+          s/\$\{hc_secondary_heat_power_id\}/hp2_heat_power/g;
+          s/\$\{hc_secondary_compressor_level_id\}/hp2_compressor_level/g;
+          s/\$\{hc_secondary_defrost_id\}/hp2_defrost/g;
+          s/\$\{hc_secondary_last_applied_level_id\}/hp2_last_applied_level/g;
+          s/\$\{hc_secondary_last_start_ms_id\}/hp2_last_start_ms/g;
+          s/\$\{hc_secondary_last_stop_ms_id\}/hp2_last_stop_ms/g;
+          s/\$\{hc_secondary_minutes_id\}/hp2_minutes/g;
+          s/\$\{hc_secondary_set_working_mode_id\}/hp2_set_working_mode/g;
+          s/\$\{hc_secondary_working_mode_id\}/hp2_working_mode/g;
+          s/\$\{hc_secondary_lvl_1_id\}/hp2_lvl_1/g;
+          s/\$\{hc_secondary_lvl_2_id\}/hp2_lvl_2/g;
+          s/\$\{hc_secondary_lvl_3_id\}/hp2_lvl_3/g;
+          s/\$\{hc_secondary_lvl_4_id\}/hp2_lvl_4/g;
+          s/\$\{hc_secondary_lvl_5_id\}/hp2_lvl_5/g;
+          s/\$\{hc_secondary_lvl_6_id\}/hp2_lvl_6/g;
+          s/\$\{hc_secondary_lvl_7_id\}/hp2_lvl_7/g;
+          s/\$\{hc_secondary_lvl_8_id\}/hp2_lvl_8/g;
+          s/\$\{hc_secondary_lvl_9_id\}/hp2_lvl_9/g;
+          s/\$\{hc_secondary_lvl_10_id\}/hp2_lvl_10/g;
+          while (s/^[ \t]*#if OQ_TOPOLOGY_DUO[ \t]*\n(.*?)[ \t]*#else[ \t]*\n(.*?)[ \t]*#endif[ \t]*\n/$1/smg) {}
+          while (s/^[ \t]*#if OQ_TOPOLOGY_DUO[ \t]*\n(.*?)[ \t]*#endif[ \t]*\n/$1/smg) {}
+        ' "${abs_path}" \
+          | sed '/^[[:space:]]*${hp_perf_map_lambda_helpers}[[:space:]]*$/d' \
           | sed 's/oq_perf_interp_power_th_w/oq_perf::interp_power_th_w/g' \
           | sed 's/oq_perf_interp_power_el_w/oq_perf::interp_power_el_w/g' \
           | shasum -a 256 | awk '{print $1}'

@@ -60,7 +60,6 @@ OpenQuatt is a modular ESPHome controller for Quatt Single and Quatt Duo topolog
 │   ├── oq_supervisory_controlmode.yaml
 │   ├── oq_heating_strategy.yaml
 │   ├── oq_heat_control.yaml
-│   ├── oq_heat_control_single.yaml
 │   ├── oq_flow_control.yaml
 │   ├── oq_flow_autotune.yaml
 │   ├── oq_boiler_control.yaml
