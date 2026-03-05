@@ -23,6 +23,7 @@ esphome:
   name_add_mac_suffix: false
   platformio_options:
     build_flags:
+      # Duo build flag comes from substitutions (`oq_topology_duo`, default "1").
       - -DOQ_TOPOLOGY_DUO=${oq_topology_duo}
   on_boot:
     priority: -100

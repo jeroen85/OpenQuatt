@@ -1,8 +1,9 @@
 # ==============================================================================
 # OpenQuatt - Package Includes (Single topology)
 # ==============================================================================
-# Single topology uses dedicated module variants only where behavior diverges
-# materially from Duo. Shared modules are preferred where possible.
+# Single topology reuses the same shared modules as Duo.
+# `*_secondary_*` vars map to HP1 to satisfy ESPHome ID validation, while actual
+# Duo-only behavior is still removed at compile-time via `#if OQ_TOPOLOGY_DUO`.
 # ==============================================================================
 oq_common: !include oq_common.yaml
 oq_supervisory_controlmode: !include
@@ -48,6 +49,7 @@ oq_heat_control: !include
 oq_flow_control: !include
   file: oq_flow_control.yaml
   vars:
+    # Secondary path disabled in Single; IDs remain mapped for template validity.
     flow_secondary_enabled: "0"
     flow_secondary_flow_sensor_id: "hp1_flow"
     flow_secondary_pump_speed_id: "hp1_pump_speed"

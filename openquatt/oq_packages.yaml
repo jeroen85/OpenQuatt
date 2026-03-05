@@ -15,6 +15,8 @@
 # 11) Web UI
 # 12) Per-HP hardware adapters
 # ==============================================================================
+# Shared modules use `*_secondary_*` template vars so topology wiring stays
+# centralized in package files and avoids duplicated module files.
 oq_common: !include oq_common.yaml
 oq_supervisory_controlmode: !include
   file: oq_supervisory_controlmode.yaml

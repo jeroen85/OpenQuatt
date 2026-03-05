@@ -23,6 +23,7 @@ esphome:
   name_add_mac_suffix: false
   platformio_options:
     build_flags:
+      # Hard-pinned for Single entrypoints to prevent accidental topology drift.
       - -DOQ_TOPOLOGY_DUO=0
   on_boot:
     priority: -100
