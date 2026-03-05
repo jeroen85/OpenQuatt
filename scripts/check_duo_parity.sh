@@ -38,6 +38,7 @@ while IFS= read -r line; do
           s/\$\{flow_secondary_enabled\}/1/g;
           s/\$\{flow_secondary_flow_sensor_id\}/hp2_flow/g;
           s/\$\{flow_secondary_pump_speed_id\}/hp2_pump_speed/g;
+          s/^\s*internal: \${flow_mismatch_internal}\n//mg;
           s/^\s*const bool secondary_enabled = \(1 != 0\);\n//mg;
           s/float f2 = secondary_enabled \? id\(hp2_flow\)\.state : NAN;/float f2 = id(hp2_flow).state;/g;
           s/^\s*if \(!secondary_enabled\) \{\n\s*if \(v1\) return f1;\n\s*return NAN;\n\s*\}\n\n//m;
@@ -65,6 +66,7 @@ while IFS= read -r line; do
       actual_hash="$(
         perl -0pe '
           s/\$\{cic_secondary_enabled\}/1/g;
+          s/^\s*internal: \${cic_hp2_sensor_internal}\n//mg;
           s/^\s*const bool hp2_enabled = \(1 != 0\);\n\s*const float hp2_outside_c = hp2_enabled \? id\(hp2_outside_temp_cic\)\.state : NAN;/      const float hp2_outside_c = id(hp2_outside_temp_cic).state;/m;
           s/^\s*if \(1 != 0\) \{\n\s*publish_float_if_changed\(id\(hp2_outside_temp_cic\), NAN\);\n\s*\}/          publish_float_if_changed(id(hp2_outside_temp_cic), NAN);/m;
           s/if \(\(1 != 0\) && root\["hp2"\]\) \{/if (root["hp2"]) {/g;
@@ -117,6 +119,9 @@ while IFS= read -r line; do
           s/\$\{hc_secondary_lvl_8_id\}/hp2_lvl_8/g;
           s/\$\{hc_secondary_lvl_9_id\}/hp2_lvl_9/g;
           s/\$\{hc_secondary_lvl_10_id\}/hp2_lvl_10/g;
+          s/^\s*internal: \${hc_dual_tuning_internal}\n//mg;
+          s/^\s*internal: \${hc_hp2_diag_internal}\n//mg;
+          s/name: "\$\{hc_runtime_reset_button_name\}"/name: "Reset Runtime Counters (HP1+HP2)"/g;
           while (s/^[ \t]*#if OQ_TOPOLOGY_DUO[ \t]*\n(.*?)[ \t]*#else[ \t]*\n(.*?)[ \t]*#endif[ \t]*\n/$1/smg) {}
           while (s/^[ \t]*#if OQ_TOPOLOGY_DUO[ \t]*\n(.*?)[ \t]*#endif[ \t]*\n/$1/smg) {}
         ' "${abs_path}" \

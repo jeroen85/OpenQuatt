@@ -89,6 +89,7 @@ sensor:
   - platform: template
     id: hp2_outside_temp_cic
     name: "CIC - HP2 Outside Temp"
+    internal: ${cic_hp2_sensor_internal}
     unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement

@@ -184,6 +184,7 @@ binary_sensor:
   - platform: template
     id: oq_flow_mismatch
     name: "Flow mismatch (HP1 vs HP2)"
+    internal: ${flow_mismatch_internal}
     icon: mdi:alert-circle-outline
     device_class: problem
     entity_category: diagnostic

@@ -78,6 +78,7 @@ number:
   - platform: template
     id: oq_dual_hp_enable_level
     name: "Dual HP Enable Level"
+    internal: ${hc_dual_tuning_internal}
     icon: mdi:arrow-up-bold-hexagon-outline
     unit_of_measurement: "lvl"
     min_value: 1
@@ -94,6 +95,7 @@ number:
   - platform: template
     id: oq_dual_hp_enable_hold_min
     name: "Dual HP Enable Hold"
+    internal: ${hc_dual_tuning_internal}
     icon: mdi:timer-plus-outline
     unit_of_measurement: "min"
     min_value: 1
@@ -110,6 +112,7 @@ number:
   - platform: template
     id: oq_dual_hp_disable_hold_min
     name: "Dual HP Disable Hold"
+    internal: ${hc_dual_tuning_internal}
     icon: mdi:timer-minus-outline
     unit_of_measurement: "min"
     min_value: 1
@@ -346,6 +349,7 @@ sensor:
   - platform: template
     id: oq_hp2_compressor_level_sensor
     name: "HP2 compressor level"
+    internal: ${hc_hp2_diag_internal}
     icon: mdi:stairs
     unit_of_measurement: "lvl"
     state_class: measurement
@@ -427,7 +431,7 @@ text_sensor:
 button:
   - platform: template
     id: oq_reset_runtime
-    name: "Reset Runtime Counters (HP1+HP2)"
+    name: "${hc_runtime_reset_button_name}"
     icon: mdi:restart
     web_server:
       sorting_group_id: oq_tuning_heat

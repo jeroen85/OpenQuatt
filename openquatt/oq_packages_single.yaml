@@ -46,6 +46,9 @@ oq_heat_control: !include
     hc_secondary_lvl_8_id: "hp1_lvl_8"
     hc_secondary_lvl_9_id: "hp1_lvl_9"
     hc_secondary_lvl_10_id: "hp1_lvl_10"
+    hc_dual_tuning_internal: "true"
+    hc_hp2_diag_internal: "true"
+    hc_runtime_reset_button_name: "Reset Runtime Counters (HP1)"
 oq_flow_control: !include
   file: oq_flow_control.yaml
   vars:
@@ -53,6 +56,7 @@ oq_flow_control: !include
     flow_secondary_enabled: "0"
     flow_secondary_flow_sensor_id: "hp1_flow"
     flow_secondary_pump_speed_id: "hp1_pump_speed"
+    flow_mismatch_internal: "true"
 oq_flow_autotune: !include oq_flow_autotune.yaml
 oq_boiler_control: !include
   file: oq_boiler_control.yaml
@@ -63,6 +67,7 @@ oq_cic: !include
   file: oq_cic.yaml
   vars:
     cic_secondary_enabled: "0"
+    cic_hp2_sensor_internal: "true"
 oq_ha_inputs: !include oq_ha_inputs.yaml
 oq_local_sensors: !include oq_local_sensors.yaml
 oq_sensor_sources: !include oq_sensor_sources.yaml
