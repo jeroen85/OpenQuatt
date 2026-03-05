@@ -71,7 +71,28 @@ while IFS= read -r line; do
         ' "${abs_path}" | shasum -a 256 | awk '{print $1}'
       )"
       ;;
-    "openquatt/oq_supervisory_controlmode.yaml"|"openquatt/oq_heat_control.yaml")
+    "openquatt/oq_supervisory_controlmode.yaml")
+      # Supervisory now contains topology-gated preprocessor blocks.
+      # Render to the Duo branch and normalize perf-map helper injection.
+      actual_hash="$(
+        perl -0pe '
+          s/\$\{supervisory_secondary_last_applied_level_id\}/hp2_last_applied_level/g;
+          s/\$\{supervisory_secondary_working_mode_id\}/hp2_working_mode/g;
+          s/\$\{supervisory_secondary_set_working_mode_id\}/hp2_set_working_mode/g;
+          s/\$\{supervisory_secondary_compressor_level_id\}/hp2_compressor_level/g;
+          s/\$\{supervisory_secondary_low_noise_mode_id\}/hp2_low_noise_mode/g;
+          s/\$\{supervisory_secondary_set_pump_mode_id\}/hp2_set_pump_mode/g;
+          s/\$\{supervisory_secondary_pump_speed_id\}/hp2_pump_speed/g;
+          while (s/^[ \t]*#if OQ_TOPOLOGY_DUO[ \t]*\n(.*?)[ \t]*#else[ \t]*\n(.*?)[ \t]*#endif[ \t]*\n/$1/smg) {}
+          while (s/^[ \t]*#if OQ_TOPOLOGY_DUO[ \t]*\n(.*?)[ \t]*#endif[ \t]*\n/$1/smg) {}
+        ' "${abs_path}" \
+          | sed '/^[[:space:]]*${hp_perf_map_lambda_helpers}[[:space:]]*$/d' \
+          | sed 's/oq_perf_interp_power_th_w/oq_perf::interp_power_th_w/g' \
+          | sed 's/oq_perf_interp_power_el_w/oq_perf::interp_power_el_w/g' \
+          | shasum -a 256 | awk '{print $1}'
+      )"
+      ;;
+    "openquatt/oq_heat_control.yaml")
       # Perf-map helper injection keeps runtime behavior but changes source shape.
       # Normalize injected helper and helper call names to compare with main.
       actual_hash="$(

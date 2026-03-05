@@ -5,7 +5,16 @@
 # materially from Duo. Shared modules are preferred where possible.
 # ==============================================================================
 oq_common: !include oq_common.yaml
-oq_supervisory_controlmode: !include oq_supervisory_controlmode_single.yaml
+oq_supervisory_controlmode: !include
+  file: oq_supervisory_controlmode.yaml
+  vars:
+    supervisory_secondary_last_applied_level_id: "hp1_last_applied_level"
+    supervisory_secondary_working_mode_id: "hp1_working_mode"
+    supervisory_secondary_set_working_mode_id: "hp1_set_working_mode"
+    supervisory_secondary_compressor_level_id: "hp1_compressor_level"
+    supervisory_secondary_low_noise_mode_id: "hp1_low_noise_mode"
+    supervisory_secondary_set_pump_mode_id: "hp1_set_pump_mode"
+    supervisory_secondary_pump_speed_id: "hp1_pump_speed"
 oq_heating_strategy: !include
   file: oq_heating_strategy.yaml
   vars:
