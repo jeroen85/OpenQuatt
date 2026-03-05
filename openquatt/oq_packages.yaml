@@ -17,7 +17,13 @@
 # ==============================================================================
 oq_common: !include oq_common.yaml
 oq_supervisory_controlmode: !include oq_supervisory_controlmode.yaml
-oq_heating_strategy: !include oq_heating_strategy.yaml
+oq_heating_strategy: !include
+  file: oq_heating_strategy.yaml
+  vars:
+    secondary_outside_temp_id: "hp2_outside_temp"
+    secondary_water_out_temp_id: "hp2_water_out_temp"
+    secondary_last_applied_level_id: "hp2_last_applied_level"
+    secondary_working_mode_id: "hp2_working_mode"
 oq_heat_control: !include oq_heat_control.yaml
 oq_flow_control: !include oq_flow_control.yaml
 oq_flow_autotune: !include oq_flow_autotune.yaml
@@ -26,7 +32,10 @@ oq_boiler_control: !include
   vars:
     heatpump_outlet_temp_id: "hp2_water_out_temp"
 oq_energy: !include oq_energy.yaml
-oq_cic: !include oq_cic.yaml
+oq_cic: !include
+  file: oq_cic.yaml
+  vars:
+    cic_secondary_enabled: "1"
 oq_ha_inputs: !include oq_ha_inputs.yaml
 oq_local_sensors: !include oq_local_sensors.yaml
 oq_sensor_sources: !include oq_sensor_sources.yaml

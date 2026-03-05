@@ -30,6 +30,29 @@ while IFS= read -r line; do
       # variant against main baseline.
       actual_hash="$(sed 's/${heatpump_outlet_temp_id}/hp2_water_out_temp/g' "${abs_path}" | shasum -a 256 | awk '{print $1}')"
       ;;
+    "openquatt/oq_heating_strategy.yaml")
+      # Heating strategy is templated for single/duo topology IDs; normalize to Duo.
+      actual_hash="$(
+        sed \
+          -e 's/${secondary_outside_temp_id}/hp2_outside_temp/g' \
+          -e 's/${secondary_water_out_temp_id}/hp2_water_out_temp/g' \
+          -e 's/${secondary_last_applied_level_id}/hp2_last_applied_level/g' \
+          -e 's/${secondary_working_mode_id}/hp2_working_mode/g' \
+          "${abs_path}" | shasum -a 256 | awk '{print $1}'
+      )"
+      ;;
+    "openquatt/oq_cic.yaml")
+      # CIC parser/aggregation can disable secondary HP logic for single topology.
+      # Render to Duo form before hashing for parity against main.
+      actual_hash="$(
+        perl -0pe '
+          s/\$\{cic_secondary_enabled\}/1/g;
+          s/^\s*const bool hp2_enabled = \(1 != 0\);\n\s*const float hp2_outside_c = hp2_enabled \? id\(hp2_outside_temp_cic\)\.state : NAN;/      const float hp2_outside_c = id(hp2_outside_temp_cic).state;/m;
+          s/^\s*if \(1 != 0\) \{\n\s*publish_float_if_changed\(id\(hp2_outside_temp_cic\), NAN\);\n\s*\}/          publish_float_if_changed(id(hp2_outside_temp_cic), NAN);/m;
+          s/if \(\(1 != 0\) && root\["hp2"\]\) \{/if (root["hp2"]) {/g;
+        ' "${abs_path}" | shasum -a 256 | awk '{print $1}'
+      )"
+      ;;
     "openquatt/oq_supervisory_controlmode.yaml"|"openquatt/oq_heat_control.yaml")
       # Perf-map helper injection keeps runtime behavior but changes source shape.
       # Normalize injected helper and helper call names to compare with main.
