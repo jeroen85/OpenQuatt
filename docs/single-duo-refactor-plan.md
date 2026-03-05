@@ -111,7 +111,11 @@ Baseline (huidig):
 - Runner: `./scripts/run_regression_tests.sh`
 - Scenarios in:
   - `tests/regression/test_power_cap.cpp`
+  - `tests/regression/test_supervisory_equivalence.cpp`
   - `tests/regression/test_topology_constants.cpp`
+- Hard Duo parity lock:
+  - `scripts/check_duo_parity.sh`
+  - `tests/golden/duo_main_sha256.txt`
 - Golden referentie is de huidige expected-state set in deze runner; elke refactorfase moet exact dezelfde uitkomst houden op Duo.
 
 Gate 1:
@@ -242,7 +246,9 @@ Out of scope:
 ### 6.4 Regressiecontract (Duo)
 
 - Golden scenario set is verplicht.
+- Duo parity-check tegen vastgelegde main-baseline is verplicht.
 - Na elke modulefase:
+  - duo parity check exact match
   - golden compare exact match
   - compile must pass
 - Bij mismatch: fase niet mergebaar.

@@ -145,7 +145,6 @@ sensor:
     update_interval: 1s
     lambda: |-
       float f1 = id(hp1_flow).state;
-      #if OQ_TOPOLOGY_DUO
       float f2 = id(hp2_flow).state;
 
       const bool v1 = !isnan(f1);
@@ -173,10 +172,6 @@ sensor:
 
       // Only when both are NaN: no valid flow.
       return NAN;
-      #else
-      if (!isnan(f1)) return f1;
-      return NAN;
-      #endif
 
 binary_sensor:
   - platform: template
@@ -192,12 +187,6 @@ binary_sensor:
       static bool mismatch_timer_running = false;
       static uint32_t mismatch_start_ms = 0;
 
-      #if !OQ_TOPOLOGY_DUO
-      state = false;
-      mismatch_timer_running = false;
-      mismatch_start_ms = 0;
-      return false;
-      #else
       float f1 = id(hp1_flow).state;
       float f2 = id(hp2_flow).state;
 
@@ -235,7 +224,6 @@ binary_sensor:
         if (diff < off_thr) state = false;
       }
       return state;
-      #endif
 
 # ----------------------------
 # CONFIG: Flow Control Mode
@@ -551,9 +539,7 @@ interval:
             stable_cnt = 0;
             pi_failsafe = false;
             write_pump_pwm_if_changed(id(hp1_pump_speed), at_pwm);
-            #if OQ_TOPOLOGY_DUO
             write_pump_pwm_if_changed(id(hp2_pump_speed), at_pwm);
-            #endif
             if (last_mode != "AUTOTUNE") {
               id(oq_flow_mode).publish_state("AUTOTUNE");
               last_mode = "AUTOTUNE";
@@ -600,9 +586,7 @@ interval:
           id(oq_flow_last_pwm) = pwm;
 
           write_pump_pwm_if_changed(id(hp1_pump_speed), pwm);
-          #if OQ_TOPOLOGY_DUO
           write_pump_pwm_if_changed(id(hp2_pump_speed), pwm);
-          #endif
 
           // External mode text has explicit priority and updates only on change.
           std::string mode_txt;

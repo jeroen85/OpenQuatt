@@ -7,6 +7,9 @@ CXX_BIN="${CXX:-c++}"
 
 mkdir -p "${BUILD_DIR}"
 
+echo "[regression] duo parity vs locked main baseline"
+"${ROOT_DIR}/scripts/check_duo_parity.sh"
+
 compile_and_run() {
   local source_file="$1"
   local output_bin="$2"

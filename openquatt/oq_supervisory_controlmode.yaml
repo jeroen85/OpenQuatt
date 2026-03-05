@@ -506,11 +506,7 @@ sensor:
     web_server:
       sorting_group_id: oq_overview
     lambda: |-
-      #if OQ_TOPOLOGY_DUO
       return (float) id(oq_power_cap_f);
-      #else
-      return (float) ${oq_power_cap_max_f};
-      #endif
 
 # ----------------------------
 # MAIN LOOP
@@ -541,37 +537,61 @@ interval:
           //   Soft: 3400W  (prolonged overshoot -> mild cap)
           //   Peak: 3650W  (short overshoot allowed; prolonged -> fast cap)
           // -------------------------------------------------
-          #if OQ_TOPOLOGY_DUO
           {
-            const oq_supervisory::PowerCapConfig cfg{
-              .dt_s = ${oq_supervisory_loop_s},
-              .p_soft_w = ${oq_power_soft_w},
-              .p_peak_w = ${oq_power_peak_w},
-              .p_recover_w = ${oq_power_recover_w},
-              .peak_trip_s = ${oq_power_peak_trip_s},
-              .soft_trip_s = ${oq_power_soft_trip_s},
-              .recover_s = ${oq_power_recover_s},
-              .cap_max_f = ${oq_power_cap_max_f},
-              .cap_nan_f = ${oq_power_cap_nan_f},
-            };
-            const oq_supervisory::PowerCapState current{
-              .cap_f = id(oq_power_cap_f),
-              .over_soft_s = id(oq_power_over_soft_s),
-              .over_peak_s = id(oq_power_over_peak_s),
-              .under_ok_s = id(oq_power_under_ok_s),
-            };
-            const auto next = oq_supervisory::step_power_cap(current, id(oq_total_power_input).state, cfg);
-            id(oq_power_cap_f) = next.cap_f;
-            id(oq_power_over_soft_s) = next.over_soft_s;
-            id(oq_power_over_peak_s) = next.over_peak_s;
-            id(oq_power_under_ok_s) = next.under_ok_s;
+            const int dt_s = ${oq_supervisory_loop_s};
+            const float P_SOFT = ${oq_power_soft_w};
+            const float P_PEAK = ${oq_power_peak_w};
+            const float P_RECOVER = ${oq_power_recover_w};
+
+            // behavior
+            const int PEAK_TRIP_S = ${oq_power_peak_trip_s};
+            const int SOFT_TRIP_S = ${oq_power_soft_trip_s};
+            const int RECOVER_S = ${oq_power_recover_s};
+
+            float p = id(oq_total_power_input).state;
+
+            // Fail-safe: power not available -> cap total demand to 16
+            if (isnan(p)) {
+              id(oq_power_cap_f) = ${oq_power_cap_nan_f};
+              id(oq_power_over_soft_s) = 0;
+              id(oq_power_over_peak_s) = 0;
+              id(oq_power_under_ok_s)  = 0;
+            } else {
+              // Update timers
+              if (p > P_PEAK) id(oq_power_over_peak_s) += dt_s;
+              else id(oq_power_over_peak_s) = 0;
+
+              if (p > P_SOFT) id(oq_power_over_soft_s) += dt_s;
+              else id(oq_power_over_soft_s) = 0;
+
+              if (p < P_RECOVER) id(oq_power_under_ok_s) += dt_s;
+              else id(oq_power_under_ok_s) = 0;
+
+              // Event-based cap down
+              if (id(oq_power_over_peak_s) >= PEAK_TRIP_S) {
+                // fast step down
+                if (id(oq_power_cap_f) > 0) id(oq_power_cap_f) -= 2;
+                id(oq_power_over_peak_s) = 0;
+                id(oq_power_over_soft_s) = 0;
+                id(oq_power_under_ok_s)  = 0;
+              } else if (id(oq_power_over_soft_s) >= SOFT_TRIP_S) {
+                // mild step down
+                if (id(oq_power_cap_f) > 0) id(oq_power_cap_f) -= 1;
+                id(oq_power_over_soft_s) = 0;
+                id(oq_power_under_ok_s)  = 0;
+              }
+
+              // Faster recovery when comfortably below
+              if (id(oq_power_under_ok_s) >= RECOVER_S) {
+                if (id(oq_power_cap_f) < ${oq_power_cap_max_f}) id(oq_power_cap_f) += 1;
+                id(oq_power_under_ok_s) = 0;
+              }
+
+              // Clamp
+              if (id(oq_power_cap_f) < 0) id(oq_power_cap_f) = 0;
+              if (id(oq_power_cap_f) > ${oq_power_cap_max_f}) id(oq_power_cap_f) = ${oq_power_cap_max_f};
+            }
           }
-          #else
-          id(oq_power_cap_f) = (int) ${oq_power_cap_max_f};
-          id(oq_power_over_soft_s) = 0;
-          id(oq_power_over_peak_s) = 0;
-          id(oq_power_under_ok_s) = 0;
-          #endif
 
           const uint32_t prepost_ms = (uint32_t)(${oq_cm_prepost_s}UL * 1000UL);
           const uint32_t frost_nan_grace_ms = (uint32_t)(${oq_cm_frost_nan_grace_s}UL * 1000UL);
@@ -645,40 +665,22 @@ interval:
           const bool curve_mode_active = (id(oq_heat_mode_code) == 1);
 
           const int hp1_lvl = id(hp1_last_applied_level);
-          #if OQ_TOPOLOGY_DUO
           const int hp2_lvl = id(hp2_last_applied_level);
           const bool both_levels_off = (hp1_lvl <= 0) && (hp2_lvl <= 0);
-          #else
-          const int hp2_lvl = 0;
-          const bool both_levels_off = (hp1_lvl <= 0);
-          #endif
 
           const float hp1_mode_raw = id(hp1_working_mode).state;
-          #if OQ_TOPOLOGY_DUO
           const float hp2_mode_raw = id(hp2_working_mode).state;
-          #endif
           const bool hp1_mode_valid = !isnan(hp1_mode_raw);
-          #if OQ_TOPOLOGY_DUO
           const bool hp2_mode_valid = !isnan(hp2_mode_raw);
-          #endif
           const bool hp1_heating = hp1_mode_valid && ((int) roundf(hp1_mode_raw) == 2);
-          #if OQ_TOPOLOGY_DUO
           const bool hp2_heating = hp2_mode_valid && ((int) roundf(hp2_mode_raw) == 2);
-          #endif
           const bool hp1_target_heating =
               id(hp1_set_working_mode).has_state() && id(hp1_set_working_mode).current_option() == "Heating";
-          #if OQ_TOPOLOGY_DUO
           const bool hp2_target_heating =
               id(hp2_set_working_mode).has_state() && id(hp2_set_working_mode).current_option() == "Heating";
-          #endif
           const bool hp1_active_guard = hp1_heating || hp1_target_heating || (hp1_lvl > 0);
-          #if OQ_TOPOLOGY_DUO
           const bool hp2_active_guard = hp2_heating || hp2_target_heating || (hp2_lvl > 0);
           const bool any_hp_active_guard = hp1_active_guard || hp2_active_guard;
-          #else
-          const bool hp2_active_guard = false;
-          const bool any_hp_active_guard = hp1_active_guard;
-          #endif
           const bool both_units_idle = !any_hp_active_guard;
 
           bool heating_req = heating_req_raw;
@@ -935,11 +937,9 @@ interval:
           // This runs in supervisory as an explicit emergency override, independent from heat-control timing.
           if (id(oq_lowflow_fault_active)) {
             set_select_option(id(hp1_set_working_mode), "Standby");
-            set_select_option(id(hp1_compressor_level), "0");
-            #if OQ_TOPOLOGY_DUO
             set_select_option(id(hp2_set_working_mode), "Standby");
+            set_select_option(id(hp1_compressor_level), "0");
             set_select_option(id(hp2_compressor_level), "0");
-            #endif
           }
           // -------------------------------------------------
           // 3) Frost condition (hysteresis + fail-safe) [CM98]
@@ -950,16 +950,19 @@ interval:
           //    - FAIL-SAFE: NaN -> frost ON (after startup grace)
           // -------------------------------------------------
           const float outside_c = id(outside_temp_selected).state;
-          const oq_supervisory::FrostConfig frost_cfg{
-            .on_c = ${oq_cm_frost_on_c},
-            .off_c = ${oq_cm_frost_off_c},
-          };
-          const bool frost = oq_supervisory::compute_frost(
-              heating_req,
-              outside_c,
-              id(oq_cm_frost_prev),
-              frost_nan_grace_active,
-              frost_cfg);
+
+          bool frost = false;
+          if (!heating_req) {
+            if (isnan(outside_c)) {
+              frost = !frost_nan_grace_active; // fail-safe after startup grace
+            } else {
+              if (id(oq_cm_frost_prev)) {
+                frost = (outside_c < ${oq_cm_frost_off_c});
+              } else {
+                frost = (outside_c < ${oq_cm_frost_on_c});
+              }
+            }
+          }
           id(oq_cm_frost_prev) = frost;
 
           // -------------------------------------------------
@@ -1219,9 +1222,7 @@ interval:
 
             const char* silent_opt = silent_active ? "On" : "Off";
             set_select_option(id(hp1_low_noise_mode), silent_opt);
-            #if OQ_TOPOLOGY_DUO
             set_select_option(id(hp2_low_noise_mode), silent_opt);
-            #endif
           };
 
           auto apply_sticky_pump_policy = [&]() -> void {
@@ -1259,17 +1260,13 @@ interval:
             // Pump failsafe: never stop circulation while any HP is still active.
             const bool pump_on = (strcmp(desired_cm, "CM0") != 0) || sticky_active || any_hp_active_guard;
             set_select_option(id(hp1_set_pump_mode), pump_on ? "On" : "Off");
-            #if OQ_TOPOLOGY_DUO
             set_select_option(id(hp2_set_pump_mode), pump_on ? "On" : "Off");
-            #endif
 
             if (strcmp(desired_cm, "CM0") == 0) {
               const float stop_pwm = ${oq_cm0_pump_stop_ipwm};
               const float target_pwm = sticky_active ? (float) id(oq_sticky_pwm).state : stop_pwm;
               set_number_value(id(hp1_pump_speed), target_pwm, 1.0f);
-              #if OQ_TOPOLOGY_DUO
               set_number_value(id(hp2_pump_speed), target_pwm, 1.0f);
-              #endif
             } else {
               if (id(oq_sticky_active).state) id(oq_sticky_active).publish_state(false);
             }

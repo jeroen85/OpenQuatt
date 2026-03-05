@@ -608,22 +608,14 @@ sensor:
       sorting_group_id: oq_temperatures
     lambda: |-
       const float hp1_outside_c = id(hp1_outside_temp).state;
-      #if OQ_TOPOLOGY_DUO
       const float hp2_outside_c = id(hp2_outside_temp).state;
-      #endif
 
       const bool hp1_valid = !isnan(hp1_outside_c);
-      #if OQ_TOPOLOGY_DUO
       const bool hp2_valid = !isnan(hp2_outside_c);
-      #endif
 
-      #if OQ_TOPOLOGY_DUO
       if (hp1_valid && hp2_valid) return std::min(hp1_outside_c, hp2_outside_c);
       if (hp1_valid) return hp1_outside_c;
       if (hp2_valid) return hp2_outside_c;
-      #else
-      if (hp1_valid) return hp1_outside_c;
-      #endif
       return NAN;
 
   - platform: template
@@ -695,12 +687,10 @@ sensor:
         const float selected_supply_c = id(water_supply_temp_selected).state;
         if (!isnan(selected_supply_c)) supply_c = selected_supply_c;
       }
-      #if OQ_TOPOLOGY_DUO
       if (isnan(supply_c)) {
         const float hp2_out_c = id(hp2_water_out_temp).state;
         if (!isnan(hp2_out_c)) supply_c = hp2_out_c;
       }
-      #endif
       if (isnan(supply_c)) {
         const float hp1_out_c = id(hp1_water_out_temp).state;
         if (!isnan(hp1_out_c)) supply_c = hp1_out_c;
@@ -1387,17 +1377,13 @@ interval:
 
               // While compressors are not yet really delivering heat, keep integral empty.
               const bool hp1_level_on = id(hp1_last_applied_level) > 0;
-              const float hp1_mode_raw = id(hp1_working_mode).state;
-              const bool hp1_heating = !isnan(hp1_mode_raw) && ((int) roundf(hp1_mode_raw) == 2);
-              #if OQ_TOPOLOGY_DUO
               const bool hp2_level_on = id(hp2_last_applied_level) > 0;
+              const float hp1_mode_raw = id(hp1_working_mode).state;
               const float hp2_mode_raw = id(hp2_working_mode).state;
+              const bool hp1_heating = !isnan(hp1_mode_raw) && ((int) roundf(hp1_mode_raw) == 2);
               const bool hp2_heating = !isnan(hp2_mode_raw) && ((int) roundf(hp2_mode_raw) == 2);
               const bool hp_delivering =
                   (hp1_level_on && hp1_heating) || (hp2_level_on && hp2_heating);
-              #else
-              const bool hp_delivering = hp1_level_on && hp1_heating;
-              #endif
               return !hp_delivering;
           then:
             - climate.pid.reset_integral_term: oq_heating_curve_pid
