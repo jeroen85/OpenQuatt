@@ -151,7 +151,7 @@ Runtime selectors decide per signal whether selected values come from local, CIC
 
 `oq_common`, `oq_debug_testing`, and `oq_heat_control` provide:
 
-- firmware update entities and manual check trigger
+- firmware update entities, runtime update-channel select, and manual check trigger
 - runtime logger level controls
 - one-shot Modbus register read tools (HP1; HP2 probe on Duo entrypoints)
 - runtime balancing service entities from heat control (`Runtime lead HP`, runtime counter reset)

@@ -9,6 +9,10 @@
 # PACKAGES
 # ==============================================================================
 substitutions:
+  main_release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-duo-ota.manifest.json"
+  dev_release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/download/dev-latest/openquatt-duo-ota.manifest.json"
+  # Stable OTA channel by default. Dev builds should override both substitutions
+  # via `esphome -s release_channel dev -s release_manifest_url ... compile ...`.
   release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-duo-ota.manifest.json"
 
 packages: !include openquatt/oq_packages.yaml
@@ -34,6 +38,15 @@ esphome:
       - text_sensor.template.publish:
           id: oq_project_version_text
           state: "${project_version}"
+      - text_sensor.template.publish:
+          id: oq_release_channel_text
+          state: "${release_channel}"
+      - lambda: |-
+          if (id(oq_firmware_update_channel).state == "dev") {
+            id(oq_firmware_update).set_source_url("${dev_release_manifest_url}");
+          } else {
+            id(oq_firmware_update).set_source_url("${main_release_manifest_url}");
+          }
 
 # ==============================================================================
 # PLATFORM

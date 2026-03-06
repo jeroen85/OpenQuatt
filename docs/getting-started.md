@@ -96,6 +96,24 @@ esphome config openquatt_duo_waveshare.yaml
 esphome compile openquatt_duo_waveshare.yaml
 ```
 
+For a dev-channel build, keep the same entrypoint and override the channel-specific substitutions. Use a unique dev version string so the OTA entity can distinguish one dev build from the next. The example below assumes you publish a mutable `dev-latest` OTA manifest for testers:
+
+```bash
+BASE_VERSION="$(awk -F'\"' '/^project_version: / { print $2 }' openquatt/oq_substitutions_common.yaml)"
+DEV_VERSION="${BASE_VERSION}-dev+local"
+
+esphome \
+  -s project_version "${DEV_VERSION}" \
+  -s release_channel dev \
+  -s release_manifest_url https://github.com/jeroen85/OpenQuatt/releases/download/dev-latest/openquatt-duo-ota.manifest.json \
+  config openquatt_duo_waveshare.yaml
+esphome \
+  -s project_version "${DEV_VERSION}" \
+  -s release_channel dev \
+  -s release_manifest_url https://github.com/jeroen85/OpenQuatt/releases/download/dev-latest/openquatt-duo-ota.manifest.json \
+  compile openquatt_duo_waveshare.yaml
+```
+
 Tip: compile each topology/hardware profile via its own entrypoint. Each entrypoint has a dedicated `build_path`, which keeps caches separate and speeds up repeated profile switching.
 
 Or run the helper script:

@@ -49,6 +49,8 @@ Requirements:
 Release coverage:
 
 - Official GitHub releases provide firmware assets for all four topology/hardware combinations.
+- Stable users should stay on the `main` release channel.
+- Testers can switch `Firmware Update Channel` to `dev` for prerelease OTA builds, or build locally from the `dev` branch with explicit dev-version overrides.
 
 ## Quick Start
 
@@ -112,6 +114,11 @@ After the device joins your network:
 5. If you want the full dashboard structure explained, see [Home Assistant Dashboard Guide](docs/home-assistant-dashboard.md).
 6. If you want runtime-selectable Home Assistant source entities, also review the optional dynamic source package in [docs/dashboard/README.md](docs/dashboard/README.md).
 
+Channel diagnostics:
+
+- Verify `OpenQuatt Release Channel` in diagnostics so you know whether the running build is `main` or `dev`.
+- Use `Firmware Update Channel` if you want OTA checks to follow `main` or `dev` without reflashing first.
+
 ## Hardware Profiles
 
 Hardware-specific compile-time settings are defined in:
@@ -147,6 +154,7 @@ Core docs:
 
 - [Maintenance Guide](docs/maintenance.md)
 - Build-from-source workflow: [Getting Started](docs/getting-started.md)
+- Release and branch flow: [Release Process](docs/release-process.md)
 
 ## License
 
