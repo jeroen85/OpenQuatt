@@ -372,7 +372,7 @@ views:
       card:
         type: markdown
         content: |-
-          <img src="https://raw.githubusercontent.com/jeroen85/OpenQuatt/main/docs/assets/openquatt_logo.svg" width="300" />
+          <img src="https://raw.githubusercontent.com/jeroen85/OpenQuatt/main/docs/assets/openquatt_logo.png" width="300" />
 
           ## <ha-icon icon="mdi:view-dashboard"></ha-icon> Overzicht
           Snel en praktisch zicht op prestaties, status en bediening.
