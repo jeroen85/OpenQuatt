@@ -99,7 +99,7 @@ esphome compile openquatt_duo_waveshare.yaml
 For a dev-channel build, keep the same entrypoint and override the channel-specific substitutions. Use a unique dev version string so the OTA entity can distinguish one dev build from the next. The example below assumes you publish a mutable `dev-latest` OTA manifest for testers:
 
 ```bash
-BASE_VERSION="$(sed -n 's/^project_version: "\(.*\)".*/\1/p' openquatt/oq_substitutions_common.yaml)"
+BASE_VERSION="$(awk -F'\"' '/^project_version: / { print $2 }' openquatt/oq_substitutions_common.yaml)"
 DEV_VERSION="${BASE_VERSION}-dev+local"
 
 esphome \

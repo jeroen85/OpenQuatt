@@ -81,7 +81,7 @@ The running firmware exposes both `OpenQuatt Version` and `OpenQuatt Release Cha
 Reuse the existing topology/hardware entrypoints and override channel-specific substitutions at build time:
 
 ```bash
-BASE_VERSION="$(sed -n 's/^project_version: "\(.*\)".*/\1/p' openquatt/oq_substitutions_common.yaml)"
+BASE_VERSION="$(awk -F'\"' '/^project_version: / { print $2 }' openquatt/oq_substitutions_common.yaml)"
 DEV_VERSION="${BASE_VERSION}-dev+local"
 
 esphome \

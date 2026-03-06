@@ -54,7 +54,7 @@ jobs:
       - name: Compute dev version
         id: dev_meta
         run: |
-          BASE_VERSION="$(sed -n 's/^project_version: \"\\(.*\\)\".*/\\1/p' openquatt/oq_substitutions_common.yaml)"
+          BASE_VERSION="$(awk -F'\"' '/^project_version: / { print $2 }' openquatt/oq_substitutions_common.yaml)"
           SHORT_SHA="${GITHUB_SHA::7}"
           DEV_VERSION="${BASE_VERSION}-dev+${SHORT_SHA}"
           echo "version=${DEV_VERSION}" >> "$GITHUB_OUTPUT"
@@ -99,7 +99,7 @@ jobs:
       - name: Compute dev version
         id: dev_meta
         run: |
-          BASE_VERSION="$(sed -n 's/^project_version: \"\\(.*\\)\".*/\\1/p' openquatt/oq_substitutions_common.yaml)"
+          BASE_VERSION="$(awk -F'\"' '/^project_version: / { print $2 }' openquatt/oq_substitutions_common.yaml)"
           SHORT_SHA="${GITHUB_SHA::7}"
           DEV_VERSION="${BASE_VERSION}-dev+${SHORT_SHA}"
           echo "version=${DEV_VERSION}" >> "$GITHUB_OUTPUT"
