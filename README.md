@@ -49,6 +49,8 @@ Requirements:
 Release coverage:
 
 - Official GitHub releases provide firmware assets and manifests for all four topology/hardware combinations.
+- Stable users should stay on the `main` release channel.
+- Testers can switch `Firmware Update Channel` to `dev` for prerelease OTA builds, or build locally from the `dev` branch with explicit dev-version overrides.
 
 ## Quick Start
 
@@ -104,6 +106,8 @@ After the device joins your network:
 1. Add the discovered ESPHome device in Home Assistant.
 2. Verify that HP telemetry updates and the device reports a valid control mode.
 3. Import the matching dashboard if you want the full UI.
+4. Verify `OpenQuatt Release Channel` in diagnostics so you know whether the running build is `main` or `dev`.
+5. Use `Firmware Update Channel` if you want OTA checks to follow `main` or `dev` without reflashing first.
 
 ## Hardware Profiles
 
@@ -140,6 +144,7 @@ Core docs:
 
 - [Maintenance Guide](docs/maintenance.md)
 - Build-from-source workflow: [Getting Started](docs/getting-started.md)
+- Release and branch flow: [Release Process](docs/release-process.md)
 
 ## License
 

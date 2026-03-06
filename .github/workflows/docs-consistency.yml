@@ -2,7 +2,7 @@ name: Docs Consistency
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
 
 permissions:
@@ -26,4 +26,3 @@ jobs:
       - name: Report warning status
         if: steps.docs_consistency.outcome == 'failure'
         run: echo "::warning::Docs consistency warnings found (non-blocking). See logs for details."
-

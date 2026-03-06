@@ -1,13 +1,16 @@
-name: Release Build
+name: Dev Build
 
 on:
   push:
-    tags:
-      - "v*"
+    branches: [dev]
   workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: dev-release
+  cancel-in-progress: true
 
 jobs:
   compile-profiles:
@@ -19,15 +22,19 @@ jobs:
           - id: duo-waveshare
             config: openquatt_duo_waveshare.yaml
             build_path: .esphome/build/openquatt_duo_waveshare
+            dev_manifest_name: openquatt-duo-ota.manifest.json
           - id: duo-heatpump-listener
             config: openquatt_duo_heatpump_listener.yaml
             build_path: .esphome/build/openquatt_duo_heatpump_listener
+            dev_manifest_name: openquatt-duo-ota.manifest.json
           - id: single-waveshare
             config: openquatt_single_waveshare.yaml
             build_path: .esphome/build/openquatt_single_waveshare
+            dev_manifest_name: openquatt-single-ota.manifest.json
           - id: single-heatpump-listener
             config: openquatt_single_heatpump_listener.yaml
             build_path: .esphome/build/openquatt_single_heatpump_listener
+            dev_manifest_name: openquatt-single-ota.manifest.json
 
     steps:
       - name: Checkout
@@ -44,66 +51,111 @@ jobs:
           pip install --upgrade "esphome==${ESPHOME_VERSION}"
           esphome version
 
+      - name: Compute dev version
+        id: dev_meta
+        run: |
+          BASE_VERSION="$(sed -n 's/^project_version: \"\\(.*\\)\".*/\\1/p' openquatt/oq_substitutions_common.yaml)"
+          SHORT_SHA="${GITHUB_SHA::7}"
+          DEV_VERSION="${BASE_VERSION}-dev+${SHORT_SHA}"
+          echo "version=${DEV_VERSION}" >> "$GITHUB_OUTPUT"
+
       - name: Validate config
-        run: esphome config ${{ matrix.profile.config }}
+        run: |
+          DEV_MANIFEST_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/dev-latest/${{ matrix.profile.dev_manifest_name }}"
+          esphome \
+            -s project_version "${{ steps.dev_meta.outputs.version }}" \
+            -s release_channel dev \
+            -s release_manifest_url "${DEV_MANIFEST_URL}" \
+            config "${{ matrix.profile.config }}"
 
       - name: Compile firmware
-        run: esphome compile ${{ matrix.profile.config }}
+        run: |
+          DEV_MANIFEST_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/dev-latest/${{ matrix.profile.dev_manifest_name }}"
+          esphome \
+            -s project_version "${{ steps.dev_meta.outputs.version }}" \
+            -s release_channel dev \
+            -s release_manifest_url "${DEV_MANIFEST_URL}" \
+            compile "${{ matrix.profile.config }}"
 
       - name: Upload firmware artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: openquatt-${{ matrix.profile.id }}-release
+          name: openquatt-${{ matrix.profile.id }}-dev-release
           if-no-files-found: error
           path: |
             ${{ matrix.profile.build_path }}/.pioenvs/openquatt/firmware.ota.bin
             ${{ matrix.profile.build_path }}/.pioenvs/openquatt/firmware.factory.bin
 
-  publish-release:
+  publish-dev-release:
     runs-on: ubuntu-latest
     needs: compile-profiles
 
     steps:
-      - name: Checkout scripts
+      - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute dev version
+        id: dev_meta
+        run: |
+          BASE_VERSION="$(sed -n 's/^project_version: \"\\(.*\\)\".*/\\1/p' openquatt/oq_substitutions_common.yaml)"
+          SHORT_SHA="${GITHUB_SHA::7}"
+          DEV_VERSION="${BASE_VERSION}-dev+${SHORT_SHA}"
+          echo "version=${DEV_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Download Duo Waveshare artifacts
         uses: actions/download-artifact@v4
         with:
-          name: openquatt-duo-waveshare-release
+          name: openquatt-duo-waveshare-dev-release
           path: dist/openquatt-duo-waveshare
 
       - name: Download Duo Heatpump Listener artifacts
         uses: actions/download-artifact@v4
         with:
-          name: openquatt-duo-heatpump-listener-release
+          name: openquatt-duo-heatpump-listener-dev-release
           path: dist/openquatt-duo-heatpump-listener
 
       - name: Download Single Waveshare artifacts
         uses: actions/download-artifact@v4
         with:
-          name: openquatt-single-waveshare-release
+          name: openquatt-single-waveshare-dev-release
           path: dist/openquatt-single-waveshare
 
       - name: Download Single Heatpump Listener artifacts
         uses: actions/download-artifact@v4
         with:
-          name: openquatt-single-heatpump-listener-release
+          name: openquatt-single-heatpump-listener-dev-release
           path: dist/openquatt-single-heatpump-listener
 
-      - name: Prepare release assets and manifests
+      - name: Prepare dev release assets and manifests
         run: |
-          TAG="${GITHUB_REF_NAME}"
+          TAG="dev-latest"
           REPO="${GITHUB_REPOSITORY}"
           BASE_URL="https://github.com/${REPO}/releases/download/${TAG}"
           RELEASE_URL="https://github.com/${REPO}/releases/tag/${TAG}"
-          ./scripts/prepare_release_assets.sh "${TAG}" "${BASE_URL}" "${RELEASE_URL}"
+          ./scripts/prepare_release_assets.sh "${{ steps.dev_meta.outputs.version }}" "${BASE_URL}" "${RELEASE_URL}"
 
-      - name: Publish release assets
+      - name: Move dev release tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -fa dev-latest -m "Development channel" "${GITHUB_SHA}"
+          git push origin refs/tags/dev-latest --force
+
+      - name: Publish dev release assets
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          tag_name: dev-latest
+          name: Development Channel
+          prerelease: true
+          generate_release_notes: false
           overwrite_files: true
+          body: |
+            Mutable development-channel release for the `dev` branch.
+
+            Commit: `${{ github.sha }}`
+            Version: `${{ steps.dev_meta.outputs.version }}`
           files: |
             openquatt-duo-install.manifest.json
             openquatt-duo-ota.manifest.json

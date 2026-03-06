@@ -148,6 +148,16 @@ text_sensor:
       return {"${project_version}"};
     web_server:
       sorting_group_id: oq_diagnostics
+  - platform: template
+    id: oq_release_channel_text
+    name: OpenQuatt Release Channel
+    icon: mdi:source-branch
+    entity_category: diagnostic
+    update_interval: never
+    lambda: |-
+      return {"${release_channel}"};
+    web_server:
+      sorting_group_id: oq_diagnostics
   - platform: version
     name: ESPHome Version
     icon: mdi:information-outline
@@ -200,6 +210,28 @@ update:
 # RUNTIME DEBUG LEVEL SELECTS
 # ==============================================================================
 select:
+  - platform: template
+    name: "Firmware Update Channel"
+    id: oq_firmware_update_channel
+    icon: mdi:source-branch
+    web_server:
+      sorting_group_id: oq_diagnostics
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    options: ["main", "dev"]
+    initial_option: "${release_channel}"
+    on_value:
+      then:
+        - lambda: |-
+            if (x == "dev") {
+              id(oq_firmware_update).set_source_url("${dev_release_manifest_url}");
+            } else {
+              id(oq_firmware_update).set_source_url("${main_release_manifest_url}");
+            }
+        - update.check:
+            id: oq_firmware_update
+
   - platform: template
     name: "Debug Level"
     id: debug_level_select

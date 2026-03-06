@@ -2,10 +2,18 @@
 
 This project uses GitHub Actions for automated validation, firmware compilation, and release asset publishing.
 
+## Branch Model
+
+- `main`: stable branch for tagged releases and the default OTA/update channel.
+- `dev`: integration branch for testers. Validate it like `main`, but do not cut stable tags from it.
+- feature branches: short-lived branches merged into `dev`; promote `dev` into `main` only after validation/soak.
+
+Firmware should expose its channel explicitly via `release_channel` so Home Assistant and the ESPHome web UI show whether a device is running `main` or `dev`.
+
 ## Workflows
 
 - `/.github/workflows/ci-build.yml`
-  - Trigger: push to `main`, pull requests
+  - Trigger: push to `main` or `dev`, pull requests
   - Actions:
     - `esphome config openquatt_duo_waveshare.yaml`
     - `esphome compile openquatt_duo_waveshare.yaml`
@@ -17,7 +25,7 @@ This project uses GitHub Actions for automated validation, firmware compilation,
     - `esphome compile openquatt_single_heatpump_listener.yaml`
     - Upload compiled firmware artifacts per profile
 - `/.github/workflows/docs-consistency.yml`
-  - Trigger: push to `main`, pull requests
+  - Trigger: push to `main` or `dev`, pull requests
   - Actions:
     - run `scripts/check_docs_consistency.py --changed-only`
     - emit non-blocking warnings on likely docs drift (does not fail CI)
@@ -30,6 +38,13 @@ This project uses GitHub Actions for automated validation, firmware compilation,
     - generate `openquatt-duo-ota.manifest.json` and `openquatt-single-ota.manifest.json` for OTA update checks
     - create/update GitHub Release
     - attach release firmware binaries and manifests to the release
+- `/.github/workflows/dev-build.yml`
+  - Trigger: push to `dev`, manual dispatch
+  - Actions:
+    - compile all four profiles with `release_channel=dev`
+    - override `project_version` to `${base_version}-dev+<shortsha>`
+    - move the mutable `dev-latest` tag to the newest `dev` commit
+    - publish/update a prerelease that contains install + OTA manifests for the dev channel
 
 ## ESPHome Version Pinning
 
@@ -49,6 +64,42 @@ Recommended increments:
 - Patch: bug fixes, docs, CI changes
 - Minor: new backward-compatible functionality
 - Major: breaking changes
+
+Keep the source-controlled `project_version` aligned with the next intended stable release. Published dev-channel artifacts should override that at build time to `${project_version}-dev+<shortsha>` while also setting `release_channel=dev`. That keeps the base version readable while giving the OTA entity a unique version per dev commit.
+
+## Channel Metadata
+
+- `project_version` in `openquatt/oq_substitutions_common.yaml` remains the user-facing firmware version.
+- `release_channel` in `openquatt/oq_substitutions_common.yaml` identifies the running channel (`main` or `dev`).
+- `release_manifest_url` selects which OTA manifest the built-in update entity uses.
+- `Firmware Update Channel` is a runtime select that switches the OTA manifest between the baked-in `main` and `dev` URLs and immediately refreshes the update entity.
+
+The running firmware exposes both `OpenQuatt Version` and `OpenQuatt Release Channel` in diagnostics, while `Firmware Update Channel` controls which OTA track the device should follow next.
+
+## Building a Dev Channel Firmware
+
+Reuse the existing topology/hardware entrypoints and override channel-specific substitutions at build time:
+
+```bash
+BASE_VERSION="$(sed -n 's/^project_version: "\(.*\)".*/\1/p' openquatt/oq_substitutions_common.yaml)"
+DEV_VERSION="${BASE_VERSION}-dev+local"
+
+esphome \
+  -s project_version "${DEV_VERSION}" \
+  -s release_channel dev \
+  -s release_manifest_url https://github.com/jeroen85/OpenQuatt/releases/download/dev-latest/openquatt-duo-ota.manifest.json \
+  compile openquatt_duo_waveshare.yaml
+```
+
+Equivalent Single builds should use:
+
+```text
+https://github.com/jeroen85/OpenQuatt/releases/download/dev-latest/openquatt-single-ota.manifest.json
+```
+
+This keeps the topology/hardware matrix independent from release channel selection.
+
+The repository now backs that URL with `/.github/workflows/dev-build.yml`, which publishes a mutable prerelease/tag named `dev-latest`.
 
 ## How To Cut a Release
 

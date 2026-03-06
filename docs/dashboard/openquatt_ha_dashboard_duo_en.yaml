@@ -2360,6 +2360,10 @@ views:
 
               - `OpenQuatt Version`: version currently running on the ESP
               (from build-time `project_version`).
+              - `OpenQuatt Release Channel`: build channel currently running
+              on the ESP (`main` or `dev`).
+              - `Firmware Update Channel`: selects which OTA track the update
+              entity follows next (`main` or `dev`).
               - `Firmware Update`: compares your installed firmware with the
               latest GitHub release and indicates if an update is available.
               - `Check Firmware Updates`: forces an immediate update check
@@ -2376,6 +2380,10 @@ views:
             entities:
               - entity: sensor.openquatt_openquatt_version
                 name: OpenQuatt Version
+              - entity: sensor.openquatt_openquatt_release_channel
+                name: OpenQuatt Release Channel
+              - entity: select.openquatt_firmware_update_channel
+                name: Firmware Update Channel
               - entity: update.openquatt_firmware_update
                 name: Firmware Update
               - entity: button.openquatt_check_firmware_updates

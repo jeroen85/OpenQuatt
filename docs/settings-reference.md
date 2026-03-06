@@ -295,6 +295,7 @@ Intent:
 
 Key entities:
 
+- `Firmware Update Channel`
 - `Firmware Update`
 - `Check Firmware Updates`
 - `Debug Level`
