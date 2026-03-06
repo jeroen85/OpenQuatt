@@ -69,16 +69,12 @@ git push origin main --tags
    - `openquatt-duo-ota.manifest.json`
    - `openquatt-single-install.manifest.json`
    - `openquatt-single-ota.manifest.json`
-   - `openquatt-duo-waveshare.firmware.bin`
    - `openquatt-duo-waveshare.firmware.ota.bin`
    - `openquatt-duo-waveshare.firmware.factory.bin`
-   - `openquatt-duo-heatpump-listener.firmware.bin`
    - `openquatt-duo-heatpump-listener.firmware.ota.bin`
    - `openquatt-duo-heatpump-listener.firmware.factory.bin`
-   - `openquatt-single-waveshare.firmware.bin`
    - `openquatt-single-waveshare.firmware.ota.bin`
    - `openquatt-single-waveshare.firmware.factory.bin`
-   - `openquatt-single-heatpump-listener.firmware.bin`
    - `openquatt-single-heatpump-listener.firmware.ota.bin`
    - `openquatt-single-heatpump-listener.firmware.factory.bin`
 

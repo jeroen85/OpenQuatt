@@ -56,7 +56,6 @@ jobs:
           name: openquatt-${{ matrix.profile.id }}-release
           if-no-files-found: error
           path: |
-            ${{ matrix.profile.build_path }}/.pioenvs/openquatt/firmware.bin
             ${{ matrix.profile.build_path }}/.pioenvs/openquatt/firmware.ota.bin
             ${{ matrix.profile.build_path }}/.pioenvs/openquatt/firmware.factory.bin
 
@@ -92,16 +91,12 @@ jobs:
       - name: Prepare release asset filenames
         run: |
           mkdir -p dist
-          cp dist/openquatt-duo-waveshare/firmware.bin dist/openquatt-duo-waveshare.firmware.bin
           cp dist/openquatt-duo-waveshare/firmware.ota.bin dist/openquatt-duo-waveshare.firmware.ota.bin
           cp dist/openquatt-duo-waveshare/firmware.factory.bin dist/openquatt-duo-waveshare.firmware.factory.bin
-          cp dist/openquatt-duo-heatpump-listener/firmware.bin dist/openquatt-duo-heatpump-listener.firmware.bin
           cp dist/openquatt-duo-heatpump-listener/firmware.ota.bin dist/openquatt-duo-heatpump-listener.firmware.ota.bin
           cp dist/openquatt-duo-heatpump-listener/firmware.factory.bin dist/openquatt-duo-heatpump-listener.firmware.factory.bin
-          cp dist/openquatt-single-waveshare/firmware.bin dist/openquatt-single-waveshare.firmware.bin
           cp dist/openquatt-single-waveshare/firmware.ota.bin dist/openquatt-single-waveshare.firmware.ota.bin
           cp dist/openquatt-single-waveshare/firmware.factory.bin dist/openquatt-single-waveshare.firmware.factory.bin
-          cp dist/openquatt-single-heatpump-listener/firmware.bin dist/openquatt-single-heatpump-listener.firmware.bin
           cp dist/openquatt-single-heatpump-listener/firmware.ota.bin dist/openquatt-single-heatpump-listener.firmware.ota.bin
           cp dist/openquatt-single-heatpump-listener/firmware.factory.bin dist/openquatt-single-heatpump-listener.firmware.factory.bin
 
@@ -232,15 +227,11 @@ jobs:
             openquatt-duo-ota.manifest.json
             openquatt-single-install.manifest.json
             openquatt-single-ota.manifest.json
-            dist/openquatt-duo-waveshare.firmware.bin
             dist/openquatt-duo-waveshare.firmware.ota.bin
             dist/openquatt-duo-waveshare.firmware.factory.bin
-            dist/openquatt-duo-heatpump-listener.firmware.bin
             dist/openquatt-duo-heatpump-listener.firmware.ota.bin
             dist/openquatt-duo-heatpump-listener.firmware.factory.bin
-            dist/openquatt-single-waveshare.firmware.bin
             dist/openquatt-single-waveshare.firmware.ota.bin
             dist/openquatt-single-waveshare.firmware.factory.bin
-            dist/openquatt-single-heatpump-listener.firmware.bin
             dist/openquatt-single-heatpump-listener.firmware.ota.bin
             dist/openquatt-single-heatpump-listener.firmware.factory.bin
