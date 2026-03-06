@@ -2,165 +2,115 @@
 
 <img src="docs/assets/openquatt_logo.svg" alt="OpenQuatt logo" width="400" />
 
-OpenQuatt is a modular ESPHome controller for Quatt Single and Quatt Duo topologies with supervisory control, demand strategy selection, flow regulation, boiler assist gating, and Home Assistant observability.
+OpenQuatt is ESPHome firmware for Quatt Single and Quatt Duo installations. It adds supervisory control, demand-based heat pump control, flow regulation, boiler assist logic, and Home Assistant visibility on top of the underlying Quatt hardware.
 
 > [!WARNING]
 > This project is currently in an experimental phase.
-> The Duo topology remains the behavioral reference path; Single support is compile-time selectable via dedicated entrypoints.
+> The Duo topology remains the main release path; Single support is available in the repository and can be built from source.
 
 ## Table of Contents
 
-- [What This Project Does](#what-this-project-does)
-- [Feature TODO](#feature-todo)
-- [Repository Structure](#repository-structure)
-- [Requirements](#requirements)
+- [What OpenQuatt Offers](#what-openquatt-offers)
+- [Supported Setups](#supported-setups)
 - [Quick Start](#quick-start)
-- [Local Validation Helper](#local-validation-helper)
 - [Hardware Profiles](#hardware-profiles)
-- [Release Process](#release-process)
 - [Documentation](#documentation)
-- [Development and Maintenance](#development-and-maintenance)
+- [Development](#development)
 - [License](#license)
 
-## What This Project Does
+## What OpenQuatt Offers
 
-- Controls one or two heat pumps over RS485 Modbus (`HP1`, optional `HP2`).
-- Runs a central Control Mode state machine (`CM0`, `CM1`, `CM2`, `CM3`, `CM98`).
-- Supports two heating demand strategies:
+- Supervisory control for Quatt Single and Quatt Duo layouts.
+- Control Mode state handling for idle, pre/post-flow, heat pump heating, boiler assist, and frost protection.
+- Two heating demand strategies:
   - `Power House`
   - `Water Temperature Control (heating curve)`
-- Regulates pump flow using PI control and optional autotune tooling.
-- Supports CIC JSON feed ingestion and local-vs-cloud source selection.
-- Publishes dashboards and entities for operations, diagnostics, and tuning.
-- Includes built-in service utilities (firmware update checks, debug log controls, manual Modbus probe tools).
+- Pump flow regulation with PI control and built-in autotune tooling.
+- Boiler assist gating with safety lockouts and control mode integration.
+- Runtime source selection between local sensors, CIC feed data, and Home Assistant inputs.
+- Energy, COP, runtime, fault, and update diagnostics in Home Assistant and the ESPHome web UI.
+- Built-in service utilities such as firmware update checks, runtime debug level control, and one-shot Modbus test actions.
 
-## Feature TODO
+## Supported Setups
 
-- Add cooling mode support.
-- Add hardware revision profile support for v1 and v1.5.
+OpenQuatt supports these topology and hardware combinations:
 
-## Repository Structure
+- `openquatt_duo_waveshare.yaml`
+- `openquatt_duo_heatpump_listener.yaml`
+- `openquatt_single_waveshare.yaml`
+- `openquatt_single_heatpump_listener.yaml`
 
-```text
-.
-├── openquatt_duo_waveshare.yaml             # Duo topology + Waveshare hardware
-├── openquatt_duo_heatpump_listener.yaml     # Duo topology + Heatpump Listener hardware
-├── openquatt_single_waveshare.yaml          # Single topology + Waveshare hardware
-├── openquatt_single_heatpump_listener.yaml  # Single topology + Heatpump Listener hardware
-├── openquatt_base.yaml                      # Shared base (Duo topology)
-├── openquatt_base_single.yaml               # Shared base (Single topology)
-├── openquatt/
-│   ├── oq_substitutions_common.yaml  # Compile-time constants shared by all profiles
-│   ├── profiles/
-│   │   ├── oq_substitutions_waveshare.yaml
-│   │   └── oq_substitutions_heatpump_listener.yaml
-│   ├── oq_packages.yaml              # Ordered package includes (Duo)
-│   ├── oq_packages_single.yaml       # Ordered package includes (Single)
-│   ├── oq_common.yaml                # Shared runtime (logger/api/ota/wifi/http/modbus/diagnostics)
-│   ├── oq_supervisory_controlmode.yaml
-│   ├── oq_heating_strategy.yaml
-│   ├── oq_heat_control.yaml
-│   ├── oq_flow_control.yaml
-│   ├── oq_flow_autotune.yaml
-│   ├── oq_boiler_control.yaml
-│   ├── oq_energy.yaml
-│   ├── oq_cic.yaml
-│   ├── oq_ha_inputs.yaml
-│   ├── oq_local_sensors.yaml
-│   ├── oq_debug_testing.yaml         # Manual diagnostic/testing tools (one-shot Modbus reads)
-│   ├── oq_debug_testing_duo.yaml     # Duo-only HP2 debug read button
-│   ├── oq_webserver.yaml
-│   ├── oq_HP_io.yaml
-│   └── includes/hp_perf_map.h
-├── docs/
-│   ├── README.md
-│   ├── getting-started.md
-│   ├── system-overview.md
-│   ├── control-modes-and-flow.md
-│   ├── settings-reference.md
-│   ├── tuning-and-troubleshooting.md
-│   ├── home-assistant-dashboard.md
-│   ├── adaptive-tuner-design.md
-│   ├── assets/
-│   │   └── openquatt_logo.svg
-│   ├── dashboard/
-│   │   ├── README.md
-│   │   ├── openquatt_ha_dashboard_duo_nl.yaml
-│   │   ├── openquatt_ha_dashboard_duo_en.yaml
-│   │   ├── openquatt_ha_dashboard_single_nl.yaml
-│   │   ├── openquatt_ha_dashboard_single_en.yaml
-│   │   └── openquatt_ha_dynamic_sources_package.yaml
-│   ├── specifications/
-│   │   ├── functional-specification.md
-│   │   └── technical-specification.md
-├── scripts/
-│   └── validate_local.sh
-└── docs/maintenance.md
-```
-
-## Requirements
+Requirements:
 
 - ESPHome `>= 2025.11.0`
-- ESP32 board (default profile: `esp32-s3-devkitc-1`)
-- RS485 wiring to at least one heat pump (HP2 only required for Duo topology)
+- ESP32 hardware matching one of the supported profiles
+- RS485 wiring to at least one heat pump
 - Home Assistant (recommended)
+
+Release coverage today:
+
+- Official GitHub releases currently publish Duo firmware assets for Waveshare and Heatpump Listener hardware.
+- Single firmware is available in the repository, but not yet published as a release asset.
 
 ## Quick Start
 
-1. Clone the repository.
-2. Choose your topology + hardware entrypoint:
-   - `openquatt_duo_waveshare.yaml`
-   - `openquatt_duo_heatpump_listener.yaml`
-   - `openquatt_single_waveshare.yaml`
-   - `openquatt_single_heatpump_listener.yaml`
-3. Validate config (example):
-```bash
-esphome config openquatt_duo_waveshare.yaml
-```
+### 1. Pick the right firmware
 
-4. Compile (example):
+For the current official releases, choose the matching Duo factory image:
 
-```bash
-PLATFORMIO_CORE_DIR="$PWD/.cache/platformio" esphome compile openquatt_duo_waveshare.yaml
-```
+- Duo + Waveshare ESP32-S3-Relay-1CH: `openquatt-waveshare.firmware.factory.bin`
+- Duo + Heatpump Listener: `openquatt-heatpump-listener.firmware.factory.bin`
 
-Note: each entrypoint has its own ESPHome `build_path`, so switching between topology/hardware combinations does not invalidate the other profile caches.
+If you want Single firmware or custom changes, build from source via [Getting Started](docs/getting-started.md).
 
-5. Flash/run:
+### 2. Flash the firmware with `web.esphome.io`
 
-```bash
-esphome run openquatt_duo_waveshare.yaml
-```
+1. Download the matching `*.firmware.factory.bin` from the [latest release](https://github.com/jeroen85/OpenQuatt/releases/latest).
+2. Open [web.esphome.io](https://web.esphome.io/).
+3. Connect your ESP board over USB.
+4. Choose the manual install flow and select the downloaded `*.firmware.factory.bin`.
+5. Wait for the first boot to complete.
 
-## Local Validation Helper
+Why `factory.bin`:
 
-```bash
-./scripts/validate_local.sh
-```
+- `*.firmware.factory.bin` is the correct first-flash image for ESP Web Tools / `web.esphome.io`.
+- The release also includes `*.firmware.ota.bin` and `openquatt.manifest.json`, but those are intended for the firmware's OTA update flow after the device is already installed.
+- The current published manifest is OTA-oriented, so manual selection of the `factory.bin` is the recommended install path today.
 
-`validate_local.sh` uses a repository-local PlatformIO core directory by default:
-`$PWD/.cache/platformio` (override via `PLATFORMIO_CORE_DIR` if needed).
+### 3. Configure Wi-Fi after first boot
+
+After flashing, OpenQuatt starts its fallback access point:
+
+- SSID: `OpenQuatt`
+- Password: `openquatt`
+
+Connect to that access point and complete the captive portal flow to enter your Wi-Fi credentials.
+
+Note:
+
+- Wi-Fi provisioning currently happens through the fallback AP and captive portal.
+- `web.esphome.io` is therefore used for flashing first, not for the final Wi-Fi setup flow.
+
+### 4. Finish setup in Home Assistant
+
+After the device joins your network:
+
+1. Add the discovered ESPHome device in Home Assistant.
+2. Verify that HP telemetry updates and the device reports a valid control mode.
+3. Import the matching dashboard if you want the full UI.
 
 ## Hardware Profiles
 
-Hardware-related compile-time settings are defined in:
+Hardware-specific compile-time settings are defined in:
 
 - `openquatt/oq_substitutions_common.yaml`
 - `openquatt/profiles/oq_substitutions_waveshare.yaml`
 - `openquatt/profiles/oq_substitutions_heatpump_listener.yaml`
 
-It includes:
+Supported hardware profiles:
 
-- Shared compile-time constants (`project_version`, control constants, CIC/flow/modbus constants)
-- [Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm) hardware mapping
-- [Heatpump Listener](https://electropaultje.nl/product/heatpump-listener/) hardware mapping
-
-## Release Process
-
-- CI workflow (`.github/workflows/ci-build.yml`) runs on push/PR and enforces:
-  - config + compile for all four topology/hardware entrypoints
-- Release workflow (`.github/workflows/release-build.yml`) runs on tags `v*` and publishes Duo firmware release assets plus `openquatt.manifest.json`.
-- Detailed steps: [Release Process Guide](docs/release-process.md)
+- [Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm)
+- [Heatpump Listener](https://electropaultje.nl/product/heatpump-listener/)
 
 ## Documentation
 
@@ -180,9 +130,10 @@ Core docs:
 - [Functional Specification](docs/specifications/functional-specification.md)
 - [Technical Specification](docs/specifications/technical-specification.md)
 
-## Development and Maintenance
+## Development
 
 - [Maintenance Guide](docs/maintenance.md)
+- Build-from-source workflow: [Getting Started](docs/getting-started.md)
 
 ## License
 
