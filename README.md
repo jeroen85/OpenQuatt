@@ -96,9 +96,21 @@ Note:
 
 After the device joins your network:
 
-1. Add the discovered ESPHome device in Home Assistant.
-2. Verify that HP telemetry updates and the device reports a valid control mode.
-3. Import the matching dashboard if you want the full UI.
+1. Add the discovered OpenQuatt device in Home Assistant.
+2. Verify the basic integration state:
+   - the device is online
+   - `Status` is available
+   - the firmware version is visible
+   - HP telemetry updates
+   - the device reports a valid control mode
+3. Import the dashboard that matches your topology and preferred language:
+   - Duo NL: `docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml`
+   - Duo EN: `docs/dashboard/openquatt_ha_dashboard_duo_en.yaml`
+   - Single NL: `docs/dashboard/openquatt_ha_dashboard_single_nl.yaml`
+   - Single EN: `docs/dashboard/openquatt_ha_dashboard_single_en.yaml`
+4. Follow the dashboard import instructions in [Dashboard Install and Topology/Language Variants](docs/dashboard/README.md).
+5. If you want the full dashboard structure explained, see [Home Assistant Dashboard Guide](docs/home-assistant-dashboard.md).
+6. If you want runtime-selectable Home Assistant source entities, also review the optional dynamic source package in [docs/dashboard/README.md](docs/dashboard/README.md).
 
 ## Hardware Profiles
 
