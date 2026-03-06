@@ -24,10 +24,12 @@ This project uses GitHub Actions for automated validation, firmware compilation,
 - `/.github/workflows/release-build.yml`
   - Trigger: tag push `v*` and manual dispatch
   - Actions:
-    - validate + compile both Duo hardware profiles
-    - generate multi-build `openquatt.manifest.json` (ESP32-S3 + ESP32) for OTA update checks
+    - validate + compile all four topology/hardware profiles
+    - publish explicit Duo and Single release assets for both hardware targets
+    - generate `openquatt-duo-install.manifest.json` and `openquatt-single-install.manifest.json` for first install via `web.esphome.io`
+    - generate `openquatt-duo-ota.manifest.json` and `openquatt-single-ota.manifest.json` for OTA update checks
     - create/update GitHub Release
-    - attach both profile firmware binaries and manifest to the release
+    - attach release firmware binaries and manifests to the release
 
 ## ESPHome Version Pinning
 
@@ -63,17 +65,27 @@ git push origin main --tags
    - CI should be green.
    - Release workflow should publish artifacts.
 5. Verify GitHub Release contains:
-   - `openquatt-waveshare.firmware.bin`
-   - `openquatt-waveshare.firmware.ota.bin`
-   - `openquatt-waveshare.firmware.factory.bin`
-   - `openquatt-heatpump-listener.firmware.bin`
-   - `openquatt-heatpump-listener.firmware.ota.bin`
-   - `openquatt-heatpump-listener.firmware.factory.bin`
-   - `openquatt.manifest.json`
+   - `openquatt-duo-install.manifest.json`
+   - `openquatt-duo-ota.manifest.json`
+   - `openquatt-single-install.manifest.json`
+   - `openquatt-single-ota.manifest.json`
+   - `openquatt-duo-waveshare.firmware.bin`
+   - `openquatt-duo-waveshare.firmware.ota.bin`
+   - `openquatt-duo-waveshare.firmware.factory.bin`
+   - `openquatt-duo-heatpump-listener.firmware.bin`
+   - `openquatt-duo-heatpump-listener.firmware.ota.bin`
+   - `openquatt-duo-heatpump-listener.firmware.factory.bin`
+   - `openquatt-single-waveshare.firmware.bin`
+   - `openquatt-single-waveshare.firmware.ota.bin`
+   - `openquatt-single-waveshare.firmware.factory.bin`
+   - `openquatt-single-heatpump-listener.firmware.bin`
+   - `openquatt-single-heatpump-listener.firmware.ota.bin`
+   - `openquatt-single-heatpump-listener.firmware.factory.bin`
 
 ## Notes
 
 - The baseline `openquatt_duo_waveshare.yaml` is secrets-free and suitable for CI builds.
-- Release artifacts are currently published for Duo entrypoints; Single remains validated in CI/local gates.
-- OTA update entity in firmware reads `${release_manifest_url}` (default points to GitHub `releases/latest` manifest).
+- `openquatt-duo-install.manifest.json` and `openquatt-single-install.manifest.json` are intended for first install via `web.esphome.io`.
+- `openquatt-duo-ota.manifest.json` and `openquatt-single-ota.manifest.json` are intended for OTA update flows.
+- Duo firmware reads `${release_manifest_url}` from `openquatt_base.yaml`, Single firmware reads it from `openquatt_base_single.yaml`.
 - Workflow files must remain directly under `.github/workflows/` (GitHub does not load workflows from nested subfolders).

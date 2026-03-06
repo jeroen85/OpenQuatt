@@ -77,45 +77,146 @@ jobs:
           name: openquatt-duo-heatpump-listener-release
           path: dist/openquatt-duo-heatpump-listener
 
+      - name: Download Single Waveshare artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: openquatt-single-waveshare-release
+          path: dist/openquatt-single-waveshare
+
+      - name: Download Single Heatpump Listener artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: openquatt-single-heatpump-listener-release
+          path: dist/openquatt-single-heatpump-listener
+
       - name: Prepare release asset filenames
         run: |
           mkdir -p dist
-          cp dist/openquatt-duo-waveshare/firmware.bin dist/openquatt-waveshare.firmware.bin
-          cp dist/openquatt-duo-waveshare/firmware.ota.bin dist/openquatt-waveshare.firmware.ota.bin
-          cp dist/openquatt-duo-waveshare/firmware.factory.bin dist/openquatt-waveshare.firmware.factory.bin
-          cp dist/openquatt-duo-heatpump-listener/firmware.bin dist/openquatt-heatpump-listener.firmware.bin
-          cp dist/openquatt-duo-heatpump-listener/firmware.ota.bin dist/openquatt-heatpump-listener.firmware.ota.bin
-          cp dist/openquatt-duo-heatpump-listener/firmware.factory.bin dist/openquatt-heatpump-listener.firmware.factory.bin
+          cp dist/openquatt-duo-waveshare/firmware.bin dist/openquatt-duo-waveshare.firmware.bin
+          cp dist/openquatt-duo-waveshare/firmware.ota.bin dist/openquatt-duo-waveshare.firmware.ota.bin
+          cp dist/openquatt-duo-waveshare/firmware.factory.bin dist/openquatt-duo-waveshare.firmware.factory.bin
+          cp dist/openquatt-duo-heatpump-listener/firmware.bin dist/openquatt-duo-heatpump-listener.firmware.bin
+          cp dist/openquatt-duo-heatpump-listener/firmware.ota.bin dist/openquatt-duo-heatpump-listener.firmware.ota.bin
+          cp dist/openquatt-duo-heatpump-listener/firmware.factory.bin dist/openquatt-duo-heatpump-listener.firmware.factory.bin
+          cp dist/openquatt-single-waveshare/firmware.bin dist/openquatt-single-waveshare.firmware.bin
+          cp dist/openquatt-single-waveshare/firmware.ota.bin dist/openquatt-single-waveshare.firmware.ota.bin
+          cp dist/openquatt-single-waveshare/firmware.factory.bin dist/openquatt-single-waveshare.firmware.factory.bin
+          cp dist/openquatt-single-heatpump-listener/firmware.bin dist/openquatt-single-heatpump-listener.firmware.bin
+          cp dist/openquatt-single-heatpump-listener/firmware.ota.bin dist/openquatt-single-heatpump-listener.firmware.ota.bin
+          cp dist/openquatt-single-heatpump-listener/firmware.factory.bin dist/openquatt-single-heatpump-listener.firmware.factory.bin
 
-      - name: Generate OTA manifest
+      - name: Generate install and OTA manifests
         run: |
-          OTA_S3_BIN="dist/openquatt-waveshare.firmware.ota.bin"
-          OTA_ESP32_BIN="dist/openquatt-heatpump-listener.firmware.ota.bin"
-          OTA_S3_MD5="$(md5sum "$OTA_S3_BIN" | awk '{print $1}')"
-          OTA_ESP32_MD5="$(md5sum "$OTA_ESP32_BIN" | awk '{print $1}')"
           TAG="${GITHUB_REF_NAME}"
           REPO="${GITHUB_REPOSITORY}"
-          cat > openquatt.manifest.json << EOF
+          DUO_OTA_S3_BIN="dist/openquatt-duo-waveshare.firmware.ota.bin"
+          DUO_OTA_ESP32_BIN="dist/openquatt-duo-heatpump-listener.firmware.ota.bin"
+          SINGLE_OTA_S3_BIN="dist/openquatt-single-waveshare.firmware.ota.bin"
+          SINGLE_OTA_ESP32_BIN="dist/openquatt-single-heatpump-listener.firmware.ota.bin"
+          DUO_OTA_S3_MD5="$(md5sum "$DUO_OTA_S3_BIN" | awk '{print $1}')"
+          DUO_OTA_ESP32_MD5="$(md5sum "$DUO_OTA_ESP32_BIN" | awk '{print $1}')"
+          SINGLE_OTA_S3_MD5="$(md5sum "$SINGLE_OTA_S3_BIN" | awk '{print $1}')"
+          SINGLE_OTA_ESP32_MD5="$(md5sum "$SINGLE_OTA_ESP32_BIN" | awk '{print $1}')"
+          BASE_URL="https://github.com/${REPO}/releases/download/${TAG}"
+          cat > openquatt-duo-install.manifest.json << EOF
           {
-            "name": "OpenQuatt",
+            "name": "OpenQuatt Duo",
+            "version": "${TAG}",
+            "builds": [
+              {
+                "chipFamily": "ESP32-S3",
+                "parts": [
+                  {
+                    "path": "${BASE_URL}/openquatt-duo-waveshare.firmware.factory.bin",
+                    "offset": 0
+                  }
+                ]
+              },
+              {
+                "chipFamily": "ESP32",
+                "parts": [
+                  {
+                    "path": "${BASE_URL}/openquatt-duo-heatpump-listener.firmware.factory.bin",
+                    "offset": 0
+                  }
+                ]
+              }
+            ]
+          }
+          EOF
+          cat > openquatt-single-install.manifest.json << EOF
+          {
+            "name": "OpenQuatt Single",
+            "version": "${TAG}",
+            "builds": [
+              {
+                "chipFamily": "ESP32-S3",
+                "parts": [
+                  {
+                    "path": "${BASE_URL}/openquatt-single-waveshare.firmware.factory.bin",
+                    "offset": 0
+                  }
+                ]
+              },
+              {
+                "chipFamily": "ESP32",
+                "parts": [
+                  {
+                    "path": "${BASE_URL}/openquatt-single-heatpump-listener.firmware.factory.bin",
+                    "offset": 0
+                  }
+                ]
+              }
+            ]
+          }
+          EOF
+          cat > openquatt-duo-ota.manifest.json << EOF
+          {
+            "name": "OpenQuatt Duo",
             "version": "${TAG}",
             "builds": [
               {
                 "chipFamily": "ESP32-S3",
                 "ota": {
-                  "path": "https://github.com/${REPO}/releases/download/${TAG}/openquatt-waveshare.firmware.ota.bin",
-                  "md5": "${OTA_S3_MD5}",
+                  "path": "${BASE_URL}/openquatt-duo-waveshare.firmware.ota.bin",
+                  "md5": "${DUO_OTA_S3_MD5}",
                   "release_url": "https://github.com/${REPO}/releases/tag/${TAG}",
-                  "summary": "OpenQuatt Waveshare firmware ${TAG}"
+                  "summary": "OpenQuatt Duo Waveshare firmware ${TAG}"
                 }
               },
               {
                 "chipFamily": "ESP32",
                 "ota": {
-                  "path": "https://github.com/${REPO}/releases/download/${TAG}/openquatt-heatpump-listener.firmware.ota.bin",
-                  "md5": "${OTA_ESP32_MD5}",
+                  "path": "${BASE_URL}/openquatt-duo-heatpump-listener.firmware.ota.bin",
+                  "md5": "${DUO_OTA_ESP32_MD5}",
                   "release_url": "https://github.com/${REPO}/releases/tag/${TAG}",
-                  "summary": "OpenQuatt Heatpump Listener firmware ${TAG}"
+                  "summary": "OpenQuatt Duo Heatpump Listener firmware ${TAG}"
+                }
+              }
+            ]
+          }
+          EOF
+          cat > openquatt-single-ota.manifest.json << EOF
+          {
+            "name": "OpenQuatt Single",
+            "version": "${TAG}",
+            "builds": [
+              {
+                "chipFamily": "ESP32-S3",
+                "ota": {
+                  "path": "${BASE_URL}/openquatt-single-waveshare.firmware.ota.bin",
+                  "md5": "${SINGLE_OTA_S3_MD5}",
+                  "release_url": "https://github.com/${REPO}/releases/tag/${TAG}",
+                  "summary": "OpenQuatt Single Waveshare firmware ${TAG}"
+                }
+              },
+              {
+                "chipFamily": "ESP32",
+                "ota": {
+                  "path": "${BASE_URL}/openquatt-single-heatpump-listener.firmware.ota.bin",
+                  "md5": "${SINGLE_OTA_ESP32_MD5}",
+                  "release_url": "https://github.com/${REPO}/releases/tag/${TAG}",
+                  "summary": "OpenQuatt Single Heatpump Listener firmware ${TAG}"
                 }
               }
             ]
@@ -127,10 +228,19 @@ jobs:
         with:
           generate_release_notes: true
           files: |
-            openquatt.manifest.json
-            dist/openquatt-waveshare.firmware.bin
-            dist/openquatt-waveshare.firmware.ota.bin
-            dist/openquatt-waveshare.firmware.factory.bin
-            dist/openquatt-heatpump-listener.firmware.bin
-            dist/openquatt-heatpump-listener.firmware.ota.bin
-            dist/openquatt-heatpump-listener.firmware.factory.bin
+            openquatt-duo-install.manifest.json
+            openquatt-duo-ota.manifest.json
+            openquatt-single-install.manifest.json
+            openquatt-single-ota.manifest.json
+            dist/openquatt-duo-waveshare.firmware.bin
+            dist/openquatt-duo-waveshare.firmware.ota.bin
+            dist/openquatt-duo-waveshare.firmware.factory.bin
+            dist/openquatt-duo-heatpump-listener.firmware.bin
+            dist/openquatt-duo-heatpump-listener.firmware.ota.bin
+            dist/openquatt-duo-heatpump-listener.firmware.factory.bin
+            dist/openquatt-single-waveshare.firmware.bin
+            dist/openquatt-single-waveshare.firmware.ota.bin
+            dist/openquatt-single-waveshare.firmware.factory.bin
+            dist/openquatt-single-heatpump-listener.firmware.bin
+            dist/openquatt-single-heatpump-listener.firmware.ota.bin
+            dist/openquatt-single-heatpump-listener.firmware.factory.bin

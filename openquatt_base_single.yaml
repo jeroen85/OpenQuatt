@@ -8,6 +8,9 @@
 # ==============================================================================
 # PACKAGES
 # ==============================================================================
+substitutions:
+  release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-single-ota.manifest.json"
+
 packages: !include openquatt/oq_packages_single.yaml
 
 # ==============================================================================

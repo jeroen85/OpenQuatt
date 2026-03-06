@@ -48,34 +48,40 @@ Requirements:
 
 Release coverage:
 
-- Official GitHub releases provide firmware assets for Duo and Single on both supported hardware profiles.
+- Official GitHub releases provide firmware assets and manifests for all four topology/hardware combinations.
 
 ## Quick Start
 
-### 1. Pick the right firmware
+### 1. Pick the right setup
 
-Choose the factory image that matches your topology and hardware:
+Choose the installer that matches your setup:
 
-- Duo + Waveshare ESP32-S3-Relay-1CH: `openquatt-waveshare.firmware.factory.bin`
-- Duo + Heatpump Listener: `openquatt-heatpump-listener.firmware.factory.bin`
-- Single + Waveshare ESP32-S3-Relay-1CH: `openquatt-single-waveshare.firmware.factory.bin`
-- Single + Heatpump Listener: `openquatt-single-heatpump-listener.firmware.factory.bin`
+- Duo install: [web.esphome.io + `openquatt-duo-install.manifest.json`](https://web.esphome.io/?manifest=https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-duo-install.manifest.json)
+- Single install: [web.esphome.io + `openquatt-single-install.manifest.json`](https://web.esphome.io/?manifest=https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-single-install.manifest.json)
 
 If you want custom changes, build from source via [Getting Started](docs/getting-started.md).
 
 ### 2. Flash the firmware with `web.esphome.io`
 
-1. Download the matching `*.firmware.factory.bin` from the [latest release](https://github.com/jeroen85/OpenQuatt/releases/latest).
-2. Open [web.esphome.io](https://web.esphome.io/).
-3. Connect your ESP board over USB.
-4. Choose the manual install flow and select the downloaded `*.firmware.factory.bin`.
-5. Wait for the first boot to complete.
+1. Open the Duo or Single installer link above.
+2. Connect your ESP board over USB.
+3. `web.esphome.io` will select the correct board image inside that setup:
+   - ESP32-S3 -> Waveshare firmware
+   - ESP32 -> Heatpump Listener firmware
+4. Complete the install flow and wait for the first boot to finish.
 
-Why `factory.bin`:
+Manifest roles:
 
-- `*.firmware.factory.bin` is the correct first-flash image for ESP Web Tools / `web.esphome.io`.
-- The release also includes `*.firmware.ota.bin` and `openquatt.manifest.json`, but those are intended for the firmware's OTA update flow after the device is already installed.
-- The current published manifest is OTA-oriented, so manual selection of the `factory.bin` is the recommended install path today.
+- `openquatt-duo-install.manifest.json` and `openquatt-single-install.manifest.json` are for first install via `web.esphome.io` and use the release `*.firmware.factory.bin` images.
+- `openquatt-duo-ota.manifest.json` and `openquatt-single-ota.manifest.json` are the OTA update manifests used by firmware.
+
+Manual fallback:
+
+- If you want to flash manually, download the matching `*.firmware.factory.bin` from the [latest release](https://github.com/jeroen85/OpenQuatt/releases/latest) and select it in `web.esphome.io`:
+  - Duo + Waveshare ESP32-S3-Relay-1CH: `openquatt-duo-waveshare.firmware.factory.bin`
+  - Duo + Heatpump Listener: `openquatt-duo-heatpump-listener.firmware.factory.bin`
+  - Single + Waveshare ESP32-S3-Relay-1CH: `openquatt-single-waveshare.firmware.factory.bin`
+  - Single + Heatpump Listener: `openquatt-single-heatpump-listener.firmware.factory.bin`
 
 ### 3. Configure Wi-Fi after first boot
 
