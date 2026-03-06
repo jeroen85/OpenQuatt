@@ -93,7 +93,7 @@ sensor:
       const bool in_cm3 = (id(oq_control_mode_code) == 3);
       if (!in_cm3) return 0.0f;
 
-      const float hp2_outlet_c = id(hp2_water_out_temp).state;
+      const float hp2_outlet_c = id(${heatpump_outlet_temp_id}).state;
       const float supply_c = id(water_supply_temp_selected).state;
       const float flow_lph = id(flow_rate_selected).state;
 

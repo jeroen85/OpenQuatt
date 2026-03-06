@@ -2,11 +2,11 @@
 
 <img src="docs/assets/openquatt_logo.svg" alt="OpenQuatt logo" width="400" />
 
-OpenQuatt is a modular ESPHome controller for a dual heat pump setup with supervisory control, demand strategy selection, flow regulation, boiler assist gating, and Home Assistant observability.
+OpenQuatt is a modular ESPHome controller for Quatt Single and Quatt Duo topologies with supervisory control, demand strategy selection, flow regulation, boiler assist gating, and Home Assistant observability.
 
 > [!WARNING]
 > This project is currently in an experimental phase.
-> The current implementation is specifically built and validated for a Quatt Hybrid Duo with outside unit (ODU) hardware revision v1.5.
+> The Duo topology remains the behavioral reference path; Single support is compile-time selectable via dedicated entrypoints.
 
 ## Table of Contents
 
@@ -24,7 +24,7 @@ OpenQuatt is a modular ESPHome controller for a dual heat pump setup with superv
 
 ## What This Project Does
 
-- Controls two heat pumps over RS485 Modbus (`HP1`, `HP2`).
+- Controls one or two heat pumps over RS485 Modbus (`HP1`, optional `HP2`).
 - Runs a central Control Mode state machine (`CM0`, `CM1`, `CM2`, `CM3`, `CM98`).
 - Supports two heating demand strategies:
   - `Power House`
@@ -37,23 +37,25 @@ OpenQuatt is a modular ESPHome controller for a dual heat pump setup with superv
 ## Feature TODO
 
 - Add cooling mode support.
-- Add topology profile support for Quatt Single and Quatt Duo.
 - Add hardware revision profile support for v1 and v1.5.
 
 ## Repository Structure
 
 ```text
 .
-├── openquatt.yaml                    # Default ESPHome config (Waveshare profile)
-├── openquatt_waveshare.yaml          # Explicit Waveshare profile entrypoint
-├── openquatt_heatpump_listener.yaml  # Heatpump Listener profile entrypoint
-├── openquatt_base.yaml               # Shared ESPHome/ESP32 base config
+├── openquatt_duo_waveshare.yaml             # Duo topology + Waveshare hardware
+├── openquatt_duo_heatpump_listener.yaml     # Duo topology + Heatpump Listener hardware
+├── openquatt_single_waveshare.yaml          # Single topology + Waveshare hardware
+├── openquatt_single_heatpump_listener.yaml  # Single topology + Heatpump Listener hardware
+├── openquatt_base.yaml                      # Shared base (Duo topology)
+├── openquatt_base_single.yaml               # Shared base (Single topology)
 ├── openquatt/
 │   ├── oq_substitutions_common.yaml  # Compile-time constants shared by all profiles
 │   ├── profiles/
 │   │   ├── oq_substitutions_waveshare.yaml
 │   │   └── oq_substitutions_heatpump_listener.yaml
-│   ├── oq_packages.yaml              # Ordered package includes
+│   ├── oq_packages.yaml              # Ordered package includes (Duo)
+│   ├── oq_packages_single.yaml       # Ordered package includes (Single)
 │   ├── oq_common.yaml                # Shared runtime (logger/api/ota/wifi/http/modbus/diagnostics)
 │   ├── oq_supervisory_controlmode.yaml
 │   ├── oq_heating_strategy.yaml
@@ -66,6 +68,7 @@ OpenQuatt is a modular ESPHome controller for a dual heat pump setup with superv
 │   ├── oq_ha_inputs.yaml
 │   ├── oq_local_sensors.yaml
 │   ├── oq_debug_testing.yaml         # Manual diagnostic/testing tools (one-shot Modbus reads)
+│   ├── oq_debug_testing_duo.yaml     # Duo-only HP2 debug read button
 │   ├── oq_webserver.yaml
 │   ├── oq_HP_io.yaml
 │   └── includes/hp_perf_map.h
@@ -82,8 +85,10 @@ OpenQuatt is a modular ESPHome controller for a dual heat pump setup with superv
 │   │   └── openquatt_logo.svg
 │   ├── dashboard/
 │   │   ├── README.md
-│   │   ├── openquatt_ha_dashboard_nl.yaml
-│   │   ├── openquatt_ha_dashboard_en.yaml
+│   │   ├── openquatt_ha_dashboard_duo_nl.yaml
+│   │   ├── openquatt_ha_dashboard_duo_en.yaml
+│   │   ├── openquatt_ha_dashboard_single_nl.yaml
+│   │   ├── openquatt_ha_dashboard_single_en.yaml
 │   │   └── openquatt_ha_dynamic_sources_package.yaml
 │   ├── specifications/
 │   │   ├── functional-specification.md
@@ -97,29 +102,34 @@ OpenQuatt is a modular ESPHome controller for a dual heat pump setup with superv
 
 - ESPHome `>= 2025.11.0`
 - ESP32 board (default profile: `esp32-s3-devkitc-1`)
-- RS485 wiring to both heat pumps
+- RS485 wiring to at least one heat pump (HP2 only required for Duo topology)
 - Home Assistant (recommended)
 
 ## Quick Start
 
 1. Clone the repository.
-2. Validate config:
+2. Choose your topology + hardware entrypoint:
+   - `openquatt_duo_waveshare.yaml`
+   - `openquatt_duo_heatpump_listener.yaml`
+   - `openquatt_single_waveshare.yaml`
+   - `openquatt_single_heatpump_listener.yaml`
+3. Validate config (example):
 ```bash
-esphome config openquatt.yaml
+esphome config openquatt_duo_waveshare.yaml
 ```
 
-3. Compile:
+4. Compile (example):
 
 ```bash
-esphome compile openquatt.yaml
+PLATFORMIO_CORE_DIR="$PWD/.cache/platformio" esphome compile openquatt_duo_waveshare.yaml
 ```
 
-Note: each hardware entrypoint now uses its own ESPHome `build_path`, so switching between `openquatt_waveshare.yaml` and `openquatt_heatpump_listener.yaml` no longer invalidates the other profile's build cache.
+Note: each entrypoint has its own ESPHome `build_path`, so switching between topology/hardware combinations does not invalidate the other profile caches.
 
-4. Flash/run:
+5. Flash/run:
 
 ```bash
-esphome run openquatt.yaml
+esphome run openquatt_duo_waveshare.yaml
 ```
 
 ## Local Validation Helper
@@ -127,6 +137,9 @@ esphome run openquatt.yaml
 ```bash
 ./scripts/validate_local.sh
 ```
+
+`validate_local.sh` uses a repository-local PlatformIO core directory by default:
+`$PWD/.cache/platformio` (override via `PLATFORMIO_CORE_DIR` if needed).
 
 ## Hardware Profiles
 
@@ -144,8 +157,10 @@ It includes:
 
 ## Release Process
 
-- CI workflow (`.github/workflows/ci-build.yml`) runs on push/PR and validates + compiles both hardware profiles (`openquatt_waveshare.yaml` and `openquatt_heatpump_listener.yaml`).
-- Release workflow (`.github/workflows/release-build.yml`) runs on tags `v*` and publishes both profile firmware sets plus a multi-build `openquatt.manifest.json` to GitHub Releases.
+- CI workflow (`.github/workflows/ci-build.yml`) runs on push/PR and enforces:
+  - control-logic regression tests (`./scripts/run_regression_tests.sh`)
+  - config + compile for all four topology/hardware entrypoints
+- Release workflow (`.github/workflows/release-build.yml`) runs on tags `v*` and publishes Duo firmware release assets plus `openquatt.manifest.json`.
 - Detailed steps: [Release Process Guide](docs/release-process.md)
 
 ## Documentation
@@ -162,7 +177,7 @@ Core docs:
 - [Settings Reference](docs/settings-reference.md)
 - [Tuning and Troubleshooting](docs/tuning-and-troubleshooting.md)
 - [Home Assistant Dashboard Guide](docs/home-assistant-dashboard.md)
-- [Dashboard Install and NL/EN Variants](docs/dashboard/README.md)
+- [Dashboard Install and Topology/Language Variants](docs/dashboard/README.md)
 - [Functional Specification](docs/specifications/functional-specification.md)
 - [Technical Specification](docs/specifications/technical-specification.md)
 

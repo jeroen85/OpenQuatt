@@ -608,7 +608,7 @@ sensor:
       sorting_group_id: oq_temperatures
     lambda: |-
       const float hp1_outside_c = id(hp1_outside_temp).state;
-      const float hp2_outside_c = id(hp2_outside_temp).state;
+      const float hp2_outside_c = id(${secondary_outside_temp_id}).state;
 
       const bool hp1_valid = !isnan(hp1_outside_c);
       const bool hp2_valid = !isnan(hp2_outside_c);
@@ -688,7 +688,7 @@ sensor:
         if (!isnan(selected_supply_c)) supply_c = selected_supply_c;
       }
       if (isnan(supply_c)) {
-        const float hp2_out_c = id(hp2_water_out_temp).state;
+        const float hp2_out_c = id(${secondary_water_out_temp_id}).state;
         if (!isnan(hp2_out_c)) supply_c = hp2_out_c;
       }
       if (isnan(supply_c)) {
@@ -1377,9 +1377,9 @@ interval:
 
               // While compressors are not yet really delivering heat, keep integral empty.
               const bool hp1_level_on = id(hp1_last_applied_level) > 0;
-              const bool hp2_level_on = id(hp2_last_applied_level) > 0;
+              const bool hp2_level_on = id(${secondary_last_applied_level_id}) > 0;
               const float hp1_mode_raw = id(hp1_working_mode).state;
-              const float hp2_mode_raw = id(hp2_working_mode).state;
+              const float hp2_mode_raw = id(${secondary_working_mode_id}).state;
               const bool hp1_heating = !isnan(hp1_mode_raw) && ((int) roundf(hp1_mode_raw) == 2);
               const bool hp2_heating = !isnan(hp2_mode_raw) && ((int) roundf(hp2_mode_raw) == 2);
               const bool hp_delivering =

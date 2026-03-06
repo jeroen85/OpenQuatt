@@ -1,17 +1,18 @@
 # OpenQuatt Home Assistant Dashboards
 
-This folder contains two dashboard variants:
+This folder contains dashboard variants per topology/language:
 
-- `openquatt_ha_dashboard_nl.yaml`: Dutch UI labels/text.
-- `openquatt_ha_dashboard_en.yaml`: English UI labels/text.
+- `openquatt_ha_dashboard_duo_nl.yaml`: Dutch UI labels/text (Duo).
+- `openquatt_ha_dashboard_duo_en.yaml`: English UI labels/text (Duo).
+- `openquatt_ha_dashboard_single_nl.yaml`: Dutch UI labels/text (Single).
+- `openquatt_ha_dashboard_single_en.yaml`: English UI labels/text (Single).
 - `openquatt_ha_dynamic_sources_package.yaml`: optional HA package for dynamic source proxies.
 
 ## Which One To Use
 
-- Choose `NL` if your Home Assistant UI and operations are mainly Dutch.
-- Choose `EN` if you prefer an English dashboard for operators or public sharing.
-
-Both dashboards target the same OpenQuatt entities.
+- Use a `duo` file for Duo firmware entrypoints.
+- Use a `single` file for Single firmware entrypoints.
+- Choose `NL` or `EN` based on preferred UI language.
 
 ## Home Assistant Installation
 
@@ -20,8 +21,10 @@ Both dashboards target the same OpenQuatt entities.
 3. Create a new dashboard or open an existing one.
 4. Open the dashboard menu (**three dots**) and choose **Raw configuration editor**.
 5. Replace or paste the YAML from either:
-   - `docs/dashboard/openquatt_ha_dashboard_nl.yaml`
-   - `docs/dashboard/openquatt_ha_dashboard_en.yaml`
+   - `docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml`
+   - `docs/dashboard/openquatt_ha_dashboard_duo_en.yaml`
+   - `docs/dashboard/openquatt_ha_dashboard_single_nl.yaml`
+   - `docs/dashboard/openquatt_ha_dashboard_single_en.yaml`
 6. Save and reload the dashboard.
 
 ## Optional Dynamic Source Proxies (HA package)

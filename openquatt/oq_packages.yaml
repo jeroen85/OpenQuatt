@@ -15,19 +15,75 @@
 # 11) Web UI
 # 12) Per-HP hardware adapters
 # ==============================================================================
+# Shared modules use `*_secondary_*` template vars so topology wiring stays
+# centralized in package files and avoids duplicated module files.
 oq_common: !include oq_common.yaml
-oq_supervisory_controlmode: !include oq_supervisory_controlmode.yaml
-oq_heating_strategy: !include oq_heating_strategy.yaml
-oq_heat_control: !include oq_heat_control.yaml
-oq_flow_control: !include oq_flow_control.yaml
+oq_supervisory_controlmode: !include
+  file: oq_supervisory_controlmode.yaml
+  vars:
+    supervisory_secondary_last_applied_level_id: "hp2_last_applied_level"
+    supervisory_secondary_working_mode_id: "hp2_working_mode"
+    supervisory_secondary_set_working_mode_id: "hp2_set_working_mode"
+    supervisory_secondary_compressor_level_id: "hp2_compressor_level"
+    supervisory_secondary_low_noise_mode_id: "hp2_low_noise_mode"
+    supervisory_secondary_set_pump_mode_id: "hp2_set_pump_mode"
+    supervisory_secondary_pump_speed_id: "hp2_pump_speed"
+oq_heating_strategy: !include
+  file: oq_heating_strategy.yaml
+  vars:
+    secondary_outside_temp_id: "hp2_outside_temp"
+    secondary_water_out_temp_id: "hp2_water_out_temp"
+    secondary_last_applied_level_id: "hp2_last_applied_level"
+    secondary_working_mode_id: "hp2_working_mode"
+oq_heat_control: !include
+  file: oq_heat_control.yaml
+  vars:
+    hc_secondary_power_input_id: "hp2_power_input"
+    hc_secondary_heat_power_id: "hp2_heat_power"
+    hc_secondary_compressor_level_id: "hp2_compressor_level"
+    hc_secondary_defrost_id: "hp2_defrost"
+    hc_secondary_last_applied_level_id: "hp2_last_applied_level"
+    hc_secondary_last_start_ms_id: "hp2_last_start_ms"
+    hc_secondary_last_stop_ms_id: "hp2_last_stop_ms"
+    hc_secondary_minutes_id: "hp2_minutes"
+    hc_secondary_set_working_mode_id: "hp2_set_working_mode"
+    hc_secondary_working_mode_id: "hp2_working_mode"
+    hc_secondary_lvl_1_id: "hp2_lvl_1"
+    hc_secondary_lvl_2_id: "hp2_lvl_2"
+    hc_secondary_lvl_3_id: "hp2_lvl_3"
+    hc_secondary_lvl_4_id: "hp2_lvl_4"
+    hc_secondary_lvl_5_id: "hp2_lvl_5"
+    hc_secondary_lvl_6_id: "hp2_lvl_6"
+    hc_secondary_lvl_7_id: "hp2_lvl_7"
+    hc_secondary_lvl_8_id: "hp2_lvl_8"
+    hc_secondary_lvl_9_id: "hp2_lvl_9"
+    hc_secondary_lvl_10_id: "hp2_lvl_10"
+    hc_dual_tuning_internal: "false"
+    hc_hp2_diag_internal: "false"
+    hc_runtime_reset_button_name: "Reset Runtime Counters (HP1+HP2)"
+oq_flow_control: !include
+  file: oq_flow_control.yaml
+  vars:
+    flow_secondary_enabled: "1"
+    flow_secondary_flow_sensor_id: "hp2_flow"
+    flow_secondary_pump_speed_id: "hp2_pump_speed"
+    flow_mismatch_internal: "false"
 oq_flow_autotune: !include oq_flow_autotune.yaml
-oq_boiler_control: !include oq_boiler_control.yaml
+oq_boiler_control: !include
+  file: oq_boiler_control.yaml
+  vars:
+    heatpump_outlet_temp_id: "hp2_water_out_temp"
 oq_energy: !include oq_energy.yaml
-oq_cic: !include oq_cic.yaml
+oq_cic: !include
+  file: oq_cic.yaml
+  vars:
+    cic_secondary_enabled: "1"
+    cic_hp2_sensor_internal: "false"
 oq_ha_inputs: !include oq_ha_inputs.yaml
 oq_local_sensors: !include oq_local_sensors.yaml
 oq_sensor_sources: !include oq_sensor_sources.yaml
 oq_debug_testing: !include oq_debug_testing.yaml
+oq_debug_testing_duo: !include oq_debug_testing_duo.yaml
 oq_webserver: !include oq_webserver.yaml
 heatpump1: !include
   file: oq_HP_io.yaml

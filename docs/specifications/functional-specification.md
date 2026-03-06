@@ -23,7 +23,7 @@ It describes **what** the system must do, independent of low-level implementatio
 
 OpenQuatt functionally covers:
 
-- dual heat pump supervisory operation
+- single/dual heat pump supervisory operation
 - demand generation and allocation
 - flow safety and pump regulation
 - boiler assist gating
@@ -42,7 +42,7 @@ Out of scope:
 
 - Home Assistant user/operator
 - CIC JSON feed endpoint
-- Heat pump units (HP1, HP2) over Modbus
+- Heat pump units over Modbus (HP1 mandatory, HP2 for Duo topology)
 
 ### Functional IO
 

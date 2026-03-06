@@ -1,7 +1,7 @@
 title: OpenQuatt
 views:
-  - title: Overzicht
-    path: overzicht
+  - title: Overview
+    path: overview
     icon: mdi:view-dashboard
     type: sections
     max_columns: 3
@@ -11,32 +11,29 @@ views:
         cards:
           - type: heading
             icon: mdi:speedometer
-            heading: Live prestaties
+            heading: Live performance
             heading_style: title
           - type: markdown
             content: >-
               <details>
 
-              <summary><strong>Uitleg</strong></summary>
+              <summary><strong>Explanation</strong></summary>
 
 
-              Deze waarden geven live de belangrijkste systeemprestatie:
+              These values show the key system performance in real time:
 
-              - `Power E`: totaal elektrisch ingangsvermogen van de
-              warmtepomp(en).
+              - `Power E`: total electrical input power of the heat pump(s).
 
-              - `Power H`: totaal thermisch afgegeven vermogen.
+              - `Power H`: total delivered thermal output power.
 
-              - `COP`: verhouding `Power H / Power E` (momentane efficientie).
+              - `COP`: ratio `Power H / Power E` (instant efficiency).
 
-              - `Flow`: actuele volumestroom die als basis dient voor
-              flowbewaking.
+              - `Flow`: current volume flow used as the basis for flow safety.
 
-              - `Buitentemp`: geselecteerde bron voor buitentemperatuur in de
-              regeling.
+              - `Outside temp`: selected outdoor temperature source used in control.
 
-              - `Aanvoertemperatuur`: geselecteerde bron voor actuele
-              watersupply.
+              - `Supply temperature`: selected source for current water supply
+              temperature.
 
 
               </details>
@@ -71,14 +68,14 @@ views:
             features_position: bottom
           - type: tile
             entity: sensor.openquatt_outside_temperature_selected
-            name: Buitentemp
+            name: Outside temp
             vertical: false
             features:
               - type: trend-graph
             features_position: bottom
           - type: tile
             entity: sensor.openquatt_water_supply_temp_selected
-            name: Aanvoertemperatuur
+            name: Supply temperature
             vertical: false
             features:
               - type: trend-graph
@@ -93,21 +90,20 @@ views:
             content: >-
               <details>
 
-              <summary><strong>Uitleg</strong></summary>
+              <summary><strong>Explanation</strong></summary>
 
 
-              Dit blok toont de actieve regeltoestand:
+              This block shows the active control state:
 
-              - `Control mode`: huidige bedrijfsmodus/stap van de state machine.
+              - `Control mode`: current operating mode/state machine step.
 
-              - `Flow mode`: manier waarop de pomp/flowregeling momenteel werkt.
+              - `Flow mode`: how pump/flow control is currently operating.
 
-              - `Heating strategy`: bron van de warmtevraag (bijv. Power
-              House/curve).
+              - `Heating strategy`: source of heating demand (for example Power House/curve).
 
-              - `Boiler active`: geeft aan of ketel-assist actief is.
+              - `Boiler active`: indicates whether boiler assist is active.
 
-              - `Silent active`: toont of het stil-venster nu van kracht is.
+              - `Silent active`: shows whether the silent window is currently active.
 
 
               </details>
@@ -146,7 +142,7 @@ views:
             content: >-
               <details>
 
-              <summary><strong>Uitleg</strong></summary><ha-alert
+              <summary><strong>Explanation</strong></summary><ha-alert
               alert-type="warning">Pas op, dit overruled de ControlMode van
               OpenQuatt!</ha-alert>
 
@@ -168,33 +164,32 @@ views:
       - type: grid
         cards:
           - type: heading
-            heading: Thermostaat
+            heading: Thermostat
             heading_style: title
             icon: mdi:home-thermometer
           - type: markdown
             content: >-
               <details>
 
-              <summary><strong>Uitleg</strong></summary>
+              <summary><strong>Explanation</strong></summary>
 
 
-              Geselecteerde kamerregelwaarden:
+              Selected room-control values:
 
-              - `Setpoint`: gevraagde ruimtetemperatuur.
+              - `Setpoint`: requested room temperature.
 
-              - `Huidige temperatuur`: gemeten ruimtetemperatuur.
+              - `Current temperature`: measured room temperature.
 
-              Het verschil tussen deze twee bepaalt hoe sterk de warmtevraag
-              oploopt.
+              The difference between these two determines how strongly heating demand increases.
 
 
               </details>
             text_only: true
           - type: custom:mini-graph-card
-            name: Huidige kamertemperatuur
+            name: Current room temperature
             entities:
               - entity: sensor.openquatt_room_temperature_selected
-                name: Kamertemperatuur
+                name: Room temperature
                 show_legend_state: true
               - entity: sensor.openquatt_room_setpoint_selected
                 name: Setpoint
@@ -220,17 +215,16 @@ views:
             content: >-
               <details>
 
-              <summary><strong>Uitleg</strong></summary>
+              <summary><strong>Explanation</strong></summary>
 
 
-              Dagelijkse instellingen die direct gedrag begrenzen:
+              Daily settings that directly limit behavior:
 
-              - `Silent end/start time`: tijdvenster voor stille modus.
+              - `Silent end/start time`: time window for silent mode.
 
-              - `Day max level`: bovengrens compressorlevel buiten silent-uren.
+              - `Day max level`: maximum compressor level outside silent hours.
 
-              - `Silent max level`: bovengrens compressorlevel tijdens
-              silent-uren.
+              - `Silent max level`: maximum compressor level during silent hours.
 
 
               </details>
@@ -273,25 +267,17 @@ views:
             heading: Performance (12h)
             heading_style: title
           - type: markdown
-            content: >-
+            content: |-
               <details>
+              <summary><strong>Explanation</strong></summary>
 
-              <summary><strong>Uitleg</strong></summary>
+              This chart combines 12-hour trends for:
 
+              - `Power E`: total electrical input power.
+              - `Power H`: total thermal output power.
+              - `COP`: efficiency ratio (`Power H / Power E`).
 
-              Deze grafiek combineert 12-uurs trends voor:
-
-
-              - `Power E`: totaal elektrisch ingangsvermogen.
-
-              - `Power H`: totaal thermisch afgegeven vermogen.
-
-              - `COP`: efficientieverhouding (`Power H / Power E`).
-
-
-              Gebruik dit om te controleren of warmteafgifte het opgenomen
-              vermogen volgt en of COP realistisch blijft.
-
+              Use this to check whether delivered heat follows input power and whether COP stays in a realistic range.
               </details>
             text_only: true
           - type: custom:apexcharts-card
@@ -372,10 +358,10 @@ views:
       card:
         type: markdown
         content: |-
-          <img src="/local/media/openquatt/openquatt_logo.svg" width="300" />
+          <img src="https://raw.githubusercontent.com/jeroen85/OpenQuatt/main/docs/assets/openquatt_logo.svg" width="300" />
 
-          ## <ha-icon icon="mdi:view-dashboard"></ha-icon> Overzicht
-          Snel en praktisch zicht op prestaties, status en bediening.
+          ## <ha-icon icon="mdi:view-dashboard"></ha-icon> Overview
+          Quick and practical view of performance, status, and control.
         text_only: true
       layout: center
       badges_position: top
@@ -392,7 +378,7 @@ views:
         state_content:
           - name
           - state
-  - title: Energie
+  - title: Energy
     path: energy
     icon: mdi:lightning-bolt-circle
     type: sections
@@ -402,174 +388,174 @@ views:
         cards:
           - type: heading
             icon: mdi:gauge
-            heading: Huidig
+            heading: Current
             heading_style: title
           - type: heading
             icon: mdi:heat-pump
-            heading: Warmtepomp
+            heading: Heat pump
             heading_style: subtitle
           - type: entities
             show_header_toggle: false
             entities:
               - entity: sensor.openquatt_total_power_input
-                name: Elektrisch ingangsvermogen
+                name: Electrical input power
               - entity: sensor.openquatt_total_heat_power
-                name: Warmteafgifte
+                name: Heat output power
               - entity: sensor.openquatt_total_cop
-                name: Huidige COP
+                name: Current COP
           - type: heading
             icon: mdi:water-boiler
-            heading: CV-ketel
+            heading: Boiler
             heading_style: subtitle
           - type: entities
             show_header_toggle: false
             entities:
               - entity: sensor.openquatt_boiler_heat_power
-                name: Warmteafgifte
+                name: Heat output power
           - type: heading
             icon: mdi:sigma
-            heading: Systeem
+            heading: System
             heading_style: subtitle
           - type: entities
             show_header_toggle: false
             entities:
               - entity: sensor.openquatt_system_heat_power
-                name: Warmteafgifte
+                name: Heat output power
       - type: grid
         cards:
           - type: heading
             icon: mdi:calendar-today
             heading_style: title
-            heading: Vandaag
-          - &ref_0
-            type: heading
+            heading: Today
+          - type: heading
             icon: mdi:heat-pump
-            heading: Warmtepomp
+            heading: Heat pump
             heading_style: subtitle
           - type: entities
             show_header_toggle: false
             entities:
               - entity: sensor.openquatt_electrical_energy_daily
-                name: Elektriciteit vandaag
+                name: Electricity today
               - entity: sensor.openquatt_heatpump_thermal_energy_daily
-                name: Warmte vandaag
+                name: Heat today
               - entity: sensor.openquatt_heatpump_cop_daily
-                name: COP vandaag
-          - &ref_1
-            type: heading
+                name: COP today
+          - type: heading
             icon: mdi:water-boiler
-            heading: CV-ketel
+            heading: Boiler
             heading_style: subtitle
           - type: entities
             show_header_toggle: false
             entities:
               - entity: sensor.openquatt_boiler_thermal_energy_daily
-                name: Warmte vandaag
-          - &ref_2
-            type: heading
+                name: Heat today
+          - type: heading
             icon: mdi:sigma
-            heading: Systeem
+            heading: System
             heading_style: subtitle
           - type: entities
             show_header_toggle: false
             entities:
               - entity: sensor.openquatt_system_thermal_energy_daily
-                name: Warmte vandaag
+                name: Heat today
       - type: grid
         cards:
           - type: heading
             icon: mdi:sigma
-            heading: Cumulatief
+            heading: Cumulative
             heading_style: title
-          - *ref_0
+          - type: heading
+            icon: mdi:heat-pump
+            heading: Heat pump
+            heading_style: subtitle
           - type: entities
             show_header_toggle: false
             entities:
               - entity: sensor.openquatt_electrical_energy_cumulative
-                name: Elektriciteit cumulatief
+                name: Electricity cumulative
               - entity: sensor.openquatt_heatpump_thermal_energy_cumulative
-                name: Warmte cumulatief
+                name: Heat cumulative
               - entity: sensor.openquatt_heatpump_cop_cumulative
-                name: COP cumulatief
-          - *ref_1
+                name: COP cumulative
+          - type: heading
+            icon: mdi:water-boiler
+            heading: Boiler
+            heading_style: subtitle
           - type: entities
             show_header_toggle: false
             entities:
               - entity: sensor.openquatt_boiler_thermal_energy_cumulative
-                name: Warmte cumulatief
-          - *ref_2
+                name: Heat cumulative
+          - type: heading
+            icon: mdi:sigma
+            heading: System
+            heading_style: subtitle
           - type: entities
             show_header_toggle: false
             entities:
               - entity: sensor.openquatt_system_thermal_energy_cumulative
-                name: Warmte cumulatief
+                name: Heat cumulative
       - type: grid
         cards:
           - type: heading
-            heading: Trends (24 uur)
+            heading: Trends (24h)
             heading_style: title
             icon: mdi:trending-up
           - type: history-graph
-            title: Warmtepomptrends (24 uur)
+            title: Heat pump trends (24h)
             hours_to_show: 24
             refresh_interval: 60
             entities:
               - entity: sensor.openquatt_total_heat_power
-                name: Warmteafgifte
+                name: Heat output power
               - entity: sensor.openquatt_heatpump_cop_daily
-                name: COP vandaag
+                name: COP today
               - entity: sensor.openquatt_heatpump_thermal_energy_daily
-                name: Warmte vandaag
+                name: Heat today
           - type: history-graph
-            title: Keteltrends (24 uur)
+            title: Boiler trends (24h)
             hours_to_show: 24
             refresh_interval: 60
             entities:
               - entity: sensor.openquatt_boiler_heat_power
-                name: Warmteafgifte
+                name: Heat output power
               - entity: sensor.openquatt_boiler_thermal_energy_daily
-                name: Warmte vandaag
+                name: Heat today
           - type: history-graph
-            title: Systeemtrends (24 uur)
+            title: System trends (24h)
             hours_to_show: 24
             refresh_interval: 60
             entities:
               - entity: sensor.openquatt_total_power_input
-                name: Elektrisch ingangsvermogen
+                name: Electrical input power
               - entity: sensor.openquatt_system_heat_power
-                name: Warmteafgifte
+                name: Heat output power
               - entity: sensor.openquatt_system_thermal_energy_daily
-                name: Warmte vandaag
+                name: Heat today
         column_span: 3
       - type: grid
         column_span: 3
         cards:
           - type: heading
             icon: mdi:chart-bar
-            heading: Energietrends (7d/30d)
+            heading: Energy trends (7d/30d)
             heading_style: title
           - type: markdown
-            content: >-
+            content: |-
               <details>
 
+              <summary><strong>Explanation</strong></summary>
 
-              <summary><strong>Uitleg</strong></summary>
-
-
-              Dagaggregatie voor energie:
-
-              - Elektriciteit en warmte als dagelijkse kWh (afgeleid uit
-              cumulatieve sensoren)
-
-              - `COP vandaag` als daggemiddelde
-
+              Daily aggregation for energy:
+              - Electricity and heat as daily kWh (derived from cumulative sensors)
+              - `COP today` as daily average
 
               </details>
             text_only: true
           - type: custom:apexcharts-card
             header:
               show: true
-              title: Energietrends (7 dagen)
+              title: Energy trends (7 days)
               show_states: false
             graph_span: 7d
             update_interval: 120s
@@ -579,7 +565,7 @@ views:
                 decimals: 1
                 apex_config:
                   title:
-                    text: kWh/dag
+                    text: kWh/day
               - id: cop
                 opposite: true
                 min: 0
@@ -588,7 +574,7 @@ views:
                 apex_config:
                   tickAmount: 4
                   title:
-                    text: COP vandaag
+                    text: COP today
             apex_config:
               chart:
                 height: 320
@@ -603,7 +589,7 @@ views:
                 shared: true
             series:
               - entity: sensor.openquatt_electrical_energy_cumulative
-                name: Elektriciteit/dag
+                name: Electricity/day
                 color: '#3B82F6'
                 yaxis_id: energy
                 type: column
@@ -611,7 +597,7 @@ views:
                   func: delta
                   duration: 1d
               - entity: sensor.openquatt_heatpump_thermal_energy_cumulative
-                name: Warmtepomp warmte/dag
+                name: Heat pump heat/day
                 color: '#F59E0B'
                 yaxis_id: energy
                 type: column
@@ -619,7 +605,7 @@ views:
                   func: delta
                   duration: 1d
               - entity: sensor.openquatt_boiler_thermal_energy_cumulative
-                name: Ketelwarmte/dag
+                name: Boiler heat/day
                 color: '#EF4444'
                 yaxis_id: energy
                 type: column
@@ -627,7 +613,7 @@ views:
                   func: delta
                   duration: 1d
               - entity: sensor.openquatt_system_thermal_energy_cumulative
-                name: Systeemwarmte/dag
+                name: System heat/day
                 color: '#10B981'
                 yaxis_id: energy
                 type: line
@@ -635,7 +621,7 @@ views:
                   func: delta
                   duration: 1d
               - entity: sensor.openquatt_heatpump_cop_daily
-                name: COP vandaag
+                name: COP today
                 color: '#A855F7'
                 yaxis_id: cop
                 type: line
@@ -647,7 +633,7 @@ views:
           - type: custom:apexcharts-card
             header:
               show: true
-              title: Energietrends (30 dagen)
+              title: Energy trends (30 days)
               show_states: false
             graph_span: 30d
             update_interval: 300s
@@ -657,7 +643,7 @@ views:
                 decimals: 1
                 apex_config:
                   title:
-                    text: kWh/dag
+                    text: kWh/day
               - id: cop
                 opposite: true
                 min: 0
@@ -666,7 +652,7 @@ views:
                 apex_config:
                   tickAmount: 4
                   title:
-                    text: COP vandaag
+                    text: COP today
             apex_config:
               chart:
                 height: 320
@@ -681,7 +667,7 @@ views:
                 shared: true
             series:
               - entity: sensor.openquatt_electrical_energy_cumulative
-                name: Elektriciteit/dag
+                name: Electricity/day
                 color: '#3B82F6'
                 yaxis_id: energy
                 type: column
@@ -689,7 +675,7 @@ views:
                   func: delta
                   duration: 1d
               - entity: sensor.openquatt_heatpump_thermal_energy_cumulative
-                name: Warmtepomp warmte/dag
+                name: Heat pump heat/day
                 color: '#F59E0B'
                 yaxis_id: energy
                 type: column
@@ -697,7 +683,7 @@ views:
                   func: delta
                   duration: 1d
               - entity: sensor.openquatt_boiler_thermal_energy_cumulative
-                name: Ketelwarmte/dag
+                name: Boiler heat/day
                 color: '#EF4444'
                 yaxis_id: energy
                 type: column
@@ -705,7 +691,7 @@ views:
                   func: delta
                   duration: 1d
               - entity: sensor.openquatt_system_thermal_energy_cumulative
-                name: Systeemwarmte/dag
+                name: System heat/day
                 color: '#10B981'
                 yaxis_id: energy
                 type: line
@@ -713,7 +699,7 @@ views:
                   func: delta
                   duration: 1d
               - entity: sensor.openquatt_heatpump_cop_daily
-                name: COP vandaag
+                name: COP today
                 color: '#A855F7'
                 yaxis_id: cop
                 type: line
@@ -727,10 +713,9 @@ views:
       card:
         type: markdown
         content: >-
-          # <ha-icon icon="mdi:lightning-bolt-circle"></ha-icon> Energie
+          # <ha-icon icon="mdi:lightning-bolt-circle"></ha-icon> Energy
 
-          Energie-overzicht van Warmtepomp, boiler en totaal systeem (dag +
-          cumulatief).
+          Energy overview of heat pump, boiler, and total system (daily + cumulative).
   - title: Flow
     path: flow
     icon: mdi:waves
@@ -748,27 +733,16 @@ views:
             heading: Status
             heading_style: subtitle
           - type: markdown
-            content: >-
+            content: |-
               <details>
+              <summary><strong>Explanation</strong></summary>
 
-              <summary><strong>Uitleg</strong></summary>
+              Flow status at a glance:
 
-
-              Flowstatus in een oogopslag:
-
-
-              - `Flow mode`: actieve werking van de flowregeling.
-
-              - `Control Mode`: actieve supervisory control state.
-
-              - `Low Flow alarm`: beveiligingsalarm bij te lage flow.
-
-              - `Flow (average)`: geselecteerde gemiddelde flow voor
-              regeling/beveiliging.
-
-              - `Flow Mismatch`: signaleert hydraulische onbalans tussen HP1 en
-              HP2.
-
+              - `Flow mode`: active flow-control behavior.
+              - `Control Mode`: active supervisory control state.
+              - `Low Flow alarm`: safety alarm for insufficient flow.
+              - `Flow (average)`: selected average flow used in control/safety.
               </details>
             text_only: true
           - type: tile
@@ -794,32 +768,20 @@ views:
             name: Flow (average)
             vertical: false
             features_position: bottom
-          - type: tile
-            entity: binary_sensor.openquatt_flow_mismatch_hp1_vs_hp2
-            name: Flow Mismatch
-            vertical: false
-            features_position: bottom
           - type: heading
             icon: ''
             heading: Control
             heading_style: subtitle
           - type: markdown
-            content: >-
+            content: |-
               <details>
+              <summary><strong>Explanation</strong></summary>
 
-              <summary><strong>Uitleg</strong></summary>
+              Main flow-control settings:
 
-
-              Belangrijkste flow-regelinstellingen:
-
-
-              - `Flow control mode`: kies automatische flowregeling of
-              handmatige werking.
-
-              - `Flow setpoint`: doel-flow in L/h voor automatische regeling.
-
-              - `Manual iPWM`: stel iPWM waarde in voor handbediening.
-
+              - `Flow control mode`: choose automatic flow control or manual behavior.
+              - `Flow setpoint`: target flow in L/h for automatic control.
+              - `Manual iPWM`: set iPWM value for manual control.
               </details>
             text_only: true
           - type: tile
@@ -861,18 +823,19 @@ views:
             content: |-
               <details>
 
-              <summary><strong>Uitleg</strong></summary>
+              <summary><strong>Explanation</strong></summary>
 
-              - `Flowmetingen` vergelijkt actuele flow met setpoint over tijd.
+              - `Flow measurements` compares actual flow versus setpoint over
+              time.
 
-              - `Pompsturing` toont iPWM-uitsturing van HP1 en HP2.
+              - `Pump control` shows iPWM command output for HP1.
 
               </details>
             text_only: true
             grid_options:
               columns: full
           - type: history-graph
-            title: Flowmetingen (4 uur)
+            title: Flow measurements (4h)
             hours_to_show: 4
             refresh_interval: 30
             entities:
@@ -883,14 +846,12 @@ views:
             grid_options:
               columns: full
           - type: history-graph
-            title: Pompsturing (4 uur)
+            title: Pump control (4h)
             hours_to_show: 4
             refresh_interval: 30
             entities:
               - entity: number.openquatt_hp1_set_pump_speed
                 name: HP1 iPWM
-              - entity: number.openquatt_hp2_set_pump_speed
-                name: HP2 iPWM
             grid_options:
               columns: full
         column_span: 2
@@ -900,13 +861,13 @@ views:
         type: markdown
         content: |-
           # <ha-icon icon="mdi:waves"></ha-icon> Flow
-          Bediening, status en trends van flowregeling en pompsturing.
+          Control, status, and trends for flow and pump behavior.
       layout: center
       badges_position: bottom
       badges_wrap: wrap
     badges: []
-  - title: Warmtecontrol
-    path: warmtecontrol
+  - title: Heat control
+    path: heat-control
     icon: mdi:radiator
     type: sections
     max_columns: 3
@@ -915,33 +876,23 @@ views:
         cards:
           - type: heading
             icon: mdi:radiator
-            heading: Warmtecontrol status
+            heading: Heat control status
             heading_style: title
           - type: heading
             icon: mdi:tune-variant
-            heading: Regelinstellingen
+            heading: Control settings
             heading_style: subtitle
           - type: markdown
-            content: >-
+            content: |-
               <details>
+              <summary><strong>Explanation</strong></summary>
 
-              <summary><strong>Uitleg</strong></summary>
-
-
-              - `Regelmodus`: kiest welke strategie de warmtevraag opbouwt
-              (bijv. Stooklijn of Power House).
-
-              - Bij stooklijnregeling verschijnt ook `Heating Curve Control
-              Profile` voor de ingebouwde regelkarakteristiek.
-
-              - Controleer daarna bij `Kern KPI` hoe dit doorwerkt in `P_req`,
-              `P_house` en `Tekort`.
-
+              - `Heating mode`: selects which strategy drives heat demand generation (for example Heating Curve or Power House).
               </details>
             text_only: true
           - type: tile
             entity: select.openquatt_heating_control_mode
-            name: Regelmodus
+            name: Heating mode
             hide_state: true
             vertical: false
             features:
@@ -963,35 +914,19 @@ views:
             features_position: inline
           - type: heading
             icon: mdi:view-dashboard-outline
-            heading: Kern KPI
+            heading: Core KPIs
             heading_style: subtitle
           - type: markdown
-            content: >-
+            content: |-
               <details>
+              <summary><strong>Explanation</strong></summary>
 
-              <summary><strong>Uitleg</strong></summary>
+              Core heat-balance indicators:
 
-
-              Kernindicatoren voor warmtebalans:
-
-
-              - Vergelijk `P_req` (gevraagd vermogen) met `P_house`
-              (modelschatting).
-
-              - `P_req`: gevraagde verwarmingspower na filtering/ramp-limiet.
-
-              - `P_house`: gemodelleerde warmtevraag van de woning.
-
-              - `Max HP capaciteit`: geschatte beschikbare warmtepompcapaciteit.
-
-              - `Tekort`: positieve waarde betekent dat vraag boven
-              beschikbare/geleverde warmte ligt.
-
-              - Richtlijn: bij `Tekort > 0 W` vraagt het systeem meer dan nu
-              geleverd wordt.
-
-              - Gebruik `Trends` voor het gedrag over tijd.
-
+              - `P_req`: requested heating power after smoothing/ramp limits.
+              - `P_house`: modeled house heat demand.
+              - `Max HP capacity`: estimated available HP heating capacity.
+              - `Deficit`: positive value means demand is above available/delivered heat.
               </details>
             text_only: true
           - square: false
@@ -1013,13 +948,13 @@ views:
                   type: entity
               - type: gauge
                 entity: sensor.openquatt_hp_capacity_w
-                name: Max HP capaciteit
+                name: Max HP capacity
                 min: 0
                 max: 12000
                 needle: true
               - type: gauge
                 entity: sensor.openquatt_hp_deficit_w
-                name: Tekort
+                name: Deficit
                 min: 0
                 max: 8000
                 needle: true
@@ -1035,29 +970,21 @@ views:
             heading: Trends
             heading_style: title
           - type: markdown
-            content: >-
+            content: |-
               <details>
 
+              <summary><strong>Explanation</strong></summary>
 
-              <summary><strong>Uitleg</strong></summary>
-
-
-              - `Warmtevraag` vergelijkt gevraagde (`P_req`) met geleverde
-              warmte.
-
-              - `HP powerinput` en `HP heat output` tonen elektrisch in versus
-              thermisch uit.
-
-              - `Temperatuurregeling` toont buiten-, supply- en kamertemperatuur
-              tegen targets.
-
+              - `Heat demand` compares requested (`P_req`) versus delivered heat.
+              - `HP input` and `HP output` show electrical input versus thermal output.
+              - `Temperature control` shows outside, supply, and room temperatures against targets.
 
               </details>
             text_only: true
             grid_options:
               columns: full
           - type: history-graph
-            title: Warmtevraag (24 uur)
+            title: Heat demand (24h)
             hours_to_show: 24
             refresh_interval: 30
             entities:
@@ -1068,42 +995,38 @@ views:
             grid_options:
               columns: full
           - type: history-graph
-            title: HP powerinput (24 uur)
+            title: HP power input (24h)
             hours_to_show: 24
             refresh_interval: 30
             entities:
               - entity: sensor.openquatt_hp1_power_input
                 name: HP1 powerinput
-              - entity: sensor.openquatt_hp2_power_input
-                name: HP2 powerinput
             grid_options:
               columns: full
           - type: history-graph
-            title: HP heat output (24 uur)
+            title: HP heat output (24h)
             hours_to_show: 24
             refresh_interval: 30
             entities:
               - entity: sensor.openquatt_hp1_heat_power
                 name: HP1 heating power
-              - entity: sensor.openquatt_hp2_heat_power
-                name: HP2 heating power
             grid_options:
               columns: full
           - type: history-graph
-            title: Temperatuurregeling (24 uur)
+            title: Temperature control (24h)
             hours_to_show: 24
             refresh_interval: 30
             entities:
               - entity: sensor.openquatt_outside_temperature_selected
-                name: Buiten
+                name: Outside
               - entity: sensor.openquatt_water_supply_temp_selected
-                name: Supply systeem
+                name: System supply
               - entity: sensor.openquatt_heating_curve_supply_target
                 name: Supply target
               - entity: sensor.openquatt_room_temperature_selected
-                name: Kamer temp
+                name: Room temp
               - entity: sensor.openquatt_room_setpoint_selected
-                name: Kamer setpoint
+                name: Room setpoint
             grid_options:
               columns: full
         column_span: 2
@@ -1112,10 +1035,10 @@ views:
       card:
         type: markdown
         content: |-
-          # <ha-icon icon="mdi:radiator"></ha-icon> Warmtecontrol
-          Warmtevraag, heat allocation en compressorbelasting.
-  - title: HPs
-    path: HPs
+          # <ha-icon icon="mdi:radiator"></ha-icon> Heat control
+          Heat demand, heat allocation, and compressor loading.
+  - title: HP1
+    path: hp1
     icon: mdi:heat-pump-outline
     type: sections
     sections:
@@ -1127,7 +1050,7 @@ views:
             cards:
               - type: picture-elements
                 title: Quatt HP1
-                image: /local/media/quatt_dashboard/Quatt.png
+                image: https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Quatt.png
                 elements:
                   - type: image
                     style:
@@ -1136,10 +1059,10 @@ views:
                       transform: translate(0,0)
                     entity: binary_sensor.openquatt_hp1_4_way_valve
                     state_image:
-                      'on': /local/media/quatt_dashboard/Cool.png
-                      'off': /local/media/quatt_dashboard/Heat.png
-                      unknown: /local/media/quatt_dashboard/Heat.png
-                      unavailable: /local/media/quatt_dashboard/Heat.png
+                      'on': https://raw.githubusercontent.com/jeroen85/OpenQuatt/main/docs/dashboard/heatpump/Cool.png
+                      'off': https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Heat.png
+                      unknown: https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Heat.png
+                      unavailable: https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Heat.png
                     tap_action:
                       action: none
                     hold_action:
@@ -1319,7 +1242,7 @@ views:
             columns: 1
             cards:
               - type: entities
-                title: HP1 kernwaarden
+                title: HP1 key values
                 show_header_toggle: false
                 entities:
                   - entity: sensor.openquatt_hp1_working_mode
@@ -1352,253 +1275,17 @@ views:
               columns: 12
               rows: auto
         column_span: 1
-      - type: grid
-        cards:
-          - square: false
-            type: grid
-            columns: 1
-            cards:
-              - type: picture-elements
-                title: Quatt HP2
-                image: /local/media/quatt_dashboard/Quatt.png
-                elements:
-                  - type: image
-                    style:
-                      left: 0%
-                      top: 0%
-                      transform: translate(0,0)
-                    entity: binary_sensor.openquatt_hp2_4_way_valve
-                    state_image:
-                      'on': /local/media/quatt_dashboard/Cool.png
-                      'off': /local/media/quatt_dashboard/Heat.png
-                      unknown: /local/media/quatt_dashboard/Heat.png
-                      unavailable: /local/media/quatt_dashboard/Heat.png
-                    tap_action:
-                      action: none
-                    hold_action:
-                      action: none
-                  - type: state-label
-                    entity: sensor.openquatt_hp2_outside_temperature
-                    style:
-                      top: 3%
-                      left: 8%
-                      font-weight: bold
-                      color: black
-                      font-size: 0.75em
-                      transform: none
-                    prefix: 'Outside: '
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_gas_discharge_temperature
-                    style:
-                      top: 22%
-                      left: 58%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_inner_coil_temperature
-                    style:
-                      top: 70%
-                      left: 60%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_eev_steps
-                    style:
-                      top: 70%
-                      left: 42%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_gas_return_temperature
-                    style:
-                      top: 22%
-                      left: 26%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_evaporating_temperature
-                    style:
-                      top: 70%
-                      left: 25%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_evaporator_coil_temperature
-                    style:
-                      top: 58%
-                      left: 6%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_condenser_pressure
-                    style:
-                      top: 11%
-                      left: 55%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_evaporator_pressure
-                    style:
-                      top: 11%
-                      left: 30%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_fan_speed
-                    style:
-                      top: 53%
-                      left: 25%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_compressor_frequency
-                    style:
-                      top: 18%
-                      left: 40%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_water_out_temperature
-                    style:
-                      top: 43%
-                      left: 92%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_water_in_temperature
-                    style:
-                      top: 63%
-                      left: 92%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-badge
-                    entity: sensor.openquatt_hp2_flow
-                    style:
-                      top: 76%
-                      left: 81%
-                      font-weight: bold
-                      color: rgba(0,0,0,0)
-                      transform: none
-                      font-size: 0.65em
-                  - type: state-label
-                    entity: sensor.openquatt_hp2_working_mode
-                    style:
-                      top: 8%
-                      left: 8%
-                      font-weight: bold
-                      color: white
-                      font-size: 0.75em
-                      transform: none
-                    prefix: 'Mode: '
-                  - type: state-label
-                    entity: sensor.openquatt_hp2_power_input
-                    style:
-                      top: 11%
-                      left: 8%
-                      font-weight: bold
-                      color: white
-                      font-size: 0.75em
-                      transform: none
-                    prefix: 'Power In: '
-                  - type: state-label
-                    entity: sensor.openquatt_hp2_heat_power
-                    style:
-                      top: 14%
-                      left: 8%
-                      font-weight: bold
-                      color: white
-                      font-size: 0.75em
-                      transform: none
-                    prefix: 'Power Out: '
-                  - type: state-label
-                    entity: sensor.openquatt_hp2_cop
-                    style:
-                      top: 17%
-                      left: 8%
-                      font-weight: bold
-                      color: white
-                      font-size: 0.75em
-                      transform: none
-                    prefix: 'COP: '
-            grid_options:
-              columns: 12
-              rows: auto
-          - square: false
-            type: grid
-            columns: 1
-            cards:
-              - type: entities
-                title: HP2 kernwaarden
-                show_header_toggle: false
-                entities:
-                  - entity: sensor.openquatt_hp2_working_mode
-                    name: Work mode
-                  - entity: sensor.openquatt_hp2_compressor_level
-                    name: Compressor level
-                  - entity: sensor.openquatt_hp2_compressor_frequency_demand
-                    name: Demand Frequency
-                  - entity: sensor.openquatt_hp2_compressor_frequency
-                    name: Actual Frequency
-                  - entity: sensor.openquatt_hp2_active_failures_list
-                    name: Active failures list
-                  - entity: sensor.openquatt_hp2_power_input
-                    name: Power input
-                  - entity: sensor.openquatt_hp2_heat_power
-                    name: Heat power
-                  - entity: sensor.openquatt_hp2_cop
-                    name: COP
-                  - entity: sensor.openquatt_hp2_flow
-                    name: Flow
-                  - entity: sensor.openquatt_hp2_water_in_temperature
-                    name: Water in temp
-                  - entity: sensor.openquatt_hp2_water_out_temperature
-                    name: Water out temp
-                  - entity: binary_sensor.openquatt_hp2_defrost
-                    name: Defrost
-                  - entity: binary_sensor.openquatt_hp2_4_way_valve
-                    name: 4-way valve
-            grid_options:
-              columns: 12
-              rows: auto
-        column_span: 1
-    max_columns: 4
+    max_columns: 2
     header:
       card:
         type: markdown
         content: >-
-          # <ha-icon icon="mdi:heat-pump-outline"></ha-icon> Overview HP1&HP2
+          # <ha-icon icon="mdi:heat-pump-outline"></ha-icon> Overview HP1
 
-          Deze tab toont per HP een technische momentopname van
-          koudemiddel/waterzijde. Gebruik dit vooral voor diagnose en
-          vergelijking tussen HP1 en HP2.
+          This tab shows a technical snapshot of HP1 refrigerant/water-side behavior. Use it mainly for diagnostics.
 
-          Voor instellingen: gebruik `Flow`, `Warmtecontrol` en `Advanced
-          settings`.
-  - title: Sensorconfiguratie
+          For settings, use `Flow`, `Heat control`, and `Advanced settings`.
+  - title: Sensor Configuration
     path: sensor-configuration
     icon: mdi:source-branch
     type: sections
@@ -1608,30 +1295,28 @@ views:
         cards:
           - type: heading
             icon: mdi:source-branch
-            heading: Sensorselectie
+            heading: Sensor selection
             heading_style: title
           - type: markdown
             content: |-
               <details>
-              <summary><strong>Uitleg</strong></summary>
+              <summary><strong>Explanation</strong></summary>
 
-              Kies per signaal de bron die OpenQuatt gebruikt.
-              De `Geselecteerde` waarde hoort de gekozen bron direct te volgen.
+              Select which source OpenQuatt should use per signal.
+              The `Selected` value should directly follow the chosen source.
 
-              Gebruik dit blok voor:
-              - bronkeuze tijdens tuning
-              - snelle vergelijking tussen CIC, lokaal en HA input
-              - validatie van de effectieve regelinput
+              Use this block for:
+              - source selection during tuning
+              - quick comparison between CIC, local, and HA Input
+              - validation of the effective control input
 
               </details>
             text_only: true
-            grid_options:
-              columns: full
           - type: vertical-stack
             cards:
               - type: heading
                 icon: mdi:home-thermometer
-                heading: Ruimtetemperatuur bronnen
+                heading: Room temperature sources
                 heading_style: subtitle
                 grid_options:
                   columns: 12
@@ -1640,18 +1325,18 @@ views:
                 show_header_toggle: false
                 entities:
                   - entity: select.openquatt_room_temperature_source
-                    name: Ruimtetemperatuur bron
+                    name: Room temperature source
                   - entity: sensor.openquatt_room_temperature_selected
-                    name: Geselecteerde kamertemperatuur
+                    name: Selected room temperature
                   - entity: sensor.openquatt_cic_ot_room_temperature
-                    name: Kamertemperatuur (CIC OT)
+                    name: Room temperature (CIC OT)
                   - entity: sensor.openquatt_ha_thermostat_room_temperature
-                    name: Kamertemperatuur (HA-invoer)
+                    name: Room temperature (HA Input)
           - type: vertical-stack
             cards:
               - type: heading
                 icon: mdi:water-thermometer
-                heading: Aanvoertemperatuur bronnen
+                heading: Water supply temperature sources
                 heading_style: subtitle
                 grid_options:
                   columns: 12
@@ -1660,18 +1345,18 @@ views:
                 show_header_toggle: false
                 entities:
                   - entity: select.openquatt_water_supply_source
-                    name: Aanvoertemperatuur bron
+                    name: Water supply temperature source
                   - entity: sensor.openquatt_water_supply_temp_selected
-                    name: Geselecteerde aanvoertemperatuur
+                    name: Selected water supply temperature
                   - entity: sensor.openquatt_water_supply_temp
-                    name: Aanvoertemperatuur (ESP)
+                    name: Water supply temperature (ESP)
                   - entity: sensor.openquatt_cic_water_supply_temp
-                    name: Aanvoertemperatuur (CIC)
+                    name: Water supply temperature (CIC)
           - type: vertical-stack
             cards:
               - type: heading
                 icon: mdi:waves
-                heading: Flow bronnen
+                heading: Flow sources
                 heading_style: subtitle
                 grid_options:
                   columns: 12
@@ -1680,18 +1365,18 @@ views:
                 show_header_toggle: false
                 entities:
                   - entity: select.openquatt_flow_source
-                    name: Flow bron
+                    name: Flow source
                   - entity: sensor.openquatt_flow_average_selected
-                    name: Geselecteerde flow
+                    name: Selected flow rate
                   - entity: sensor.openquatt_flow_average_local
-                    name: Flow (buitenunit)
+                    name: Flow rate (Outdoor unit)
                   - entity: sensor.openquatt_cic_flowrate_filtered
-                    name: Flow (CIC)
+                    name: Flow rate (CIC)
           - type: vertical-stack
             cards:
               - type: heading
                 icon: mdi:thermometer
-                heading: Buitentemperatuur bronnen
+                heading: Outside temperature sources
                 heading_style: subtitle
                 grid_options:
                   columns: 12
@@ -1700,18 +1385,18 @@ views:
                 show_header_toggle: false
                 entities:
                   - entity: select.openquatt_outside_temperature_source
-                    name: Buitentemperatuur bron
+                    name: Outside temperature source
                   - entity: sensor.openquatt_outside_temperature_selected
-                    name: Geselecteerde buitentemperatuur
+                    name: Selected outside temperature
                   - entity: sensor.openquatt_outside_temperature_local_aggregated
-                    name: Buitentemperatuur (buitenunit)
+                    name: Outside temperature (Outdoor unit)
                   - entity: sensor.openquatt_ha_outside_temperature
-                    name: Buitentemperatuur (HA-invoer)
+                    name: Outside temperature (HA Input)
           - type: vertical-stack
             cards:
               - type: heading
                 icon: mdi:thermostat
-                heading: Kamer setpoint bronnen
+                heading: Room setpoint sources
                 heading_style: subtitle
                 grid_options:
                   columns: 12
@@ -1720,117 +1405,107 @@ views:
                 show_header_toggle: false
                 entities:
                   - entity: select.openquatt_room_setpoint_source
-                    name: Kamer setpoint bron
+                    name: Room setpoint source
                   - entity: sensor.openquatt_room_setpoint_selected
-                    name: Geselecteerd kamer setpoint
+                    name: Selected room setpoint
                   - entity: sensor.openquatt_cic_ot_room_setpoint
-                    name: Kamer setpoint (CIC OT)
+                    name: Room setpoint (CIC OT)
                   - entity: sensor.openquatt_ha_thermostat_setpoint
-                    name: Kamer setpoint (HA-invoer)
+                    name: Room setpoint (HA Input)
         column_span: 3
       - type: grid
         cards:
           - type: heading
             icon: mdi:home-assistant
-            heading: Home Assistant input configuration
+            heading: Home Assistant source configuration
             heading_style: title
           - type: vertical-stack
             cards:
               - type: heading
                 icon: mdi:form-textbox
-                heading: Dynamische bronselectors
+                heading: Dynamic source selectors
                 heading_style: subtitle
               - type: markdown
                 content: |-
                   <details>
-                  <summary><strong>Uitleg</strong></summary>
+                  <summary><strong>Explanation</strong></summary>
 
-                  Vul hier de entity IDs in van de bronnen die de OpenQuatt HA
-                  proxy-sensoren moeten voeden.
+                  Enter the entity IDs for the sources that must feed the OpenQuatt HA
+                  proxy sensors.
 
-                  Voorbeelden:
+                  Example values:
                   - `sensor.outdoor_temperature`
                   - `sensor.thermostat_setpoint`
                   - `sensor.thermostat_room_temperature`
-                  - `climate.woonkamer | current_temperature`
+                  - `climate.living_room | current_temperature`
 
-                  Optioneel attribuutformaat:
+                  Optional attribute format:
                   - `entity_id|attribute_name`
-                  Spaties rond `|` worden genegeerd.
+                  Spaces around `|` are ignored.
 
-                  Is een bron ongeldig, dan wordt de proxywaarde `Unavailable`.
+                  If a source is invalid, the proxy value becomes `Unavailable`.
                   </details>
                 text_only: true
               - type: entities
                 show_header_toggle: false
                 entities:
                   - entity: input_text.openquatt_source_outdoor_temperature
-                    name: Bronentity buitentemperatuur
+                    name: Outside source entity
                   - entity: input_text.openquatt_source_room_setpoint
-                    name: Bronentity setpoint
+                    name: Setpoint source entity
                   - entity: input_text.openquatt_source_room_temperature
-                    name: Bronentity ruimtetemperatuur
+                    name: Room temperature source entity
           - type: vertical-stack
             cards:
               - type: heading
                 icon: mdi:database-arrow-right
-                heading: HA proxywaarden en validiteit
+                heading: HA proxy values and validity
                 heading_style: subtitle
               - type: markdown
-                content: >-
+                content: |-
                   <details>
+                  <summary><strong>Explanation</strong></summary>
 
-                  <summary><strong>Uitleg</strong></summary>
+                  These are the stable HA proxy entities used as the contract towards
+                  OpenQuatt.
 
-
-                  Dit zijn de stabiele HA proxy-entities die als contract naar
-
-                  OpenQuatt dienen.
-
-
-                  De status `Valid` hoort voor alle drie signalen op `on` te
-                  staan.
-
-                  Als `Valid` op `off` staat, is de huidige bron niet numeriek.
-
-                  Dan wordt de proxywaarde `Unavailable` totdat de bron weer
-                  geldig
-
-                  is.
-
+                  `Valid` should be `on` for all three signals.
+                  If `Valid` is `off`, the current source is not numeric.
+                  In that case the proxy value is `Unavailable` until the source
+                  becomes valid again.
                   </details>
                 text_only: true
               - type: entities
                 show_header_toggle: false
                 entities:
                   - entity: sensor.openquatt_ext_outdoor_temperature
-                    name: Proxy buitentemperatuur
+                    name: Proxy outside temperature
                   - entity: binary_sensor.openquatt_ext_outdoor_temperature_valid
-                    name: Buitentemperatuur bron valid
+                    name: Outside temperature source valid
                   - entity: sensor.openquatt_ext_room_setpoint
-                    name: Proxy kamer setpoint
+                    name: Proxy room setpoint
                   - entity: binary_sensor.openquatt_ext_room_setpoint_valid
-                    name: Setpoint bron valid
+                    name: Setpoint source valid
                   - entity: sensor.openquatt_ext_room_temperature
-                    name: Proxy ruimtetemperatuur
+                    name: Proxy room temperature
                   - entity: binary_sensor.openquatt_ext_room_temperature_valid
-                    name: Ruimtetemperatuur bron valid
+                    name: Room temperature source valid
           - type: vertical-stack
             cards:
               - type: heading
                 icon: mdi:chip
-                heading: OpenQuatt HA-invoerwaarden
+                heading: OpenQuatt HA input signals
                 heading_style: subtitle
               - type: markdown
                 content: |-
                   <details>
-                  <summary><strong>Uitleg</strong></summary>
+                  <summary><strong>Explanation</strong></summary>
 
-                  Dit zijn de drie HA-invoerwaarden zoals OpenQuatt ze ontvangt.
-                  Deze horen de proxywaarden uit het middelste blok te volgen.
+                  These are the three HA input signals as received by OpenQuatt.
+                  They should follow the proxy values shown in the middle panel.
 
-                  Blijft een waarde op `Unknown`, controleer dan eerst of de
-                  bijbehorende `... bron valid` op `on` staat.
+                  If a value stays `Unknown`, first check whether the matching
+                  `... source valid` sensor is `on`.
 
                   </details>
                 text_only: true
@@ -1853,13 +1528,13 @@ views:
           - type: markdown
             content: |-
               <details>
-              <summary><strong>Uitleg</strong></summary>
+              <summary><strong>Explanation</strong></summary>
 
-              Dit blok toont de status van de CiC-feed.
-              Als de feed niet OK is of data stale wordt, kunnen CIC-bronnen
-              onbruikbaar worden voor de geselecteerde signalen.
+              This block shows CiC feed health.
+              If feed health degrades or data becomes stale, CIC-backed sources
+              may become unusable for selected signals.
 
-              Controleer bij afwijkingen:
+              Check these first when values look wrong:
               - `JSON feed OK`
               - `Data stale`
               - `Last success age`
@@ -1885,14 +1560,11 @@ views:
     header:
       card:
         type: markdown
-        content: >-
-          # <ha-icon icon="mdi:source-branch"></ha-icon> Sensorconfiguratie
+        content: |-
+          # <ha-icon icon="mdi:source-branch"></ha-icon> Sensor configuration
 
-
-          Configureer bronkeuze en bronkoppeling, en verifieer daarna per
-          signaal
-
-          de geselecteerde waarde en bronstatus.
+          Configure source selection and source mapping, then verify per signal
+          the selected value and source status.
     top_margin: false
     dense_section_placement: false
   - title: Tuning
@@ -1911,15 +1583,14 @@ views:
             content: >-
               <details>
 
-              <summary><strong>Uitleg parameters</strong></summary>
+              <summary><strong>Parameter explanation</strong></summary>
 
 
-              - **Day max level / Silent max level** begrenzen het maximale
-              compressorlevel in normale of stille uren.
+              - **Day max level / Silent max level** limit the maximum
+              compressor level during normal or silent hours.
 
-              - **Silent start/end time** definieert het tijdvenster waarin de
-              silent-begrenzing actief is.
-
+              - **Silent start/end time** defines the time window in which the
+              silent cap is active.
 
               </details>
             text_only: true
@@ -1944,49 +1615,47 @@ views:
             content: >-
               <details>
 
-              <summary><strong>Uitleg parameters</strong></summary>
+              <summary><strong>Parameter explanation</strong></summary>
 
 
-              - **House cold temp** en **Rated maximum house power (Pr)**
-              bepalen samen de schaal van de warmtevraag bij koude condities.
+              - **House cold temp** and **Rated maximum house power (Pr)**
+              together define heat-demand scale at cold conditions.
 
-              - **Maximum heating outdoor temperature** is het punt waar
-              modelmatig de warmtevraag naar ~0 gaat.
+              - **Maximum heating outdoor temperature** is the point where model
+              heat demand approaches ~0.
 
-              - **Power House Kp** bepaalt hoe sterk kamertemperatuurfout naar
-              warmtevraag (W) wordt vertaald.
+              - **Power House Kp** defines how strongly room temperature error
+              is translated into heat demand (W).
 
-              - **Deadband** voorkomt onrust bij kleine afwijkingen.
+              - **Deadband** suppresses tiny corrections and reduces hunting.
 
               - `Effective room target = setpoint + comfort bias`.
 
-              - **Comfort bias base** is de minimale verschuiving omhoog en is
-              dus altijd actief. Bij `0.1` stuurt de regelaar minimaal op
-              `setpoint + 0.1`.
+              - **Comfort bias base** is the minimum upward shift and is always
+              active. With `0.1`, control never targets below `setpoint + 0.1`.
 
-              - **Comfort bias max** is de maximale verschuiving omhoog en ook
-              de bovencap voor de warme correctierand: `setpoint + bias max`.
+              - **Comfort bias max** is the maximum upward shift and also the
+              warm-side correction cap anchor: `setpoint + bias max`.
 
-              - **Comfort above setpoint** is extra marge boven `effective
-              target` voordat warme tegensturing begint, maar alleen tot de
-              bovencap hierboven.
+              - **Comfort above setpoint** is extra warm margin above
+              `effective target` before negative correction starts, but only up
+              to the cap above.
 
-              - **Comfort below setpoint** bepaalt de marge onder `effective
-              target` voordat extra opwarming begint.
+              - **Comfort below setpoint** is the cold-side margin below
+              `effective target` before extra heating correction starts.
 
-              - Warme randformule: `Tr_high = min(effective_target +
-              comfort_above, setpoint + bias_max)`.
+              - Warm-side edge:
+              `Tr_high = min(effective_target + comfort_above, setpoint + bias_max)`.
 
-              - Voorbeeld: setpoint `20.0`, base `0.1`, max `0.4`, above `0.5`
-              geeft een maximale warme rand van `20.4`. Vind je het te warm:
-              verlaag eerst `comfort above`, daarna `bias base` (eventueel naar
-              `0.0`) en/of `bias max`.
+              - Example: setpoint `20.0`, base `0.1`, max `0.4`, above `0.5`
+              yields a maximum warm edge of `20.4`. If this is too warm:
+              lower `comfort above`, then `bias base` (possibly `0.0`), and if
+              needed lower `bias max`.
 
-              - **Comfort bias up/down** en **room error avg tau** bepalen hoe
-              snel de bias zich over de tijd aanpast.
+              - **Comfort bias up/down** and **room error avg tau** control
+              how quickly bias adapts over time.
 
-              - **Ramp up/down** begrenzen stijg-/daalsnelheid van gevraagde
-              warmte.
+              - **Ramp up/down** limit rise/fall rate of requested heat.
 
               </details>
             text_only: true
@@ -2025,32 +1694,31 @@ views:
         cards:
           - type: heading
             icon: mdi:chart-bell-curve
-            heading: Stooklijnregeling
+            heading: Heating curve control
             heading_style: title
           - type: markdown
             content: >-
               <details>
 
-              <summary><strong>Uitleg parameters</strong></summary>
+              <summary><strong>Parameter explanation</strong></summary>
 
 
-              - De **curve Tsupply**-punten vormen de stooklijn: gewenste
-              aanvoertemperatuur bij verschillende buitentemperaturen.
+              - **Curve Tsupply** points form the heating curve: desired supply
+              temperature for different outdoor temperatures.
 
-              - Pas eerst de curvepunten aan voor het juiste basiscomfort,
-              daarna pas PID finetunen.
+              - First tune curve points for baseline comfort, then fine-tune PID.
 
-              - **Fallback Tsupply** wordt gebruikt als buitentemperatuur
-              tijdelijk ontbreekt.
+              - **Fallback Tsupply** is used when outdoor temperature is
+              temporarily unavailable.
 
-              - `Heating Curve Control Profile` kiest het ingebouwde regelgedrag
-              voor stabiliteit (o.a. smoothing/hysterese).
+              - `Heating Curve Control Profile` selects the built-in control
+              behavior for stability (including smoothing/hysteresis behavior).
 
-              - **PID Kp/Ki/Kd** bepaalt de correctie op de
-              systeem-aanvoertemperatuur:
-                - Kp te hoog: snelle maar nerveuze reactie.
-                - Ki te hoog: traag pendelen/overshoot.
-                - Kd meestal laag houden in trage hydraulische systemen.
+              - **PID Kp/Ki/Kd** defines correction on system supply
+              temperature:
+                - Kp too high: fast but nervous response.
+                - Ki too high: slow oscillation/overshoot.
+                - Keep Kd low in slow hydraulic systems.
 
               </details>
             text_only: true
@@ -2090,32 +1758,16 @@ views:
             content: >-
               <details>
 
-              <summary><strong>Uitleg parameters</strong></summary>
+              <summary><strong>Parameter explanation</strong></summary>
 
 
-              - **Minimum runtime** voorkomt kortcyclen en overmatig
-              start/stop-gedrag.
+              - **Minimum runtime** prevents short-cycling and excessive
+              start/stop behavior.
 
-              - **Demand filter ramp up** bepaalt met hoeveel demand-stappen per
-              minuut `Demand filtered` maximaal mag stijgen richting `Demand
-              raw` in Power House mode.
+              - **Demand filter ramp up** controls how many demand steps per
+              minute `Demand filtered` may rise toward `Demand raw` in Power
+              House mode.
 
-              - In heating-curve mode wordt PID-demand direct doorgezet; de
-              allocatie is single-HP-first met dual-enable hysterese en
-              sequentiële levelstappen.
-
-              - **Dual HP enable level (lvl)** bepaalt bij welk aanhoudend
-              single-HP compressorlevel een tweede HP mag worden geactiveerd.
-
-              - Disable-level wordt intern afgeleid als `enable - 1` om het
-              aantal instellingen beperkt te houden.
-
-              - **Enable/disable hold** voegt tijdhysterese toe om op en neer
-              schakelen te dempen.
-
-              - Lager enable-level of kortere enable-hold = sneller 2 HP actief.
-
-              - Hogere disable-hold = langer dual-HP actief.
 
 
               </details>
@@ -2127,12 +1779,6 @@ views:
                 name: Minimum runtime
               - entity: number.openquatt_demand_filter_ramp_up
                 name: Demand filter ramp up
-              - entity: number.openquatt_dual_hp_enable_level
-                name: Dual HP enable level
-              - entity: number.openquatt_dual_hp_enable_hold
-                name: Dual HP enable hold
-              - entity: number.openquatt_dual_hp_disable_hold
-                name: Dual HP disable hold
       - type: grid
         cards:
           - type: heading
@@ -2143,19 +1789,18 @@ views:
             content: >-
               <details>
 
-              <summary><strong>Uitleg parameters</strong></summary>
+              <summary><strong>Parameter explanation</strong></summary>
 
 
-              - **Auto start iPWM** is een fallback startwaarde; AUTO gebruikt
-              eerst de onthouden **last good iPWM** als die geldig is.
+              - **Auto start iPWM** is fallback start command; AUTO first uses remembered **last good iPWM** when valid.
 
-              - **CM98 iPWM** is de circulatiesetting voor anti-freeze context.
+              - **CM98 iPWM** is the circulation setting for anti-freeze context.
 
-              - **Flow PI Kp/Ki** bepaalt de dynamiek van flowregeling; wijzig
-              in kleine stappen.
+              - **Flow PI Kp/Ki** defines flow-control dynamics; adjust in small
+              steps.
 
-              - **Sticky pump iPWM** is vooral service/onderhoud en wordt zelden
-              aangepast.
+              - **Sticky pump iPWM** is mainly for service/maintenance and is
+              rarely adjusted.
 
 
               </details>
@@ -2177,21 +1822,21 @@ views:
         cards:
           - type: heading
             icon: mdi:fire
-            heading: Ketelregeling
+            heading: Boiler control
             heading_style: title
           - type: markdown
             content: >-
               <details>
 
-              <summary><strong>Uitleg parameters</strong></summary>
+              <summary><strong>Parameter explanation</strong></summary>
 
-              - **CM3 deficit ON/OFF thresholds** bepalen wanneer boiler-assist
-              mag inschakelen/uitschakelen.
+              - **CM3 deficit ON/OFF thresholds** define when boiler assist may
+              switch on/off.
 
-              - Houd ON duidelijk hoger dan OFF om schakelen rond de grens te
-              beperken.
+              - Keep ON clearly higher than OFF to reduce toggling around the
+              threshold.
 
-              - Bij te agressief gedrag: ON verhogen of OFF verlagen.
+              - If behavior is too aggressive: increase ON or decrease OFF.
 
 
               </details>
@@ -2214,22 +1859,20 @@ views:
             content: >-
               <details>
 
-              <summary><strong>Uitleg parameters</strong></summary>
+              <summary><strong>Parameter explanation</strong></summary>
 
 
-              - Deze switches begrenzen welke compressorlevels per HP gebruikt
-              mogen worden.
+              - These switches limit which compressor levels may be used per HP.
 
-              - `Aan` betekent: level mag door de verdelingslogica gekozen
-              worden.
+              - `On` means: level may be selected by allocation logic.
 
-              - `Uit` betekent: level wordt overgeslagen.
+              - `Off` means: level is skipped.
 
-              - Meestal laat je alle levels aan; schakel alleen uit voor testen,
-              geluid of specifieke beperkingen.
+              - Usually you keep all levels enabled; disable only for testing,
+              noise, or specific constraints.
 
-              - Houd per HP minimaal een aaneengesloten reeks levels actief om
-              onnodige sprongen te voorkomen.
+              - Keep at least one contiguous range of levels enabled per HP to
+              avoid unnecessary jumps.
 
 
               </details>
@@ -2261,38 +1904,14 @@ views:
                 name: L9 (H85/C71)
               - entity: switch.openquatt_hp1_allowed_level_10_h_90hz_c_74hz
                 name: L10 (H90/C74)
-          - type: entities
-            title: HP2 allowed levels
-            show_header_toggle: false
-            entities:
-              - entity: switch.openquatt_hp2_allowed_level_1_h_30hz_c_30hz
-                name: L1 (H30/C30)
-              - entity: switch.openquatt_hp2_allowed_level_2_h_39hz_c_36hz
-                name: L2 (H39/C36)
-              - entity: switch.openquatt_hp2_allowed_level_3_h_49hz_c_42hz
-                name: L3 (H49/C42)
-              - entity: switch.openquatt_hp2_allowed_level_4_h_55hz_c_47hz
-                name: L4 (H55/C47)
-              - entity: switch.openquatt_hp2_allowed_level_5_h_61hz_c_52hz
-                name: L5 (H61/C52)
-              - entity: switch.openquatt_hp2_allowed_level_6_h_67hz_c_56hz
-                name: L6 (H67/C56)
-              - entity: switch.openquatt_hp2_allowed_level_7_h_72hz_c_61hz
-                name: L7 (H72/C61)
-              - entity: switch.openquatt_hp2_allowed_level_8_h_79hz_c_66hz
-                name: L8 (H79/C66)
-              - entity: switch.openquatt_hp2_allowed_level_9_h_85hz_c_71hz
-                name: L9 (H85/C71)
-              - entity: switch.openquatt_hp2_allowed_level_10_h_90hz_c_74hz
-                name: L10 (H90/C74)
     header:
       card:
         type: markdown
         content: >-
           # <ha-icon icon="mdi:tune-vertical"></ha-icon> Tuning
 
-          Structurele regelinstellingen voor limieten, huismodel, stooklijn,
-          heat-allocation en flow.
+          Structural control tuning for limits, house model, heating curve, heat
+          allocation, and flow.
     cards: []
   - title: Service & Test
     path: service-test
@@ -2304,26 +1923,25 @@ views:
         cards:
           - type: heading
             icon: mdi:tools
-            heading: Runtime / draaiuren
+            heading: Runtime / hours
             heading_style: title
           - type: markdown
             content: >-
               <details>
 
-              <summary><strong>Uitleg parameters</strong></summary>
+              <summary><strong>Parameter explanation</strong></summary>
 
 
-              - **Reset runtime counters**. Let op: het kan maximaal 1 minuut
-              duren voordat je effect ziet.
+              - **Reset runtime counters**. Note: it can take up to 1 minute
+              before the effect is visible.
 
-              - **Reset cumulatieve energietellers** zet cumulatieve elektriciteits-
-              en warmte-energiemeters terug naar 0.
+              - **Reset cumulative energy counters** sets cumulative electricity
+              and thermal energy counters back to 0.
+              - **HP1 Runtime counter** shows the current counter used for
+              runtime balancing.
 
-              - **HP1/HP2 Runtime counters** tonen de actuele teller waarop de
-              runtime-balans wordt gebaseerd.
-
-              - **Runtime lead HP** toont welke unit momenteel lead is op basis
-              van de laagste runtime.
+              - **Runtime lead HP** shows which unit is currently selected as
+              lead based on the lowest runtime.
 
 
               </details>
@@ -2334,11 +1952,9 @@ views:
               - entity: button.openquatt_reset_runtime_counters_hp1_hp2
                 name: Reset runtime counters
               - entity: button.openquatt_reset_cumulative_energy_counters
-                name: Reset cumulatieve energietellers
+                name: Reset cumulative energy counters
               - entity: sensor.openquatt_hp1_runtime_hours
                 name: HP1 Runtime
-              - entity: sensor.openquatt_hp2_runtime_hours
-                name: HP2 Runtime
               - entity: sensor.openquatt_runtime_lead_hp
                 name: Runtime lead HP
       - type: grid
@@ -2351,17 +1967,16 @@ views:
             content: >-
               <details>
 
-              <summary><strong>Uitleg parameters</strong></summary>
+              <summary><strong>Parameter explanation</strong></summary>
 
 
-              - **Flow autotune** starten bij stabiele installatie en zonder
-              actieve fouten.
+              - Start **Flow autotune** only on a stable installation without
+              active faults.
 
-              - Eerst `u_step` en `max duration` bepalen, daarna pas autotune
-              starten.
+              - Set `u_step` and `max duration` first, then start autotune.
 
-              - `Apply autotune Kp/Ki` alleen toepassen als de voorgestelde
-              waarden logisch zijn.
+              - Apply `Apply autotune Kp/Ki` only if suggested values are
+              sensible.
 
 
               </details>
@@ -2391,25 +2006,18 @@ views:
         cards:
           - type: heading
             icon: mdi:flask-outline
-            heading: Handmatige Modbus testlezer
+            heading: Manual Modbus test reader
             heading_style: title
           - type: markdown
-            content: >-
+            content: |-
               <details>
+              <summary><strong>Explanation</strong></summary>
 
-              <summary><strong>Uitleg</strong></summary>
+              One-shot manual register read for debugging/testing:
 
-
-              Eenmalige handmatige register-read voor debug/test:
-
-
-              - Kies eerst het registernummer.
-
-              - Druk daarna op **Debug Read HP1 register** of **Debug Read HP2
-              register**.
-
-              - Resultaat verschijnt als `U16` en `S16`.
-
+              - First set the register number.
+              - Then press **Debug Read HP1 register**.
+              - Result is shown as `U16` and `S16`.
 
               </details>
             text_only: true
@@ -2420,8 +2028,6 @@ views:
                 name: Modbus register
               - entity: button.openquatt_debug_read_hp1_register
                 name: Debug Read HP1 register
-              - entity: button.openquatt_debug_read_hp2_register
-                name: Debug Read HP2 register
               - entity: sensor.openquatt_debug_modbus_value_u16
                 name: Result U16
               - entity: sensor.openquatt_debug_modbus_value_s16
@@ -2431,9 +2037,10 @@ views:
     header:
       card:
         type: markdown
-        content: |-
+        content: >-
           # <ha-icon icon="mdi:toolbox-outline"></ha-icon> Service & Test
-          Handmatige service-acties en tijdelijke testtools.
+
+          Manual service actions and temporary test tooling.
     cards: []
   - title: Diagnostics
     path: diagnostics
@@ -2445,25 +2052,25 @@ views:
         cards:
           - type: heading
             icon: mdi:tag-text
-            heading: Versie informatie
+            heading: Version information
             heading_style: title
           - type: markdown
             content: |-
               <details>
 
-              <summary><strong>Uitleg</strong></summary>
+              <summary><strong>Explanation</strong></summary>
 
-              Dit blok toont firmwareversie en OTA-update-status:
+              This block shows firmware version and OTA update status:
 
-              - `OpenQuatt Version`: versie die lokaal op de ESP draait
-              (uit `project_version` in de build).
-              - `Firmware Update`: vergelijkt jouw huidige firmware met de
-              laatste GitHub release en toont of er een update beschikbaar is.
-              - `Check Firmware Updates`: forceert direct een nieuwe updatecheck
-              (zonder te wachten op de volgende automatische poll).
+              - `OpenQuatt Version`: version currently running on the ESP
+              (from build-time `project_version`).
+              - `Firmware Update`: compares your installed firmware with the
+              latest GitHub release and indicates if an update is available.
+              - `Check Firmware Updates`: forces an immediate update check
+              (without waiting for the next scheduled poll).
 
-              Let op: bij een nieuwe release kan het kort duren voordat de
-              update-entiteit de nieuwe versie toont (cache/refresh interval).
+              Note: after a new release, the update entity may take a short
+              time to reflect the latest version (cache/refresh interval).
 
               </details>
             text_only: true
@@ -2479,23 +2086,23 @@ views:
                 name: Check Firmware Updates
           - type: heading
             icon: mdi:chip
-            heading: Controller informatie
+            heading: Controller information
             heading_style: title
           - type: markdown
             content: |-
               <details>
 
-              <summary><strong>Uitleg</strong></summary>
+              <summary><strong>Explanation</strong></summary>
 
-              Basis runtime-diagnostiek van de controller:
+              Basic runtime diagnostics of the controller:
 
-              - `Status`: online/offline van de ESP-node.
-              - `Uptime`: tijd sinds laatste reboot.
-              - `IP Address`: huidig netwerkadres.
-              - `WiFi SSID`: verbonden draadloos netwerk.
-              - `WiFi Signal`: RSSI-signaalsterkte in dBm.
-              - `ESPHome Version`: versie van de ESPHome runtime.
-              - `Restart`: herstart de controllernode vanuit Home Assistant.
+              - `Status`: online/offline state of the ESP node.
+              - `Uptime`: time since last reboot.
+              - `IP Address`: current network address.
+              - `WiFi SSID`: connected wireless network.
+              - `WiFi Signal`: RSSI signal strength in dBm.
+              - `ESPHome Version`: version of the ESPHome runtime.
+              - `Restart`: reboots the controller node from Home Assistant.
 
               </details>
             text_only: true
@@ -2522,38 +2129,38 @@ views:
         cards:
           - type: heading
             icon: mdi:home-lightning-bolt
-            heading: Power House diagnose
+            heading: Power House diagnostics
             heading_style: title
           - type: markdown
             content: >-
               <details>
 
 
-              <summary><strong>Uitleg</strong></summary>
+              <summary><strong>Explanation</strong></summary>
 
 
-              Gebruik dit blok om de Power House-regelketen te debuggen.
+              Use this block to inspect Power House control behavior.
 
 
-              - Relevant bij actieve Power House-regeling.
+              - Relevant when Power House control is active.
 
-              - `P_house` is de modelschatting op basis van buitentemperatuur.
+              - `P_house` is the model estimate based on outdoor temperature.
 
-              - `P_req` is de begrensde warmtevraag na deadband/ramp-limiter.
+              - `P_req` is the limited heat request after deadband/ramp limiter.
 
               - `Effective room target = room setpoint + comfort bias`.
 
-              - `Comfort bias` toont de status van de adaptieve warm-bias
-              regelaar.
+              - `Comfort bias` shows the adaptive warm-bias governor state.
 
-              - `Low-load dynamic thresholds` toont live de `pmin/off/on`
-              drempels.
+              - `Low-load dynamic thresholds` shows live `pmin/off/on`
+              thresholds.
 
-              - `Heat-enable state (shadow)` toont de shadow-arbiterstatus
-              (`IDLE/PREHEAT/HEATING/POSTFLOW/LOCKOUT`) voor strategievalidatie.
+              - `Heat-enable state (shadow)` shows the shadow arbiter state
+              (`IDLE/PREHEAT/HEATING/POSTFLOW/LOCKOUT`) for strategy
+              validation.
 
-              Als `P_req` onverwacht hoog/laag is: controleer buitenbron, kamer
-              setpoint/temp en de ramp/deadband instellingen.
+              If `P_req` looks unexpectedly high/low: check outside source, room
+              setpoint/temp, and ramp/deadband tuning.
 
 
               </details>
@@ -2584,32 +2191,31 @@ views:
         cards:
           - type: heading
             icon: mdi:radiator
-            heading: Heating Curve diagnose
+            heading: Heating Curve diagnostics
             heading_style: title
           - type: markdown
             content: >-
               <details>
 
-              <summary><strong>Uitleg</strong></summary>
+              <summary><strong>Explanation</strong></summary>
 
 
-              Gebruik dit blok om de curve-regeling stap voor stap te
-              controleren.
+              Use this block to inspect heating-curve behavior step by step.
 
 
-              - Deze sectie is vooral relevant bij actieve stooklijnregeling.
+              - This section is most relevant when heating-curve control is active.
 
-              - Vergelijk eerst `Supply target` met `Supply actual` om de
-              regelafwijking te zien.
+              - First compare `Supply target` and `Supply actual` to see control
+              error.
 
-              - `Curve phase` (`HEAT`/`COAST`/`OFF`) verklaart de actuele fase
-              van de curve-regeling.
+              - `Curve phase` (`HEAT`/`COAST`/`OFF`) explains the current phase
+              of curve control.
 
-              - Gebruik `Heating Curve PID` en `Reset PID integral` bij
-              finetuning als de regeling te traag of te nerveus reageert.
+              - Use `Heating Curve PID` and `Reset PID integral` for fine tuning
+              when response is too slow or too nervous.
 
-              - `Outside temp (selected)` helpt verklaren waarom het `Supply
-              target` stijgt of daalt.
+              - `Outside temp (selected)` helps explain why `Supply target`
+              rises or drops.
 
 
               </details>
@@ -2633,6 +2239,7 @@ views:
     header:
       card:
         type: markdown
-        content: |-
+        content: >-
           # <ha-icon icon="mdi:stethoscope"></ha-icon> Diagnostics
-          Controller- en firmwarediagnostiek, gericht op troubleshooting.
+
+          Controller and firmware diagnostics, focused on troubleshooting.

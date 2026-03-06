@@ -1,11 +1,11 @@
 # ==============================================================================
-# OpenQuatt - Main Config (Heatpump Listener)
+# OpenQuatt - Single Topology Main Config (Heatpump Listener)
 # ==============================================================================
 substitutions: !include openquatt/oq_substitutions_common.yaml
 
 esphome:
-  build_path: build/openquatt_heatpump_listener
+  build_path: build/openquatt_single_heatpump_listener
 
 packages:
   openquatt_hw_profile: !include openquatt/profiles/oq_substitutions_heatpump_listener.yaml
-  openquatt_base: !include openquatt_base.yaml
+  openquatt_base: !include openquatt_base_single.yaml

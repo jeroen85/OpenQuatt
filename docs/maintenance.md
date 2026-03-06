@@ -72,9 +72,17 @@ Use a consistent order per package where applicable:
 
 ## Validation Checklist After Refactor
 
-1. `esphome config openquatt.yaml`
-2. `esphome compile openquatt.yaml`
-3. Verify critical IDs still exist and update:
+1. `./scripts/check_duo_parity.sh`
+2. `./scripts/run_regression_tests.sh`
+3. `esphome config openquatt_duo_waveshare.yaml`
+4. `esphome compile openquatt_duo_waveshare.yaml`
+5. `esphome config openquatt_duo_heatpump_listener.yaml`
+6. `esphome compile openquatt_duo_heatpump_listener.yaml`
+7. `esphome config openquatt_single_waveshare.yaml`
+8. `esphome compile openquatt_single_waveshare.yaml`
+9. `esphome config openquatt_single_heatpump_listener.yaml`
+10. `esphome compile openquatt_single_heatpump_listener.yaml`
+11. Verify critical IDs still exist and update:
    - `oq_control_mode`
    - `oq_demand_raw`
    - `flow_rate_selected`
@@ -82,5 +90,5 @@ Use a consistent order per package where applicable:
    - `water_supply_temp_selected`
    - `boiler_relay`
    - `hp1_set_working_mode`, `hp2_set_working_mode`
-4. Verify dashboard entity references are still valid.
-5. Run `./scripts/validate_local.sh` for combined config+compile validation.
+12. Verify dashboard entity references are still valid.
+13. Run `./scripts/validate_local.sh` for full local gate parity.

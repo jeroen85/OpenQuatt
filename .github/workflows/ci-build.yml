@@ -9,18 +9,34 @@ permissions:
   contents: read
 
 jobs:
+  regression-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run control-logic regression tests
+        run: ./scripts/run_regression_tests.sh
+
   validate-and-compile:
+    needs: regression-tests
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         profile:
-          - id: waveshare
-            config: openquatt_waveshare.yaml
-            build_path: .esphome/build/openquatt_waveshare
-          - id: heatpump-listener
-            config: openquatt_heatpump_listener.yaml
-            build_path: .esphome/build/openquatt_heatpump_listener
+          - id: duo-waveshare
+            config: openquatt_duo_waveshare.yaml
+            build_path: .esphome/build/openquatt_duo_waveshare
+          - id: duo-heatpump-listener
+            config: openquatt_duo_heatpump_listener.yaml
+            build_path: .esphome/build/openquatt_duo_heatpump_listener
+          - id: single-waveshare
+            config: openquatt_single_waveshare.yaml
+            build_path: .esphome/build/openquatt_single_waveshare
+          - id: single-heatpump-listener
+            config: openquatt_single_heatpump_listener.yaml
+            build_path: .esphome/build/openquatt_single_heatpump_listener
 
     steps:
       - name: Checkout

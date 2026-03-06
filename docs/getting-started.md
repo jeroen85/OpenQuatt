@@ -43,13 +43,15 @@ Both profiles include:
 
 Main entrypoint:
 
-- `openquatt.yaml`
-- `openquatt_waveshare.yaml`
-- `openquatt_heatpump_listener.yaml`
+- `openquatt_duo_waveshare.yaml`
+- `openquatt_duo_heatpump_listener.yaml`
+- `openquatt_single_waveshare.yaml`
+- `openquatt_single_heatpump_listener.yaml`
 
 Package include file:
 
 - `openquatt/oq_packages.yaml`
+- `openquatt/oq_packages_single.yaml`
 
 Compile-time constants:
 
@@ -59,8 +61,10 @@ Compile-time constants:
 
 Dashboard YAML:
 
-- `docs/dashboard/openquatt_ha_dashboard_nl.yaml` (recommended default)
-- `docs/dashboard/openquatt_ha_dashboard_en.yaml`
+- `docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml` (recommended default for Duo)
+- `docs/dashboard/openquatt_ha_dashboard_duo_en.yaml`
+- `docs/dashboard/openquatt_ha_dashboard_single_nl.yaml` (for Single topology)
+- `docs/dashboard/openquatt_ha_dashboard_single_en.yaml` (for Single topology)
 
 ## 3. Baseline Runtime
 
@@ -69,27 +73,30 @@ Adjust `openquatt/oq_common.yaml` if you want environment-specific API encryptio
 
 ## 4. Select Hardware Profile
 
-Select the firmware entrypoint that matches your hardware:
+Select the firmware entrypoint that matches your topology + hardware:
 
-1. `openquatt_waveshare.yaml` for [Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm)
-2. `openquatt_heatpump_listener.yaml` for Heatpump Listener
+1. `openquatt_duo_waveshare.yaml` for Duo + [Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm)
+2. `openquatt_duo_heatpump_listener.yaml` for Duo + Heatpump Listener
+3. `openquatt_single_waveshare.yaml` for Single + [Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm)
+4. `openquatt_single_heatpump_listener.yaml` for Single + Heatpump Listener
 
 Each entrypoint loads:
 
 - shared constants from `openquatt/oq_substitutions_common.yaml`
 - hardware-specific pin mapping from its profile file
-3. Recompile and flash.
+
+Then recompile and flash.
 
 ## 5. Validate and Compile
 
 Run:
 
 ```bash
-esphome config openquatt.yaml
-esphome compile openquatt.yaml
+esphome config openquatt_duo_waveshare.yaml
+esphome compile openquatt_duo_waveshare.yaml
 ```
 
-Tip: compile each hardware profile via its own entrypoint (`openquatt_waveshare.yaml` or `openquatt_heatpump_listener.yaml`). Each entrypoint has a dedicated `build_path`, which keeps profile caches separate and speeds up repeated profile switching.
+Tip: compile each topology/hardware profile via its own entrypoint. Each entrypoint has a dedicated `build_path`, which keeps caches separate and speeds up repeated profile switching.
 
 Or run the helper script:
 
@@ -102,13 +109,13 @@ Or run the helper script:
 Run:
 
 ```bash
-esphome run openquatt.yaml
+esphome run openquatt_duo_waveshare.yaml
 ```
 
 After first boot, verify:
 
 1. Device appears in Home Assistant.
-2. Modbus HP entities update for both HP1 and HP2.
+2. Modbus HP entities update for HP1 (and HP2 when using Duo topology).
 3. `Control Mode` has a valid value.
 4. Selected source sensors (`Water Supply Temp (Selected)`, `Flow average (Selected)`, `Outside Temperature (Selected)`) update.
 5. No persistent `unknown` or stale feed state unless expected.
@@ -152,7 +159,9 @@ Check selected flow source and low-flow timer/fault logic states, not only insta
 
 After successful first run:
 
-1. Import either `docs/dashboard/openquatt_ha_dashboard_nl.yaml` or `docs/dashboard/openquatt_ha_dashboard_en.yaml` into Home Assistant.
+1. Import the matching dashboard into Home Assistant:
+   - Duo: `docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml` or `docs/dashboard/openquatt_ha_dashboard_duo_en.yaml`
+   - Single: `docs/dashboard/openquatt_ha_dashboard_single_nl.yaml` or `docs/dashboard/openquatt_ha_dashboard_single_en.yaml`
 2. Optional: install `docs/dashboard/openquatt_ha_dynamic_sources_package.yaml` as HA package for dynamic source entity selection.
 3. Read [Control Modes and Flow](control-modes-and-flow.md).
 4. Tune using [Settings Reference](settings-reference.md) and [Tuning and Troubleshooting](tuning-and-troubleshooting.md).

@@ -18,10 +18,17 @@ This document explains the current OpenQuatt architecture as implemented in the 
 
 ## 1. Top-Level Composition
 
-OpenQuatt is driven from `openquatt.yaml` as the project entrypoint, which includes:
+OpenQuatt is driven from explicit topology/hardware entrypoints:
+
+- `openquatt_duo_waveshare.yaml`
+- `openquatt_duo_heatpump_listener.yaml`
+- `openquatt_single_waveshare.yaml`
+- `openquatt_single_heatpump_listener.yaml`
+
+Each entrypoint includes:
 
 - global project/board/framework config
-- package includes via `openquatt/oq_packages.yaml`
+- package includes via `openquatt/oq_packages.yaml` (Duo) or `openquatt/oq_packages_single.yaml` (Single)
 
 Shared runtime services are loaded from `openquatt/oq_common.yaml`, including:
 
@@ -44,8 +51,9 @@ Package include order is intentional:
 11. `oq_local_sensors`
 12. `oq_sensor_sources`
 13. `oq_debug_testing`
-14. `oq_webserver`
-15. `oq_HP_io` (HP1 and HP2 instances)
+14. `oq_debug_testing_duo` (Duo only)
+15. `oq_webserver`
+16. `oq_HP_io` (HP1 always; HP2 only on Duo)
 
 This order mirrors data dependencies and ownership boundaries.
 
@@ -126,7 +134,7 @@ Runtime selectors decide per signal whether selected values come from local, CIC
 ### 4.6 Actuation layer
 
 - Compressor level writes via HP select entities
-- Pump iPWM writes to HP1 and HP2 pump speed entities
+- Pump iPWM writes to HP1 (and HP2 on Duo control paths)
 - Boiler relay writes via GPIO output
 
 ### 4.7 Telemetry and energy layer
@@ -145,7 +153,7 @@ Runtime selectors decide per signal whether selected values come from local, CIC
 
 - firmware update entities and manual check trigger
 - runtime logger level controls
-- one-shot Modbus register read tools (HP1/HP2)
+- one-shot Modbus register read tools (HP1; HP2 probe on Duo entrypoints)
 - runtime balancing service entities from heat control (`Runtime lead HP`, runtime counter reset)
 
 ## 5. Heating Strategy Mechanics
@@ -252,8 +260,10 @@ Shared non-hardware constants are in `openquatt/oq_substitutions_common.yaml`.
 
 Compile-time profile selection is done by choosing the firmware entrypoint:
 
-- `openquatt_waveshare.yaml`
-- `openquatt_heatpump_listener.yaml`
+- `openquatt_duo_waveshare.yaml`
+- `openquatt_duo_heatpump_listener.yaml`
+- `openquatt_single_waveshare.yaml`
+- `openquatt_single_heatpump_listener.yaml`
 
 ## 10. UI and Observability Organization
 
@@ -263,7 +273,7 @@ Compile-time profile selection is done by choosing the firmware entrypoint:
 - HP1, HP2
 - Tuning groups
 - Diagnostics groups
-- Debug and testing groups surfaced in the dedicated dashboard tab
+- Debug and testing groups surfaced in the dedicated dashboard tab (`oq_debug_testing_duo.yaml` adds HP2 debug probe button only on Duo)
 
 This keeps ESPHome web UI and Home Assistant mapping coherent.
 

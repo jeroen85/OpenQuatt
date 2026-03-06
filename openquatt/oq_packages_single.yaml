@@ -1,0 +1,81 @@
+# ==============================================================================
+# OpenQuatt - Package Includes (Single topology)
+# ==============================================================================
+# Single topology reuses the same shared modules as Duo.
+# `*_secondary_*` vars map to HP1 to satisfy ESPHome ID validation, while actual
+# Duo-only behavior is still removed at compile-time via `#if OQ_TOPOLOGY_DUO`.
+# ==============================================================================
+oq_common: !include oq_common.yaml
+oq_supervisory_controlmode: !include
+  file: oq_supervisory_controlmode.yaml
+  vars:
+    supervisory_secondary_last_applied_level_id: "hp1_last_applied_level"
+    supervisory_secondary_working_mode_id: "hp1_working_mode"
+    supervisory_secondary_set_working_mode_id: "hp1_set_working_mode"
+    supervisory_secondary_compressor_level_id: "hp1_compressor_level"
+    supervisory_secondary_low_noise_mode_id: "hp1_low_noise_mode"
+    supervisory_secondary_set_pump_mode_id: "hp1_set_pump_mode"
+    supervisory_secondary_pump_speed_id: "hp1_pump_speed"
+oq_heating_strategy: !include
+  file: oq_heating_strategy.yaml
+  vars:
+    secondary_outside_temp_id: "hp1_outside_temp"
+    secondary_water_out_temp_id: "hp1_water_out_temp"
+    secondary_last_applied_level_id: "hp1_last_applied_level"
+    secondary_working_mode_id: "hp1_working_mode"
+oq_heat_control: !include
+  file: oq_heat_control.yaml
+  vars:
+    hc_secondary_power_input_id: "hp1_power_input"
+    hc_secondary_heat_power_id: "hp1_heat_power"
+    hc_secondary_compressor_level_id: "hp1_compressor_level"
+    hc_secondary_defrost_id: "hp1_defrost"
+    hc_secondary_last_applied_level_id: "hp1_last_applied_level"
+    hc_secondary_last_start_ms_id: "hp1_last_start_ms"
+    hc_secondary_last_stop_ms_id: "hp1_last_stop_ms"
+    hc_secondary_minutes_id: "hp1_minutes"
+    hc_secondary_set_working_mode_id: "hp1_set_working_mode"
+    hc_secondary_working_mode_id: "hp1_working_mode"
+    hc_secondary_lvl_1_id: "hp1_lvl_1"
+    hc_secondary_lvl_2_id: "hp1_lvl_2"
+    hc_secondary_lvl_3_id: "hp1_lvl_3"
+    hc_secondary_lvl_4_id: "hp1_lvl_4"
+    hc_secondary_lvl_5_id: "hp1_lvl_5"
+    hc_secondary_lvl_6_id: "hp1_lvl_6"
+    hc_secondary_lvl_7_id: "hp1_lvl_7"
+    hc_secondary_lvl_8_id: "hp1_lvl_8"
+    hc_secondary_lvl_9_id: "hp1_lvl_9"
+    hc_secondary_lvl_10_id: "hp1_lvl_10"
+    hc_dual_tuning_internal: "true"
+    hc_hp2_diag_internal: "true"
+    hc_runtime_reset_button_name: "Reset Runtime Counters (HP1)"
+oq_flow_control: !include
+  file: oq_flow_control.yaml
+  vars:
+    # Secondary path disabled in Single; IDs remain mapped for template validity.
+    flow_secondary_enabled: "0"
+    flow_secondary_flow_sensor_id: "hp1_flow"
+    flow_secondary_pump_speed_id: "hp1_pump_speed"
+    flow_mismatch_internal: "true"
+oq_flow_autotune: !include oq_flow_autotune.yaml
+oq_boiler_control: !include
+  file: oq_boiler_control.yaml
+  vars:
+    heatpump_outlet_temp_id: "hp1_water_out_temp"
+oq_energy: !include oq_energy.yaml
+oq_cic: !include
+  file: oq_cic.yaml
+  vars:
+    cic_secondary_enabled: "0"
+    cic_hp2_sensor_internal: "true"
+oq_ha_inputs: !include oq_ha_inputs.yaml
+oq_local_sensors: !include oq_local_sensors.yaml
+oq_sensor_sources: !include oq_sensor_sources.yaml
+oq_debug_testing: !include oq_debug_testing.yaml
+oq_webserver: !include oq_webserver.yaml
+heatpump1: !include
+  file: oq_HP_io.yaml
+  vars:
+    hp_id: "hp1"
+    prefix: "HP1 - "
+    device_address: 0x01

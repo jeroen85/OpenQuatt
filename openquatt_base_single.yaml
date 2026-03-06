@@ -1,5 +1,5 @@
 # ==============================================================================
-# OpenQuatt - Shared Base Config
+# OpenQuatt - Shared Base Config (Single topology)
 # ==============================================================================
 # Common ESPHome/ESP32 runtime shared by all hardware profiles.
 # Hardware-specific pin/board substitutions are provided by profile files.
@@ -8,7 +8,7 @@
 # ==============================================================================
 # PACKAGES
 # ==============================================================================
-packages: !include openquatt/oq_packages.yaml
+packages: !include openquatt/oq_packages_single.yaml
 
 # ==============================================================================
 # ESPHOME CORE
@@ -23,8 +23,8 @@ esphome:
   name_add_mac_suffix: false
   platformio_options:
     build_flags:
-      # Duo build flag comes from substitutions (`oq_topology_duo`, default "1").
-      - -DOQ_TOPOLOGY_DUO=${oq_topology_duo}
+      # Hard-pinned for Single entrypoints to prevent accidental topology drift.
+      - -DOQ_TOPOLOGY_DUO=0
   on_boot:
     priority: -100
     then:
