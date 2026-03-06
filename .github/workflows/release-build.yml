@@ -10,8 +10,24 @@ permissions:
   contents: write
 
 jobs:
-  build-and-release:
+  compile-profiles:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        profile:
+          - id: duo-waveshare
+            config: openquatt_duo_waveshare.yaml
+            build_path: .esphome/build/openquatt_duo_waveshare
+          - id: duo-heatpump-listener
+            config: openquatt_duo_heatpump_listener.yaml
+            build_path: .esphome/build/openquatt_duo_heatpump_listener
+          - id: single-waveshare
+            config: openquatt_single_waveshare.yaml
+            build_path: .esphome/build/openquatt_single_waveshare
+          - id: single-heatpump-listener
+            config: openquatt_single_heatpump_listener.yaml
+            build_path: .esphome/build/openquatt_single_heatpump_listener
 
     steps:
       - name: Checkout
@@ -28,26 +44,48 @@ jobs:
           pip install --upgrade "esphome==${ESPHOME_VERSION}"
           esphome version
 
-      - name: Validate configs
-        run: |
-          esphome config openquatt_duo_waveshare.yaml
-          esphome config openquatt_duo_heatpump_listener.yaml
+      - name: Validate config
+        run: esphome config ${{ matrix.profile.config }}
 
-      - name: Build Waveshare firmware
-        run: |
-          esphome compile openquatt_duo_waveshare.yaml
-          mkdir -p dist
-          cp .esphome/build/openquatt_duo_waveshare/.pioenvs/openquatt/firmware.bin dist/openquatt-waveshare.firmware.bin
-          cp .esphome/build/openquatt_duo_waveshare/.pioenvs/openquatt/firmware.ota.bin dist/openquatt-waveshare.firmware.ota.bin
-          cp .esphome/build/openquatt_duo_waveshare/.pioenvs/openquatt/firmware.factory.bin dist/openquatt-waveshare.firmware.factory.bin
+      - name: Compile firmware
+        run: esphome compile ${{ matrix.profile.config }}
 
-      - name: Build Heatpump Listener firmware
+      - name: Upload firmware artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: openquatt-${{ matrix.profile.id }}-release
+          if-no-files-found: error
+          path: |
+            ${{ matrix.profile.build_path }}/.pioenvs/openquatt/firmware.bin
+            ${{ matrix.profile.build_path }}/.pioenvs/openquatt/firmware.ota.bin
+            ${{ matrix.profile.build_path }}/.pioenvs/openquatt/firmware.factory.bin
+
+  publish-release:
+    runs-on: ubuntu-latest
+    needs: compile-profiles
+
+    steps:
+      - name: Download Duo Waveshare artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: openquatt-duo-waveshare-release
+          path: dist/openquatt-duo-waveshare
+
+      - name: Download Duo Heatpump Listener artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: openquatt-duo-heatpump-listener-release
+          path: dist/openquatt-duo-heatpump-listener
+
+      - name: Prepare release asset filenames
         run: |
-          esphome compile openquatt_duo_heatpump_listener.yaml
           mkdir -p dist
-          cp .esphome/build/openquatt_duo_heatpump_listener/.pioenvs/openquatt/firmware.bin dist/openquatt-heatpump-listener.firmware.bin
-          cp .esphome/build/openquatt_duo_heatpump_listener/.pioenvs/openquatt/firmware.ota.bin dist/openquatt-heatpump-listener.firmware.ota.bin
-          cp .esphome/build/openquatt_duo_heatpump_listener/.pioenvs/openquatt/firmware.factory.bin dist/openquatt-heatpump-listener.firmware.factory.bin
+          cp dist/openquatt-duo-waveshare/firmware.bin dist/openquatt-waveshare.firmware.bin
+          cp dist/openquatt-duo-waveshare/firmware.ota.bin dist/openquatt-waveshare.firmware.ota.bin
+          cp dist/openquatt-duo-waveshare/firmware.factory.bin dist/openquatt-waveshare.firmware.factory.bin
+          cp dist/openquatt-duo-heatpump-listener/firmware.bin dist/openquatt-heatpump-listener.firmware.bin
+          cp dist/openquatt-duo-heatpump-listener/firmware.ota.bin dist/openquatt-heatpump-listener.firmware.ota.bin
+          cp dist/openquatt-duo-heatpump-listener/firmware.factory.bin dist/openquatt-heatpump-listener.firmware.factory.bin
 
       - name: Generate OTA manifest
         run: |
