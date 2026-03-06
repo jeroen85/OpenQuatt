@@ -1310,7 +1310,7 @@ interval:
             id(oq_ph_room_target_effective_c) = Trsp_eff;
 
             // Room correction
-            // Asymmetric comfort band around room setpoint:
+            // Asymmetric comfort band around effective room target:
             // - below band: lower edge where extra correction starts
             // - above band: upper edge where negative correction starts
             // Inside this comfort band, room correction is zero.

@@ -101,7 +101,8 @@ Runtime entity: `select.openquatt_heating_control_mode`
 ### 5.1 Power House
 
 - Computes `P_house` from outdoor temperature and house model.
-- Applies room correction (`Trsp - Tr`) with deadband.
+- Applies room correction outside an asymmetric comfort window around the
+  effective room target, with deadband.
 - Applies ramp constraints.
 - Maps to demand `0..20`.
 - Adds low-load OFF/ON hysteresis on `P_req` through a heat-request latch.
