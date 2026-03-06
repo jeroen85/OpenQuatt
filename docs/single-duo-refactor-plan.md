@@ -1,5 +1,7 @@
 # Single/Duo Refactor Plan + Implementation Contract
 
+Status: dit document is een historisch refactorplan. De tijdelijke fase-1 regressieharness is na merge verwijderd uit `main`.
+
 ## 1. Doel en uitgangspunten
 
 Deze refactor voegt compile-time support toe voor zowel:
@@ -106,23 +108,17 @@ Aanpak:
   - frost hysteresis/fail-safe beslislogica
   - dual-HP hold state-machine (enable/disable timers)
 
-Baseline (huidig):
+Baseline (historisch):
 
-- Runner: `./scripts/run_regression_tests.sh`
-- Scenarios in:
-  - `tests/regression/test_power_cap.cpp`
-  - `tests/regression/test_supervisory_equivalence.cpp`
-  - `tests/regression/test_topology_constants.cpp`
-- Hard Duo parity lock:
-  - `scripts/check_duo_parity.sh`
-  - `tests/golden/duo_main_sha256.txt`
-- Golden referentie is de huidige expected-state set in deze runner; elke refactorfase moet exact dezelfde uitkomst houden op Duo.
+- Tijdens de refactor is tijdelijk een host-side C++ regressieharness gebruikt met golden outputs.
+- Die tijdelijke harness/scripts zijn na afronding van de refactor verwijderd uit `main` om onderhoudslast te beperken.
+- De structurele gates op `main` zijn compile-validatie per topology/hardware en documentatie-consistentie.
 
-Gate 1:
+Gate 1 (historisch):
 
-- Regressierunner slaagt op baseline.
+- Tijdelijke regressierunner slaagt op baseline.
 - Duo compile blijft groen.
-- Golden outputs vormen referentie voor alle volgende fases.
+- Golden outputs vormen referentie voor de opvolgende refactorfases.
 
 ### Fase 2A: Heat control migratie
 

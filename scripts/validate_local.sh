@@ -28,15 +28,12 @@ run_esphome() {
 
 echo "PlatformIO core dir: ${PIO_CORE_DIR}"
 
-echo "[1/5] Regressietests draaien"
-./scripts/run_regression_tests.sh
-
-step=2
+step=1
 for config in "${CONFIG_FILES[@]}"; do
-  echo "[${step}/5] Valideren en compileren: ${config}"
+  echo "[${step}/4] Valideren en compileren: ${config}"
   run_esphome config "${config}"
   run_esphome compile "${config}"
   ((step++))
 done
 
-echo "Klaar: regressie + alle topology/hardware compilaties succesvol."
+echo "Klaar: alle topology/hardware compilaties succesvol."

@@ -7,7 +7,6 @@ This project uses GitHub Actions for automated validation, firmware compilation,
 - `/.github/workflows/ci-build.yml`
   - Trigger: push to `main`, pull requests
   - Actions:
-    - `./scripts/run_regression_tests.sh`
     - `esphome config openquatt_duo_waveshare.yaml`
     - `esphome compile openquatt_duo_waveshare.yaml`
     - `esphome config openquatt_duo_heatpump_listener.yaml`

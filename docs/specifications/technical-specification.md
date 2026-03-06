@@ -327,16 +327,15 @@ Integration sources use existing power sensors and shared time source (`oq_time`
 
 After technical changes:
 
-1. `./scripts/run_regression_tests.sh`
-2. `esphome config openquatt_duo_waveshare.yaml`
-3. `esphome compile openquatt_duo_waveshare.yaml`
-4. `esphome config openquatt_duo_heatpump_listener.yaml`
-5. `esphome compile openquatt_duo_heatpump_listener.yaml`
-6. `esphome config openquatt_single_waveshare.yaml`
-7. `esphome compile openquatt_single_waveshare.yaml`
-8. `esphome config openquatt_single_heatpump_listener.yaml`
-9. `esphome compile openquatt_single_heatpump_listener.yaml`
-10. Verify mode entities and selected sources update.
-11. Verify pump and compressor commands behave as expected.
-12. Verify dashboard entities still resolve.
-13. Verify no unintended source or mode ownership conflicts.
+1. `esphome config openquatt_duo_waveshare.yaml`
+2. `esphome compile openquatt_duo_waveshare.yaml`
+3. `esphome config openquatt_duo_heatpump_listener.yaml`
+4. `esphome compile openquatt_duo_heatpump_listener.yaml`
+5. `esphome config openquatt_single_waveshare.yaml`
+6. `esphome compile openquatt_single_waveshare.yaml`
+7. `esphome config openquatt_single_heatpump_listener.yaml`
+8. `esphome compile openquatt_single_heatpump_listener.yaml`
+9. Verify mode entities and selected sources update.
+10. Verify pump and compressor commands behave as expected.
+11. Verify dashboard entities still resolve.
+12. Verify no unintended source or mode ownership conflicts.
