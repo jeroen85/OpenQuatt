@@ -25,6 +25,12 @@ if ! command -v esphome >/dev/null 2>&1; then
   exit 127
 fi
 
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "Error: 'python3' is niet gevonden in PATH." >&2
+  echo "Installeer Python 3 lokaal en probeer opnieuw." >&2
+  exit 127
+fi
+
 run_esphome() {
   PLATFORMIO_CORE_DIR="${PIO_CORE_DIR}" esphome "$@"
 }
@@ -36,6 +42,9 @@ if ! [[ "${JOBS}" =~ ^[1-9][0-9]*$ ]]; then
   echo "Error: JOBS moet een positief geheel getal zijn." >&2
   exit 2
 fi
+
+echo "[docs] Valideren: docs consistency"
+python3 scripts/check_docs_consistency.py
 
 step=1
 for config in "${CONFIG_FILES[@]}"; do

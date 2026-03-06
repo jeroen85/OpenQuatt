@@ -1,6 +1,7 @@
 # Release Process
 
 This project uses GitHub Actions for automated validation, firmware compilation, and release asset publishing.
+Documentation consistency is validated locally via `./scripts/validate_local.sh`.
 
 ## Branch Model
 
@@ -24,11 +25,6 @@ Firmware should expose its channel explicitly via `release_channel` so Home Assi
     - `esphome config openquatt_single_heatpump_listener.yaml`
     - `esphome compile openquatt_single_heatpump_listener.yaml`
     - Upload compiled firmware artifacts per profile
-- `/.github/workflows/docs-consistency.yml`
-  - Trigger: push to `main` or `dev`, pull requests
-  - Actions:
-    - run `scripts/check_docs_consistency.py --changed-only`
-    - emit non-blocking warnings on likely docs drift (does not fail CI)
 - `/.github/workflows/release-build.yml`
   - Trigger: tag push `v*` and manual dispatch
   - Actions:
