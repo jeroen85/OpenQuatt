@@ -38,7 +38,7 @@ Firmware should expose its channel explicitly via `release_channel` so Home Assi
   - Trigger: push to `dev`, manual dispatch
   - Actions:
     - compile all four profiles with `release_channel=dev`
-    - override `project_version` to `${base_version}-dev+<shortsha>`
+    - override `project_version` to `${base_version}-dev.<run_number>+<shortsha>`
     - move the mutable `dev-latest` tag to the newest `dev` commit
     - publish/update a prerelease that contains install + OTA manifests for the dev channel
 
@@ -61,7 +61,7 @@ Recommended increments:
 - Minor: new backward-compatible functionality
 - Major: breaking changes
 
-Keep the source-controlled `project_version` aligned with the next intended stable release. Published dev-channel artifacts should override that at build time to `${project_version}-dev+<shortsha>` while also setting `release_channel=dev`. That keeps the base version readable while giving the OTA entity a unique version per dev commit.
+Keep the source-controlled `project_version` aligned with the next intended stable release. Published dev-channel artifacts should override that at build time to `${project_version}-dev.<run_number>+<shortsha>` while also setting `release_channel=dev`. The monotonically increasing prerelease number is important: SemVer ignores everything after `+`, so SHA-only build metadata does not count as a newer OTA version on its own.
 
 ## Channel Metadata
 
@@ -78,7 +78,8 @@ Reuse the existing topology/hardware entrypoints and override channel-specific s
 
 ```bash
 BASE_VERSION="$(awk -F'\"' '/^project_version: / { print $2 }' openquatt/oq_substitutions_common.yaml)"
-DEV_VERSION="${BASE_VERSION}-dev+local"
+DEV_STAMP="$(date -u +%Y%m%d%H%M%S)"
+DEV_VERSION="${BASE_VERSION}-dev.${DEV_STAMP}+local"
 
 esphome \
   -s project_version "${DEV_VERSION}" \

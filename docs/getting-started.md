@@ -100,7 +100,8 @@ For a dev-channel build, keep the same entrypoint and override the channel-speci
 
 ```bash
 BASE_VERSION="$(awk -F'\"' '/^project_version: / { print $2 }' openquatt/oq_substitutions_common.yaml)"
-DEV_VERSION="${BASE_VERSION}-dev+local"
+DEV_STAMP="$(date -u +%Y%m%d%H%M%S)"
+DEV_VERSION="${BASE_VERSION}-dev.${DEV_STAMP}+local"
 
 esphome \
   -s project_version "${DEV_VERSION}" \
