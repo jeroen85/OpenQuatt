@@ -6,7 +6,6 @@ OpenQuatt is ESPHome firmware for Quatt Single and Quatt Duo installations. It a
 
 > [!WARNING]
 > This project is currently in an experimental phase.
-> The Duo topology remains the main release path; Single support is available in the repository and can be built from source.
 
 ## Table of Contents
 
@@ -47,21 +46,22 @@ Requirements:
 - RS485 wiring to at least one heat pump
 - Home Assistant (recommended)
 
-Release coverage today:
+Release coverage:
 
-- Official GitHub releases currently publish Duo firmware assets for Waveshare and Heatpump Listener hardware.
-- Single firmware is available in the repository, but not yet published as a release asset.
+- Official GitHub releases provide firmware assets for Duo and Single on both supported hardware profiles.
 
 ## Quick Start
 
 ### 1. Pick the right firmware
 
-For the current official releases, choose the matching Duo factory image:
+Choose the factory image that matches your topology and hardware:
 
 - Duo + Waveshare ESP32-S3-Relay-1CH: `openquatt-waveshare.firmware.factory.bin`
 - Duo + Heatpump Listener: `openquatt-heatpump-listener.firmware.factory.bin`
+- Single + Waveshare ESP32-S3-Relay-1CH: `openquatt-single-waveshare.firmware.factory.bin`
+- Single + Heatpump Listener: `openquatt-single-heatpump-listener.firmware.factory.bin`
 
-If you want Single firmware or custom changes, build from source via [Getting Started](docs/getting-started.md).
+If you want custom changes, build from source via [Getting Started](docs/getting-started.md).
 
 ### 2. Flash the firmware with `web.esphome.io`
 
