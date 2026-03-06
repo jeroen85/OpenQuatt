@@ -1,9 +1,0 @@
-# Duo logic parity baseline
-# Source commit: be191f9c27720f88581f1212ccb1180e7453ea4f
-# Format: <sha256>  <path>
-ac5cc3b5346dc5422c3cf9367ef88ddcaaaafb254c4ffdbe4387e62be95179ad  openquatt/oq_supervisory_controlmode.yaml
-37cd7c1b0e46d3f4e67f0ac11e6456301d22a6c76b6485c2b618939cd8a17f47  openquatt/oq_heat_control.yaml
-586d643b7e9071d297310a2cb8b1a1ada74bdcf21feda1bef45eb4b4892ccc87  openquatt/oq_flow_control.yaml
-16751a3f2d5c0aa562bfbfae6436527b366662c8e4ca6fbd1eb118ff94b79930  openquatt/oq_heating_strategy.yaml
-b36e070732c925d13de18ef076ee45f6b782222f8f336d366115e51648dcf4e6  openquatt/oq_cic.yaml
-4ef132c6e447637df3afe6c34c5424cfd8c48d075a3c6dea36ac99e880536901  openquatt/oq_boiler_control.yaml

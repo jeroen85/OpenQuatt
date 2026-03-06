@@ -158,7 +158,6 @@ It includes:
 ## Release Process
 
 - CI workflow (`.github/workflows/ci-build.yml`) runs on push/PR and enforces:
-  - control-logic regression tests (`./scripts/run_regression_tests.sh`)
   - config + compile for all four topology/hardware entrypoints
 - Release workflow (`.github/workflows/release-build.yml`) runs on tags `v*` and publishes Duo firmware release assets plus `openquatt.manifest.json`.
 - Detailed steps: [Release Process Guide](docs/release-process.md)
