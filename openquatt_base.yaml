@@ -28,6 +28,8 @@ esphome:
     version: ${project_version}
   min_version: 2025.11.0
   name_add_mac_suffix: false
+  includes:
+    - ${hp_perf_map_header}
   platformio_options:
     build_flags:
       # Duo build flag comes from substitutions (`oq_topology_duo`, default "1").
@@ -42,7 +44,7 @@ esphome:
           id: oq_release_channel_text
           state: "${release_channel}"
       - lambda: |-
-          if (id(oq_firmware_update_channel).state == "dev") {
+          if (id(oq_firmware_update_channel).current_option() == "dev") {
             id(oq_firmware_update).set_source_url("${dev_release_manifest_url}");
           } else {
             id(oq_firmware_update).set_source_url("${main_release_manifest_url}");
