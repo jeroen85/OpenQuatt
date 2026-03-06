@@ -73,11 +73,6 @@ If you want custom changes, build from source via [Getting Started](docs/getting
 4. Select the `*.firmware.factory.bin` file you downloaded from the latest release.
 5. Complete the flashing process and wait for the board to reboot.
 
-Note:
-
-- The manifest-based install link is currently not the recommended route.
-- For now, the reliable path is: download the correct `factory.bin` from the latest release, then install it manually through `web.esphome.io`.
-
 Firmware file types:
 
 - `*.firmware.factory.bin` is for the first installation on a board over USB.
