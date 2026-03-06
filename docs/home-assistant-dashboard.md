@@ -11,14 +11,15 @@ Dashboard source:
 The dashboard is designed as a practical operations console with the **Sections** layout.
 
 Note: this document describes the full Duo view set; the Single variants keep the same structure and remove HP2-specific cards/entities.
+This document uses the English dashboard titles and paths.
 
 ## Table of Contents
 
 - [1. Current View Set](#1-current-view-set)
 - [2. Design Rules Used](#2-design-rules-used)
-- [3. Overview View (Overzicht)](#3-overview-view-overzicht)
+- [3. Overview View](#3-overview-view)
 - [4. Flow View](#4-flow-view)
-- [5. Warmtecontrol View](#5-warmtecontrol-view)
+- [5. Heat Control View](#5-heat-control-view)
 - [6. HPs View](#6-hps-view)
 - [7. Sensor Configuration View](#7-sensor-configuration-view)
 - [8. Energy View](#8-energy-view)
@@ -31,9 +32,9 @@ Note: this document describes the full Duo view set; the Single variants keep th
 
 | View | Path | Primary purpose |
 |---|---|---|
-| Overzicht | `overzicht` | Daily status, quick controls, and top-level trends |
+| Overview | `overview` | Daily status, quick controls, and top-level trends |
 | Flow | `flow` | Hydraulic status, flow control, pump tuning |
-| Warmtecontrol | `warmtecontrol` | Demand and heat allocation behavior |
+| Heat Control | `heat-control` | Demand and heat allocation behavior |
 | HPs | `HPs` | HP1/HP2 deep diagnostics and visualization |
 | Sensor Configuration | `sensor-configuration` | Source setup (CIC/HA/selectors) plus per-signal diagnostics and feedback |
 | Energy | `energy` | Daily/cumulative energy and efficiency metrics |
@@ -49,11 +50,11 @@ Note: this document describes the full Duo view set; the Single variants keep th
 - Use markdown details blocks for contextual explanation.
 - Keep source controls grouped in the Sensor Configuration tab so source origin is always explicit.
 
-## 3. Overview View (Overzicht)
+## 3. Overview View
 
 Contains four practical clusters:
 
-1. **Live prestaties**
+1. **Live performance**
    - selected flow
    - total electrical power
    - total thermal power
@@ -66,10 +67,10 @@ Contains four practical clusters:
    - Heating Strategy
    - boiler active
    - silent active
-3. **Thermostaat**
+3. **Thermostat**
    - selected room setpoint
    - selected room temperature
-4. **Dagelijkse bediening**
+4. **Daily controls**
    - CM override
    - day/silent level caps
    - silent start/end time
@@ -90,7 +91,7 @@ Operational rule:
 
 - Keep flow diagnostics and flow control tuning in this tab to avoid mixing with Heating Strategy tuning.
 
-## 5. Warmtecontrol View
+## 5. Heat Control View
 
 Expected content pattern:
 
