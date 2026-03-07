@@ -1,4 +1,4 @@
-const RELEASE_ROOT = "https://github.com/jeroen85/OpenQuatt/releases/latest/download";
+const FACTORY_ROOT = new URL("../firmware/main/", window.location.href).toString().replace(/\/$/, "");
 
 const PROFILES = {
   duo: {
@@ -70,7 +70,7 @@ function buildManifest(profile) {
         chipFamily: profile.chipFamily,
         parts: [
           {
-            path: `${RELEASE_ROOT}/${profile.fileName}`,
+            path: `${FACTORY_ROOT}/${profile.fileName}`,
             offset: 0,
           },
         ],
@@ -113,7 +113,7 @@ function updateSummary() {
 
   selectionTitle.textContent = profile.title;
   selectionCopy.textContent =
-    "This installer points straight at the latest stable GitHub Release factory image for the selected profile.";
+    "This installer points at the stable factory image mirrored on this site for the selected profile.";
   selectionTopology.textContent = PROFILES[profile.topology].label;
   selectionHardware.textContent = profile.hardwareLabel;
   selectionChip.textContent = profile.chipFamily;
