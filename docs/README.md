@@ -64,7 +64,7 @@ docs/
 ## What Each Document Covers
 
 - `getting-started.md`: hardware prerequisites, baseline runtime, build/flash flow, first validation.
-- `install/`: GitHub Pages first-install flow that generates a profile-specific ESP Web Tools manifest for the latest stable release.
+- `install/`: GitHub Pages first-install flow that generates a profile-specific ESP Web Tools manifest against the stable factory binaries mirrored onto Pages.
 - `system-overview.md`: package architecture, control ownership, data pipeline, safety model.
 - `control-modes-and-flow.md`: CM behavior, Flow Mode semantics, Heating Strategy modes, and precedence.
 - `settings-reference.md`: compile-time vs runtime settings, including low-load and anti-flip controls.

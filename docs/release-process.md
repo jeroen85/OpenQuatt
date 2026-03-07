@@ -40,6 +40,13 @@ Firmware should expose its channel explicitly via `release_channel` so Home Assi
     - override `project_version` to `${base_version}-dev.<run_number>+<shortsha>`
     - move the mutable `dev-latest` tag to the newest `dev` commit
     - publish/update a prerelease that contains binaries + OTA manifests for the dev channel
+- `/.github/workflows/pages-deploy.yml`
+  - Trigger: push to `dev` when docs/install assets change, published stable release, manual dispatch
+  - Actions:
+    - check out the `dev` branch docs as the Pages site source
+    - download the latest stable `*.firmware.factory.bin` assets from GitHub Releases
+    - mirror those first-install binaries into the Pages artifact under `/firmware/main/`
+    - deploy the resulting site via GitHub Pages Actions
 
 ## ESPHome Version Pinning
 
@@ -127,7 +134,8 @@ git push origin main --tags
 ## Notes
 
 - The baseline `openquatt_duo_waveshare.yaml` is secrets-free and suitable for CI builds.
-- First-install UX now lives on the GitHub Pages installer at `https://jeroen85.github.io/OpenQuatt/install/`, which builds ESP Web Tools manifests dynamically in the browser against the latest stable release binaries.
+- First-install UX now lives on the GitHub Pages installer at `https://jeroen85.github.io/OpenQuatt/install/`, which builds ESP Web Tools manifests dynamically in the browser against same-origin stable factory binaries mirrored onto Pages.
 - `openquatt-duo-ota.manifest.json` and `openquatt-single-ota.manifest.json` are intended for OTA update flows.
 - Duo firmware reads `${release_manifest_url}` from `openquatt_base.yaml`, Single firmware reads it from `openquatt_base_single.yaml`.
+- OTA manifests and OTA binaries remain on GitHub Releases; only first-install factory binaries are mirrored onto Pages for Web Serial/CORS compatibility.
 - Workflow files must remain directly under `.github/workflows/` (GitHub does not load workflows from nested subfolders).
