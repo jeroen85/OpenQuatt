@@ -14,7 +14,8 @@
 # ==============================================================================
 logger:
   level: DEBUG
-  baud_rate: 0
+  initial_level: INFO
+  baud_rate: 115200
   runtime_tag_levels: true
 
 api:
@@ -34,6 +35,10 @@ wifi:
     password: "openquatt"
 
 captive_portal:
+
+# Enable ESP Web Tools Wi-Fi provisioning while keeping AP fallback available.
+improv_serial:
+  next_url: "http://{{ip_address}}/"
 
 # ==============================================================================
 # HTTP REQUEST (shared CIC + OTA update)

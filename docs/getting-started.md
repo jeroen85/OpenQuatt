@@ -131,6 +131,8 @@ Or run the helper script:
 
 For the stock stable firmware, prefer the
 [OpenQuatt web installer](https://jeroen85.github.io/OpenQuatt/install/).
+That flow now supports browser-based Wi-Fi provisioning after flashing, with the
+OpenQuatt fallback access point still available if provisioning is interrupted.
 
 For local source builds, run:
 
