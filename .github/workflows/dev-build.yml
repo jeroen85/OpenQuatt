@@ -157,9 +157,7 @@ jobs:
             Commit: `${{ github.sha }}`
             Version: `${{ steps.dev_meta.outputs.version }}`
           files: |
-            openquatt-duo-install.manifest.json
             openquatt-duo-ota.manifest.json
-            openquatt-single-install.manifest.json
             openquatt-single-ota.manifest.json
             dist/openquatt-duo-waveshare.firmware.ota.bin
             dist/openquatt-duo-waveshare.firmware.factory.bin

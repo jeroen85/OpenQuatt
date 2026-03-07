@@ -13,9 +13,10 @@ This documentation set is organized for fast onboarding and professional mainten
 
 ### Path A: First install / first run
 
-1. [Getting Started](getting-started.md)
-2. [System Overview](system-overview.md)
-3. [Home Assistant Dashboard](home-assistant-dashboard.md)
+1. [Web Installer](install/)
+2. [Getting Started](getting-started.md)
+3. [System Overview](system-overview.md)
+4. [Home Assistant Dashboard](home-assistant-dashboard.md)
 
 ### Path B: Daily operation, tuning, and troubleshooting
 
@@ -35,6 +36,10 @@ This documentation set is organized for fast onboarding and professional mainten
 ```text
 docs/
 ├── README.md
+├── install/
+│   ├── index.html
+│   ├── install.css
+│   └── install.js
 ├── getting-started.md
 ├── system-overview.md
 ├── control-modes-and-flow.md
@@ -59,6 +64,7 @@ docs/
 ## What Each Document Covers
 
 - `getting-started.md`: hardware prerequisites, baseline runtime, build/flash flow, first validation.
+- `install/`: GitHub Pages first-install flow that generates a profile-specific ESP Web Tools manifest for the latest stable release.
 - `system-overview.md`: package architecture, control ownership, data pipeline, safety model.
 - `control-modes-and-flow.md`: CM behavior, Flow Mode semantics, Heating Strategy modes, and precedence.
 - `settings-reference.md`: compile-time vs runtime settings, including low-load and anti-flip controls.

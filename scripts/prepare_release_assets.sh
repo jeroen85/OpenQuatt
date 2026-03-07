@@ -31,60 +31,6 @@ DUO_OTA_ESP32_MD5="$(md5sum "$DUO_OTA_ESP32_BIN" | awk '{print $1}')"
 SINGLE_OTA_S3_MD5="$(md5sum "$SINGLE_OTA_S3_BIN" | awk '{print $1}')"
 SINGLE_OTA_ESP32_MD5="$(md5sum "$SINGLE_OTA_ESP32_BIN" | awk '{print $1}')"
 
-cat > openquatt-duo-install.manifest.json <<EOF
-{
-  "name": "OpenQuatt Duo",
-  "version": "${VERSION}",
-  "builds": [
-    {
-      "chipFamily": "ESP32-S3",
-      "parts": [
-        {
-          "path": "${BASE_URL}/openquatt-duo-waveshare.firmware.factory.bin",
-          "offset": 0
-        }
-      ]
-    },
-    {
-      "chipFamily": "ESP32",
-      "parts": [
-        {
-          "path": "${BASE_URL}/openquatt-duo-heatpump-listener.firmware.factory.bin",
-          "offset": 0
-        }
-      ]
-    }
-  ]
-}
-EOF
-
-cat > openquatt-single-install.manifest.json <<EOF
-{
-  "name": "OpenQuatt Single",
-  "version": "${VERSION}",
-  "builds": [
-    {
-      "chipFamily": "ESP32-S3",
-      "parts": [
-        {
-          "path": "${BASE_URL}/openquatt-single-waveshare.firmware.factory.bin",
-          "offset": 0
-        }
-      ]
-    },
-    {
-      "chipFamily": "ESP32",
-      "parts": [
-        {
-          "path": "${BASE_URL}/openquatt-single-heatpump-listener.firmware.factory.bin",
-          "offset": 0
-        }
-      ]
-    }
-  ]
-}
-EOF
-
 cat > openquatt-duo-ota.manifest.json <<EOF
 {
   "name": "OpenQuatt Duo",
