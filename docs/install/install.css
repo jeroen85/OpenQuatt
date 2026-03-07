@@ -175,14 +175,20 @@ h2 {
 }
 
 .step {
+  position: relative;
+  z-index: 2;
   display: flex;
   gap: 16px;
   align-items: start;
-  margin-bottom: 18px;
+  margin-bottom: 22px;
 }
 
 .step + .step {
   margin-top: 28px;
+}
+
+.choice-grid + .step {
+  margin-top: 44px;
 }
 
 .step-number {
@@ -204,6 +210,8 @@ h2 {
 }
 
 .choice-grid {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
