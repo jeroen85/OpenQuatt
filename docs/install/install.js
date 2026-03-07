@@ -1,4 +1,6 @@
 const FACTORY_ROOT = new URL("../firmware/main/", window.location.href).toString().replace(/\/$/, "");
+const VERSION_URL = new URL("../firmware/main/version.json", window.location.href).toString();
+const FALLBACK_RELEASE_URL = "https://github.com/jeroen85/OpenQuatt/releases/latest";
 
 const PROFILES = {
   duo: {
@@ -35,15 +37,25 @@ const PROFILES = {
 
 const selectionTitle = document.getElementById("selection-title");
 const selectionCopy = document.getElementById("selection-copy");
+const selectionVersion = document.getElementById("selection-version");
 const selectionTopology = document.getElementById("selection-topology");
 const selectionHardware = document.getElementById("selection-hardware");
 const selectionChip = document.getElementById("selection-chip");
 const selectionFile = document.getElementById("selection-file");
+const releaseLink = document.getElementById("release-link");
 const installPanel = document.getElementById("install-panel");
 const installState = document.getElementById("install-state");
 const installButton = document.getElementById("install-button");
 
 let activeManifestUrl;
+let releaseInfo = {
+  version: "latest",
+  releaseUrl: FALLBACK_RELEASE_URL,
+};
+
+function getStableVersionLabel() {
+  return releaseInfo.version === "latest" ? "Latest stable" : releaseInfo.version;
+}
 
 function getSelectedProfile() {
   const topology = document.querySelector('input[name="topology"]:checked')?.value;
@@ -63,7 +75,7 @@ function getSelectedProfile() {
 function buildManifest(profile) {
   return {
     name: profile.title,
-    version: "latest",
+    version: releaseInfo.version,
     new_install_prompt_erase: true,
     new_install_improv_wait_time: 30,
     builds: [
@@ -95,11 +107,15 @@ function updateInstallManifest(profile) {
 
 function updateSummary() {
   const profile = getSelectedProfile();
+  const stableVersionLabel = getStableVersionLabel();
+
+  releaseLink.href = releaseInfo.releaseUrl;
 
   if (!profile) {
     selectionTitle.textContent = "Choose setup and hardware first";
     selectionCopy.textContent =
       "The installer will generate a one-off ESP Web Tools manifest for the exact profile you pick here.";
+    selectionVersion.textContent = stableVersionLabel;
     selectionTopology.textContent = "Not selected";
     selectionHardware.textContent = "Not selected";
     selectionChip.textContent = "Not selected";
@@ -114,7 +130,8 @@ function updateSummary() {
 
   selectionTitle.textContent = profile.title;
   selectionCopy.textContent =
-    "This installer points at the stable factory image mirrored on this site for the selected profile.";
+    `This installer points at stable ${stableVersionLabel} mirrored on this site for the selected profile.`;
+  selectionVersion.textContent = stableVersionLabel;
   selectionTopology.textContent = PROFILES[profile.topology].label;
   selectionHardware.textContent = profile.hardwareLabel;
   selectionChip.textContent = profile.chipFamily;
@@ -128,6 +145,27 @@ document.querySelectorAll('input[name="topology"], input[name="hardware"]').forE
   input.addEventListener("change", updateSummary);
 });
 
+async function loadReleaseInfo() {
+  try {
+    const response = await fetch(VERSION_URL, { cache: "no-cache" });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const metadata = await response.json();
+    if (typeof metadata.version === "string" && metadata.version) {
+      releaseInfo.version = metadata.version;
+    }
+    if (typeof metadata.release_url === "string" && metadata.release_url) {
+      releaseInfo.releaseUrl = metadata.release_url;
+    }
+  } catch (error) {
+    console.warn("Failed to load mirrored release metadata", error);
+  } finally {
+    updateSummary();
+  }
+}
+
 window.addEventListener("beforeunload", () => {
   if (activeManifestUrl) {
     URL.revokeObjectURL(activeManifestUrl);
@@ -135,3 +173,4 @@ window.addEventListener("beforeunload", () => {
 });
 
 updateSummary();
+loadReleaseInfo();
