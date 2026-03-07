@@ -2,7 +2,7 @@ name: Pages Deploy
 
 on:
   push:
-    branches: [dev]
+    branches: [main]
     paths:
       - "docs/**"
       - "scripts/prepare_pages_site.sh"
@@ -28,7 +28,7 @@ jobs:
       - name: Checkout site source
         uses: actions/checkout@v4
         with:
-          ref: dev
+          ref: main
 
       - name: Download latest stable factory binaries
         env:
