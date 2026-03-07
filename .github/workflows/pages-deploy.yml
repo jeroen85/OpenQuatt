@@ -41,8 +41,25 @@ jobs:
             --dir .tmp/pages-firmware \
             --clobber
 
+      - name: Capture latest stable release metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="$(gh release view --repo "${GITHUB_REPOSITORY}" --json tagName --jq .tagName)"
+          RELEASE_URL="$(gh release view --repo "${GITHUB_REPOSITORY}" --json url --jq .url)"
+          mkdir -p .tmp/pages-metadata
+          cat > .tmp/pages-metadata/version.json <<EOF
+          {
+            "version": "${VERSION}",
+            "release_url": "${RELEASE_URL}"
+          }
+          EOF
+
       - name: Assemble Pages site
         run: ./scripts/prepare_pages_site.sh site .tmp/pages-firmware
+
+      - name: Add mirrored release metadata
+        run: install -m 0644 .tmp/pages-metadata/version.json site/firmware/main/version.json
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
