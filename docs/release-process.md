@@ -68,6 +68,7 @@ Keep the source-controlled `project_version` aligned with the next intended stab
 - `project_version` in `openquatt/oq_substitutions_common.yaml` remains the user-facing firmware version.
 - `release_channel` in `openquatt/oq_substitutions_common.yaml` identifies the running channel (`main` or `dev`).
 - `release_manifest_url` selects which OTA manifest the built-in update entity uses.
+- `Firmware Update` checks the selected OTA manifest every `4h`.
 - `Firmware Update Channel` is a runtime select that switches the OTA manifest between the baked-in `main` and `dev` URLs and immediately refreshes the update entity.
 
 The running firmware exposes both `OpenQuatt Version` and `OpenQuatt Release Channel` in diagnostics, while `Firmware Update Channel` controls which OTA track the device should follow next.

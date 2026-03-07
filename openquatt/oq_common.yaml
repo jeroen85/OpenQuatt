@@ -201,6 +201,7 @@ update:
     id: oq_firmware_update
     name: Firmware Update
     source: ${release_manifest_url}
+    update_interval: 4h
     icon: mdi:update
     entity_category: diagnostic
     web_server:
