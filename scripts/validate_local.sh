@@ -35,6 +35,21 @@ run_esphome() {
   PLATFORMIO_CORE_DIR="${PIO_CORE_DIR}" esphome "$@"
 }
 
+validate_config() {
+  local config="$1"
+  local stem="${config%.yaml}"
+  local log_file="${LOG_DIR}/${stem}.config.log"
+
+  if run_esphome config "${config}" >"${log_file}" 2>&1; then
+    echo "[ok] ${config}"
+  else
+    local rc=$?
+    echo "[FAIL] ${config} (config exit ${rc}), log: ${log_file}" >&2
+    tail -n 80 "${log_file}" >&2 || true
+    return "${rc}"
+  fi
+}
+
 echo "PlatformIO core dir: ${PIO_CORE_DIR}"
 echo "Parallel compile jobs: ${JOBS}"
 
@@ -47,10 +62,11 @@ echo "[docs] Valideren: docs consistency"
 python3 scripts/check_docs_consistency.py
 
 step=1
+total_configs=${#CONFIG_FILES[@]}
 for config in "${CONFIG_FILES[@]}"; do
-  echo "[config ${step}/4] Valideren: ${config}"
-  run_esphome config "${config}"
-  ((step++))
+  echo "[config ${step}/${total_configs}] Valideren: ${config}"
+  validate_config "${config}"
+  ((step += 1))
 done
 
 COMPILE_FILES=("${CONFIG_FILES[@]}")
@@ -99,7 +115,7 @@ for config in "${COMPILE_FILES[@]}"; do
   log_file="${LOG_DIR}/${stem}.log"
   if [[ ! -f "${status_file}" ]]; then
     echo "[FAIL] ${config}: geen statusbestand aangemaakt." >&2
-    ((failures++))
+    failures=$((failures + 1))
     continue
   fi
 
@@ -107,7 +123,7 @@ for config in "${COMPILE_FILES[@]}"; do
   if [[ "${rc}" != "0" ]]; then
     echo "[FAIL] ${config} (exit ${rc}), log: ${log_file}" >&2
     tail -n 80 "${log_file}" >&2 || true
-    ((failures++))
+    failures=$((failures + 1))
     continue
   fi
 

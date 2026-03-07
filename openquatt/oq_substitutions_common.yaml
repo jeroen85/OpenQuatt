@@ -16,7 +16,6 @@ project_name: "openquatt.openquatt"                   # ESPHome project identifi
 project_version: "v0.16.3"                            # ESPHome project version shown in firmware metadata.
 release_channel: "main"                               # Firmware release channel shown in diagnostics (`main` or `dev`).
 hp_perf_map_header: "openquatt/includes/hp_perf_map.h" # C++ performance-map header include path.
-oq_topology_duo: "1"                                  # Compile-time topology flag: 1=Duo, 0=Single.
 
 # ----------------------------
 # HARDWARE

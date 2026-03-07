@@ -32,8 +32,8 @@ esphome:
     - ${hp_perf_map_header}
   platformio_options:
     build_flags:
-      # Duo build flag comes from substitutions (`oq_topology_duo`, default "1").
-      - -DOQ_TOPOLOGY_DUO=${oq_topology_duo}
+      # Hard-pinned for Duo entrypoints to prevent accidental topology drift.
+      - -DOQ_TOPOLOGY_DUO=1
   on_boot:
     priority: -100
     then:
