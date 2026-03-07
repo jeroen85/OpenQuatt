@@ -54,35 +54,42 @@ Release coverage:
 
 ## Quick Start
 
-### 1. Download the correct firmware from the latest release
+### 1. Open the web installer
 
-Open the [latest OpenQuatt release](https://github.com/jeroen85/OpenQuatt/releases/latest) and download the `*.firmware.factory.bin` file that matches your setup:
+Open the [OpenQuatt installer](https://jeroen85.github.io/OpenQuatt/install/) and choose your exact combination:
 
-- Duo + Waveshare ESP32-S3-Relay-1CH: `openquatt-duo-waveshare.firmware.factory.bin`
-- Duo + Heatpump Listener: `openquatt-duo-heatpump-listener.firmware.factory.bin`
-- Single + Waveshare ESP32-S3-Relay-1CH: `openquatt-single-waveshare.firmware.factory.bin`
-- Single + Heatpump Listener: `openquatt-single-heatpump-listener.firmware.factory.bin`
+- Duo + Waveshare ESP32-S3-Relay-1CH
+- Duo + Heatpump Listener
+- Single + Waveshare ESP32-S3-Relay-1CH
+- Single + Heatpump Listener
 
-Use the `factory.bin` file for first installation.
+The installer always flashes the latest stable `factory.bin` from the current GitHub release.
 
 If you want custom changes, build from source via [Getting Started](docs/getting-started.md).
 
-### 2. Install the firmware with `web.esphome.io`
+### 2. Install the firmware over USB
 
-1. Open [web.esphome.io](https://web.esphome.io/).
+1. Open the installer page in Chrome or Edge.
 2. Connect your ESP board over USB.
-3. Start the manual installation flow.
-4. Select the `*.firmware.factory.bin` file you downloaded from the latest release.
-5. Complete the flashing process and wait for the board to reboot.
+3. Select the matching setup and hardware profile.
+4. Start the installation flow and wait for the board to reboot.
+5. Keep the browser tab open after flashing so ESP Web Tools can offer Wi-Fi provisioning over USB.
 
 Firmware file types:
 
 - `*.firmware.factory.bin` is for the first installation on a board over USB.
 - `*.firmware.ota.bin` is for updating a device that is already running OpenQuatt.
 
+Manual fallback:
+
+- Open the [latest OpenQuatt release](https://github.com/jeroen85/OpenQuatt/releases/latest) and download the matching `*.firmware.factory.bin`.
+- Flash it manually with [web.esphome.io](https://web.esphome.io/).
+
 ### 3. Configure Wi-Fi after first boot
 
-After flashing, OpenQuatt starts its fallback access point:
+After flashing, prefer the browser-based Wi-Fi setup offered by ESP Web Tools.
+
+If that flow is unavailable or interrupted, OpenQuatt still starts its fallback access point:
 
 - SSID: `OpenQuatt`
 - Password: `openquatt`
@@ -91,8 +98,8 @@ Connect to that access point and complete the captive portal flow to enter your 
 
 Note:
 
-- Wi-Fi provisioning currently happens through the fallback AP and captive portal.
-- `web.esphome.io` is therefore used for flashing first, not for the final Wi-Fi setup flow.
+- The preferred first-install flow is now USB flashing plus browser-based Wi-Fi provisioning through `improv_serial`.
+- The fallback AP and captive portal remain available as the recovery path.
 
 ### 4. Finish setup in Home Assistant
 

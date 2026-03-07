@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenQuatt Installer</title>
+    <meta
+      name="description"
+      content="Install the latest stable OpenQuatt firmware on a supported Waveshare or Heatpump Listener board."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="install.css" />
+    <script
+      type="module"
+      src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"
+    ></script>
+    <script type="module" src="install.js"></script>
+  </head>
+  <body>
+    <div class="backdrop backdrop-left"></div>
+    <div class="backdrop backdrop-right"></div>
+    <main class="page-shell">
+      <section class="hero card reveal">
+        <p class="eyebrow">OpenQuatt / Main Channel</p>
+        <div class="hero-grid">
+          <div>
+            <div class="logo-frame">
+              <img
+                class="logo"
+                src="../assets/openquatt_logo.svg"
+                alt="OpenQuatt"
+                width="300"
+                height="101"
+              />
+            </div>
+            <h1>Install the latest stable firmware without hunting for binaries.</h1>
+            <p class="lead">
+              Choose your setup and hardware profile, then flash the matching
+              OpenQuatt factory image over USB. OTA updates stay on the existing
+              GitHub Release flow after first boot.
+            </p>
+          </div>
+          <aside class="hero-notes">
+            <p>Use Chrome or Edge on desktop.</p>
+            <p>Connect with a USB data cable, not power-only.</p>
+            <p>Keep this page open after flashing so the browser can offer Wi-Fi setup over USB.</p>
+            <p>If that fails, the OpenQuatt fallback access point remains available.</p>
+          </aside>
+        </div>
+      </section>
+
+      <section class="layout">
+        <section class="card chooser reveal">
+          <div class="step">
+            <p class="step-number">1</p>
+            <div>
+              <h2>Pick your setup</h2>
+              <p class="step-copy">This decides whether the firmware runs in Single or Duo topology.</p>
+            </div>
+          </div>
+          <div class="choice-grid" id="topology-grid">
+            <label class="choice-card">
+              <input type="radio" name="topology" value="single" />
+              <span class="choice-title">Single</span>
+              <span class="choice-body">Single heat pump topology with Duo-only logic compiled out.</span>
+            </label>
+            <label class="choice-card">
+              <input type="radio" name="topology" value="duo" />
+              <span class="choice-title">Duo</span>
+              <span class="choice-body">Two heat pumps enabled in the compiled topology.</span>
+            </label>
+          </div>
+
+          <div class="step">
+            <p class="step-number">2</p>
+            <div>
+              <h2>Pick your ESP module</h2>
+              <p class="step-copy">This decides the exact board mapping and factory image to flash.</p>
+            </div>
+          </div>
+          <div class="choice-grid" id="hardware-grid">
+            <label class="choice-card">
+              <input type="radio" name="hardware" value="waveshare" />
+              <span class="choice-title">Waveshare</span>
+              <span class="choice-body">ESP32-S3-Relay-1CH board using the ESP32-S3 build.</span>
+            </label>
+            <label class="choice-card">
+              <input type="radio" name="hardware" value="heatpump-listener" />
+              <span class="choice-title">Heatpump Listener</span>
+              <span class="choice-body">ESP32 Heatpump Listener board using the ESP32 build.</span>
+            </label>
+          </div>
+        </section>
+
+        <aside class="card summary reveal">
+          <p class="eyebrow">Selected Firmware</p>
+          <h2 id="selection-title">Choose setup and hardware first</h2>
+          <p class="summary-copy" id="selection-copy">
+            The installer will generate a one-off ESP Web Tools manifest for the exact profile you pick here.
+          </p>
+
+          <dl class="summary-list">
+            <div>
+              <dt>Setup</dt>
+              <dd id="selection-topology">Not selected</dd>
+            </div>
+            <div>
+              <dt>Hardware</dt>
+              <dd id="selection-hardware">Not selected</dd>
+            </div>
+            <div>
+              <dt>Chip Family</dt>
+              <dd id="selection-chip">Not selected</dd>
+            </div>
+            <div>
+              <dt>Factory Image</dt>
+              <dd id="selection-file">Not selected</dd>
+            </div>
+          </dl>
+
+          <div class="install-panel" id="install-panel" data-ready="false">
+            <p class="install-state" id="install-state">Finish both selections to unlock the installer.</p>
+            <esp-web-install-button id="install-button">
+              <button class="install-cta" slot="activate">Install OpenQuatt</button>
+              <span class="install-fallback" slot="unsupported">
+                Web Serial is not available in this browser. Use Chrome or Edge on desktop.
+              </span>
+              <span class="install-fallback" slot="not-allowed">
+                Open the installer over HTTPS to access Web Serial.
+              </span>
+            </esp-web-install-button>
+          </div>
+
+          <div class="manual-panel">
+            <p>Manual fallback</p>
+            <a href="https://github.com/jeroen85/OpenQuatt/releases/latest" target="_blank" rel="noreferrer">
+              Open the latest stable release
+            </a>
+            <a href="https://web.esphome.io/" target="_blank" rel="noreferrer">
+              Flash a downloaded factory binary in ESP Web Tools
+            </a>
+          </div>
+        </aside>
+      </section>
+    </main>
+  </body>
+</html>

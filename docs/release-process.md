@@ -1,6 +1,7 @@
 # Release Process
 
 This project uses GitHub Actions for automated validation, firmware compilation, and release asset publishing.
+Documentation consistency is validated locally via `./scripts/validate_local.sh`.
 
 ## Branch Model
 
@@ -24,27 +25,28 @@ Firmware should expose its channel explicitly via `release_channel` so Home Assi
     - `esphome config openquatt_single_heatpump_listener.yaml`
     - `esphome compile openquatt_single_heatpump_listener.yaml`
     - Upload compiled firmware artifacts per profile
-- `/.github/workflows/docs-consistency.yml`
-  - Trigger: push to `main` or `dev`, pull requests
-  - Actions:
-    - run `scripts/check_docs_consistency.py --changed-only`
-    - emit non-blocking warnings on likely docs drift (does not fail CI)
 - `/.github/workflows/release-build.yml`
   - Trigger: tag push `v*` and manual dispatch
   - Actions:
     - validate + compile all four topology/hardware profiles
     - publish explicit Duo and Single release assets for both hardware targets
-    - generate `openquatt-duo-install.manifest.json` and `openquatt-single-install.manifest.json` for first install via `web.esphome.io`
     - generate `openquatt-duo-ota.manifest.json` and `openquatt-single-ota.manifest.json` for OTA update checks
     - create/update GitHub Release
-    - attach release firmware binaries and manifests to the release
+    - attach release firmware binaries and OTA manifests to the release
 - `/.github/workflows/dev-build.yml`
   - Trigger: push to `dev`, manual dispatch
   - Actions:
     - compile all four profiles with `release_channel=dev`
-    - override `project_version` to `${base_version}-dev+<shortsha>`
+    - override `project_version` to `${base_version}-dev.<run_number>+<shortsha>`
     - move the mutable `dev-latest` tag to the newest `dev` commit
-    - publish/update a prerelease that contains install + OTA manifests for the dev channel
+    - publish/update a prerelease that contains binaries + OTA manifests for the dev channel
+- `/.github/workflows/pages-deploy.yml`
+  - Trigger: push to `dev` when docs/install assets change, published stable release, manual dispatch
+  - Actions:
+    - check out the `dev` branch docs as the Pages site source
+    - download the latest stable `*.firmware.factory.bin` assets from GitHub Releases
+    - mirror those first-install binaries into the Pages artifact under `/firmware/main/`
+    - deploy the resulting site via GitHub Pages Actions
 
 ## ESPHome Version Pinning
 
@@ -65,13 +67,14 @@ Recommended increments:
 - Minor: new backward-compatible functionality
 - Major: breaking changes
 
-Keep the source-controlled `project_version` aligned with the next intended stable release. Published dev-channel artifacts should override that at build time to `${project_version}-dev+<shortsha>` while also setting `release_channel=dev`. That keeps the base version readable while giving the OTA entity a unique version per dev commit.
+Keep the source-controlled `project_version` aligned with the next intended stable release. Published dev-channel artifacts should override that at build time to `${project_version}-dev.<run_number>+<shortsha>` while also setting `release_channel=dev`. The monotonically increasing prerelease number is important: SemVer ignores everything after `+`, so SHA-only build metadata does not count as a newer OTA version on its own.
 
 ## Channel Metadata
 
 - `project_version` in `openquatt/oq_substitutions_common.yaml` remains the user-facing firmware version.
 - `release_channel` in `openquatt/oq_substitutions_common.yaml` identifies the running channel (`main` or `dev`).
 - `release_manifest_url` selects which OTA manifest the built-in update entity uses.
+- `Firmware Update` checks the selected OTA manifest every `4h`.
 - `Firmware Update Channel` is a runtime select that switches the OTA manifest between the baked-in `main` and `dev` URLs and immediately refreshes the update entity.
 
 The running firmware exposes both `OpenQuatt Version` and `OpenQuatt Release Channel` in diagnostics, while `Firmware Update Channel` controls which OTA track the device should follow next.
@@ -82,7 +85,8 @@ Reuse the existing topology/hardware entrypoints and override channel-specific s
 
 ```bash
 BASE_VERSION="$(awk -F'\"' '/^project_version: / { print $2 }' openquatt/oq_substitutions_common.yaml)"
-DEV_VERSION="${BASE_VERSION}-dev+local"
+DEV_STAMP="$(date -u +%Y%m%d%H%M%S)"
+DEV_VERSION="${BASE_VERSION}-dev.${DEV_STAMP}+local"
 
 esphome \
   -s project_version "${DEV_VERSION}" \
@@ -116,9 +120,7 @@ git push origin main --tags
    - CI should be green.
    - Release workflow should publish artifacts.
 5. Verify GitHub Release contains:
-   - `openquatt-duo-install.manifest.json`
    - `openquatt-duo-ota.manifest.json`
-   - `openquatt-single-install.manifest.json`
    - `openquatt-single-ota.manifest.json`
    - `openquatt-duo-waveshare.firmware.ota.bin`
    - `openquatt-duo-waveshare.firmware.factory.bin`
@@ -132,7 +134,8 @@ git push origin main --tags
 ## Notes
 
 - The baseline `openquatt_duo_waveshare.yaml` is secrets-free and suitable for CI builds.
-- `openquatt-duo-install.manifest.json` and `openquatt-single-install.manifest.json` are intended for first install via `web.esphome.io`.
+- First-install UX now lives on the GitHub Pages installer at `https://jeroen85.github.io/OpenQuatt/install/`, which builds ESP Web Tools manifests dynamically in the browser against same-origin stable factory binaries mirrored onto Pages.
 - `openquatt-duo-ota.manifest.json` and `openquatt-single-ota.manifest.json` are intended for OTA update flows.
 - Duo firmware reads `${release_manifest_url}` from `openquatt_base.yaml`, Single firmware reads it from `openquatt_base_single.yaml`.
+- OTA manifests and OTA binaries remain on GitHub Releases; only first-install factory binaries are mirrored onto Pages for Web Serial/CORS compatibility.
 - Workflow files must remain directly under `.github/workflows/` (GitHub does not load workflows from nested subfolders).

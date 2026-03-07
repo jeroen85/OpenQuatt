@@ -56,7 +56,7 @@ jobs:
         run: |
           BASE_VERSION="$(awk -F'\"' '/^project_version: / { print $2 }' openquatt/oq_substitutions_common.yaml)"
           SHORT_SHA="${GITHUB_SHA::7}"
-          DEV_VERSION="${BASE_VERSION}-dev+${SHORT_SHA}"
+          DEV_VERSION="${BASE_VERSION}-dev.${GITHUB_RUN_NUMBER}+${SHORT_SHA}"
           echo "version=${DEV_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Validate config
@@ -101,7 +101,7 @@ jobs:
         run: |
           BASE_VERSION="$(awk -F'\"' '/^project_version: / { print $2 }' openquatt/oq_substitutions_common.yaml)"
           SHORT_SHA="${GITHUB_SHA::7}"
-          DEV_VERSION="${BASE_VERSION}-dev+${SHORT_SHA}"
+          DEV_VERSION="${BASE_VERSION}-dev.${GITHUB_RUN_NUMBER}+${SHORT_SHA}"
           echo "version=${DEV_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Download Duo Waveshare artifacts
@@ -157,9 +157,7 @@ jobs:
             Commit: `${{ github.sha }}`
             Version: `${{ steps.dev_meta.outputs.version }}`
           files: |
-            openquatt-duo-install.manifest.json
             openquatt-duo-ota.manifest.json
-            openquatt-single-install.manifest.json
             openquatt-single-ota.manifest.json
             dist/openquatt-duo-waveshare.firmware.ota.bin
             dist/openquatt-duo-waveshare.firmware.factory.bin

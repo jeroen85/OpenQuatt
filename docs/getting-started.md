@@ -2,6 +2,10 @@
 
 This guide gets OpenQuatt from repository clone to a validated first run.
 
+If you only want the latest stable firmware without local builds, use the
+[OpenQuatt web installer](https://jeroen85.github.io/OpenQuatt/install/) first.
+This document is the source-build path.
+
 ## Table of Contents
 
 - [1. Prerequisites](#1-prerequisites)
@@ -100,7 +104,8 @@ For a dev-channel build, keep the same entrypoint and override the channel-speci
 
 ```bash
 BASE_VERSION="$(awk -F'\"' '/^project_version: / { print $2 }' openquatt/oq_substitutions_common.yaml)"
-DEV_VERSION="${BASE_VERSION}-dev+local"
+DEV_STAMP="$(date -u +%Y%m%d%H%M%S)"
+DEV_VERSION="${BASE_VERSION}-dev.${DEV_STAMP}+local"
 
 esphome \
   -s project_version "${DEV_VERSION}" \
@@ -124,7 +129,12 @@ Or run the helper script:
 
 ## 6. Flash and Boot
 
-Run:
+For the stock stable firmware, prefer the
+[OpenQuatt web installer](https://jeroen85.github.io/OpenQuatt/install/).
+That flow now supports browser-based Wi-Fi provisioning after flashing, with the
+OpenQuatt fallback access point still available if provisioning is interrupted.
+
+For local source builds, run:
 
 ```bash
 esphome run openquatt_duo_waveshare.yaml
