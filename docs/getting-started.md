@@ -2,6 +2,10 @@
 
 This guide gets OpenQuatt from repository clone to a validated first run.
 
+If you only want the latest stable firmware without local builds, use the
+[OpenQuatt web installer](https://jeroen85.github.io/OpenQuatt/install/) first.
+This document is the source-build path.
+
 ## Table of Contents
 
 - [1. Prerequisites](#1-prerequisites)
@@ -125,7 +129,10 @@ Or run the helper script:
 
 ## 6. Flash and Boot
 
-Run:
+For the stock stable firmware, prefer the
+[OpenQuatt web installer](https://jeroen85.github.io/OpenQuatt/install/).
+
+For local source builds, run:
 
 ```bash
 esphome run openquatt_duo_waveshare.yaml

@@ -30,17 +30,16 @@ Firmware should expose its channel explicitly via `release_channel` so Home Assi
   - Actions:
     - validate + compile all four topology/hardware profiles
     - publish explicit Duo and Single release assets for both hardware targets
-    - generate `openquatt-duo-install.manifest.json` and `openquatt-single-install.manifest.json` for first install via `web.esphome.io`
     - generate `openquatt-duo-ota.manifest.json` and `openquatt-single-ota.manifest.json` for OTA update checks
     - create/update GitHub Release
-    - attach release firmware binaries and manifests to the release
+    - attach release firmware binaries and OTA manifests to the release
 - `/.github/workflows/dev-build.yml`
   - Trigger: push to `dev`, manual dispatch
   - Actions:
     - compile all four profiles with `release_channel=dev`
     - override `project_version` to `${base_version}-dev.<run_number>+<shortsha>`
     - move the mutable `dev-latest` tag to the newest `dev` commit
-    - publish/update a prerelease that contains install + OTA manifests for the dev channel
+    - publish/update a prerelease that contains binaries + OTA manifests for the dev channel
 
 ## ESPHome Version Pinning
 
@@ -114,9 +113,7 @@ git push origin main --tags
    - CI should be green.
    - Release workflow should publish artifacts.
 5. Verify GitHub Release contains:
-   - `openquatt-duo-install.manifest.json`
    - `openquatt-duo-ota.manifest.json`
-   - `openquatt-single-install.manifest.json`
    - `openquatt-single-ota.manifest.json`
    - `openquatt-duo-waveshare.firmware.ota.bin`
    - `openquatt-duo-waveshare.firmware.factory.bin`
@@ -130,7 +127,7 @@ git push origin main --tags
 ## Notes
 
 - The baseline `openquatt_duo_waveshare.yaml` is secrets-free and suitable for CI builds.
-- `openquatt-duo-install.manifest.json` and `openquatt-single-install.manifest.json` are intended for first install via `web.esphome.io`.
+- First-install UX now lives on the GitHub Pages installer at `https://jeroen85.github.io/OpenQuatt/install/`, which builds ESP Web Tools manifests dynamically in the browser against the latest stable release binaries.
 - `openquatt-duo-ota.manifest.json` and `openquatt-single-ota.manifest.json` are intended for OTA update flows.
 - Duo firmware reads `${release_manifest_url}` from `openquatt_base.yaml`, Single firmware reads it from `openquatt_base_single.yaml`.
 - Workflow files must remain directly under `.github/workflows/` (GitHub does not load workflows from nested subfolders).
