@@ -33,7 +33,7 @@ Each entrypoint includes:
 Shared runtime services are loaded from `openquatt/oq_common.yaml`, including:
 
 - logging, API, and OTA
-- Wi-Fi fallback and captive portal
+- Improv Serial Wi-Fi provisioning plus captive portal fallback
 - HTTP client and Modbus transport
 
 Package include order is intentional:

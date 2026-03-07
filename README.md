@@ -73,6 +73,7 @@ If you want custom changes, build from source via [Getting Started](docs/getting
 2. Connect your ESP board over USB.
 3. Select the matching setup and hardware profile.
 4. Start the installation flow and wait for the board to reboot.
+5. Keep the browser tab open after flashing so ESP Web Tools can offer Wi-Fi provisioning over USB.
 
 Firmware file types:
 
@@ -86,7 +87,9 @@ Manual fallback:
 
 ### 3. Configure Wi-Fi after first boot
 
-After flashing, OpenQuatt starts its fallback access point:
+After flashing, prefer the browser-based Wi-Fi setup offered by ESP Web Tools.
+
+If that flow is unavailable or interrupted, OpenQuatt still starts its fallback access point:
 
 - SSID: `OpenQuatt`
 - Password: `openquatt`
@@ -95,8 +98,8 @@ Connect to that access point and complete the captive portal flow to enter your 
 
 Note:
 
-- Wi-Fi provisioning currently happens through the fallback AP and captive portal.
-- The installer page only handles flashing; network setup still happens on the device itself after reboot.
+- The preferred first-install flow is now USB flashing plus browser-based Wi-Fi provisioning through `improv_serial`.
+- The fallback AP and captive portal remain available as the recovery path.
 
 ### 4. Finish setup in Home Assistant
 

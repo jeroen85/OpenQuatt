@@ -65,6 +65,7 @@ function buildManifest(profile) {
     name: profile.title,
     version: "latest",
     new_install_prompt_erase: true,
+    new_install_improv_wait_time: 30,
     builds: [
       {
         chipFamily: profile.chipFamily,
@@ -120,7 +121,7 @@ function updateSummary() {
   selectionFile.textContent = profile.fileName;
   installPanel.dataset.ready = "true";
   installState.textContent =
-    "Ready to flash. After the install completes, let the board reboot and continue setup on the OpenQuatt access point.";
+    "Ready to flash. Keep this page open after reboot so ESP Web Tools can offer Wi-Fi setup over USB, with the OpenQuatt access point as fallback.";
 }
 
 document.querySelectorAll('input[name="topology"], input[name="hardware"]').forEach((input) => {
