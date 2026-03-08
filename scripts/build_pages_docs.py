@@ -32,7 +32,6 @@ PAGES = [
     Page(PurePosixPath("docs/problemen-oplossen-en-afstellen.md"), PurePosixPath("problemen-oplossen-en-afstellen.html"), "Problemen oplossen en afstellen", "Docs", "Veilige volgorde bij klachten, onrustig gedrag en tuning."),
     Page(PurePosixPath("docs/technische-uitleg-standen-en-flow.md"), PurePosixPath("technische-uitleg-standen-en-flow.html"), "Technische uitleg over standen en flow", "Naslag", "Technische runtime-uitleg over modes, flow en bronkeuze."),
     Page(PurePosixPath("docs/instellingen-en-meetwaarden.md"), PurePosixPath("instellingen-en-meetwaarden.html"), "Instellingen en meetwaarden", "Naslag", "Praktische naslag voor runtime- en compile-time instellingen."),
-    Page(PurePosixPath("docs/adaptieve-tuner-ontwerpnotities.md"), PurePosixPath("adaptieve-tuner-ontwerpnotities.html"), "Adaptieve tuner ontwerpnotities", "Naslag", "Toekomstige ontwerpnotities, niet bedoeld als gebruikershandleiding."),
     Page(PurePosixPath("docs/onderhoudsgids.md"), PurePosixPath("onderhoudsgids.html"), "Onderhoudsgids", "Ontwikkelaars", "Onderhoudsregels en refactorcontrole voor de codebase."),
     Page(PurePosixPath("docs/releaseproces.md"), PurePosixPath("releaseproces.html"), "Releaseproces", "Ontwikkelaars", "CI-, release- en Pages-flow voor maintainers."),
 ]

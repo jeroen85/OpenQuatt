@@ -25,20 +25,8 @@ Gebruik je alleen de standaardfirmware, dan is de kortste route meestal de web i
 
 - [Technische uitleg over standen en flow](technische-uitleg-standen-en-flow.md): huidige technische uitleg over systeemstanden en flowgedrag.
 - [Instellingen en meetwaarden](instellingen-en-meetwaarden.md): uitgebreide naslag van instellingen en meetwaarden.
-- [Adaptieve tuner ontwerpnotities](adaptieve-tuner-ontwerpnotities.md): toekomstig ontwerpwerk, geen gebruikershandleiding.
 
 ## Voor ontwikkelaars
 
 - [Onderhoudsgids](onderhoudsgids.md)
 - [Releaseproces](releaseproces.md)
-
-## Niet in deze GitHub-repo
-
-De uitgebreide functionele en technische specificaties worden niet meer als publieke documentatie in deze repo bijgehouden. Ze kunnen lokaal blijven bestaan als privé-referentie, maar maken geen deel meer uit van de hoofdroute voor gebruikers.
-
-## Schrijfregels voor de volgende documentatieronde
-
-- Schrijf in gewoon Nederlands en leg afkortingen direct uit.
-- Begin elke publieke pagina met: wat is dit, wanneer gebruik je dit, en wat doe je als het misgaat.
-- Gebruik productnamen in plaats van bijnamen.
-- Houd de publieksdocumentatie beperkt tot de werkelijk ondersteunde hardwareprofielen.

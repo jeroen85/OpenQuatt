@@ -81,7 +81,6 @@ Technischere naslag blijft beschikbaar, maar staat niet meer centraal in de publ
 
 - [Technische uitleg over standen en flow](docs/technische-uitleg-standen-en-flow.md)
 - [Instellingen en meetwaarden](docs/instellingen-en-meetwaarden.md)
-- [Adaptieve tuner ontwerpnotities](docs/adaptieve-tuner-ontwerpnotities.md)
 
 ## Voor ontwikkelaars
 
