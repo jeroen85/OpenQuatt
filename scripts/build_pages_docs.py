@@ -44,7 +44,7 @@ PRIMARY_NAV = [
     ("Installatie", PurePosixPath("installatie-en-eerste-start.html")),
     ("Dashboard", PurePosixPath("dashboard-uitleg.html")),
     ("Problemen oplossen", PurePosixPath("problemen-oplossen-en-afstellen.html")),
-    ("Installer", PurePosixPath("install/index.html")),
+    ("Installatiehulp", PurePosixPath("install/index.html")),
 ]
 
 DOC_NAV = [
@@ -411,7 +411,7 @@ def render_template(page: Page, lead: str, body_html: str, toc: list[tuple[int, 
           <img class="site-nav-logo" src="{asset_prefix}assets/openquatt_logo.svg" alt="OpenQuatt" />
           <span class="site-nav-title">
             <strong>OpenQuatt</strong>
-            <span>Documentatie en installer</span>
+            <span>Documentatie en installatiehulp</span>
           </span>
         </a>
         <div class="site-nav-links">
@@ -427,7 +427,7 @@ def render_template(page: Page, lead: str, body_html: str, toc: list[tuple[int, 
             <h1>{escape(page.label)}</h1>
             {lead_html}
             <div class="hero-pills">
-              <a href="{rel_url(page.output, PurePosixPath('install/index.html'))}">Naar installer</a>
+              <a href="{rel_url(page.output, PurePosixPath('install/index.html'))}">Naar installatiehulp</a>
               <a href="{rel_url(page.output, PurePosixPath('documentatie.html'))}">Naar documentatie-overzicht</a>
             </div>
           </div>
@@ -458,7 +458,7 @@ def render_template(page: Page, lead: str, body_html: str, toc: list[tuple[int, 
 
       <footer class="card site-footer">
         <p>
-          Liever direct flashen? Gebruik de <a href="{rel_url(page.output, PurePosixPath('install/index.html'))}">web installer</a>.
+          Liever direct flashen? Gebruik de <a href="{rel_url(page.output, PurePosixPath('install/index.html'))}">webinstallatiehulp</a>.
           Wil je de broncode zien of een issue openen, ga dan naar <a href="{GITHUB_REPO_URL}">GitHub</a>.
         </p>
       </footer>
