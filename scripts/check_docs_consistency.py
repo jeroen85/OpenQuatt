@@ -220,7 +220,7 @@ def main() -> int:
         nl_expected = [
             "Overzicht",
             "Energie",
-            "Debiet",
+            "Flow",
             "Warmteregeling",
             "Warmtepompen",
             "Sensorconfiguratie",
@@ -231,7 +231,7 @@ def main() -> int:
         single_nl_expected = [
             "Overzicht",
             "Energie",
-            "Debiet",
+            "Flow",
             "Warmteregeling",
             "HP1",
             "Sensorconfiguratie",

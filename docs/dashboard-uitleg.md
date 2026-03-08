@@ -50,7 +50,7 @@ Dit is meestal de eerste plek bij rare waarden. Hier zie je:
 
 Als de verkeerde bron gekozen is, lijken andere schermen vaak ook onlogisch. Daarom is dit meestal de beste eerste controle.
 
-### Debiet
+### Flow
 
 Gebruik deze tab als:
 
@@ -113,7 +113,7 @@ De gekozen waarde is dan de enige die echt telt voor de regeling.
 Loop dan in deze volgorde:
 
 1. `Sensorconfiguratie`
-2. `Debiet`
+2. `Flow`
 3. `Warmtepompen` of `HP1`
 4. `Diagnostiek`
 5. pas daarna `Afstellen`

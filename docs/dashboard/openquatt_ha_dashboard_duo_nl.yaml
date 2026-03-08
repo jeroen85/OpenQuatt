@@ -29,7 +29,7 @@ views:
 
               - `COP`: verhouding `Power H / Power E` (momentane efficientie).
 
-              - `Debiet`: actuele volumestroom die als basis dient voor
+              - `Flow`: actuele volumestroom die als basis dient voor
               flowbewaking.
 
               - `Buitentemp`: geselecteerde bron voor buitentemperatuur in de
@@ -64,7 +64,7 @@ views:
             features_position: bottom
           - type: tile
             entity: sensor.openquatt_flow_average_selected
-            name: Debiet
+            name: Flow
             vertical: false
             features:
               - type: trend-graph
@@ -98,9 +98,9 @@ views:
 
               Dit blok toont de actieve regeltoestand:
 
-              - `Regelmodus`: huidige bedrijfsmodus/stap van de state machine.
+              - `ControlMode`: huidige bedrijfsmodus/stap van de state machine.
 
-              - `Debietmodus`: manier waarop de pomp/flowregeling momenteel werkt.
+              - `Flow mode`: manier waarop de pomp/flowregeling momenteel werkt.
 
               - `Verwarmingsstrategie`: bron van de warmtevraag (bijv. Power
               House/curve).
@@ -114,12 +114,12 @@ views:
             text_only: true
           - type: tile
             entity: sensor.openquatt_control_mode_label
-            name: Regelmodus
+            name: ControlMode
             vertical: false
             features_position: bottom
           - type: tile
             entity: sensor.openquatt_flow_mode
-            name: Debietmodus
+            name: Flow mode
             vertical: false
             features_position: bottom
           - type: tile
@@ -731,7 +731,7 @@ views:
 
           Energie-overzicht van Warmtepomp, boiler en totaal systeem (dag +
           cumulatief).
-  - title: Debiet
+  - title: Flow
     path: flow
     icon: mdi:waves
     type: sections
@@ -741,7 +741,7 @@ views:
         cards:
           - type: heading
             icon: mdi:waves-arrow-right
-            heading: Debietstatus en regeling
+            heading: Flowstatus en regeling
             heading_style: title
           - type: heading
             icon: ''
@@ -754,19 +754,19 @@ views:
               <summary><strong>Uitleg</strong></summary>
 
 
-              Debietstatus in een oogopslag:
+              Flowstatus in een oogopslag:
 
 
-              - `Debietmodus`: actieve werking van de flowregeling.
+              - `Flow mode`: actieve werking van de flowregeling.
 
-              - `Regelmodus`: actieve supervisory control state.
+              - `ControlMode`: actieve supervisory control state.
 
-              - `Laag-debietalarm`: beveiligingsalarm bij te lage flow.
+              - `Low flow alarm`: beveiligingsalarm bij te lage flow.
 
-              - `Gemiddeld debiet`: geselecteerde gemiddelde flow voor
+              - `Flow (gemiddeld)`: geselecteerde gemiddelde flow voor
               regeling/beveiliging.
 
-              - `Debietverschil`: signaleert hydraulische onbalans tussen HP1 en
+              - `Flow mismatch`: signaleert hydraulische onbalans tussen HP1 en
               HP2.
 
               </details>
@@ -781,22 +781,22 @@ views:
             features_position: bottom
           - type: tile
             entity: sensor.openquatt_control_mode_label
-            name: Regelmodus
+            name: ControlMode
             vertical: false
             features_position: bottom
           - type: tile
             entity: binary_sensor.openquatt_lowflow_fault_active
-            name: Laag-debietalarm
+            name: Low flow alarm
             vertical: false
             features_position: bottom
           - type: tile
             entity: sensor.openquatt_flow_average_selected
-            name: Gemiddeld debiet
+            name: Flow (gemiddeld)
             vertical: false
             features_position: bottom
           - type: tile
             entity: binary_sensor.openquatt_flow_mismatch_hp1_vs_hp2
-            name: Debietverschil
+            name: Flow mismatch
             vertical: false
             features_position: bottom
           - type: heading
@@ -810,13 +810,13 @@ views:
               <summary><strong>Uitleg</strong></summary>
 
 
-              Belangrijkste debietinstellingen:
+              Belangrijkste flowinstellingen:
 
 
-              - `Debietregelmodus`: kies automatische flowregeling of
+              - `Flow control mode`: kies automatische flowregeling of
               handmatige werking.
 
-              - `Doeldebiet`: doel-flow in L/h voor automatische regeling.
+              - `Flow setpoint`: doel-flow in L/h voor automatische regeling.
 
               - `Handmatige iPWM`: stel iPWM waarde in voor handbediening.
 
@@ -855,7 +855,7 @@ views:
         cards:
           - type: heading
             icon: mdi:chart-line
-            heading: Debiettrends
+            heading: Flowtrends
             heading_style: title
           - type: markdown
             content: |-
@@ -863,7 +863,7 @@ views:
 
               <summary><strong>Uitleg</strong></summary>
 
-              - `Debietmetingen` vergelijkt actuele flow met setpoint over tijd.
+              - `Flowmetingen` vergelijkt actuele flow met setpoint over tijd.
 
               - `Pompsturing` toont iPWM-uitsturing van HP1 en HP2.
 
@@ -872,14 +872,14 @@ views:
             grid_options:
               columns: full
           - type: history-graph
-            title: Debietmetingen (4 uur)
+            title: Flowmetingen (4 uur)
             hours_to_show: 4
             refresh_interval: 30
             entities:
               - entity: sensor.openquatt_flow_average_selected
-                name: Debiet
+                name: Flow
               - entity: number.openquatt_flow_setpoint
-                name: Doeldebiet
+                name: Flow setpoint
             grid_options:
               columns: full
           - type: history-graph
@@ -899,7 +899,7 @@ views:
       card:
         type: markdown
         content: |-
-          # <ha-icon icon="mdi:waves"></ha-icon> Debiet
+          # <ha-icon icon="mdi:waves"></ha-icon> Flow
           Bediening, status en trends van flowregeling en pompsturing.
       layout: center
       badges_position: bottom
@@ -928,7 +928,7 @@ views:
               <summary><strong>Uitleg</strong></summary>
 
 
-              - `Regelmodus`: kiest welke strategie de warmtevraag opbouwt
+              - `ControlMode`: kiest welke strategie de warmtevraag opbouwt
               (bijv. Stooklijn of Power House).
 
               - Bij stooklijnregeling verschijnt ook `Heating Curve Control
@@ -941,7 +941,7 @@ views:
             text_only: true
           - type: tile
             entity: select.openquatt_heating_control_mode
-            name: Regelmodus
+            name: ControlMode
             hide_state: true
             vertical: false
             features:
@@ -1290,7 +1290,7 @@ views:
                       color: white
                       font-size: 0.75em
                       transform: none
-                    prefix: 'Vermogen in: '
+                    prefix: 'PowerInput: '
                   - type: state-label
                     entity: sensor.openquatt_hp1_heat_power
                     style:
@@ -1300,7 +1300,7 @@ views:
                       color: white
                       font-size: 0.75em
                       transform: none
-                    prefix: 'Vermogen uit: '
+                    prefix: 'Heat Power: '
                   - type: state-label
                     entity: sensor.openquatt_hp1_cop
                     style:
@@ -1333,19 +1333,19 @@ views:
                   - entity: sensor.openquatt_hp1_active_failures_list
                     name: Actieve storingen
                   - entity: sensor.openquatt_hp1_power_input
-                    name: Ingaand vermogen
+                    name: PowerInput
                   - entity: sensor.openquatt_hp1_heat_power
-                    name: Warmtevermogen
+                    name: Heat Power
                   - entity: sensor.openquatt_hp1_cop
                     name: COP
                   - entity: sensor.openquatt_hp1_flow
-                    name: Debiet
+                    name: Flow
                   - entity: sensor.openquatt_hp1_water_in_temperature
                     name: Water in temp
                   - entity: sensor.openquatt_hp1_water_out_temperature
                     name: Water uit temp
                   - entity: binary_sensor.openquatt_hp1_defrost
-                    name: Ontdooien
+                    name: Defrost
                   - entity: binary_sensor.openquatt_hp1_4_way_valve
                     name: 4-wegklep
             grid_options:
@@ -1523,7 +1523,7 @@ views:
                       color: white
                       font-size: 0.75em
                       transform: none
-                    prefix: 'Vermogen in: '
+                    prefix: 'PowerInput: '
                   - type: state-label
                     entity: sensor.openquatt_hp2_heat_power
                     style:
@@ -1533,7 +1533,7 @@ views:
                       color: white
                       font-size: 0.75em
                       transform: none
-                    prefix: 'Vermogen uit: '
+                    prefix: 'Heat Power: '
                   - type: state-label
                     entity: sensor.openquatt_hp2_cop
                     style:
@@ -1566,19 +1566,19 @@ views:
                   - entity: sensor.openquatt_hp2_active_failures_list
                     name: Actieve storingen
                   - entity: sensor.openquatt_hp2_power_input
-                    name: Ingaand vermogen
+                    name: PowerInput
                   - entity: sensor.openquatt_hp2_heat_power
-                    name: Warmtevermogen
+                    name: Heat Power
                   - entity: sensor.openquatt_hp2_cop
                     name: COP
                   - entity: sensor.openquatt_hp2_flow
-                    name: Debiet
+                    name: Flow
                   - entity: sensor.openquatt_hp2_water_in_temperature
                     name: Water in temp
                   - entity: sensor.openquatt_hp2_water_out_temperature
                     name: Water uit temp
                   - entity: binary_sensor.openquatt_hp2_defrost
-                    name: Ontdooien
+                    name: Defrost
                   - entity: binary_sensor.openquatt_hp2_4_way_valve
                     name: 4-wegklep
             grid_options:
@@ -1596,7 +1596,7 @@ views:
           koudemiddel/waterzijde. Gebruik dit vooral voor diagnose en
           vergelijking tussen HP1 en HP2.
 
-          Voor instellingen: gebruik `Debiet`, `Warmteregeling` en `Afstellen`.
+          Voor instellingen: gebruik `Flow`, `Warmteregeling` en `Afstellen`.
   - title: Sensorconfiguratie
     path: sensor-configuration
     icon: mdi:source-branch
@@ -1670,7 +1670,7 @@ views:
             cards:
               - type: heading
                 icon: mdi:waves
-                heading: Debietbronnen
+                heading: Flowbronnen
                 heading_style: subtitle
                 grid_options:
                   columns: 12
@@ -1679,13 +1679,13 @@ views:
                 show_header_toggle: false
                 entities:
                   - entity: select.openquatt_flow_source
-                    name: Debietbron
+                    name: Flow bron
                   - entity: sensor.openquatt_flow_average_selected
                     name: Geselecteerde flow
                   - entity: sensor.openquatt_flow_average_local
-                    name: Debiet (buitenunit)
+                    name: Flow (buitenunit)
                   - entity: sensor.openquatt_cic_flowrate_filtered
-                    name: Debiet (CIC)
+                    name: Flow (CIC)
           - type: vertical-stack
             cards:
               - type: heading
@@ -2136,7 +2136,7 @@ views:
         cards:
           - type: heading
             icon: mdi:tune-variant
-            heading: Debiet afstellen
+            heading: Flow afstellen
             heading_style: title
           - type: markdown
             content: >-
@@ -2167,9 +2167,9 @@ views:
               - entity: number.openquatt_frost_circulation_ipwm
                 name: CM98 iPWM
               - entity: number.openquatt_flow_pi_kp
-                name: Debiet PI Kp
+                name: Flow PI Kp
               - entity: number.openquatt_flow_pi_ki
-                name: Debiet PI Ki
+                name: Flow PI Ki
               - entity: number.openquatt_sticky_pump_ipwm
                 name: Sticky pump iPWM
       - type: grid
@@ -2344,7 +2344,7 @@ views:
         cards:
           - type: heading
             icon: mdi:tools
-            heading: Debiet-autotune
+            heading: Flow autotune
             heading_style: title
           - type: markdown
             content: >-
@@ -2353,7 +2353,7 @@ views:
               <summary><strong>Uitleg parameters</strong></summary>
 
 
-              - **Debiet-autotune** starten bij stabiele installatie en zonder
+              - **Flow autotune** starten bij stabiele installatie en zonder
               actieve fouten.
 
               - Eerst `u_step` en `max duration` bepalen, daarna pas autotune
@@ -2369,11 +2369,11 @@ views:
             show_header_toggle: false
             entities:
               - entity: switch.openquatt_flow_autotune_enable
-                name: Debiet-autotune inschakelen
+                name: Flow autotune inschakelen
               - entity: button.openquatt_flow_autotune_start
-                name: Debiet-autotune starten
+                name: Flow autotune starten
               - entity: button.openquatt_flow_autotune_abort
-                name: Debiet-autotune afbreken
+                name: Flow autotune afbreken
               - entity: button.openquatt_apply_flow_autotune_kp_ki
                 name: Pas autotune Kp/Ki toe
               - entity: number.openquatt_flow_autotune_u_step_ipwm
