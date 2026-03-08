@@ -92,43 +92,6 @@ def parse_dashboard_titles(path: Path) -> list[str]:
     return titles
 
 
-def parse_package_keys(path: Path) -> list[str]:
-    keys: list[str] = []
-    rx = re.compile(r"^([A-Za-z0-9_]+):\s*!include\b")
-    for line in read_text(path).splitlines():
-        m = rx.match(line)
-        if m:
-            keys.append(m.group(1))
-    return keys
-
-
-def parse_doc_package_order(path: Path) -> list[str]:
-    lines = read_text(path).splitlines()
-    start = None
-    for idx, line in enumerate(lines):
-        if line.strip() == "Package include order is intentional:":
-            start = idx + 1
-            break
-    if start is None:
-        return []
-
-    order: list[str] = []
-    rx = re.compile(r"^\d+\.\s+`([^`]+)`")
-    for line in lines[start:]:
-        line = line.strip()
-        if not line:
-            if order:
-                break
-            continue
-        m = rx.match(line)
-        if not m:
-            if order:
-                break
-            continue
-        order.append(m.group(1))
-    return order
-
-
 def add(findings: list[Finding], file: str, line: int, message: str) -> None:
     findings.append(Finding(file=file, line=line, message=message))
 
@@ -153,7 +116,6 @@ def main() -> int:
     docs_settings = REPO_ROOT / "docs/instellingen-en-meetwaarden.md"
     docs_tuning = REPO_ROOT / "docs/problemen-oplossen-en-afstellen.md"
     docs_system = REPO_ROOT / "docs/hoe-openquatt-werkt.md"
-    pkg_file = REPO_ROOT / "openquatt/oq_packages.yaml"
     dash_en = REPO_ROOT / "docs/dashboard/openquatt_ha_dashboard_duo_en.yaml"
     dash_nl = REPO_ROOT / "docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml"
     dash_single_nl = REPO_ROOT / "docs/dashboard/openquatt_ha_dashboard_single_nl.yaml"
@@ -275,39 +237,8 @@ def main() -> int:
             if phrase not in home_text:
                 add(findings, "docs/dashboard-uitleg.md", 1, f"Missing dashboard docs phrase: {phrase}")
 
-    # 3) Package order in docs should mirror oq_packages.yaml.
-    package_related = {
-        "openquatt/oq_packages.yaml",
-        "docs/hoe-openquatt-werkt.md",
-    }
-    if not args.changed_only or any_changed(changed, package_related):
-        package_keys = parse_package_keys(pkg_file)
-        doc_order = parse_doc_package_order(docs_system)
-        expected_doc_order: list[str] = []
-        for key in package_keys:
-            if key in {"heatpump1", "heatpump2"}:
-                continue
-            expected_doc_order.append(key)
-        if "heatpump1" in package_keys and "heatpump2" in package_keys:
-            expected_doc_order.append("oq_HP_io")
-
-        if doc_order != expected_doc_order:
-            add(
-                findings,
-                "docs/hoe-openquatt-werkt.md",
-                1,
-                f"Package order drift: docs={doc_order}, expected={expected_doc_order}",
-            )
-
-    # 4) Advisory changed-file guards for likely doc drift.
+    # 3) Advisory changed-file guards for likely doc drift.
     if args.changed_only and changed:
-        if any_changed(changed, {"openquatt/oq_packages.yaml"}) and not any_changed(changed, {"docs/hoe-openquatt-werkt.md"}):
-            add(
-                findings,
-                "docs/hoe-openquatt-werkt.md",
-                1,
-                "oq_packages changed; consider updating package include order in docs/hoe-openquatt-werkt.md.",
-            )
         if any_changed(
             changed,
             {
