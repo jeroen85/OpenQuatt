@@ -1,84 +1,44 @@
-# OpenQuatt Documentation
+# OpenQuatt documentatie
 
-This documentation set is organized for fast onboarding and professional maintenance.
+Deze documentatieset wordt stap voor stap omgezet naar duidelijk Nederlands. De publieksroute is daarom opnieuw ingedeeld: eerst installeren en begrijpen, daarna pas verdiepen.
 
-## Table of Contents
+Sommige verdiepende pagina's zijn nog technisch van toon. Ze blijven voorlopig beschikbaar als naslag, maar zijn niet meer de hoofdroute voor gewone gebruikers.
 
-- [Recommended Reading Paths](#recommended-reading-paths)
-- [Documentation Structure](#documentation-structure)
-- [What Each Document Covers](#what-each-document-covers)
-- [Documentation Rules](#documentation-rules)
+## Begin hier
 
-## Recommended Reading Paths
+1. [README in de repo](../README.md)
+2. [Installatie en lokaal bouwen](installatie-en-eerste-start.md)
+3. [Dashboard installeren](dashboard/README.md)
+4. [Dashboard uitleg](dashboard-uitleg.md)
 
-### Path A: First install / first run
+Gebruik je alleen de standaardfirmware, dan is de kortste route meestal de web installer uit de README. Voor lokaal bouwen, valideren en flashen begin je bij `installatie-en-eerste-start.md`.
 
-1. [Web Installer](install/)
-2. [Getting Started](getting-started.md)
-3. [System Overview](system-overview.md)
-4. [Home Assistant Dashboard](home-assistant-dashboard.md)
+## Voor de meeste gebruikers
 
-### Path B: Daily operation, tuning, and troubleshooting
+- [Installatie en lokaal bouwen](installatie-en-eerste-start.md): eerste installatie, lokaal bouwen en eerste veiligheidschecks.
+- [Hoe OpenQuatt werkt](hoe-openquatt-werkt.md): uitleg hoe OpenQuatt samenwerkt met thermostaat, warmtepomp en Home Assistant.
+- [Dashboard uitleg](dashboard-uitleg.md): wat je op het dashboard ziet en hoe je het gebruikt.
+- [Dashboard installeren](dashboard/README.md): welk dashboard je moet kiezen en hoe je het importeert.
+- [Problemen oplossen en afstellen](problemen-oplossen-en-afstellen.md): klachten, mogelijke oorzaken en veilige eerste acties.
 
-1. [Control Modes and Flow](control-modes-and-flow.md)
-2. [Settings Reference](settings-reference.md)
-3. [Tuning and Troubleshooting](tuning-and-troubleshooting.md)
+## Voor wie verder wil verdiepen
 
-### Path C: Engineering and code review
+- [Technische uitleg over standen en flow](technische-uitleg-standen-en-flow.md): huidige technische uitleg over systeemstanden en flowgedrag.
+- [Instellingen en meetwaarden](instellingen-en-meetwaarden.md): uitgebreide naslag van instellingen en meetwaarden.
+- [Adaptieve tuner ontwerpnotities](adaptieve-tuner-ontwerpnotities.md): toekomstig ontwerpwerk, geen gebruikershandleiding.
 
-1. [System Overview](system-overview.md)
-2. [Functional Specification](specifications/functional-specification.md)
-3. [Technical Specification](specifications/technical-specification.md)
-4. [Maintenance Guide](maintenance.md)
+## Voor ontwikkelaars
 
-## Documentation Structure
+- [Onderhoudsgids](onderhoudsgids.md)
+- [Releaseproces](releaseproces.md)
 
-```text
-docs/
-├── README.md
-├── install/
-│   ├── index.html
-│   ├── install.css
-│   └── install.js
-├── getting-started.md
-├── system-overview.md
-├── control-modes-and-flow.md
-├── settings-reference.md
-├── tuning-and-troubleshooting.md
-├── home-assistant-dashboard.md
-├── release-process.md
-├── adaptive-tuner-design.md
-├── assets/
-│   └── openquatt_logo.svg
-├── dashboard/
-│   ├── README.md
-│   ├── openquatt_ha_dashboard_duo_nl.yaml
-│   ├── openquatt_ha_dashboard_duo_en.yaml
-│   ├── openquatt_ha_dashboard_single_nl.yaml
-│   └── openquatt_ha_dashboard_single_en.yaml
-└── specifications/
-    ├── functional-specification.md
-    └── technical-specification.md
-```
+## Niet in deze GitHub-repo
 
-## What Each Document Covers
+De uitgebreide functionele en technische specificaties worden niet meer als publieke documentatie in deze repo bijgehouden. Ze kunnen lokaal blijven bestaan als privé-referentie, maar maken geen deel meer uit van de hoofdroute voor gebruikers.
 
-- `getting-started.md`: hardware prerequisites, baseline runtime, build/flash flow, first validation.
-- `install/`: GitHub Pages first-install flow that generates a profile-specific ESP Web Tools manifest against the stable factory binaries mirrored onto Pages.
-- `system-overview.md`: package architecture, control ownership, data pipeline, safety model.
-- `control-modes-and-flow.md`: CM behavior, Flow Mode semantics, Heating Strategy modes, and precedence.
-- `settings-reference.md`: compile-time vs runtime settings, including low-load and anti-flip controls.
-- `tuning-and-troubleshooting.md`: practical workflows, symptom-driven diagnostics, and low-load/zero-edge stability tuning.
-- `home-assistant-dashboard.md`: dashboard structure and how to use low-load, shadow-arbiter, and heating-curve debug cards.
-- `release-process.md`: GitHub Actions CI/release flow, tag strategy, and release execution steps.
-- `dashboard/README.md`: dashboard topology/language variants and Home Assistant import instructions.
-- `specifications/functional-specification.md`: what the system must do.
-- `specifications/technical-specification.md`: how the current implementation does it.
-- `adaptive-tuner-design.md`: future design for local adaptive tuning.
+## Schrijfregels voor de volgende documentatieronde
 
-## Documentation Rules
-
-- Keep filenames versionless.
-- Keep firmware versioning in `openquatt/oq_substitutions_common.yaml` (`project_version`).
-- Update both specifications when changing control behavior.
-- Keep entity names and examples aligned with the current YAML codebase.
+- Schrijf in gewoon Nederlands en leg afkortingen direct uit.
+- Begin elke publieke pagina met: wat is dit, wanneer gebruik je dit, en wat doe je als het misgaat.
+- Gebruik productnamen in plaats van bijnamen.
+- Houd de publieksdocumentatie beperkt tot de werkelijk ondersteunde hardwareprofielen.

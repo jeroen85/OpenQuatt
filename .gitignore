@@ -10,3 +10,5 @@ __pycache__/
 tmp/
 .tmp/
 .cache/
+# Lokale referentiedocumenten die bewust niet in GitHub horen
+docs/_local_reference/

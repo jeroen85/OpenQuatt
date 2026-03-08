@@ -1,58 +1,52 @@
-# OpenQuatt Home Assistant Dashboards
+# Dashboard installeren
 
-This folder contains dashboard variants per topology/language:
+In deze map staan de dashboardbestanden voor OpenQuatt.
 
-- `openquatt_ha_dashboard_duo_nl.yaml`: Dutch UI labels/text (Duo).
-- `openquatt_ha_dashboard_duo_en.yaml`: English UI labels/text (Duo).
-- `openquatt_ha_dashboard_single_nl.yaml`: Dutch UI labels/text (Single).
-- `openquatt_ha_dashboard_single_en.yaml`: English UI labels/text (Single).
-- `openquatt_ha_dynamic_sources_package.yaml`: optional HA package for dynamic source proxies.
+## Welk bestand kies je?
 
-## Which One To Use
+Kies het bestand dat past bij jouw opstelling en taal:
 
-- Use a `duo` file for Duo firmware entrypoints.
-- Use a `single` file for Single firmware entrypoints.
-- Choose `NL` or `EN` based on preferred UI language.
+- `openquatt_ha_dashboard_duo_nl.yaml`
+- `openquatt_ha_dashboard_duo_en.yaml`
+- `openquatt_ha_dashboard_single_nl.yaml`
+- `openquatt_ha_dashboard_single_en.yaml`
 
-## Home Assistant Installation
+Gebruik `duo` voor Duo en `single` voor Single. Kies daarna `nl` of `en` op basis van je voorkeurstaal.
+
+## Importeren in Home Assistant
 
 1. Open Home Assistant.
-2. Go to **Settings -> Dashboards**.
-3. Create a new dashboard or open an existing one.
-4. Open the dashboard menu (**three dots**) and choose **Raw configuration editor**.
-5. Replace or paste the YAML from either:
-   - `docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml`
-   - `docs/dashboard/openquatt_ha_dashboard_duo_en.yaml`
-   - `docs/dashboard/openquatt_ha_dashboard_single_nl.yaml`
-   - `docs/dashboard/openquatt_ha_dashboard_single_en.yaml`
-6. Save and reload the dashboard.
+2. Ga naar **Instellingen -> Dashboards**.
+3. Maak een nieuw dashboard aan of open een bestaand dashboard.
+4. Open het menu met de drie puntjes.
+5. Kies **Raw configuration editor**.
+6. Plak de inhoud van het gekozen YAML-bestand.
+7. Sla op en laad het dashboard opnieuw.
 
-## Optional Dynamic Source Proxies (HA package)
+## Wat als importeren mislukt?
 
-If you want users to choose source entities at runtime, use:
+- Controleer of je echt het juiste `single`- of `duo`-bestand hebt.
+- Controleer of je de volledige YAML hebt geplakt.
+- Controleer of de OpenQuatt-entiteiten al in Home Assistant bestaan.
 
-- `docs/dashboard/openquatt_ha_dynamic_sources_package.yaml`
+## Optioneel: dynamische bronselectie via Home Assistant
 
-This package creates:
+Gebruik `openquatt_ha_dynamic_sources_package.yaml` alleen als je tijdens runtime zelf Home Assistant-bronnen wilt kunnen aanwijzen zonder opnieuw te flashen.
+
+Dat pakket maakt extra helper-entiteiten aan, zoals:
 
 - `input_text.openquatt_source_outdoor_temperature`
 - `input_text.openquatt_source_room_setpoint`
 - `input_text.openquatt_source_room_temperature`
-- proxy sensors consumed by OpenQuatt ESPHome:
-  - `sensor.openquatt_ext_outdoor_temperature`
-  - `sensor.openquatt_ext_room_setpoint`
-  - `sensor.openquatt_ext_room_temperature`
 
-Install in Home Assistant:
+Installatie in Home Assistant:
 
-1. Enable packages in `/config/configuration.yaml`:
-   - `homeassistant:`
-   - `  packages: !include_dir_named packages`
-2. Copy the package file to `/config/packages/openquatt_dynamic_sources.yaml`.
-3. Reload Template Entities (or restart HA).
+1. Zet packages aan in `/config/configuration.yaml`.
+2. Kopieer het pakket naar `/config/packages/openquatt_dynamic_sources.yaml`.
+3. Herlaad de template-entiteiten of herstart Home Assistant.
 
-## Notes
+## Belangrijk om te onthouden
 
-- These YAML files assume the OpenQuatt entity IDs from this repository.
-- If entities are renamed in ESPHome, update dashboard entity references accordingly.
-- Keep dashboard changes in this folder, so docs and repo history stay aligned.
+- De dashboards gaan uit van de entiteitsnamen uit deze repository.
+- Als je zelf entiteitsnamen wijzigt, moet je ook het dashboard aanpassen.
+- Het NL-dashboard is voor de meeste gebruikers de logischste start.

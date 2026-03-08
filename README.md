@@ -2,167 +2,93 @@
 
 <img src="docs/assets/openquatt_logo.svg" alt="OpenQuatt logo" width="400" />
 
-OpenQuatt is ESPHome firmware for Quatt Single and Quatt Duo installations. It adds supervisory control, demand-based heat pump control, flow regulation, boiler assist logic, and Home Assistant visibility on top of the underlying Quatt hardware.
+OpenQuatt is ESPHome-firmware voor Quatt Single- en Duo-installaties. Het project geeft je meer inzicht, meer regie en een beter uitleesbaar Home Assistant-dashboard bovenop de bestaande Quatt-hardware.
+
+De publieksdocumentatie wordt momenteel herschreven naar duidelijk Nederlands. Deze README is daarom bewust kort en taakgericht opgezet.
 
 > [!WARNING]
-> This project is currently in an experimental phase.
+> Dit project zit nog in een experimentele fase. Gebruik het bewust en test wijzigingen stap voor stap.
 
-## Table of Contents
+## Wat is OpenQuatt?
 
-- [What OpenQuatt Offers](#what-openquatt-offers)
-- [Supported Setups](#supported-setups)
-- [Quick Start](#quick-start)
-- [Hardware Profiles](#hardware-profiles)
-- [Documentation](#documentation)
-- [Development](#development)
-- [License](#license)
+OpenQuatt is bedoeld voor gebruikers van een Quatt Single of Quatt Duo die:
 
-## What OpenQuatt Offers
+- meer inzicht willen in wat de installatie doet;
+- een duidelijk Home Assistant-dashboard willen;
+- meer grip willen op gedrag, metingen en instellingen;
+- willen kunnen kiezen uit de twee ondersteunde OpenQuatt-hardwareprofielen.
 
-- Supervisory control for Quatt Single and Quatt Duo layouts.
-- Control Mode state handling for idle, pre/post-flow, heat pump heating, boiler assist, and frost protection.
-- Two heating demand strategies:
-  - `Power House`
-  - `Water Temperature Control (heating curve)`
-- Pump flow regulation with PI control and built-in autotune tooling.
-- Boiler assist gating with safety lockouts and control mode integration.
-- Runtime source selection between local sensors, CIC feed data, and Home Assistant inputs.
-- Energy, COP, runtime, fault, and update diagnostics in Home Assistant and the ESPHome web UI.
-- Built-in service utilities such as firmware update checks, runtime debug level control, and one-shot Modbus test actions.
+Je hoeft voor de eerste installatie niet eerst alle technische achtergronddocumenten te lezen. De hoofdroute is: installeren, koppelen aan Home Assistant en daarna pas verdiepen waar nodig.
 
-## Supported Setups
+## Ondersteunde combinaties
 
-OpenQuatt supports these topology and hardware combinations:
-
-- `openquatt_duo_waveshare.yaml`
-- `openquatt_duo_heatpump_listener.yaml`
-- `openquatt_single_waveshare.yaml`
-- `openquatt_single_heatpump_listener.yaml`
-
-Requirements:
-
-- ESPHome `>= 2025.11.0`
-- ESP32 hardware matching one of the supported profiles
-- RS485 wiring to at least one heat pump
-- Home Assistant (recommended)
-
-Release coverage:
-
-- Official GitHub releases provide firmware assets for all four topology/hardware combinations.
-- Stable users should stay on the `main` release channel.
-- Testers can switch `Firmware Update Channel` to `dev` for prerelease OTA builds, or build locally from the `dev` branch with explicit dev-version overrides.
-
-## Quick Start
-
-### 1. Open the web installer
-
-Open the [OpenQuatt installer](https://jeroen85.github.io/OpenQuatt/install/) and choose your exact combination:
+OpenQuatt ondersteunt momenteel deze combinaties:
 
 - Duo + Waveshare ESP32-S3-Relay-1CH
 - Duo + Heatpump Listener
 - Single + Waveshare ESP32-S3-Relay-1CH
 - Single + Heatpump Listener
 
-The installer always flashes the latest stable `factory.bin` from the current GitHub release.
+Praktisch betekent dit:
 
-If you want custom changes, build from source via [Getting Started](docs/getting-started.md).
+- ESPHome `>= 2025.11.0`
+- een ondersteund ESP32-profiel
+- RS485-aansluiting op minimaal een warmtepomp
+- Home Assistant is sterk aanbevolen
 
-### 2. Install the firmware over USB
+## Snel starten
 
-1. Open the installer page in Chrome or Edge.
-2. Connect your ESP board over USB.
-3. Select the matching setup and hardware profile.
-4. Start the installation flow and wait for the board to reboot.
-5. Keep the browser tab open after flashing so ESP Web Tools can offer Wi-Fi provisioning over USB.
-
-Firmware file types:
-
-- `*.firmware.factory.bin` is for the first installation on a board over USB.
-- `*.firmware.ota.bin` is for updating a device that is already running OpenQuatt.
-
-Manual fallback:
-
-- Open the [latest OpenQuatt release](https://github.com/jeroen85/OpenQuatt/releases/latest) and download the matching `*.firmware.factory.bin`.
-- Flash it manually with [web.esphome.io](https://web.esphome.io/).
-
-### 3. Configure Wi-Fi after first boot
-
-After flashing, prefer the browser-based Wi-Fi setup offered by ESP Web Tools.
-
-If that flow is unavailable or interrupted, OpenQuatt still starts its fallback access point:
-
-- SSID: `OpenQuatt`
-- Password: `openquatt`
-
-Connect to that access point and complete the captive portal flow to enter your Wi-Fi credentials.
-
-Note:
-
-- The preferred first-install flow is now USB flashing plus browser-based Wi-Fi provisioning through `improv_serial`.
-- The fallback AP and captive portal remain available as the recovery path.
-
-### 4. Finish setup in Home Assistant
-
-After the device joins your network:
-
-1. Add the discovered OpenQuatt device in Home Assistant.
-2. Verify the basic integration state:
-   - the device is online
-   - `Status` is available
-   - the firmware version is visible
-   - HP telemetry updates
-   - the device reports a valid control mode
-3. Import the dashboard that matches your topology and preferred language:
+1. Open de [OpenQuatt installer](https://jeroen85.github.io/OpenQuatt/install/).
+2. Kies exact de combinatie die past bij jouw installatie en hardware.
+3. Flash de firmware via USB in Chrome of Edge.
+4. Stel wifi in via de browserflow of via het fallback access point `OpenQuatt` met wachtwoord `openquatt`.
+5. Voeg het apparaat toe in Home Assistant.
+6. Importeer het dashboard dat past bij jouw taal en opstelling:
    - Duo NL: [docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml](docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml)
    - Duo EN: [docs/dashboard/openquatt_ha_dashboard_duo_en.yaml](docs/dashboard/openquatt_ha_dashboard_duo_en.yaml)
    - Single NL: [docs/dashboard/openquatt_ha_dashboard_single_nl.yaml](docs/dashboard/openquatt_ha_dashboard_single_nl.yaml)
    - Single EN: [docs/dashboard/openquatt_ha_dashboard_single_en.yaml](docs/dashboard/openquatt_ha_dashboard_single_en.yaml)
-4. Follow the dashboard import instructions in [Dashboard Install and Topology/Language Variants](docs/dashboard/README.md).
-5. If you want the full dashboard structure explained, see [Home Assistant Dashboard Guide](docs/home-assistant-dashboard.md).
-6. If you want runtime-selectable Home Assistant source entities, also review the optional dynamic source package in [docs/dashboard/README.md](docs/dashboard/README.md).
 
-Channel diagnostics:
+Alleen de nieuwste stabiele eerste-installatiebestanden worden standaard via de installer aangeboden. Wil je lokaal bouwen of testen, gebruik dan [Installatie en lokaal bouwen](docs/installatie-en-eerste-start.md).
 
-- Verify `OpenQuatt Release Channel` in diagnostics so you know whether the running build is `main` or `dev`.
-- Use `Firmware Update Channel` if you want OTA checks to follow `main` or `dev` without reflashing first.
+Loopt de eerste installatie vast, kijk dan hier:
 
-## Hardware Profiles
+- [Dashboard installeren](docs/dashboard/README.md)
+- [Problemen oplossen en afstellen](docs/problemen-oplossen-en-afstellen.md)
 
-Hardware-specific compile-time settings are defined in:
+## Ondersteunde hardware
 
-- `openquatt/oq_substitutions_common.yaml`
-- `openquatt/profiles/oq_substitutions_waveshare.yaml`
-- `openquatt/profiles/oq_substitutions_heatpump_listener.yaml`
-
-Supported hardware profiles:
+OpenQuatt richt zich nu bewust op twee hardwareprofielen:
 
 - [Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm)
 - [Heatpump Listener](https://electropaultje.nl/product/heatpump-listener/)
 
-## Documentation
+## Documentatie
 
-Start with:
+Begin hier:
 
-- [Documentation Index](docs/README.md)
+- [Documentatie-overzicht](docs/README.md)
 
-Core docs:
+Belangrijkste pagina's voor gebruikers:
 
-- [Getting Started](docs/getting-started.md)
-- [System Overview](docs/system-overview.md)
-- [Control Modes and Flow](docs/control-modes-and-flow.md)
-- [Settings Reference](docs/settings-reference.md)
-- [Tuning and Troubleshooting](docs/tuning-and-troubleshooting.md)
-- [Home Assistant Dashboard Guide](docs/home-assistant-dashboard.md)
-- [Dashboard Install and Topology/Language Variants](docs/dashboard/README.md)
-- [Functional Specification](docs/specifications/functional-specification.md)
-- [Technical Specification](docs/specifications/technical-specification.md)
+- [Installatie en lokaal bouwen](docs/installatie-en-eerste-start.md) voor installeren of lokaal bouwen
+- [Hoe OpenQuatt werkt](docs/hoe-openquatt-werkt.md) voor de rolverdeling tussen thermostaat, OpenQuatt, warmtepomp en Home Assistant
+- [Dashboard uitleg](docs/dashboard-uitleg.md) voor uitleg van de dashboardweergaven
+- [Dashboard installeren](docs/dashboard/README.md) voor het importeren van dashboards
+- [Problemen oplossen en afstellen](docs/problemen-oplossen-en-afstellen.md) voor problemen oplossen en veilig afstellen
 
-## Development
+Technischere naslag blijft beschikbaar, maar staat niet meer centraal in de publieksroute:
 
-- [Maintenance Guide](docs/maintenance.md)
-- Build-from-source workflow: [Getting Started](docs/getting-started.md)
-- Release and branch flow: [Release Process](docs/release-process.md)
+- [Technische uitleg over standen en flow](docs/technische-uitleg-standen-en-flow.md)
+- [Instellingen en meetwaarden](docs/instellingen-en-meetwaarden.md)
+- [Adaptieve tuner ontwerpnotities](docs/adaptieve-tuner-ontwerpnotities.md)
 
-## License
+## Voor ontwikkelaars
 
-This project includes a `LICENSE` file in the repository root.
+- [Onderhoudsgids](docs/onderhoudsgids.md)
+- [Releaseproces](docs/releaseproces.md)
+- Lokaal bouwen en valideren: [Installatie en lokaal bouwen](docs/installatie-en-eerste-start.md)
+
+## Licentie
+
+Dit project bevat een `LICENSE`-bestand in de root van de repository.
