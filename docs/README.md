@@ -25,8 +25,3 @@ Gebruik je alleen de standaardfirmware, dan is de kortste route meestal de web i
 
 - [Technische uitleg over standen en flow](technische-uitleg-standen-en-flow.md): huidige technische uitleg over systeemstanden en flowgedrag.
 - [Instellingen en meetwaarden](instellingen-en-meetwaarden.md): uitgebreide naslag van instellingen en meetwaarden.
-
-## Voor ontwikkelaars
-
-- [Onderhoudsgids](onderhoudsgids.md)
-- [Releaseproces](releaseproces.md)

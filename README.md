@@ -82,12 +82,6 @@ Technischere naslag blijft beschikbaar, maar staat niet meer centraal in de publ
 - [Technische uitleg over standen en flow](docs/technische-uitleg-standen-en-flow.md)
 - [Instellingen en meetwaarden](docs/instellingen-en-meetwaarden.md)
 
-## Voor ontwikkelaars
-
-- [Onderhoudsgids](docs/onderhoudsgids.md)
-- [Releaseproces](docs/releaseproces.md)
-- Lokaal bouwen en valideren: [Installatie en lokaal bouwen](docs/installatie-en-eerste-start.md)
-
 ## Licentie
 
 Dit project bevat een `LICENSE`-bestand in de root van de repository.
