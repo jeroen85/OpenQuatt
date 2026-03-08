@@ -21,6 +21,7 @@ rm -rf "${SITE_DIR}"
 mkdir -p "${SITE_DIR}/firmware/main"
 
 cp -R "${ROOT_DIR}/docs/." "${SITE_DIR}/"
+python3 "${ROOT_DIR}/scripts/build_pages_docs.py" "${SITE_DIR}"
 touch "${SITE_DIR}/.nojekyll"
 
 for file in "${FACTORY_FILES[@]}"; do
