@@ -220,24 +220,24 @@ def main() -> int:
         nl_expected = [
             "Overzicht",
             "Energie",
-            "Flow",
-            "Warmtecontrol",
-            "HPs",
+            "Debiet",
+            "Warmteregeling",
+            "Warmtepompen",
             "Sensorconfiguratie",
-            "Tuning",
-            "Service & Test",
-            "Diagnostics",
+            "Afstellen",
+            "Service en test",
+            "Diagnostiek",
         ]
         single_nl_expected = [
             "Overzicht",
             "Energie",
-            "Flow",
-            "Warmtecontrol",
+            "Debiet",
+            "Warmteregeling",
             "HP1",
             "Sensorconfiguratie",
-            "Tuning",
-            "Service & Test",
-            "Diagnostics",
+            "Afstellen",
+            "Service en test",
+            "Diagnostiek",
         ]
         single_en_expected = [
             "Overview",
@@ -266,10 +266,10 @@ def main() -> int:
 
         home_text = read_text(docs_home)
         required_phrases = [
-            "Service & Test View",
+            "Service en test",
             "`service-test`",
-            "Diagnostics View",
-            "Tuning View",
+            "Diagnostiek",
+            "Afstellen",
         ]
         for phrase in required_phrases:
             if phrase not in home_text:

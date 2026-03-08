@@ -40,7 +40,7 @@ De energieweergave is vooral handig om veranderingen over een hele dag te beoord
 
 ## Waar kijk je als iets niet klopt?
 
-### Sensor Configuration
+### Sensorconfiguratie
 
 Dit is meestal de eerste plek bij rare waarden. Hier zie je:
 
@@ -50,15 +50,15 @@ Dit is meestal de eerste plek bij rare waarden. Hier zie je:
 
 Als de verkeerde bron gekozen is, lijken andere schermen vaak ook onlogisch. Daarom is dit meestal de beste eerste controle.
 
-### Flow
+### Debiet
 
 Gebruik deze tab als:
 
-- de flow vreemd lijkt;
+- het debiet vreemd lijkt;
 - het systeem niet wil doorverwarmen;
 - de pomp onrustig lijkt te regelen.
 
-### HPs
+### Warmtepompen
 
 Gebruik deze tab voor unit-specifieke diagnose:
 
@@ -66,7 +66,7 @@ Gebruik deze tab voor unit-specifieke diagnose:
 - hoe HP2 zich gedraagt bij een Duo-opstelling;
 - welke fouten of afwijkingen per unit zichtbaar zijn.
 
-### Diagnostics
+### Diagnostiek
 
 Deze tab is bedoeld voor moeilijker uit te leggen gedrag. Denk aan gevallen waarin:
 
@@ -76,15 +76,15 @@ Deze tab is bedoeld voor moeilijker uit te leggen gedrag. Denk aan gevallen waar
 
 ## Wat is alleen voor gevorderden?
 
-### Tuning
+### Afstellen
 
 Deze tab is niet bedoeld voor dagelijks gebruik. Gebruik hem alleen als je bewust iets wilt afstellen en je vooraf weet welk probleem je probeert op te lossen.
 
-### Service & Test
+### Service en test
 
 Deze tab is bedoeld voor service, testen en diepere diagnose. Voor gewone dagelijkse bediening kun je hem meestal negeren.
 
-In de onderliggende dashboard-YAML kun je nog Engelstalige namen tegenkomen, zoals `Tuning View`, `Service & Test View` met pad `service-test`, en `Diagnostics View`. Dat zijn technische tabnamen; voor de dagelijkse uitleg in deze documentatie houden we het bewust eenvoudiger.
+De technische padnaam `service-test` blijft in de YAML bestaan, maar de zichtbare tabnamen in de NL-dashboards zijn nu ook gewoon Nederlandstalig.
 
 ## Handige dagelijkse routine
 
@@ -92,13 +92,13 @@ Als je maar een minuut hebt, kijk dan naar deze vijf dingen:
 
 1. apparaat online;
 2. gekozen temperaturen logisch;
-3. flow logisch;
+3. debiet logisch;
 4. geen duidelijke fout- of storingssignalen;
 5. gedrag past bij de warmtevraag in huis.
 
-## Wat betekent `Selected` op het dashboard?
+## Wat betekent `Gekozen` op het dashboard?
 
-`Selected` betekent: dit is de waarde die OpenQuatt nu echt gebruikt. Dat is belangrijk, want je kunt soms meerdere mogelijke bronnen hebben voor dezelfde meting.
+`Gekozen` betekent: dit is de waarde die OpenQuatt nu echt gebruikt. Dat is belangrijk, want je kunt soms meerdere mogelijke bronnen hebben voor dezelfde meting.
 
 Voorbeelden:
 
@@ -106,16 +106,16 @@ Voorbeelden:
 - een lokale meting;
 - een waarde uit een externe bron.
 
-De `Selected`-waarde is dan de enige die echt telt voor de regeling.
+De gekozen waarde is dan de enige die echt telt voor de regeling.
 
 ## Wat als het dashboard onrustig of onduidelijk voelt?
 
 Loop dan in deze volgorde:
 
-1. `Sensor Configuration`
-2. `Flow`
-3. `HPs`
-4. `Diagnostics`
-5. pas daarna `Tuning`
+1. `Sensorconfiguratie`
+2. `Debiet`
+3. `Warmtepompen` of `HP1`
+4. `Diagnostiek`
+5. pas daarna `Afstellen`
 
 Zo voorkom je dat je instellingen gaat veranderen terwijl het echte probleem gewoon een verkeerde bronwaarde of een ontbrekende meting is.
