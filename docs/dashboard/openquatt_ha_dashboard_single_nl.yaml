@@ -919,7 +919,7 @@ views:
 
 
               - `ControlMode`: kiest welke strategie de warmtevraag opbouwt
-              (bijv. Stooklijn of Power House).
+              (bijv. Stooklijn of PH).
 
               - Bij stooklijnregeling verschijnt ook `Heating Curve Control
               Profile` voor de ingebouwde regelkarakteristiek.
@@ -1689,7 +1689,7 @@ views:
         cards:
           - type: heading
             icon: mdi:home-thermometer-outline
-            heading: Huismodel (Power House)
+            heading: Huismodel (PH)
             heading_style: title
           - type: markdown
             content: >-
@@ -1704,7 +1704,7 @@ views:
               - **Maximum heating outdoor temperature** is het punt waar
               modelmatig de warmtevraag naar ~0 gaat.
 
-              - **Power House Kp** bepaalt hoe sterk kamertemperatuurfout naar
+              - **PH Kp** bepaalt hoe sterk kamertemperatuurfout naar
               warmtevraag (W) wordt vertaald.
 
               - **Deadband** voorkomt onrust bij kleine afwijkingen.
@@ -1751,27 +1751,27 @@ views:
               - entity: number.openquatt_rated_maximum_house_power
                 name: Rated maximum house power (Pr)
               - entity: number.openquatt_power_house_kp_w_k
-                name: Power House Kp (W/K)
+                name: PH Kp (W/K)
               - entity: number.openquatt_power_house_deadband
-                name: Power House deadband
+                name: PH deadband
               - entity: number.openquatt_power_house_comfort_below_setpoint
-                name: Power House comfort below setpoint
+                name: PH comfort onder SP
               - entity: number.openquatt_power_house_comfort_above_setpoint
-                name: Power House comfort above setpoint
+                name: PH comfort boven SP
               - entity: number.openquatt_power_house_comfort_bias_base
-                name: Power House comfort bias base
+                name: PH bias basis
               - entity: number.openquatt_power_house_comfort_bias_max
-                name: Power House comfort bias max
+                name: PH bias max
               - entity: number.openquatt_power_house_comfort_bias_up
-                name: Power House comfort bias up
+                name: PH bias omhoog
               - entity: number.openquatt_power_house_comfort_bias_down
-                name: Power House comfort bias down
+                name: PH bias omlaag
               - entity: number.openquatt_power_house_room_error_avg_tau
-                name: Power House room error avg tau
+                name: PH room avg tau
               - entity: number.openquatt_power_house_ramp_up
-                name: Power House ramp up
+                name: PH ramp up
               - entity: number.openquatt_power_house_ramp_down
-                name: Power House ramp down
+                name: PH ramp down
       - type: grid
         cards:
           - type: heading
@@ -1785,13 +1785,13 @@ views:
               <summary><strong>Uitleg parameters</strong></summary>
 
 
-              - De **curve Tsupply**-punten vormen de stooklijn: gewenste
+              - De **aanvoerpunten** vormen de stooklijn: gewenste
               aanvoertemperatuur bij verschillende buitentemperaturen.
 
               - Pas eerst de curvepunten aan voor het juiste basiscomfort,
               daarna pas PID finetunen.
 
-              - **Fallback Tsupply** wordt gebruikt als buitentemperatuur
+              - **Fallback-aanvoer** wordt gebruikt als buitentemperatuur
               tijdelijk ontbreekt.
 
               - `Heating Curve Control Profile` kiest het ingebouwde regelgedrag
@@ -1809,19 +1809,19 @@ views:
             show_header_toggle: false
             entities:
               - entity: number.openquatt_curve_tsupply_20degc
-                name: Curve Tsupply @ -20C
+                name: Aanvoer @ -20C
               - entity: number.openquatt_curve_tsupply_10degc
-                name: Curve Tsupply @ -10C
+                name: Aanvoer @ -10C
               - entity: number.openquatt_curve_tsupply_0degc
-                name: Curve Tsupply @ 0C
+                name: Aanvoer @ 0C
               - entity: number.openquatt_curve_tsupply_5degc
-                name: Curve Tsupply @ 5C
+                name: Aanvoer @ 5C
               - entity: number.openquatt_curve_tsupply_10degc_2
-                name: Curve Tsupply @ 10C
+                name: Aanvoer @ 10C
               - entity: number.openquatt_curve_tsupply_15degc
-                name: Curve Tsupply @ 15C
+                name: Aanvoer @ 15C
               - entity: number.openquatt_curve_fallback_tsupply_no_outside_temp
-                name: Curve fallback Tsupply
+                name: Fallback-aanvoer
               - entity: select.openquatt_heating_curve_control_profile
                 name:
                   type: entity
@@ -1849,7 +1849,7 @@ views:
 
               - **Demand filter ramp up** bepaalt met hoeveel demand-stappen per
               minuut `Demand filtered` maximaal mag stijgen richting `Demand
-              raw` in Power House mode.
+              raw` in PH-modus.
 
               - In heating-curve mode wordt PID-demand direct doorgezet en
               vertaald naar sequentiële levelstappen op HP1.
@@ -2231,7 +2231,7 @@ views:
         cards:
           - type: heading
             icon: mdi:home-lightning-bolt
-            heading: Power House-diagnose
+            heading: PH-diagnose
             heading_style: title
           - type: markdown
             content: >-
@@ -2241,10 +2241,10 @@ views:
               <summary><strong>Uitleg</strong></summary>
 
 
-              Gebruik dit blok om de Power House-regelketen te debuggen.
+              Gebruik dit blok om de PH-regelketen te debuggen.
 
 
-              - Relevant bij actieve Power House-regeling.
+              - Relevant bij actieve PH-regeling.
 
               - `P_house` is de modelschatting op basis van buitentemperatuur.
 
