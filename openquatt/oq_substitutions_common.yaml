@@ -115,7 +115,7 @@ cic_backoff_start_ms: "5000"                          # Initial polling backoff 
 cic_backoff_max_ms: "120000"                          # Maximum exponential backoff on errors [ms].
 cic_poll_tick_ms: "5000"                              # Scheduler tick for CIC main loop [ms].
 cic_min_url_len: "10"                                 # Minimum URL length before starting a request [chars].
-cic_stale_after_ms: "30000"                           # Data becomes stale after this time without a successful fetch [ms].
+cic_stale_after_ms: "600000"                          # Data becomes stale after this time without a successful fetch [ms].
 cic_feed_error_trip_n: "3"                            # Feed OK becomes false after N consecutive fetch/parse errors.
 oq_room_cic_recovery_hold_default_min: "1"            # Default hold before room failover returns from HA to recovered CIC [min].
 
