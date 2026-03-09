@@ -54,7 +54,7 @@ let releaseInfo = {
 };
 
 function getStableVersionLabel() {
-  return releaseInfo.version === "latest" ? "Latest stable" : releaseInfo.version;
+  return releaseInfo.version === "latest" ? "Nieuwste stabiele" : releaseInfo.version;
 }
 
 function getSelectedProfile() {
@@ -112,16 +112,16 @@ function updateSummary() {
   releaseLink.href = releaseInfo.releaseUrl;
 
   if (!profile) {
-    selectionTitle.textContent = "Choose setup and hardware first";
+    selectionTitle.textContent = "Kies eerst je opstelling en hardware";
     selectionCopy.textContent =
-      "The installer will generate a one-off ESP Web Tools manifest for the exact profile you pick here.";
+      "Deze installatiehulp maakt automatisch een eenmalig ESP Web Tools-manifest voor het profiel dat je hier kiest.";
     selectionVersion.textContent = stableVersionLabel;
-    selectionTopology.textContent = "Not selected";
-    selectionHardware.textContent = "Not selected";
-    selectionChip.textContent = "Not selected";
-    selectionFile.textContent = "Not selected";
+    selectionTopology.textContent = "Niet gekozen";
+    selectionHardware.textContent = "Niet gekozen";
+    selectionChip.textContent = "Niet gekozen";
+    selectionFile.textContent = "Niet gekozen";
     installPanel.dataset.ready = "false";
-    installState.textContent = "Finish both selections to unlock the installer.";
+    installState.textContent = "Kies eerst beide opties om de installatieknop te activeren.";
     installButton.manifest = "";
     return;
   }
@@ -130,7 +130,7 @@ function updateSummary() {
 
   selectionTitle.textContent = profile.title;
   selectionCopy.textContent =
-    `This installer points at stable ${stableVersionLabel} mirrored on this site for the selected profile.`;
+    `Deze installatiehulp wijst naar de stabiele versie ${stableVersionLabel} die voor dit profiel op deze site beschikbaar is.`;
   selectionVersion.textContent = stableVersionLabel;
   selectionTopology.textContent = PROFILES[profile.topology].label;
   selectionHardware.textContent = profile.hardwareLabel;
@@ -138,7 +138,7 @@ function updateSummary() {
   selectionFile.textContent = profile.fileName;
   installPanel.dataset.ready = "true";
   installState.textContent =
-    "Ready to flash. Keep this page open after reboot so ESP Web Tools can offer Wi-Fi setup over USB, with the OpenQuatt access point as fallback.";
+    "Klaar om te flashen. Laat deze pagina na de herstart open zodat ESP Web Tools wifi-instelling via USB kan aanbieden; anders kun je terugvallen op het OpenQuatt access point.";
 }
 
 document.querySelectorAll('input[name="topology"], input[name="hardware"]').forEach((input) => {
@@ -160,7 +160,7 @@ async function loadReleaseInfo() {
       releaseInfo.releaseUrl = metadata.release_url;
     }
   } catch (error) {
-    console.warn("Failed to load mirrored release metadata", error);
+    console.warn("Kon de gespiegelde release-metadata niet laden", error);
   } finally {
     updateSummary();
   }

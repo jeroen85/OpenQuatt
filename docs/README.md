@@ -1,84 +1,25 @@
-# OpenQuatt Documentation
+# OpenQuatt documentatie
 
-This documentation set is organized for fast onboarding and professional maintenance.
+Deze documentatie is bedoeld voor gebruikers die OpenQuatt willen installeren, koppelen aan Home Assistant en daarna gericht willen afstellen of verdiepen.
 
-## Table of Contents
+## Begin hier
 
-- [Recommended Reading Paths](#recommended-reading-paths)
-- [Documentation Structure](#documentation-structure)
-- [What Each Document Covers](#what-each-document-covers)
-- [Documentation Rules](#documentation-rules)
+1. [README in de repo](../README.md)
+2. [Installatie en ingebruikname](installatie-en-ingebruikname.md)
+3. [Dashboard installeren](dashboard/README.md)
+4. [Dashboardoverzicht](dashboardoverzicht.md)
 
-## Recommended Reading Paths
+Gebruik je de standaardfirmware, dan is de web installer uit de README meestal de snelste route. Daarna volg je de documentatieroute voor dashboard, uitleg en diagnose.
 
-### Path A: First install / first run
+## Hoofdroute
 
-1. [Web Installer](install/)
-2. [Getting Started](getting-started.md)
-3. [System Overview](system-overview.md)
-4. [Home Assistant Dashboard](home-assistant-dashboard.md)
+- [Installatie en ingebruikname](installatie-en-ingebruikname.md): eerste installatie en controle na de eerste start.
+- [Hoe OpenQuatt werkt](hoe-openquatt-werkt.md): rolverdeling tussen thermostaat, OpenQuatt, warmtepomp en Home Assistant.
+- [Dashboard installeren](dashboard/README.md): keuze van het juiste dashboardbestand en import in Home Assistant.
+- [Dashboardoverzicht](dashboardoverzicht.md): de belangrijkste dashboardtabs en de volgorde waarin je ze gebruikt.
+- [Diagnose en afstelling](diagnose-en-afstelling.md): diagnose, werkvolgorde en terughoudend afstellen.
 
-### Path B: Daily operation, tuning, and troubleshooting
+## Naslag
 
-1. [Control Modes and Flow](control-modes-and-flow.md)
-2. [Settings Reference](settings-reference.md)
-3. [Tuning and Troubleshooting](tuning-and-troubleshooting.md)
-
-### Path C: Engineering and code review
-
-1. [System Overview](system-overview.md)
-2. [Functional Specification](specifications/functional-specification.md)
-3. [Technical Specification](specifications/technical-specification.md)
-4. [Maintenance Guide](maintenance.md)
-
-## Documentation Structure
-
-```text
-docs/
-├── README.md
-├── install/
-│   ├── index.html
-│   ├── install.css
-│   └── install.js
-├── getting-started.md
-├── system-overview.md
-├── control-modes-and-flow.md
-├── settings-reference.md
-├── tuning-and-troubleshooting.md
-├── home-assistant-dashboard.md
-├── release-process.md
-├── adaptive-tuner-design.md
-├── assets/
-│   └── openquatt_logo.svg
-├── dashboard/
-│   ├── README.md
-│   ├── openquatt_ha_dashboard_duo_nl.yaml
-│   ├── openquatt_ha_dashboard_duo_en.yaml
-│   ├── openquatt_ha_dashboard_single_nl.yaml
-│   └── openquatt_ha_dashboard_single_en.yaml
-└── specifications/
-    ├── functional-specification.md
-    └── technical-specification.md
-```
-
-## What Each Document Covers
-
-- `getting-started.md`: hardware prerequisites, baseline runtime, build/flash flow, first validation.
-- `install/`: GitHub Pages first-install flow that generates a profile-specific ESP Web Tools manifest against the stable factory binaries mirrored onto Pages.
-- `system-overview.md`: package architecture, control ownership, data pipeline, safety model.
-- `control-modes-and-flow.md`: CM behavior, Flow Mode semantics, Heating Strategy modes, and precedence.
-- `settings-reference.md`: compile-time vs runtime settings, including low-load and anti-flip controls.
-- `tuning-and-troubleshooting.md`: practical workflows, symptom-driven diagnostics, and low-load/zero-edge stability tuning.
-- `home-assistant-dashboard.md`: dashboard structure and how to use low-load, shadow-arbiter, and heating-curve debug cards.
-- `release-process.md`: GitHub Actions CI/release flow, tag strategy, and release execution steps.
-- `dashboard/README.md`: dashboard topology/language variants and Home Assistant import instructions.
-- `specifications/functional-specification.md`: what the system must do.
-- `specifications/technical-specification.md`: how the current implementation does it.
-- `adaptive-tuner-design.md`: future design for local adaptive tuning.
-
-## Documentation Rules
-
-- Keep filenames versionless.
-- Keep firmware versioning in `openquatt/oq_substitutions_common.yaml` (`project_version`).
-- Update both specifications when changing control behavior.
-- Keep entity names and examples aligned with the current YAML codebase.
+- [Regelgedrag van OpenQuatt](regelgedrag-van-openquatt.md): systeemstanden, overgangen en flowregeling.
+- [Instellingen en meetwaarden](instellingen-en-meetwaarden.md): compile-time en runtime instellingen, plus de belangrijkste meetwaarden.

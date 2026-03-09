@@ -99,7 +99,7 @@ views:
 
               - `Flow mode`: how pump/flow control is currently operating.
 
-              - `Heating strategy`: source of heating demand (for example Power House/curve).
+              - `Heating strategy`: source of heating demand (for example PH/curve).
 
               - `Boiler active`: indicates whether boiler assist is active.
 
@@ -202,7 +202,7 @@ views:
               legend: true
               labels: false
             points_per_hour: 30
-            hours_to_show: 2
+            hours_to_show: 24
             line_width: 2
             hour24: true
             height: 80
@@ -895,7 +895,7 @@ views:
               <details>
               <summary><strong>Explanation</strong></summary>
 
-              - `Heating mode`: selects which strategy drives heat demand generation (for example Heating Curve or Power House).
+              - `Heating mode`: selects which strategy drives heat demand generation (for example Heating Curve or PH).
               </details>
             text_only: true
           - type: tile
@@ -1855,7 +1855,7 @@ views:
         cards:
           - type: heading
             icon: mdi:home-thermometer-outline
-            heading: House model (Power House)
+            heading: House model (PH)
             heading_style: title
           - type: markdown
             content: >-
@@ -1870,7 +1870,7 @@ views:
               - **Maximum heating outdoor temperature** is the point where model
               heat demand approaches ~0.
 
-              - **Power House Kp** defines how strongly room temperature error
+              - **PH Kp** defines how strongly room temperature error
               is translated into heat demand (W).
 
               - **Deadband** suppresses tiny corrections and reduces hunting.
@@ -1915,27 +1915,27 @@ views:
               - entity: number.openquatt_rated_maximum_house_power
                 name: Rated maximum house power (Pr)
               - entity: number.openquatt_power_house_kp_w_k
-                name: Power House Kp (W/K)
+                name: PH Kp (W/K)
               - entity: number.openquatt_power_house_deadband
-                name: Power House deadband
+                name: PH deadband
               - entity: number.openquatt_power_house_comfort_below_setpoint
-                name: Power House comfort below setpoint
+                name: PH comfort below SP
               - entity: number.openquatt_power_house_comfort_above_setpoint
-                name: Power House comfort above setpoint
+                name: PH comfort above SP
               - entity: number.openquatt_power_house_comfort_bias_base
-                name: Power House comfort bias base
+                name: PH bias base
               - entity: number.openquatt_power_house_comfort_bias_max
-                name: Power House comfort bias max
+                name: PH bias max
               - entity: number.openquatt_power_house_comfort_bias_up
-                name: Power House comfort bias up
+                name: PH bias up
               - entity: number.openquatt_power_house_comfort_bias_down
-                name: Power House comfort bias down
+                name: PH bias down
               - entity: number.openquatt_power_house_room_error_avg_tau
-                name: Power House room error avg tau
+                name: PH room avg tau
               - entity: number.openquatt_power_house_ramp_up
-                name: Power House ramp up
+                name: PH ramp up
               - entity: number.openquatt_power_house_ramp_down
-                name: Power House ramp down
+                name: PH ramp down
       - type: grid
         cards:
           - type: heading
@@ -1949,12 +1949,12 @@ views:
               <summary><strong>Parameter explanation</strong></summary>
 
 
-              - **Curve Tsupply** points form the heating curve: desired supply
+              - **Supply points** form the heating curve: desired supply
               temperature for different outdoor temperatures.
 
               - First tune curve points for baseline comfort, then fine-tune PID.
 
-              - **Fallback Tsupply** is used when outdoor temperature is
+              - **Fallback supply** is used when outdoor temperature is
               temporarily unavailable.
 
               - `Heating Curve Control Profile` selects the built-in control
@@ -1972,19 +1972,19 @@ views:
             show_header_toggle: false
             entities:
               - entity: number.openquatt_curve_tsupply_20degc
-                name: Curve Tsupply @ -20C
+                name: Supply @ -20C
               - entity: number.openquatt_curve_tsupply_10degc
-                name: Curve Tsupply @ -10C
+                name: Supply @ -10C
               - entity: number.openquatt_curve_tsupply_0degc
-                name: Curve Tsupply @ 0C
+                name: Supply @ 0C
               - entity: number.openquatt_curve_tsupply_5degc
-                name: Curve Tsupply @ 5C
+                name: Supply @ 5C
               - entity: number.openquatt_curve_tsupply_10degc_2
-                name: Curve Tsupply @ 10C
+                name: Supply @ 10C
               - entity: number.openquatt_curve_tsupply_15degc
-                name: Curve Tsupply @ 15C
+                name: Supply @ 15C
               - entity: number.openquatt_curve_fallback_tsupply_no_outside_temp
-                name: Curve fallback Tsupply
+                name: Fallback supply
               - entity: select.openquatt_heating_curve_control_profile
                 name:
                   type: entity
@@ -2433,7 +2433,7 @@ views:
         cards:
           - type: heading
             icon: mdi:home-lightning-bolt
-            heading: Power House diagnostics
+            heading: PH diagnostics
             heading_style: title
           - type: markdown
             content: >-
@@ -2443,10 +2443,10 @@ views:
               <summary><strong>Explanation</strong></summary>
 
 
-              Use this block to inspect Power House control behavior.
+              Use this block to inspect PH control behavior.
 
 
-              - Relevant when Power House control is active.
+              - Relevant when PH control is active.
 
               - `P_house` is the model estimate based on outdoor temperature.
 
