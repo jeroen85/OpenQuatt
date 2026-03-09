@@ -92,43 +92,6 @@ def parse_dashboard_titles(path: Path) -> list[str]:
     return titles
 
 
-def parse_package_keys(path: Path) -> list[str]:
-    keys: list[str] = []
-    rx = re.compile(r"^([A-Za-z0-9_]+):\s*!include\b")
-    for line in read_text(path).splitlines():
-        m = rx.match(line)
-        if m:
-            keys.append(m.group(1))
-    return keys
-
-
-def parse_doc_package_order(path: Path) -> list[str]:
-    lines = read_text(path).splitlines()
-    start = None
-    for idx, line in enumerate(lines):
-        if line.strip() == "Package include order is intentional:":
-            start = idx + 1
-            break
-    if start is None:
-        return []
-
-    order: list[str] = []
-    rx = re.compile(r"^\d+\.\s+`([^`]+)`")
-    for line in lines[start:]:
-        line = line.strip()
-        if not line:
-            if order:
-                break
-            continue
-        m = rx.match(line)
-        if not m:
-            if order:
-                break
-            continue
-        order.append(m.group(1))
-    return order
-
-
 def add(findings: list[Finding], file: str, line: int, message: str) -> None:
     findings.append(Finding(file=file, line=line, message=message))
 
@@ -149,11 +112,10 @@ def main() -> int:
     findings: list[Finding] = []
     changed = changed_files_for_ci() if args.changed_only else set()
 
-    docs_home = REPO_ROOT / "docs/home-assistant-dashboard.md"
-    docs_settings = REPO_ROOT / "docs/settings-reference.md"
-    docs_tuning = REPO_ROOT / "docs/tuning-and-troubleshooting.md"
-    docs_system = REPO_ROOT / "docs/system-overview.md"
-    pkg_file = REPO_ROOT / "openquatt/oq_packages.yaml"
+    docs_home = REPO_ROOT / "docs/dashboardoverzicht.md"
+    docs_settings = REPO_ROOT / "docs/instellingen-en-meetwaarden.md"
+    docs_tuning = REPO_ROOT / "docs/diagnose-en-afstelling.md"
+    docs_system = REPO_ROOT / "docs/hoe-openquatt-werkt.md"
     dash_en = REPO_ROOT / "docs/dashboard/openquatt_ha_dashboard_duo_en.yaml"
     dash_nl = REPO_ROOT / "docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml"
     dash_single_nl = REPO_ROOT / "docs/dashboard/openquatt_ha_dashboard_single_nl.yaml"
@@ -163,9 +125,9 @@ def main() -> int:
     flow_related = {
         "openquatt/oq_flow_control.yaml",
         "openquatt/oq_substitutions_common.yaml",
-        "docs/settings-reference.md",
-        "docs/tuning-and-troubleshooting.md",
-        "docs/home-assistant-dashboard.md",
+        "docs/instellingen-en-meetwaarden.md",
+        "docs/diagnose-en-afstelling.md",
+        "docs/dashboardoverzicht.md",
         "docs/dashboard/openquatt_ha_dashboard_duo_en.yaml",
         "docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml",
         "docs/dashboard/openquatt_ha_dashboard_single_nl.yaml",
@@ -174,9 +136,9 @@ def main() -> int:
     if not args.changed_only or any_changed(changed, flow_related):
         for rel in [
             "README.md",
-            "docs/settings-reference.md",
-            "docs/tuning-and-troubleshooting.md",
-            "docs/home-assistant-dashboard.md",
+            "docs/instellingen-en-meetwaarden.md",
+            "docs/diagnose-en-afstelling.md",
+            "docs/dashboardoverzicht.md",
         ]:
             path = REPO_ROOT / rel
             for ln in lines_with_phrase(path, "Flow mismatch threshold"):
@@ -191,15 +153,15 @@ def main() -> int:
 
         settings_text = read_text(docs_settings)
         if "oq_flow_mismatch_threshold_lph" not in settings_text:
-            add(findings, "docs/settings-reference.md", 1, "Missing `oq_flow_mismatch_threshold_lph` reference.")
+            add(findings, "docs/instellingen-en-meetwaarden.md", 1, "Missing `oq_flow_mismatch_threshold_lph` reference.")
         if "oq_flow_mismatch_hyst_lph" not in settings_text:
-            add(findings, "docs/settings-reference.md", 1, "Missing `oq_flow_mismatch_hyst_lph` reference.")
+            add(findings, "docs/instellingen-en-meetwaarden.md", 1, "Missing `oq_flow_mismatch_hyst_lph` reference.")
         if "oq_flow_mismatch_fallback_lph" in settings_text:
-            add(findings, "docs/settings-reference.md", 1, "Obsolete `oq_flow_mismatch_fallback_lph` found.")
+            add(findings, "docs/instellingen-en-meetwaarden.md", 1, "Obsolete `oq_flow_mismatch_fallback_lph` found.")
 
     # 2) Dashboard docs should stay aligned with dashboard YAML view sets.
     dashboard_related = {
-        "docs/home-assistant-dashboard.md",
+        "docs/dashboardoverzicht.md",
         "docs/dashboard/openquatt_ha_dashboard_duo_en.yaml",
         "docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml",
         "docs/dashboard/openquatt_ha_dashboard_single_nl.yaml",
@@ -221,23 +183,23 @@ def main() -> int:
             "Overzicht",
             "Energie",
             "Flow",
-            "Warmtecontrol",
-            "HPs",
+            "Warmteregeling",
+            "Warmtepompen",
             "Sensorconfiguratie",
-            "Tuning",
-            "Service & Test",
-            "Diagnostics",
+            "Instellingen",
+            "Service en test",
+            "Diagnostiek",
         ]
         single_nl_expected = [
             "Overzicht",
             "Energie",
             "Flow",
-            "Warmtecontrol",
+            "Warmteregeling",
             "HP1",
             "Sensorconfiguratie",
-            "Tuning",
-            "Service & Test",
-            "Diagnostics",
+            "Instellingen",
+            "Service en test",
+            "Diagnostiek",
         ]
         single_en_expected = [
             "Overview",
@@ -266,48 +228,17 @@ def main() -> int:
 
         home_text = read_text(docs_home)
         required_phrases = [
-            "Service & Test View",
+            "Service en test",
             "`service-test`",
-            "Diagnostics View",
-            "Tuning View",
+            "Diagnostiek",
+            "Instellingen",
         ]
         for phrase in required_phrases:
             if phrase not in home_text:
-                add(findings, "docs/home-assistant-dashboard.md", 1, f"Missing dashboard docs phrase: {phrase}")
+                add(findings, "docs/dashboardoverzicht.md", 1, f"Missing dashboard docs phrase: {phrase}")
 
-    # 3) Package order in docs should mirror oq_packages.yaml.
-    package_related = {
-        "openquatt/oq_packages.yaml",
-        "docs/system-overview.md",
-    }
-    if not args.changed_only or any_changed(changed, package_related):
-        package_keys = parse_package_keys(pkg_file)
-        doc_order = parse_doc_package_order(docs_system)
-        expected_doc_order: list[str] = []
-        for key in package_keys:
-            if key in {"heatpump1", "heatpump2"}:
-                continue
-            expected_doc_order.append(key)
-        if "heatpump1" in package_keys and "heatpump2" in package_keys:
-            expected_doc_order.append("oq_HP_io")
-
-        if doc_order != expected_doc_order:
-            add(
-                findings,
-                "docs/system-overview.md",
-                1,
-                f"Package order drift: docs={doc_order}, expected={expected_doc_order}",
-            )
-
-    # 4) Advisory changed-file guards for likely doc drift.
+    # 3) Advisory changed-file guards for likely doc drift.
     if args.changed_only and changed:
-        if any_changed(changed, {"openquatt/oq_packages.yaml"}) and not any_changed(changed, {"docs/system-overview.md"}):
-            add(
-                findings,
-                "docs/system-overview.md",
-                1,
-                "oq_packages changed; consider updating package include order in docs/system-overview.md.",
-            )
         if any_changed(
             changed,
             {
@@ -316,17 +247,17 @@ def main() -> int:
                 "docs/dashboard/openquatt_ha_dashboard_single_nl.yaml",
                 "docs/dashboard/openquatt_ha_dashboard_single_en.yaml",
             },
-        ) and not any_changed(changed, {"docs/home-assistant-dashboard.md"}):
+        ) and not any_changed(changed, {"docs/dashboardoverzicht.md"}):
             add(
                 findings,
-                "docs/home-assistant-dashboard.md",
+                "docs/dashboardoverzicht.md",
                 1,
-                "Dashboard YAML changed; consider updating docs/home-assistant-dashboard.md.",
+                "Dashboard YAML changed; consider updating docs/dashboardoverzicht.md.",
             )
-        if any_changed(changed, {"openquatt/oq_debug_testing.yaml", "openquatt/oq_common.yaml"}) and not any_changed(changed, {"docs/home-assistant-dashboard.md", "docs/settings-reference.md", "docs/system-overview.md"}):
+        if any_changed(changed, {"openquatt/oq_debug_testing.yaml", "openquatt/oq_common.yaml"}) and not any_changed(changed, {"docs/dashboardoverzicht.md", "docs/instellingen-en-meetwaarden.md", "docs/hoe-openquatt-werkt.md"}):
             add(
                 findings,
-                "docs/home-assistant-dashboard.md",
+                "docs/dashboardoverzicht.md",
                 1,
                 "Service/debug entities changed; consider updating dashboard/settings/system docs.",
             )

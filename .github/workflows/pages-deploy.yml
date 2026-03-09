@@ -4,7 +4,9 @@ on:
   push:
     branches: [main]
     paths:
+      - "README.md"
       - "docs/**"
+      - "scripts/build_pages_docs.py"
       - "scripts/prepare_pages_site.sh"
       - ".github/workflows/pages-deploy.yml"
   release:
