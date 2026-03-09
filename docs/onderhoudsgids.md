@@ -34,10 +34,10 @@ This guide keeps the configuration maintainable and predictable while preserving
 - Preserve package include order in `openquatt/oq_packages.yaml` unless dependencies are intentionally redesigned.
 - If you add/remove packages or user-facing entities, update the affected docs in the same PR:
   - `README.md`
-  - `docs/system-overview.md`
-  - `docs/settings-reference.md`
-  - `docs/home-assistant-dashboard.md`
-  - `docs/specifications/technical-specification.md`
+  - `docs/README.md`
+  - `docs/hoe-openquatt-werkt.md`
+  - `docs/instellingen-en-meetwaarden.md`
+  - `docs/dashboardoverzicht.md`
 
 ## Package Structure Convention
 
