@@ -22,19 +22,24 @@ Je hoeft voor de eerste installatie niet eerst alle technische achtergronddocume
 
 ## Ondersteunde combinaties
 
-OpenQuatt ondersteunt momenteel deze combinaties:
+OpenQuatt ondersteunt momenteel deze Quatt-opstellingen en hardwarevarianten.
 
-- Duo + Waveshare ESP32-S3-Relay-1CH
-- Duo + Heatpump Listener
+Quatt-opstellingen (V1 en V1.5):
+
+- Single
+- Duo
+
+Ondersteunde hardware:
+
+- Waveshare ESP32-S3-Relay-1CH
+- Heatpump Listener
+
+Elke combinatie van bovenstaande Quatt-opstellingen en hardware wordt ondersteund:
+
 - Single + Waveshare ESP32-S3-Relay-1CH
 - Single + Heatpump Listener
-
-Praktisch betekent dit:
-
-- ESPHome `>= 2025.11.0`
-- een ondersteund ESP32-profiel
-- RS485-aansluiting op minimaal een warmtepomp
-- Home Assistant is sterk aanbevolen
+- Duo + Waveshare ESP32-S3-Relay-1CH
+- Duo + Heatpump Listener
 
 ## Snel starten
 
