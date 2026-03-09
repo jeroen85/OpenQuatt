@@ -11,6 +11,9 @@ on:
       - ".github/workflows/pages-deploy.yml"
   release:
     types: [published]
+  workflow_run:
+    workflows: ["Release Build"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -25,6 +28,7 @@ concurrency:
 jobs:
   build-pages:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: Checkout site source
