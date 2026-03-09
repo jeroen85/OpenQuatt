@@ -1326,6 +1326,8 @@ views:
                 entities:
                   - entity: select.openquatt_room_temperature_source
                     name: Room temperature source
+                  - entity: sensor.openquatt_room_temperature_effective_source
+                    name: Effective room temperature source
                   - entity: sensor.openquatt_room_temperature_selected
                     name: Selected room temperature
                   - entity: sensor.openquatt_cic_ot_room_temperature
@@ -1406,12 +1408,32 @@ views:
                 entities:
                   - entity: select.openquatt_room_setpoint_source
                     name: Room setpoint source
+                  - entity: sensor.openquatt_room_setpoint_effective_source
+                    name: Effective room setpoint source
                   - entity: sensor.openquatt_room_setpoint_selected
                     name: Selected room setpoint
                   - entity: sensor.openquatt_cic_ot_room_setpoint
                     name: Room setpoint (CIC OT)
                   - entity: sensor.openquatt_ha_thermostat_setpoint
                     name: Room setpoint (HA Input)
+          - type: vertical-stack
+            cards:
+              - type: heading
+                icon: mdi:swap-horizontal-bold
+                heading: CIC thermostat fallback
+                heading_style: subtitle
+                grid_options:
+                  columns: 12
+                  rows: 1
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: switch.openquatt_room_cic_auto_failover
+                    name: CIC thermostat auto failover
+                  - entity: binary_sensor.openquatt_room_cic_failover_active
+                    name: CIC thermostat fallback active
+                  - entity: sensor.openquatt_room_cic_failover_status
+                    name: CIC thermostat fallback status
         column_span: 3
       - type: grid
         cards:

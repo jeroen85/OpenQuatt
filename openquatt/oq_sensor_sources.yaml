@@ -9,8 +9,38 @@
 # Scope:
 #   - Source selectors for water/flow/outside/room inputs
 #   - Merged selected outputs consumed by strategy/control packages
+#   - Optional room-signal failover from CIC to HA input on prolonged CIC outages
 #
 # ==============================================================================
+
+globals:
+  - id: oq_room_temp_failover_active
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+  - id: oq_room_temp_cic_recover_since_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: oq_room_setpoint_failover_active
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+  - id: oq_room_setpoint_cic_recover_since_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+
+switch:
+  - platform: template
+    name: "Room CIC Auto Failover"
+    id: oq_room_cic_auto_failover
+    icon: mdi:swap-horizontal
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_cic
 
 select:
   - platform: template
@@ -80,6 +110,44 @@ select:
       - CIC
       - HA input
     initial_option: CIC
+    web_server:
+      sorting_group_id: oq_cic
+
+binary_sensor:
+  - platform: template
+    id: oq_room_cic_failover_active_bs
+    name: "Room CIC Failover Active"
+    icon: mdi:swap-horizontal-bold
+    device_class: running
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_cic
+
+text_sensor:
+  - platform: template
+    id: oq_room_temperature_effective_source
+    name: "Room Temperature Effective Source"
+    icon: mdi:source-branch
+    update_interval: never
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_cic
+
+  - platform: template
+    id: oq_room_setpoint_effective_source
+    name: "Room Setpoint Effective Source"
+    icon: mdi:source-branch
+    update_interval: never
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_cic
+
+  - platform: template
+    id: oq_room_cic_failover_status
+    name: "Room CIC Failover Status"
+    icon: mdi:information-outline
+    update_interval: never
+    entity_category: diagnostic
     web_server:
       sorting_group_id: oq_cic
 
@@ -167,7 +235,8 @@ sensor:
     update_interval: 10s
     lambda: |-
       if (!id(room_temp_source).has_state()) return NAN;
-      const auto source = id(room_temp_source).current_option();
+      const bool failover_active = id(oq_room_temp_failover_active);
+      const auto source = failover_active ? std::string("HA input") : id(room_temp_source).current_option();
       if (source == "HA input") {
         if (id(thermostat_room_temp_ha).has_state()) return id(thermostat_room_temp_ha).state;
         return NAN;
@@ -191,7 +260,8 @@ sensor:
     update_interval: 10s
     lambda: |-
       if (!id(room_setpoint_source).has_state()) return NAN;
-      const auto source = id(room_setpoint_source).current_option();
+      const bool failover_active = id(oq_room_setpoint_failover_active);
+      const auto source = failover_active ? std::string("HA input") : id(room_setpoint_source).current_option();
       if (source == "HA input") {
         if (id(thermostat_setpoint_ha).has_state()) return id(thermostat_setpoint_ha).state;
         return NAN;
@@ -203,3 +273,112 @@ sensor:
       return NAN;
     web_server:
       sorting_group_id: oq_temperatures
+
+interval:
+  - interval: 5s
+    then:
+      - lambda: |-
+          auto has_valid_float = [](auto *sensor) -> bool {
+            return sensor != nullptr && sensor->has_state() && !isnan(sensor->state);
+          };
+          auto publish_binary_if_changed = [](auto *binary, bool value) {
+            if (binary == nullptr) return;
+            if (!binary->has_state() || binary->state != value) binary->publish_state(value);
+          };
+          auto publish_text_if_changed = [](auto *text, const std::string &value) {
+            if (text == nullptr) return;
+            if (text->state != value) text->publish_state(value);
+          };
+          const bool failover_enabled = id(oq_room_cic_auto_failover).state;
+          const bool room_source_cic = id(room_temp_source).has_state() && id(room_temp_source).current_option() == "CIC";
+          const bool setpoint_source_cic = id(room_setpoint_source).has_state() && id(room_setpoint_source).current_option() == "CIC";
+
+          const bool cic_room_valid = has_valid_float(id(ot_room_temp));
+          const bool cic_setpoint_valid = has_valid_float(id(ot_room_setpoint));
+
+          const bool ha_room_valid = has_valid_float(id(thermostat_room_temp_ha));
+          const bool ha_setpoint_valid = has_valid_float(id(thermostat_setpoint_ha));
+
+          const bool cic_stale = id(cic_data_stale).state;
+          const uint32_t now_ms = millis();
+          const uint32_t recovery_hold_ms =
+              (uint32_t) lroundf((float) ${oq_room_cic_recovery_hold_default_min} * 60000.0f);
+          auto update_failover_state = [&](bool source_cic, bool cic_valid, bool ha_valid, bool &active, uint32_t &recover_since_ms) {
+            if (!failover_enabled || !source_cic) {
+              active = false;
+              recover_since_ms = 0;
+              return;
+            }
+            if (!active) {
+              recover_since_ms = 0;
+              if (cic_stale && ha_valid) active = true;
+              return;
+            }
+            if (!ha_valid) {
+              active = false;
+              recover_since_ms = 0;
+              return;
+            }
+            if (cic_stale || !cic_valid) {
+              recover_since_ms = 0;
+              return;
+            }
+            if (recovery_hold_ms == 0U) {
+              active = false;
+              recover_since_ms = 0;
+              return;
+            }
+            if (recover_since_ms == 0 || now_ms <= recover_since_ms) {
+              recover_since_ms = now_ms;
+            } else if ((int32_t) (now_ms - recover_since_ms) >= (int32_t) recovery_hold_ms) {
+              active = false;
+              recover_since_ms = 0;
+            }
+          };
+          auto describe_failover = [&](const char *label, bool source_cic, bool active, bool cic_valid, bool ha_valid) -> std::string {
+            if (!source_cic) return std::string(label) + "=BYPASS";
+            if (active) {
+              if (cic_stale) return std::string(label) + "=ACTIVE";
+              if (!cic_valid) return std::string(label) + "=ACTIVE(wait CIC)";
+              return std::string(label) + "=RECOVERING";
+            }
+            if (cic_stale && !ha_valid) return std::string(label) + "=BLOCKED(no HA)";
+            return std::string(label) + "=READY";
+          };
+
+          bool room_temp_failover_active = id(oq_room_temp_failover_active);
+          uint32_t room_temp_recover_since_ms = id(oq_room_temp_cic_recover_since_ms);
+          bool room_setpoint_failover_active = id(oq_room_setpoint_failover_active);
+          uint32_t room_setpoint_recover_since_ms = id(oq_room_setpoint_cic_recover_since_ms);
+
+          update_failover_state(room_source_cic, cic_room_valid, ha_room_valid, room_temp_failover_active, room_temp_recover_since_ms);
+          update_failover_state(setpoint_source_cic, cic_setpoint_valid, ha_setpoint_valid, room_setpoint_failover_active, room_setpoint_recover_since_ms);
+
+          id(oq_room_temp_failover_active) = room_temp_failover_active;
+          id(oq_room_temp_cic_recover_since_ms) = room_temp_recover_since_ms;
+          id(oq_room_setpoint_failover_active) = room_setpoint_failover_active;
+          id(oq_room_setpoint_cic_recover_since_ms) = room_setpoint_recover_since_ms;
+
+          std::string room_temp_effective = "Unknown";
+          if (room_temp_failover_active) room_temp_effective = "HA input (failover)";
+          else if (id(room_temp_source).has_state()) room_temp_effective = id(room_temp_source).current_option().c_str();
+
+          std::string room_setpoint_effective = "Unknown";
+          if (room_setpoint_failover_active) room_setpoint_effective = "HA input (failover)";
+          else if (id(room_setpoint_source).has_state()) room_setpoint_effective = id(room_setpoint_source).current_option().c_str();
+
+          const bool any_failover_active = room_temp_failover_active || room_setpoint_failover_active;
+          std::string failover_status = "TEMP=READY | SP=READY";
+          if (!failover_enabled) {
+            failover_status = "DISABLED";
+          } else {
+            failover_status =
+                describe_failover("TEMP", room_source_cic, room_temp_failover_active, cic_room_valid, ha_room_valid) +
+                " | " +
+                describe_failover("SP", setpoint_source_cic, room_setpoint_failover_active, cic_setpoint_valid, ha_setpoint_valid);
+          }
+
+          publish_binary_if_changed(id(oq_room_cic_failover_active_bs), any_failover_active);
+          publish_text_if_changed(id(oq_room_temperature_effective_source), room_temp_effective);
+          publish_text_if_changed(id(oq_room_setpoint_effective_source), room_setpoint_effective);
+          publish_text_if_changed(id(oq_room_cic_failover_status), failover_status);

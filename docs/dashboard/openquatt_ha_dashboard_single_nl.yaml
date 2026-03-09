@@ -1392,6 +1392,8 @@ views:
                 entities:
                   - entity: select.openquatt_room_temperature_source
                     name: Ruimtetemperatuur bron
+                  - entity: sensor.openquatt_room_temperature_effective_source
+                    name: Effectieve kamertemperatuurbron
                   - entity: sensor.openquatt_room_temperature_selected
                     name: Geselecteerde kamertemperatuur
                   - entity: sensor.openquatt_cic_ot_room_temperature
@@ -1472,12 +1474,32 @@ views:
                 entities:
                   - entity: select.openquatt_room_setpoint_source
                     name: Kamer setpoint bron
+                  - entity: sensor.openquatt_room_setpoint_effective_source
+                    name: Effectieve setpointbron
                   - entity: sensor.openquatt_room_setpoint_selected
                     name: Geselecteerd kamer setpoint
                   - entity: sensor.openquatt_cic_ot_room_setpoint
                     name: Kamer setpoint (CIC OT)
                   - entity: sensor.openquatt_ha_thermostat_setpoint
                     name: Kamer setpoint (HA-invoer)
+          - type: vertical-stack
+            cards:
+              - type: heading
+                icon: mdi:swap-horizontal-bold
+                heading: CIC thermostaat fallback
+                heading_style: subtitle
+                grid_options:
+                  columns: 12
+                  rows: 1
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: switch.openquatt_room_cic_auto_failover
+                    name: CIC thermostaat auto-failover
+                  - entity: binary_sensor.openquatt_room_cic_failover_active
+                    name: CIC thermostaat fallback actief
+                  - entity: sensor.openquatt_room_cic_failover_status
+                    name: CIC thermostaat fallback status
         column_span: 3
       - type: grid
         cards:
