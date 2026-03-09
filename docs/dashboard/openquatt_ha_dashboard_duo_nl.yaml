@@ -1640,8 +1640,16 @@ views:
                 entities:
                   - entity: select.openquatt_room_temperature_source
                     name: Ruimtetemperatuur bron
+                  - entity: switch.openquatt_room_cic_auto_failover
+                    name: Kamer CIC auto-failover
+                  - entity: text_sensor.openquatt_room_temperature_effective_source
+                    name: Effectieve kamertemperatuurbron
                   - entity: sensor.openquatt_room_temperature_selected
                     name: Geselecteerde kamertemperatuur
+                  - entity: binary_sensor.openquatt_room_cic_failover_active
+                    name: CIC failover actief
+                  - entity: text_sensor.openquatt_room_cic_failover_status
+                    name: CIC failover status
                   - entity: sensor.openquatt_cic_ot_room_temperature
                     name: Kamertemperatuur (CIC OT)
                   - entity: sensor.openquatt_ha_thermostat_room_temperature
@@ -1720,6 +1728,8 @@ views:
                 entities:
                   - entity: select.openquatt_room_setpoint_source
                     name: Kamer setpoint bron
+                  - entity: text_sensor.openquatt_room_setpoint_effective_source
+                    name: Effectieve setpointbron
                   - entity: sensor.openquatt_room_setpoint_selected
                     name: Geselecteerd kamer setpoint
                   - entity: sensor.openquatt_cic_ot_room_setpoint

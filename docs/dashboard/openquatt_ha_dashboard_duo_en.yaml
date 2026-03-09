@@ -1572,8 +1572,16 @@ views:
                 entities:
                   - entity: select.openquatt_room_temperature_source
                     name: Room temperature source
+                  - entity: switch.openquatt_room_cic_auto_failover
+                    name: Room CIC auto failover
+                  - entity: text_sensor.openquatt_room_temperature_effective_source
+                    name: Effective room temperature source
                   - entity: sensor.openquatt_room_temperature_selected
                     name: Selected room temperature
+                  - entity: binary_sensor.openquatt_room_cic_failover_active
+                    name: CIC failover active
+                  - entity: text_sensor.openquatt_room_cic_failover_status
+                    name: CIC failover status
                   - entity: sensor.openquatt_cic_ot_room_temperature
                     name: Room temperature (CIC OT)
                   - entity: sensor.openquatt_ha_thermostat_room_temperature
@@ -1652,6 +1660,8 @@ views:
                 entities:
                   - entity: select.openquatt_room_setpoint_source
                     name: Room setpoint source
+                  - entity: text_sensor.openquatt_room_setpoint_effective_source
+                    name: Effective room setpoint source
                   - entity: sensor.openquatt_room_setpoint_selected
                     name: Selected room setpoint
                   - entity: sensor.openquatt_cic_ot_room_setpoint
