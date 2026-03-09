@@ -202,7 +202,7 @@ views:
               legend: true
               labels: false
             points_per_hour: 30
-            hours_to_show: 2
+            hours_to_show: 24
             line_width: 2
             hour24: true
             height: 80

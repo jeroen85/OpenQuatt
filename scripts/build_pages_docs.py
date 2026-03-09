@@ -25,12 +25,12 @@ class Page:
 PAGES = [
     Page(PurePosixPath("README.md"), PurePosixPath("index.html"), "OpenQuatt", "Project", "Projectoverzicht, snelle start en hoofdroute."),
     Page(PurePosixPath("docs/README.md"), PurePosixPath("documentatie.html"), "Documentatie", "Docs", "Hoofdingang voor alle handleidingen en naslag."),
-    Page(PurePosixPath("docs/installatie-en-eerste-start.md"), PurePosixPath("installatie-en-eerste-start.html"), "Installatie en eerste start", "Docs", "Eerste installatie, lokaal bouwen en basiscontrole."),
+    Page(PurePosixPath("docs/installatie-en-ingebruikname.md"), PurePosixPath("installatie-en-ingebruikname.html"), "Installatie en ingebruikname", "Docs", "Eerste installatie en controle na de eerste start."),
     Page(PurePosixPath("docs/hoe-openquatt-werkt.md"), PurePosixPath("hoe-openquatt-werkt.html"), "Hoe OpenQuatt werkt", "Docs", "Rolverdeling tussen thermostaat, OpenQuatt, warmtepomp en Home Assistant."),
-    Page(PurePosixPath("docs/dashboard-uitleg.md"), PurePosixPath("dashboard-uitleg.html"), "Dashboard uitleg", "Docs", "Wat je ziet in Home Assistant en waar je eerst moet kijken."),
+    Page(PurePosixPath("docs/dashboardoverzicht.md"), PurePosixPath("dashboardoverzicht.html"), "Dashboardoverzicht", "Docs", "Gebruik, controle en diagnose in Home Assistant."),
     Page(PurePosixPath("docs/dashboard/README.md"), PurePosixPath("dashboard/index.html"), "Dashboard installeren", "Docs", "Importeer het juiste dashboardbestand voor Single of Duo."),
-    Page(PurePosixPath("docs/problemen-oplossen-en-afstellen.md"), PurePosixPath("problemen-oplossen-en-afstellen.html"), "Problemen oplossen en afstellen", "Docs", "Veilige volgorde bij klachten, onrustig gedrag en tuning."),
-    Page(PurePosixPath("docs/technische-uitleg-standen-en-flow.md"), PurePosixPath("technische-uitleg-standen-en-flow.html"), "Technische uitleg over standen en flow", "Naslag", "Technische runtime-uitleg over modes, flow en bronkeuze."),
+    Page(PurePosixPath("docs/diagnose-en-afstelling.md"), PurePosixPath("diagnose-en-afstelling.html"), "Diagnose en afstelling", "Docs", "Werkvolgorde bij klachten, onrustig gedrag en gerichte afstelling."),
+    Page(PurePosixPath("docs/regelgedrag-van-openquatt.md"), PurePosixPath("regelgedrag-van-openquatt.html"), "Regelgedrag van OpenQuatt", "Naslag", "Technische runtime-uitleg over systeemstanden, flowregeling en bronkeuze."),
     Page(PurePosixPath("docs/instellingen-en-meetwaarden.md"), PurePosixPath("instellingen-en-meetwaarden.html"), "Instellingen en meetwaarden", "Naslag", "Praktische naslag voor runtime- en compile-time instellingen."),
 ]
 
@@ -38,9 +38,9 @@ PAGE_BY_SOURCE = {page.source: page for page in PAGES}
 PRIMARY_NAV = [
     ("Start", PurePosixPath("index.html")),
     ("Documentatie", PurePosixPath("documentatie.html")),
-    ("Installatie", PurePosixPath("installatie-en-eerste-start.html")),
-    ("Dashboard", PurePosixPath("dashboard-uitleg.html")),
-    ("Problemen oplossen", PurePosixPath("problemen-oplossen-en-afstellen.html")),
+    ("Installatie", PurePosixPath("installatie-en-ingebruikname.html")),
+    ("Dashboard", PurePosixPath("dashboardoverzicht.html")),
+    ("Problemen oplossen", PurePosixPath("diagnose-en-afstelling.html")),
     ("Installatiehulp", PurePosixPath("install/index.html")),
 ]
 

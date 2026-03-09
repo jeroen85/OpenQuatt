@@ -4,8 +4,6 @@
 
 OpenQuatt is ESPHome-firmware voor Quatt Single- en Duo-installaties. Het project geeft je meer inzicht, meer regie en een beter uitleesbaar Home Assistant-dashboard bovenop de bestaande Quatt-hardware.
 
-De publieksdocumentatie wordt momenteel herschreven naar duidelijk Nederlands. Deze README is daarom bewust kort en taakgericht opgezet.
-
 > [!WARNING]
 > Dit project zit nog in een experimentele fase. Gebruik het bewust en test wijzigingen stap voor stap.
 
@@ -54,12 +52,12 @@ Elke combinatie van bovenstaande Quatt-opstellingen en hardware wordt ondersteun
    - Single NL: [docs/dashboard/openquatt_ha_dashboard_single_nl.yaml](docs/dashboard/openquatt_ha_dashboard_single_nl.yaml)
    - Single EN: [docs/dashboard/openquatt_ha_dashboard_single_en.yaml](docs/dashboard/openquatt_ha_dashboard_single_en.yaml)
 
-Alleen de nieuwste stabiele eerste-installatiebestanden worden standaard via de installer aangeboden. Wil je lokaal bouwen of testen, gebruik dan [Installatie en lokaal bouwen](docs/installatie-en-eerste-start.md).
+Alleen de nieuwste stabiele eerste-installatiebestanden worden standaard via de installer aangeboden.
 
 Loopt de eerste installatie vast, kijk dan hier:
 
 - [Dashboard installeren](docs/dashboard/README.md)
-- [Problemen oplossen en afstellen](docs/problemen-oplossen-en-afstellen.md)
+- [Diagnose en afstelling](docs/diagnose-en-afstelling.md)
 
 ## Ondersteunde hardware
 
@@ -76,15 +74,15 @@ Begin hier:
 
 Belangrijkste pagina's voor gebruikers:
 
-- [Installatie en lokaal bouwen](docs/installatie-en-eerste-start.md) voor installeren of lokaal bouwen
+- [Installatie en ingebruikname](docs/installatie-en-ingebruikname.md) voor installeren en controle na de eerste start
 - [Hoe OpenQuatt werkt](docs/hoe-openquatt-werkt.md) voor de rolverdeling tussen thermostaat, OpenQuatt, warmtepomp en Home Assistant
-- [Dashboard uitleg](docs/dashboard-uitleg.md) voor uitleg van de dashboardweergaven
+- [Dashboardoverzicht](docs/dashboardoverzicht.md) voor gebruik en diagnose van de dashboardweergaven
 - [Dashboard installeren](docs/dashboard/README.md) voor het importeren van dashboards
-- [Problemen oplossen en afstellen](docs/problemen-oplossen-en-afstellen.md) voor problemen oplossen en veilig afstellen
+- [Diagnose en afstelling](docs/diagnose-en-afstelling.md) voor diagnose en gerichte afstelling
 
 Technischere naslag blijft beschikbaar, maar staat niet meer centraal in de publieksroute:
 
-- [Technische uitleg over standen en flow](docs/technische-uitleg-standen-en-flow.md)
+- [Regelgedrag van OpenQuatt](docs/regelgedrag-van-openquatt.md)
 - [Instellingen en meetwaarden](docs/instellingen-en-meetwaarden.md)
 
 ## Licentie

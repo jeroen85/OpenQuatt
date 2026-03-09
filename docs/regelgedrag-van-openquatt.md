@@ -1,8 +1,8 @@
-# Technische uitleg over standen en flow
+# Regelgedrag van OpenQuatt
 
-Deze pagina is bedoeld als technische naslag voor mensen die willen begrijpen waarom OpenQuatt zich op runtime op een bepaalde manier gedraagt. De uitleg is bewuster eenvoudiger gehouden dan een specificatie, maar gebruikt nog wel de echte entiteitsnamen en mode-namen.
+Deze pagina is bedoeld als technische naslag voor wie wil begrijpen waarom OpenQuatt zich tijdens runtime op een bepaalde manier gedraagt. De uitleg gebruikt de echte entiteitsnamen en mode-namen, maar blijft gericht op praktisch begrip in plaats van op een formele specificatie.
 
-## Eerst het hoofdidee
+## Hoofdmodel
 
 OpenQuatt werkt in de praktijk met drie lagen die met elkaar samenhangen:
 
@@ -10,9 +10,9 @@ OpenQuatt werkt in de praktijk met drie lagen die met elkaar samenhangen:
 2. `Heating Strategy`: de manier waarop warmtevraag wordt opgebouwd.
 3. `Flow Mode`: de manier waarop pompaansturing wordt bepaald.
 
-Je kunt dus niet naar alleen een pompstand of alleen een strategie kijken. Het gedrag is altijd een combinatie van deze drie.
+Je kunt het gedrag daarom niet verklaren vanuit alleen een pompstand of alleen een strategie. Het is steeds een combinatie van deze drie lagen.
 
-## Control Mode in gewone taal
+## Control Mode
 
 `Control Mode` is de globale toestand van het systeem.
 
@@ -24,7 +24,7 @@ Je kunt dus niet naar alleen een pompstand of alleen een strategie kijken. Het g
 | `CM3` | Warmtepomp plus ketelhulp | ketel mag bijspringen |
 | `CM98` | Vorstbeveiliging | circulatie voor vorstbescherming |
 
-De belangrijkste gedachte is: OpenQuatt gaat niet zomaar direct van "geen vraag" naar "vol verwarmen". Er zitten tussenstappen en veiligheidschecks in.
+Het belangrijkste uitgangspunt is dat OpenQuatt niet direct van "geen vraag" naar "vol verwarmen" springt. Er zitten tussenstappen en veiligheidscontroles in.
 
 ## Wanneer gaat het systeem naar een andere mode?
 
@@ -38,19 +38,19 @@ OpenQuatt kijkt daarbij vooral naar:
 
 ### Van rust naar verwarmen
 
-Als er warmtevraag ontstaat, gaat het systeem meestal eerst via `CM1` en daarna naar `CM2`. Die tussenstap is bedoeld om de hydrauliek en de volgorde van acties netjes te houden.
+Als er warmtevraag ontstaat, gaat het systeem meestal eerst via `CM1` en daarna naar `CM2`. Die tussenstap is bedoeld om hydrauliek en acties in de juiste volgorde op te bouwen.
 
 ### Van `CM2` naar `CM3`
 
-De stap naar `CM3` gebeurt niet op een klein momentje tekort. Er zijn drempels en timers, zodat de ketel niet te snel bijspringt.
+De stap naar `CM3` gebeurt niet op basis van een kort tekort. Drempels en timers voorkomen dat de ketel te snel bijspringt.
 
 ### Terug van `CM3` naar `CM2`
 
-Ook terugschakelen gebeurt met drempels en wachttijd, zodat het systeem niet gaat pendelen.
+Ook terugschakelen gebeurt met drempels en wachttijd, zodat het systeem niet onnodig gaat pendelen.
 
-## Waarom blijft het systeem soms hangen in een tussenstand?
+## Waarom blijft het systeem soms in een tussenstand?
 
-Dat heeft vaak te maken met flow of veiligheid.
+Dat heeft meestal te maken met flow of veiligheid.
 
 Als verwarmen gevraagd wordt, maar de gekozen flow te laag is of te lang ongeldig blijft:
 
@@ -58,7 +58,7 @@ Als verwarmen gevraagd wordt, maar de gekozen flow te laag is of te lang ongeldi
 - wordt verdere opbouw naar normaal verwarmen tegengehouden;
 - blijft OpenQuatt in een veiligere tussenroute.
 
-Dat voelt soms alsof het systeem "niet doorpakt", maar is meestal bewust gedrag.
+Dat kan voelen alsof het systeem niet doorpakt, maar is meestal bewust beveiligd gedrag.
 
 ## Overrides
 
@@ -69,31 +69,31 @@ Met `select.openquatt_cm_override` kun je het gedrag tijdelijk forceren:
 - `Force CM1`
 - `Force CM98`
 
-Gebruik dit alleen bewust. Voor normaal gebruik hoort deze instelling op `Auto` te staan.
+Gebruik dit alleen doelbewust. Voor normaal gebruik hoort deze instelling op `Auto` te staan.
 
-## Begrenzing op totaal vermogen
+## Begrenzing van totaal vermogen
 
 OpenQuatt kan ook rekening houden met totaal opgenomen vermogen. Dat gebeurt via `oq_power_cap_f`.
 
-Het idee is eenvoudig:
+Het principe is als volgt:
 
 - bij een zachte overschrijding grijpt het systeem rustig in;
 - bij een piek grijpt het sneller in;
 - als de situatie weer normaal is, laat het systeem geleidelijk meer toe.
 
-Zo wordt de warmtevraag niet los gezien van het totale elektrische gedrag.
+Zo wordt warmtevraag niet los gezien van het totale elektrische gedrag van de installatie.
 
 ## Verwarmingsstrategieën
 
 ### Power House
 
-Bij `Power House` kijkt OpenQuatt vooral naar wat het huis ongeveer nodig heeft op basis van onder andere buitentemperatuur en kamerafwijking.
+Bij `Power House` kijkt OpenQuatt vooral naar wat de woning nodig heeft op basis van onder meer buitentemperatuur en kamerafwijking.
 
-Belangrijk om te onthouden:
+Belangrijke eigenschappen:
 
 - het systeem rekent niet alleen op een instantane kamerfout;
 - er zijn dode zones, grenzen en op- en afbouwsnelheden;
-- OpenQuatt probeert laaglast-gedrag rustig te houden om flipperen te voorkomen.
+- OpenQuatt probeert laaglastgedrag rustig te houden om pendelen te voorkomen.
 
 Handige diagnose-entiteiten:
 
@@ -106,13 +106,13 @@ Handige diagnose-entiteiten:
 
 Bij deze strategie kijkt OpenQuatt vooral naar de gewenste aanvoertemperatuur via een stooklijn.
 
-Belangrijk om te onthouden:
+Belangrijke eigenschappen:
 
 - de regeling gebruikt de gekozen aanvoertemperatuurbron;
 - er zijn profielen en PID-instellingen;
-- rond lage vraag probeert het systeem niet te abrupt naar nul te springen.
+- rond lage vraag probeert het systeem niet abrupt naar nul te springen.
 
-Deze strategie past vaak beter bij gebruikers die in termen van aanvoertemperatuur of stooklijn denken.
+Deze strategie past vaak beter bij gebruikers die hun installatie benaderen vanuit aanvoertemperatuur of stooklijn.
 
 ## Flow Mode
 
@@ -123,9 +123,9 @@ Beschikbare keuzes:
 - `Flow Setpoint`
 - `Manual PWM`
 
-Maar de uiteindelijke pompaansturing hangt nog steeds ook af van `Control Mode`. Een handmatige pompstand overschrijft dus niet alle veiligheidslogica van het systeem.
+De uiteindelijke pompaansturing hangt nog steeds samen met `Control Mode`. Een handmatige pompstand overschrijft dus niet alle veiligheidslogica.
 
-## Volgorde in de flowregeling
+## Volgorde binnen de flowregeling
 
 In technische termen is de volgorde:
 
@@ -134,9 +134,9 @@ In technische termen is de volgorde:
 3. handmatige of vorst-PWM kan gelden.
 4. anders werkt de automatische regeling.
 
-Die volgorde voorkomt dat meerdere delen van het systeem tegelijk "eigenaar" van dezelfde pompactie proberen te zijn.
+Die volgorde voorkomt dat meerdere delen van het systeem tegelijk dezelfde pompactie proberen te bepalen.
 
-## Wat betekent AUTO PI grofweg?
+## AUTO PI in hoofdlijnen
 
 De automatische flowregeling gebruikt een regelaar die probeert de flow rond de gewenste waarde te houden.
 
@@ -147,9 +147,9 @@ Praktisch betekent dat:
 - er zijn grenzen om te agressief regelen te voorkomen;
 - bij ongeldige meetwaarden kiest OpenQuatt voor een voorzichtige fallback.
 
-## Bronkeuze is vaak de echte oorzaak
+## Bronkeuze is vaak de werkelijke oorzaak
 
-Veel vreemd gedrag ontstaat niet door een slechte regelstrategie, maar door een verkeerde gekozen bron.
+Veel vreemd gedrag ontstaat niet door de regelstrategie zelf, maar door een onjuiste geselecteerde bron.
 
 Voor de regeling zijn vooral belangrijk:
 
@@ -157,9 +157,9 @@ Voor de regeling zijn vooral belangrijk:
 - `outside_temp_selected`
 - `water_supply_temp_selected`
 
-Als deze gekozen waarden niet kloppen, lijkt het alsof de modes verkeerd werken terwijl de bronkeuze het echte probleem is.
+Als deze geselecteerde waarden niet kloppen, lijkt het alsof modes verkeerd werken terwijl de bronkeuze het eigenlijke probleem is.
 
-## Veelgemaakte misverstanden
+## Veelvoorkomende misverstanden
 
 - Een hoge flow op één moment betekent niet automatisch dat een low-flow toestand meteen moet verdwijnen.
 - `Flow Mode` vervangt `Control Mode` niet.
@@ -177,7 +177,7 @@ Als deze gekozen waarden niet kloppen, lijkt het alsof de modes verkeerd werken 
 | tekort herstelt in `CM3` | terug naar `CM2` |
 | vorstgevaar zonder normale warmtevraag | `CM98` |
 
-## Wat controleer je bij twijfel?
+## Controle bij twijfel
 
 1. Kijk welke `Control Mode` actief is.
 2. Kijk welke bronwaarden daadwerkelijk geselecteerd zijn.

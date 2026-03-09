@@ -1,8 +1,8 @@
 # Instellingen en meetwaarden
 
-Deze pagina is de praktische naslag voor instellingen en belangrijke meetwaarden in OpenQuatt. De insteek is: eerst begrijpen of iets tijdens runtime aanpasbaar is, en pas daarna kijken welke instelling je eventueel wilt veranderen.
+Deze pagina is de praktische naslag voor instellingen en belangrijke meetwaarden in OpenQuatt. Begin altijd met de vraag of iets compile-time of runtime wordt bepaald; pas daarna heeft het zin om een instelling te wijzigen.
 
-## Eerst het belangrijkste onderscheid
+## Compile-time of runtime
 
 OpenQuatt heeft grofweg twee soorten instellingen:
 
@@ -51,9 +51,9 @@ Belangrijke compile-time profielvelden zijn:
 - `ds18b20_pin`
 - `oq_boiler_relay_pin`
 
-## Welke compile-time instellingen zijn het belangrijkst?
+## Belangrijkste compile-time instellingen
 
-Niet alles is even vaak relevant. In de praktijk zijn dit de groepen die het meeste gedrag bepalen:
+Niet elke instelling is even relevant. In de praktijk bepalen vooral deze groepen het gedrag:
 
 ### Vermogen en systeemgedrag
 
@@ -83,7 +83,7 @@ Niet alles is even vaak relevant. In de praktijk zijn dit de groepen die het mee
 - `oq_flow_ki_min`
 - `oq_flow_ki_max`
 
-Belangrijk: `oq_flow_mismatch_threshold_lph` en `oq_flow_mismatch_hyst_lph` zijn compile-time constanten. Deze pas je dus niet even live aan in een dashboard; daarvoor is opnieuw compileren en flashen nodig.
+Belangrijk: `oq_flow_mismatch_threshold_lph` en `oq_flow_mismatch_hyst_lph` zijn compile-time constanten. Daarvoor is dus opnieuw compileren en flashen nodig.
 
 ### Ketel en veiligheid
 
@@ -117,11 +117,11 @@ Deze instellingen gebruik je als eerste als je gedrag wilt begrenzen of verklare
 - `Low-load ON fallback`
 - `Low-load CM2 re-entry block`
 
-In gewone taal: hiermee bepaal je hoeveel ruimte OpenQuatt krijgt, wanneer stille uren gelden en hoe snel het systeem naar ketelhulp of terugschakelen beweegt.
+Praktisch bepaal je hiermee hoeveel ruimte OpenQuatt krijgt, wanneer stille uren gelden en hoe snel het systeem naar ketelhulp of terugschakelen beweegt.
 
 ### Verwarmingsstrategie
 
-Belangrijke runtime-instellingen hier zijn:
+Belangrijke runtime-instellingen in deze groep zijn:
 
 - `Heating Control Mode`
 - `House cold temp`
@@ -143,12 +143,12 @@ Belangrijke runtime-instellingen hier zijn:
 - `Heating Curve PID Kp/Ki/Kd`
 - `Curve Fallback Tsupply (No Outside Temp)`
 
-Praktisch:
+Samengevat:
 
 - `Power House` is meer huis- en kamervraaggericht;
 - `Water Temperature Control` is meer stooklijn- en aanvoertemperatuurgericht.
 
-Verander niet meteen meerdere instellingen uit deze groep tegelijk.
+Verander niet meerdere instellingen uit deze groep tegelijk.
 
 ### Verdeling bij Duo en looptijdgedrag
 
@@ -194,7 +194,7 @@ Beschikbare hulpmiddelen:
 - `Flow Autotune Ki suggested`
 - `Flow Autotune status`
 
-Zie autotune als hulpmiddel, niet als magische knop. Controleer altijd eerst of de omstandigheden kloppen en of de gemeten flow zelf betrouwbaar is.
+Zie autotune als hulpmiddel, niet als automatische oplossing. Controleer eerst of de omstandigheden kloppen en of de gemeten flow zelf betrouwbaar is.
 
 ### Bronkeuze en externe data
 
@@ -212,7 +212,7 @@ Belangrijke instellingen en signalen:
 - `Room Temperature Source`
 - `Room Setpoint Source`
 
-Dit is vaak de belangrijkste groep bij onverklaarbaar gedrag. Als de gekozen bron niet klopt, helpt fijnregelen bijna nooit.
+Dit is vaak de belangrijkste groep bij onverklaarbaar gedrag. Als de geselecteerde bron niet klopt, helpt fijnregelen vrijwel nooit.
 
 ### Service en diagnose
 
@@ -229,7 +229,7 @@ Belangrijke hulpmiddelen:
 - `Debug Read HP1 register`
 - `Debug Read HP2 register`
 
-Gebruik deze groep vooral voor onderhoud en diagnose, niet voor dagelijks bedienen.
+Gebruik deze groep vooral voor onderhoud en diagnose, niet voor dagelijks gebruik.
 
 ## Belangrijkste meetwaarden
 
@@ -287,7 +287,7 @@ Gebruik deze werkwijze:
 
 ## Wanneer zit je in de verkeerde laag?
 
-Een veelgemaakte fout is een runtimeprobleem proberen op te lossen met compile-time aanpassingen, of andersom.
+Een veelgemaakte fout is een runtimeprobleem oplossen met compile-time aanpassingen, of andersom.
 
 Vuistregel:
 
@@ -296,8 +296,8 @@ Vuistregel:
 
 ## Gerelateerde pagina's
 
-- [Installatie en eerste start](installatie-en-eerste-start.md)
+- [Installatie en ingebruikname](installatie-en-ingebruikname.md)
 - [Hoe OpenQuatt werkt](hoe-openquatt-werkt.md)
-- [Technische uitleg over standen en flow](technische-uitleg-standen-en-flow.md)
-- [Problemen oplossen en afstellen](problemen-oplossen-en-afstellen.md)
-- [Dashboard uitleg](dashboard-uitleg.md)
+- [Regelgedrag van OpenQuatt](regelgedrag-van-openquatt.md)
+- [Diagnose en afstelling](diagnose-en-afstelling.md)
+- [Dashboardoverzicht](dashboardoverzicht.md)

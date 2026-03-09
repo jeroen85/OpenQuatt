@@ -112,9 +112,9 @@ def main() -> int:
     findings: list[Finding] = []
     changed = changed_files_for_ci() if args.changed_only else set()
 
-    docs_home = REPO_ROOT / "docs/dashboard-uitleg.md"
+    docs_home = REPO_ROOT / "docs/dashboardoverzicht.md"
     docs_settings = REPO_ROOT / "docs/instellingen-en-meetwaarden.md"
-    docs_tuning = REPO_ROOT / "docs/problemen-oplossen-en-afstellen.md"
+    docs_tuning = REPO_ROOT / "docs/diagnose-en-afstelling.md"
     docs_system = REPO_ROOT / "docs/hoe-openquatt-werkt.md"
     dash_en = REPO_ROOT / "docs/dashboard/openquatt_ha_dashboard_duo_en.yaml"
     dash_nl = REPO_ROOT / "docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml"
@@ -126,8 +126,8 @@ def main() -> int:
         "openquatt/oq_flow_control.yaml",
         "openquatt/oq_substitutions_common.yaml",
         "docs/instellingen-en-meetwaarden.md",
-        "docs/problemen-oplossen-en-afstellen.md",
-        "docs/dashboard-uitleg.md",
+        "docs/diagnose-en-afstelling.md",
+        "docs/dashboardoverzicht.md",
         "docs/dashboard/openquatt_ha_dashboard_duo_en.yaml",
         "docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml",
         "docs/dashboard/openquatt_ha_dashboard_single_nl.yaml",
@@ -137,8 +137,8 @@ def main() -> int:
         for rel in [
             "README.md",
             "docs/instellingen-en-meetwaarden.md",
-            "docs/problemen-oplossen-en-afstellen.md",
-            "docs/dashboard-uitleg.md",
+            "docs/diagnose-en-afstelling.md",
+            "docs/dashboardoverzicht.md",
         ]:
             path = REPO_ROOT / rel
             for ln in lines_with_phrase(path, "Flow mismatch threshold"):
@@ -161,7 +161,7 @@ def main() -> int:
 
     # 2) Dashboard docs should stay aligned with dashboard YAML view sets.
     dashboard_related = {
-        "docs/dashboard-uitleg.md",
+        "docs/dashboardoverzicht.md",
         "docs/dashboard/openquatt_ha_dashboard_duo_en.yaml",
         "docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml",
         "docs/dashboard/openquatt_ha_dashboard_single_nl.yaml",
@@ -186,7 +186,7 @@ def main() -> int:
             "Warmteregeling",
             "Warmtepompen",
             "Sensorconfiguratie",
-            "Afstellen",
+            "Instellingen",
             "Service en test",
             "Diagnostiek",
         ]
@@ -197,7 +197,7 @@ def main() -> int:
             "Warmteregeling",
             "HP1",
             "Sensorconfiguratie",
-            "Afstellen",
+            "Instellingen",
             "Service en test",
             "Diagnostiek",
         ]
@@ -231,11 +231,11 @@ def main() -> int:
             "Service en test",
             "`service-test`",
             "Diagnostiek",
-            "Afstellen",
+            "Instellingen",
         ]
         for phrase in required_phrases:
             if phrase not in home_text:
-                add(findings, "docs/dashboard-uitleg.md", 1, f"Missing dashboard docs phrase: {phrase}")
+                add(findings, "docs/dashboardoverzicht.md", 1, f"Missing dashboard docs phrase: {phrase}")
 
     # 3) Advisory changed-file guards for likely doc drift.
     if args.changed_only and changed:
@@ -247,17 +247,17 @@ def main() -> int:
                 "docs/dashboard/openquatt_ha_dashboard_single_nl.yaml",
                 "docs/dashboard/openquatt_ha_dashboard_single_en.yaml",
             },
-        ) and not any_changed(changed, {"docs/dashboard-uitleg.md"}):
+        ) and not any_changed(changed, {"docs/dashboardoverzicht.md"}):
             add(
                 findings,
-                "docs/dashboard-uitleg.md",
+                "docs/dashboardoverzicht.md",
                 1,
-                "Dashboard YAML changed; consider updating docs/dashboard-uitleg.md.",
+                "Dashboard YAML changed; consider updating docs/dashboardoverzicht.md.",
             )
-        if any_changed(changed, {"openquatt/oq_debug_testing.yaml", "openquatt/oq_common.yaml"}) and not any_changed(changed, {"docs/dashboard-uitleg.md", "docs/instellingen-en-meetwaarden.md", "docs/hoe-openquatt-werkt.md"}):
+        if any_changed(changed, {"openquatt/oq_debug_testing.yaml", "openquatt/oq_common.yaml"}) and not any_changed(changed, {"docs/dashboardoverzicht.md", "docs/instellingen-en-meetwaarden.md", "docs/hoe-openquatt-werkt.md"}):
             add(
                 findings,
-                "docs/dashboard-uitleg.md",
+                "docs/dashboardoverzicht.md",
                 1,
                 "Service/debug entities changed; consider updating dashboard/settings/system docs.",
             )

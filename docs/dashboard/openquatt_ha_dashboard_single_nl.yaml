@@ -207,7 +207,7 @@ views:
               legend: true
               labels: false
             points_per_hour: 30
-            hours_to_show: 2
+            hours_to_show: 24
             line_width: 2
             hour24: true
             height: 80
@@ -1348,7 +1348,7 @@ views:
           Deze tab toont een technische momentopname van HP1 op
           koudemiddel/waterzijde. Gebruik dit vooral voor diagnose.
 
-          Voor instellingen: gebruik `Flow`, `Warmteregeling` en `Afstellen`.
+          Voor instellingen: gebruik `Flow`, `Warmteregeling` en `Instellingen`.
   - title: Sensorconfiguratie
     path: sensor-configuration
     icon: mdi:source-branch
@@ -1646,7 +1646,7 @@ views:
           de geselecteerde waarde en bronstatus.
     top_margin: false
     dense_section_placement: false
-  - title: Afstellen
+  - title: Instellingen
     path: tuning
     icon: mdi:tune-vertical
     type: sections
@@ -1996,7 +1996,7 @@ views:
       card:
         type: markdown
         content: >-
-          # <ha-icon icon="mdi:tune-vertical"></ha-icon> Afstellen
+          # <ha-icon icon="mdi:tune-vertical"></ha-icon> Instellingen
 
           Structurele regelinstellingen voor limieten, huismodel, stooklijn,
           heat-allocation en flow.
@@ -2122,7 +2122,7 @@ views:
               - entity: number.openquatt_debug_modbus_register
                 name: Modbus register
               - entity: button.openquatt_debug_read_hp1_register
-                name: Debug: lees HP1-register
+                name: "Debug: lees HP1-register"
               - entity: sensor.openquatt_debug_modbus_value_u16
                 name: Result U16
               - entity: sensor.openquatt_debug_modbus_value_s16

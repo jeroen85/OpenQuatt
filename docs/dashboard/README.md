@@ -1,17 +1,17 @@
 # Dashboard installeren
 
-In deze map staan de dashboardbestanden voor OpenQuatt.
+In deze map staan de dashboardbestanden voor OpenQuatt in Home Assistant.
 
 ## Welk bestand kies je?
 
-Kies het bestand dat past bij jouw opstelling en taal:
+Kies het bestand dat past bij je opstelling en voorkeurstaal:
 
 - `openquatt_ha_dashboard_duo_nl.yaml`
 - `openquatt_ha_dashboard_duo_en.yaml`
 - `openquatt_ha_dashboard_single_nl.yaml`
 - `openquatt_ha_dashboard_single_en.yaml`
 
-Gebruik `duo` voor Duo en `single` voor Single. Kies daarna `nl` of `en` op basis van je voorkeurstaal.
+Gebruik `duo` voor Duo en `single` voor Single. Kies daarna `nl` of `en`.
 
 ## Importeren in Home Assistant
 
@@ -23,7 +23,7 @@ Gebruik `duo` voor Duo en `single` voor Single. Kies daarna `nl` of `en` op basi
 6. Plak de inhoud van het gekozen YAML-bestand.
 7. Sla op en laad het dashboard opnieuw.
 
-## Wat als importeren mislukt?
+## Bij importproblemen
 
 - Controleer of je echt het juiste `single`- of `duo`-bestand hebt.
 - Controleer of je de volledige YAML hebt geplakt.
@@ -49,4 +49,4 @@ Installatie in Home Assistant:
 
 - De dashboards gaan uit van de entiteitsnamen uit deze repository.
 - Als je zelf entiteitsnamen wijzigt, moet je ook het dashboard aanpassen.
-- Het NL-dashboard is voor de meeste gebruikers de logischste start.
+- Het Nederlandstalige dashboard is voor de meeste gebruikers de beste start.

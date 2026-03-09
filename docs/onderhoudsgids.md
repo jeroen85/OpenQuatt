@@ -37,7 +37,7 @@ This guide keeps the configuration maintainable and predictable while preserving
   - `docs/README.md`
   - `docs/hoe-openquatt-werkt.md`
   - `docs/instellingen-en-meetwaarden.md`
-  - `docs/dashboard-uitleg.md`
+  - `docs/dashboardoverzicht.md`
 
 ## Package Structure Convention
 

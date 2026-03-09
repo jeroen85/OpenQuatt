@@ -1,23 +1,25 @@
 # OpenQuatt documentatie
 
+Deze documentatie is bedoeld voor gebruikers die OpenQuatt willen installeren, koppelen aan Home Assistant en daarna gericht willen afstellen of verdiepen.
+
 ## Begin hier
 
 1. [README in de repo](../README.md)
-2. [Installatie en lokaal bouwen](installatie-en-eerste-start.md)
+2. [Installatie en ingebruikname](installatie-en-ingebruikname.md)
 3. [Dashboard installeren](dashboard/README.md)
-4. [Dashboard uitleg](dashboard-uitleg.md)
+4. [Dashboardoverzicht](dashboardoverzicht.md)
 
-Gebruik je alleen de standaardfirmware, dan is de kortste route meestal de web installer uit de README. Voor lokaal bouwen, valideren en flashen begin je bij `installatie-en-eerste-start.md`.
+Gebruik je de standaardfirmware, dan is de web installer uit de README meestal de snelste route. Daarna volg je de documentatieroute voor dashboard, uitleg en diagnose.
 
-## Voor de meeste gebruikers
+## Hoofdroute
 
-- [Installatie en lokaal bouwen](installatie-en-eerste-start.md): eerste installatie, lokaal bouwen en eerste veiligheidschecks.
-- [Hoe OpenQuatt werkt](hoe-openquatt-werkt.md): uitleg hoe OpenQuatt samenwerkt met thermostaat, warmtepomp en Home Assistant.
-- [Dashboard uitleg](dashboard-uitleg.md): wat je op het dashboard ziet en hoe je het gebruikt.
-- [Dashboard installeren](dashboard/README.md): welk dashboard je moet kiezen en hoe je het importeert.
-- [Problemen oplossen en afstellen](problemen-oplossen-en-afstellen.md): klachten, mogelijke oorzaken en veilige eerste acties.
+- [Installatie en ingebruikname](installatie-en-ingebruikname.md): eerste installatie en controle na de eerste start.
+- [Hoe OpenQuatt werkt](hoe-openquatt-werkt.md): rolverdeling tussen thermostaat, OpenQuatt, warmtepomp en Home Assistant.
+- [Dashboard installeren](dashboard/README.md): keuze van het juiste dashboardbestand en import in Home Assistant.
+- [Dashboardoverzicht](dashboardoverzicht.md): de belangrijkste dashboardtabs en de volgorde waarin je ze gebruikt.
+- [Diagnose en afstelling](diagnose-en-afstelling.md): diagnose, werkvolgorde en terughoudend afstellen.
 
-## Voor wie verder wil verdiepen
+## Naslag
 
-- [Technische uitleg over standen en flow](technische-uitleg-standen-en-flow.md): huidige technische uitleg over systeemstanden en flowgedrag.
-- [Instellingen en meetwaarden](instellingen-en-meetwaarden.md): uitgebreide naslag van instellingen en meetwaarden.
+- [Regelgedrag van OpenQuatt](regelgedrag-van-openquatt.md): systeemstanden, overgangen en flowregeling.
+- [Instellingen en meetwaarden](instellingen-en-meetwaarden.md): compile-time en runtime instellingen, plus de belangrijkste meetwaarden.
