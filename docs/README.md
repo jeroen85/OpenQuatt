@@ -1,9 +1,5 @@
 # OpenQuatt documentatie
 
-Deze documentatieset wordt stap voor stap omgezet naar duidelijk Nederlands. De publieksroute is daarom opnieuw ingedeeld: eerst installeren en begrijpen, daarna pas verdiepen.
-
-Sommige verdiepende pagina's zijn nog technisch van toon. Ze blijven voorlopig beschikbaar als naslag, maar zijn niet meer de hoofdroute voor gewone gebruikers.
-
 ## Begin hier
 
 1. [README in de repo](../README.md)
