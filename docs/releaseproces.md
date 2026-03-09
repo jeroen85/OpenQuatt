@@ -41,7 +41,7 @@ Firmware should expose its channel explicitly via `release_channel` so Home Assi
     - move the mutable `dev-latest` tag to the newest `dev` commit
     - publish/update a prerelease that contains binaries + OTA manifests for the dev channel
 - `/.github/workflows/pages-deploy.yml`
-  - Trigger: push to `main` when docs/install assets change, published stable release, manual dispatch
+  - Trigger: push to `main` when docs/install assets change, published stable release, successful `Release Build`, manual dispatch
   - Actions:
     - check out the `main` branch docs as the Pages site source
     - download the latest stable `*.firmware.factory.bin` assets from GitHub Releases
