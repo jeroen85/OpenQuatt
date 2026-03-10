@@ -8,8 +8,9 @@
 #
 # Strategies:
 #   1) Power House
-#      - Computes heat demand from house parameters, outdoor/room temperature, and ramp/deadband
-#      - Converts requested thermal power to demand 0..20 (`oq_demand_raw`)
+#      - Computes a requested thermal power (`P_req`) from the house model, room temperature,
+#        adaptive comfort bias, comfort band, deadband, and ramp limits
+#      - Converts that requested thermal power to compatible demand 0..20 (`oq_demand_raw`)
 #
 #   2) Heating Curve
 #      - 6-point heating curve (Tout -> Tsupply_target) with linear interpolation
@@ -17,7 +18,7 @@
 #      - PI output is directly translated to demand 0..20
 #
 # Transition:
-#   - Mode switch is immediate; on mode change, PID integral and latch states are reset.
+#   - Mode switch is immediate; on mode change, mode-local controller state is reinitialized.
 #
 # Ownership:
 #   - Only this package writes oq_demand_raw.
@@ -40,7 +41,7 @@ globals:
     restore_value: false
     initial_value: '0.0'
 
-  # Power House – interne ramp-limiter state
+  # Power House - internal ramp-limiter state
   - id: oq_phouse_last_w
     type: float
     restore_value: false
@@ -1160,8 +1161,8 @@ text_sensor:
 
 # ----------------------------
 # INTERVAL (5s)
-#   * Power House: computes P_req (W) + compatible demand (0..20)
-#   * Water temperature control: runs Heating Curve PID and provides demand (0..20)
+#   * Power House: computes P_req (W) and compatible demand (0..20)
+#   * Heating Curve: runs the supply-temperature PID and provides demand (0..20)
 # ----------------------------
 interval:
   - interval: ${oq_strategy_loop_s}s
@@ -1187,7 +1188,7 @@ interval:
 
           if (heat_mode_code == 1) {
             // ------------------------------------------------------------
-            // WATER TEMP MODE
+            // HEATING CURVE MODE
             // - Heating Curve PID: PV = oq_system_supply_temp, SP = oq_supply_target_temp
             // - PID output -> oq_demand_curve via heating_curve_pid_out
             // - Strategy output: oq_demand_raw = oq_demand_curve
@@ -1240,9 +1241,10 @@ interval:
           } else {
             // ------------------------------------------------------------
             // POWER HOUSE MODE
-            // - Feedforward P_house(Tout) + room error correctie -> P_req_total (W)
-            // - Ramp limiter in W/min
-            // - Compat: oq_demand_raw = round(20 * P_req / house_rated_power)
+            // - Feedforward house model: P_house(Tout)
+            // - Room-temperature correction around the effective room target
+            //   (setpoint + adaptive comfort bias, with asymmetric comfort band)
+            // - Deadband and ramp limiting in W/min before mapping to oq_demand_raw
             // ------------------------------------------------------------
             if (id(oq_heating_curve_pid).mode != CLIMATE_MODE_OFF) {
               auto c0 = id(oq_heating_curve_pid).make_call();
@@ -1267,7 +1269,7 @@ interval:
               return;
             }
 
-            // P_house
+            // House-model baseline demand from outdoor temperature only.
             float x = (T0 - Tout) / (T0 - Tc);
             x = clampf(x, 0.0f, 1.0f);
             const float P_house = Pr * x;
@@ -1312,7 +1314,7 @@ interval:
             const float Trsp_eff = Trsp + bias_c;
             id(oq_ph_room_target_effective_c) = Trsp_eff;
 
-            // Room correction
+            // Room-temperature correction around the effective comfort target.
             // Asymmetric comfort band around effective room target:
             // - below band: lower edge where extra correction starts
             // - above band: upper edge where negative correction starts
@@ -1360,11 +1362,11 @@ interval:
             id(oq_phouse_last_w) = P_limited;
             id(oq_phouse_last_ms) = now_ms;
 
-            // Compat demand 0..20
+            // Backward-compatible demand 0..20 for the existing heat-control path.
             int d = (int) lroundf(${oq_strategy_demand_max_f} * (P_limited / Pr));
             id(oq_demand_raw) = clamp_demand(d);
 
-            // In power house mode is curve demand diagnostisch 0
+            // In Power House mode, curve demand is diagnostic-only and stays at 0.
             id(oq_demand_curve) = 0;
           }
       - if:
