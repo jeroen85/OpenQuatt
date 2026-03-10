@@ -87,10 +87,9 @@ Niet elke instelling is even relevant. In de praktijk bepalen vooral deze groepe
 
 Belangrijk: `oq_flow_mismatch_threshold_lph` en `oq_flow_mismatch_hyst_lph` zijn compile-time constanten. Daarvoor is dus opnieuw compileren en flashen nodig.
 
-### Ketel en veiligheid
+### Ketel en hulpcircuit
 
-- `oq_boiler_trip_c`
-- `oq_boiler_reset_c`
+- `oq_boiler_loop_s`
 
 ### Externe bronnen
 
@@ -150,6 +149,9 @@ Belangrijke runtime-instellingen in deze groep zijn:
 - `Power House room error avg tau`
 - `Power House ramp up`
 - `Power House ramp down`
+- `Maximum water temperature`
+- `Water temperature soft band`
+- `Maximum water temperature trip`
 - `Curve Tsupply @ -20/-10/0/5/10/15°C`
 - `Heating Curve Control Profile`
 - `Heating Curve PID Kp/Ki/Kd`
@@ -159,6 +161,8 @@ Samengevat:
 
 - `Power House` is meer huis- en kamervraaggericht;
 - `Water Temperature Control` is meer stooklijn- en aanvoertemperatuurgericht.
+
+De watertempbegrenzing werkt op `water_supply_temp_selected`. In `Water Temperature Control` wordt `Heating Curve Supply Target` begrensd op `Maximum water temperature`. In `Power House` wordt `P_req` progressief teruggenomen, met de sterkste afbouw tussen `max - soft band` en `max`. In `CM3` wordt de boiler vanaf `Maximum water temperature` geblokkeerd.
 
 Verander niet meerdere instellingen uit deze groep tegelijk.
 
@@ -256,6 +260,7 @@ Gebruik deze groep vooral voor onderhoud en diagnose, niet voor dagelijks gebrui
 - `Demand raw`
 - `Demand filtered`
 - `Heating Curve Supply Target`
+- `Water Supply Temp (Selected)`
 - `Power House effective room target`
 - `Power House comfort bias`
 - `Power House room error avg`

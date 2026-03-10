@@ -80,10 +80,10 @@ This prevents hidden control coupling and keeps debugging deterministic.
 | Subsystem | Interval | Purpose |
 |---|---:|---|
 | Supervisory | `${oq_supervisory_loop_s}` (default 5s) | Mode decisions, flow interlock, frost logic, power-cap safety net |
-| Heating Strategy | `${oq_strategy_loop_s}` (default 5s) | Demand generation (Power House / heating-curve path) |
+| Heating Strategy | `${oq_strategy_loop_s}` (default 5s) | Demand generation plus shared water-temperature limiting (Power House / heating-curve path) |
 | Heat allocation | Tick `${oq_heat_loop_tick_s}` (default 5s), effective cadence `${oq_heat_loop_curve_s}` (Curve) / `${oq_heat_loop_powerhouse_s}` (Power House) | Demand filtering, allocation, optimizer, level apply (per-minute tuning is elapsed-time scaled) |
 | Flow control | `${oq_flow_loop_s}` (default 5s) | Pump iPWM control (AUTO/MANUAL/FROST/autotune override) |
-| Boiler control | `${oq_boiler_loop_s}` (default 5s) | CM3 gating and temperature lockout |
+| Boiler control | `${oq_boiler_loop_s}` (default 5s) | CM3 gating under the shared water-temperature guardrail |
 | CIC polling tick | `${cic_poll_tick_ms}` (default 5s) | Poll scheduler, stale detection, feed invalidation |
 
 ## 4. Data Pipeline
@@ -177,6 +177,7 @@ Power House stability guards in supervisory:
 - temporary CM2 re-entry block after CM2 idle-exit trip
 - CM2 startup-grace and high-load guard on idle-exit path
 - shadow heat-enable arbiter diagnostics (`IDLE/PREHEAT/HEATING/POSTFLOW/LOCKOUT`)
+- shared water-temperature limiter on effective `P_req` using `water_supply_temp_selected`
 
 ### Water Temperature Control mode
 
@@ -194,6 +195,7 @@ Heating-curve stability guards around zero-demand edge:
 - start/stop gating with OFF-confirmation and low-PID requirement
 - near-target `COAST` phase (low modulation instead of immediate drop to `0`)
 - room-temperature coupling trims supply target when room drifts warm
+- target clamp at `Maximum water temperature`
 - explicit per-HP slew-rate limiting with slower up and faster down behavior
 - single-HP-first allocation with dual-enable hysteresis and sequential HP step changes
 
@@ -246,7 +248,7 @@ Safety is distributed but coordinated:
 
 - flow safety and CM gating in supervisory
 - compressor-zero enforcement outside CM2/CM3 in heat control
-- boiler trip/reset hysteresis in boiler control
+- shared water-temperature limiter/trip across heating strategy, heat control, and boiler control
 - stale feed invalidation in CIC ingest
 - conservative fallback on invalid numeric inputs
 

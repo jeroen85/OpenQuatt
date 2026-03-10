@@ -81,6 +81,14 @@ Deze strategie kijkt vooral naar de warmtevraag van de woning. Dat past vaak bij
 
 Deze strategie kijkt vooral naar de gewenste watertemperatuur. Dat sluit beter aan bij gebruikers die liever werken met een stooklijn of een aanvoertemperatuurdoel.
 
+### Watertempbegrenzing
+
+Welke strategie je ook gebruikt, OpenQuatt kijkt daarnaast naar `Water Supply Temp (Selected)`. Daarmee kan het systeem:
+
+- in stooklijnmodus de gevraagde aanvoertemperatuur begrenzen;
+- in `Power House` de warmtevraag geleidelijk terugnemen als de aanvoer te hoog wordt;
+- in `CM3` de boiler blokkeren als de aanvoer op de ingestelde bovengrens komt.
+
 Je hoeft daarvoor niet eerst de interne berekening te kennen. Relevanter is welke strategie in jouw installatie het meest stabiele en voorspelbare gedrag geeft.
 
 ## Single en Duo
