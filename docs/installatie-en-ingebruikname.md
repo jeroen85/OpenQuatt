@@ -36,6 +36,8 @@ Kies altijd exact de combinatie van je opstelling en je hardware:
 5. Laat het browsertabblad open, zodat de wifi-configuratie direct daarna kan worden aangeboden.
 6. Voeg het apparaat na de eerste start toe in Home Assistant.
 
+Praktisch voor een DS18B20: sluit die sensor bij voorkeur aan voordat OpenQuatt opstart. De 1-Wire sensor wordt tijdens het opstarten gedetecteerd; als je hem later aansluit, moet je het bord eerst herstarten voordat de sensor zichtbaar wordt.
+
 Als de browserflow voor wifi niet werkt, start OpenQuatt een fallback access point:
 
 - SSID: `OpenQuatt`
@@ -77,6 +79,11 @@ Zie voor het dashboard:
 ### Waarden zijn zichtbaar, maar lijken onlogisch
 
 Controleer in Home Assistant eerst welke bron is geselecteerd voor flow, buitentemperatuur, kamertemperatuur en setpoint. Kijk pas daarna naar afstelling of tuning.
+
+### Een aangesloten DS18B20 verschijnt niet
+
+- Controleer of de sensor op de juiste `ds18b20_pin` van het gekozen hardwareprofiel zit.
+- Herstart OpenQuatt nadat je de sensor hebt aangesloten. Zonder reboot wordt een later aangesloten DS18B20 niet ontdekt.
 
 ### Het dashboard wil niet importeren
 

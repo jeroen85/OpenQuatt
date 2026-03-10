@@ -27,6 +27,61 @@
 # ==============================================================================
 
 # ----------------------------
+# INTERNAL STATE
+# ----------------------------
+globals:
+  - id: oq_flow_autotune_state
+    type: int
+    restore_value: false
+    initial_value: '0'   # 0=IDLE,1=ARM,2=STEP,3=DONE,4=ABORT
+  - id: oq_flow_autotune_req
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: oq_flow_autotune_abort
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+  # Measurement memory
+  - id: oq_flow_at_t
+    type: int
+    restore_value: false
+    initial_value: '0'
+  - id: oq_flow_at_pwm0
+    type: int
+    restore_value: false
+    initial_value: '850'
+  - id: oq_flow_at_pwm_step
+    type: int
+    restore_value: false
+    initial_value: '850'
+  - id: oq_flow_at_pv0
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+  - id: oq_flow_at_pv_ss
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+  - id: oq_flow_at_pv63_time_s
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+  - id: oq_flow_at_w0
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+  - id: oq_flow_at_w1
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+  - id: oq_flow_at_w2
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+
+# ----------------------------
 # CONTROL INPUTS
 # ----------------------------
 switch:
@@ -76,6 +131,7 @@ button:
       sorting_group_id: oq_tuning_flow
     on_press:
       - lambda: |-
+          // Read the suggested gains and apply them only when both are valid.
           const float kp = id(oq_flow_kp_suggested).state;
           const float ki = id(oq_flow_ki_suggested).state;
           if (!isnan(kp) && !isnan(ki) && kp > 0.0f && ki >= 0.0f) {
@@ -87,6 +143,7 @@ button:
             cki.perform();
             id(oq_flow_autotune_status).publish_state("APPLIED");
           } else {
+            // Leave the live tuning untouched when the suggestion is invalid.
             id(oq_flow_autotune_status).publish_state("APPLY_FAILED");
           }
 
@@ -161,61 +218,6 @@ text_sensor:
     web_server:
       sorting_group_id: oq_tuning_flow
     update_interval: never
-
-# ----------------------------
-# INTERNAL STATE
-# ----------------------------
-globals:
-  - id: oq_flow_autotune_state
-    type: int
-    restore_value: false
-    initial_value: '0'   # 0=IDLE,1=ARM,2=STEP,3=DONE,4=ABORT
-  - id: oq_flow_autotune_req
-    type: bool
-    restore_value: false
-    initial_value: 'false'
-  - id: oq_flow_autotune_abort
-    type: bool
-    restore_value: false
-    initial_value: 'false'
-
-  # Measurement memory
-  - id: oq_flow_at_t
-    type: int
-    restore_value: false
-    initial_value: '0'
-  - id: oq_flow_at_pwm0
-    type: int
-    restore_value: false
-    initial_value: '850'
-  - id: oq_flow_at_pwm_step
-    type: int
-    restore_value: false
-    initial_value: '850'
-  - id: oq_flow_at_pv0
-    type: float
-    restore_value: false
-    initial_value: 'NAN'
-  - id: oq_flow_at_pv_ss
-    type: float
-    restore_value: false
-    initial_value: 'NAN'
-  - id: oq_flow_at_pv63_time_s
-    type: float
-    restore_value: false
-    initial_value: 'NAN'
-  - id: oq_flow_at_w0
-    type: float
-    restore_value: false
-    initial_value: 'NAN'
-  - id: oq_flow_at_w1
-    type: float
-    restore_value: false
-    initial_value: 'NAN'
-  - id: oq_flow_at_w2
-    type: float
-    restore_value: false
-    initial_value: 'NAN'
 
 # ----------------------------
 # MAIN LOOP

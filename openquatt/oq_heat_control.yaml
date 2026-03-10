@@ -40,93 +40,7 @@
 # ==============================================================================
 
 # ----------------------------
-# TUNING INPUTS
-# ----------------------------
-number:
-  - platform: template
-    id: oq_min_runtime_min
-    name: "Minimum runtime"
-    icon: mdi:timer-cog-outline
-    unit_of_measurement: "min"
-    min_value: 0
-    max_value: 240
-    step: 1
-    mode: slider
-    restore_value: true
-    optimistic: true
-    initial_value: 30
-    web_server:
-      sorting_group_id: oq_tuning_heat
-
-  - platform: template
-    id: oq_demand_filter_ramp_up_step_min
-    name: "Demand filter ramp up"
-    icon: mdi:stairs-up
-    unit_of_measurement: "step/min"
-    min_value: 1
-    max_value: 20
-    step: 1
-    mode: slider
-    restore_value: true
-    optimistic: true
-    initial_value: 1
-    web_server:
-      sorting_group_id: oq_tuning_heat
-
-  # Dual-HP enable threshold on single-HP compressor level request (1..10).
-  # Disable threshold is derived internally as max(1, enable - 1) to keep parameter count low.
-  - platform: template
-    id: oq_dual_hp_enable_level
-    name: "Dual HP Enable Level"
-    internal: ${hc_dual_tuning_internal}
-    icon: mdi:arrow-up-bold-hexagon-outline
-    unit_of_measurement: "lvl"
-    min_value: 1
-    max_value: 10
-    step: 1
-    mode: slider
-    restore_value: true
-    optimistic: true
-    initial_value: 5
-    web_server:
-      sorting_group_id: oq_tuning_heat
-
-  # Hold time before enabling dual-HP in curve mode.
-  - platform: template
-    id: oq_dual_hp_enable_hold_min
-    name: "Dual HP Enable Hold"
-    internal: ${hc_dual_tuning_internal}
-    icon: mdi:timer-plus-outline
-    unit_of_measurement: "min"
-    min_value: 1
-    max_value: 60
-    step: 1
-    mode: slider
-    restore_value: true
-    optimistic: true
-    initial_value: 3
-    web_server:
-      sorting_group_id: oq_tuning_heat
-
-  # Hold time before disabling dual-HP in curve mode.
-  - platform: template
-    id: oq_dual_hp_disable_hold_min
-    name: "Dual HP Disable Hold"
-    internal: ${hc_dual_tuning_internal}
-    icon: mdi:timer-minus-outline
-    unit_of_measurement: "min"
-    min_value: 1
-    max_value: 60
-    step: 1
-    mode: slider
-    restore_value: true
-    optimistic: true
-    initial_value: 5
-    web_server:
-      sorting_group_id: oq_tuning_heat
-
-# ----------------------------
-# GLOBALS
+# INTERNAL STATE
 # ----------------------------
 globals:
   # Filtered demand (0..20)
@@ -232,6 +146,116 @@ globals:
     type: uint32_t
     restore_value: false
     initial_value: '0'
+
+# ----------------------------
+# TUNING INPUTS
+# ----------------------------
+number:
+  - platform: template
+    id: oq_min_runtime_min
+    name: "Minimum runtime"
+    icon: mdi:timer-cog-outline
+    unit_of_measurement: "min"
+    min_value: 0
+    max_value: 240
+    step: 1
+    mode: slider
+    restore_value: true
+    optimistic: true
+    initial_value: 30
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+  - platform: template
+    id: oq_demand_filter_ramp_up_step_min
+    name: "Demand filter ramp up"
+    icon: mdi:stairs-up
+    unit_of_measurement: "step/min"
+    min_value: 1
+    max_value: 20
+    step: 1
+    mode: slider
+    restore_value: true
+    optimistic: true
+    initial_value: 1
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+  # Dual-HP enable threshold on single-HP compressor level request (1..10).
+  # Disable threshold is derived internally as max(1, enable - 1) to keep parameter count low.
+  - platform: template
+    id: oq_dual_hp_enable_level
+    name: "Dual HP Enable Level"
+    internal: ${hc_dual_tuning_internal}
+    icon: mdi:arrow-up-bold-hexagon-outline
+    unit_of_measurement: "lvl"
+    min_value: 1
+    max_value: 10
+    step: 1
+    mode: slider
+    restore_value: true
+    optimistic: true
+    initial_value: 5
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+  # Hold time before enabling dual-HP in curve mode.
+  - platform: template
+    id: oq_dual_hp_enable_hold_min
+    name: "Dual HP Enable Hold"
+    internal: ${hc_dual_tuning_internal}
+    icon: mdi:timer-plus-outline
+    unit_of_measurement: "min"
+    min_value: 1
+    max_value: 60
+    step: 1
+    mode: slider
+    restore_value: true
+    optimistic: true
+    initial_value: 3
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+  # Hold time before disabling dual-HP in curve mode.
+  - platform: template
+    id: oq_dual_hp_disable_hold_min
+    name: "Dual HP Disable Hold"
+    internal: ${hc_dual_tuning_internal}
+    icon: mdi:timer-minus-outline
+    unit_of_measurement: "min"
+    min_value: 1
+    max_value: 60
+    step: 1
+    mode: slider
+    restore_value: true
+    optimistic: true
+    initial_value: 5
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+# ----------------------------
+# BUTTON
+# ----------------------------
+button:
+  - platform: template
+    id: oq_reset_runtime
+    name: "${hc_runtime_reset_button_name}"
+    icon: mdi:restart
+    web_server:
+      sorting_group_id: oq_tuning_heat
+    on_press:
+      - lambda: |-
+          #if OQ_TOPOLOGY_DUO
+          id(hp1_minutes) = 0;
+          id(${hc_secondary_minutes_id}) = 0;
+          id(hp1_runtime_accum_ms) = 0;
+          id(hp2_runtime_accum_ms) = 0;
+          ESP_LOGW("quatt", "Runtime counters reset (HP1+HP2).");
+          #else
+          id(hp1_minutes) = 0;
+          id(hp1_runtime_accum_ms) = 0;
+          ESP_LOGW("quatt", "Runtime counters reset (HP1).");
+          #endif
 
 # ----------------------------
 # SENSORS (energie + status)
@@ -425,29 +449,6 @@ text_sensor:
     web_server:
       sorting_group_id: oq_diagnostics
 
-# ----------------------------
-# BUTTON
-# ----------------------------
-button:
-  - platform: template
-    id: oq_reset_runtime
-    name: "${hc_runtime_reset_button_name}"
-    icon: mdi:restart
-    web_server:
-      sorting_group_id: oq_tuning_heat
-    on_press:
-      - lambda: |-
-          #if OQ_TOPOLOGY_DUO
-          id(hp1_minutes) = 0;
-          id(${hc_secondary_minutes_id}) = 0;
-          id(hp1_runtime_accum_ms) = 0;
-          id(hp2_runtime_accum_ms) = 0;
-          ESP_LOGW("quatt", "Runtime counters reset (HP1+HP2).");
-          #else
-          id(hp1_minutes) = 0;
-          id(hp1_runtime_accum_ms) = 0;
-          ESP_LOGW("quatt", "Runtime counters reset (HP1).");
-          #endif
 # ----------------------------
 # MAIN LOOP
 # ----------------------------

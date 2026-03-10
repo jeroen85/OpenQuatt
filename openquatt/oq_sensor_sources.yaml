@@ -234,9 +234,12 @@ sensor:
     accuracy_decimals: 2
     update_interval: 10s
     lambda: |-
+      // Resolve the active source, including automatic HA failover.
       if (!id(room_temp_source).has_state()) return NAN;
       const bool failover_active = id(oq_room_temp_failover_active);
       const auto source = failover_active ? std::string("HA input") : id(room_temp_source).current_option();
+
+      // Return the selected source value when available.
       if (source == "HA input") {
         if (id(thermostat_room_temp_ha).has_state()) return id(thermostat_room_temp_ha).state;
         return NAN;
@@ -259,9 +262,12 @@ sensor:
     accuracy_decimals: 2
     update_interval: 10s
     lambda: |-
+      // Resolve the active source, including automatic HA failover.
       if (!id(room_setpoint_source).has_state()) return NAN;
       const bool failover_active = id(oq_room_setpoint_failover_active);
       const auto source = failover_active ? std::string("HA input") : id(room_setpoint_source).current_option();
+
+      // Return the selected source value when available.
       if (source == "HA input") {
         if (id(thermostat_setpoint_ha).has_state()) return id(thermostat_setpoint_ha).state;
         return NAN;
@@ -278,6 +284,7 @@ interval:
   - interval: 5s
     then:
       - lambda: |-
+          // Small helpers keep the failover bookkeeping readable and idempotent.
           auto has_valid_float = [](auto *sensor) -> bool {
             return sensor != nullptr && sensor->has_state() && !isnan(sensor->state);
           };
@@ -289,6 +296,8 @@ interval:
             if (text == nullptr) return;
             if (text->state != value) text->publish_state(value);
           };
+
+          // Read current source selection, source health, and timing inputs.
           const bool failover_enabled = id(oq_room_cic_auto_failover).state;
           const bool room_source_cic = id(room_temp_source).has_state() && id(room_temp_source).current_option() == "CIC";
           const bool setpoint_source_cic = id(room_setpoint_source).has_state() && id(room_setpoint_source).current_option() == "CIC";
@@ -351,6 +360,7 @@ interval:
           bool room_setpoint_failover_active = id(oq_room_setpoint_failover_active);
           uint32_t room_setpoint_recover_since_ms = id(oq_room_setpoint_cic_recover_since_ms);
 
+          // Compute the next failover state for room temperature and setpoint.
           update_failover_state(room_source_cic, cic_room_valid, ha_room_valid, room_temp_failover_active, room_temp_recover_since_ms);
           update_failover_state(setpoint_source_cic, cic_setpoint_valid, ha_setpoint_valid, room_setpoint_failover_active, room_setpoint_recover_since_ms);
 
@@ -359,6 +369,7 @@ interval:
           id(oq_room_setpoint_failover_active) = room_setpoint_failover_active;
           id(oq_room_setpoint_cic_recover_since_ms) = room_setpoint_recover_since_ms;
 
+          // Build operator-facing diagnostics for the effective source and status.
           std::string room_temp_effective = "Unknown";
           if (room_temp_failover_active) room_temp_effective = "HA input (failover)";
           else if (id(room_temp_source).has_state()) room_temp_effective = id(room_temp_source).current_option().c_str();
@@ -378,6 +389,7 @@ interval:
                 describe_failover("SP", setpoint_source_cic, room_setpoint_failover_active, cic_setpoint_valid, ha_setpoint_valid);
           }
 
+          // Publish only when something actually changed.
           publish_binary_if_changed(id(oq_room_cic_failover_active_bs), any_failover_active);
           publish_text_if_changed(id(oq_room_temperature_effective_source), room_temp_effective);
           publish_text_if_changed(id(oq_room_setpoint_effective_source), room_setpoint_effective);

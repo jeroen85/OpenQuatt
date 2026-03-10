@@ -51,6 +51,8 @@ Belangrijke compile-time profielvelden zijn:
 - `ds18b20_pin`
 - `oq_boiler_relay_pin`
 
+Let op bij `ds18b20_pin`: de DS18B20 wordt tijdens het opstarten van OpenQuatt gedetecteerd. Sluit je de sensor pas later aan, dan is een reboot nodig voordat hij beschikbaar komt.
+
 ## Belangrijkste compile-time instellingen
 
 Niet elke instelling is even relevant. In de praktijk bepalen vooral deze groepen het gedrag:

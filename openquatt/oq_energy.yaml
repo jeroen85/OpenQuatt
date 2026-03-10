@@ -6,6 +6,21 @@
 # - Keep control packages focused on control logic.
 # ==============================================================================
 
+button:
+  - platform: template
+    id: oq_reset_cumulative_energy_counters
+    name: "Reset Cumulative Energy Counters"
+    icon: mdi:restart
+    web_server:
+      sorting_group_id: oq_tuning_heat
+    on_press:
+      - lambda: |-
+          id(oq_electrical_energy_cumulative).reset();
+          id(oq_heatpump_thermal_energy_cumulative).reset();
+          id(oq_boiler_thermal_energy_cumulative).reset();
+          id(oq_system_thermal_energy_cumulative).reset();
+          ESP_LOGW("quatt", "Cumulative energy counters reset.");
+
 sensor:
   # Electrical input energy (daily, kWh).
   - platform: total_daily_energy
@@ -190,18 +205,3 @@ sensor:
     restore: true
     web_server:
       sorting_group_id: oq_performance
-
-button:
-  - platform: template
-    id: oq_reset_cumulative_energy_counters
-    name: "Reset Cumulative Energy Counters"
-    icon: mdi:restart
-    web_server:
-      sorting_group_id: oq_tuning_heat
-    on_press:
-      - lambda: |-
-          id(oq_electrical_energy_cumulative).reset();
-          id(oq_heatpump_thermal_energy_cumulative).reset();
-          id(oq_boiler_thermal_energy_cumulative).reset();
-          id(oq_system_thermal_energy_cumulative).reset();
-          ESP_LOGW("quatt", "Cumulative energy counters reset.");

@@ -34,6 +34,39 @@
 # ==============================================================================
 
 # ----------------------------
+# INTERNAL STATE (PI)
+# ----------------------------
+globals:
+  - id: oq_flow_i
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+  - id: oq_flow_last_pwm
+    type: int
+    restore_value: false
+    initial_value: '850'
+  - id: oq_flow_last_mode
+    type: int
+    restore_value: false
+    initial_value: '0'   # 0=AUTO, 1=MANUAL, 2=FROST
+  - id: oq_flow_last_good_pwm
+    type: int
+    restore_value: true
+    initial_value: "440"
+  - id: oq_flow_control_mode_code
+    type: int
+    restore_value: false
+    initial_value: '0'   # 0=AUTO, 1=MANUAL
+  - id: oq_flow_autotune_active
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: oq_flow_autotune_pwm
+    type: int
+    restore_value: false
+    initial_value: '850'
+
+# ----------------------------
 # TUNING INPUTS
 # ----------------------------
 number:
@@ -126,6 +159,25 @@ number:
     restore_value: true
     optimistic: true
     initial_value: 0.0008
+
+# ----------------------------
+# CONFIG: Flow Control Mode
+#   - Flow Setpoint : PI controls flow to oq_flow_setpoint_lph
+#   - Manual PWM    : fixed iPWM from oq_flow_manual_pwm (no PI)
+# ----------------------------
+select:
+  - platform: template
+    id: oq_flow_control_mode
+    name: "Flow Control Mode"
+    icon: mdi:tune-variant
+    options:
+      - Flow Setpoint
+      - Manual PWM
+    initial_option: Flow Setpoint
+    restore_value: true
+    optimistic: true
+    web_server:
+      sorting_group_id: oq_control
 
 # ----------------------------
 # SENSORS
@@ -242,25 +294,6 @@ binary_sensor:
       return state;
 
 # ----------------------------
-# CONFIG: Flow Control Mode
-#   - Flow Setpoint : PI controls flow to oq_flow_setpoint_lph
-#   - Manual PWM    : fixed iPWM from oq_flow_manual_pwm (no PI)
-# ----------------------------
-select:
-  - platform: template
-    id: oq_flow_control_mode
-    name: "Flow Control Mode"
-    icon: mdi:tune-variant
-    options:
-      - Flow Setpoint
-      - Manual PWM
-    initial_option: Flow Setpoint
-    restore_value: true
-    optimistic: true
-    web_server:
-      sorting_group_id: oq_control
-
-# ----------------------------
 # STATUS (CM0/CM98/AUTO/MANUAL)
 # ----------------------------
 text_sensor:
@@ -280,39 +313,6 @@ text_sensor:
     update_interval: never
     web_server:
       sorting_group_id: oq_diagnostics
-
-# ----------------------------
-# INTERNAL STATE (PI)
-# ----------------------------
-globals:
-  - id: oq_flow_i
-    type: float
-    restore_value: false
-    initial_value: '0.0'
-  - id: oq_flow_last_pwm
-    type: int
-    restore_value: false
-    initial_value: '850'
-  - id: oq_flow_last_mode
-    type: int
-    restore_value: false
-    initial_value: '0'   # 0=AUTO, 1=MANUAL, 2=FROST
-  - id: oq_flow_last_good_pwm
-    type: int
-    restore_value: true
-    initial_value: "440"
-  - id: oq_flow_control_mode_code
-    type: int
-    restore_value: false
-    initial_value: '0'   # 0=AUTO, 1=MANUAL
-  - id: oq_flow_autotune_active
-    type: bool
-    restore_value: false
-    initial_value: 'false'
-  - id: oq_flow_autotune_pwm
-    type: int
-    restore_value: false
-    initial_value: '850'
 
 # ----------------------------
 # MAIN LOOP (5s): PI + mode handling

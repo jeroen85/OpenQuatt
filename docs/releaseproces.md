@@ -1,13 +1,14 @@
 # Release Process
 
 This project uses GitHub Actions for automated validation, firmware compilation, and release asset publishing.
-Documentation consistency is validated locally via `./scripts/validate_local.sh` on bash hosts or `.\scripts\validate_local.ps1` on Windows.
+Style and documentation consistency are validated locally via `./scripts/validate_local.sh` on bash hosts or `.\scripts\validate_local.ps1` on Windows. The current style scope is documented in `CONTRIBUTING.md`.
 
 ## Branch Model
 
 - `main`: stable branch for tagged releases and the default OTA/update channel.
 - `dev`: integration branch for testers. Validate it like `main`, but do not cut stable tags from it.
 - feature branches: short-lived branches merged into `dev`; promote `dev` into `main` only after validation/soak.
+- after each stable release, reset `dev` back to the released `main` commit before starting the next development cycle. Then apply the next dev-version bump as a new commit on top.
 
 Firmware should expose its channel explicitly via `release_channel` so Home Assistant and the ESPHome web UI show whether a device is running `main` or `dev`.
 
@@ -107,19 +108,23 @@ The repository now backs that URL with `/.github/workflows/dev-build.yml`, which
 
 ## How To Cut a Release
 
-1. Update `project_version` in `openquatt/oq_substitutions_common.yaml`.
-2. Commit and push to `main`.
-3. Create and push a tag:
+1. Update `project_version` in `openquatt/oq_substitutions_common.yaml` on `dev`.
+2. Push `dev` and wait for `CI` and `Dev Build` to go green.
+3. Open a release PR from `dev` to `main` with a curated summary of the release.
+4. Merge that PR into `main` using the repository-approved merge method.
+5. Wait for `CI` on `main` to go green.
+6. Create and push a tag from the merged `main` commit:
 
 ```bash
-git tag v0.13.0
-git push origin main --tags
+git fetch origin
+git tag v0.13.0 origin/main
+git push origin v0.13.0
 ```
 
-4. Check GitHub Actions:
+7. Check GitHub Actions:
    - CI should be green.
    - Release workflow should publish artifacts.
-5. Verify GitHub Release contains:
+8. Verify GitHub Release contains:
    - `openquatt-duo-ota.manifest.json`
    - `openquatt-single-ota.manifest.json`
    - `openquatt-duo-waveshare.firmware.ota.bin`
@@ -130,6 +135,18 @@ git push origin main --tags
    - `openquatt-single-waveshare.firmware.factory.bin`
    - `openquatt-single-heatpump-listener.firmware.ota.bin`
    - `openquatt-single-heatpump-listener.firmware.factory.bin`
+9. Immediately realign `dev` with the released `main` commit, then bump to the next development version:
+
+```bash
+git fetch origin
+git checkout dev
+git reset --hard origin/main
+git push --force-with-lease origin dev
+
+# then bump to the next dev version, commit, and push
+```
+
+This reset is intentional. `main` is merged via squash, while `dev` must stay linear and must not accumulate merge commits. Resetting `dev` to `origin/main` avoids misleading `ahead/behind` counters where the trees match but the commit graph does not.
 
 ## Notes
 

@@ -75,146 +75,6 @@ modbus:
 # ==============================================================================
 # DIAGNOSTIC ENTITIES
 # ==============================================================================
-binary_sensor:
-  - platform: status
-    name: Status
-    icon: mdi:check-circle-outline
-    entity_category: diagnostic
-    web_server:
-      sorting_group_id: oq_diagnostics
-
-sensor:
-  - platform: uptime
-    name: Uptime
-    id: uptime_sensor
-    internal: true
-    icon: mdi:timer-outline
-    update_interval: 60s
-    device_class: duration
-    unit_of_measurement: s
-    entity_category: diagnostic
-    web_server:
-      sorting_group_id: oq_diagnostics
-  - platform: wifi_signal
-    name: WiFi Signal
-    icon: mdi:wifi-arrow-left-right
-    update_interval: 300s
-    entity_category: diagnostic
-    web_server:
-      sorting_group_id: oq_diagnostics
-
-button:
-  - platform: restart
-    name: Restart
-    icon: mdi:restart
-    id: restart_switch
-    web_server:
-      sorting_group_id: oq_diagnostics
-
-  - platform: safe_mode
-    name: Safe mode
-    icon: mdi:shield-alert
-    id: safe_mode_button
-    web_server:
-      sorting_group_id: oq_diagnostics
-
-  - platform: template
-    id: oq_check_firmware_updates
-    name: Check Firmware Updates
-    icon: mdi:update
-    entity_category: diagnostic
-    web_server:
-      sorting_group_id: oq_diagnostics
-    on_press:
-      - update.check:
-          id: oq_firmware_update
-
-text_sensor:
-  - platform: wifi_info
-    ip_address:
-      name: IP Address
-      icon: mdi:ip-network-outline
-      entity_category: diagnostic
-      web_server:
-        sorting_group_id: oq_diagnostics
-    ssid:
-      name: WiFi SSID
-      icon: mdi:wifi
-      entity_category: diagnostic
-      web_server:
-        sorting_group_id: oq_diagnostics
-  - platform: template
-    id: oq_project_version_text
-    name: OpenQuatt Version
-    icon: mdi:tag-text-outline
-    entity_category: diagnostic
-    update_interval: never
-    lambda: |-
-      return {"${project_version}"};
-    web_server:
-      sorting_group_id: oq_diagnostics
-  - platform: template
-    id: oq_release_channel_text
-    name: OpenQuatt Release Channel
-    icon: mdi:source-branch
-    entity_category: diagnostic
-    update_interval: never
-    lambda: |-
-      return {"${release_channel}"};
-    web_server:
-      sorting_group_id: oq_diagnostics
-  - platform: version
-    name: ESPHome Version
-    icon: mdi:information-outline
-    hide_timestamp: true
-    entity_category: diagnostic
-    web_server:
-      sorting_group_id: oq_diagnostics
-  - platform: template
-    id: uptime_readable_text
-    name: Uptime
-    icon: mdi:timer-outline
-    entity_category: diagnostic
-    update_interval: 60s
-    lambda: |-
-      if (isnan(id(uptime_sensor).state)) {
-        return {"unknown"};
-      }
-
-      const uint32_t total_seconds = static_cast<uint32_t>(id(uptime_sensor).state);
-      const uint32_t days = total_seconds / 86400U;
-      const uint32_t hours = (total_seconds % 86400U) / 3600U;
-      const uint32_t minutes = (total_seconds % 3600U) / 60U;
-      const uint32_t seconds = total_seconds % 60U;
-
-      char buffer[32];
-      if (days > 0U) {
-        snprintf(buffer, sizeof(buffer), "%ud %uh %um", days, hours, minutes);
-      } else if (hours > 0U) {
-        snprintf(buffer, sizeof(buffer), "%uh %um", hours, minutes);
-      } else if (minutes > 0U) {
-        snprintf(buffer, sizeof(buffer), "%um", minutes);
-      } else {
-        snprintf(buffer, sizeof(buffer), "%us", seconds);
-      }
-      return {buffer};
-    web_server:
-      sorting_group_id: oq_diagnostics
-
-update:
-  - platform: http_request
-    id: oq_firmware_update
-    name: Firmware Update
-    source: ${release_manifest_url}
-    update_interval: 4h
-    icon: mdi:update
-    entity_category: diagnostic
-    web_server:
-      sorting_group_id: oq_diagnostics
-
-# ==============================================================================
-# RUNTIME DEBUG LEVEL SELECTS
-# ==============================================================================
 select:
   - platform: template
     name: "Firmware Update Channel"
@@ -288,3 +148,142 @@ select:
 
             logger->set_log_level("modbus", lvl);
             logger->set_log_level("modbus_controller", lvl);
+
+button:
+  - platform: restart
+    name: Restart
+    icon: mdi:restart
+    id: restart_switch
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+  - platform: safe_mode
+    name: Safe mode
+    icon: mdi:shield-alert
+    id: safe_mode_button
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+  - platform: template
+    id: oq_check_firmware_updates
+    name: Check Firmware Updates
+    icon: mdi:update
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+    on_press:
+      - update.check:
+          id: oq_firmware_update
+
+binary_sensor:
+  - platform: status
+    name: Status
+    icon: mdi:check-circle-outline
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+sensor:
+  - platform: uptime
+    name: Uptime
+    id: uptime_sensor
+    internal: true
+    icon: mdi:timer-outline
+    update_interval: 60s
+    device_class: duration
+    unit_of_measurement: s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+  - platform: wifi_signal
+    name: WiFi Signal
+    icon: mdi:wifi-arrow-left-right
+    update_interval: 300s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: IP Address
+      icon: mdi:ip-network-outline
+      entity_category: diagnostic
+      web_server:
+        sorting_group_id: oq_diagnostics
+    ssid:
+      name: WiFi SSID
+      icon: mdi:wifi
+      entity_category: diagnostic
+      web_server:
+        sorting_group_id: oq_diagnostics
+  - platform: template
+    id: oq_project_version_text
+    name: OpenQuatt Version
+    icon: mdi:tag-text-outline
+    entity_category: diagnostic
+    update_interval: never
+    lambda: |-
+      return {"${project_version}"};
+    web_server:
+      sorting_group_id: oq_diagnostics
+  - platform: template
+    id: oq_release_channel_text
+    name: OpenQuatt Release Channel
+    icon: mdi:source-branch
+    entity_category: diagnostic
+    update_interval: never
+    lambda: |-
+      return {"${release_channel}"};
+    web_server:
+      sorting_group_id: oq_diagnostics
+  - platform: version
+    name: ESPHome Version
+    icon: mdi:information-outline
+    hide_timestamp: true
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+  - platform: template
+    id: uptime_readable_text
+    name: Uptime
+    icon: mdi:timer-outline
+    entity_category: diagnostic
+    update_interval: 60s
+    lambda: |-
+      // Read the raw uptime and bail out early when the source is unavailable.
+      if (isnan(id(uptime_sensor).state)) {
+        return {"unknown"};
+      }
+
+      const uint32_t total_seconds = static_cast<uint32_t>(id(uptime_sensor).state);
+      const uint32_t days = total_seconds / 86400U;
+      const uint32_t hours = (total_seconds % 86400U) / 3600U;
+      const uint32_t minutes = (total_seconds % 3600U) / 60U;
+      const uint32_t seconds = total_seconds % 60U;
+
+      // Format the most compact readable representation for the dashboard.
+      char buffer[32];
+      if (days > 0U) {
+        snprintf(buffer, sizeof(buffer), "%ud %uh %um", days, hours, minutes);
+      } else if (hours > 0U) {
+        snprintf(buffer, sizeof(buffer), "%uh %um", hours, minutes);
+      } else if (minutes > 0U) {
+        snprintf(buffer, sizeof(buffer), "%um", minutes);
+      } else {
+        snprintf(buffer, sizeof(buffer), "%us", seconds);
+      }
+      return {buffer};
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+update:
+  - platform: http_request
+    id: oq_firmware_update
+    name: Firmware Update
+    source: ${release_manifest_url}
+    update_interval: 4h
+    icon: mdi:update
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics

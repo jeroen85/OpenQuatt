@@ -8,8 +8,9 @@
 #
 # Strategies:
 #   1) Power House
-#      - Computes heat demand from house parameters, outdoor/room temperature, and ramp/deadband
-#      - Converts requested thermal power to demand 0..20 (`oq_demand_raw`)
+#      - Computes a requested thermal power (`P_req`) from the house model, room temperature,
+#        adaptive comfort bias, comfort band, deadband, and ramp limits
+#      - Converts that requested thermal power to compatible demand 0..20 (`oq_demand_raw`)
 #
 #   2) Heating Curve
 #      - 6-point heating curve (Tout -> Tsupply_target) with linear interpolation
@@ -17,12 +18,123 @@
 #      - PI output is directly translated to demand 0..20
 #
 # Transition:
-#   - Mode switch is immediate; on mode change, PID integral and latch states are reset.
+#   - Mode switch is immediate; on mode change, mode-local controller state is reinitialized.
 #
 # Ownership:
 #   - Only this package writes oq_demand_raw.
 #   - Heat control consumes oq_demand_raw and otherwise remains unchanged.
 # ==============================================================================
+
+# ----------------------------
+# INTERNAL STATE
+# ----------------------------
+globals:
+  # Output of this strategy (0..20) - consumed by heat-control
+  - id: oq_demand_raw
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  # Power House - requested house heat power (W)
+  - id: oq_phouse_req_w
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+
+  # Power House - internal ramp-limiter state
+  - id: oq_phouse_last_w
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+
+  - id: oq_phouse_last_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
+  # Internal source (0..20) for heating-curve mode (PID -> demand)
+  - id: oq_demand_curve
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  # Heating-curve diagnostics: demand before output guardrails.
+  - id: oq_curve_demand_pre_guardrail
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  # Heating-curve diagnostics: 0=OFF, 1=HEAT, 2=COAST.
+  - id: oq_curve_phase_code
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  # Curve-mode on/off hysteresis state near zero-demand edge.
+  - id: oq_curve_heat_request_active
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+  # Timestamp when curve stop condition was first armed (OFF confirm guardrail).
+  - id: oq_curve_stop_arm_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
+  # Timestamp when curve phase entered OFF (for restart inhibit timing).
+  - id: oq_curve_off_since_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
+  # Diagnostic flag: restart from OFF is temporarily inhibited.
+  - id: oq_curve_restart_inhibit_active
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+  # Curve outside-temperature EMA state.
+  - id: oq_curve_outside_ema_c
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+  - id: oq_curve_outside_ema_initialized
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: oq_curve_outside_ema_last_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_heat_mode_code
+    type: int
+    restore_value: false
+    initial_value: '0'  # 0=Power House, 1=Heating Curve
+
+  # DEBUG-RUNTIME START: Power House adaptive comfort-bias diagnostics
+  - id: oq_ph_comfort_bias_c
+    type: float
+    restore_value: false
+    initial_value: '0.1'
+  - id: oq_ph_room_error_avg_c
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+  - id: oq_ph_room_error_avg_init
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: oq_ph_comfort_bias_last_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_ph_room_target_effective_c
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+  # DEBUG-RUNTIME END
 
 # ----------------------------
 # CONTROL INPUTS
@@ -480,470 +592,6 @@ button:
         - climate.pid.reset_integral_term: oq_heating_curve_pid
 
 # ----------------------------
-# GLOBALS
-# ----------------------------
-globals:
-  # Output of this strategy (0..20) - consumed by heat-control
-  - id: oq_demand_raw
-    type: int
-    restore_value: false
-    initial_value: '0'
-
-  # Power House - requested house heat power (W)
-  - id: oq_phouse_req_w
-    type: float
-    restore_value: false
-    initial_value: '0.0'
-
-  # Power House – interne ramp-limiter state
-  - id: oq_phouse_last_w
-    type: float
-    restore_value: false
-    initial_value: '0.0'
-
-  - id: oq_phouse_last_ms
-    type: uint32_t
-    restore_value: false
-    initial_value: '0'
-
-  # Internal source (0..20) for heating-curve mode (PID -> demand)
-  - id: oq_demand_curve
-    type: int
-    restore_value: false
-    initial_value: '0'
-
-  # Heating-curve diagnostics: demand before output guardrails.
-  - id: oq_curve_demand_pre_guardrail
-    type: int
-    restore_value: false
-    initial_value: '0'
-
-  # Heating-curve diagnostics: 0=OFF, 1=HEAT, 2=COAST.
-  - id: oq_curve_phase_code
-    type: int
-    restore_value: false
-    initial_value: '0'
-
-  # Curve-mode on/off hysteresis state near zero-demand edge.
-  - id: oq_curve_heat_request_active
-    type: bool
-    restore_value: false
-    initial_value: 'false'
-
-  # Timestamp when curve stop condition was first armed (OFF confirm guardrail).
-  - id: oq_curve_stop_arm_ms
-    type: uint32_t
-    restore_value: false
-    initial_value: '0'
-
-  # Timestamp when curve phase entered OFF (for restart inhibit timing).
-  - id: oq_curve_off_since_ms
-    type: uint32_t
-    restore_value: false
-    initial_value: '0'
-
-  # Diagnostic flag: restart from OFF is temporarily inhibited.
-  - id: oq_curve_restart_inhibit_active
-    type: bool
-    restore_value: false
-    initial_value: 'false'
-
-  # Curve outside-temperature EMA state.
-  - id: oq_curve_outside_ema_c
-    type: float
-    restore_value: false
-    initial_value: '0.0'
-  - id: oq_curve_outside_ema_initialized
-    type: bool
-    restore_value: false
-    initial_value: 'false'
-  - id: oq_curve_outside_ema_last_ms
-    type: uint32_t
-    restore_value: false
-    initial_value: '0'
-
-  - id: oq_heat_mode_code
-    type: int
-    restore_value: false
-    initial_value: '0'  # 0=Power House, 1=Heating Curve
-
-  # DEBUG-RUNTIME START: Power House adaptive comfort-bias diagnostics
-  - id: oq_ph_comfort_bias_c
-    type: float
-    restore_value: false
-    initial_value: '0.1'
-  - id: oq_ph_room_error_avg_c
-    type: float
-    restore_value: false
-    initial_value: '0.0'
-  - id: oq_ph_room_error_avg_init
-    type: bool
-    restore_value: false
-    initial_value: 'false'
-  - id: oq_ph_comfort_bias_last_ms
-    type: uint32_t
-    restore_value: false
-    initial_value: '0'
-  - id: oq_ph_room_target_effective_c
-    type: float
-    restore_value: false
-    initial_value: '0.0'
-  # DEBUG-RUNTIME END
-
-# ----------------------------
-# SENSORS - outdoor temperature aggregation + heating curve target
-# ----------------------------
-sensor:
-  - platform: template
-    id: outside_temp_hp_avg
-    name: "Outside Temperature (Local aggregated)"
-    icon: mdi:thermometer
-    internal: false
-    unit_of_measurement: "°C"
-    device_class: temperature
-    state_class: measurement
-    accuracy_decimals: 1
-    update_interval: 10s
-    web_server:
-      sorting_group_id: oq_temperatures
-    lambda: |-
-      const float hp1_outside_c = id(hp1_outside_temp).state;
-      const float hp2_outside_c = id(${secondary_outside_temp_id}).state;
-
-      const bool hp1_valid = !isnan(hp1_outside_c);
-      const bool hp2_valid = !isnan(hp2_outside_c);
-
-      if (hp1_valid && hp2_valid) return std::min(hp1_outside_c, hp2_outside_c);
-      if (hp1_valid) return hp1_outside_c;
-      if (hp2_valid) return hp2_outside_c;
-      return NAN;
-
-  - platform: template
-    id: oq_curve_outside_temp_filtered
-    name: "Outside Temperature (Curve filtered)"
-    icon: mdi:thermometer-lines
-    internal: true
-    unit_of_measurement: "°C"
-    device_class: temperature
-    state_class: measurement
-    accuracy_decimals: 2
-    update_interval: 10s
-    lambda: |-
-      const float outside_c = id(outside_temp_selected).state;
-      if (isnan(outside_c)) {
-        id(oq_curve_outside_ema_initialized) = false;
-        id(oq_curve_outside_ema_last_ms) = 0;
-        return NAN;
-      }
-
-      // Profile-based smoothing time constant:
-      // Comfort = faster tracking, Stable = stronger smoothing.
-      float tau_s = 1800.0f;  // Balanced default
-      if (id(oq_curve_control_profile).has_state()) {
-        const auto profile = id(oq_curve_control_profile).current_option();
-        if (profile == "Comfort") tau_s = 900.0f;
-        else if (profile == "Stable") tau_s = 3600.0f;
-      }
-
-      const uint32_t now_ms = (uint32_t) millis();
-      if (!id(oq_curve_outside_ema_initialized) ||
-          id(oq_curve_outside_ema_last_ms) == 0 ||
-          now_ms <= id(oq_curve_outside_ema_last_ms)) {
-        id(oq_curve_outside_ema_c) = outside_c;
-        id(oq_curve_outside_ema_initialized) = true;
-        id(oq_curve_outside_ema_last_ms) = now_ms;
-        return outside_c;
-      }
-
-      const float dt_s = (now_ms - id(oq_curve_outside_ema_last_ms)) / 1000.0f;
-      float alpha = dt_s / (tau_s + dt_s);
-      if (alpha < 0.0f) alpha = 0.0f;
-      if (alpha > 1.0f) alpha = 1.0f;
-
-      float ema_c = id(oq_curve_outside_ema_c);
-      if (isnan(ema_c)) ema_c = outside_c;
-      ema_c += alpha * (outside_c - ema_c);
-
-      id(oq_curve_outside_ema_c) = ema_c;
-      id(oq_curve_outside_ema_last_ms) = now_ms;
-      return ema_c;
-
-  - platform: template
-    id: oq_system_supply_temp
-    name: "System Supply Temp (abstraction)"
-    icon: mdi:water-thermometer
-    internal: true
-    unit_of_measurement: "°C"
-    device_class: temperature
-    state_class: measurement
-    accuracy_decimals: 1
-    update_interval: 5s
-    web_server:
-      sorting_group_id: oq_temperatures
-    lambda: |-
-      // Prefer: selected supply source (water_supply_temp_selected). Fallback: HP2 / HP1 water_out.
-      float supply_c = NAN;
-      if (id(water_supply_temp_selected).has_state()) {
-        const float selected_supply_c = id(water_supply_temp_selected).state;
-        if (!isnan(selected_supply_c)) supply_c = selected_supply_c;
-      }
-      if (isnan(supply_c)) {
-        const float hp2_out_c = id(${secondary_water_out_temp_id}).state;
-        if (!isnan(hp2_out_c)) supply_c = hp2_out_c;
-      }
-      if (isnan(supply_c)) {
-        const float hp1_out_c = id(hp1_water_out_temp).state;
-        if (!isnan(hp1_out_c)) supply_c = hp1_out_c;
-      }
-      return supply_c;
-
-  - platform: template
-    id: oq_phouse_house_w
-    name: "Power House – P_house"
-    icon: mdi:home-lightning-bolt
-    unit_of_measurement: "W"
-    device_class: power
-    state_class: measurement
-    accuracy_decimals: 0
-    update_interval: 5s
-    web_server:
-      sorting_group_id: oq_overview
-    lambda: |-
-      const float Tout = id(outside_temp_selected).state;
-      const float Tc = id(house_cold_temp_c).state;
-      const float T0 = id(house_zero_power_temp_c).state;
-      const float Pr = id(house_rated_power_w).state;
-
-      if (isnan(Tout) || isnan(Tc) || isnan(T0) || isnan(Pr)) return NAN;
-      if (T0 <= Tc + ${oq_temp_guard_delta_c}f) return NAN;
-
-      float x = (T0 - Tout) / (T0 - Tc);
-      if (x < 0.0f) x = 0.0f;
-      if (x > 1.0f) x = 1.0f;
-      return Pr * x;
-
-  - platform: template
-    id: oq_phouse_req_w_sensor
-    name: "Power House – P_req"
-    icon: mdi:flash
-    unit_of_measurement: "W"
-    device_class: power
-    state_class: measurement
-    accuracy_decimals: 0
-    update_interval: 5s
-    web_server:
-      sorting_group_id: oq_overview
-    lambda: |-
-      return id(oq_phouse_req_w);
-
-  - platform: template
-    id: oq_supply_target_temp
-    name: "Heating Curve Supply Target"
-    icon: mdi:target
-    unit_of_measurement: "°C"
-    device_class: temperature
-    state_class: measurement
-    accuracy_decimals: 1
-    update_interval: 10s
-    web_server:
-      sorting_group_id: oq_temperatures
-    lambda: |-
-      const float outside_c = id(oq_curve_outside_temp_filtered).state;
-      float target_c = id(curve_fallback_supply_temp).state;
-
-      struct Point { float outside_c; float target_c; };
-      const Point points[6] = {
-        {-20.0f, id(curve_tsupply_m20).state},
-        {-10.0f, id(curve_tsupply_m10).state},
-        {  0.0f, id(curve_tsupply_0).state},
-        {  5.0f, id(curve_tsupply_5).state},
-        { 10.0f, id(curve_tsupply_10).state},
-        { 15.0f, id(curve_tsupply_15).state}
-      };
-
-      if (!isnan(outside_c)) {
-        if (outside_c <= -20.0f) target_c = points[0].target_c;
-        else if (outside_c >= 15.0f) target_c = points[5].target_c;
-        else {
-          for (int i = 0; i < 5; i++) {
-            if (outside_c >= points[i].outside_c && outside_c <= points[i + 1].outside_c) {
-              const float segment = (outside_c - points[i].outside_c) / (points[i + 1].outside_c - points[i].outside_c);
-              target_c = points[i].target_c + segment * (points[i + 1].target_c - points[i].target_c);
-              break;
-            }
-          }
-        }
-      }
-
-      // Room thermostat coupling: when room drifts warm, trim curve target down.
-      // This keeps heating-curve control continuous, but prevents living-room overshoot.
-      const float room_c = id(room_temp_selected).state;
-      const float room_sp_c = id(room_setpoint_selected).state;
-      if (!isnan(target_c) && !isnan(room_c) && !isnan(room_sp_c)) {
-        float warm_err_c = room_c - room_sp_c;
-        float trim_start_c = 0.10f;   // Balanced default
-        float trim_gain = 1.50f;      // Balanced default
-        float trim_max_c = 2.00f;     // Balanced default
-        if (id(oq_curve_control_profile).has_state()) {
-          const auto profile = id(oq_curve_control_profile).current_option();
-          if (profile == "Comfort") {
-            trim_start_c = 0.05f;
-            trim_gain = 2.00f;
-            trim_max_c = 2.00f;
-          } else if (profile == "Stable") {
-            trim_start_c = 0.15f;
-            trim_gain = 1.00f;
-            trim_max_c = 2.50f;
-          }
-        }
-        if (warm_err_c > trim_start_c) {
-          float trim_c = (warm_err_c - trim_start_c) * trim_gain;
-          if (trim_c < 0.0f) trim_c = 0.0f;
-          if (trim_c > trim_max_c) trim_c = trim_max_c;
-          target_c -= trim_c;
-        }
-      }
-
-      // Profile-based target quantization keeps supply target calm at low load.
-      float quant_step_c = 0.5f;  // Balanced default
-      if (id(oq_curve_control_profile).has_state()) {
-        const auto profile = id(oq_curve_control_profile).current_option();
-        if (profile == "Comfort") quant_step_c = 0.25f;
-        else if (profile == "Stable") quant_step_c = 1.0f;
-      }
-      if (!isnan(target_c) && quant_step_c > 0.0f) {
-        target_c = roundf(target_c / quant_step_c) * quant_step_c;
-      }
-      return target_c;
-
-  # Diagnostics
-  - platform: template
-    id: oq_demand_curve_sensor
-    name: "Demand Curve (raw)"
-    icon: mdi:counter
-    unit_of_measurement: "step"
-    state_class: measurement
-    accuracy_decimals: 0
-    update_interval: 5s
-    web_server:
-      sorting_group_id: oq_diagnostics
-    lambda: |-
-      return (float) id(oq_demand_curve);
-
-  - platform: template
-    id: oq_curve_demand_pre_guardrail_sensor
-    name: "Demand Curve (pre-guardrail)"
-    icon: mdi:counter
-    unit_of_measurement: "step"
-    state_class: measurement
-    accuracy_decimals: 0
-    update_interval: 5s
-    entity_category: diagnostic
-    web_server:
-      sorting_group_id: oq_diagnostics
-    lambda: |-
-      return (float) id(oq_curve_demand_pre_guardrail);
-
-  - platform: template
-    id: oq_curve_demand_post_guardrail_sensor
-    name: "Demand Curve (post-guardrail)"
-    icon: mdi:counter
-    unit_of_measurement: "step"
-    state_class: measurement
-    accuracy_decimals: 0
-    update_interval: 5s
-    entity_category: diagnostic
-    web_server:
-      sorting_group_id: oq_diagnostics
-    lambda: |-
-      return (float) id(oq_demand_curve);
-
-  - platform: template
-    id: oq_curve_restart_inhibit_sensor
-    name: "Curve restart inhibit"
-    icon: mdi:timer-sand-paused
-    accuracy_decimals: 0
-    update_interval: 5s
-    entity_category: diagnostic
-    web_server:
-      sorting_group_id: oq_diagnostics
-    lambda: |-
-      return id(oq_curve_restart_inhibit_active) ? 1.0f : 0.0f;
-
-  # DEBUG-RUNTIME START: Power House adaptive comfort-bias diagnostics
-  - platform: template
-    id: oq_phouse_room_error_avg_c_sensor
-    name: "Power House room error avg"
-    icon: mdi:chart-timeline-variant
-    unit_of_measurement: "°C"
-    state_class: measurement
-    accuracy_decimals: 3
-    update_interval: 5s
-    entity_category: diagnostic
-    web_server:
-      sorting_group_id: oq_diagnostics
-    lambda: |-
-      return id(oq_ph_room_error_avg_c);
-
-  - platform: template
-    id: oq_phouse_comfort_bias_c_sensor
-    name: "Power House comfort bias"
-    icon: mdi:thermometer-plus
-    unit_of_measurement: "°C"
-    state_class: measurement
-    accuracy_decimals: 3
-    update_interval: 5s
-    entity_category: diagnostic
-    web_server:
-      sorting_group_id: oq_diagnostics
-    lambda: |-
-      return id(oq_ph_comfort_bias_c);
-
-  - platform: template
-    id: oq_phouse_room_target_effective_c_sensor
-    name: "Power House effective room target"
-    icon: mdi:target
-    unit_of_measurement: "°C"
-    state_class: measurement
-    accuracy_decimals: 2
-    update_interval: 5s
-    entity_category: diagnostic
-    web_server:
-      sorting_group_id: oq_diagnostics
-    lambda: |-
-      return id(oq_ph_room_target_effective_c);
-  # DEBUG-RUNTIME END
-
-# ----------------------------
-# STATUS
-# ----------------------------
-text_sensor:
-  - platform: template
-    id: heating_strategy_status
-    name: "Heating Strategy"
-    icon: mdi:state-machine
-    update_interval: 5s
-    web_server:
-      sorting_group_id: oq_overview
-    lambda: |-
-      return std::string(id(oq_heat_control_mode).current_option().c_str());
-
-  - platform: template
-    id: oq_curve_phase_sensor
-    name: "Curve Phase"
-    icon: mdi:state-machine
-    update_interval: 5s
-    entity_category: diagnostic
-    web_server:
-      sorting_group_id: oq_diagnostics
-    lambda: |-
-      switch (id(oq_curve_phase_code)) {
-        case 1: return std::string("HEAT");
-        case 2: return std::string("COAST");
-        default: return std::string("OFF");
-      }
-
-# ----------------------------
 # TEMPERATURE CONTROLLER (PID climate)
 # ----------------------------
 climate:
@@ -1156,9 +804,365 @@ output:
           id(oq_curve_phase_code) = curve_phase_code;
 
 # ----------------------------
+# SENSORS - outdoor temperature aggregation + heating curve target
+# ----------------------------
+sensor:
+  - platform: template
+    id: outside_temp_hp_avg
+    name: "Outside Temperature (Local aggregated)"
+    icon: mdi:thermometer
+    internal: false
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      const float hp1_outside_c = id(hp1_outside_temp).state;
+      const float hp2_outside_c = id(${secondary_outside_temp_id}).state;
+
+      const bool hp1_valid = !isnan(hp1_outside_c);
+      const bool hp2_valid = !isnan(hp2_outside_c);
+
+      if (hp1_valid && hp2_valid) return std::min(hp1_outside_c, hp2_outside_c);
+      if (hp1_valid) return hp1_outside_c;
+      if (hp2_valid) return hp2_outside_c;
+      return NAN;
+
+  - platform: template
+    id: oq_curve_outside_temp_filtered
+    name: "Outside Temperature (Curve filtered)"
+    icon: mdi:thermometer-lines
+    internal: true
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 10s
+    lambda: |-
+      // Reject invalid source values and reset the EMA state when the source drops out.
+      const float outside_c = id(outside_temp_selected).state;
+      if (isnan(outside_c)) {
+        id(oq_curve_outside_ema_initialized) = false;
+        id(oq_curve_outside_ema_last_ms) = 0;
+        return NAN;
+      }
+
+      // Resolve the profile-dependent smoothing constant.
+      float tau_s = 1800.0f;  // Balanced default
+      if (id(oq_curve_control_profile).has_state()) {
+        const auto profile = id(oq_curve_control_profile).current_option();
+        if (profile == "Comfort") tau_s = 900.0f;
+        else if (profile == "Stable") tau_s = 3600.0f;
+      }
+
+      // Initialize the EMA on first valid sample or after timer rollover.
+      const uint32_t now_ms = (uint32_t) millis();
+      if (!id(oq_curve_outside_ema_initialized) ||
+          id(oq_curve_outside_ema_last_ms) == 0 ||
+          now_ms <= id(oq_curve_outside_ema_last_ms)) {
+        id(oq_curve_outside_ema_c) = outside_c;
+        id(oq_curve_outside_ema_initialized) = true;
+        id(oq_curve_outside_ema_last_ms) = now_ms;
+        return outside_c;
+      }
+
+      // Apply a time-scaled EMA update and publish the new filtered value.
+      const float dt_s = (now_ms - id(oq_curve_outside_ema_last_ms)) / 1000.0f;
+      float alpha = dt_s / (tau_s + dt_s);
+      if (alpha < 0.0f) alpha = 0.0f;
+      if (alpha > 1.0f) alpha = 1.0f;
+
+      float ema_c = id(oq_curve_outside_ema_c);
+      if (isnan(ema_c)) ema_c = outside_c;
+      ema_c += alpha * (outside_c - ema_c);
+
+      id(oq_curve_outside_ema_c) = ema_c;
+      id(oq_curve_outside_ema_last_ms) = now_ms;
+      return ema_c;
+
+  - platform: template
+    id: oq_system_supply_temp
+    name: "System Supply Temp (abstraction)"
+    icon: mdi:water-thermometer
+    internal: true
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 5s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      // Prefer: selected supply source (water_supply_temp_selected). Fallback: HP2 / HP1 water_out.
+      float supply_c = NAN;
+      if (id(water_supply_temp_selected).has_state()) {
+        const float selected_supply_c = id(water_supply_temp_selected).state;
+        if (!isnan(selected_supply_c)) supply_c = selected_supply_c;
+      }
+      if (isnan(supply_c)) {
+        const float hp2_out_c = id(${secondary_water_out_temp_id}).state;
+        if (!isnan(hp2_out_c)) supply_c = hp2_out_c;
+      }
+      if (isnan(supply_c)) {
+        const float hp1_out_c = id(hp1_water_out_temp).state;
+        if (!isnan(hp1_out_c)) supply_c = hp1_out_c;
+      }
+      return supply_c;
+
+  - platform: template
+    id: oq_phouse_house_w
+    name: "Power House – P_house"
+    icon: mdi:home-lightning-bolt
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    web_server:
+      sorting_group_id: oq_overview
+    lambda: |-
+      const float Tout = id(outside_temp_selected).state;
+      const float Tc = id(house_cold_temp_c).state;
+      const float T0 = id(house_zero_power_temp_c).state;
+      const float Pr = id(house_rated_power_w).state;
+
+      if (isnan(Tout) || isnan(Tc) || isnan(T0) || isnan(Pr)) return NAN;
+      if (T0 <= Tc + ${oq_temp_guard_delta_c}f) return NAN;
+
+      float x = (T0 - Tout) / (T0 - Tc);
+      if (x < 0.0f) x = 0.0f;
+      if (x > 1.0f) x = 1.0f;
+      return Pr * x;
+
+  - platform: template
+    id: oq_phouse_req_w_sensor
+    name: "Power House – P_req"
+    icon: mdi:flash
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    web_server:
+      sorting_group_id: oq_overview
+    lambda: |-
+      return id(oq_phouse_req_w);
+
+  - platform: template
+    id: oq_supply_target_temp
+    name: "Heating Curve Supply Target"
+    icon: mdi:target
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      // Start from the fallback target and override it when outdoor temperature is available.
+      const float outside_c = id(oq_curve_outside_temp_filtered).state;
+      float target_c = id(curve_fallback_supply_temp).state;
+
+      struct Point { float outside_c; float target_c; };
+      const Point points[6] = {
+        {-20.0f, id(curve_tsupply_m20).state},
+        {-10.0f, id(curve_tsupply_m10).state},
+        {  0.0f, id(curve_tsupply_0).state},
+        {  5.0f, id(curve_tsupply_5).state},
+        { 10.0f, id(curve_tsupply_10).state},
+        { 15.0f, id(curve_tsupply_15).state}
+      };
+
+      if (!isnan(outside_c)) {
+        if (outside_c <= -20.0f) target_c = points[0].target_c;
+        else if (outside_c >= 15.0f) target_c = points[5].target_c;
+        else {
+          for (int i = 0; i < 5; i++) {
+            if (outside_c >= points[i].outside_c && outside_c <= points[i + 1].outside_c) {
+              const float segment = (outside_c - points[i].outside_c) / (points[i + 1].outside_c - points[i].outside_c);
+              target_c = points[i].target_c + segment * (points[i + 1].target_c - points[i].target_c);
+              break;
+            }
+          }
+        }
+      }
+
+      // When the room drifts warm, trim the target down to avoid living-room overshoot.
+      const float room_c = id(room_temp_selected).state;
+      const float room_sp_c = id(room_setpoint_selected).state;
+      if (!isnan(target_c) && !isnan(room_c) && !isnan(room_sp_c)) {
+        float warm_err_c = room_c - room_sp_c;
+        float trim_start_c = 0.10f;   // Balanced default
+        float trim_gain = 1.50f;      // Balanced default
+        float trim_max_c = 2.00f;     // Balanced default
+        if (id(oq_curve_control_profile).has_state()) {
+          const auto profile = id(oq_curve_control_profile).current_option();
+          if (profile == "Comfort") {
+            trim_start_c = 0.05f;
+            trim_gain = 2.00f;
+            trim_max_c = 2.00f;
+          } else if (profile == "Stable") {
+            trim_start_c = 0.15f;
+            trim_gain = 1.00f;
+            trim_max_c = 2.50f;
+          }
+        }
+        if (warm_err_c > trim_start_c) {
+          float trim_c = (warm_err_c - trim_start_c) * trim_gain;
+          if (trim_c < 0.0f) trim_c = 0.0f;
+          if (trim_c > trim_max_c) trim_c = trim_max_c;
+          target_c -= trim_c;
+        }
+      }
+
+      // Quantize the final target to keep low-load behavior calm and repeatable.
+      float quant_step_c = 0.5f;  // Balanced default
+      if (id(oq_curve_control_profile).has_state()) {
+        const auto profile = id(oq_curve_control_profile).current_option();
+        if (profile == "Comfort") quant_step_c = 0.25f;
+        else if (profile == "Stable") quant_step_c = 1.0f;
+      }
+      if (!isnan(target_c) && quant_step_c > 0.0f) {
+        target_c = roundf(target_c / quant_step_c) * quant_step_c;
+      }
+      return target_c;
+
+  # Diagnostics
+  - platform: template
+    id: oq_demand_curve_sensor
+    name: "Demand Curve (raw)"
+    icon: mdi:counter
+    unit_of_measurement: "step"
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return (float) id(oq_demand_curve);
+
+  - platform: template
+    id: oq_curve_demand_pre_guardrail_sensor
+    name: "Demand Curve (pre-guardrail)"
+    icon: mdi:counter
+    unit_of_measurement: "step"
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return (float) id(oq_curve_demand_pre_guardrail);
+
+  - platform: template
+    id: oq_curve_demand_post_guardrail_sensor
+    name: "Demand Curve (post-guardrail)"
+    icon: mdi:counter
+    unit_of_measurement: "step"
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return (float) id(oq_demand_curve);
+
+  - platform: template
+    id: oq_curve_restart_inhibit_sensor
+    name: "Curve restart inhibit"
+    icon: mdi:timer-sand-paused
+    accuracy_decimals: 0
+    update_interval: 5s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return id(oq_curve_restart_inhibit_active) ? 1.0f : 0.0f;
+
+  # DEBUG-RUNTIME START: Power House adaptive comfort-bias diagnostics
+  - platform: template
+    id: oq_phouse_room_error_avg_c_sensor
+    name: "Power House room error avg"
+    icon: mdi:chart-timeline-variant
+    unit_of_measurement: "°C"
+    state_class: measurement
+    accuracy_decimals: 3
+    update_interval: 5s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return id(oq_ph_room_error_avg_c);
+
+  - platform: template
+    id: oq_phouse_comfort_bias_c_sensor
+    name: "Power House comfort bias"
+    icon: mdi:thermometer-plus
+    unit_of_measurement: "°C"
+    state_class: measurement
+    accuracy_decimals: 3
+    update_interval: 5s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return id(oq_ph_comfort_bias_c);
+
+  - platform: template
+    id: oq_phouse_room_target_effective_c_sensor
+    name: "Power House effective room target"
+    icon: mdi:target
+    unit_of_measurement: "°C"
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 5s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return id(oq_ph_room_target_effective_c);
+  # DEBUG-RUNTIME END
+
+# ----------------------------
+# STATUS
+# ----------------------------
+text_sensor:
+  - platform: template
+    id: heating_strategy_status
+    name: "Heating Strategy"
+    icon: mdi:state-machine
+    update_interval: 5s
+    web_server:
+      sorting_group_id: oq_overview
+    lambda: |-
+      return std::string(id(oq_heat_control_mode).current_option().c_str());
+
+  - platform: template
+    id: oq_curve_phase_sensor
+    name: "Curve Phase"
+    icon: mdi:state-machine
+    update_interval: 5s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      switch (id(oq_curve_phase_code)) {
+        case 1: return std::string("HEAT");
+        case 2: return std::string("COAST");
+        default: return std::string("OFF");
+      }
+
+
+# ----------------------------
 # INTERVAL (5s)
-#   * Power House: computes P_req (W) + compatible demand (0..20)
-#   * Water temperature control: runs Heating Curve PID and provides demand (0..20)
+#   * Power House: computes P_req (W) and compatible demand (0..20)
+#   * Heating Curve: runs the supply-temperature PID and provides demand (0..20)
 # ----------------------------
 interval:
   - interval: ${oq_strategy_loop_s}s
@@ -1184,7 +1188,7 @@ interval:
 
           if (heat_mode_code == 1) {
             // ------------------------------------------------------------
-            // WATER TEMP MODE
+            // HEATING CURVE MODE
             // - Heating Curve PID: PV = oq_system_supply_temp, SP = oq_supply_target_temp
             // - PID output -> oq_demand_curve via heating_curve_pid_out
             // - Strategy output: oq_demand_raw = oq_demand_curve
@@ -1237,9 +1241,10 @@ interval:
           } else {
             // ------------------------------------------------------------
             // POWER HOUSE MODE
-            // - Feedforward P_house(Tout) + room error correctie -> P_req_total (W)
-            // - Ramp limiter in W/min
-            // - Compat: oq_demand_raw = round(20 * P_req / house_rated_power)
+            // - Feedforward house model: P_house(Tout)
+            // - Room-temperature correction around the effective room target
+            //   (setpoint + adaptive comfort bias, with asymmetric comfort band)
+            // - Deadband and ramp limiting in W/min before mapping to oq_demand_raw
             // ------------------------------------------------------------
             if (id(oq_heating_curve_pid).mode != CLIMATE_MODE_OFF) {
               auto c0 = id(oq_heating_curve_pid).make_call();
@@ -1264,7 +1269,7 @@ interval:
               return;
             }
 
-            // P_house
+            // House-model baseline demand from outdoor temperature only.
             float x = (T0 - Tout) / (T0 - Tc);
             x = clampf(x, 0.0f, 1.0f);
             const float P_house = Pr * x;
@@ -1309,7 +1314,7 @@ interval:
             const float Trsp_eff = Trsp + bias_c;
             id(oq_ph_room_target_effective_c) = Trsp_eff;
 
-            // Room correction
+            // Room-temperature correction around the effective comfort target.
             // Asymmetric comfort band around effective room target:
             // - below band: lower edge where extra correction starts
             // - above band: upper edge where negative correction starts
@@ -1357,11 +1362,11 @@ interval:
             id(oq_phouse_last_w) = P_limited;
             id(oq_phouse_last_ms) = now_ms;
 
-            // Compat demand 0..20
+            // Backward-compatible demand 0..20 for the existing heat-control path.
             int d = (int) lroundf(${oq_strategy_demand_max_f} * (P_limited / Pr));
             id(oq_demand_raw) = clamp_demand(d);
 
-            // In power house mode is curve demand diagnostisch 0
+            // In Power House mode, curve demand is diagnostic-only and stays at 0.
             id(oq_demand_curve) = 0;
           }
       - if:
