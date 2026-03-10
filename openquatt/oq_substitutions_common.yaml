@@ -13,7 +13,7 @@
 device_name: "openquatt"                              # Internal ESPHome device ID / hostname base.
 friendly_name: OpenQuatt                              # Display name in Home Assistant / UI.
 project_name: "openquatt.openquatt"                   # ESPHome project identifier shown in firmware metadata.
-project_version: "v0.18.0"                            # ESPHome project version shown in firmware metadata.
+project_version: "v0.18.1"                            # ESPHome project version shown in firmware metadata.
 release_channel: "main"                               # Firmware release channel shown in diagnostics (`main` or `dev`).
 hp_perf_map_header: "openquatt/includes/hp_perf_map.h" # C++ performance-map header include path.
 
@@ -41,6 +41,9 @@ oq_cm_min_flow_lph: "250.0"                           # Minimum valid flow for c
 oq_cm_flow_fault_s: "60"                              # Low-flow duration before fault becomes active [s].
 oq_cm_flow_recover_s: "30"                            # Flow recovery duration before fault is cleared [s].
 oq_cm2_idle_exit_s: "90"                              # Exit CM2 if both HPs are idle for this duration while demand remains > 0 [s].
+oq_low_load_fallback_off_w: "900"                     # Internal fallback OFF threshold when no dynamic low-load input is available [W].
+oq_low_load_fallback_on_w: "1300"                     # Internal fallback ON threshold when no dynamic low-load input is available [W].
+oq_low_load_dyn_cache_max_s: "60"                     # Maximum age for reusing last-known-good dynamic low-load thresholds [s].
 oq_cm_frost_on_c: "5.0"                               # Frost protection enable threshold [°C].
 oq_cm_frost_off_c: "6.0"                              # Frost protection disable threshold (hysteresis) [°C].
 oq_cm_frost_nan_grace_s: "30"                         # Startup grace before NaN outside temp triggers frost fail-safe [s].

@@ -164,6 +164,10 @@ globals:
     type: float
     restore_value: false
     initial_value: 'NAN'
+  - id: oq_low_load_pmin_dyn_lkg_w
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
   - id: oq_low_load_off_dyn_w
     type: float
     restore_value: false
@@ -172,6 +176,14 @@ globals:
     type: float
     restore_value: false
     initial_value: 'NAN'
+  - id: oq_low_load_dyn_last_valid_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_low_load_dyn_source_state
+    type: int
+    restore_value: false
+    initial_value: '0'  # 0=inactive,1=live,2=cached,3=fallback
   # Shadow heat-enable arbiter state machine (diagnostics only).
   - id: oq_heat_enable_state_shadow
     type: int
@@ -292,31 +304,44 @@ number:
       sorting_group_id: oq_control
 
   - platform: template
-    id: oq_low_load_off_w
-    name: "Low-load OFF fallback"
-    icon: mdi:arrow-collapse-down
-    unit_of_measurement: "W"
-    min_value: 0
-    max_value: 3000
-    step: 25
+    id: oq_low_load_dyn_off_factor
+    name: "Low-load dynamic OFF factor"
+    icon: mdi:percent-outline
+    min_value: 0.60
+    max_value: 0.90
+    step: 0.05
     optimistic: true
     restore_value: true
-    initial_value: 900
+    initial_value: 0.75
     entity_category: config
     web_server:
       sorting_group_id: oq_control
 
   - platform: template
-    id: oq_low_load_on_w
-    name: "Low-load ON fallback"
-    icon: mdi:arrow-expand-up
+    id: oq_low_load_dyn_on_factor
+    name: "Low-load dynamic ON factor"
+    icon: mdi:percent-outline
+    min_value: 0.85
+    max_value: 1.10
+    step: 0.05
+    optimistic: true
+    restore_value: true
+    initial_value: 1.0
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_control
+
+  - platform: template
+    id: oq_low_load_min_hysteresis_w
+    name: "Low-load minimum hysteresis"
+    icon: mdi:arrow-expand-vertical
     unit_of_measurement: "W"
-    min_value: 0
-    max_value: 3000
+    min_value: 100
+    max_value: 400
     step: 25
     optimistic: true
     restore_value: true
-    initial_value: 1300
+    initial_value: 200
     entity_category: config
     web_server:
       sorting_group_id: oq_control
@@ -468,9 +493,14 @@ text_sensor:
       const float pmin = id(oq_low_load_pmin_dyn_w);
       const float off  = id(oq_low_load_off_dyn_w);
       const float on   = id(oq_low_load_on_dyn_w);
-      char b[96];
-      if (isnan(pmin) || isnan(off) || isnan(on)) {
+      const int source_state = id(oq_low_load_dyn_source_state);
+      char b[112];
+      if (source_state == 0) {
+        snprintf(b, sizeof(b), "inactive (Power House only)");
+      } else if (source_state == 3 || isnan(pmin) || isnan(off) || isnan(on)) {
         snprintf(b, sizeof(b), "dynamic: n/a (fallback in use)");
+      } else if (source_state == 2) {
+        snprintf(b, sizeof(b), "pmin=%.0fW off=%.0fW on=%.0fW (cached)", pmin, off, on);
       } else {
         snprintf(b, sizeof(b), "pmin=%.0fW off=%.0fW on=%.0fW", pmin, off, on);
       }
@@ -673,7 +703,7 @@ interval:
           const char* cur_cm_state = id(oq_control_mode).state.c_str();
           const bool in_cm2 = strcmp(cur_cm_state, "CM2") == 0;
           const bool heating_req_raw = (id(oq_demand_filtered) > 0);
-          const bool curve_mode_active = (id(oq_heat_mode_code) == 1);
+          const bool power_house_active = (id(oq_heat_mode_code) == 0);
 
           const int hp1_lvl = id(hp1_last_applied_level);
           #if OQ_TOPOLOGY_DUO
@@ -713,39 +743,70 @@ interval:
           float low_load_off_w = NAN;
           float low_load_on_w = NAN;
           bool reentry_block_active = false;
-          if (!curve_mode_active) {
+          if (power_house_active) {
             // DEBUG-RUNTIME: dynamic low-load thresholds + latch/re-entry diagnostics (Power House).
             // Power House low-load hysteresis on P_req to prevent CM1<->CM2 chattering.
-            // Prefer dynamic thresholds from perf-map level-1 thermal power.
+            // Prefer live dynamic thresholds from perf-map level-1 thermal power,
+            // then last-known-good dynamic values, then internal fallback defaults.
             auto clampf = [](float v, float lo, float hi)->float {
               if (v < lo) return lo;
               if (v > hi) return hi;
               return v;
             };
-            float off_w = id(oq_low_load_off_w).state; // fallback OFF
-            float on_w  = id(oq_low_load_on_w).state;  // fallback ON
+            float off_factor = id(oq_low_load_dyn_off_factor).state;
+            float on_factor = id(oq_low_load_dyn_on_factor).state;
+            float min_hyst_w = id(oq_low_load_min_hysteresis_w).state;
+            if (isnan(off_factor) || off_factor <= 0.0f) off_factor = 0.75f;
+            if (isnan(on_factor)  || on_factor  <= 0.0f) on_factor  = 1.00f;
+            if (isnan(min_hyst_w) || min_hyst_w <= 0.0f) min_hyst_w = 200.0f;
+            off_factor = clampf(off_factor, 0.60f, 0.90f);
+            on_factor = clampf(on_factor, 0.85f, 1.10f);
+            min_hyst_w = clampf(min_hyst_w, 100.0f, 400.0f);
+
+            float off_w = ${oq_low_load_fallback_off_w};
+            float on_w  = ${oq_low_load_fallback_on_w};
             if (isnan(off_w) || off_w < 0.0f) off_w = 900.0f;
             if (isnan(on_w)  || on_w  < 0.0f) on_w  = 1300.0f;
 
             const float Tamb = id(outside_temp_selected).state;
             const float Tsup = id(oq_system_supply_temp).state;
-            float pmin_dyn = NAN;
+            float pmin_dyn_live = NAN;
+            float pmin_dyn_effective = NAN;
+            int dyn_source_state = 3;
             if (!isnan(Tamb) && !isnan(Tsup)) {
-              pmin_dyn = oq_perf::interp_power_th_w(1, Tamb, Tsup);
-              if (isnan(pmin_dyn) || pmin_dyn <= 0.0f) pmin_dyn = NAN;
+              pmin_dyn_live = oq_perf::interp_power_th_w(1, Tamb, Tsup);
+              if (isnan(pmin_dyn_live) || pmin_dyn_live <= 0.0f) pmin_dyn_live = NAN;
             }
-            if (!isnan(pmin_dyn)) {
-              off_w = clampf(0.75f * pmin_dyn, 500.0f, 1600.0f);
-              on_w  = clampf(1.00f * pmin_dyn, 700.0f, 2200.0f);
+            const uint32_t cache_max_ms = (uint32_t)(${oq_low_load_dyn_cache_max_s}UL * 1000UL);
+            if (!isnan(pmin_dyn_live)) {
+              pmin_dyn_effective = pmin_dyn_live;
+              id(oq_low_load_pmin_dyn_lkg_w) = pmin_dyn_live;
+              id(oq_low_load_dyn_last_valid_ms) = now_ms;
+              dyn_source_state = 1;
+            } else {
+              const float pmin_dyn_lkg = id(oq_low_load_pmin_dyn_lkg_w);
+              const uint32_t last_valid_ms = id(oq_low_load_dyn_last_valid_ms);
+              const bool lkg_valid = !isnan(pmin_dyn_lkg) && pmin_dyn_lkg > 0.0f &&
+                  last_valid_ms != 0 &&
+                  ((uint32_t)(now_ms - last_valid_ms) <= cache_max_ms);
+              if (lkg_valid) {
+                pmin_dyn_effective = pmin_dyn_lkg;
+                dyn_source_state = 2;
+              }
             }
-            if (on_w < off_w + 200.0f) on_w = off_w + 200.0f;
+            if (!isnan(pmin_dyn_effective)) {
+              off_w = clampf(off_factor * pmin_dyn_effective, 500.0f, 1600.0f);
+              on_w  = clampf(on_factor  * pmin_dyn_effective, 600.0f, 2200.0f);
+            }
+            if (on_w < off_w + min_hyst_w) on_w = off_w + min_hyst_w;
             if (on_w > 2200.0f) on_w = 2200.0f;
-            if (off_w > on_w - 200.0f) off_w = fmaxf(500.0f, on_w - 200.0f);
+            if (off_w > on_w - min_hyst_w) off_w = fmaxf(500.0f, on_w - min_hyst_w);
             low_load_off_w = off_w;
             low_load_on_w = on_w;
-            id(oq_low_load_pmin_dyn_w) = pmin_dyn;
+            id(oq_low_load_pmin_dyn_w) = pmin_dyn_effective;
             id(oq_low_load_off_dyn_w) = off_w;
             id(oq_low_load_on_dyn_w) = on_w;
+            id(oq_low_load_dyn_source_state) = dyn_source_state;
 
             p_req_w = id(oq_phouse_req_w);
             bool latch = id(oq_lowload_heat_latch);
@@ -766,10 +827,11 @@ interval:
               reentry_block_active = false;
             }
           } else {
-            // Curve mode keeps original heat-request semantics.
+            // Non-Power-House modes keep original heat-request semantics.
             id(oq_lowload_heat_latch) = heating_req_raw;
             id(oq_cm2_reentry_block_until_ms) = 0;
             reentry_block_active = false;
+            id(oq_low_load_dyn_source_state) = 0;
             id(oq_low_load_pmin_dyn_w) = NAN;
             id(oq_low_load_off_dyn_w) = NAN;
             id(oq_low_load_on_dyn_w) = NAN;
@@ -781,7 +843,7 @@ interval:
               in_cm2 && id(oq_cm2_entered_ms) != 0 &&
               ((uint32_t)(now_ms - id(oq_cm2_entered_ms)) < cm2_startup_grace_ms);
           const bool ph_high_load_idle_exit_block =
-              (!curve_mode_active) && !isnan(p_req_w) && !isnan(low_load_off_w) && (p_req_w > low_load_off_w);
+              power_house_active && !isnan(p_req_w) && !isnan(low_load_off_w) && (p_req_w > low_load_off_w);
           // DEBUG-RUNTIME: expose why CM2 idle-exit path is armed/blocked/tripped.
           std::string cm2_idle_exit_reason = "not_in_cm2";
           if (in_cm2) {
@@ -804,7 +866,7 @@ interval:
           } else {
             id(oq_cm2_idle_since_ms) = 0;
           }
-          if (!curve_mode_active) {
+          if (power_house_active) {
             const uint32_t reentry_block_ms = (uint32_t) lroundf(id(oq_low_load_reentry_block_s).state) * 1000UL;
             // Pad A behavior: set block only when CM2 idle-exit trips.
             if (cm2_idle_exit_trip && reentry_block_ms > 0) {
@@ -832,9 +894,9 @@ interval:
             // DEBUG-RUNTIME: shadow state-machine for stepwise migration to a dedicated heat-enable arbiter.
             const bool heat_req_shadow = heating_req;
             const uint32_t min_run_ms = (uint32_t)(${oq_cm2_min_run_s}UL * 1000UL);
-            const uint32_t lockout_ms = curve_mode_active
-                ? 0
-                : (uint32_t) lroundf(id(oq_low_load_reentry_block_s).state) * 1000UL;
+            const uint32_t lockout_ms = power_house_active
+                ? (uint32_t) lroundf(id(oq_low_load_reentry_block_s).state) * 1000UL
+                : 0;
 
             auto shadow_state_to_text = [](int st) -> const char* {
               if (st == 1) return "PREHEAT";

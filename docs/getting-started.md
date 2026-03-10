@@ -127,6 +127,13 @@ Or run the helper script:
 ./scripts/validate_local.sh
 ```
 
+On Windows, bootstrap a local venv once and then use the PowerShell helper (the validator automatically mirrors the repo into a no-space workspace when the checkout path contains spaces):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap_esphome_local.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\validate_local.ps1
+```
+
 ## 6. Flash and Boot
 
 For the stock stable firmware, prefer the

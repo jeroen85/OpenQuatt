@@ -89,4 +89,4 @@ Use a consistent order per package where applicable:
    - `boiler_relay`
    - `hp1_set_working_mode`, `hp2_set_working_mode`
 10. Verify dashboard entity references are still valid.
-11. Run `./scripts/validate_local.sh` for full local gate parity.
+11. Run `./scripts/validate_local.sh` for full local gate parity on bash hosts, or `powershell -ExecutionPolicy Bypass -File .\scripts\validate_local.ps1` on Windows.
