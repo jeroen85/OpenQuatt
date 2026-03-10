@@ -5,10 +5,10 @@ Style and documentation consistency are validated locally via `./scripts/validat
 
 ## Branch Model
 
-- `main`: stable branch for tagged releases and the default OTA/update channel.
+- `main`: stable branch for tagged releases and the default OTA/update channel. Small docs/ops fixes may be committed directly to `main` when appropriate.
 - `dev`: integration branch for testers. Validate it like `main`, but do not cut stable tags from it.
 - feature branches: short-lived branches merged into `dev`; promote `dev` into `main` only after validation/soak.
-- after each stable release, reset `dev` back to the released `main` commit before starting the next development cycle. Then apply the next dev-version bump as a new commit on top.
+- if `main` and `dev` diverge after a release (for example because of a direct `main` fix or a non-fast-forward promotion), realign `dev` with the released `main` commit before starting the next development cycle. Then apply the next dev-version bump as a new commit on top.
 
 Firmware should expose its channel explicitly via `release_channel` so Home Assistant and the ESPHome web UI show whether a device is running `main` or `dev`.
 
@@ -110,10 +110,20 @@ The repository now backs that URL with `/.github/workflows/dev-build.yml`, which
 
 1. Update `project_version` in `openquatt/oq_substitutions_common.yaml` on `dev`.
 2. Push `dev` and wait for `CI` and `Dev Build` to go green.
-3. Open a release PR from `dev` to `main` with a curated summary of the release.
-4. Merge that PR into `main` using the repository-approved merge method.
-5. Wait for `CI` on `main` to go green.
-6. Create and push a tag from the merged `main` commit:
+3. Promote the validated `dev` commit to `main`. Recommended path: fast-forward `main` to `origin/dev`:
+
+```bash
+git fetch origin
+git checkout main
+git reset --hard origin/main
+git merge --ff-only origin/dev
+git push origin main
+```
+
+You may still use a release PR when you want a reviewed release summary on GitHub, but the ruleset no longer requires that path.
+
+4. Wait for `CI` on `main` to go green.
+5. Create and push a tag from the merged `main` commit:
 
 ```bash
 git fetch origin
@@ -121,10 +131,10 @@ git tag v0.13.0 origin/main
 git push origin v0.13.0
 ```
 
-7. Check GitHub Actions:
+6. Check GitHub Actions:
    - CI should be green.
    - Release workflow should publish artifacts.
-8. Verify GitHub Release contains:
+7. Verify GitHub Release contains:
    - `openquatt-duo-ota.manifest.json`
    - `openquatt-single-ota.manifest.json`
    - `openquatt-duo-waveshare.firmware.ota.bin`
@@ -135,7 +145,7 @@ git push origin v0.13.0
    - `openquatt-single-waveshare.firmware.factory.bin`
    - `openquatt-single-heatpump-listener.firmware.ota.bin`
    - `openquatt-single-heatpump-listener.firmware.factory.bin`
-9. Immediately realign `dev` with the released `main` commit, then bump to the next development version:
+8. If `main` and `dev` no longer point to the same release content, realign `dev` with the released `main` commit before bumping to the next development version:
 
 ```bash
 git fetch origin
@@ -146,7 +156,7 @@ git push --force-with-lease origin dev
 # then bump to the next dev version, commit, and push
 ```
 
-This reset is intentional. `main` is merged via squash, while `dev` must stay linear and must not accumulate merge commits. Resetting `dev` to `origin/main` avoids misleading `ahead/behind` counters where the trees match but the commit graph does not.
+If you used the recommended fast-forward promotion and did not add extra `main`-only commits afterwards, `dev` and `main` already align and you can skip this reset.
 
 ## Notes
 
