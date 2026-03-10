@@ -58,6 +58,9 @@ if ! [[ "${JOBS}" =~ ^[1-9][0-9]*$ ]]; then
   exit 2
 fi
 
+echo "[style] Valideren: style consistency"
+python3 scripts/check_style_consistency.py
+
 echo "[docs] Valideren: docs consistency"
 python3 scripts/check_docs_consistency.py
 

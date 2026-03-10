@@ -490,10 +490,13 @@ text_sensor:
     web_server:
       sorting_group_id: oq_diagnostics
     lambda: |-
+      // Read the active threshold set from diagnostics.
       const float pmin = id(oq_low_load_pmin_dyn_w);
       const float off  = id(oq_low_load_off_dyn_w);
       const float on   = id(oq_low_load_on_dyn_w);
       const int source_state = id(oq_low_load_dyn_source_state);
+
+      // Render a short operator-facing status string.
       char b[112];
       if (source_state == 0) {
         snprintf(b, sizeof(b), "inactive (Power House only)");

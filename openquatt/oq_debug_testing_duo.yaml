@@ -14,11 +14,13 @@ button:
       sorting_group_id: oq_diagnostics
     on_press:
       - lambda: |-
+          // Read the target register and build a one-shot Modbus read command.
           using namespace esphome::modbus_controller;
           const uint16_t reg = (uint16_t) lroundf(id(oq_debug_modbus_register).state);
           auto cmd = ModbusCommandItem::create_read_command(
               id(hp2), ModbusRegisterType::HOLDING, reg, 1,
               [reg](ModbusRegisterType, uint16_t, const std::vector<uint8_t> &data) {
+                // Decode the response and publish the raw/u16/s16 views.
                 if (data.size() < 2) {
                   id(oq_debug_modbus_last_target).publish_state("HP2 reg " + std::to_string(reg));
                   id(oq_debug_modbus_last_raw).publish_state("ERR: short response");
@@ -33,4 +35,5 @@ button:
                 id(oq_debug_modbus_last_target).publish_state("HP2 reg " + std::to_string(reg));
                 id(oq_debug_modbus_last_raw).publish_state(raw);
               });
+          // Queue the command after the callback is fully configured.
           id(hp2)->queue_command(cmd);

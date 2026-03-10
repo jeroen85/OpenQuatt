@@ -177,6 +177,101 @@ number:
       sorting_group_id: oq_${hp_id}
 
 # ----------------------------
+# SWITCH
+# ----------------------------
+switch:
+  - platform: template
+    id: ${hp_id}_lvl_1
+    name: "${prefix}Allowed level 1 (H:30Hz, C:30Hz)"
+    icon: mdi:speedometer
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
+    web_server:
+      sorting_group_id: oq_advanced_levels_${hp_id}
+
+  - platform: template
+    id: ${hp_id}_lvl_2
+    name: "${prefix}Allowed level 2 (H:39Hz, C:36Hz)"
+    icon: mdi:speedometer
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
+    web_server:
+      sorting_group_id: oq_advanced_levels_${hp_id}
+
+  - platform: template
+    id: ${hp_id}_lvl_3
+    name: "${prefix}Allowed level 3 (H:49Hz, C:42Hz)"
+    icon: mdi:speedometer
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
+    web_server:
+      sorting_group_id: oq_advanced_levels_${hp_id}
+
+  - platform: template
+    id: ${hp_id}_lvl_4
+    name: "${prefix}Allowed level 4 (H:55Hz, C:47Hz)"
+    icon: mdi:speedometer
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
+    web_server:
+      sorting_group_id: oq_advanced_levels_${hp_id}
+
+  - platform: template
+    id: ${hp_id}_lvl_5
+    name: "${prefix}Allowed level 5 (H:61Hz, C:52Hz)"
+    icon: mdi:speedometer
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
+    web_server:
+      sorting_group_id: oq_advanced_levels_${hp_id}
+
+  - platform: template
+    id: ${hp_id}_lvl_6
+    name: "${prefix}Allowed level 6 (H:67Hz, C:56Hz)"
+    icon: mdi:speedometer
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
+    web_server:
+      sorting_group_id: oq_advanced_levels_${hp_id}
+
+  - platform: template
+    id: ${hp_id}_lvl_7
+    name: "${prefix}Allowed level 7 (H:72Hz, C:61Hz)"
+    icon: mdi:speedometer
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
+    web_server:
+      sorting_group_id: oq_advanced_levels_${hp_id}
+
+  - platform: template
+    id: ${hp_id}_lvl_8
+    name: "${prefix}Allowed level 8 (H:79Hz, C:66Hz)"
+    icon: mdi:speedometer
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
+    web_server:
+      sorting_group_id: oq_advanced_levels_${hp_id}
+
+  - platform: template
+    id: ${hp_id}_lvl_9
+    name: "${prefix}Allowed level 9 (H:85Hz, C:71Hz)"
+    icon: mdi:speedometer
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
+    web_server:
+      sorting_group_id: oq_advanced_levels_${hp_id}
+
+  - platform: template
+    id: ${hp_id}_lvl_10
+    name: "${prefix}Allowed level 10 (H:90Hz, C:74Hz)"
+    icon: mdi:speedometer
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
+    web_server:
+      sorting_group_id: oq_advanced_levels_${hp_id}
+      sorting_weight: 51
+
+# ----------------------------
 # SENSOR
 # ----------------------------
 sensor:
@@ -1613,98 +1708,3 @@ text_sensor:
     update_interval: never
     web_server:
       sorting_group_id: oq_diagnostics_hp
-
-# ----------------------------
-# SWITCH
-# ----------------------------
-switch:
-  - platform: template
-    id: ${hp_id}_lvl_1
-    name: "${prefix}Allowed level 1 (H:30Hz, C:30Hz)"
-    icon: mdi:speedometer
-    restore_mode: RESTORE_DEFAULT_ON
-    optimistic: true
-    web_server:
-      sorting_group_id: oq_advanced_levels_${hp_id}
-
-  - platform: template
-    id: ${hp_id}_lvl_2
-    name: "${prefix}Allowed level 2 (H:39Hz, C:36Hz)"
-    icon: mdi:speedometer
-    restore_mode: RESTORE_DEFAULT_ON
-    optimistic: true
-    web_server:
-      sorting_group_id: oq_advanced_levels_${hp_id}
-
-  - platform: template
-    id: ${hp_id}_lvl_3
-    name: "${prefix}Allowed level 3 (H:49Hz, C:42Hz)"
-    icon: mdi:speedometer
-    restore_mode: RESTORE_DEFAULT_ON
-    optimistic: true
-    web_server:
-      sorting_group_id: oq_advanced_levels_${hp_id}
-
-  - platform: template
-    id: ${hp_id}_lvl_4
-    name: "${prefix}Allowed level 4 (H:55Hz, C:47Hz)"
-    icon: mdi:speedometer
-    restore_mode: RESTORE_DEFAULT_ON
-    optimistic: true
-    web_server:
-      sorting_group_id: oq_advanced_levels_${hp_id}
-
-  - platform: template
-    id: ${hp_id}_lvl_5
-    name: "${prefix}Allowed level 5 (H:61Hz, C:52Hz)"
-    icon: mdi:speedometer
-    restore_mode: RESTORE_DEFAULT_ON
-    optimistic: true
-    web_server:
-      sorting_group_id: oq_advanced_levels_${hp_id}
-
-  - platform: template
-    id: ${hp_id}_lvl_6
-    name: "${prefix}Allowed level 6 (H:67Hz, C:56Hz)"
-    icon: mdi:speedometer
-    restore_mode: RESTORE_DEFAULT_ON
-    optimistic: true
-    web_server:
-      sorting_group_id: oq_advanced_levels_${hp_id}
-
-  - platform: template
-    id: ${hp_id}_lvl_7
-    name: "${prefix}Allowed level 7 (H:72Hz, C:61Hz)"
-    icon: mdi:speedometer
-    restore_mode: RESTORE_DEFAULT_ON
-    optimistic: true
-    web_server:
-      sorting_group_id: oq_advanced_levels_${hp_id}
-
-  - platform: template
-    id: ${hp_id}_lvl_8
-    name: "${prefix}Allowed level 8 (H:79Hz, C:66Hz)"
-    icon: mdi:speedometer
-    restore_mode: RESTORE_DEFAULT_ON
-    optimistic: true
-    web_server:
-      sorting_group_id: oq_advanced_levels_${hp_id}
-
-  - platform: template
-    id: ${hp_id}_lvl_9
-    name: "${prefix}Allowed level 9 (H:85Hz, C:71Hz)"
-    icon: mdi:speedometer
-    restore_mode: RESTORE_DEFAULT_ON
-    optimistic: true
-    web_server:
-      sorting_group_id: oq_advanced_levels_${hp_id}
-
-  - platform: template
-    id: ${hp_id}_lvl_10
-    name: "${prefix}Allowed level 10 (H:90Hz, C:74Hz)"
-    icon: mdi:speedometer
-    restore_mode: RESTORE_DEFAULT_ON
-    optimistic: true
-    web_server:
-      sorting_group_id: oq_advanced_levels_${hp_id}
-      sorting_weight: 51

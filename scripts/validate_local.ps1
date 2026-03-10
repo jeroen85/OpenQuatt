@@ -165,6 +165,15 @@ if ($CommandRoot -ne $RootDir) {
 Write-Host "PlatformIO core dir: $PioCoreDir"
 Write-Host "Log dir: $LogDir"
 
+$StyleLog = Join-Path $LogDir 'style-consistency.log'
+Invoke-LoggedCommand `
+    -Exe $PythonExe `
+    -Arguments @((Join-Path $CommandScriptsDir 'check_style_consistency.py')) `
+    -LogFile $StyleLog `
+    -Label 'style consistency' `
+    -WorkingDirectory $CommandRoot `
+    -PlatformIoCoreDir $PioCoreDir
+
 $DocsLog = Join-Path $LogDir 'docs-consistency.log'
 Invoke-LoggedCommand `
     -Exe $PythonExe `
