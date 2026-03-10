@@ -941,31 +941,61 @@ views:
             type: grid
             cards:
               - type: gauge
+                entity: sensor.openquatt_total_power_input
+                min: 0
+                max: 3600
+                needle: false
+                name:
+                  type: entity
+                severity:
+                  green: 0
+                  yellow: 1200
+                  red: 2400
+              - type: gauge
+                entity: sensor.openquatt_total_heat_power
+                min: 0
+                max: 12000
+                needle: false
+                name:
+                  type: entity
+                severity:
+                  green: 0
+                  yellow: 4000
+                  red: 8000
+              - type: gauge
                 entity: sensor.openquatt_power_house_p_house
                 min: 0
                 max: 12000
-                needle: true
+                needle: false
                 name:
                   type: entity
+                severity:
+                  green: 0
+                  yellow: 4000
+                  red: 8000
               - type: gauge
                 entity: sensor.openquatt_power_house_p_req
                 min: 0
                 max: 12000
-                needle: true
+                needle: false
                 name:
                   type: entity
+                severity:
+                  green: 0
+                  yellow: 4000
+                  red: 8000
               - type: gauge
                 entity: sensor.openquatt_hp_capacity_w
                 name: Max HP capacity
                 min: 0
                 max: 12000
-                needle: true
+                needle: false
               - type: gauge
                 entity: sensor.openquatt_hp_deficit_w
                 name: Deficit
                 min: 0
                 max: 8000
-                needle: true
+                needle: false
                 severity:
                   green: 0
                   yellow: 800
