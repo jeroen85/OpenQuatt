@@ -1707,7 +1707,17 @@ views:
               - **Comfort bias up/down** and **room error avg tau** control
               how quickly bias adapts over time.
 
-              - **Ramp up/down** limit rise/fall rate of requested heat.
+              - **Response profile** is a quick preset for calmer, balanced, or
+              more responsive Power House behavior. As soon as rise and fall
+              time no longer match a preset, the profile automatically shows
+              `Custom`.
+
+              - **Demand rise time** is the approximate time `P_req` may take
+              to move from `0` to `Pr`. Lower = faster ramp-up.
+
+              - **Demand fall time** is the approximate time `P_req` may take
+              to move from `Pr` back to `0`. Lower = faster pullback on
+              overshoot.
 
               - **Low-load dynamic OFF/ON factor** tune when Power House
               may release or re-arm heat request around low load.
@@ -1747,10 +1757,12 @@ views:
                 name: PH bias down
               - entity: number.openquatt_power_house_room_error_avg_tau
                 name: PH room avg tau
-              - entity: number.openquatt_power_house_ramp_up
-                name: PH ramp up
-              - entity: number.openquatt_power_house_ramp_down
-                name: PH ramp down
+              - entity: select.openquatt_power_house_response_profile
+                name: PH response profile
+              - entity: number.openquatt_power_house_demand_rise_time
+                name: PH rise time
+              - entity: number.openquatt_power_house_demand_fall_time
+                name: PH fall time
               - entity: number.openquatt_low_load_dynamic_off_factor
                 name: Low-load dynamic OFF factor
               - entity: number.openquatt_low_load_dynamic_on_factor

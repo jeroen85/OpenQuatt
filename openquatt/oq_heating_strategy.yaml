@@ -9,7 +9,7 @@
 # Strategies:
 #   1) Power House
 #      - Computes a requested thermal power (`P_req`) from the house model, room temperature,
-#        adaptive comfort bias, comfort band, deadband, and ramp limits
+#        adaptive comfort bias, comfort band, deadband, and response-time limits
 #      - Applies a shared water-temperature limiter on the effective requested heat
 #      - Converts that requested thermal power to compatible demand 0..20 (`oq_demand_raw`)
 #
@@ -189,6 +189,51 @@ select:
             id(oq_curve_outside_ema_last_ms) = 0;
             id(oq_ph_comfort_bias_last_ms) = 0;
             id(oq_ph_room_error_avg_init) = false;
+
+  - platform: template
+    id: oq_ph_response_profile
+    name: "Power House response profile"
+    icon: mdi:tune-variant
+    options:
+      - Calm
+      - Balanced
+      - Responsive
+      - Custom
+    update_interval: 5s
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_tuning_heat
+    lambda: |-
+      const float rise = id(ph_demand_rise_time_min).state;
+      const float fall = id(ph_demand_fall_time_min).state;
+      auto near = [](float a, float b) -> bool {
+        return !isnan(a) && fabsf(a - b) < 0.25f;
+      };
+      if (near(rise, 12.0f) && near(fall, 5.0f)) return std::string("Calm");
+      if (near(rise, 8.0f) && near(fall, 3.0f)) return std::string("Balanced");
+      if (near(rise, 5.0f) && near(fall, 2.0f)) return std::string("Responsive");
+      return std::string("Custom");
+    set_action:
+      then:
+        - lambda: |-
+            // Apply preset selections to the canonical rise/fall time settings.
+            auto set_number_value = [](auto *num, float value) {
+              if (num == nullptr) return;
+              auto c = num->make_call();
+              c.set_value(value);
+              c.perform();
+            };
+
+            if (x == "Calm") {
+              set_number_value(id(ph_demand_rise_time_min), 12.0f);
+              set_number_value(id(ph_demand_fall_time_min), 5.0f);
+            } else if (x == "Balanced") {
+              set_number_value(id(ph_demand_rise_time_min), 8.0f);
+              set_number_value(id(ph_demand_fall_time_min), 3.0f);
+            } else if (x == "Responsive") {
+              set_number_value(id(ph_demand_rise_time_min), 5.0f);
+              set_number_value(id(ph_demand_fall_time_min), 2.0f);
+            }
 
   - platform: template
     id: oq_curve_control_profile
@@ -402,31 +447,31 @@ number:
       sorting_group_id: oq_tuning_heat
 
   - platform: template
-    id: ph_ramp_up_w_per_min
-    name: "Power House ramp up"
+    id: ph_demand_rise_time_min
+    name: "Power House demand rise time"
     icon: mdi:chart-line-variant
-    unit_of_measurement: "W/min"
-    min_value: 0
-    max_value: 3000
-    step: 10
+    unit_of_measurement: "min"
+    min_value: 2
+    max_value: 20
+    step: 1
     restore_value: true
     optimistic: true
-    initial_value: 853.7781041357721
+    initial_value: 8
     entity_category: config
     web_server:
       sorting_group_id: oq_tuning_heat
 
   - platform: template
-    id: ph_ramp_down_w_per_min
-    name: "Power House ramp down"
+    id: ph_demand_fall_time_min
+    name: "Power House demand fall time"
     icon: mdi:chart-line
-    unit_of_measurement: "W/min"
-    min_value: 0
-    max_value: 5000
-    step: 10
+    unit_of_measurement: "min"
+    min_value: 1
+    max_value: 10
+    step: 1
     restore_value: true
     optimistic: true
-    initial_value: 2421.504843770334
+    initial_value: 3
     entity_category: config
     web_server:
       sorting_group_id: oq_tuning_heat
@@ -1415,7 +1460,7 @@ interval:
             // - Feedforward house model: P_house(Tout)
             // - Room-temperature correction around the effective room target
             //   (setpoint + adaptive comfort bias, with asymmetric comfort band)
-            // - Deadband and ramp limiting in W/min before mapping to oq_demand_raw
+            // - Deadband and profile-scaled rise/fall limiting before mapping to oq_demand_raw
             // ------------------------------------------------------------
             if (id(oq_heating_curve_pid).mode != CLIMATE_MODE_OFF) {
               auto c0 = id(oq_heating_curve_pid).make_call();
@@ -1510,14 +1555,18 @@ interval:
             float P_raw = P_house + kp * e;
             P_raw = clampf(P_raw, 0.0f, Pr);
 
-            // Ramp limiting
+            // Response-time limiting:
+            // - rise time: approximate 0 -> Pr travel time
+            // - fall time: approximate Pr -> 0 travel time
             uint32_t last = id(oq_phouse_last_ms);
             float lastw = id(oq_phouse_last_w);
             if (last == 0) { last = now_ms; lastw = P_raw; }
 
             const float dt_s = (now_ms >= last) ? ((now_ms - last) / 1000.0f) : 0.0f;
-            const float up = id(ph_ramp_up_w_per_min).state / seconds_per_minute;     // W/s
-            const float dn = id(ph_ramp_down_w_per_min).state / seconds_per_minute;   // W/s
+            const float rise_time_min = clampf(id(ph_demand_rise_time_min).state, 2.0f, 20.0f);
+            const float fall_time_min = clampf(id(ph_demand_fall_time_min).state, 1.0f, 10.0f);
+            const float up = (Pr / rise_time_min) / seconds_per_minute;   // W/s
+            const float dn = (Pr / fall_time_min) / seconds_per_minute;   // W/s
 
             float P_limited = P_raw;
             if (dt_s > 0.0f) {

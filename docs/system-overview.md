@@ -164,7 +164,7 @@ Computes requested power from:
 
 - outdoor temperature model (`Tc`, `T0`, `Pr`)
 - room error (`room_setpoint - room_temp`) with deadband
-- ramp-up/ramp-down constraints in W/min
+- response profile plus rise/fall times scaled to rated house power (`Pr`)
 
 Then maps requested power to demand scale `0..20`.
 

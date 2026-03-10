@@ -92,7 +92,7 @@ Bij `Power House` kijkt OpenQuatt vooral naar wat de woning nodig heeft op basis
 Belangrijke eigenschappen:
 
 - het systeem rekent niet alleen op een instantane kamerfout;
-- er zijn dode zones, grenzen en op- en afbouwsnelheden;
+- er zijn dode zones, grenzen en een reactieprofiel met opbouw-/afbouwtijd;
 - OpenQuatt probeert laaglastgedrag rustig te houden om pendelen te voorkomen.
 
 Handige diagnose-entiteiten:

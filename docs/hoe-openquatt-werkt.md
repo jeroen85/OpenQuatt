@@ -75,7 +75,7 @@ OpenQuatt kent twee hoofdstrategieën om warmte op te bouwen:
 
 ### Power House
 
-Deze strategie kijkt vooral naar de warmtevraag van de woning. Dat past vaak bij gebruikers die het gedrag vooral aan comfort en kamervraag willen koppelen.
+Deze strategie kijkt vooral naar de warmtevraag van de woning. Dat past vaak bij gebruikers die het gedrag vooral aan comfort en kamervraag willen koppelen. Het tempo waarmee de gevraagde warmte op- en afbouwt wordt daarbij gestuurd via een reactieprofiel en aparte opbouw-/afbouwtijd.
 
 ### Water Temperature Control
 

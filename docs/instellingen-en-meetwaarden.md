@@ -147,8 +147,9 @@ Belangrijke runtime-instellingen in deze groep zijn:
 - `Power House comfort bias up`
 - `Power House comfort bias down`
 - `Power House room error avg tau`
-- `Power House ramp up`
-- `Power House ramp down`
+- `Power House response profile`
+- `Power House demand rise time`
+- `Power House demand fall time`
 - `Maximum water temperature`
 - `Water temperature soft band`
 - `Maximum water temperature trip`
@@ -161,6 +162,10 @@ Samengevat:
 
 - `Power House` is meer huis- en kamervraaggericht;
 - `Water Temperature Control` is meer stooklijn- en aanvoertemperatuurgericht.
+
+Voor `Power House` geldt: `Power House response profile` is een snelle voorkeuze die `Power House demand rise time` en `Power House demand fall time` samen zet. De opbouwtijd geeft ongeveer aan hoe lang `P_req` nodig mag hebben om van `0` naar `Rated maximum house power` te lopen; de afbouwtijd doet hetzelfde voor `Rated maximum house power` terug naar `0`. Kleinere tijden reageren sneller. Zodra de tijden niet meer precies bij een preset horen, toont het profiel `Custom`.
+
+Deze tijden schalen mee met `Rated maximum house power` en zijn daardoor beter overdraagbaar tussen installaties dan oude absolute `W/min`-rampen.
 
 De watertempbegrenzing werkt op `water_supply_temp_selected`. In `Water Temperature Control` wordt `Heating Curve Supply Target` begrensd op `Maximum water temperature`. In `Power House` wordt `P_req` progressief teruggenomen, met de sterkste afbouw tussen `max - soft band` en `max`. In `CM3` wordt de boiler vanaf `Maximum water temperature` geblokkeerd.
 

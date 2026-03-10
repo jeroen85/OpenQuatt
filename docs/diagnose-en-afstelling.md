@@ -84,11 +84,13 @@ Controleer in deze volgorde:
 
 Pas als deze basis klopt, heeft het zin om verwarmingsinstellingen te wijzigen.
 
+Bij `Power House` kun je daarna eventueel kijken naar `Power House response profile` of een kortere `Power House demand rise time`, maar doe dat pas als bronwaarden en comfortinstellingen al logisch zijn.
+
 ### Het wordt te warm of het systeem blijft te lang doorgaan
 
 Controleer eerst of de gebruikte kamer- en setpointwaarden kloppen. Te warm gedrag ontstaat vaak niet door te weinig beveiliging, maar doordat OpenQuatt met een verkeerde of verouderde bronwaarde rekent.
 
-Daarna kun je pas kijken naar een minder agressieve afstelling.
+Daarna kun je pas kijken naar een minder agressieve afstelling. In `Power House` betekent dat vaak eerst minder comfortmarge of een kortere `Power House demand fall time`, zodat gevraagde warmte sneller mag teruglopen.
 
 ### De flow lijkt goed, maar verwarmen blijft toch geblokkeerd
 
