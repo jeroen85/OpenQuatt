@@ -11,167 +11,222 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
+    <link rel="stylesheet" href="../site.css" />
     <link rel="stylesheet" href="install.css" />
+    <script defer src="../site.js"></script>
     <script
       type="module"
       src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"
     ></script>
     <script type="module" src="install.js"></script>
   </head>
-  <body>
-    <div class="backdrop backdrop-left"></div>
-    <div class="backdrop backdrop-right"></div>
-    <main class="page-shell">
-      <nav class="site-nav reveal">
-        <a class="site-nav-brand" href="../index.html">
-          <img
-            class="site-nav-logo"
-            src="../assets/openquatt_logo.svg"
-            alt="OpenQuatt"
-            width="118"
-            height="40"
-          />
-          <span class="site-nav-title">
-            <strong>OpenQuatt</strong>
-            <span>Installatiehulp en documentatie</span>
-          </span>
-        </a>
-        <div class="site-nav-links">
-          <a href="../index.html">Start</a>
-          <a href="../documentatie.html">Documentatie</a>
-          <a class="active" href="./">Installatiehulp</a>
-          <a href="https://github.com/jeroen85/OpenQuatt" target="_blank" rel="noreferrer">GitHub</a>
+  <body class="install-page">
+    <header class="site-header">
+      <div class="site-header-inner">
+        <div class="site-header-start">
+          <button class="menu-toggle" type="button" data-sidebar-toggle aria-controls="docs-sidebar" aria-expanded="false">
+            <span class="menu-toggle-bar"></span>
+            <span class="menu-toggle-bar"></span>
+            <span class="menu-toggle-bar"></span>
+            <span class="sr-only">Open navigatie</span>
+          </button>
+
+          <a class="site-brand" href="../index.html">
+            <img class="site-brand-logo" src="../assets/openquatt_logo.svg" alt="OpenQuatt" width="118" height="40" />
+          </a>
         </div>
-      </nav>
-      <section class="hero card reveal">
-        <p class="eyebrow">OpenQuatt / Stabiele release</p>
-        <div class="hero-grid">
-          <div>
-            <div class="logo-frame">
-              <img
-                class="logo"
-                src="../assets/openquatt_logo.svg"
-                alt="OpenQuatt"
-                width="300"
-                height="101"
-              />
-            </div>
-            <h1>Installeer de nieuwste stabiele firmware zonder zelf binaries te zoeken.</h1>
-            <p class="lead">
-              Kies je opstelling en hardwareprofiel en flash daarna direct het
-              juiste OpenQuatt factory-image via USB. OTA-updates blijven na de
-              eerste start gewoon via de bestaande GitHub Release-flow lopen.
+
+        <div class="site-header-actions">
+          <a class="header-link" href="https://github.com/jeroen85/OpenQuatt" target="_blank" rel="noreferrer">GitHub</a>
+        </div>
+      </div>
+    </header>
+
+    <div class="docs-shell">
+      <div class="sidebar-backdrop" data-sidebar-backdrop></div>
+
+      <aside class="docs-sidebar" id="docs-sidebar" data-sidebar>
+        <div class="sidebar-inner">
+          <section class="sidebar-overview">
+            <p class="sidebar-kicker">Installatiehulp</p>
+            <p class="sidebar-copy">
+              Flash de stabiele OpenQuatt-firmware voor Single of Duo via USB en ga daarna verder met dashboard en diagnose.
             </p>
-          </div>
-          <aside class="hero-notes">
-            <p>Gebruik Chrome of Edge op een desktop of laptop.</p>
-            <p>Sluit een USB-datakabel aan, niet alleen een voedingskabel.</p>
-            <p>Laat deze pagina na het flashen open zodat de browser wifi-instelling via USB kan aanbieden.</p>
-            <p>Lukt dat niet, dan blijft het fallback access point van OpenQuatt beschikbaar.</p>
-          </aside>
+            <a class="sidebar-utility" href="../documentatie.html">Open documentatie</a>
+          </section>
+
+          <section class="sidebar-section">
+            <button class="sidebar-section-toggle" type="button" data-nav-toggle aria-expanded="true" aria-controls="install-nav-0">
+              <span class="sidebar-section-title">Aan de slag</span>
+              <span class="sidebar-section-chevron" aria-hidden="true"></span>
+            </button>
+            <div class="sidebar-section-panel" id="install-nav-0" data-nav-panel>
+              <ul class="nav-list">
+                <li><a class="sidebar-link" href="../index.html" data-sidebar-link>OpenQuatt</a></li>
+                <li><a class="sidebar-link" href="../documentatie.html" data-sidebar-link>Documentatie</a></li>
+                <li><a class="sidebar-link current" href="./" data-sidebar-link>Installatiehulp</a></li>
+              </ul>
+            </div>
+          </section>
+
+          <section class="sidebar-section">
+            <button class="sidebar-section-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="install-nav-1">
+              <span class="sidebar-section-title">Daarna</span>
+              <span class="sidebar-section-chevron" aria-hidden="true"></span>
+            </button>
+            <div class="sidebar-section-panel" id="install-nav-1" data-nav-panel hidden>
+              <ul class="nav-list">
+                <li><a class="sidebar-link" href="../dashboard/index.html" data-sidebar-link>Dashboard installeren</a></li>
+                <li><a class="sidebar-link" href="../diagnose-en-afstelling.html" data-sidebar-link>Diagnose en afstelling</a></li>
+                <li><a class="sidebar-link" href="../hoe-openquatt-werkt.html" data-sidebar-link>Hoe OpenQuatt werkt</a></li>
+              </ul>
+            </div>
+          </section>
         </div>
-      </section>
+      </aside>
 
-      <section class="layout">
-        <section class="card chooser reveal">
-          <div class="step">
-            <p class="step-number">1</p>
-            <div>
-              <h2>Kies je opstelling</h2>
-              <p class="step-copy">Hiermee bepaal je of de firmware als Single of Duo wordt opgebouwd.</p>
-            </div>
-          </div>
-          <div class="choice-grid" id="topology-grid">
-            <label class="choice-card">
-              <input type="radio" name="topology" value="single" />
-              <span class="choice-title">Single</span>
-              <span class="choice-body">Opstelling met één warmtepomp, zonder Duo-specifieke logica.</span>
-            </label>
-            <label class="choice-card">
-              <input type="radio" name="topology" value="duo" />
-              <span class="choice-title">Duo</span>
-              <span class="choice-body">Opstelling met twee warmtepompen in de gecompileerde topologie.</span>
-            </label>
-          </div>
-
-          <div class="step">
-            <p class="step-number">2</p>
-            <div>
-              <h2>Kies je ESP-module</h2>
-              <p class="step-copy">Hiermee bepaal je de exacte bordindeling en het juiste factory-image.</p>
-            </div>
-          </div>
-          <div class="choice-grid" id="hardware-grid">
-            <label class="choice-card">
-              <input type="radio" name="hardware" value="waveshare" />
-              <span class="choice-title">Waveshare</span>
-              <span class="choice-body">ESP32-S3-Relay-1CH-bord met de ESP32-S3-build.</span>
-            </label>
-            <label class="choice-card">
-              <input type="radio" name="hardware" value="heatpump-listener" />
-              <span class="choice-title">Heatpump Listener</span>
-              <span class="choice-body">Heatpump Listener-bord met de ESP32-build.</span>
-            </label>
-          </div>
+      <main class="docs-main">
+        <section class="doc-header">
+          <p class="doc-kicker">Installatiehulp</p>
+          <h1>Installeer de nieuwste stabiele OpenQuatt-firmware</h1>
+          <p class="doc-lead">
+            Kies eerst je opstelling en hardwareprofiel. Deze pagina stelt daarna automatisch het juiste factory-image samen voor ESP Web Tools.
+          </p>
+          <ul class="install-quicklist">
+            <li>Gebruik Chrome of Edge op desktop.</li>
+            <li>Sluit een USB-datakabel aan.</li>
+            <li>Laat de pagina na het flashen open voor wifi-configuratie via USB.</li>
+          </ul>
         </section>
 
-        <aside class="card summary reveal">
-          <p class="eyebrow">Gekozen firmware</p>
-          <h2 id="selection-title">Kies eerst je opstelling en hardware</h2>
-          <p class="summary-copy" id="selection-copy">
-            Deze installatiehulp maakt automatisch een eenmalig ESP Web Tools-manifest voor het profiel dat je hier kiest.
-          </p>
+        <div class="install-layout">
+          <section class="install-card install-flow">
+            <section class="install-step" id="topology-step">
+              <div class="install-step-head">
+                <p class="install-step-number">1</p>
+                <div>
+                  <h2>Kies je opstelling</h2>
+                  <p class="install-step-copy">Hiermee bepaal je of de firmware als Single of Duo wordt opgebouwd.</p>
+                </div>
+              </div>
 
-          <dl class="summary-list">
-            <div>
-              <dt>Stabiele versie</dt>
-              <dd id="selection-version">Laden...</dd>
-            </div>
-            <div>
-              <dt>Opstelling</dt>
-              <dd id="selection-topology">Niet gekozen</dd>
-            </div>
-            <div>
-              <dt>Hardware</dt>
-              <dd id="selection-hardware">Niet gekozen</dd>
-            </div>
-            <div>
-              <dt>Chipfamilie</dt>
-              <dd id="selection-chip">Niet gekozen</dd>
-            </div>
-            <div>
-              <dt>Factory-image</dt>
-              <dd id="selection-file">Niet gekozen</dd>
-            </div>
-          </dl>
+              <div class="choice-grid" id="topology-grid">
+                <label class="choice-card">
+                  <input type="radio" name="topology" value="single" />
+                  <span class="choice-title">Single</span>
+                  <span class="choice-body">Opstelling met een warmtepomp, zonder Duo-specifieke logica.</span>
+                </label>
+                <label class="choice-card">
+                  <input type="radio" name="topology" value="duo" />
+                  <span class="choice-title">Duo</span>
+                  <span class="choice-body">Opstelling met twee warmtepompen in de gecompileerde topologie.</span>
+                </label>
+              </div>
+            </section>
 
-          <div class="install-panel" id="install-panel" data-ready="false">
-            <p class="install-state" id="install-state">Kies eerst beide opties om de installatieknop te activeren.</p>
-            <esp-web-install-button id="install-button">
-              <button class="install-cta" slot="activate">Installeer OpenQuatt</button>
-              <span class="install-fallback" slot="unsupported">
-                Web Serial is in deze browser niet beschikbaar. Gebruik Chrome of Edge op desktop.
-              </span>
-              <span class="install-fallback" slot="not-allowed">
-                Open deze installatiehulp via HTTPS om Web Serial te kunnen gebruiken.
-              </span>
-            </esp-web-install-button>
+            <section class="install-step" id="hardware-step">
+              <div class="install-step-head">
+                <p class="install-step-number">2</p>
+                <div>
+                  <h2>Kies je ESP-module</h2>
+                  <p class="install-step-copy">Hiermee bepaal je de exacte bordindeling en het juiste factory-image.</p>
+                </div>
+              </div>
+
+              <div class="choice-grid" id="hardware-grid">
+                <label class="choice-card">
+                  <input type="radio" name="hardware" value="waveshare" />
+                  <span class="choice-title">Waveshare</span>
+                  <span class="choice-body">ESP32-S3-Relay-1CH-bord met de ESP32-S3-build.</span>
+                </label>
+                <label class="choice-card">
+                  <input type="radio" name="hardware" value="heatpump-listener" />
+                  <span class="choice-title">Heatpump Listener</span>
+                  <span class="choice-body">Heatpump Listener-bord met de ESP32-build.</span>
+                </label>
+              </div>
+            </section>
+          </section>
+
+          <aside class="install-summary-wrap">
+            <section class="install-card install-summary-card" id="flash-step">
+              <p class="install-section-label">Gekozen firmware</p>
+              <h2 id="selection-title">Kies eerst je opstelling en hardware</h2>
+              <p class="summary-copy" id="selection-copy">
+                Deze installatiehulp maakt automatisch een eenmalig ESP Web Tools-manifest voor het profiel dat je hier kiest.
+              </p>
+
+              <dl class="summary-list">
+                <div>
+                  <dt>Stabiele versie</dt>
+                  <dd id="selection-version">Laden...</dd>
+                </div>
+                <div>
+                  <dt>Opstelling</dt>
+                  <dd id="selection-topology">Niet gekozen</dd>
+                </div>
+                <div>
+                  <dt>Hardware</dt>
+                  <dd id="selection-hardware">Niet gekozen</dd>
+                </div>
+                <div>
+                  <dt>Chipfamilie</dt>
+                  <dd id="selection-chip">Niet gekozen</dd>
+                </div>
+                <div>
+                  <dt>Factory-image</dt>
+                  <dd id="selection-file">Niet gekozen</dd>
+                </div>
+              </dl>
+
+              <div class="install-panel" id="install-panel" data-ready="false">
+                <p class="install-state" id="install-state">Kies eerst beide opties om de installatieknop te activeren.</p>
+                <esp-web-install-button id="install-button">
+                  <button class="install-cta" slot="activate">Installeer OpenQuatt</button>
+                  <span class="install-fallback" slot="unsupported">
+                    Web Serial is in deze browser niet beschikbaar. Gebruik Chrome of Edge op desktop.
+                  </span>
+                  <span class="install-fallback" slot="not-allowed">
+                    Open deze installatiehulp via HTTPS om Web Serial te kunnen gebruiken.
+                  </span>
+                </esp-web-install-button>
+              </div>
+
+              <div class="manual-panel">
+                <p class="install-section-label">Handmatige route</p>
+                <a id="release-link" href="https://github.com/jeroen85/OpenQuatt/releases/latest" target="_blank" rel="noreferrer">
+                  Open de nieuwste stabiele release
+                </a>
+                <a href="https://web.esphome.io/" target="_blank" rel="noreferrer">
+                  Flash een gedownloade factory binary in ESP Web Tools
+                </a>
+              </div>
+            </section>
+          </aside>
+        </div>
+
+        <section class="install-card install-follow-up" id="after-flash">
+          <h2>Na het flashen</h2>
+          <div class="install-follow-up-grid">
+            <article class="install-follow-up-item">
+              <h3>Wifi instellen</h3>
+              <p>Laat deze pagina open na de eerste herstart zodat ESP Web Tools wifi-configuratie via USB kan aanbieden.</p>
+            </article>
+            <article class="install-follow-up-item">
+              <h3>Fallback route</h3>
+              <p>Lukt dat niet, dan blijft het OpenQuatt access point beschikbaar om wifi alsnog handmatig in te stellen.</p>
+            </article>
+            <article class="install-follow-up-item">
+              <h3>Ga verder in de docs</h3>
+              <p>Importeer daarna het juiste dashboard en loop de documentatieroute door voor controle en diagnose.</p>
+            </article>
           </div>
+        </section>
+      </main>
 
-          <div class="manual-panel">
-            <p>Handmatige route</p>
-            <a id="release-link" href="https://github.com/jeroen85/OpenQuatt/releases/latest" target="_blank" rel="noreferrer">
-              Open de nieuwste stabiele release
-            </a>
-            <a href="https://web.esphome.io/" target="_blank" rel="noreferrer">
-              Flash een gedownloade factory binary in ESP Web Tools
-            </a>
-          </div>
-        </aside>
-      </section>
-    </main>
+    </div>
   </body>
 </html>

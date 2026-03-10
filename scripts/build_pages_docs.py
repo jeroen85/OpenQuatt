@@ -4,7 +4,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from html import escape
 from pathlib import Path, PurePosixPath
-import os
+import json
+import unicodedata
+import posixpath
 import re
 import sys
 
@@ -22,6 +24,14 @@ class Page:
     summary: str
 
 
+@dataclass(frozen=True)
+class RenderedPage:
+    page: Page
+    lead: str
+    body_html: str
+    toc: list[tuple[int, str, str]]
+
+
 PAGES = [
     Page(PurePosixPath("README.md"), PurePosixPath("index.html"), "OpenQuatt", "Project", "Projectoverzicht, snelle start en hoofdroute."),
     Page(PurePosixPath("docs/README.md"), PurePosixPath("documentatie.html"), "Documentatie", "Docs", "Hoofdingang voor alle handleidingen en naslag."),
@@ -35,19 +45,34 @@ PAGES = [
 ]
 
 PAGE_BY_SOURCE = {page.source: page for page in PAGES}
-PRIMARY_NAV = [
-    ("Start", PurePosixPath("index.html")),
-    ("Documentatie", PurePosixPath("documentatie.html")),
-    ("Installatie", PurePosixPath("installatie-en-ingebruikname.html")),
-    ("Dashboard", PurePosixPath("dashboardoverzicht.html")),
-    ("Problemen oplossen", PurePosixPath("diagnose-en-afstelling.html")),
-    ("Installatiehulp", PurePosixPath("install/index.html")),
-]
-
-DOC_NAV = [
-    page
-    for page in PAGES
-    if page.output != PurePosixPath("index.html")
+SIDEBAR_GROUPS = [
+    (
+        "Aan de slag",
+        "Van projectintro naar eerste firmwareflash.",
+        [
+            PurePosixPath("README.md"),
+            PurePosixPath("docs/README.md"),
+            PurePosixPath("docs/installatie-en-ingebruikname.md"),
+        ],
+    ),
+    (
+        "Handleiding",
+        "Dagelijkse route voor inzicht, dashboard en diagnose.",
+        [
+            PurePosixPath("docs/hoe-openquatt-werkt.md"),
+            PurePosixPath("docs/dashboard/README.md"),
+            PurePosixPath("docs/dashboardoverzicht.md"),
+            PurePosixPath("docs/diagnose-en-afstelling.md"),
+        ],
+    ),
+    (
+        "Naslag",
+        "Voor wie dieper wil afstellen of het regelgedrag wil volgen.",
+        [
+            PurePosixPath("docs/regelgedrag-van-openquatt.md"),
+            PurePosixPath("docs/instellingen-en-meetwaarden.md"),
+        ],
+    ),
 ]
 
 HEADING_RE = re.compile(r"^(#{1,6})\s+(.*)$")
@@ -61,10 +86,17 @@ CALLOUT_LABELS = {
     "TIP": "Tip",
     "IMPORTANT": "Belangrijk",
 }
+CALLOUT_VARIANTS = {
+    "WARNING": "warning",
+    "NOTE": "note",
+    "TIP": "tip",
+    "IMPORTANT": "important",
+}
 
 
 def slugify(text: str, seen: dict[str, int]) -> str:
-    base = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-") or "sectie"
+    normalized = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+    base = re.sub(r"[^a-z0-9]+", "-", normalized.lower()).strip("-") or "sectie"
     count = seen.get(base, 0) + 1
     seen[base] = count
     return base if count == 1 else f"{base}-{count}"
@@ -79,8 +111,7 @@ def strip_markdown(text: str) -> str:
 
 
 def rel_url(from_output: PurePosixPath, to_output: PurePosixPath) -> str:
-    rel = os.path.relpath(str(to_output), start=str(from_output.parent))
-    return rel.replace(os.sep, "/")
+    return posixpath.relpath(str(to_output), start=str(from_output.parent))
 
 
 def rewrite_href(source: PurePosixPath, current_output: PurePosixPath, href: str) -> str:
@@ -91,9 +122,8 @@ def rewrite_href(source: PurePosixPath, current_output: PurePosixPath, href: str
     target_path = PurePosixPath(target)
     source_dir = source.parent
     resolved = (source_dir / target_path).as_posix()
-    normalized = PurePosixPath(os.path.normpath(resolved))
+    normalized = PurePosixPath(posixpath.normpath(resolved))
 
-    site_target: PurePosixPath
     if normalized in PAGE_BY_SOURCE:
         site_target = PAGE_BY_SOURCE[normalized].output
     elif normalized.parts and normalized.parts[0] == "docs":
@@ -122,21 +152,21 @@ def render_inline(text: str, source: PurePosixPath, current_output: PurePosixPat
         return stash(f"<code>{escape(match.group(1))}</code>")
 
     def replace_image(match: re.Match[str]) -> str:
-        alt, href = match.group(1), match.group(2)
-        url = rewrite_href(source, current_output, href)
+        alt, linked_href = match.group(1), match.group(2)
+        url = rewrite_href(source, current_output, linked_href)
         return stash(f'<img src="{escape(url, quote=True)}" alt="{escape(alt)}" />')
 
     def replace_link(match: re.Match[str]) -> str:
-        label, href = match.group(1), match.group(2)
-        url = rewrite_href(source, current_output, href)
+        label, linked_href = match.group(1), match.group(2)
+        url = rewrite_href(source, current_output, linked_href)
         return stash(f'<a href="{escape(url, quote=True)}">{render_inline(label, source, current_output)}</a>')
 
     text = re.sub(r"`([^`]+)`", replace_code, text)
     text = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", replace_image, text)
     text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", replace_link, text)
     text = escape(text, quote=False)
-    text = re.sub(r"\*\*([^*]+)\*\*", lambda m: f"<strong>{m.group(1)}</strong>", text)
-    text = re.sub(r"(?<!\*)\*([^*]+)\*(?!\*)", lambda m: f"<em>{m.group(1)}</em>", text)
+    text = re.sub(r"\*\*([^*]+)\*\*", lambda match: f"<strong>{match.group(1)}</strong>", text)
+    text = re.sub(r"(?<!\*)\*([^*]+)\*(?!\*)", lambda match: f"<em>{match.group(1)}</em>", text)
     for key, value in tokens.items():
         text = text.replace(key, value)
     return text
@@ -258,9 +288,10 @@ class MarkdownRenderer:
                 if quote_lines and re.fullmatch(r"\[![A-Z]+\]", quote_lines[0]):
                     raw_label = quote_lines[0][2:-1]
                     label = CALLOUT_LABELS.get(raw_label, raw_label.title())
+                    variant = CALLOUT_VARIANTS.get(raw_label, "note")
                     body = [ln for ln in quote_lines[1:] if ln.strip()]
                     inner = "".join(f"<p>{render_inline(' '.join(body), self.source, self.output)}</p>") if body else ""
-                    blocks.append(f'<div class="callout"><span class="callout-title">{escape(label)}</span>{inner}</div>')
+                    blocks.append(f'<div class="callout callout-{variant}"><span class="callout-title">{escape(label)}</span>{inner}</div>')
                 else:
                     inner = self._render_blocks(quote_lines)
                     blocks.append(f"<blockquote>{inner}</blockquote>")
@@ -355,38 +386,77 @@ class MarkdownRenderer:
         return f"<{tag}>{''.join(items)}</{tag}>", idx
 
 
-def render_template(page: Page, lead: str, body_html: str, toc: list[tuple[int, str, str]]) -> str:
-    asset_prefix = "./" if page.output.parent == PurePosixPath(".") else "../"
-    nav_links = []
-    for label, target in PRIMARY_NAV:
-        href = rel_url(page.output, target)
-        active = " active" if page.output == target else ""
-        nav_links.append(f'<a class="{active.strip()}" href="{href}">{escape(label)}</a>')
+def github_source_url(page: Page) -> str:
+    return f"{GITHUB_REPO_URL}/blob/main/{page.source.as_posix()}"
 
-    sidebar_pages = []
-    for doc_page in DOC_NAV:
-        href = rel_url(page.output, doc_page.output)
-        sidebar_pages.append(
-            f"<li><a href=\"{href}\">{escape(doc_page.label)}</a><small>{escape(doc_page.summary)}</small></li>"
+
+def build_sidebar(current_page: Page) -> str:
+    groups_html = []
+    for index, (label, _description, sources) in enumerate(SIDEBAR_GROUPS):
+        expanded = current_page.source in sources or index == 0
+        items = []
+        for source in sources:
+            linked_page = PAGE_BY_SOURCE[source]
+            href = rel_url(current_page.output, linked_page.output)
+            current = " current" if current_page.source == source else ""
+            items.append(
+                f"""
+                <li>
+                  <a class="sidebar-link{current}" href="{href}" data-sidebar-link>{escape(linked_page.label)}</a>
+                </li>
+                """
+            )
+        groups_html.append(
+            f"""
+            <section class="sidebar-section">
+              <button class="sidebar-section-toggle" type="button" data-nav-toggle aria-expanded="{'true' if expanded else 'false'}" aria-controls="sidebar-group-{index}">
+                <span class="sidebar-section-title">{escape(label)}</span>
+                <span class="sidebar-section-chevron" aria-hidden="true"></span>
+              </button>
+              <div class="sidebar-section-panel" id="sidebar-group-{index}" data-nav-panel{' hidden' if not expanded else ''}>
+                <ul class="nav-list">
+                  {''.join(items)}
+                </ul>
+              </div>
+            </section>
+            """
         )
+    return "".join(groups_html)
 
-    toc_html = ""
-    if toc:
-        toc_items = []
-        for level, label, anchor in toc:
-            indent = " style=\"padding-left: 14px;\"" if level == 3 else ""
-            toc_items.append(f"<li{indent}><a href=\"#{anchor}\">{escape(label)}</a></li>")
-        toc_html = f"""
-        <section class="card sidebar-card">
-          <p class="eyebrow">Inhoud</p>
-          <h2>Op deze pagina</h2>
-          <ul class="toc-list">
-            {''.join(toc_items)}
-          </ul>
-        </section>
+
+def build_toc(toc: list[tuple[int, str, str]]) -> str:
+    if not toc:
+        return """
+        <div class="page-rail-inner">
+          <p class="page-rail-title">Op deze pagina</p>
+          <p class="page-rail-empty">Geen subsecties op deze pagina.</p>
+        </div>
         """
 
-    lead_html = f'<p class="hero-lead">{lead}</p>' if lead else ""
+    items = []
+    for level, label, anchor in toc:
+        indent_class = " toc-link-sub" if level == 3 else ""
+        items.append(f'<li><a class="toc-link{indent_class}" href="#{anchor}" data-toc-link>{escape(label)}</a></li>')
+    return f"""
+    <div class="page-rail-inner">
+      <p class="page-rail-title">Op deze pagina</p>
+      <nav aria-label="Inhoudsopgave">
+        <ul class="toc-list">
+          {''.join(items)}
+        </ul>
+      </nav>
+    </div>
+    """
+
+
+def render_template(rendered_page: RenderedPage, rendered_pages: list[RenderedPage]) -> str:
+    page = rendered_page.page
+    asset_prefix = "./" if page.output.parent == PurePosixPath(".") else "../"
+    install_href = rel_url(page.output, PurePosixPath("install/index.html"))
+
+
+    lead_html = f'<p class="doc-lead">{rendered_page.lead}</p>' if rendered_page.lead else ""
+
     return f"""<!DOCTYPE html>
 <html lang="nl">
   <head>
@@ -396,82 +466,83 @@ def render_template(page: Page, lead: str, body_html: str, toc: list[tuple[int, 
     <meta name="description" content="{escape(page.summary)}" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="{asset_prefix}site.css" />
+    <script defer src="{asset_prefix}site.js"></script>
   </head>
   <body>
-    <div class="backdrop backdrop-left"></div>
-    <div class="backdrop backdrop-right"></div>
-    <main class="page-shell">
-      <nav class="site-nav">
-        <a class="site-nav-brand" href="{rel_url(page.output, PurePosixPath('index.html'))}">
-          <img class="site-nav-logo" src="{asset_prefix}assets/openquatt_logo.svg" alt="OpenQuatt" />
-          <span class="site-nav-title">
-            <strong>OpenQuatt</strong>
-            <span>Documentatie en installatiehulp</span>
-          </span>
-        </a>
-        <div class="site-nav-links">
-          {''.join(nav_links)}
-          <a href="{GITHUB_REPO_URL}">GitHub</a>
-        </div>
-      </nav>
+    <header class="site-header">
+      <div class="site-header-inner">
+        <div class="site-header-start">
+          <button class="menu-toggle" type="button" data-sidebar-toggle aria-controls="docs-sidebar" aria-expanded="false">
+            <span class="menu-toggle-bar"></span>
+            <span class="menu-toggle-bar"></span>
+            <span class="menu-toggle-bar"></span>
+            <span class="sr-only">Open navigatie</span>
+          </button>
 
-      <section class="hero card">
-        <p class="eyebrow">OpenQuatt / {escape(page.kind)}</p>
-        <div class="hero-grid">
-          <div>
-            <h1>{escape(page.label)}</h1>
-            {lead_html}
-            <div class="hero-pills">
-              <a href="{rel_url(page.output, PurePosixPath('install/index.html'))}">Naar installatiehulp</a>
-              <a href="{rel_url(page.output, PurePosixPath('documentatie.html'))}">Naar documentatie-overzicht</a>
-            </div>
-          </div>
-          <aside class="hero-side">
-            <p>{escape(page.summary)}</p>
-            <p>Deze pagina wordt tijdens de GitHub Pages-build gegenereerd uit de Markdown in de repository.</p>
-          </aside>
+          <a class="site-brand" href="{rel_url(page.output, PurePosixPath('index.html'))}">
+            <img class="site-brand-logo" src="{asset_prefix}assets/openquatt_logo.svg" alt="OpenQuatt" width="118" height="40" />
+          </a>
         </div>
-      </section>
 
-      <section class="layout">
-        <article class="card content-card">
-          <div class="prose">
-            {body_html}
-          </div>
-        </article>
-        <aside class="sidebar-stack">
-          {toc_html}
-          <section class="card sidebar-card">
-            <p class="eyebrow">Snelle links</p>
-            <h2>Belangrijkste pagina's</h2>
-            <ul class="page-list">
-              {''.join(sidebar_pages)}
-            </ul>
+        <div class="site-header-actions">
+          <a class="header-link" href="{GITHUB_REPO_URL}">GitHub</a>
+        </div>
+      </div>
+    </header>
+
+    <div class="docs-shell">
+      <div class="sidebar-backdrop" data-sidebar-backdrop></div>
+
+      <aside class="docs-sidebar" id="docs-sidebar" data-sidebar>
+        <div class="sidebar-inner">
+          <section class="sidebar-overview">
+            <p class="sidebar-kicker">OpenQuatt Docs</p>
+            <p class="sidebar-copy">Installatie, gebruik en technische naslag voor Single en Duo.</p>
+            <a class="sidebar-utility" href="{install_href}">Open webinstaller</a>
           </section>
-        </aside>
-      </section>
+          {build_sidebar(page)}
+        </div>
+      </aside>
 
-      <footer class="card site-footer">
-        <p>
-          Liever direct flashen? Gebruik de <a href="{rel_url(page.output, PurePosixPath('install/index.html'))}">webinstallatiehulp</a>.
-          Wil je de broncode zien of een issue openen, ga dan naar <a href="{GITHUB_REPO_URL}">GitHub</a>.
-        </p>
-      </footer>
-    </main>
+      <main class="docs-main">
+        <section class="doc-header">
+          <p class="doc-kicker">{escape(page.kind)}</p>
+          <h1>{escape(page.label)}</h1>
+          {lead_html}
+
+        </section>
+
+        <article class="doc-content prose">
+          {rendered_page.body_html}
+        </article>
+
+
+      </main>
+
+      <aside class="page-rail">
+        {build_toc(rendered_page.toc)}
+      </aside>
+    </div>
+
+
   </body>
 </html>
 """
 
 
 def build_site(site_dir: Path) -> None:
+    rendered_pages: list[RenderedPage] = []
     for page in PAGES:
         renderer = MarkdownRenderer(page.source, page.output)
         text = (REPO_ROOT / page.source).read_text(encoding="utf-8")
         lead, body = renderer.render(text)
-        html = render_template(page, lead, body, renderer.toc)
-        output_path = site_dir / page.output
+        rendered_pages.append(RenderedPage(page, lead, body, list(renderer.toc)))
+
+    for rendered_page in rendered_pages:
+        html = render_template(rendered_page, rendered_pages)
+        output_path = site_dir / rendered_page.page.output
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(html, encoding="utf-8")
 
