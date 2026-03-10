@@ -107,8 +107,6 @@ oq_flow_autotune_lambda_min_s: "10.0"                 # Minimum IMC lambda for c
 # BOILER CONTROL
 # ----------------------------
 oq_boiler_loop_s: "5"                                 # Main interval for boiler gating/safety loop [s].
-oq_boiler_trip_c: "60.0"                              # Supply-water trip threshold for boiler lockout [°C].
-oq_boiler_reset_c: "58.0"                             # Reset threshold (hysteresis) for boiler lockout [°C].
 oq_boiler_cp_j_per_kgk: "4186.0"                      # Specific heat capacity of water [J/(kg*K)].
 
 # ----------------------------

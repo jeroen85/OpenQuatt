@@ -116,6 +116,23 @@ Belangrijke eigenschappen:
 
 Deze strategie past vaak beter bij gebruikers die hun installatie benaderen vanuit aanvoertemperatuur of stooklijn.
 
+### Watertempbegrenzing
+
+OpenQuatt heeft daarnaast een gedeelde begrenzing op basis van `water_supply_temp_selected`.
+
+Belangrijke eigenschappen:
+
+- `Maximum water temperature` is het normale bovendoel voor de gemeten aanvoer;
+- `Water temperature soft band` bepaalt vanaf hoeveel graden daaronder OpenQuatt al terughoudend wordt;
+- `Maximum water temperature trip` is de absolute bovengrens.
+
+Praktisch betekent dit:
+
+- in `Water Temperature Control` wordt `Heating Curve Supply Target` geclampt op `Maximum water temperature`;
+- in `Power House` wordt de effectieve warmtevraag progressief verlaagd, met de sterkste afbouw tussen `max - soft band` en `max`;
+- in `CM3` wordt de boiler vanaf `Maximum water temperature` geblokkeerd;
+- bij `Maximum water temperature trip` kan een harde stop volgen zonder dat OpenQuatt de `Control Mode` zelf herschrijft.
+
 ## Flow Mode
 
 `Flow Mode` bepaalt hoe de pompregeling werkt.

@@ -2066,6 +2066,43 @@ views:
       - type: grid
         cards:
           - type: heading
+            icon: mdi:water-thermometer
+            heading: Water temperature limit
+            heading_style: title
+          - type: markdown
+            content: >-
+              <details>
+
+              <summary><strong>Parameter explanation</strong></summary>
+
+
+              - Uses `Water Supply Temp (Selected)` as the measured limit source.
+
+              - **Maximum water temperature** is the normal ceiling for measured
+              supply temperature.
+
+              - **Soft band** starts the rollback below that ceiling. Power House
+              reduces effective requested heat most strongly between `max - band`
+              and `max`.
+
+              - **Trip** is the absolute upper limit. In `CM3` the boiler drops
+              out first; a hard HP stop follows only if the overshoot persists.
+
+
+              </details>
+            text_only: true
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: number.openquatt_maximum_water_temperature
+                name: Maximum water temperature
+              - entity: number.openquatt_water_temperature_soft_band
+                name: Water temperature soft band
+              - entity: number.openquatt_maximum_water_temperature_trip
+                name: Maximum water temperature trip
+      - type: grid
+        cards:
+          - type: heading
             icon: mdi:heat-wave
             heading: Heat allocation
             heading_style: title
@@ -2168,6 +2205,9 @@ views:
 
               - **CM3 deficit ON/OFF thresholds** define when boiler assist may
               switch on/off.
+
+              - Boiler assist is still blocked by the water temperature limit
+              when measured supply temperature gets too high.
 
               - Keep ON clearly higher than OFF to reduce toggling around the
               threshold.

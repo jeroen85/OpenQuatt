@@ -1319,11 +1319,26 @@ interval:
           }
 
           // =========================
-          // 5) Minimum runtime (all strategies)
+          // 5) Absolute water-temperature hard trip
+          // Shared with boiler-control and heating-strategy. This safety stop has
+          // higher priority than compressor minimum runtime.
+          // =========================
+          if (id(oq_water_temp_hard_trip_active)) {
+            hp1_req = 0;
+            #if OQ_TOPOLOGY_DUO
+            hp2_req = 0;
+            #else
+            hp2_req = 0;
+            #endif
+          }
+
+          // =========================
+          // 6) Minimum runtime (all strategies)
           // Prevents very short compressor runs in both curve and Power House modes.
+          // Skipped during an absolute water-temperature hard trip.
           // =========================
           const int min_rt = (int) roundf(id(oq_min_runtime_min).state);
-          if (min_rt > 0) {
+          if (!id(oq_water_temp_hard_trip_active) && min_rt > 0) {
             // HP1: if request is 0 but runtime < min -> force >=1
             const uint32_t min_rt_ms = (uint32_t) min_rt * 60000UL;
             const uint32_t hp1_rt_ms = (uint32_t)(now_ms - id(hp1_last_start_ms));
@@ -1342,7 +1357,7 @@ interval:
           }
 
           // =========================
-          // 6) Working mode gate + apply compressor
+          // 7) Working mode gate + apply compressor
           // =========================
           auto set_mode = [&](bool is_hp1, bool heating) {
             const char* opt = heating ? "Heating" : "Standby";
