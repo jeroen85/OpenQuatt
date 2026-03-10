@@ -1,7 +1,7 @@
 # Release Process
 
 This project uses GitHub Actions for automated validation, firmware compilation, and release asset publishing.
-Documentation consistency is validated locally via `./scripts/validate_local.sh`.
+Documentation consistency is validated locally via `./scripts/validate_local.sh` on bash hosts or `.\scripts\validate_local.ps1` on Windows.
 
 ## Branch Model
 
