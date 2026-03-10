@@ -171,7 +171,8 @@ Then maps requested power to demand scale `0..20`.
 Power House stability guards in supervisory:
 
 - dynamic low-load thresholds from performance map level-1 thermal power (`pmin/off/on`)
-- fallback low-load OFF/ON thresholds when dynamic input is unavailable
+- last-known-good dynamic thresholds across short telemetry dropouts
+- internal fallback low-load OFF/ON thresholds when dynamic input is unavailable
 - low-load heat-request latch (OFF/ON hysteresis on `P_req`)
 - temporary CM2 re-entry block after CM2 idle-exit trip
 - CM2 startup-grace and high-load guard on idle-exit path

@@ -114,11 +114,12 @@ Deze instellingen gebruik je als eerste als je gedrag wilt begrenzen of verklare
 - `Silent end time`
 - `CM3 deficit ON threshold`
 - `CM3 deficit OFF threshold`
-- `Low-load OFF fallback`
-- `Low-load ON fallback`
+- `Low-load dynamic OFF factor`
+- `Low-load dynamic ON factor`
+- `Low-load minimum hysteresis`
 - `Low-load CM2 re-entry block`
 
-Praktisch bepaal je hiermee hoeveel ruimte OpenQuatt krijgt, wanneer stille uren gelden en hoe snel het systeem naar ketelhulp of terugschakelen beweegt.
+Praktisch bepaal je hiermee hoeveel ruimte OpenQuatt krijgt, wanneer stille uren gelden en hoe snel het systeem naar ketelhulp of terugschakelen beweegt. De vaste low-load fallbackdrempels zitten intern in substitutions; tijdens runtime tune je vooral de dynamische factoren, hysterese en re-entry block.
 
 ### Bronselectie en failover
 

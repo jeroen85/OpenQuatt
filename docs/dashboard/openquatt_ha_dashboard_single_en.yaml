@@ -1709,6 +1709,15 @@ views:
 
               - **Ramp up/down** limit rise/fall rate of requested heat.
 
+              - **Low-load dynamic OFF/ON factor** tune when Power House
+              may release or re-arm heat request around low load.
+
+              - **Low-load minimum hysteresis** keeps OFF and ON thresholds
+              sufficiently apart to reduce chattering.
+
+              - **Low-load CM2 re-entry block** delays CM2 re-entry after an
+              idle-exit trip unless demand clearly recovers.
+
               </details>
             text_only: true
           - type: entities
@@ -1742,6 +1751,14 @@ views:
                 name: PH ramp up
               - entity: number.openquatt_power_house_ramp_down
                 name: PH ramp down
+              - entity: number.openquatt_low_load_dynamic_off_factor
+                name: Low-load dynamic OFF factor
+              - entity: number.openquatt_low_load_dynamic_on_factor
+                name: Low-load dynamic ON factor
+              - entity: number.openquatt_low_load_minimum_hysteresis
+                name: Low-load minimum hysteresis
+              - entity: number.openquatt_low_load_cm2_re_entry_block
+                name: Low-load CM2 re-entry block
       - type: grid
         cards:
           - type: heading
@@ -2212,8 +2229,9 @@ views:
 
               - `Comfort bias` shows the adaptive warm-bias governor state.
 
-              - `Low-load dynamic thresholds` shows live `pmin/off/on`
-              thresholds.
+              - `Low-load dynamic thresholds` shows live or cached
+              `pmin/off/on` thresholds and falls back to internal defaults when
+              dynamic input is unavailable.
 
               - `Heat-enable state (shadow)` shows the shadow arbiter state
               (`IDLE/PREHEAT/HEATING/POSTFLOW/LOCKOUT`) for strategy

@@ -102,6 +102,8 @@ Handige diagnose-entiteiten:
 - `CM2 re-entry block active`
 - `Heat-enable state (shadow)`
 
+`Low-load dynamic thresholds` toont live of cached `pmin/off/on`; als die dynamische input ontbreekt, valt OpenQuatt terug op interne fallbackdrempels.
+
 ### Water Temperature Control
 
 Bij deze strategie kijkt OpenQuatt vooral naar de gewenste aanvoertemperatuur via een stooklijn.
