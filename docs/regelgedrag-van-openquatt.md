@@ -122,7 +122,7 @@ Bij deze strategie kijkt OpenQuatt vooral naar de gewenste aanvoertemperatuur vi
 
 Belangrijke eigenschappen:
 
-- de regeling gebruikt de gekozen aanvoertemperatuurbron;
+- de regeling gebruikt de gekozen aanvoertemperatuurbron (`Local`, `CIC` of `HA input`);
 - er zijn profielen en PID-instellingen;
 - rond lage vraag probeert het systeem niet abrupt naar nul te springen.
 

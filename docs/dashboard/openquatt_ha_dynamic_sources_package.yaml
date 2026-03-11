@@ -6,6 +6,7 @@
 #   - User can enter source entity IDs in HA input_text helpers.
 #   - This package publishes stable proxy sensors consumed by OpenQuatt ESPHome:
 #       sensor.openquatt_ext_outdoor_temperature
+#       sensor.openquatt_ext_water_supply_temperature
 #       sensor.openquatt_ext_room_setpoint
 #       sensor.openquatt_ext_room_temperature
 #
@@ -15,7 +16,7 @@
 #          packages: !include_dir_named packages
 #   2) Copy this file to: /config/packages/openquatt_dynamic_sources.yaml
 #   3) Reload Template Entities (or restart Home Assistant).
-#   4) Set the three input_text helpers once to your own source entity IDs.
+#   4) Set the four input_text helpers once to your own source entity IDs.
 #
 # Notes:
 #   - Trigger interval is 15s to support dynamic entity_id references.
@@ -31,6 +32,12 @@ input_text:
   openquatt_source_outdoor_temperature:
     name: OpenQuatt source outdoor temperature
     icon: mdi:thermometer
+    mode: text
+    max: 100
+
+  openquatt_source_water_supply_temperature:
+    name: OpenQuatt source water supply temperature
+    icon: mdi:water-thermometer
     mode: text
     max: 100
 
@@ -56,6 +63,7 @@ template:
       - platform: state
         entity_id:
           - input_text.openquatt_source_outdoor_temperature
+          - input_text.openquatt_source_water_supply_temperature
           - input_text.openquatt_source_room_setpoint
           - input_text.openquatt_source_room_temperature
       - platform: time_pattern
@@ -108,6 +116,56 @@ template:
             {{ parts[0] | trim if (parts | length > 0) else '' }}
           source_attribute: >-
             {% set selector = states('input_text.openquatt_source_outdoor_temperature') | trim %}
+            {% set parts = selector.split('|', 1) %}
+            {{ parts[1] | trim if (parts | length > 1) else '' }}
+
+      - name: OpenQuatt Ext Water Supply Temperature
+        unique_id: openquatt_ext_water_supply_temperature
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        icon: mdi:water-thermometer
+        availability: >-
+          {% set selector = states('input_text.openquatt_source_water_supply_temperature') | trim %}
+          {% set parts = selector.split('|', 1) %}
+          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
+          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
+          {% set state_raw = states(entity) | trim if entity else '' %}
+          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
+          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
+          {% if attr_raw is number %}
+            {% set attr_val = attr_raw %}
+          {% elif attr_raw is string %}
+            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
+          {% else %}
+            {% set attr_val = none %}
+          {% endif %}
+          {% set val = attr_val if attr_name else state_val %}
+          {{ val is not none }}
+        state: >-
+          {% set selector = states('input_text.openquatt_source_water_supply_temperature') | trim %}
+          {% set parts = selector.split('|', 1) %}
+          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
+          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
+          {% set state_raw = states(entity) | trim if entity else '' %}
+          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
+          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
+          {% if attr_raw is number %}
+            {% set attr_val = attr_raw %}
+          {% elif attr_raw is string %}
+            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
+          {% else %}
+            {% set attr_val = none %}
+          {% endif %}
+          {% set val = attr_val if attr_name else state_val %}
+          {{ val if val is not none else 0 }}
+        attributes:
+          source_entity: >-
+            {% set selector = states('input_text.openquatt_source_water_supply_temperature') | trim %}
+            {% set parts = selector.split('|', 1) %}
+            {{ parts[0] | trim if (parts | length > 0) else '' }}
+          source_attribute: >-
+            {% set selector = states('input_text.openquatt_source_water_supply_temperature') | trim %}
             {% set parts = selector.split('|', 1) %}
             {{ parts[1] | trim if (parts | length > 1) else '' }}
 
@@ -271,6 +329,36 @@ template:
             {{ parts[0] | trim if (parts | length > 0) else '' }}
           source_attribute: >-
             {% set selector = states('input_text.openquatt_source_outdoor_temperature') | trim %}
+            {% set parts = selector.split('|', 1) %}
+            {{ parts[1] | trim if (parts | length > 1) else '' }}
+
+      - name: OpenQuatt Ext Water Supply Temperature Valid
+        unique_id: openquatt_ext_water_supply_temperature_valid
+        icon: mdi:check-decagram
+        state: >-
+          {% set selector = states('input_text.openquatt_source_water_supply_temperature') | trim %}
+          {% set parts = selector.split('|', 1) %}
+          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
+          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
+          {% set state_raw = states(entity) | trim if entity else '' %}
+          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
+          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
+          {% if attr_raw is number %}
+            {% set attr_val = attr_raw %}
+          {% elif attr_raw is string %}
+            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
+          {% else %}
+            {% set attr_val = none %}
+          {% endif %}
+          {% set val = attr_val if attr_name else state_val %}
+          {{ val is not none }}
+        attributes:
+          source_entity: >-
+            {% set selector = states('input_text.openquatt_source_water_supply_temperature') | trim %}
+            {% set parts = selector.split('|', 1) %}
+            {{ parts[0] | trim if (parts | length > 0) else '' }}
+          source_attribute: >-
+            {% set selector = states('input_text.openquatt_source_water_supply_temperature') | trim %}
             {% set parts = selector.split('|', 1) %}
             {{ parts[1] | trim if (parts | length > 1) else '' }}
 

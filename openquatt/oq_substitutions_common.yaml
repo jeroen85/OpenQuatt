@@ -125,9 +125,10 @@ oq_room_cic_recovery_hold_default_min: "1"            # Default hold before room
 # ----------------------------
 # HA INPUT ENTITY MAPPING
 # ----------------------------
-ha_outside_temp_entity_id: "sensor.openquatt_ext_outdoor_temperature" # HA proxy entity for outside temperature [degC].
-ha_room_setpoint_entity_id: "sensor.openquatt_ext_room_setpoint"      # HA proxy entity for thermostat room setpoint [degC].
-ha_room_temp_entity_id: "sensor.openquatt_ext_room_temperature"        # HA proxy entity for thermostat room temperature [degC].
+ha_outside_temp_entity_id: "sensor.openquatt_ext_outdoor_temperature"      # HA proxy entity for outside temperature [degC].
+ha_water_supply_temp_entity_id: "sensor.openquatt_ext_water_supply_temperature" # HA proxy entity for water supply temperature [degC].
+ha_room_setpoint_entity_id: "sensor.openquatt_ext_room_setpoint"           # HA proxy entity for thermostat room setpoint [degC].
+ha_room_temp_entity_id: "sensor.openquatt_ext_room_temperature"             # HA proxy entity for thermostat room temperature [degC].
 
 # ----------------------------
 # HP IO (MODBUS POLLING)
