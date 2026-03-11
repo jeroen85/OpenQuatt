@@ -72,6 +72,8 @@ Veilige eerste acties:
 
 Bij `Duo` is het meestal wenselijk dat niet meteen beide units hard starten, maar dat het systeem rustig opbouwt.
 
+In `Power House` hoeft dat niet te betekenen dat 1 warmtepomp altijd voorrang krijgt. Daar probeert OpenQuatt juist de zuinigste geldige combinatie te kiezen, en wisselt het alleen als dat echt voordeel geeft.
+
 ### Het huis wordt niet warm genoeg
 
 Controleer in deze volgorde:
@@ -85,6 +87,8 @@ Controleer in deze volgorde:
 Pas als deze basis klopt, heeft het zin om verwarmingsinstellingen te wijzigen.
 
 Bij `Power House` kun je daarna eventueel kijken naar `Power House response profile` of een kortere `Power House demand rise time`, maar doe dat pas als bronwaarden en comfortinstellingen al logisch zijn.
+
+Bij `Duo` geldt daarbij: kijk niet alleen of er 1 of 2 warmtepompen actief zijn, maar vooral of de warmtevraag netjes gevolgd wordt zonder onrustig wisselen.
 
 ### Het wordt te warm of het systeem blijft te lang doorgaan
 

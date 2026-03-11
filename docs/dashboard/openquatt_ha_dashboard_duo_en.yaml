@@ -2174,17 +2174,26 @@ views:
               allocation is single-HP-first with dual-enable hysteresis and
               sequential level steps.
 
+              - In Power House mode, OpenQuatt first keeps only combinations
+              that follow the requested heat closely enough and then picks the
+              lowest-power combination. It only switches when that gives a clear
+              benefit, with a short hold to reduce back-and-forth switching.
+
               - **Dual HP enable level (lvl)** defines at which sustained
-              single-HP compressor level a second HP may be enabled.
+              single-HP compressor level a second HP may be enabled in
+              heating-curve mode.
 
               - Disable level is derived internally as `enable - 1` to keep tuning
               compact.
 
-              - **Enable/disable hold** adds time hysteresis to damp frequent toggling.
+              - **Enable/disable hold** adds time hysteresis to damp frequent
+              toggling in heating-curve mode.
 
-              - Lower enable level or shorter enable-hold = faster second-HP activation.
+              - Lower enable level or shorter enable-hold = faster second-HP
+              activation in heating-curve mode.
 
-              - Longer disable-hold = dual-HP stays active longer.
+              - Longer disable-hold = dual-HP stays active longer in
+              heating-curve mode.
 
 
               </details>

@@ -187,6 +187,13 @@ Deze groep bepaalt vooral:
 - hoe lang units blijven lopen;
 - wanneer een tweede unit bij een Duo-opstelling mag meedoen.
 
+Belangrijk onderscheid:
+
+- `Dual HP Enable Level`, `Dual HP Enable Hold` en `Dual HP Disable Hold` horen bij de verdeling in `Water Temperature Control`;
+- in `Power House` wordt de Duo-keuze juist automatisch bepaald op basis van geldige combinaties, warmtematch en elektrisch verbruik.
+
+Je hoeft in `Power House` dus geen aparte single-versus-duo voorkeur af te stellen. De bedoeling is juist dat OpenQuatt zelf de zuinigste geldige combinatie kiest en die kort vasthoudt om op en neer schakelen te beperken.
+
 ### Flow en pompregeling
 
 Belangrijke instellingen:

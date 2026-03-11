@@ -197,7 +197,7 @@ Heating-curve stability guards around zero-demand edge:
 - room-temperature coupling trims supply target when room drifts warm
 - target clamp at `Maximum water temperature`
 - explicit per-HP slew-rate limiting with slower up and faster down behavior
-- single-HP-first allocation with dual-enable hysteresis and sequential HP step changes
+- in heating-curve mode: single-HP-first allocation with dual-enable hysteresis and sequential HP step changes
 
 ## 6. Allocation and Optimization Mechanics
 
@@ -216,14 +216,14 @@ Demand filter behavior is asymmetric:
 - downward path follows demand immediately
 - upward path is rate-limited by runtime control `Demand filter ramp up` (step/min, Power House path)
 
-Power House optimizer cost considers:
+Power House duo dispatch works in simple steps:
 
-- thermal tracking error
-- change penalty (anti-chatter)
-- low-load two-HP penalty
-- HP1/HP2 level balance penalty
-- electrical soft/peak guard
-- defrost derating and optional compensation boost
+- keep only combinations that follow the requested heat closely enough
+- within that group, choose the lowest electrical input
+- keep the current combination unless a switch gives clear heat or power benefit
+- hold a single-vs-dual choice briefly to reduce back-and-forth switching
+- if two single-HP options are equally good, choose the runtime lead HP
+- defrost still uses thermal derating and optional compensation boost
 
 ## 7. Flow Control Mechanics
 

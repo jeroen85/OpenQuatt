@@ -2283,18 +2283,26 @@ views:
               allocatie is single-HP-first met dual-enable hysterese en
               sequentiële levelstappen.
 
+              - In Power House mode kiest OpenQuatt eerst combinaties die de
+              warmtevraag goed genoeg volgen en daarna de zuinigste combinatie.
+              Wisselen gebeurt alleen als dat echt voordeel geeft, met een
+              korte houdtijd tegen op en neer schakelen.
+
               - **Dual HP enable level (lvl)** bepaalt bij welk aanhoudend
-              single-HP compressorlevel een tweede HP mag worden geactiveerd.
+              single-HP compressorlevel een tweede HP mag worden geactiveerd in
+              heating-curve mode.
 
               - Disable-level wordt intern afgeleid als `enable - 1` om het
               aantal instellingen beperkt te houden.
 
               - **Enable/disable hold** voegt tijdhysterese toe om op en neer
-              schakelen te dempen.
+              schakelen te dempen in heating-curve mode.
 
-              - Lager enable-level of kortere enable-hold = sneller 2 HP actief.
+              - Lager enable-level of kortere enable-hold = sneller 2 HP actief
+              in heating-curve mode.
 
-              - Hogere disable-hold = langer dual-HP actief.
+              - Hogere disable-hold = langer dual-HP actief in heating-curve
+              mode.
 
 
               </details>
