@@ -809,7 +809,7 @@ sensor:
 
       if (isnan(t_in_c) || isnan(t_out_c) || isnan(flow_lph)) return 0.0f;
 
-      const float water_cp_j_per_kgk = 4186.0f;         // J/(kg·K)
+      const float water_cp_j_per_kgk = ${oq_water_cp_j_per_kgk};  // J/(kg·K)
       const float mass_flow_kgps = flow_lph / 3600.0f;  // kg/s (≈ L/h)
       const float delta_t_k = t_out_c - t_in_c;         // K
       return mass_flow_kgps * water_cp_j_per_kgk * delta_t_k;

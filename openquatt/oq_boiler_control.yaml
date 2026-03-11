@@ -92,7 +92,7 @@ sensor:
       // With missing measurements: return 0 W instead of NaN (cleaner dashboard + CM3 gate already enforced)
       if (isnan(hp2_outlet_c) || isnan(supply_c) || isnan(flow_lph)) return 0.0f;
 
-      const float cp_j_per_kgk = ${oq_boiler_cp_j_per_kgk};  // J/(kg·K)
+      const float cp_j_per_kgk = ${oq_water_cp_j_per_kgk};   // J/(kg·K)
       const float mass_flow_kgps = flow_lph / 3600.0f;       // kg/s (≈ L/h)
       const float delta_t_k = supply_c - hp2_outlet_c;       // K
 
