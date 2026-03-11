@@ -1403,6 +1403,7 @@ views:
               - bronkeuze tijdens tuning
               - snelle vergelijking tussen CIC, lokaal en HA input
               - validatie van de effectieve regelinput
+              - controle van automatische HA-terugval naar HA-inputs bij CIC-uitval
 
               </details>
             text_only: true
@@ -1516,7 +1517,7 @@ views:
             cards:
               - type: heading
                 icon: mdi:swap-horizontal-bold
-                heading: CIC thermostaat fallback
+                heading: HA-terugval bij CIC-uitval
                 heading_style: subtitle
                 grid_options:
                   columns: 12
@@ -1525,11 +1526,11 @@ views:
                 show_header_toggle: false
                 entities:
                   - entity: switch.openquatt_room_cic_auto_failover
-                    name: CIC thermostaat auto-failover
+                    name: Automatische HA-terugval
                   - entity: binary_sensor.openquatt_room_cic_failover_active
-                    name: CIC thermostaat fallback actief
+                    name: HA-terugval actief
                   - entity: sensor.openquatt_room_cic_failover_status
-                    name: CIC thermostaat fallback status
+                    name: Status HA-terugval
         column_span: 3
       - type: grid
         cards:
@@ -1647,6 +1648,43 @@ views:
                   - entity: sensor.openquatt_ha_thermostat_room_temperature
                     name: HA - Thermostaat kamertemperatuur
         column_span: 3
+        visibility:
+          - condition: state
+            entity: binary_sensor.openquatt_ha_dynamic_sources_package_active
+            state: 'on'
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:home-assistant
+            heading: Home Assistant input configuration
+            heading_style: title
+          - type: markdown
+            content: >
+              **Optionele HA-bronselectie niet actief**
+
+
+              `openquatt_ha_dynamic_sources_package.yaml` is niet geladen.  
+
+              Met dit optionele package kun je in Home Assistant zelf de
+              bron-entities voor buiten-, kamer- en setpointtemperatuur kiezen,
+              zonder OpenQuatt opnieuw te flashen.
+
+
+              Na installatie verschijnen hier extra configuratieblokken voor
+              dynamische bronselectie.
+
+
+              Installatiehandleiding:
+
+              [OpenQuatt documentatie - dynamische bronselectie via Home
+              Assistant](https://jeroen85.github.io/OpenQuatt/dashboard/index.html#optioneel-dynamische-bronselectie-via-home-assistant)
+            grid_options:
+              columns: full
+        column_span: 3
+        visibility:
+          - condition: state
+            entity: binary_sensor.openquatt_ha_dynamic_sources_package_active
+            state_not: 'on'
       - type: grid
         cards:
           - type: heading

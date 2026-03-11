@@ -47,6 +47,11 @@ input_text:
     max: 100
 
 template:
+  - binary_sensor:
+      - name: OpenQuatt HA Dynamic Sources Package Active
+        unique_id: openquatt_ha_dynamic_sources_package_active
+        state: "on"
+        icon: mdi:check-circle
   - trigger:
       - platform: state
         entity_id:

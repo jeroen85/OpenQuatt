@@ -1339,6 +1339,7 @@ views:
               - source selection during tuning
               - quick comparison between CIC, local, and HA Input
               - validation of the effective control input
+              - verification of automatic HA fallback to HA inputs during CIC outages
 
               </details>
             text_only: true
@@ -1450,7 +1451,7 @@ views:
             cards:
               - type: heading
                 icon: mdi:swap-horizontal-bold
-                heading: CIC thermostat fallback
+                heading: HA fallback for CIC outage
                 heading_style: subtitle
                 grid_options:
                   columns: 12
@@ -1459,11 +1460,11 @@ views:
                 show_header_toggle: false
                 entities:
                   - entity: switch.openquatt_room_cic_auto_failover
-                    name: CIC thermostat auto failover
+                    name: Automatic HA fallback
                   - entity: binary_sensor.openquatt_room_cic_failover_active
-                    name: CIC thermostat fallback active
+                    name: HA fallback active
                   - entity: sensor.openquatt_room_cic_failover_status
-                    name: CIC thermostat fallback status
+                    name: HA fallback status
         column_span: 3
       - type: grid
         cards:
@@ -1571,6 +1572,43 @@ views:
                   - entity: sensor.openquatt_ha_thermostat_room_temperature
                     name: HA - Thermostat Room Temperature
         column_span: 3
+        visibility:
+          - condition: state
+            entity: binary_sensor.openquatt_ha_dynamic_sources_package_active
+            state: 'on'
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:home-assistant
+            heading: Home Assistant source configuration
+            heading_style: title
+          - type: markdown
+            content: >
+              **Optional HA source selection not active**
+
+
+              `openquatt_ha_dynamic_sources_package.yaml` is not loaded.  
+
+              With this optional package you can choose the Home Assistant source
+              entities for outside, room, and setpoint temperature at runtime,
+              without reflashing OpenQuatt.
+
+
+              After installation, extra configuration blocks for dynamic source
+              selection will appear here.
+
+
+              Installation guide:
+
+              [OpenQuatt docs - dynamic source selection via Home
+              Assistant](https://jeroen85.github.io/OpenQuatt/dashboard/index.html#optioneel-dynamische-bronselectie-via-home-assistant)
+            grid_options:
+              columns: full
+        column_span: 3
+        visibility:
+          - condition: state
+            entity: binary_sensor.openquatt_ha_dynamic_sources_package_active
+            state_not: 'on'
       - type: grid
         cards:
           - type: heading

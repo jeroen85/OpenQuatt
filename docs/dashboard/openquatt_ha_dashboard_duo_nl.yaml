@@ -107,7 +107,8 @@ views:
 
               - `Ketel actief`: geeft aan of ketel-assist actief is.
 
-              - `Stille modus actief`: toont of het stil-venster nu van kracht is.
+              - `Stille modus actief`: toont of het stil-venster nu van kracht
+              is.
 
 
               </details>
@@ -371,10 +372,14 @@ views:
     header:
       card:
         type: markdown
-        content: |-
-          <img src="https://raw.githubusercontent.com/jeroen85/OpenQuatt/main/docs/assets/openquatt_logo.png" width="300" />
+        content: >-
+          <img
+          src="https://raw.githubusercontent.com/jeroen85/OpenQuatt/main/docs/assets/openquatt_logo.png"
+          width="300" />
+
 
           ## <ha-icon icon="mdi:view-dashboard"></ha-icon> Overzicht
+
           Snel en praktisch zicht op prestaties, status en bediening.
         text_only: true
       layout: center
@@ -441,8 +446,7 @@ views:
             icon: mdi:calendar-today
             heading_style: title
             heading: Vandaag
-          - &ref_0
-            type: heading
+          - type: heading
             icon: mdi:heat-pump
             heading: Warmtepomp
             heading_style: subtitle
@@ -455,8 +459,7 @@ views:
                 name: Warmte vandaag
               - entity: sensor.openquatt_heatpump_cop_daily
                 name: COP vandaag
-          - &ref_1
-            type: heading
+          - type: heading
             icon: mdi:water-boiler
             heading: CV-ketel
             heading_style: subtitle
@@ -465,8 +468,7 @@ views:
             entities:
               - entity: sensor.openquatt_boiler_thermal_energy_daily
                 name: Warmte vandaag
-          - &ref_2
-            type: heading
+          - type: heading
             icon: mdi:sigma
             heading: Systeem
             heading_style: subtitle
@@ -481,7 +483,10 @@ views:
             icon: mdi:sigma
             heading: Cumulatief
             heading_style: title
-          - *ref_0
+          - type: heading
+            icon: mdi:heat-pump
+            heading: Warmtepomp
+            heading_style: subtitle
           - type: entities
             show_header_toggle: false
             entities:
@@ -491,13 +496,19 @@ views:
                 name: Warmte cumulatief
               - entity: sensor.openquatt_heatpump_cop_cumulative
                 name: COP cumulatief
-          - *ref_1
+          - type: heading
+            icon: mdi:water-boiler
+            heading: CV-ketel
+            heading_style: subtitle
           - type: entities
             show_header_toggle: false
             entities:
               - entity: sensor.openquatt_boiler_thermal_energy_cumulative
                 name: Warmte cumulatief
-          - *ref_2
+          - type: heading
+            icon: mdi:sigma
+            heading: Systeem
+            heading_style: subtitle
           - type: entities
             show_header_toggle: false
             entities:
@@ -1157,7 +1168,8 @@ views:
             cards:
               - type: picture-elements
                 title: Quatt HP1
-                image: https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Quatt.png
+                image: >-
+                  https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Quatt.png
                 elements:
                   - type: image
                     style:
@@ -1166,10 +1178,14 @@ views:
                       transform: translate(0,0)
                     entity: binary_sensor.openquatt_hp1_4_way_valve
                     state_image:
-                      'on': https://raw.githubusercontent.com/jeroen85/OpenQuatt/main/docs/dashboard/heatpump/Cool.png
-                      'off': https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Heat.png
-                      unknown: https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Heat.png
-                      unavailable: https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Heat.png
+                      'on': >-
+                        https://raw.githubusercontent.com/jeroen85/OpenQuatt/main/docs/dashboard/heatpump/Cool.png
+                      'off': >-
+                        https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Heat.png
+                      unknown: >-
+                        https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Heat.png
+                      unavailable: >-
+                        https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Heat.png
                     tap_action:
                       action: none
                     hold_action:
@@ -1390,7 +1406,8 @@ views:
             cards:
               - type: picture-elements
                 title: Quatt HP2
-                image: https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Quatt.png
+                image: >-
+                  https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Quatt.png
                 elements:
                   - type: image
                     style:
@@ -1399,10 +1416,14 @@ views:
                       transform: translate(0,0)
                     entity: binary_sensor.openquatt_hp2_4_way_valve
                     state_image:
-                      'on': https://raw.githubusercontent.com/jeroen85/OpenQuatt/main/docs/dashboard/heatpump/Cool.png
-                      'off': https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Heat.png
-                      unknown: https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Heat.png
-                      unavailable: https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Heat.png
+                      'on': >-
+                        https://raw.githubusercontent.com/jeroen85/OpenQuatt/main/docs/dashboard/heatpump/Cool.png
+                      'off': >-
+                        https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Heat.png
+                      unknown: >-
+                        https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Heat.png
+                      unavailable: >-
+                        https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Heat.png
                     tap_action:
                       action: none
                     hold_action:
@@ -1620,7 +1641,8 @@ views:
       card:
         type: markdown
         content: >-
-          # <ha-icon icon="mdi:heat-pump-outline"></ha-icon> Overzicht HP1 en HP2
+          # <ha-icon icon="mdi:heat-pump-outline"></ha-icon> Overzicht HP1 en
+          HP2
 
           Deze tab toont per HP een technische momentopname van
           koudemiddel/waterzijde. Gebruik dit vooral voor diagnose en
@@ -1651,6 +1673,7 @@ views:
               - bronkeuze tijdens tuning
               - snelle vergelijking tussen CIC, lokaal en HA input
               - validatie van de effectieve regelinput
+              - controle van automatische HA-terugval naar HA-inputs bij CIC-uitval
 
               </details>
             text_only: true
@@ -1764,7 +1787,7 @@ views:
             cards:
               - type: heading
                 icon: mdi:swap-horizontal-bold
-                heading: CIC thermostaat fallback
+                heading: HA-terugval bij CIC-uitval
                 heading_style: subtitle
                 grid_options:
                   columns: 12
@@ -1773,11 +1796,11 @@ views:
                 show_header_toggle: false
                 entities:
                   - entity: switch.openquatt_room_cic_auto_failover
-                    name: CIC thermostaat auto-failover
+                    name: Automatische HA-terugval
                   - entity: binary_sensor.openquatt_room_cic_failover_active
-                    name: CIC thermostaat fallback actief
+                    name: HA-terugval actief
                   - entity: sensor.openquatt_room_cic_failover_status
-                    name: CIC thermostaat fallback status
+                    name: Status HA-terugval
         column_span: 3
       - type: grid
         cards:
@@ -1895,6 +1918,43 @@ views:
                   - entity: sensor.openquatt_ha_thermostat_room_temperature
                     name: HA - Thermostaat kamertemperatuur
         column_span: 3
+        visibility:
+          - condition: state
+            entity: binary_sensor.openquatt_ha_dynamic_sources_package_active
+            state: 'on'
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:home-assistant
+            heading: Home Assistant input configuration
+            heading_style: title
+          - type: markdown
+            content: >
+              **Optionele HA-bronselectie niet actief**
+
+
+              `openquatt_ha_dynamic_sources_package.yaml` is niet geladen.  
+
+              Met dit optionele package kun je in Home Assistant zelf de
+              bron-entities voor buiten-, kamer- en setpointtemperatuur kiezen,
+              zonder OpenQuatt opnieuw te flashen.
+
+
+              Na installatie verschijnen hier extra configuratieblokken voor
+              dynamische bronselectie.
+
+
+              Installatiehandleiding:
+
+              [OpenQuatt documentatie - dynamische bronselectie via Home
+              Assistant](https://jeroen85.github.io/OpenQuatt/dashboard/index.html#optioneel-dynamische-bronselectie-via-home-assistant)
+            grid_options:
+              columns: full
+        column_span: 3
+        visibility:
+          - condition: state
+            entity: binary_sensor.openquatt_ha_dynamic_sources_package_active
+            state_not: 'on'
       - type: grid
         cards:
           - type: heading
@@ -2036,28 +2096,17 @@ views:
               - **Comfort bias up/down** en **room error avg tau** bepalen hoe
               snel de bias zich over de tijd aanpast.
 
-              - **Response profile** is een snelle voorkeuze voor rustige,
-              gebalanceerde of vlottere Power House-reactie. Zodra opbouwtijd
-              en afbouwtijd niet meer bij een preset horen, toont het profiel
-              automatisch `Custom`.
+              - **Ramp up/down** begrenzen stijg-/daalsnelheid van gevraagde
+              warmte.
 
-              - **Demand rise time** geeft ongeveer aan hoe lang `P_req` nodig
-              mag hebben om van `0` naar `Pr` te lopen. Lager = sneller
-              opschakelen.
+              - **Low-load dynamic OFF/ON factor** bepalen wanneer Power House
+              de warmtevraag rond lage last weer vrijgeeft of opnieuw oppakt.
 
-              - **Demand fall time** geeft ongeveer aan hoe lang `P_req` nodig
-              mag hebben om van `Pr` naar `0` te zakken. Lager = sneller
-              terugregelen bij overshoot.
+              - **Low-load minimum hysteresis** houdt OFF en ON voldoende uit
+              elkaar om pendelen te verminderen.
 
-              - **Low-load dynamic OFF/ON factor** bepalen wanneer Power
-              House de warmtevraag rond lage last weer vrijgeeft of opnieuw
-              oppakt.
-
-              - **Low-load minimum hysteresis** houdt OFF en ON voldoende
-              uit elkaar om pendelen te verminderen.
-
-              - **Low-load CM2 re-entry block** vertraagt CM2-herintrede na
-              een idle-exit trip tenzij de vraag duidelijk herstelt.
+              - **Low-load CM2 re-entry block** vertraagt CM2-herintrede na een
+              idle-exit trip tenzij de vraag duidelijk herstelt.
 
               </details>
             text_only: true
@@ -2088,12 +2137,10 @@ views:
                 name: PH bias omlaag
               - entity: number.openquatt_power_house_room_error_avg_tau
                 name: PH room avg tau
-              - entity: select.openquatt_power_house_response_profile
-                name: PH reactieprofiel
-              - entity: number.openquatt_power_house_demand_rise_time
-                name: PH opbouwtijd
-              - entity: number.openquatt_power_house_demand_fall_time
-                name: PH afbouwtijd
+              - entity: number.openquatt_power_house_ramp_up
+                name: PH ramp up
+              - entity: number.openquatt_power_house_ramp_down
+                name: PH ramp down
               - entity: number.openquatt_low_load_dynamic_off_factor
                 name: Low-load dynamic OFF factor
               - entity: number.openquatt_low_load_dynamic_on_factor
@@ -2174,7 +2221,8 @@ views:
               <summary><strong>Uitleg parameters</strong></summary>
 
 
-              - Gebruikt `Water Supply Temp (Selected)` als gemeten begrenzingsbron.
+              - Gebruikt `Water Supply Temp (Selected)` als gemeten
+              begrenzingsbron.
 
               - **Maximum water temperature** is het normale plafond voor de
               gemeten aanvoertemperatuur.
@@ -2194,11 +2242,11 @@ views:
             show_header_toggle: false
             entities:
               - entity: number.openquatt_maximum_water_temperature
-                name: Maximum water temperature
+                name: Max. water temperature
               - entity: number.openquatt_water_temperature_soft_band
                 name: Water temperature soft band
               - entity: number.openquatt_maximum_water_temperature_trip
-                name: Maximum water temperature trip
+                name: Max. water temperature trip
       - type: grid
         cards:
           - type: heading
@@ -2435,17 +2483,17 @@ views:
               <summary><strong>Uitleg parameters</strong></summary>
 
 
-              - **Reset draaitellers**. Let op: het kan maximaal 1 minuut
-              duren voordat je effect ziet.
+              - **Reset draaitellers**. Let op: het kan maximaal 1 minuut duren
+              voordat je effect ziet.
 
-              - **Reset cumulatieve energietellers** zet cumulatieve elektriciteits-
-              en warmte-energiemeters terug naar 0.
+              - **Reset cumulatieve energietellers** zet cumulatieve
+              elektriciteits- en warmte-energiemeters terug naar 0.
 
               - **HP1/HP2 draaitijd counters** tonen de actuele teller waarop de
               runtime-balans wordt gebaseerd.
 
-              - **Leidende HP** toont welke unit momenteel lead is op basis
-              van de laagste runtime.
+              - **Leidende HP** toont welke unit momenteel lead is op basis van
+              de laagste runtime.
 
 
               </details>
@@ -2541,9 +2589,9 @@ views:
               - entity: number.openquatt_debug_modbus_register
                 name: Modbus register
               - entity: button.openquatt_debug_read_hp1_register
-                name: "Debug: lees HP1-register"
+                name: 'Debug: lees HP1-register'
               - entity: button.openquatt_debug_read_hp2_register
-                name: "Debug: lees HP2-register"
+                name: 'Debug: lees HP2-register'
               - entity: sensor.openquatt_debug_modbus_value_u16
                 name: Result U16
               - entity: sensor.openquatt_debug_modbus_value_s16
@@ -2570,26 +2618,42 @@ views:
             heading: Versie informatie
             heading_style: title
           - type: markdown
-            content: |-
+            content: >-
               <details>
+
 
               <summary><strong>Uitleg</strong></summary>
 
+
               Dit blok toont firmwareversie en OTA-update-status:
 
+
               - `OpenQuatt-versie`: versie die lokaal op de ESP draait
+
               (uit `project_version` in de build).
+
               - `OpenQuatt-releasekanaal`: buildkanaal dat nu op de ESP draait
+
               (`main` of `dev`).
+
               - `Firmware-updatekanaal`: kiest welk OTA-kanaal de update-
+
               entiteit hierna volgt (`main` of `dev`).
+
               - `Firmware-update`: vergelijkt jouw huidige firmware met de
+
               laatste GitHub release en toont of er een update beschikbaar is.
-              - `Controleer firmware-updates`: forceert direct een nieuwe updatecheck
+
+              - `Controleer firmware-updates`: forceert direct een nieuwe
+              updatecheck
+
               (zonder te wachten op de volgende automatische poll).
 
+
               Let op: bij een nieuwe release kan het kort duren voordat de
+
               update-entiteit de nieuwe versie toont (cache/refresh interval).
+
 
               </details>
             text_only: true
@@ -2730,14 +2794,14 @@ views:
 
               - Deze sectie is vooral relevant bij actieve stooklijnregeling.
 
-              - Vergelijk eerst `Aanvoerdoel` met `Werkelijke aanvoer (gekozen)` om de
-              regelafwijking te zien.
+              - Vergelijk eerst `Aanvoerdoel` met `Werkelijke aanvoer (gekozen)`
+              om de regelafwijking te zien.
 
-              - `Curvefase` (`HEAT`/`COAST`/`OFF`) verklaart de actuele fase
-              van de curve-regeling.
+              - `Curvefase` (`HEAT`/`COAST`/`OFF`) verklaart de actuele fase van
+              de curve-regeling.
 
-              - Gebruik `Stooklijn-PID` en `Reset PID-integraal` bij
-              finetuning als de regeling te traag of te nerveus reageert.
+              - Gebruik `Stooklijn-PID` en `Reset PID-integraal` bij finetuning
+              als de regeling te traag of te nerveus reageert.
 
               - `Buitentemp (gekozen)` helpt verklaren waarom het `Supply
               target` stijgt of daalt.
