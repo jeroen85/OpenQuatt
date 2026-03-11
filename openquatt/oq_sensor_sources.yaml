@@ -53,6 +53,7 @@ select:
     options:
       - Local
       - CIC
+      - HA input
     initial_option: Local
     web_server:
       sorting_group_id: oq_cic
@@ -162,10 +163,15 @@ sensor:
     accuracy_decimals: 2
     update_interval: 2s
     lambda: |-
+      // Resolve the configured water supply source without implicit fallback.
       if (!id(water_supply_source).has_state()) return NAN;
       const auto source = id(water_supply_source).current_option();
       if (source == "CIC") {
         if (id(water_supply_temp_cic).has_state()) return id(water_supply_temp_cic).state;
+        return NAN;
+      }
+      if (source == "HA input") {
+        if (id(water_supply_temp_ha).has_state()) return id(water_supply_temp_ha).state;
         return NAN;
       }
       if (source == "Local") {

@@ -1385,6 +1385,8 @@ views:
                     name: Water supply temperature (ESP)
                   - entity: sensor.openquatt_cic_water_supply_temp
                     name: Water supply temperature (CIC)
+                  - entity: sensor.openquatt_ha_water_supply_temperature
+                    name: Water supply temperature (HA Input)
           - type: vertical-stack
             cards:
               - type: heading
@@ -1488,6 +1490,7 @@ views:
 
                   Example values:
                   - `sensor.outdoor_temperature`
+                  - `sensor.water_supply_temperature`
                   - `sensor.thermostat_setpoint`
                   - `sensor.thermostat_room_temperature`
                   - `climate.living_room | current_temperature`
@@ -1504,6 +1507,8 @@ views:
                 entities:
                   - entity: input_text.openquatt_source_outdoor_temperature
                     name: Outside source entity
+                  - entity: input_text.openquatt_source_water_supply_temperature
+                    name: Water supply source entity
                   - entity: input_text.openquatt_source_room_setpoint
                     name: Setpoint source entity
                   - entity: input_text.openquatt_source_room_temperature
@@ -1522,7 +1527,7 @@ views:
                   These are the stable HA proxy entities used as the contract towards
                   OpenQuatt.
 
-                  `Valid` should be `on` for all three signals.
+                  `Valid` should be `on` for all four signals.
                   If `Valid` is `off`, the current source is not numeric.
                   In that case the proxy value is `Unavailable` until the source
                   becomes valid again.
@@ -1535,6 +1540,10 @@ views:
                     name: Proxy outside temperature
                   - entity: binary_sensor.openquatt_ext_outdoor_temperature_valid
                     name: Outside temperature source valid
+                  - entity: sensor.openquatt_ext_water_supply_temperature
+                    name: Proxy water supply temperature
+                  - entity: binary_sensor.openquatt_ext_water_supply_temperature_valid
+                    name: Water supply source valid
                   - entity: sensor.openquatt_ext_room_setpoint
                     name: Proxy room setpoint
                   - entity: binary_sensor.openquatt_ext_room_setpoint_valid
@@ -1554,7 +1563,7 @@ views:
                   <details>
                   <summary><strong>Explanation</strong></summary>
 
-                  These are the three HA input signals as received by OpenQuatt.
+                  These are the four HA input signals as received by OpenQuatt.
                   They should follow the proxy values shown in the middle panel.
 
                   If a value stays `Unknown`, first check whether the matching
@@ -1567,6 +1576,8 @@ views:
                 entities:
                   - entity: sensor.openquatt_ha_outside_temperature
                     name: HA - Outside Temperature
+                  - entity: sensor.openquatt_ha_water_supply_temperature
+                    name: HA - Water Supply Temperature
                   - entity: sensor.openquatt_ha_thermostat_setpoint
                     name: HA - Thermostat Setpoint
                   - entity: sensor.openquatt_ha_thermostat_room_temperature
@@ -1590,8 +1601,8 @@ views:
               `openquatt_ha_dynamic_sources_package.yaml` is not loaded.  
 
               With this optional package you can choose the Home Assistant source
-              entities for outside, room, and setpoint temperature at runtime,
-              without reflashing OpenQuatt.
+              entities for outside, water supply, room, and setpoint
+              temperature at runtime, without reflashing OpenQuatt.
 
 
               After installation, extra configuration blocks for dynamic source

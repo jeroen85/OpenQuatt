@@ -1721,6 +1721,8 @@ views:
                     name: Aanvoertemperatuur (ESP)
                   - entity: sensor.openquatt_cic_water_supply_temp
                     name: Aanvoertemperatuur (CIC)
+                  - entity: sensor.openquatt_ha_water_supply_temperature
+                    name: Aanvoertemperatuur (HA-invoer)
           - type: vertical-stack
             cards:
               - type: heading
@@ -1824,6 +1826,7 @@ views:
 
                   Voorbeelden:
                   - `sensor.outdoor_temperature`
+                  - `sensor.water_supply_temperature`
                   - `sensor.thermostat_setpoint`
                   - `sensor.thermostat_room_temperature`
                   - `climate.woonkamer | current_temperature`
@@ -1840,6 +1843,8 @@ views:
                 entities:
                   - entity: input_text.openquatt_source_outdoor_temperature
                     name: Bronentity buitentemperatuur
+                  - entity: input_text.openquatt_source_water_supply_temperature
+                    name: Bronentity aanvoertemperatuur
                   - entity: input_text.openquatt_source_room_setpoint
                     name: Bronentity setpoint
                   - entity: input_text.openquatt_source_room_temperature
@@ -1862,7 +1867,7 @@ views:
                   OpenQuatt dienen.
 
 
-                  De status `Valid` hoort voor alle drie signalen op `on` te
+                  De status `Valid` hoort voor alle vier signalen op `on` te
                   staan.
 
                   Als `Valid` op `off` staat, is de huidige bron niet numeriek.
@@ -1881,6 +1886,10 @@ views:
                     name: Proxy buitentemperatuur
                   - entity: binary_sensor.openquatt_ext_outdoor_temperature_valid
                     name: Buitentemperatuur bron valid
+                  - entity: sensor.openquatt_ext_water_supply_temperature
+                    name: Proxy aanvoertemperatuur
+                  - entity: binary_sensor.openquatt_ext_water_supply_temperature_valid
+                    name: Aanvoertemperatuur bron valid
                   - entity: sensor.openquatt_ext_room_setpoint
                     name: Proxy kamer setpoint
                   - entity: binary_sensor.openquatt_ext_room_setpoint_valid
@@ -1900,7 +1909,7 @@ views:
                   <details>
                   <summary><strong>Uitleg</strong></summary>
 
-                  Dit zijn de drie HA-invoerwaarden zoals OpenQuatt ze ontvangt.
+                  Dit zijn de vier HA-invoerwaarden zoals OpenQuatt ze ontvangt.
                   Deze horen de proxywaarden uit het middelste blok te volgen.
 
                   Blijft een waarde op `Unknown`, controleer dan eerst of de
@@ -1913,6 +1922,8 @@ views:
                 entities:
                   - entity: sensor.openquatt_ha_outside_temperature
                     name: HA - Buitentemperatuur
+                  - entity: sensor.openquatt_ha_water_supply_temperature
+                    name: HA - Aanvoertemperatuur
                   - entity: sensor.openquatt_ha_thermostat_setpoint
                     name: HA - Thermostat Doeltemperatuur
                   - entity: sensor.openquatt_ha_thermostat_room_temperature
@@ -1936,8 +1947,8 @@ views:
               `openquatt_ha_dynamic_sources_package.yaml` is niet geladen.  
 
               Met dit optionele package kun je in Home Assistant zelf de
-              bron-entities voor buiten-, kamer- en setpointtemperatuur kiezen,
-              zonder OpenQuatt opnieuw te flashen.
+              bron-entities voor buiten-, aanvoer-, kamer- en
+              setpointtemperatuur kiezen, zonder OpenQuatt opnieuw te flashen.
 
 
               Na installatie verschijnen hier extra configuratieblokken voor

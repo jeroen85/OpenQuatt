@@ -296,6 +296,7 @@ Gebruik deze groep vooral voor onderhoud en diagnose, niet voor dagelijks gebrui
 ### Voor broncontrole
 
 - `HA - Outside Temperature`
+- `HA - Water Supply Temperature`
 - `HA - Thermostat Setpoint`
 - `HA - Thermostat Room Temperature`
 

@@ -30,6 +30,19 @@ sensor:
       sorting_group_id: oq_ha
 
   - platform: homeassistant
+    id: water_supply_temp_ha
+    name: "HA - Water Supply Temperature"
+    entity_id: ${ha_water_supply_temp_entity_id}
+    internal: false
+    icon: mdi:water-thermometer
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    web_server:
+      sorting_group_id: oq_ha
+
+  - platform: homeassistant
     id: thermostat_setpoint_ha
     name: "HA - Thermostat Setpoint"
     entity_id: ${ha_room_setpoint_entity_id}

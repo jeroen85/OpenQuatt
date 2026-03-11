@@ -89,6 +89,8 @@ Welke strategie je ook gebruikt, OpenQuatt kijkt daarnaast naar `Water Supply Te
 - in `Power House` de warmtevraag geleidelijk terugnemen als de aanvoer te hoog wordt;
 - in `CM3` de boiler blokkeren als de aanvoer op de ingestelde bovengrens komt.
 
+Die geselecteerde aanvoertemperatuur kan uit de lokale ESP-sensor, uit CIC of uit een Home Assistant-input komen, afhankelijk van jouw bronkeuze.
+
 Je hoeft daarvoor niet eerst de interne berekening te kennen. Relevanter is welke strategie in jouw installatie het meest stabiele en voorspelbare gedrag geeft.
 
 ## Single en Duo
