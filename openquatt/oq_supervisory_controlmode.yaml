@@ -747,7 +747,7 @@ interval:
           const bool any_hp_active_guard = hp1_active_guard;
           #endif
           auto defrost_stop_hold_level = [&](bool is_hp1)->int {
-            const bool defrost_active = is_hp1 ? id(hp1_defrost).state : id(${hc_secondary_defrost_id}).state;
+            const bool defrost_active = is_hp1 ? id(hp1_defrost).state : id(${supervisory_secondary_defrost_id}).state;
             if (!defrost_active) return 0;
 
             const int selected_level = is_hp1 ? hp1_cmd_lvl : hp2_cmd_lvl;
@@ -1396,4 +1396,3 @@ interval:
 
           apply_silent_window();
           apply_sticky_pump_policy();
-
