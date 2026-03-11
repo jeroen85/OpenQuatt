@@ -104,6 +104,18 @@ Handige diagnose-entiteiten:
 
 `Low-load dynamic thresholds` toont live of cached `pmin/off/on`; als die dynamische input ontbreekt, valt OpenQuatt terug op interne fallbackdrempels.
 
+#### Duo-keuze in Power House
+
+In een `Duo`-opstelling gebruikt `Power House` geen vaste regel als "altijd eerst 1 warmtepomp" of "liever altijd 2". De keuze gaat in eenvoudige stappen:
+
+1. kijk welke levelcombinaties toegestaan en geldig zijn;
+2. houd alleen combinaties over die de gevraagde warmte goed genoeg volgen;
+3. kies daarbinnen de combinatie met het laagste elektrische verbruik;
+4. wissel alleen als dat echt voordeel geeft;
+5. houd een single-/duokeuze kort vast om op en neer schakelen te beperken.
+
+Als twee single-HP-keuzes verder gelijk zijn, krijgt de runtime lead warmtepomp voorrang. Tijdens defrost blijft OpenQuatt voorzichtiger en wordt het beschikbare thermische vermogen van de defrostende unit lager ingeschat.
+
 ### Water Temperature Control
 
 Bij deze strategie kijkt OpenQuatt vooral naar de gewenste aanvoertemperatuur via een stooklijn.
