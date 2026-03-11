@@ -197,7 +197,7 @@ Heating-curve stability guards around zero-demand edge:
 - room-temperature coupling trims supply target when room drifts warm
 - target clamp at `Maximum water temperature`
 - explicit per-HP slew-rate limiting with slower up and faster down behavior
-- single-HP-first allocation with dual-enable hysteresis and sequential HP step changes
+- in heating-curve mode: single-HP-first allocation with dual-enable hysteresis and sequential HP step changes
 
 ## 6. Allocation and Optimization Mechanics
 
