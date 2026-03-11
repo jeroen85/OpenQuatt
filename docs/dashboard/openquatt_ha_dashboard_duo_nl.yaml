@@ -2096,8 +2096,18 @@ views:
               - **Comfort bias up/down** en **room error avg tau** bepalen hoe
               snel de bias zich over de tijd aanpast.
 
-              - **Ramp up/down** begrenzen stijg-/daalsnelheid van gevraagde
-              warmte.
+              - **Response profile** is een snelle voorkeuze voor rustige,
+              gebalanceerde of vlottere Power House-reactie. Zodra opbouwtijd
+              en afbouwtijd niet meer bij een preset horen, toont het profiel
+              automatisch `Custom`.
+
+              - **Demand rise time** geeft ongeveer aan hoe lang `P_req` nodig
+              mag hebben om van `0` naar `Pr` te lopen. Lager = sneller
+              opschakelen.
+
+              - **Demand fall time** geeft ongeveer aan hoe lang `P_req` nodig
+              mag hebben om van `Pr` naar `0` te zakken. Lager = sneller
+              terugregelen bij overshoot.
 
               - **Low-load dynamic OFF/ON factor** bepalen wanneer Power House
               de warmtevraag rond lage last weer vrijgeeft of opnieuw oppakt.
@@ -2137,10 +2147,12 @@ views:
                 name: PH bias omlaag
               - entity: number.openquatt_power_house_room_error_avg_tau
                 name: PH room avg tau
-              - entity: number.openquatt_power_house_ramp_up
-                name: PH ramp up
-              - entity: number.openquatt_power_house_ramp_down
-                name: PH ramp down
+              - entity: select.openquatt_power_house_response_profile
+                name: PH reactieprofiel
+              - entity: number.openquatt_power_house_demand_rise_time
+                name: PH opbouwtijd
+              - entity: number.openquatt_power_house_demand_fall_time
+                name: PH afbouwtijd
               - entity: number.openquatt_low_load_dynamic_off_factor
                 name: Low-load dynamic OFF factor
               - entity: number.openquatt_low_load_dynamic_on_factor
