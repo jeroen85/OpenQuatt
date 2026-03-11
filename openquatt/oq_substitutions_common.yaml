@@ -73,9 +73,7 @@ oq_heat_loop_powerhouse_s: "60"                       # Effective heat-control c
 oq_cop_min_input_w: "10.0"                            # Minimum electrical input for a valid COP calculation [W].
 oq_optimizer_soft_w: "3400.0"                         # Soft limit for electrical HP power in optimizer [W]; peak limit follows oq_power_peak_w.
 oq_optimizer_penalty_per_w: "5.0"                     # Cost factor above soft limit [cost/W].
-oq_optimizer_twohp_penalty: "10.4427"                 # Penalty for running both HPs at low load without defrost.
-oq_optimizer_balance_penalty_per_step: "18.7874"      # Penalty per level difference |HP1-HP2| at medium/high load without defrost.
-oq_defrost_power_factor: "0.7639"                     # Thermal derate on defrosting HP in optimizer.
+oq_defrost_power_factor: "0.764"                      # Thermal derate on a defrosting HP in duo dispatch.
 oq_defrost_comp_min_f: "6"                            # Minimum demand f before single-defrost compensation is applied.
 oq_defrost_comp_boost_steps: "1"                      # Extra level steps on non-defrost HP during single-defrost compensation.
 
