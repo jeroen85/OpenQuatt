@@ -709,8 +709,14 @@ interval:
           const bool power_house_active = (id(oq_heat_mode_code) == 0);
 
           const int hp1_lvl = id(hp1_last_applied_level);
+          const int hp1_cmd_lvl =
+              id(hp1_compressor_level).has_state() ? (int) id(hp1_compressor_level).active_index().value_or(-1) : -1;
           #if OQ_TOPOLOGY_DUO
           const int hp2_lvl = id(${supervisory_secondary_last_applied_level_id});
+          const int hp2_cmd_lvl =
+              id(${supervisory_secondary_compressor_level_id}).has_state()
+                  ? (int) id(${supervisory_secondary_compressor_level_id}).active_index().value_or(-1)
+                  : -1;
           const bool both_levels_off = (hp1_lvl <= 0) && (hp2_lvl <= 0);
 
           const float hp1_mode_raw = id(hp1_working_mode).state;
@@ -728,6 +734,7 @@ interval:
           const bool any_hp_active_guard = hp1_active_guard || hp2_active_guard;
           #else
           const int hp2_lvl = 0;
+          const int hp2_cmd_lvl = -1;
           const bool both_levels_off = (hp1_lvl <= 0);
 
           const float hp1_mode_raw = id(hp1_working_mode).state;
@@ -739,6 +746,18 @@ interval:
           const bool hp2_active_guard = false;
           const bool any_hp_active_guard = hp1_active_guard;
           #endif
+          auto defrost_stop_hold_level = [&](bool is_hp1)->int {
+            const bool defrost_active = is_hp1 ? id(hp1_defrost).state : id(${hc_secondary_defrost_id}).state;
+            if (!defrost_active) return 0;
+
+            const int selected_level = is_hp1 ? hp1_cmd_lvl : hp2_cmd_lvl;
+            if (selected_level > 0) return selected_level;
+
+            const int prev_level = is_hp1 ? hp1_lvl : hp2_lvl;
+            if (prev_level > 0) return prev_level;
+
+            return 0;
+          };
           const bool both_units_idle = !any_hp_active_guard;
 
           bool heating_req = heating_req_raw;
@@ -1024,15 +1043,18 @@ interval:
           publish_binary_if_changed(id(oq_lowflow_fault_active_bs), id(oq_lowflow_fault_active));
 
           // Hard safety path: persistent low-flow fault must force both HPs to Standby + level 0.
-          // This runs in supervisory as an explicit emergency override, independent from heat-control timing.
+          // Never issue that stop command to a unit that is actively defrosting; let heat-control
+          // keep its last non-zero command until defrost clears.
           if (id(oq_lowflow_fault_active)) {
-            set_select_option(id(hp1_set_working_mode), "Standby");
+            if (defrost_stop_hold_level(true) <= 0) {
+              set_select_option(id(hp1_set_working_mode), "Standby");
+              set_select_option(id(hp1_compressor_level), "0");
+            }
             #if OQ_TOPOLOGY_DUO
-            set_select_option(id(${supervisory_secondary_set_working_mode_id}), "Standby");
-            #endif
-            set_select_option(id(hp1_compressor_level), "0");
-            #if OQ_TOPOLOGY_DUO
-            set_select_option(id(${supervisory_secondary_compressor_level_id}), "0");
+            if (defrost_stop_hold_level(false) <= 0) {
+              set_select_option(id(${supervisory_secondary_set_working_mode_id}), "Standby");
+              set_select_option(id(${supervisory_secondary_compressor_level_id}), "0");
+            }
             #endif
           }
           // -------------------------------------------------
@@ -1374,3 +1396,4 @@ interval:
 
           apply_silent_window();
           apply_sticky_pump_policy();
+
