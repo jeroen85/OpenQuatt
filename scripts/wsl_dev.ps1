@@ -16,45 +16,46 @@ Assert-WslReady -DistroName $Distro
 
 $resolvedRepoDir = Resolve-WslPath -DistroName $Distro -Path $RepoDir
 $repoDirEsc = Escape-BashDoubleQuotedString -Value $resolvedRepoDir
+$commandArguments = @($Arguments | Where-Object { $null -ne $_ -and $_ -ne "" })
 
 switch ($Command) {
     "bootstrap" {
-        $commandParts = @("python3", "scripts/dev.py", "bootstrap") + $Arguments
+        $commandParts = @("python3", "scripts/dev.py", "bootstrap") + $commandArguments
     }
     "validate" {
-        $commandParts = @("python3", "scripts/dev.py", "validate") + $Arguments
+        $commandParts = @("python3", "scripts/dev.py", "validate") + $commandArguments
     }
     "preview-pages" {
-        $commandParts = @("python3", "scripts/dev.py", "preview-pages") + $Arguments
+        $commandParts = @("python3", "scripts/dev.py", "preview-pages") + $commandArguments
     }
     "status" {
         $commandParts = @("git", "status", "--short", "--branch")
     }
     "fetch" {
-        $commandParts = @("git", "fetch", "--prune") + $Arguments
+        $commandParts = @("git", "fetch", "--prune") + $commandArguments
     }
     "pull" {
-        $commandParts = @("git", "pull", "--ff-only") + $Arguments
+        $commandParts = @("git", "pull", "--ff-only") + $commandArguments
     }
     "push" {
-        $commandParts = @("git", "push") + $Arguments
+        $commandParts = @("git", "push") + $commandArguments
     }
     "branch" {
-        $commandParts = @("git", "branch", "-vv") + $Arguments
+        $commandParts = @("git", "branch", "-vv") + $commandArguments
     }
     "git" {
-        if (-not $Arguments -or $Arguments.Count -eq 0) {
+        if (-not $commandArguments -or $commandArguments.Count -eq 0) {
             throw "Geef een git-subcommand mee, bijvoorbeeld: git status."
         }
 
-        $commandParts = @("git") + $Arguments
+        $commandParts = @("git") + $commandArguments
     }
     "python" {
-        if (-not $Arguments -or $Arguments.Count -eq 0) {
+        if (-not $commandArguments -or $commandArguments.Count -eq 0) {
             throw "Geef Python-argumenten mee, bijvoorbeeld: python scripts/dev.py validate --jobs 2."
         }
 
-        $commandParts = @("python3") + $Arguments
+        $commandParts = @("python3") + $commandArguments
     }
 }
 
