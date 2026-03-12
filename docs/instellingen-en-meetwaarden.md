@@ -76,6 +76,10 @@ Niet elke instelling is even relevant. In de praktijk bepalen vooral deze groepe
 - `oq_strategy_demand_max_f`
 - `oq_temp_guard_delta_c`
 
+### Compressor guardrails
+
+- `oq_hp_min_off_s`
+
 ### Flow en pomp
 
 - `oq_flow_mismatch_threshold_lph`
@@ -191,6 +195,8 @@ Belangrijk onderscheid:
 
 - `Dual HP Enable Level`, `Dual HP Enable Hold` en `Dual HP Disable Hold` horen bij de verdeling in `Water Temperature Control`;
 - in `Power House` wordt de Duo-keuze juist automatisch bepaald op basis van geldige combinaties, warmtematch en elektrisch verbruik.
+- `Minimum runtime` is een runtime slider met standaard `15` minuten; dat is dus geen compile-time substitution.
+- `oq_hp_min_off_s` is juist wel compile-time en bepaalt de minimale uit-tijd per compressor voor elke restart, ook in `Power House`.
 
 Je hoeft in `Power House` dus geen aparte single-versus-duo voorkeur af te stellen. De bedoeling is juist dat OpenQuatt zelf de zuinigste geldige combinatie kiest en die kort vasthoudt om op en neer schakelen te beperken.
 
