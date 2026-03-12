@@ -485,7 +485,7 @@ interval:
 # - CM-gating (only CM2/CM3)
 # - strategy pad:
 #   heating curve => single-HP/split
-#   power-house => duo dispatch on good-enough heat match, lowest electrical input, then anti-flip guards
+#   power-house => compare best single-vs-duo candidates, prefer lower electrical input, then apply anti-flip guards
 # - shared capacity/deficit publication
 # - allowed-level mapping + min-runtime + apply + runtime bookkeeping
 # ----------------------------
@@ -1124,10 +1124,10 @@ interval:
               }
             } else {
               // Power House duo dispatch:
-              // 1) keep only combinations that follow requested heat closely enough
-              // 2) within that group, pick the lowest electrical input
-              // 3) only switch if it clearly improves heat match or power use
-              // 4) hold single-vs-dual briefly to prevent pendelen
+              // 1) find the best single-HP and best dual-HP candidates separately
+              // 2) prefer the lower-power topology by default
+              // 3) allow a less-efficient topology only when it has a clear heat-match advantage
+              // 4) hold costlier single-vs-dual switches briefly to prevent pendelen
               float P_target = P_req_total;
               if (isnan(P_target)) P_target = 0.0f;
               if (P_target > cap_total) P_target = cap_total;
@@ -1139,6 +1139,10 @@ interval:
               const float P_EL_PEAK_W = ${oq_power_peak_w};
               const float thermal_tie_band_w = fmaxf(150.0f, 0.05f * fmaxf(P_target, 1000.0f));
               const float thermal_keep_margin_w = fminf(90.0f, thermal_tie_band_w * 0.5f);
+              float topology_power_margin_w = ${oq_optimizer_topology_power_margin_w};
+              if (isnan(topology_power_margin_w) || topology_power_margin_w < 0.0f) topology_power_margin_w = 40.0f;
+              float topology_heat_advantage_w = ${oq_optimizer_topology_heat_advantage_w};
+              if (isnan(topology_heat_advantage_w) || topology_heat_advantage_w < 0.0f) topology_heat_advantage_w = 225.0f;
               const float pel_switch_margin_w = 120.0f;
               const float soft_switch_margin_w = 40.0f;
               struct DuoCandidate {
@@ -1220,30 +1224,62 @@ interval:
                 return a.l2 < b.l2;
               };
 
-              float best_err_w = 1e12f;
-              for (int l1 = 0; l1 <= level_cap; l1++) {
-                for (int l2 = 0; l2 <= level_cap; l2++) {
-                  const DuoCandidate c = build_duo_candidate(l1, l2);
-                  if (!c.valid) continue;
-                  if (c.err_w < best_err_w) best_err_w = c.err_w;
+              const DuoCandidate current_candidate = build_duo_candidate(last1, last2);
+              auto pick_topology_candidate = [&](int active_hp_count, DuoCandidate &chosen)->bool {
+                float topology_best_err_w = 1e12f;
+                bool have_topology_candidate = false;
+                for (int l1 = 0; l1 <= level_cap; l1++) {
+                  for (int l2 = 0; l2 <= level_cap; l2++) {
+                    const DuoCandidate c = build_duo_candidate(l1, l2);
+                    if (!c.valid || c.active_hp_count != active_hp_count) continue;
+                    have_topology_candidate = true;
+                    if (c.err_w < topology_best_err_w) topology_best_err_w = c.err_w;
+                  }
                 }
-              }
+                if (!have_topology_candidate) return false;
+
+                bool have_chosen = false;
+                for (int l1 = 0; l1 <= level_cap; l1++) {
+                  for (int l2 = 0; l2 <= level_cap; l2++) {
+                    const DuoCandidate c = build_duo_candidate(l1, l2);
+                    if (!c.valid || c.active_hp_count != active_hp_count) continue;
+                    if (c.err_w > (topology_best_err_w + thermal_tie_band_w)) continue;
+                    if (!have_chosen || better_duo_candidate(c, chosen)) {
+                      chosen = c;
+                      have_chosen = true;
+                    }
+                  }
+                }
+                return have_chosen;
+              };
+
+              DuoCandidate best_single_candidate{};
+              const bool have_best_single = pick_topology_candidate(1, best_single_candidate);
+              DuoCandidate best_duo_candidate{};
+              const bool have_best_duo = pick_topology_candidate(2, best_duo_candidate);
 
               DuoCandidate best_candidate{};
               bool have_best_candidate = false;
-              for (int l1 = 0; l1 <= level_cap; l1++) {
-                for (int l2 = 0; l2 <= level_cap; l2++) {
-                  const DuoCandidate c = build_duo_candidate(l1, l2);
-                  if (!c.valid) continue;
-                  if (c.err_w > (best_err_w + thermal_tie_band_w)) continue;
-                  if (!have_best_candidate || better_duo_candidate(c, best_candidate)) {
-                    best_candidate = c;
-                    have_best_candidate = true;
-                  }
+              if (have_best_single && have_best_duo) {
+                const DuoCandidate *preferred_candidate = &best_single_candidate;
+                const DuoCandidate *alternate_candidate = &best_duo_candidate;
+                if (best_duo_candidate.p_el_w < best_single_candidate.p_el_w) {
+                  preferred_candidate = &best_duo_candidate;
+                  alternate_candidate = &best_single_candidate;
                 }
+                best_candidate = *preferred_candidate;
+                if (alternate_candidate->err_w + topology_heat_advantage_w < preferred_candidate->err_w) {
+                  best_candidate = *alternate_candidate;
+                }
+                have_best_candidate = true;
+              } else if (have_best_single) {
+                best_candidate = best_single_candidate;
+                have_best_candidate = true;
+              } else if (have_best_duo) {
+                best_candidate = best_duo_candidate;
+                have_best_candidate = true;
               }
 
-              const DuoCandidate current_candidate = build_duo_candidate(last1, last2);
               bool keep_current = false;
               const char* optimizer_reason = "keep_current";
 
@@ -1253,14 +1289,19 @@ interval:
                     (current_candidate.active_hp_count > 0) &&
                     (best_candidate.active_hp_count > 0) &&
                     (current_candidate.active_hp_count != best_candidate.active_hp_count);
-                const bool hold_active =
+                const bool switching_to_higher_pel =
                     topology_change &&
+                    (best_candidate.p_el_w > (current_candidate.p_el_w + topology_power_margin_w));
+                const bool hold_active =
+                    switching_to_higher_pel &&
                     (id(oq_duo_dispatch_hold_until_ms) > 0) &&
                     (now_ms < id(oq_duo_dispatch_hold_until_ms));
                 const bool better_soft_guard =
                     current_candidate.over_soft_w > (best_candidate.over_soft_w + soft_switch_margin_w);
+                const float efficiency_switch_margin_w =
+                    topology_change ? topology_power_margin_w : pel_switch_margin_w;
                 const bool better_efficiency =
-                    current_candidate.p_el_w > (best_candidate.p_el_w + pel_switch_margin_w);
+                    current_candidate.p_el_w > (best_candidate.p_el_w + efficiency_switch_margin_w);
 
                 if (hold_active && current_heat_ok) {
                   keep_current = true;

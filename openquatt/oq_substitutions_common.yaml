@@ -74,6 +74,8 @@ oq_cop_min_input_w: "10.0"                            # Minimum electrical input
 oq_hp_min_off_s: "240"                                # Minimum per-HP off-time before any restart [s].
 oq_optimizer_soft_w: "3400.0"                         # Soft limit for electrical HP power in optimizer [W]; peak limit follows oq_power_peak_w.
 oq_optimizer_penalty_per_w: "5.0"                     # Cost factor above soft limit [cost/W].
+oq_optimizer_topology_power_margin_w: "40.0"          # Required power delta before a single<->duo topology switch counts as a meaningful efficiency gain [W].
+oq_optimizer_topology_heat_advantage_w: "225.0"       # Required heat-match advantage before a less-efficient topology may override the efficiency-first choice [W].
 oq_defrost_power_factor: "0.764"                      # Thermal derate on a defrosting HP in duo dispatch.
 oq_defrost_comp_min_f: "6"                            # Minimum demand f before single-defrost compensation is applied.
 oq_defrost_comp_boost_steps: "1"                      # Extra level steps on non-defrost HP during single-defrost compensation.

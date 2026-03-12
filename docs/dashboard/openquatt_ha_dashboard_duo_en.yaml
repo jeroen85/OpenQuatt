@@ -2185,10 +2185,11 @@ views:
               allocation is single-HP-first with dual-enable hysteresis and
               sequential level steps.
 
-              - In Power House mode, OpenQuatt first keeps only combinations
-              that follow the requested heat closely enough and then picks the
-              lowest-power combination. It only switches when that gives a clear
-              benefit, with a short hold to reduce back-and-forth switching.
+              - In Power House mode, OpenQuatt compares the best single-HP and
+              dual-HP options, prefers the lower-power topology by default, and
+              lets a less efficient topology win only when heat match is clearly
+              better. Switches toward a higher-power topology are held briefly to
+              reduce back-and-forth switching.
 
               - **Dual HP enable level (lvl)** defines at which sustained
               single-HP compressor level a second HP may be enabled in

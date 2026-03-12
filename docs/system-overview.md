@@ -218,10 +218,11 @@ Demand filter behavior is asymmetric:
 
 Power House duo dispatch works in simple steps:
 
-- keep only combinations that follow the requested heat closely enough
-- within that group, choose the lowest electrical input
+- compare the best valid single-HP and dual-HP candidates separately
+- prefer the topology with the lower electrical input by default
+- allow a less-efficient topology only when it has a clear heat-match advantage
 - keep the current combination unless a switch gives clear heat or power benefit
-- hold a single-vs-dual choice briefly to reduce back-and-forth switching
+- hold only topology switches toward a higher-power choice briefly to reduce back-and-forth switching
 - if two single-HP options are equally good, choose the runtime lead HP
 - defrost still uses thermal derating and optional compensation boost
 
