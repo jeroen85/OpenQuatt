@@ -94,6 +94,8 @@ Gebruik:
 Convenience wrappers blijven beschikbaar:
 
 - `./scripts/bootstrap_esphome_local.sh`
+- `.\scripts\wsl_dev.ps1 bootstrap`
+- `.\scripts\wsl_dev.ps1 validate --jobs 2`
 - `./scripts/validate_local.sh`
 - `.\scripts\bootstrap_esphome_local.ps1`
 - `.\scripts\validate_local.ps1`

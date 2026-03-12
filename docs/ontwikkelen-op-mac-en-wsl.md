@@ -43,6 +43,30 @@ powershell -ExecutionPolicy Bypass -File .\scripts\setup_wsl_openquatt.ps1 -Inst
 
 Gebruik `-CloneRepo` alleen als je branch al veilig in git staat. Heb je nog lokale, niet-gecommitte wijzigingen op Windows, commit of push die eerst.
 
+## Codex Op Windows
+
+Gebruik je deze repo vanuit de Codex-desktopapp op Windows, dan is het handiger om WSL-opdrachten via een vaste wrapper te laten lopen:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\wsl_dev.ps1 status
+powershell -ExecutionPolicy Bypass -File .\scripts\wsl_dev.ps1 validate --jobs 2
+```
+
+Beschikbare subcommands:
+
+- `bootstrap`
+- `validate`
+- `preview-pages`
+- `status`
+- `fetch`
+- `pull`
+- `push`
+- `branch`
+- `git ...`
+- `python ...`
+
+Deze wrapper laat alle WSL-werkzaamheden via een consistente command-prefix lopen. In Codex betekent dat doorgaans minder losse toestemmingsprompts nadat die prefix eenmaal is goedgekeurd.
+
 ## Hoofdworkflow
 
 Gebruik deze commando's als primaire lokale workflow:
