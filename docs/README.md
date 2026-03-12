@@ -23,3 +23,4 @@ Gebruik je de standaardfirmware, dan is de web installer uit de README meestal d
 
 - [Regelgedrag van OpenQuatt](regelgedrag-van-openquatt.md): systeemstanden, overgangen en flowregeling.
 - [Instellingen en meetwaarden](instellingen-en-meetwaarden.md): compile-time en runtime instellingen, plus de belangrijkste meetwaarden.
+- [Ontwikkelen op Mac en WSL](ontwikkelen-op-mac-en-wsl.md): aanbevolen lokale ontwikkelworkflow voor onderhoud en builds.
