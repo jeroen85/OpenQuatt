@@ -634,7 +634,66 @@ interval:
             #endif
           };
 
-          auto force_standby = [&](bool is_hp1)->void {
+          auto hp_selected_level = [&](bool is_hp1)->int {
+            if (is_hp1) {
+              if (!id(hp1_compressor_level).has_state()) return -1;
+              auto idx = id(hp1_compressor_level).active_index();
+              return idx.has_value() ? (int) idx.value() : -1;
+            }
+            if (!id(${hc_secondary_compressor_level_id}).has_state()) return -1;
+            auto idx = id(${hc_secondary_compressor_level_id}).active_index();
+            return idx.has_value() ? (int) idx.value() : -1;
+          };
+
+          auto defrost_stop_hold_level = [&](bool is_hp1)->int {
+            const bool defrost_active = is_hp1 ? id(hp1_defrost).state : id(${hc_secondary_defrost_id}).state;
+            if (!defrost_active) return 0;
+
+            const int selected_level = hp_selected_level(is_hp1);
+            if (selected_level > 0) return selected_level;
+
+            const int prev_applied = is_hp1 ? id(hp1_last_applied_level) : id(${hc_secondary_last_applied_level_id});
+            if (prev_applied > 0) return prev_applied;
+
+            return 0;
+          };
+
+          auto apply_defrost_stop_hold = [&](bool is_hp1, int retained_level)->bool {
+            if (retained_level <= 0) return false;
+
+            // Keep the HP in Heating and preserve its last non-zero level until defrost clears.
+            const char* opt = "Heating";
+            if (is_hp1) {
+              if (!id(hp1_set_working_mode).has_state() || id(hp1_set_working_mode).current_option() != opt) {
+                auto c = id(hp1_set_working_mode).make_call();
+                c.set_option(opt);
+                c.perform();
+              }
+              if (hp_selected_level(true) != retained_level) {
+                auto c = id(hp1_compressor_level).make_call();
+                c.set_index(retained_level);
+                c.perform();
+              }
+            } else {
+              if (!id(${hc_secondary_set_working_mode_id}).has_state() || id(${hc_secondary_set_working_mode_id}).current_option() != opt) {
+                auto c = id(${hc_secondary_set_working_mode_id}).make_call();
+                c.set_option(opt);
+                c.perform();
+              }
+              if (hp_selected_level(false) != retained_level) {
+                auto c = id(${hc_secondary_compressor_level_id}).make_call();
+                c.set_index(retained_level);
+                c.perform();
+              }
+            }
+
+            return true;
+          };
+
+          auto force_standby = [&](bool is_hp1)->bool {
+            const int retained_level = defrost_stop_hold_level(is_hp1);
+            if (apply_defrost_stop_hold(is_hp1, retained_level)) return false;
+
             const char* opt = "Standby";
             if (is_hp1) {
               if (!id(hp1_set_working_mode).has_state() || id(hp1_set_working_mode).current_option() != opt) {
@@ -659,6 +718,7 @@ interval:
                 c2.perform();
               }
             }
+            return true;
           };
 
           auto sync_forced_stop_state = [&](bool is_hp1)->void {
@@ -685,19 +745,28 @@ interval:
           };
 
           if (!cm_allows_hp) {
-            // Force both units to Standby + level 0
-            force_standby(true);
+            // Force both units to Standby + level 0, except while a unit is still in defrost.
+            const bool hp1_stopped = force_standby(true);
+            const int hp1_hold_level = hp1_stopped ? 0 : defrost_stop_hold_level(true);
             #if OQ_TOPOLOGY_DUO
-            force_standby(false);
+            const bool hp2_stopped = force_standby(false);
+            const int hp2_hold_level = hp2_stopped ? 0 : defrost_stop_hold_level(false);
+            const bool any_defrost_hold = (hp1_hold_level > 0) || (hp2_hold_level > 0);
+            #else
+            const int hp2_hold_level = 0;
             #endif
             // Keep internal state aligned with forced 0-level actuation to avoid stale optimizer/min-runtime state.
-            sync_forced_stop_state(true);
+            if (hp1_stopped) sync_forced_stop_state(true);
             #if OQ_TOPOLOGY_DUO
-            sync_forced_stop_state(false);
+            if (hp2_stopped) sync_forced_stop_state(false);
             #endif
             reset_dual_runtime_state(0);
-            publish_optimizer_reason("inactive");
-            publish_debug(0, 0, 0, 0);
+            #if OQ_TOPOLOGY_DUO
+            publish_optimizer_reason(any_defrost_hold ? "defrost_protect_hold" : "inactive");
+            #else
+            publish_optimizer_reason(hp1_hold_level > 0 ? "defrost_protect_hold" : "inactive");
+            #endif
+            publish_debug(hp1_hold_level, hp2_hold_level, hp1_hold_level, hp2_hold_level);
             return;
           }
           // =========================
@@ -1509,7 +1578,13 @@ interval:
           auto apply_level = [&](bool is_hp1, int req_level)->int {
             req_level = std::max(min_level, std::min(max_level, req_level));
             const int prev_applied = is_hp1 ? id(hp1_last_applied_level) : id(${hc_secondary_last_applied_level_id});
+            const int retained_level = defrost_stop_hold_level(is_hp1);
 
+            if (req_level == 0 && retained_level > 0) {
+              apply_defrost_stop_hold(is_hp1, retained_level);
+              publish_optimizer_reason("defrost_protect_hold");
+              return retained_level;
+            }
             // Hard guardrail: after stop, enforce a universal per-HP minimum off-time before restart.
             if (req_level > 0 && prev_applied == 0) {
               int min_off_s = (int) ${oq_hp_min_off_s};
@@ -1544,6 +1619,12 @@ interval:
             // This avoids losing a full control cycle on mode-transition latency.
             if (req_level > 0 && !mode_is_heating(is_hp1) && !mode_target_is_heating(is_hp1)) {
               applied = 0;
+            }
+
+            if (applied == 0 && retained_level > 0) {
+              apply_defrost_stop_hold(is_hp1, retained_level);
+              publish_optimizer_reason("defrost_protect_hold");
+              return retained_level;
             }
 
             // writes only on change
@@ -1627,3 +1708,4 @@ interval:
           log_transition(false, hp2_applied);
           #endif
           publish_debug(hp1_req, hp2_req, hp1_applied, hp2_applied);
+

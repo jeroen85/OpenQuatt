@@ -25,6 +25,7 @@ oq_supervisory_controlmode: !include
     supervisory_secondary_working_mode_id: "hp2_working_mode"
     supervisory_secondary_set_working_mode_id: "hp2_set_working_mode"
     supervisory_secondary_compressor_level_id: "hp2_compressor_level"
+    supervisory_secondary_defrost_id: "hp2_defrost"
     supervisory_secondary_low_noise_mode_id: "hp2_low_noise_mode"
     supervisory_secondary_set_pump_mode_id: "hp2_set_pump_mode"
     supervisory_secondary_pump_speed_id: "hp2_pump_speed"
@@ -97,3 +98,4 @@ heatpump2: !include
     hp_id: "hp2"
     prefix: "HP2 - "
     device_address: 0x02
+
