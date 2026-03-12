@@ -1622,6 +1622,35 @@ binary_sensor:
   # ----------------------------
 text_sensor:
   - platform: template
+    id: ${hp_id}_working_mode_label
+    name: "${prefix}Working Mode Label"
+    icon: mdi:state-machine
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_${hp_id}
+    lambda: |-
+      // Map the raw numeric Modbus mode to a dashboard-friendly label.
+      const float working_mode_raw = id(${hp_id}_working_mode).state;
+      if (isnan(working_mode_raw)) {
+        return std::string("Unknown");
+      }
+
+      const int working_mode = static_cast<int>(roundf(working_mode_raw));
+      switch (working_mode) {
+        case 0:
+          return std::string("Standby");
+        case 1:
+          return std::string("Cooling");
+        case 2:
+          return std::string("Heating");
+        default: {
+          char buf[24];
+          snprintf(buf, sizeof(buf), "Unknown (%d)", working_mode);
+          return std::string(buf);
+        }
+      }
+
+  - platform: template
     id: ${hp_id}_active_failures_list
     name: "${prefix}Active Failures List"
     entity_category: diagnostic

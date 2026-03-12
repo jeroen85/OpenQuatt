@@ -1225,7 +1225,7 @@ views:
                       transform: none
                       font-size: 0.65em
                   - type: state-label
-                    entity: sensor.openquatt_hp1_working_mode
+                    entity: sensor.openquatt_hp1_working_mode_label
                     style:
                       top: 8%
                       left: 8%
@@ -1275,7 +1275,7 @@ views:
                 title: HP1 key values
                 show_header_toggle: false
                 entities:
-                  - entity: sensor.openquatt_hp1_working_mode
+                  - entity: sensor.openquatt_hp1_working_mode_label
                     name: Work mode
                   - entity: sensor.openquatt_hp1_compressor_level
                     name: Compressor level
