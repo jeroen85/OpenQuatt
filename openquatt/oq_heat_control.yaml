@@ -168,7 +168,7 @@ number:
     mode: slider
     restore_value: true
     optimistic: true
-    initial_value: 30
+    initial_value: 15
     web_server:
       sorting_group_id: oq_tuning_heat
 
@@ -1510,14 +1510,9 @@ interval:
             req_level = std::max(min_level, std::min(max_level, req_level));
             const int prev_applied = is_hp1 ? id(hp1_last_applied_level) : id(${hc_secondary_last_applied_level_id});
 
-            // Hard guardrail: after stop, enforce a profile-based minimum off-time before restart.
-            if (!is_power_house && req_level > 0 && prev_applied == 0) {
-              int min_off_s = 120;  // Balanced default
-              if (id(oq_curve_control_profile).has_state()) {
-                const auto profile = id(oq_curve_control_profile).current_option();
-                if (profile == "Comfort") min_off_s = 60;
-                else if (profile == "Stable") min_off_s = 180;
-              }
+            // Hard guardrail: after stop, enforce a universal per-HP minimum off-time before restart.
+            if (req_level > 0 && prev_applied == 0) {
+              int min_off_s = (int) ${oq_hp_min_off_s};
               if (min_off_s < 0) min_off_s = 0;
 
               const uint32_t last_stop_ms = is_hp1 ? id(hp1_last_stop_ms) : id(${hc_secondary_last_stop_ms_id});
