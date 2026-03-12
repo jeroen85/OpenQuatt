@@ -109,10 +109,11 @@ Handige diagnose-entiteiten:
 In een `Duo`-opstelling gebruikt `Power House` geen vaste regel als "altijd eerst 1 warmtepomp" of "liever altijd 2". De keuze gaat in eenvoudige stappen:
 
 1. kijk welke levelcombinaties toegestaan en geldig zijn;
-2. houd alleen combinaties over die de gevraagde warmte goed genoeg volgen;
-3. kies daarbinnen de combinatie met het laagste elektrische verbruik;
-4. wissel alleen als dat echt voordeel geeft;
-5. houd een single-/duokeuze kort vast om op en neer schakelen te beperken.
+2. bepaal apart de beste single-HP en beste dual-HP kandidaat;
+3. kies normaal de topology met het laagste elektrische verbruik;
+4. laat een minder zuinige topology alleen winnen als die de warmtevraag duidelijk beter volgt;
+5. wissel alleen als dat echt voordeel geeft;
+6. houd vooral topologywissels naar een duurdere keuze kort vast om op en neer schakelen te beperken.
 
 Als twee single-HP-keuzes verder gelijk zijn, krijgt de runtime lead warmtepomp voorrang. Tijdens defrost blijft OpenQuatt voorzichtiger en wordt het beschikbare thermische vermogen van de defrostende unit lager ingeschat.
 

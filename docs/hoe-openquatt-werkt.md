@@ -106,9 +106,9 @@ Het doel bij `Duo` is niet om direct beide units maximaal te laten werken. Rusti
 Hoe dat precies gebeurt, hangt af van de gekozen verwarmingsstrategie:
 
 - in `Water Temperature Control` werkt OpenQuatt in de basis single-HP-first; de tweede warmtepomp mag pas meedoen als de vraag hoog genoeg blijft;
-- in `Power House` rekent OpenQuatt meerdere geldige combinaties door en kiest daarna de combinatie die de warmtevraag goed genoeg volgt met het laagste elektrische verbruik.
+- in `Power House` vergelijkt OpenQuatt de beste single- en duocombinaties en kiest normaal de variant met het laagste elektrische verbruik; alleen bij een duidelijk betere warmtematch mag een minder zuinige topology winnen.
 
-Bij `Power House` betekent dat dus niet automatisch "eerst 1 warmtepomp" of "liever altijd 2 warmtepompen". Soms is 1 warmtepomp zuiniger, soms 2 op lagere levels. OpenQuatt wisselt alleen als dat echt voordeel geeft en houdt een single-/duokeuze kort vast om onrust te beperken.
+Bij `Power House` betekent dat dus niet automatisch "eerst 1 warmtepomp" of "liever altijd 2 warmtepompen". Soms is 1 warmtepomp zuiniger, soms 2 op lagere levels. OpenQuatt behandelt de single-versus-duokeuze efficiency-first, laat een minder zuinige topology alleen winnen bij duidelijk betere warmtematch en houdt vooral duurdere topologywissels kort vast om onrust te beperken.
 
 ## Stabiliteit en pendelgedrag
 
