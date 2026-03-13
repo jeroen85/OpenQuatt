@@ -29,6 +29,8 @@ Kies altijd exact de combinatie van je opstelling en je hardware:
 
 ## Installatie via de web installer
 
+> Let op: gebruik van OpenQuatt kan gevolgen hebben voor je Quatt-garantie. De standaard commerciële Quatt-garantie vervalt in principe bij gebruik van externe aansturing zoals OpenQuatt. De wettelijke garantie blijft bestaan, maar een garantieclaim kan daardoor in de praktijk wel ingewikkelder worden.
+
 1. Open de [OpenQuatt installer](https://jeroen85.github.io/OpenQuatt/install/).
 2. Kies de combinatie die past bij je opstelling en hardware.
 3. Sluit het ESP32-bord via USB aan.

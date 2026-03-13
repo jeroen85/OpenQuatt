@@ -6,6 +6,8 @@ OpenQuatt is ESPHome-firmware voor Quatt Single- en Duo-installaties. Het projec
 
 > [!WARNING]
 > Dit project zit nog in een experimentele fase. Gebruik het bewust en test wijzigingen stap voor stap.
+>
+> Gebruik van OpenQuatt kan gevolgen hebben voor je Quatt-garantie. De standaard commerciële Quatt-garantie vervalt in principe bij gebruik van externe aansturing zoals OpenQuatt. De wettelijke garantie blijft bestaan, maar een garantieclaim kan daardoor in de praktijk wel ingewikkelder worden.
 
 ## Wat is OpenQuatt?
 
