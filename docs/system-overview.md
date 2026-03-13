@@ -48,12 +48,13 @@ Package include order is intentional:
 8. `oq_energy`
 9. `oq_cic`
 10. `oq_ha_inputs`
-11. `oq_local_sensors`
-12. `oq_sensor_sources`
-13. `oq_debug_testing`
-14. `oq_debug_testing_duo` (Duo only)
-15. `oq_webserver`
-16. `oq_HP_io` (HP1 always; HP2 only on Duo)
+11. `oq_ot_slave`
+12. `oq_local_sensors`
+13. `oq_sensor_sources`
+14. `oq_debug_testing`
+15. `oq_debug_testing_duo` (Duo only)
+16. `oq_webserver`
+17. `oq_HP_io` (HP1 always; HP2 only on Duo)
 
 This order mirrors data dependencies and ownership boundaries.
 
@@ -68,6 +69,7 @@ OpenQuatt follows strict subsystem ownership:
 - **Boiler relay control**: `oq_boiler_control`
 - **External feed ingest**: `oq_cic`
 - **External HA proxy ingest**: `oq_ha_inputs`
+- **Local OpenTherm thermostat bridge**: `oq_ot_slave`
 - **Local DS18B20 ingest**: `oq_local_sensors`
 - **Source selection and selected-source synthesis**: `oq_sensor_sources`
 - **Shared runtime services and service entities**: `oq_common`
@@ -93,6 +95,7 @@ This prevents hidden control coupling and keeps debugging deterministic.
 - HP telemetry and status from `oq_HP_io` (Modbus registers)
 - CIC cloud feed from `oq_cic`
 - Home Assistant proxy inputs from `oq_ha_inputs`
+- Local OpenTherm thermostat input from `oq_ot_slave`
 - Local DS18B20 from `oq_local_sensors`
 
 ### 4.2 Source abstraction layer
@@ -105,16 +108,47 @@ This prevents hidden control coupling and keeps debugging deterministic.
 - `room_temp_selected`
 - `room_setpoint_selected`
 
-Runtime selectors decide per signal whether selected values come from local, CIC, or HA-input sources.
+Runtime selectors decide per signal whether selected values come from local, CIC, OT-thermostat, or HA-input sources.
 
-### 4.3 Demand layer
+### 4.3 Local OpenTherm thermostat bridge
+
+`oq_ot_slave` exposes a local OpenTherm slave endpoint towards a thermostat.
+
+Inbound thermostat intent captured by OpenQuatt:
+
+- `Status` master bits for CH enable and cooling enable
+- `TSet` as OT control setpoint
+- `TrSet` as room setpoint
+- `Tr` as room temperature
+
+Outbound slave values presented back to the thermostat:
+
+- `ch_active`: `true` when HP1, HP2, or boiler is actively delivering heat
+- `flame_on`: currently mirrors `ch_active`
+- `Tboiler`: `water_supply_temp_selected`
+- `Tret`: `hp1_water_in_temp`
+- `Toutside`: `outside_temp_selected`
+- `MaxTSet`: `max_water_temp_limit_c`
+- `fault_indication`: aggregated OT fault state from explicit HP `fail_*` bits
+- `diagnostic_indication`: OT fault state plus OpenQuatt low-flow and water-temperature trip states
+
+OpenTherm capability profile currently advertised by OpenQuatt:
+
+- modulating CH slave
+- no DHW
+- no cooling support
+- no CH2
+
+When OpenQuatt does not have a truthful value, the slave prefers `DATA_INVALID` over a placeholder value for items such as `RelModLevel`, `CHPressure`, `Texhaust`, and the DHW-related temperatures/bounds.
+
+### 4.4 Demand layer
 
 `oq_heating_strategy` computes:
 
 - `oq_demand_raw` (`0..20`)
 - strategy-specific telemetry (`P_house`, `P_req`, curve target/output)
 
-### 4.4 Allocation layer
+### 4.5 Allocation layer
 
 `oq_heat_control` computes:
 
@@ -122,7 +156,7 @@ Runtime selectors decide per signal whether selected values come from local, CIC
 - HP level requests and applied levels
 - `oq_P_hp_cap_w` and `oq_P_deficit_w`
 
-### 4.5 Supervisory and safety layer
+### 4.6 Supervisory and safety layer
 
 `oq_supervisory_controlmode` resolves:
 
@@ -131,13 +165,13 @@ Runtime selectors decide per signal whether selected values come from local, CIC
 - power cap factor (`oq_power_cap_f`)
 - silent window state
 
-### 4.6 Actuation layer
+### 4.7 Actuation layer
 
 - Compressor level writes via HP select entities
 - Pump iPWM writes to HP1 (and HP2 on Duo control paths)
 - Boiler relay writes via GPIO output
 
-### 4.7 Telemetry and energy layer
+### 4.8 Telemetry and energy layer
 
 `oq_energy` derives:
 
@@ -147,7 +181,7 @@ Runtime selectors decide per signal whether selected values come from local, CIC
 - system thermal energy daily/total
 - daily heat pump COP metric
 
-### 4.8 Service and diagnostics layer
+### 4.9 Service and diagnostics layer
 
 `oq_common`, `oq_debug_testing`, and `oq_heat_control` provide:
 

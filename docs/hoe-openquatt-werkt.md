@@ -19,7 +19,9 @@ De thermostaat blijft het uitgangspunt voor de warmtevraag in huis. In de prakti
 - de gemeten kamertemperatuur;
 - het algemene verwarmingsverzoek.
 
-Gebruik je een OpenTherm-thermostaat, dan zijn setpoint en actuele kamertemperatuur meestal goed beschikbaar. OpenQuatt vervangt de thermostaat niet, maar werkt erop voort.
+Gebruik je een OpenTherm-thermostaat, dan zijn setpoint en actuele kamertemperatuur meestal goed beschikbaar. OpenQuatt vervangt de thermostaat niet, maar werkt erop voort. Bij lokale OT-ondersteuning leest OpenQuatt die thermostaatsignalen rechtstreeks in en kan het ook een beperkt, geloofwaardig verwarmingssysteem terugmelden aan de thermostaat.
+
+Concreet meldt OpenQuatt zich daarbij nu als een modulerend verwarmingssysteem zonder DHW, zonder koelfunctie en zonder tweede verwarmingscircuit. Het doel daarvan is niet om een volledige cv-ketel te emuleren, maar om de thermostaat genoeg eerlijke informatie te geven voor verwarming met OpenQuatt.
 
 ### OpenQuatt
 
@@ -32,6 +34,17 @@ OpenQuatt is de laag die:
 - de gegevens ontsluit voor Home Assistant.
 
 OpenQuatt vormt daarmee de schakel tussen warmtevraag, beschikbare data en de manier waarop het systeem daarop reageert.
+
+Bij lokale OT-ondersteuning betekent dat ook dat OpenQuatt de slave-antwoorden richting thermostaat invult met echte runtimewaarden:
+
+- `CH active`: actief als HP1, HP2 of boiler werkelijk warmte levert;
+- `Flame on`: volgt nu dezelfde actieve warmtelevering;
+- `Tboiler`: de geselecteerde aanvoertemperatuur;
+- `Tret`: de water-in-temperatuur van HP1;
+- `Toutside`: de geselecteerde buitentemperatuur;
+- `MaxTSet`: de actuele OpenQuatt-limiet voor maximale watertemperatuur.
+
+Voor gegevens die OpenQuatt niet eerlijk kan leveren, kiest de OT-laag liever voor "ongeldig" dan voor een verzonnen waarde. Dat geldt nu bijvoorbeeld voor relatieve modulatie, cv-waterdruk, uitlaattemperatuur en DHW-gerelateerde OT-waarden.
 
 ### De warmtepomp
 
@@ -57,6 +70,7 @@ OpenQuatt kan waarden uit meerdere bronnen halen:
 
 - lokaal gemeten waarden op de OpenQuatt-controller;
 - gegevens uit de CIC-feed;
+- een lokaal aangesloten OpenTherm-thermostaat;
 - waarden uit Home Assistant.
 
 De term `Selected` betekent: dit is de waarde die OpenQuatt op dat moment daadwerkelijk gebruikt voor de regeling.

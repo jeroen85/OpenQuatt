@@ -76,10 +76,35 @@ Als een lambda meerdere verantwoordelijkheden heeft, geef die blokken dan explic
 
 ## Lokale Validatie
 
+Aanbevolen ontwikkelomgeving:
+
+- macOS
+- Linux
+- WSL2 op Windows
+
+Gebruik op Windows bij voorkeur WSL en clone de repo in het Linux-filesystem, niet onder `C:\...` of `/mnt/c/...`. Native Windows blijft bruikbaar voor lichte checks en compatibiliteit, maar is niet de voorkeursroute voor dagelijkse compile-runs of parallel builds.
+
 Gebruik:
 
-- `python3 scripts/check_style_consistency.py`
+- `python3 scripts/dev.py bootstrap`
+- `python3 scripts/dev.py validate`
+- `python3 scripts/dev.py validate --config-only`
+- `python3 scripts/dev.py validate --jobs 2`
+
+Convenience wrappers blijven beschikbaar:
+
+- `./scripts/bootstrap_esphome_local.sh`
+- `.\scripts\wsl_dev.ps1 bootstrap`
+- `.\scripts\wsl_dev.ps1 validate --jobs 2`
 - `./scripts/validate_local.sh`
+- `.\scripts\bootstrap_esphome_local.ps1`
 - `.\scripts\validate_local.ps1`
+
+Losse checks blijven bruikbaar voor snelle iteraties:
+
+- `python3 scripts/check_style_consistency.py`
+- `python3 scripts/check_docs_consistency.py`
+
+Meer achtergrond en een concrete WSL/macOS workflow staan in [docs/ontwikkelen-op-mac-en-wsl.md](docs/ontwikkelen-op-mac-en-wsl.md).
 
 De checker is bedoeld als lokale kwaliteitsgate. Nieuwe regels horen pas toegevoegd te worden als de huidige codebase er stabiel mee om kan gaan.

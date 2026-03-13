@@ -6,6 +6,7 @@ on:
     paths:
       - "README.md"
       - "docs/**"
+      - "scripts/dev.py"
       - "scripts/build_pages_docs.py"
       - "scripts/prepare_pages_site.sh"
       - ".github/workflows/pages-deploy.yml"
@@ -62,7 +63,7 @@ jobs:
           EOF
 
       - name: Assemble Pages site
-        run: ./scripts/prepare_pages_site.sh site .tmp/pages-firmware
+        run: python3 scripts/dev.py prepare-pages-site site .tmp/pages-firmware
 
       - name: Add mirrored release metadata
         run: install -m 0644 .tmp/pages-metadata/version.json site/firmware/main/version.json

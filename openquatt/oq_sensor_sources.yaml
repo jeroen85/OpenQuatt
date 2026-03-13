@@ -95,6 +95,7 @@ select:
     restore_value: true
     options:
       - CIC
+      - OT thermostat
       - HA input
     initial_option: CIC
     web_server:
@@ -109,6 +110,7 @@ select:
     restore_value: true
     options:
       - CIC
+      - OT thermostat
       - HA input
     initial_option: CIC
     web_server:
@@ -250,6 +252,10 @@ sensor:
         if (id(thermostat_room_temp_ha).has_state()) return id(thermostat_room_temp_ha).state;
         return NAN;
       }
+      if (source == "OT thermostat") {
+        if (id(ot_thermostat_room_temp).has_state()) return id(ot_thermostat_room_temp).state;
+        return NAN;
+      }
       if (source == "CIC") {
         if (id(ot_room_temp).has_state()) return id(ot_room_temp).state;
         return NAN;
@@ -276,6 +282,10 @@ sensor:
       // Return the selected source value when available.
       if (source == "HA input") {
         if (id(thermostat_setpoint_ha).has_state()) return id(thermostat_setpoint_ha).state;
+        return NAN;
+      }
+      if (source == "OT thermostat") {
+        if (id(ot_thermostat_room_setpoint).has_state()) return id(ot_thermostat_room_setpoint).state;
         return NAN;
       }
       if (source == "CIC") {
