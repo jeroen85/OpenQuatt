@@ -24,6 +24,8 @@ Je hoeft voor de eerste installatie niet eerst alle technische achtergronddocume
 
 OpenQuatt ondersteunt momenteel deze Quatt-opstellingen en hardwarevarianten.
 
+Experimenteel kan OpenQuatt daarnaast als lokale OpenTherm-slave richting een thermostaat werken. Die OT-laag is runtime-optioneel en vooral bedoeld om thermostaatvraag direct in OpenQuatt beschikbaar te maken zonder Home Assistant-omweg. De huidige OT-profielkeuze is bewust smal: modulerende verwarming, zonder DHW, zonder cooling en zonder CH2, met echte OpenQuatt-runtimewaarden terug naar de thermostaat waar dat kan.
+
 Quatt-opstellingen (V1 en V1.5):
 
 - Single
