@@ -215,3 +215,11 @@ Als deze geselecteerde waarden niet kloppen, lijkt het alsof modes verkeerd werk
 2. Kijk welke bronwaarden daadwerkelijk geselecteerd zijn.
 3. Kijk of de flow logisch en stabiel is.
 4. Kijk pas daarna naar strategie- of tuninginstellingen.
+
+## Verder lezen
+
+- [Heating Strategy](heating-strategy.md)
+- [Power House](power-house.md)
+- [Water Temperature Control](water-temperature-control.md)
+- [Instellingen en meetwaarden](instellingen-en-meetwaarden.md)
+- [Diagnose en afstelling](diagnose-en-afstelling.md)

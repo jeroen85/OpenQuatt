@@ -115,6 +115,7 @@ interval:
           const bool boiler_allowed =
               in_cm3 &&
               has_valid_supply_temp &&
+              !id(oq_boot_startup_inhibit_active) &&
               !id(oq_water_temp_boiler_inhibit_active) &&
               !id(oq_water_temp_hard_trip_active);
 

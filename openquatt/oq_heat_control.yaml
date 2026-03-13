@@ -152,6 +152,10 @@ globals:
     type: uint32_t
     restore_value: false
     initial_value: '0'
+  - id: oq_boot_startup_inhibit_logged
+    type: bool
+    restore_value: false
+    initial_value: 'false'
 
 # ----------------------------
 # TUNING INPUTS
@@ -496,6 +500,22 @@ interval:
           const int heat_mode_code = id(oq_heat_mode_code);
           const bool is_curve_mode = (heat_mode_code == 1);
           const uint32_t loop_target_ms = (uint32_t) ((is_curve_mode ? ${oq_heat_loop_curve_s} : ${oq_heat_loop_powerhouse_s}) * 1000UL);
+
+          // After any controller reboot we intentionally keep all heat outputs blocked for a while.
+          // This makes the compressor restart guard reboot-safe without relying on lost pre-crash timestamps.
+          if (id(oq_boot_startup_inhibit_until_ms) == 0) {
+            const uint32_t inhibit_ms = (uint32_t) ${oq_hp_min_off_s} * 1000UL;
+            id(oq_boot_startup_inhibit_until_ms) = now_ms + inhibit_ms;
+            id(oq_boot_startup_inhibit_active) = (inhibit_ms > 0);
+            if (!id(oq_boot_startup_inhibit_logged) && inhibit_ms > 0) {
+              ESP_LOGW("quatt", "Startup inhibit armed for %us after reboot; compressors and boiler remain blocked.", (unsigned int) ${oq_hp_min_off_s});
+              id(oq_boot_startup_inhibit_logged) = true;
+            }
+          }
+          const bool startup_inhibit_active =
+              id(oq_boot_startup_inhibit_until_ms) > 0 &&
+              now_ms < id(oq_boot_startup_inhibit_until_ms);
+          id(oq_boot_startup_inhibit_active) = startup_inhibit_active;
 
           // On mode switch, execute immediately on this tick instead of waiting for previous cadence window.
           if (id(oq_heat_last_mode_code) != heat_mode_code) {
@@ -1559,6 +1579,17 @@ interval:
             #endif
           }
 
+          // Absolute boot-time startup inhibit: after a controller reboot, keep compressors
+          // at level 0 until the configured compressor minimum off-time has elapsed.
+          if (startup_inhibit_active) {
+            hp1_req = 0;
+            #if OQ_TOPOLOGY_DUO
+            hp2_req = 0;
+            #else
+            hp2_req = 0;
+            #endif
+          }
+
           // =========================
           // 6) Minimum runtime (all strategies)
           // Prevents very short compressor runs in both curve and Power House modes.
@@ -1749,4 +1780,3 @@ interval:
           log_transition(false, hp2_applied);
           #endif
           publish_debug(hp1_req, hp2_req, hp1_applied, hp2_applied);
-
