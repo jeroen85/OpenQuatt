@@ -338,7 +338,9 @@ Vuistregel:
 ## Gerelateerde pagina's
 
 - [Installatie en ingebruikname](installatie-en-ingebruikname.md)
+- [Heating Strategy](heating-strategy.md)
 - [Power House](power-house.md)
+- [Water Temperature Control](water-temperature-control.md)
 - [Hoe OpenQuatt werkt](hoe-openquatt-werkt.md)
 - [Regelgedrag van OpenQuatt](regelgedrag-van-openquatt.md)
 - [Diagnose en afstelling](diagnose-en-afstelling.md)
