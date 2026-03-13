@@ -148,12 +148,23 @@ namespace esphome {
 			}
 			m_enabled = enabled;
 			if (m_enabled) {
+				m_updatePrepareActive = false;
 				start_opentherm_();
 			} else {
 				stop_opentherm_();
 				m_master_state = MasterState{};
 				m_slave_state = SlaveState{};
 			}
+		}
+
+		void OpenQuattOTSlave::prepare_for_firmware_update()
+		{
+			if (!m_enabled || m_updatePrepareActive) {
+				return;
+			}
+			ESP_LOGI(TAG, "Preparing OpenTherm for firmware update");
+			m_updatePrepareActive = true;
+			stop_opentherm_();
 		}
 
 	        OpenQuattOTSlave::~OpenQuattOTSlave()
@@ -233,6 +244,10 @@ namespace esphome {
 				if (m_otaActive) {
 					ESP_LOGI(TAG, "OpenTherm OTA state ended");
 					m_otaActive = false;
+				}
+				if (m_updatePrepareActive) {
+					ESP_LOGI(TAG, "Clearing OpenTherm firmware update prepare state");
+					m_updatePrepareActive = false;
 				}
 			}
 		}
@@ -612,7 +627,7 @@ namespace esphome {
 	        void OpenQuattOTSlave::loop() 
 	        {        	
 	        	m_msLastLoop=now_millis();
-	        	if (!m_otaActive && m_enabled && !m_otStarted && m_otThermostat != NULL)
+	        	if (!m_otaActive && !m_updatePrepareActive && m_enabled && !m_otStarted && m_otThermostat != NULL)
 	        		start_opentherm_();
 	        	if(m_otStarted && m_otThermostat!=NULL)
 	        		m_otThermostat->process();
