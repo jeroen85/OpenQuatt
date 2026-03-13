@@ -168,5 +168,8 @@ Te veel aanpassen is een van de snelste manieren om onrust in het systeem te hou
 
 - Installatie en basiscontrole: [Installatie en ingebruikname](installatie-en-ingebruikname.md)
 - Uitleg van rollen en begrippen: [Hoe OpenQuatt werkt](hoe-openquatt-werkt.md)
+- Overzicht van beide strategieën: [Heating Strategy](heating-strategy.md)
+- Power House in meer detail: [Power House](power-house.md)
+- Stooklijnregeling in meer detail: [Water Temperature Control](water-temperature-control.md)
 - Dashboard lezen: [Dashboardoverzicht](dashboardoverzicht.md)
 - Meer technische naslag: [Regelgedrag van OpenQuatt](regelgedrag-van-openquatt.md) en [Instellingen en meetwaarden](instellingen-en-meetwaarden.md)
