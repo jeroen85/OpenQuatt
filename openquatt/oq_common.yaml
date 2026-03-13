@@ -73,6 +73,23 @@ modbus:
     send_wait_time: 100ms
 
 # ==============================================================================
+# SHARED RUNTIME STATE
+# ==============================================================================
+globals:
+  - id: oq_fw_check_last_request_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_boot_startup_inhibit_until_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_boot_startup_inhibit_active
+    type: bool
+    restore_value: false
+    initial_value: 'true'
+
+# ==============================================================================
 # DIAGNOSTIC ENTITIES
 # ==============================================================================
 select:
@@ -95,8 +112,22 @@ select:
             } else {
               id(oq_firmware_update).set_source_url("${main_release_manifest_url}");
             }
-        - update.check:
-            id: oq_firmware_update
+        - if:
+            condition:
+              lambda: |-
+                constexpr uint32_t fw_check_cooldown_ms = 15000UL;
+                const uint32_t now_ms = (uint32_t) millis();
+                const uint32_t last_request_ms = id(oq_fw_check_last_request_ms);
+                if (last_request_ms > 0 && now_ms >= last_request_ms &&
+                    (now_ms - last_request_ms) < fw_check_cooldown_ms) {
+                  ESP_LOGW("oq_fw", "Skip firmware update check: cooldown active after a recent request.");
+                  return false;
+                }
+                id(oq_fw_check_last_request_ms) = now_ms;
+                return true;
+            then:
+              - update.check:
+                  id: oq_firmware_update
 
   - platform: template
     name: "Debug Level"
@@ -172,8 +203,22 @@ button:
     web_server:
       sorting_group_id: oq_diagnostics
     on_press:
-      - update.check:
-          id: oq_firmware_update
+      - if:
+          condition:
+            lambda: |-
+              constexpr uint32_t fw_check_cooldown_ms = 15000UL;
+              const uint32_t now_ms = (uint32_t) millis();
+              const uint32_t last_request_ms = id(oq_fw_check_last_request_ms);
+              if (last_request_ms > 0 && now_ms >= last_request_ms &&
+                  (now_ms - last_request_ms) < fw_check_cooldown_ms) {
+                ESP_LOGW("oq_fw", "Skip firmware update check: cooldown active after a recent request.");
+                return false;
+              }
+              id(oq_fw_check_last_request_ms) = now_ms;
+              return true;
+          then:
+            - update.check:
+                id: oq_firmware_update
 
 binary_sensor:
   - platform: status
