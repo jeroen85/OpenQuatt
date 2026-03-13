@@ -338,6 +338,7 @@ Vuistregel:
 ## Gerelateerde pagina's
 
 - [Installatie en ingebruikname](installatie-en-ingebruikname.md)
+- [Power House](power-house.md)
 - [Hoe OpenQuatt werkt](hoe-openquatt-werkt.md)
 - [Regelgedrag van OpenQuatt](regelgedrag-van-openquatt.md)
 - [Diagnose en afstelling](diagnose-en-afstelling.md)

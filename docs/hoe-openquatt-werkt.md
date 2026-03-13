@@ -149,5 +149,6 @@ Belangrijk daarbij is:
 
 - Installeren en eerste controle: [Installatie en ingebruikname](installatie-en-ingebruikname.md)
 - Dashboard begrijpen: [Dashboardoverzicht](dashboardoverzicht.md)
+- Specifiek over deze strategie: [Power House](power-house.md)
 - Problemen oplossen: [Diagnose en afstelling](diagnose-en-afstelling.md)
 - Meer technische naslag: [Regelgedrag van OpenQuatt](regelgedrag-van-openquatt.md) en [Instellingen en meetwaarden](instellingen-en-meetwaarden.md)
