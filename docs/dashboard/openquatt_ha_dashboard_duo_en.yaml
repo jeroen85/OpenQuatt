@@ -1609,6 +1609,8 @@ views:
                     name: Selected room temperature
                   - entity: sensor.openquatt_cic_ot_room_temperature
                     name: Room temperature (CIC OT)
+                  - entity: sensor.openquatt_ot_room_temperature
+                    name: Room temperature (OT thermostat)
                   - entity: sensor.openquatt_ha_thermostat_room_temperature
                     name: Room temperature (HA Input)
           - type: vertical-stack
@@ -1693,6 +1695,8 @@ views:
                     name: Selected room setpoint
                   - entity: sensor.openquatt_cic_ot_room_setpoint
                     name: Room setpoint (CIC OT)
+                  - entity: sensor.openquatt_ot_room_setpoint
+                    name: Room setpoint (OT thermostat)
                   - entity: sensor.openquatt_ha_thermostat_setpoint
                     name: Room setpoint (HA Input)
           - type: vertical-stack
@@ -1866,6 +1870,47 @@ views:
           - condition: state
             entity: binary_sensor.openquatt_ha_dynamic_sources_package_active
             state_not: 'on'
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:thermostat-box
+            heading_style: title
+            heading: OpenTherm thermostat
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Explanation</strong></summary>
+
+              This block shows the status of the local OpenTherm connection.
+              Use it to verify that the thermostat is active and which OT
+              demand values OpenQuatt receives directly.
+
+              Check these first when behavior looks wrong:
+              - `OpenTherm Enabled`
+              - `Thermostat CH enable`
+              - `Control setpoint`
+              - `Room setpoint`
+              - `Room temperature`
+
+              </details>
+            text_only: true
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: switch.openquatt_opentherm_enabled
+                name: OpenTherm Enabled
+              - entity: switch.openquatt_opentherm_debug
+                name: OpenTherm Debug
+              - entity: binary_sensor.openquatt_ot_thermostat_ch_enable
+                name: Thermostat CH enable
+              - entity: binary_sensor.openquatt_ot_thermostat_cooling_enable
+                name: Thermostat cooling enable
+              - entity: sensor.openquatt_ot_control_setpoint
+                name: Control setpoint
+              - entity: sensor.openquatt_ot_room_setpoint
+                name: Room setpoint
+              - entity: sensor.openquatt_ot_room_temperature
+                name: Room temperature
       - type: grid
         cards:
           - type: heading
