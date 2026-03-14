@@ -188,6 +188,33 @@ select:
             logger->set_log_level("modbus", lvl);
             logger->set_log_level("modbus_controller", lvl);
 
+  - platform: template
+    name: "Debug Level OpenTherm"
+    id: debug_level_opentherm
+    icon: mdi:thermostat-cog
+    web_server:
+      sorting_group_id: oq_diagnostics
+    entity_category: diagnostic
+    optimistic: true
+    restore_value: true
+    options: [NONE, ERROR, WARN, INFO, CONFIG, DEBUG]
+    initial_option: WARN
+    on_value:
+      then:
+        - lambda: |-
+            int lvl =
+              (x == "NONE")    ? 0 :
+              (x == "ERROR")   ? 1 :
+              (x == "WARN")    ? 2 :
+              (x == "INFO")    ? 3 :
+              (x == "CONFIG")  ? 4 :
+                                 5;  // DEBUG
+
+            auto *logger = esphome::logger::global_logger;
+
+            logger->set_log_level("OpenQuattOTSlave", lvl);
+            logger->set_log_level("OpenTherm", lvl);
+
 button:
   - platform: restart
     name: Restart
