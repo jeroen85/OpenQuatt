@@ -299,7 +299,10 @@ namespace esphome {
 			if(dataID==OpenThermMessageID::Status)
 			{
 				m_master_state.ch_enable = message_data::parse_flag8_hb_0(data);
+				m_master_state.dhw_enable = message_data::parse_flag8_hb_1(data);
 				m_master_state.cooling_enable = message_data::parse_flag8_hb_2(data);
+				m_master_state.otc_active = message_data::parse_flag8_hb_3(data);
+				m_master_state.ch2_enable = message_data::parse_flag8_hb_4(data);
 				m_lastMasterStatusMs = now_millis();
 		}
 
@@ -347,20 +350,29 @@ namespace esphome {
 		{
 			if (!m_enabled) {
 				m_master_state.ch_enable = false;
+				m_master_state.dhw_enable = false;
 				m_master_state.cooling_enable = false;
+				m_master_state.otc_active = false;
+				m_master_state.ch2_enable = false;
 				return;
 			}
 
 			if (m_lastMasterStatusMs == 0) {
 				m_master_state.ch_enable = false;
+				m_master_state.dhw_enable = false;
 				m_master_state.cooling_enable = false;
+				m_master_state.otc_active = false;
+				m_master_state.ch2_enable = false;
 				return;
 			}
 
 			const unsigned long age_ms = now_millis() - m_lastMasterStatusMs;
 			if (age_ms > MASTER_STATUS_TIMEOUT_MS) {
 				m_master_state.ch_enable = false;
+				m_master_state.dhw_enable = false;
 				m_master_state.cooling_enable = false;
+				m_master_state.otc_active = false;
+				m_master_state.ch2_enable = false;
 			}
 		}
 
@@ -437,9 +449,10 @@ namespace esphome {
 			uint16_t status = master_status & 0xFF00;
 			status = message_data::write_flag8_lb_0(m_slave_state.fault, status);
 			status = message_data::write_flag8_lb_1(m_slave_state.ch_active, status);
-			status = message_data::write_flag8_lb_2(false, status);
+			status = message_data::write_flag8_lb_2(false, status);  // DHW mode
 			status = message_data::write_flag8_lb_3(m_slave_state.flame_on, status);
 			status = message_data::write_flag8_lb_4(m_slave_state.cooling_active, status);
+			status = message_data::write_flag8_lb_5(false, status);  // CH2 mode
 			status = message_data::write_flag8_lb_6(m_slave_state.diagnostic, status);
 			return status;
 		}

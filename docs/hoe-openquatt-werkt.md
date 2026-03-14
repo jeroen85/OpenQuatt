@@ -23,6 +23,8 @@ Gebruik je een OpenTherm-thermostaat, dan zijn setpoint en actuele kamertemperat
 
 Concreet meldt OpenQuatt zich daarbij nu als een modulerend verwarmingssysteem zonder DHW, zonder koelfunctie en zonder tweede verwarmingscircuit. Het doel daarvan is niet om een volledige cv-ketel te emuleren, maar om de thermostaat genoeg eerlijke informatie te geven voor verwarming met OpenQuatt.
 
+Voor de OT-profielkeuze, T6-mapping en de precieze invulling van OT-velden is er nu ook een aparte pagina: [OpenTherm-thermostaten](opentherm-thermostaten.md).
+
 ### OpenQuatt
 
 OpenQuatt is de laag die:
@@ -44,7 +46,7 @@ Bij lokale OT-ondersteuning betekent dat ook dat OpenQuatt de slave-antwoorden r
 - `Toutside`: de geselecteerde buitentemperatuur;
 - `MaxTSet`: de actuele OpenQuatt-limiet voor maximale watertemperatuur.
 
-Voor gegevens die OpenQuatt niet eerlijk kan leveren, kiest de OT-laag liever voor "ongeldig" dan voor een verzonnen waarde. Dat geldt nu bijvoorbeeld voor relatieve modulatie, cv-waterdruk, uitlaattemperatuur en DHW-gerelateerde OT-waarden.
+Voor gegevens die OpenQuatt niet eerlijk kan leveren, kiest de OT-laag waar mogelijk liever voor een compatibel, terughoudend antwoord of anders voor "ongeldig" dan voor een misleidende waarde. Welke OT-velden echte runtime, proxy of compatibiliteitswaarden zijn, staat uitgewerkt op [OpenTherm-thermostaten](opentherm-thermostaten.md).
 
 ### De warmtepomp
 
@@ -167,4 +169,5 @@ Belangrijk daarbij is:
 - Specifiek over deze strategie: [Power House](power-house.md)
 - Specifiek over stooklijnregeling: [Water Temperature Control](water-temperature-control.md)
 - Problemen oplossen: [Diagnose en afstelling](diagnose-en-afstelling.md)
+- OpenTherm-profiel en T6-compatibiliteit: [OpenTherm-thermostaten](opentherm-thermostaten.md)
 - Meer technische naslag: [Regelgedrag van OpenQuatt](regelgedrag-van-openquatt.md) en [Instellingen en meetwaarden](instellingen-en-meetwaarden.md)

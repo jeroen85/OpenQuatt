@@ -112,7 +112,10 @@ namespace esphome {
 			private:
 				struct MasterState {
 					bool ch_enable = false;
+					bool dhw_enable = false;
 					bool cooling_enable = false;
+					bool otc_active = false;
+					bool ch2_enable = false;
 					int member_id = -1;
 					float ot_version = NAN;
 					float t_set = 0.0f;
