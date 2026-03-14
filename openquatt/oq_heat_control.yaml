@@ -605,6 +605,9 @@ interval:
             const float pv = id(oq_system_supply_temp).state;
             const float room_c = id(room_temp_selected).state;
             const float room_sp_c = id(room_setpoint_selected).state;
+            const float phouse_w = id(oq_phouse_house_w).state;
+            const float preq_w = id(oq_phouse_req_w);
+            const float room_target_c = id(oq_ph_room_target_effective_c);
             const float tout_c = id(outside_temp_selected).state;
             const float wm1 = id(hp1_working_mode).state;
             float wm2 = 0.0f;
@@ -617,10 +620,10 @@ interval:
             if (id(${hc_secondary_compressor_level_id}).has_state()) cur2 = (int) id(${hc_secondary_compressor_level_id}).active_index().value_or(-1);
             rt2 = id(${hc_secondary_minutes_id});
             #endif
-            char buf[640];
+            char buf[768];
             snprintf(
               buf, sizeof(buf),
-              "mode=%s cm=%d phase=%s raw=%d f=%d cap=%d pre=%d post=%d dual=%d on=%d off=%d em=%d lead=%d owner=%d req=%d+%d app=%d+%d cur=%d+%d wm=%.0f/%.0f sp=%.2f pv=%.2f room=%.2f/%.2f out=%.2f ri=%d off_age=%lus rt=%d/%d",
+              "mode=%s cm=%d phase=%s raw=%d f=%d cap=%d pre=%d post=%d dual=%d on=%d off=%d em=%d lead=%d owner=%d req=%d+%d app=%d+%d cur=%d+%d wm=%.0f/%.0f sp=%.2f pv=%.2f room=%.2f/%.2f rtgt=%.2f phouse=%.0f preq=%.0f out=%.2f ri=%d off_age=%lus rt=%d/%d",
               mode_s, cm_code, phase_s, raw, f, f_cap,
               id(oq_curve_demand_pre_guardrail), id(oq_demand_curve),
               (int) id(oq_dual_hp_enabled),
@@ -629,7 +632,7 @@ interval:
               id(oq_dual_hp_emergency_hold_elapsed_min),
               id(oq_last_lead_hp), id(oq_curve_single_owner_hp),
               req1, req2, app1, app2,
-              cur1, cur2, wm1, wm2, spw, pv, room_c, room_sp_c, tout_c,
+              cur1, cur2, wm1, wm2, spw, pv, room_c, room_sp_c, room_target_c, phouse_w, preq_w, tout_c,
               (int) id(oq_curve_restart_inhibit_active),
               (unsigned long) off_age_s,
               id(hp1_minutes), rt2);
