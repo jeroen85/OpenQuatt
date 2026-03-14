@@ -70,12 +70,6 @@ oq_cic: !include
     cic_secondary_enabled: "0"
     cic_hp2_sensor_internal: "true"
 oq_ha_inputs: !include oq_ha_inputs.yaml
-oq_ot_slave: !include
-  file: oq_ot_slave.yaml
-  vars:
-    ot_secondary_present: "0"
-    ot_secondary_last_applied_level_id: "hp1_last_applied_level"
-    ot_secondary_fault_binary_sensor_id: "hp1_ot_fault_active"
 oq_local_sensors: !include oq_local_sensors.yaml
 oq_sensor_sources: !include oq_sensor_sources.yaml
 oq_debug_testing: !include oq_debug_testing.yaml
@@ -86,3 +80,4 @@ heatpump1: !include
     hp_id: "hp1"
     prefix: "HP1 - "
     device_address: 0x01
+

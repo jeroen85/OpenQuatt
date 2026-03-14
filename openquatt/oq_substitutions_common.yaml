@@ -115,11 +115,6 @@ oq_water_cp_j_per_kgk: "4186.0"                       # Specific heat capacity o
 oq_boiler_loop_s: "5"                                 # Main interval for boiler gating/safety loop [s].
 
 # ----------------------------
-# OPEN THERM SLAVE
-# ----------------------------
-oq_ot_enabled_default: "false"                        # Default runtime state of the OT slave bus handler.
-
-# ----------------------------
 # CIC FEED
 # ----------------------------
 cic_backoff_start_ms: "5000"                          # Initial polling backoff after success/startup [ms].
