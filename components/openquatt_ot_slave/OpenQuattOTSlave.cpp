@@ -573,12 +573,18 @@ namespace esphome {
 						break;
 					case OpenThermMessageID::Tdhw:
 					case OpenThermMessageID::Tdhw2:
-						responseType = OpenThermMessageType::DATA_INVALID;
-						responseData = 0x0000;
+						// Some thermostats probe DHW values even on CH-only systems.
+						// Return a conservative compatibility temperature rather than DATA_INVALID.
+						responseData = message_data::encode_f88(m_slave_state.t_dhw);
+						break;
+					case OpenThermMessageID::TrOverride:
+						// OpenQuatt does not drive a remote room-setpoint override, but some
+						// thermostats keep polling the ID and treat UNKNOWN_DATA_ID poorly.
+						// Respond with a neutral "no override" value instead.
+						responseData = message_data::encode_f88(0.0f);
 						break;
 					case OpenThermMessageID::RelModLevel:
-						responseType = OpenThermMessageType::DATA_INVALID;
-						responseData = 0x0000;
+						responseData = message_data::encode_f88(m_slave_state.rel_mod_level);
 						break;
 					case OpenThermMessageID::Texhaust:
 						responseType = OpenThermMessageType::DATA_INVALID;
@@ -590,12 +596,25 @@ namespace esphome {
 						// compatibility response instead of DATA_INVALID.
 						responseData = 0x3C0A;
 						break;
+					case OpenThermMessageID::TdhwSet:
+						responseData = message_data::encode_f88(m_slave_state.t_dhw_set);
+						break;
+					case OpenThermMessageID::T6CompatProbe70:
+					case OpenThermMessageID::T6CompatProbe72:
+					case OpenThermMessageID::T6CompatProbe82:
+						// These IDs are probed by the Honeywell T6, but we do not have a
+						// verified semantic mapping for them. DATA_INVALID is a softer and
+						// more protocol-friendly response than UNKNOWN_DATA_ID.
+						responseType = OpenThermMessageType::DATA_INVALID;
+						responseData = 0x0000;
+						break;
 					case OpenThermMessageID::MaxCapacityMinModLevel:
 						responseData = 0x1400;
 						break;
 					case OpenThermMessageID::CHPressure:
-						responseType = OpenThermMessageType::DATA_INVALID;
-						responseData = 0x0000;
+						// OpenQuatt does not measure hydronic CH pressure, but a conservative
+						// fixed value is more compatible than DATA_INVALID for some thermostats.
+						responseData = message_data::encode_f88(m_slave_state.ch_pressure);
 						break;
 					case OpenThermMessageID::Tboiler:
 						responseData = message_data::encode_f88(m_slave_state.t_boiler);
