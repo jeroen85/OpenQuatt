@@ -271,7 +271,6 @@ sensor:
     icon: mdi:timer-outline
     update_interval: 60s
     device_class: duration
-    state_class: total_increasing
     unit_of_measurement: s
     entity_category: diagnostic
     web_server:

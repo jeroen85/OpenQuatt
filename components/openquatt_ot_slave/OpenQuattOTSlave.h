@@ -63,10 +63,6 @@ namespace esphome {
 			void set_slave_t_ret(float value) { m_slave_state.t_ret = value; }
 			void set_slave_t_outside(float value) { m_slave_state.t_outside = value; }
 			void set_slave_max_t_set(float value) { m_slave_state.max_t_set = value; }
-			void set_slave_rel_mod_level(float value) { m_slave_state.rel_mod_level = value; }
-			void set_slave_ch_pressure(float value) { m_slave_state.ch_pressure = value; }
-			void set_slave_t_dhw(float value) { m_slave_state.t_dhw = value; }
-			void set_slave_t_dhw_set(float value) { m_slave_state.t_dhw_set = value; }
 			void prepare_for_firmware_update();
 			
 			#define OPENQUATT_OT_SLAVE_SET_SENSOR(entity) void set_ ## entity(sensor::Sensor* sensor) { this->entity = sensor; }
@@ -130,10 +126,6 @@ namespace esphome {
 					float t_ret = 20.0f;
 					float t_outside = NAN;
 					float max_t_set = 60.0f;
-					float rel_mod_level = 0.0f;
-					float ch_pressure = 1.5f;
-					float t_dhw = 40.0f;
-					float t_dhw_set = 40.0f;
 				};
 
 				uint8_t m_pinThermostatIn = 0;

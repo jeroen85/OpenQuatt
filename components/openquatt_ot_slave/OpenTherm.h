@@ -91,10 +91,6 @@ enum OpenThermMessageID {
 	TdhwSet = 56, // f8.8  DHW setpoint (°C)    (Remote parameter 1)
 	MaxTSet, // f8.8  Max CH water setpoint (°C)  (Remote parameters 2)
 	Hcratio, // f8.8  OTC heat curve ratio (°C)  (Remote parameter 3)
-
-	T6CompatProbe70 = 70, // T6 compatibility probe (meaning not implemented in OpenQuatt)
-	T6CompatProbe72 = 72, // T6 compatibility probe (meaning not implemented in OpenQuatt)
-	T6CompatProbe82 = 82, // T6 compatibility probe (meaning not implemented in OpenQuatt)
 	
 	Unknown99=99,	
 
