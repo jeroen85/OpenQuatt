@@ -8,7 +8,7 @@ substitutions:
   uart_tx_pin: "GPIO17"                                 # Active RS485 TX pin.
   uart_rx_pin: "GPIO18"                                 # Active RS485 RX pin.
   uart_rts_pin: "GPIO21"                                # Active RS485 DE/RE (flow control) pin.
-  oq_ot_thermostat_in_pin: "GPIO14"                     # OpenTherm thermostat input on header pin GPIO14.
-  oq_ot_thermostat_out_pin: "GPIO13"                    # OpenTherm thermostat output on header pin GPIO13.
+  oq_ot_thermostat_in_pin: "GPIO14"                     # Reserved OT thermostat RX pin placeholder for future wiring.
+  oq_ot_thermostat_out_pin: "GPIO15"                    # Reserved OT thermostat TX pin placeholder for future wiring.
   ds18b20_pin: "GPIO2"                                  # Active DS18B20 1-Wire pin.
   oq_boiler_relay_pin: "GPIO47"                         # Active boiler relay output pin.
