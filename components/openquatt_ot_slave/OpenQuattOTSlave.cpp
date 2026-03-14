@@ -315,10 +315,6 @@ namespace esphome {
 					m_master_state.t_set = message_data::parse_f88(data);
 					break;
 
-			case OpenThermMessageID::MaxRelModLevelSetting:
-				m_master_state.max_rel_mod_level_setting = message_data::parse_f88(data);
-				break;
-
 			case OpenThermMessageID::TsetCH2:
 				break;
 
@@ -343,11 +339,6 @@ namespace esphome {
 
 			case OpenThermMessageID::OpenThermVersionMaster:
 				m_master_state.ot_version = message_data::parse_f88(data);
-				break;
-
-			case OpenThermMessageID::MasterVersion:
-				m_master_state.product_version = message_data::parse_u8_hb(data);
-				m_master_state.product_type = message_data::parse_u8_lb(data);
 				break;
 
 			default:
@@ -620,12 +611,6 @@ namespace esphome {
 						break;
 					case OpenThermMessageID::TdhwSet:
 						responseData = message_data::encode_f88(m_slave_state.t_dhw_set);
-						break;
-					case OpenThermMessageID::RemoteOverrideFunction:
-						// OpenQuatt does not actively drive thermostat-side remote override
-						// priorities or operating modes. Return a neutral "no override
-						// function active" response instead of UNKNOWN_DATA_ID.
-						responseData = 0x0000;
 						break;
 					case OpenThermMessageID::T6CompatProbe70:
 					case OpenThermMessageID::T6CompatProbe72:

@@ -4,8 +4,6 @@ Deze pagina beschrijft hoe OpenQuatt momenteel met lokale OpenTherm-thermostaten
 
 De focus ligt op de huidige OpenQuatt-implementatie en op praktische compatibiliteit. OpenQuatt gedraagt zich daarbij niet als volledige cv-ketel-emulatie, maar als een geloofwaardige, beperkt geprofileerde OT-slave voor verwarming.
 
-OpenQuatt gebruikt de lokale OT-koppeling alleen aan thermostaatzijde. Het project zet OpenTherm-vraag van de thermostaat dus niet transparant door naar een OT-boiler, maar verwerkt die vraag binnen de eigen OpenQuatt-logica.
-
 ## Samengevat
 
 - OpenQuatt kan lokaal als OpenTherm-slave richting een thermostaat werken.
@@ -23,12 +21,6 @@ De belangrijkste inkomende thermostaatsignalen zijn:
 - `ID 16 TrSet`: kamer-setpoint
 - `ID 24 Tr`: gemeten kamertemperatuur
 - `ID 14 MaxRelModLevelSetting`: master-side low-load / max relatieve modulatie
-
-OpenQuatt bewaart daarnaast ook nog een paar standaard master-kenmerken intern voor compatibiliteitsanalyse:
-
-- `ID 2 MConfigMMemberIDcode`: member ID van de master
-- `ID 124 OpenThermVersionMaster`: OT-versie van de master
-- `ID 126 MasterVersion`: standaard product type/version-info van de master
 
 In Home Assistant zie je daarvan vooral:
 
@@ -116,7 +108,6 @@ Sommige OT-velden zijn nuttig voor thermostaatcompatibiliteit, maar hebben in Op
 - `ID 48 TdhwSetUB/TdhwSetLB`: conservatieve DHW-bounds
 - `ID 56 TdhwSet`: vaste compatibiliteitswaarde
 - `ID 9 TrOverride`: neutrale waarde `0.0 C`
-- `ID 100 RemoteOverrideFunction`: neutrale waarde `0x0000`
 
 Deze waarden zijn vooral toegevoegd omdat sommige thermostaten, met name de Honeywell T6, deze velden actief pollen of in hun OT-infoscherm tonen.
 
