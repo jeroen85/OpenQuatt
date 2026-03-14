@@ -92,7 +92,6 @@ namespace esphome {
     namespace OpenQuattOTSlave {
         static const char * TAG = "OpenQuattOTSlave";
 	static constexpr unsigned long MASTER_STATUS_TIMEOUT_MS = 5000;
-	static constexpr float SUPPORTED_OPENTHERM_VERSION = 2.2f;
 	static const char *message_type_to_string_(OpenThermMessageType type) {
 		switch (type) {
 			case OpenThermMessageType::READ_DATA: return "READ_DATA";
@@ -458,20 +457,6 @@ namespace esphome {
 			return config;
 		}
 
-		uint16_t OpenQuattOTSlave::build_remote_boiler_parameter_flags_() const
-		{
-			// RBPflags (ID 6):
-			// - HB bits advertise which remote boiler parameters exist.
-			// - LB bits advertise whether the matching parameter is writable.
-			//
-			// OpenQuatt exposes only remote parameter 2 (Max CH water setpoint),
-			// and keeps that value owned by OpenQuatt itself, so it is read-only.
-			uint16_t flags = 0x0000;
-			flags = message_data::write_flag8_hb_1(true, flags);   // Remote parameter 2 available
-			flags = message_data::write_flag8_lb_1(false, flags);  // Read-only for the thermostat
-			return flags;
-		}
-
 		void OpenQuattOTSlave::refresh_slave_runtime_state_()
 		{
 			if (m_enabled) {
@@ -538,7 +523,7 @@ namespace esphome {
 			publish_float_if_changed(this->max_t_set_sensor, m_slave_state.max_t_set, m_lastPublishedMaxTSet);
 			#endif
 			#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_slave_ot_version
-			publish_float_if_changed(this->slave_ot_version_sensor, SUPPORTED_OPENTHERM_VERSION, m_lastPublishedSlaveOTVersion);
+			publish_float_if_changed(this->slave_ot_version_sensor, 4.0f, m_lastPublishedSlaveOTVersion);
 			#endif
 			#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_slave_memberid
 			publish_int_if_changed(this->slave_memberid_sensor, 1, m_lastPublishedSlaveMemberID);
@@ -565,11 +550,9 @@ namespace esphome {
 						responseData = build_slave_config_();
 						break;
 					case OpenThermMessageID::ASFflags:
+					case OpenThermMessageID::RBPflags:
 					case OpenThermMessageID::TflowCH2:
 						responseData = 0x0000;
-						break;
-					case OpenThermMessageID::RBPflags:
-						responseData = build_remote_boiler_parameter_flags_();
 						break;
 					case OpenThermMessageID::Tdhw:
 					case OpenThermMessageID::Tdhw2:
@@ -585,10 +568,8 @@ namespace esphome {
 						responseData = 0x0000;
 						break;
 					case OpenThermMessageID::TdhwSetUBTdhwSetLB:
-						// Some thermostats keep probing this DHW bounds ID even when the slave
-						// does not advertise DHW support. Return conservative bounds as a
-						// compatibility response instead of DATA_INVALID.
-						responseData = 0x3C0A;
+						responseType = OpenThermMessageType::DATA_INVALID;
+						responseData = 0x0000;
 						break;
 					case OpenThermMessageID::MaxCapacityMinModLevel:
 						responseData = 0x1400;
@@ -618,7 +599,7 @@ namespace esphome {
 						responseData = message_data::encode_f88(m_slave_state.max_t_set);
 						break;
 					case OpenThermMessageID::OpenThermVersionSlave:
-						responseData = message_data::encode_f88(SUPPORTED_OPENTHERM_VERSION);
+						responseData = message_data::encode_f88(4.0f);
 					break;
 				case OpenThermMessageID::SlaveVersion:
 					responseData = 0x0101;

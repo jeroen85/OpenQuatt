@@ -189,7 +189,6 @@ namespace esphome {
 				unsigned long build_slave_response_(OpenThermMessageType type, OpenThermMessageID dataID, uint16_t data);
 				uint16_t build_slave_status_(uint16_t master_status) const;
 				uint16_t build_slave_config_() const;
-				uint16_t build_remote_boiler_parameter_flags_() const;
 				void publish_master_runtime_state_();
 				void refresh_master_runtime_state_();
 				void refresh_slave_runtime_state_();
