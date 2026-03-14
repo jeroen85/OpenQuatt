@@ -117,8 +117,11 @@ namespace esphome {
 					bool otc_active = false;
 					bool ch2_enable = false;
 					int member_id = -1;
+					int product_type = -1;
+					int product_version = -1;
 					float ot_version = NAN;
 					float t_set = 0.0f;
+					float max_rel_mod_level_setting = NAN;
 					float t_room_set = 0.0f;
 					float t_room = 0.0f;
 				};
