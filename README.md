@@ -80,7 +80,6 @@ Belangrijkste pagina's voor gebruikers:
 
 - [Installatie en ingebruikname](docs/installatie-en-ingebruikname.md) voor installeren en controle na de eerste start
 - [Hoe OpenQuatt werkt](docs/hoe-openquatt-werkt.md) voor de rolverdeling tussen thermostaat, OpenQuatt, warmtepomp en Home Assistant
-- [OpenTherm-thermostaten](docs/opentherm-thermostaten.md) voor OT-profiel, T6-mapping en compatibiliteitsgedrag
 - [Dashboardoverzicht](docs/dashboardoverzicht.md) voor gebruik en diagnose van de dashboardweergaven
 - [Dashboard installeren](docs/dashboard/README.md) voor het importeren van dashboards
 - [Diagnose en afstelling](docs/diagnose-en-afstelling.md) voor diagnose en gerichte afstelling
