@@ -23,15 +23,7 @@ api:
 
 ota:
   - platform: esphome
-    on_begin:
-      then:
-        - lambda: |-
-            id(oq_ot_slave_hub).prepare_for_firmware_update();
   - platform: http_request
-    on_begin:
-      then:
-        - lambda: |-
-            id(oq_ot_slave_hub).prepare_for_firmware_update();
 
 # ==============================================================================
 # NETWORK + RECOVERY

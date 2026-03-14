@@ -63,7 +63,6 @@ namespace esphome {
 			void set_slave_t_ret(float value) { m_slave_state.t_ret = value; }
 			void set_slave_t_outside(float value) { m_slave_state.t_outside = value; }
 			void set_slave_max_t_set(float value) { m_slave_state.max_t_set = value; }
-			void prepare_for_firmware_update();
 			
 			#define OPENQUATT_OT_SLAVE_SET_SENSOR(entity) void set_ ## entity(sensor::Sensor* sensor) { this->entity = sensor; }
 			OPENQUATT_OT_SLAVE_SENSOR_LIST(OPENQUATT_OT_SLAVE_SET_SENSOR, )
@@ -133,7 +132,6 @@ namespace esphome {
 
 				bool m_enabled = true;
 				bool m_debug_enabled = false;
-				bool m_updatePrepareActive = false;
 				unsigned long m_lastMasterStatusMs = 0;
 				MasterState m_master_state{};
 				SlaveState m_slave_state{};
