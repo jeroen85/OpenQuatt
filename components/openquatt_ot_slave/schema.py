@@ -400,7 +400,7 @@ SWITCHES: Schema[SwitchSchema] = Schema(
                 "description": "Enable or disable the OpenTherm slave runtime",
                 "icon": "mdi:connection",
                 "entity_category": ENTITY_CATEGORY_CONFIG,
-                "restore_mode": "RESTORE_DEFAULT_ON",
+                "restore_mode": "RESTORE_DEFAULT_OFF",
                 "message": "Status",
                 "message_data": "flag8_hb_0",
                 "init": False,
