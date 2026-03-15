@@ -25,6 +25,9 @@ ota:
   - platform: esphome
   - platform: http_request
 
+debug:
+  update_interval: 10s
+
 # ==============================================================================
 # NETWORK + RECOVERY
 # ==============================================================================
@@ -229,6 +232,32 @@ binary_sensor:
       sorting_group_id: oq_diagnostics
 
 sensor:
+  - platform: debug
+    free:
+      id: esp_free_heap
+      name: "ESP Free Heap"
+      entity_category: diagnostic
+      web_server:
+        sorting_group_id: oq_diagnostics
+    block:
+      id: esp_max_block
+      name: "ESP Max Block"
+      entity_category: diagnostic
+      web_server:
+        sorting_group_id: oq_diagnostics
+    loop_time:
+      id: esp_loop_time
+      name: "ESP Loop Time"
+      entity_category: diagnostic
+      web_server:
+        sorting_group_id: oq_diagnostics
+    cpu_frequency:
+      id: esp_cpu_frequency
+      name: "ESP CPU Frequency"
+      entity_category: diagnostic
+      web_server:
+        sorting_group_id: oq_diagnostics
+
   - platform: uptime
     name: Uptime
     id: uptime_sensor
