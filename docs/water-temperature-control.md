@@ -171,6 +171,52 @@ De code gebruikt namelijk ook een warme-kamertrim op het supply target. In gewon
 
 Dat maakt het gedrag vaak bruikbaarder in echte woningen.
 
+### Hoe sterk is die kamercorrectie?
+
+De huidige kamercorrectie werkt bewust als **rem op overshoot**, niet als tweede hoofdregeling.
+
+Belangrijk:
+
+- de correctie verlaagt het stooklijndoel alleen als de kamer al **boven** setpoint zit;
+- de correctie verhoogt het stooklijndoel dus niet extra als de kamer te koud is;
+- een te koude kamer helpt in deze modus vooral mee in de **stop/herstartlogica**, niet via een extra opwaartse supply-boost.
+
+In formulevorm:
+
+- `warm_err = room_temp - room_setpoint`
+- alleen als `warm_err > trim_start` volgt er een correctie
+- `trim = min((warm_err - trim_start) * trim_gain, trim_max)`
+- `supply_target = supply_target - trim`
+
+De ingebouwde profielen bepalen hoe vroeg en hoe sterk die trim ingrijpt:
+
+- `Comfort`: trim start vanaf `+0.05°C`, gain `2.0`, max trim `2.0°C`, target-kwantisatie `0.25°C`
+- `Balanced`: trim start vanaf `+0.10°C`, gain `1.5`, max trim `2.0°C`, target-kwantisatie `0.5°C`
+- `Stable`: trim start vanaf `+0.15°C`, gain `1.0`, max trim `2.5°C`, target-kwantisatie `1.0°C`
+
+Praktisch voorbeeld:
+
+- stel de stooklijn vraagt `35.0°C` aanvoer
+- kamer-setpoint is `20.0°C`
+- gemeten kamer is `20.5°C`
+
+Dan wordt de trim ongeveer:
+
+- `Comfort`: `(0.50 - 0.05) * 2.0 = 0.90°C` -> target daalt grofweg naar `34.1°C`
+- `Balanced`: `(0.50 - 0.10) * 1.5 = 0.60°C` -> target daalt grofweg naar `34.4°C`
+- `Stable`: `(0.50 - 0.15) * 1.0 = 0.35°C` -> target daalt grofweg naar `34.7°C`
+
+Daarna rondt OpenQuatt het target nog af op profielafhankelijke stappen. Daardoor kunnen kleine trims in de praktijk nog iets minder zichtbaar worden:
+
+- `Comfort`: afronding op `0.25°C`
+- `Balanced`: afronding op `0.5°C`
+- `Stable`: afronding op `1.0°C`
+
+Naast deze target-trim gebruikt de regeling de kamer ook voor stop/herstartgedrag. In `Balanced` betekent dat bijvoorbeeld:
+
+- pas echt richting `OFF` als de kamer warm genoeg is, grofweg vanaf `setpoint + 0.30°C`
+- weer makkelijker herstarten als de kamer onder setpoint komt, grofweg vanaf `setpoint - 0.05°C`
+
 ## Single: hoe werkt dit?
 
 Bij `Single` is de verdeling simpel:

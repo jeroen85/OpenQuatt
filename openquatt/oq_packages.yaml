@@ -98,4 +98,3 @@ heatpump2: !include
     hp_id: "hp2"
     prefix: "HP2 - "
     device_address: 0x02
-
