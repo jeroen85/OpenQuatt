@@ -1586,6 +1586,9 @@ views:
               - quick comparison between CIC, local, and HA Input
               - validation of the effective control input
               - verification of automatic HA fallback to HA inputs during CIC outages
+              - in Duo, `Flow source = Outdoor unit` reveals an extra choice for
+                `Flowmeter HP1`, `Flowmeter HP2`, or the existing local HP1/HP2
+                aggregate
 
               </details>
             text_only: true
@@ -1653,6 +1656,23 @@ views:
                     name: Flow rate (Outdoor unit)
                   - entity: sensor.openquatt_cic_flowrate_filtered
                     name: Flow rate (CIC)
+              - type: conditional
+                conditions:
+                  - condition: state
+                    entity: select.openquatt_flow_source
+                    state: Outdoor unit
+                card:
+                  type: entities
+                  show_header_toggle: false
+                  entities:
+                    - entity: select.openquatt_outdoor_unit_flow_mode
+                      name: Outdoor unit flow mode
+                    - entity: sensor.openquatt_hp1_flow
+                      name: Flowmeter HP1
+                    - entity: sensor.openquatt_hp2_flow
+                      name: Flowmeter HP2
+                    - entity: sensor.openquatt_flow_average_local
+                      name: Local aggregate HP1/HP2
           - type: vertical-stack
             cards:
               - type: heading

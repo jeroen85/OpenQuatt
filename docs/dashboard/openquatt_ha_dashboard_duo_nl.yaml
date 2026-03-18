@@ -1674,6 +1674,9 @@ views:
               - snelle vergelijking tussen CIC, lokaal en HA input
               - validatie van de effectieve regelinput
               - controle van automatische HA-terugval naar HA-inputs bij CIC-uitval
+              - bij `Flow bron = Outdoor unit` in een Duo-opstelling verschijnt een extra
+                keuze voor `Flowmeter HP1`, `Flowmeter HP2` of de bestaande lokale
+                aggregatie van HP1/HP2
 
               </details>
             text_only: true
@@ -1743,6 +1746,23 @@ views:
                     name: Flow (buitenunit)
                   - entity: sensor.openquatt_cic_flowrate_filtered
                     name: Flow (CIC)
+              - type: conditional
+                conditions:
+                  - condition: state
+                    entity: select.openquatt_flow_source
+                    state: Outdoor unit
+                card:
+                  type: entities
+                  show_header_toggle: false
+                  entities:
+                    - entity: select.openquatt_outdoor_unit_flow_mode
+                      name: Buitenunit flowmodus
+                    - entity: sensor.openquatt_hp1_flow
+                      name: Flowmeter HP1
+                    - entity: sensor.openquatt_hp2_flow
+                      name: Flowmeter HP2
+                    - entity: sensor.openquatt_flow_average_local
+                      name: Lokale aggregatie HP1/HP2
           - type: vertical-stack
             cards:
               - type: heading
