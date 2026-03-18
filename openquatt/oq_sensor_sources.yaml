@@ -73,6 +73,22 @@ select:
       sorting_group_id: oq_cic
 
   - platform: template
+    name: "Outdoor Unit Flow Mode"
+    id: oq_duo_outdoor_flow_mode
+    internal: ${sensor_sources_duo_flow_internal}
+    icon: mdi:call-split
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    options:
+      - Flowmeter HP1
+      - Flowmeter HP2
+      - Local aggregate HP1/HP2
+    initial_option: Local aggregate HP1/HP2
+    web_server:
+      sorting_group_id: oq_cic
+
+  - platform: template
     name: "Outside Temperature Source"
     id: outside_temp_source
     icon: mdi:source-branch
@@ -200,6 +216,23 @@ sensor:
         return NAN;
       }
       if (source == "Outdoor unit") {
+        #if OQ_TOPOLOGY_DUO
+        // Duo-only local flow selector:
+        // - HP1/HP2 = direct individual flowmeter
+        // - Local aggregate HP1/HP2 = existing combined local flow signal
+        //   (normally average, but with mismatch guard inside flow_rate_hp_avg)
+        // This keeps the main flow source selector compact while still allowing
+        // per-flowmeter inspection and explicit selection for local Duo flow.
+        const auto local_mode = id(oq_duo_outdoor_flow_mode).current_option();
+        if (local_mode == "Flowmeter HP1") {
+          if (id(hp1_flow).has_state()) return id(hp1_flow).state;
+          return NAN;
+        }
+        if (local_mode == "Flowmeter HP2") {
+          if (id(${flow_secondary_flow_sensor_id}).has_state()) return id(${flow_secondary_flow_sensor_id}).state;
+          return NAN;
+        }
+        #endif
         if (id(flow_rate_hp_avg).has_state()) return id(flow_rate_hp_avg).state;
         return NAN;
       }

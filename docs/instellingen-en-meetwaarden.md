@@ -255,6 +255,13 @@ Dit is vaak de belangrijkste groep bij onverklaarbaar gedrag. Als de geselecteer
 
 Voor `Outside Temperature Source` is ook de optie `Lowest valid` beschikbaar. Dan vergelijkt OpenQuatt de lokale buitenunitmeting en de HA-invoer, gebruikt alleen geldige waarden en kiest de laagste van de twee.
 
+Bij een Duo-installatie en `Flow Source = Outdoor unit` is er ook een extra keuze voor de lokale flowbepaling:
+
+- `Flowmeter HP1`
+- `Flowmeter HP2`
+- `Local aggregate HP1/HP2`
+
+Die laatste gebruikt de bestaande lokale duo-aggregatie. In normale gevallen is dat het gemiddelde van HP1 en HP2, maar bij een duidelijke mismatch gebruikt OpenQuatt bewust een plausibele hogere waarde om onderschatting te voorkomen.
 ### Service en diagnose
 
 Belangrijke hulpmiddelen:
