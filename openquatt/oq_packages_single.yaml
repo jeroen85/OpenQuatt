@@ -75,6 +75,7 @@ oq_sensor_sources: !include
   file: oq_sensor_sources.yaml
   vars:
     sensor_sources_duo_flow_internal: "true"
+    flow_secondary_flow_sensor_id: "hp1_flow"
 oq_debug_testing: !include oq_debug_testing.yaml
 oq_webserver: !include oq_webserver.yaml
 heatpump1: !include
