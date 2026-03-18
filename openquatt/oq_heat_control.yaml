@@ -165,14 +165,14 @@ number:
     id: oq_min_runtime_min
     name: "Minimum runtime"
     icon: mdi:timer-cog-outline
-    unit_of_measurement: "min"
-    min_value: 0
-    max_value: 240
-    step: 1
+    unit_of_measurement: "s"
+    min_value: 300
+    max_value: 3600
+    step: 30
     mode: slider
     restore_value: true
     optimistic: true
-    initial_value: 15
+    initial_value: 300
     web_server:
       sorting_group_id: oq_tuning_heat
 
@@ -1596,12 +1596,13 @@ interval:
           // =========================
           // 6) Minimum runtime (all strategies)
           // Prevents very short compressor runs in both curve and Power House modes.
+          // Runtime is per-compressor and user-tunable, with a hard lower bound of 300 s.
           // Skipped during an absolute water-temperature hard trip.
           // =========================
-          const int min_rt = (int) roundf(id(oq_min_runtime_min).state);
-          if (!id(oq_water_temp_hard_trip_active) && min_rt > 0) {
+          const int min_rt_s = (int) roundf(id(oq_min_runtime_min).state);
+          if (!id(oq_water_temp_hard_trip_active) && min_rt_s > 0) {
             // HP1: if request is 0 but runtime < min -> force >=1
-            const uint32_t min_rt_ms = (uint32_t) min_rt * 60000UL;
+            const uint32_t min_rt_ms = (uint32_t) min_rt_s * 1000UL;
             const uint32_t hp1_rt_ms = (uint32_t)(now_ms - id(hp1_last_start_ms));
             if (hp1_req == 0 && id(hp1_last_applied_level) > 0 && hp1_rt_ms < min_rt_ms) {
               hp1_req = pick_allowed(1, true);

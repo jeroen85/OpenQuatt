@@ -309,10 +309,12 @@ Belangrijke signalen:
 
 Wat daar gebeurt:
 
+- voordat een nieuwe warmtevraag echt mag starten, moet die vraag kort stabiel blijven;
 - OpenQuatt schat een dynamische ondergrens in voor zinvol warmtepompbedrijf;
 - bij heel lage vraag mag `CM2` niet meteen blijven herstarten;
 - er zit hysterese tussen "uit laten" en "weer duidelijk genoeg vraag";
 - er zit een re-entry block tussen om `CM1 <-> CM2`-flipperen te beperken.
+- na een compressorstart geldt per compressor een instelbare minimale draaitijd, met een ondergrens van `300 s`.
 
 Dit deel is juist belangrijk in zacht weer of bij installaties die op lage load snel te veel warmte leveren.
 

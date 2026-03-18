@@ -188,14 +188,14 @@ Belangrijke instellingen:
 Deze groep bepaalt vooral:
 
 - hoe snel vraag mag oplopen;
-- hoe lang units blijven lopen;
+- hoe lang een al gestarte compressor minimaal moet blijven lopen;
 - wanneer een tweede unit bij een Duo-opstelling mag meedoen.
 
 Belangrijk onderscheid:
 
 - `Dual HP Enable Level`, `Dual HP Enable Hold` en `Dual HP Disable Hold` horen bij de verdeling in `Water Temperature Control`;
 - in `Power House` wordt de Duo-keuze juist automatisch bepaald op basis van geldige combinaties, met een efficiency-first single-versus-duokeuze en alleen een warmte-override als het verschil echt duidelijk is.
-- `Minimum runtime` is een runtime slider met standaard `15` minuten; dat is dus geen compile-time substitution.
+- `Minimum runtime` is een runtime slider in seconden. De ondergrens is `300 s`, zodat je korte compressor-runs niet per ongeluk weer mogelijk maakt.
 - `oq_hp_min_off_s` is juist wel compile-time en bepaalt de minimale uit-tijd per compressor voor elke restart, ook in `Power House`.
 - `oq_optimizer_topology_power_margin_w` en `oq_optimizer_topology_heat_advantage_w` zijn compile-time marges voor de single-versus-duokeuze in `Power House`.
 
