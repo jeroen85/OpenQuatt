@@ -1763,6 +1763,10 @@ views:
                     name: Buitentemperatuur (buitenunit)
                   - entity: sensor.openquatt_ha_outside_temperature
                     name: Buitentemperatuur (HA-invoer)
+                  - type: attribute
+                    entity: select.openquatt_outside_temperature_source
+                    attribute: options
+                    name: Beschikbare bronopties
           - type: vertical-stack
             cards:
               - type: heading
