@@ -41,6 +41,7 @@ oq_cm_min_flow_lph: "250.0"                           # Minimum valid flow for c
 oq_cm_flow_fault_s: "60"                              # Low-flow duration before fault becomes active [s].
 oq_cm_flow_recover_s: "30"                            # Flow recovery duration before fault is cleared [s].
 oq_cm2_idle_exit_s: "90"                              # Exit CM2 if both HPs are idle for this duration while demand remains > 0 [s].
+oq_ph_start_confirm_s: "30"                          # Power House start confirmation: demand must stay active for this time before CM1/CM2 startup [s].
 oq_low_load_fallback_off_w: "900"                     # Internal fallback OFF threshold when no dynamic low-load input is available [W].
 oq_low_load_fallback_on_w: "1300"                     # Internal fallback ON threshold when no dynamic low-load input is available [W].
 oq_low_load_dyn_cache_max_s: "60"                     # Maximum age for reusing last-known-good dynamic low-load thresholds [s].

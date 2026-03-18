@@ -170,6 +170,7 @@ Then maps requested power to demand scale `0..20`.
 
 Power House stability guards in supervisory:
 
+- short start confirmation before a new Power House heating request may leave idle
 - dynamic low-load thresholds from performance map level-1 thermal power (`pmin/off/on`)
 - last-known-good dynamic thresholds across short telemetry dropouts
 - internal fallback low-load OFF/ON thresholds when dynamic input is unavailable
@@ -178,6 +179,7 @@ Power House stability guards in supervisory:
 - CM2 startup-grace and high-load guard on idle-exit path
 - shadow heat-enable arbiter diagnostics (`IDLE/PREHEAT/HEATING/POSTFLOW/LOCKOUT`)
 - shared water-temperature limiter on effective `P_req` using `water_supply_temp_selected`
+- per-compressor minimum runtime once a compressor has started (user-tunable, lower bound `300 s`)
 
 ### Water Temperature Control mode
 

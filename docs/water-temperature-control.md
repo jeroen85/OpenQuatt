@@ -242,10 +242,10 @@ De basis is:
 
 Belangrijke instellingen:
 
+- `Minimum runtime`
 - `Dual HP Enable Level`
 - `Dual HP Enable Hold`
 - `Dual HP Disable Hold`
-- `Minimum runtime`
 
 Dat betekent praktisch:
 
@@ -306,12 +306,12 @@ Gebruik deze om te bepalen hoe scherp of rustig de aanvoerregeling het target vo
 
 ### 3. Duo-opbouw en looptijd
 
+- `Minimum runtime`
 - `Dual HP Enable Level`
 - `Dual HP Enable Hold`
 - `Dual HP Disable Hold`
-- `Minimum runtime`
 
-Gebruik deze vooral als `Duo` te laat, te vroeg of te onrustig inschakelt.
+Gebruik deze vooral als `Duo` te laat, te vroeg of te onrustig inschakelt. `Minimum runtime` werkt per compressor en heeft een ondergrens van `300 s` om korte start/stop-cycli te vermijden.
 
 ### 4. Watertempbegrenzing
 

@@ -2013,8 +2013,9 @@ views:
               <summary><strong>Uitleg parameters</strong></summary>
 
 
-              - **Minimum runtime** voorkomt kortcyclen en overmatig
-              start/stop-gedrag.
+              - **Minimum runtime** houdt een al gestarte compressor minimaal
+              `300 s` aan. Je kunt deze runtime verlengen, maar niet lager
+              zetten.
 
               - **Demand filter ramp up** bepaalt met hoeveel demand-stappen per
               minuut `Demand filtered` maximaal mag stijgen richting `Demand

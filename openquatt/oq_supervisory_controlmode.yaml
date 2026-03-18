@@ -96,6 +96,10 @@ globals:
     type: uint32_t
     restore_value: false
     initial_value: '0'
+  - id: oq_ph_start_confirm_since_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
 
   # Sticky Pump Protection (CM0-only)
   - id: oq_cm0_since_ms
@@ -853,10 +857,28 @@ interval:
             id(oq_lowload_heat_latch) = heating_req_raw;
             id(oq_cm2_reentry_block_until_ms) = 0;
             reentry_block_active = false;
+            id(oq_ph_start_confirm_since_ms) = 0;
             id(oq_low_load_dyn_source_state) = 0;
             id(oq_low_load_pmin_dyn_w) = NAN;
             id(oq_low_load_off_dyn_w) = NAN;
             id(oq_low_load_on_dyn_w) = NAN;
+          }
+
+          // Power House startup confirmation:
+          // from a non-heating state, demand must stay active briefly before we enter CM1/CM2.
+          // This filters short-lived P_req spikes (for example sun on the outside sensor)
+          // before they turn into a real compressor start.
+          if (power_house_active) {
+            const uint32_t start_confirm_ms = (uint32_t)(${oq_ph_start_confirm_s}UL * 1000UL);
+            const bool start_pending_scope = !in_cm2 && !any_hp_active_guard;
+            if (start_confirm_ms > 0 && heating_req && start_pending_scope) {
+              if (id(oq_ph_start_confirm_since_ms) == 0) id(oq_ph_start_confirm_since_ms) = now_ms;
+              if ((uint32_t)(now_ms - id(oq_ph_start_confirm_since_ms)) < start_confirm_ms) {
+                heating_req = false;
+              }
+            } else {
+              id(oq_ph_start_confirm_since_ms) = 0;
+            }
           }
 
           const uint32_t cm2_idle_exit_ms = (uint32_t)(${oq_cm2_idle_exit_s}UL * 1000UL);

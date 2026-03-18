@@ -1928,8 +1928,8 @@ views:
               <summary><strong>Parameter explanation</strong></summary>
 
 
-              - **Minimum runtime** prevents short-cycling and excessive
-              start/stop behavior.
+              - **Minimum runtime** keeps a started compressor on for at least
+              `300 s`. You can lengthen this runtime, but not lower it.
 
               - **Demand filter ramp up** controls how many demand steps per
               minute `Demand filtered` may rise toward `Demand raw` in Power
