@@ -1427,6 +1427,10 @@ views:
                     name: Outside temperature (Outdoor unit)
                   - entity: sensor.openquatt_ha_outside_temperature
                     name: Outside temperature (HA Input)
+                  - type: attribute
+                    entity: select.openquatt_outside_temperature_source
+                    attribute: options
+                    name: Available source options
           - type: vertical-stack
             cards:
               - type: heading

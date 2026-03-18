@@ -253,6 +253,8 @@ Belangrijke instellingen en signalen:
 
 Dit is vaak de belangrijkste groep bij onverklaarbaar gedrag. Als de geselecteerde bron niet klopt, helpt fijnregelen vrijwel nooit.
 
+Voor `Outside Temperature Source` is ook de optie `Lowest valid` beschikbaar. Dan vergelijkt OpenQuatt de lokale buitenunitmeting en de HA-invoer, gebruikt alleen geldige waarden en kiest de laagste van de twee.
+
 ### Service en diagnose
 
 Belangrijke hulpmiddelen:

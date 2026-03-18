@@ -82,6 +82,7 @@ select:
     options:
       - Outdoor unit
       - HA input
+      - Lowest valid
     initial_option: Outdoor unit
     web_server:
       sorting_group_id: oq_cic
@@ -218,12 +219,20 @@ sensor:
     lambda: |-
       if (!id(outside_temp_source).has_state()) return NAN;
       const auto source = id(outside_temp_source).current_option();
+      const bool hp_valid = id(outside_temp_hp_avg).has_state() && !isnan(id(outside_temp_hp_avg).state);
+      const bool ha_valid = id(outside_temp_ha).has_state() && !isnan(id(outside_temp_ha).state);
+      if (source == "Lowest valid") {
+        if (hp_valid && ha_valid) return fminf(id(outside_temp_hp_avg).state, id(outside_temp_ha).state);
+        if (hp_valid) return id(outside_temp_hp_avg).state;
+        if (ha_valid) return id(outside_temp_ha).state;
+        return NAN;
+      }
       if (source == "HA input") {
-        if (id(outside_temp_ha).has_state()) return id(outside_temp_ha).state;
+        if (ha_valid) return id(outside_temp_ha).state;
         return NAN;
       }
       if (source == "Outdoor unit") {
-        if (id(outside_temp_hp_avg).has_state()) return id(outside_temp_hp_avg).state;
+        if (hp_valid) return id(outside_temp_hp_avg).state;
         return NAN;
       }
       return NAN;
