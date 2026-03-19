@@ -250,6 +250,8 @@ sensor:
     accuracy_decimals: 1
     update_interval: 10s
     lambda: |-
+      // Keep source behavior explicit: prefer the configured source, but in
+      // Lowest valid mode pick the coldest usable reading and ignore invalid inputs.
       if (!id(outside_temp_source).has_state()) return NAN;
       const auto source = id(outside_temp_source).current_option();
       const bool hp_valid = id(outside_temp_hp_avg).has_state() && !isnan(id(outside_temp_hp_avg).state);
