@@ -124,6 +124,26 @@ globals:
     restore_value: false
     initial_value: '0'
 
+  # Per-HP timestamp of the last measured transition into working_mode=Heating.
+  # Minimum runtime is enforced from this real heating start, not from an earlier
+  # request/apply transition that can happen before the compressor truly runs.
+  - id: hp1_last_real_heat_start_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: hp2_last_real_heat_start_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: hp1_prev_heating_mode_active
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: hp2_prev_heating_mode_active
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
   # Diagnostic: last computed lead pump based on runtime minutes.
   - id: oq_last_lead_hp
     type: int
@@ -255,15 +275,23 @@ button:
       sorting_group_id: oq_tuning_heat
     on_press:
       - lambda: |-
+          // Reset accumulated runtime counters and measured-start latches together,
+          // so fairness and minimum-runtime diagnostics restart from a clean state.
           #if OQ_TOPOLOGY_DUO
           id(hp1_minutes) = 0;
           id(${hc_secondary_minutes_id}) = 0;
           id(hp1_runtime_accum_ms) = 0;
           id(hp2_runtime_accum_ms) = 0;
+          id(hp1_last_real_heat_start_ms) = 0;
+          id(hp2_last_real_heat_start_ms) = 0;
+          id(hp1_prev_heating_mode_active) = false;
+          id(hp2_prev_heating_mode_active) = false;
           ESP_LOGW("quatt", "Runtime counters reset (HP1+HP2).");
           #else
           id(hp1_minutes) = 0;
           id(hp1_runtime_accum_ms) = 0;
+          id(hp1_last_real_heat_start_ms) = 0;
+          id(hp1_prev_heating_mode_active) = false;
           ESP_LOGW("quatt", "Runtime counters reset (HP1).");
           #endif
 
@@ -583,6 +611,29 @@ interval:
           int f_cap = id(oq_power_cap_f);
           f_cap = std::max(0, std::min(demand_max_f, f_cap));
           if (f > f_cap) f = f_cap;
+
+          // Track the moment each HP is actually measured in Heating.
+          // This is the runtime anchor for the minimum runtime guard. It avoids
+          // starting the timer too early on request/apply transitions that occur
+          // before the compressor truly enters Heating mode.
+          const float hp1_mode_runtime_raw = id(hp1_working_mode).state;
+          const bool hp1_measured_heating =
+              !isnan(hp1_mode_runtime_raw) && ((int) roundf(hp1_mode_runtime_raw) == 2);
+          if (hp1_measured_heating && !id(hp1_prev_heating_mode_active)) {
+            id(hp1_last_real_heat_start_ms) = now_ms;
+          }
+          id(hp1_prev_heating_mode_active) = hp1_measured_heating;
+          #if OQ_TOPOLOGY_DUO
+          const float hp2_mode_runtime_raw = id(${hc_secondary_working_mode_id}).state;
+          const bool hp2_measured_heating =
+              !isnan(hp2_mode_runtime_raw) && ((int) roundf(hp2_mode_runtime_raw) == 2);
+          if (hp2_measured_heating && !id(hp2_prev_heating_mode_active)) {
+            id(hp2_last_real_heat_start_ms) = now_ms;
+          }
+          id(hp2_prev_heating_mode_active) = hp2_measured_heating;
+          #else
+          const bool hp2_measured_heating = false;
+          #endif
 
           // =========================
           // 1b) Control Mode gating
@@ -1601,16 +1652,28 @@ interval:
           // =========================
           const int min_rt_s = (int) roundf(id(oq_min_runtime_min).state);
           if (!id(oq_water_temp_hard_trip_active) && min_rt_s > 0) {
-            // HP1: if request is 0 but runtime < min -> force >=1
+            // HP1/HP2: if request is 0 but measured heating start is still within
+            // the minimum runtime window, keep that compressor alive at >=1.
+            // This guard intentionally keys off real heating start instead of the
+            // earlier apply transition, so short mode-transition delays do not
+            // silently consume most of the runtime window.
             const uint32_t min_rt_ms = (uint32_t) min_rt_s * 1000UL;
-            const uint32_t hp1_rt_ms = (uint32_t)(now_ms - id(hp1_last_start_ms));
-            if (hp1_req == 0 && id(hp1_last_applied_level) > 0 && hp1_rt_ms < min_rt_ms) {
+            const bool hp1_min_runtime_active =
+                (id(hp1_last_real_heat_start_ms) > 0) &&
+                (now_ms > id(hp1_last_real_heat_start_ms)) &&
+                ((uint32_t)(now_ms - id(hp1_last_real_heat_start_ms)) < min_rt_ms);
+            if (hp1_req == 0 && hp1_min_runtime_active &&
+                (id(hp1_last_applied_level) > 0 || hp1_measured_heating)) {
               hp1_req = pick_allowed(1, true);
             }
 
             #if OQ_TOPOLOGY_DUO
-            const uint32_t hp2_rt_ms = (uint32_t)(now_ms - id(${hc_secondary_last_start_ms_id}));
-            if (hp2_req == 0 && id(${hc_secondary_last_applied_level_id}) > 0 && hp2_rt_ms < min_rt_ms) {
+            const bool hp2_min_runtime_active =
+                (id(hp2_last_real_heat_start_ms) > 0) &&
+                (now_ms > id(hp2_last_real_heat_start_ms)) &&
+                ((uint32_t)(now_ms - id(hp2_last_real_heat_start_ms)) < min_rt_ms);
+            if (hp2_req == 0 && hp2_min_runtime_active &&
+                (id(${hc_secondary_last_applied_level_id}) > 0 || hp2_measured_heating)) {
               hp2_req = pick_allowed(1, false);
             }
             #else
