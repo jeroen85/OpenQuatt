@@ -113,9 +113,9 @@ In een `Duo`-opstelling gebruikt `Power House` geen vaste regel als "altijd eers
 3. kies normaal de topology met het laagste elektrische verbruik;
 4. laat een minder zuinige topology alleen winnen als die de warmtevraag duidelijk beter volgt;
 5. wissel alleen als dat echt voordeel geeft;
-6. houd vooral topologywissels naar een duurdere keuze kort vast om op en neer schakelen te beperken.
+6. houd een recente single-versus-duowissel wat langer vast als het alternatief maar een klein voordeel geeft.
 
-Als twee single-HP-keuzes verder gelijk zijn, krijgt de runtime lead warmtepomp voorrang. Tijdens defrost blijft OpenQuatt voorzichtiger en wordt het beschikbare thermische vermogen van de defrostende unit lager ingeschat.
+Als twee single-HP-keuzes verder gelijk zijn, krijgt de runtime lead warmtepomp voorrang. Tijdens defrost blijft OpenQuatt voorzichtiger, maar nu pas zodra de `4-Way valve` aangeeft dat de echte defrost loopt. Daarmee wordt te vroege voorbelasting voorkomen en komt extra steun alleen in beeld als de gekozen combinatie anders nog duidelijk tekort zou komen.
 
 ### Water Temperature Control
 
