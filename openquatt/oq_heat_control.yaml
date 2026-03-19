@@ -719,8 +719,20 @@ interval:
             return idx.has_value() ? (int) idx.value() : -1;
           };
 
+          auto valve_defrost_active = [&](bool is_hp1)->bool {
+            if (is_hp1) return id(hp1_4_way_valve).state;
+            #if OQ_TOPOLOGY_DUO
+            return id(hp2_4_way_valve).state;
+            #else
+            return false;
+            #endif
+          };
+
           auto defrost_stop_hold_level = [&](bool is_hp1)->int {
-            const bool defrost_active = is_hp1 ? id(hp1_defrost).state : id(${hc_secondary_defrost_id}).state;
+            // Only keep the last non-zero level during real defrost, i.e. once the
+            // 4-way valve is active. The broader defrost bit can assert earlier and
+            // caused the duo optimizer to pre-load far too aggressively.
+            const bool defrost_active = valve_defrost_active(is_hp1);
             if (!defrost_active) return 0;
 
             const int selected_level = hp_selected_level(is_hp1);
@@ -917,11 +929,14 @@ interval:
           if (level_cap < 0) level_cap = 0;
           if (level_cap > max_level) level_cap = max_level;
           const bool hp1_def = id(hp1_defrost).state;
+          const bool hp1_valve_def = valve_defrost_active(true);
           #if OQ_TOPOLOGY_DUO
           const bool hp2_def = id(${hc_secondary_defrost_id}).state;
+          const bool hp2_valve_def = valve_defrost_active(false);
           const bool hp2_available = true;
           #else
           const bool hp2_def = false;
+          const bool hp2_valve_def = false;
           const bool hp2_available = false;
           #endif
           // Command levels may remain active during defrost; model it as thermal derating.
@@ -933,8 +948,11 @@ interval:
           float def_fac_cfg = ${oq_defrost_power_factor};
           if (isnan(def_fac_cfg)) def_fac_cfg = 0.55f;
           const float def_fac = fmaxf(0.10f, fminf(1.00f, def_fac_cfg));
-          const float hp1_th_fac = hp1_def ? def_fac : 1.0f;
-          const float hp2_th_fac = hp2_def ? def_fac : 1.0f;
+          // Thermal derating only applies during real defrost. Using the broader
+          // defrost bit here made the optimizer overreact before power actually
+          // dropped negative.
+          const float hp1_th_fac = hp1_valve_def ? def_fac : 1.0f;
+          const float hp2_th_fac = hp2_valve_def ? def_fac : 1.0f;
 
           auto max_cap_hp = [&](bool is_hp1)->float {
             if ((is_hp1 && !hp1_available) || (!is_hp1 && !hp2_available)) return 0.0f;
@@ -970,8 +988,8 @@ interval:
             // ------------------------------------------------------------
             // HEATING CURVE MODE (demand path from heating-curve strategy)
             // ------------------------------------------------------------
-            const bool d1_pre = id(hp1_defrost).state;
-            const bool d2_pre = id(${hc_secondary_defrost_id}).state;
+            const bool d1_pre = hp1_valve_def;
+            const bool d2_pre = hp2_valve_def;
 
             // Telemetry + deficit calculation also in heating-curve mode (for CM3 + dual-enable hysteresis).
             publish_capacity_and_deficit(id(oq_phouse_req_w));
@@ -1214,10 +1232,10 @@ interval:
               const float thermal_tie_band_w = fmaxf(150.0f, 0.05f * fmaxf(P_target, 1000.0f));
               const float thermal_keep_margin_w = fminf(90.0f, thermal_tie_band_w * 0.5f);
               float topology_power_margin_w = ${oq_optimizer_topology_power_margin_w};
-              if (isnan(topology_power_margin_w) || topology_power_margin_w < 0.0f) topology_power_margin_w = 40.0f;
+              if (isnan(topology_power_margin_w) || topology_power_margin_w < 0.0f) topology_power_margin_w = 80.0f;
               float topology_heat_advantage_w = ${oq_optimizer_topology_heat_advantage_w};
-              if (isnan(topology_heat_advantage_w) || topology_heat_advantage_w < 0.0f) topology_heat_advantage_w = 225.0f;
-              const float pel_switch_margin_w = 120.0f;
+              if (isnan(topology_heat_advantage_w) || topology_heat_advantage_w < 0.0f) topology_heat_advantage_w = 300.0f;
+              const float pel_switch_margin_w = 150.0f;
               const float soft_switch_margin_w = 40.0f;
               struct DuoCandidate {
                 bool valid;
@@ -1363,13 +1381,19 @@ interval:
                     (current_candidate.active_hp_count > 0) &&
                     (best_candidate.active_hp_count > 0) &&
                     (current_candidate.active_hp_count != best_candidate.active_hp_count);
+                const bool hold_window_active =
+                    (id(oq_duo_dispatch_hold_until_ms) > 0) &&
+                    (now_ms < id(oq_duo_dispatch_hold_until_ms));
+                const bool small_topology_power_gap =
+                    topology_change &&
+                    (fabsf(best_candidate.p_el_w - current_candidate.p_el_w) <= topology_power_margin_w);
                 const bool switching_to_higher_pel =
                     topology_change &&
                     (best_candidate.p_el_w > (current_candidate.p_el_w + topology_power_margin_w));
                 const bool hold_active =
-                    switching_to_higher_pel &&
-                    (id(oq_duo_dispatch_hold_until_ms) > 0) &&
-                    (now_ms < id(oq_duo_dispatch_hold_until_ms));
+                    hold_window_active &&
+                    current_heat_ok &&
+                    (switching_to_higher_pel || small_topology_power_gap);
                 const bool better_soft_guard =
                     current_candidate.over_soft_w > (best_candidate.over_soft_w + soft_switch_margin_w);
                 const float efficiency_switch_margin_w =
@@ -1379,7 +1403,7 @@ interval:
 
                 if (hold_active && current_heat_ok) {
                   keep_current = true;
-                  optimizer_reason = (hp1_def || hp2_def) ? "defrost_hold" : "hold_active";
+                  optimizer_reason = (hp1_valve_def || hp2_valve_def) ? "defrost_hold" : "hold_active";
                 } else if (!current_heat_ok) {
                   optimizer_reason = "better_heat";
                 } else if (better_soft_guard) {
@@ -1403,19 +1427,30 @@ interval:
               hp2_req = chosen_candidate.valid ? chosen_candidate.l2 : 0;
               publish_optimizer_reason(optimizer_reason);
 
-              // Single-defrost compensation: allow the non-defrost HP to step up.
+              // Single-defrost compensation: only help during real valve-on defrost,
+              // and only when the chosen candidate still underdelivers materially.
+              // If duo dispatch already covers the request well enough, extra boost
+              // just creates the overshoot spikes we saw in history.
               int def_comp_min_f = (int) roundf(${oq_defrost_comp_min_f});
               if (def_comp_min_f < 0) def_comp_min_f = 0;
               if (def_comp_min_f > demand_max_f) def_comp_min_f = demand_max_f;
               int def_comp_boost = (int) roundf(${oq_defrost_comp_boost_steps});
               if (def_comp_boost < 0) def_comp_boost = 0;
               if (def_comp_boost > 3) def_comp_boost = 3;
-              if (def_comp_boost > 0 && f >= def_comp_min_f) {
-                if (hp1_def && !hp2_def && hp2_req > 0) {
+              const bool chosen_underdelivers =
+                  chosen_candidate.valid && (chosen_candidate.p_th_w + thermal_tie_band_w < P_target);
+              const bool allow_defrost_boost =
+                  (def_comp_boost > 0) &&
+                  (f >= def_comp_min_f) &&
+                  chosen_underdelivers &&
+                  chosen_candidate.valid &&
+                  (chosen_candidate.active_hp_count == 1);
+              if (allow_defrost_boost) {
+                if (hp1_valve_def && !hp2_valve_def && hp2_req > 0) {
                   hp2_req = std::min(level_cap, hp2_req + def_comp_boost);
                   publish_optimizer_reason("defrost_boost");
                 }
-                if (hp2_def && !hp1_def && hp1_req > 0) {
+                if (hp2_valve_def && !hp1_valve_def && hp1_req > 0) {
                   hp1_req = std::min(level_cap, hp1_req + def_comp_boost);
                   publish_optimizer_reason("defrost_boost");
                 }
@@ -1795,7 +1830,7 @@ interval:
               (id(hp1_last_applied_level) > 0 ? 1 : 0) + (id(${hc_secondary_last_applied_level_id}) > 0 ? 1 : 0);
           const int new_topology_count = (hp1_applied > 0 ? 1 : 0) + (hp2_applied > 0 ? 1 : 0);
           if (prev_topology_count > 0 && new_topology_count > 0 && prev_topology_count != new_topology_count) {
-            id(oq_duo_dispatch_hold_until_ms) = now_ms + (uint32_t) ((hp1_def || hp2_def) ? 300000UL : 180000UL);
+            id(oq_duo_dispatch_hold_until_ms) = now_ms + 180000UL;
           }
           #else
           const int hp2_applied = 0;
