@@ -66,14 +66,18 @@ def _existing_path(paths: Iterable[Path]) -> Path | None:
     return None
 
 
-def resolve_helper_python(venv_dir: Path) -> list[str]:
-    candidate = _existing_path(
+def venv_python_path(venv_dir: Path) -> Path | None:
+    return _existing_path(
         (
             venv_bin_dir(venv_dir) / "python.exe",
             venv_bin_dir(venv_dir) / "python",
             venv_bin_dir(venv_dir) / "python3",
         )
     )
+
+
+def resolve_helper_python(venv_dir: Path) -> list[str]:
+    candidate = venv_python_path(venv_dir)
     if candidate is not None:
         return [str(candidate)]
     return [sys.executable]
@@ -97,6 +101,96 @@ def resolve_esphome_command(venv_dir: Path) -> list[str]:
         "ESPHome executable not found. Run the bootstrap command first or install "
         "'esphome' in PATH."
     )
+
+
+def bootstrap_python_candidates(explicit_python: str) -> list[str]:
+    if explicit_python:
+        return [explicit_python]
+
+    candidates: list[str] = []
+    seen: set[str] = set()
+
+    def add(candidate: str | None) -> None:
+        if not candidate:
+            return
+        path = Path(candidate).expanduser()
+        try:
+            resolved = str(path.resolve())
+        except OSError:
+            resolved = str(path)
+        if resolved in seen or not Path(resolved).exists():
+            return
+        seen.add(resolved)
+        candidates.append(resolved)
+
+    if sys.platform == "darwin":
+        for candidate in (
+            "/opt/homebrew/bin/python3",
+            "/usr/local/bin/python3",
+            "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+            "/Library/Frameworks/Python.framework/Versions/3.12/bin/python3",
+            "/Library/Frameworks/Python.framework/Versions/3.11/bin/python3",
+            "/usr/bin/python3",
+        ):
+            add(candidate)
+
+    add(sys.executable)
+    add(shutil.which("python3"))
+    add(shutil.which("python"))
+
+    return candidates
+
+
+def can_create_bootstrap_venv(python_exe: str, root_dir: Path) -> tuple[bool, str]:
+    with tempfile.TemporaryDirectory(prefix="openquatt-bootstrap-check-") as tmp_dir:
+        probe_venv = Path(tmp_dir) / "venv"
+        completed = subprocess.run(
+            [python_exe, "-m", "venv", str(probe_venv)],
+            cwd=root_dir,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if completed.returncode != 0:
+            detail = completed.stderr.strip() or completed.stdout.strip() or "venv creation failed"
+            return False, detail
+
+        probe_python = venv_python_path(probe_venv)
+        if probe_python is None:
+            return False, "venv created without a Python executable"
+
+        pip_check = subprocess.run(
+            [str(probe_python), "-m", "pip", "--version"],
+            cwd=root_dir,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if pip_check.returncode != 0:
+            detail = pip_check.stderr.strip() or pip_check.stdout.strip() or "pip is unavailable inside the venv"
+            return False, detail
+
+    return True, ""
+
+
+def resolve_bootstrap_python(explicit_python: str, root_dir: Path) -> str:
+    failures: list[str] = []
+    for candidate in bootstrap_python_candidates(explicit_python):
+        ok, detail = can_create_bootstrap_venv(candidate, root_dir)
+        if ok:
+            return candidate
+        failures.append(f"{candidate}: {detail}")
+
+    if failures:
+        joined = "\n".join(f"  - {failure}" for failure in failures)
+        raise SystemExit(
+            "No usable Python executable found for bootstrap.\n"
+            "Tried:\n"
+            f"{joined}\n"
+            "Pass --python-exe /path/to/python3 to override."
+        )
+
+    raise SystemExit("No Python executable found for bootstrap.")
 
 
 def ensure_factory_dir(factory_dir: Path) -> None:
@@ -300,20 +394,14 @@ def bootstrap_command(args: argparse.Namespace) -> int:
     root_dir = repo_root()
     venv_dir = resolve_path(args.venv_dir)
     requirements_file = root_dir / ".github" / "requirements-esphome.txt"
-    python_exe = args.python_exe or sys.executable
+    python_exe = resolve_bootstrap_python(args.python_exe, root_dir)
 
     print(f"Using Python: {python_exe}")
     print(f"Virtual environment: {venv_dir}")
 
-    run_command([python_exe, "-m", "venv", str(venv_dir)], cwd=root_dir)
+    run_command([python_exe, "-m", "venv", "--clear", str(venv_dir)], cwd=root_dir)
 
-    venv_python = _existing_path(
-        (
-            venv_bin_dir(venv_dir) / "python.exe",
-            venv_bin_dir(venv_dir) / "python",
-            venv_bin_dir(venv_dir) / "python3",
-        )
-    )
+    venv_python = venv_python_path(venv_dir)
     if venv_python is None:
         raise SystemExit(f"Virtual environment Python not found under {venv_dir}")
 
@@ -386,16 +474,16 @@ def validate_command(args: argparse.Namespace) -> int:
 
         compile_queue = list(args.configs)
         packages_dir = pio_core_dir / "packages"
-        cold_cache = not packages_dir.exists() or not any(packages_dir.iterdir())
-        if args.jobs > 1 and compile_queue and cold_cache:
-            warm_config = compile_queue.pop(0)
-            run_logged(
-                [*esphome_command, "compile", warm_config],
-                cwd=command_root,
-                env=env,
-                log_path=log_dir / f"{Path(warm_config).stem}.compile.log",
-                label=f"compile {warm_config}",
+        espressif_cache_dir = command_root / ".esphome" / ".espressif"
+        cold_platformio_cache = not packages_dir.exists() or not any(packages_dir.iterdir())
+        cold_espressif_cache = not espressif_cache_dir.exists() or not any(espressif_cache_dir.iterdir())
+        force_serial_compile = args.jobs > 1 and (cold_platformio_cache or cold_espressif_cache)
+        if force_serial_compile:
+            print(
+                "Cold compile cache detected; running this validation sequentially once "
+                "to avoid ESP-IDF component-cache races."
             )
+            shutil.rmtree(espressif_cache_dir, ignore_errors=True)
 
         def compile_one(config: str) -> tuple[str, int, Path]:
             log_path = log_dir / f"{Path(config).stem}.compile.log"
@@ -406,11 +494,29 @@ def validate_command(args: argparse.Namespace) -> int:
                 log_path=log_path,
                 check=False,
             )
+            if exit_code != 0:
+                tail = tail_lines(log_path, limit=160)
+                cache_race = (
+                    ".esphome/.espressif/service_" in tail
+                    and ("ArduinoJson" in tail or "idf_component_manager" in tail)
+                )
+                if cache_race:
+                    print(
+                        f"[retry] compile {config}: resetting ESP-IDF component cache after a generated-cache race."
+                    )
+                    shutil.rmtree(espressif_cache_dir, ignore_errors=True)
+                    exit_code = run_command(
+                        [*esphome_command, "compile", config],
+                        cwd=command_root,
+                        env=env,
+                        log_path=log_path,
+                        check=False,
+                    )
             return config, exit_code, log_path
 
         results: list[tuple[str, int, Path]] = []
         if compile_queue:
-            if args.jobs == 1:
+            if args.jobs == 1 or force_serial_compile:
                 results = [compile_one(config) for config in compile_queue]
             else:
                 with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as executor:

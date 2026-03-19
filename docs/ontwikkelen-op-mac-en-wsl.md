@@ -79,6 +79,8 @@ python3 scripts/dev.py preview-pages --no-serve
 ```
 
 De `bootstrap`-stap maakt een lokale `.venv` aan en installeert de gepinde ESPHome-versie uit de repo.
+Voer `python3 scripts/dev.py bootstrap` opnieuw uit nadat `/.github/requirements-esphome.txt`
+is aangepast; de bootstrap ververst een bestaande `.venv` dan opnieuw naar de gepinde versie.
 
 ## Parallel Bouwen
 
@@ -89,6 +91,7 @@ python3 scripts/dev.py validate --jobs 2
 ```
 
 Begin bij voorkeur met `--jobs 2`. Meer parallelisme kan sneller zijn, maar gebruikt ook meer CPU, RAM en schijfcache.
+De eerste full-validate na een lege of opgeschoonde cache kan tijdelijk sequentieel lopen; de helper doet dat automatisch om ESP-IDF component-cache races te vermijden.
 
 Op native Windows raden we parallel builden niet aan. Gebruik daar liever WSL voor, of draai native Windows-builds sequentieel.
 
