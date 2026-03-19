@@ -722,7 +722,7 @@ interval:
           auto valve_defrost_active = [&](bool is_hp1)->bool {
             if (is_hp1) return id(hp1_4_way_valve).state;
             #if OQ_TOPOLOGY_DUO
-            return id(hp2_4_way_valve).state;
+            return id(${hc_secondary_4_way_valve_id}).state;
             #else
             return false;
             #endif

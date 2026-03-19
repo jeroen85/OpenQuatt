@@ -49,6 +49,7 @@ oq_heat_control: !include
     hc_secondary_minutes_id: "hp2_minutes"
     hc_secondary_set_working_mode_id: "hp2_set_working_mode"
     hc_secondary_working_mode_id: "hp2_working_mode"
+    hc_secondary_4_way_valve_id: "hp2_4_way_valve"
     hc_secondary_lvl_1_id: "hp2_lvl_1"
     hc_secondary_lvl_2_id: "hp2_lvl_2"
     hc_secondary_lvl_3_id: "hp2_lvl_3"
