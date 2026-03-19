@@ -224,9 +224,9 @@ Power House duo dispatch works in simple steps:
 - prefer the topology with the lower electrical input by default
 - allow a less-efficient topology only when it has a clear heat-match advantage
 - keep the current combination unless a switch gives clear heat or power benefit
-- hold only topology switches toward a higher-power choice briefly to reduce back-and-forth switching
+- after a recent single<->duo change, keep the current topology a bit longer if the alternative gives only a small advantage
 - if two single-HP options are equally good, choose the runtime lead HP
-- defrost still uses thermal derating and optional compensation boost
+- defrost derating now follows the real `4-Way valve` phase, and extra compensation is only added if the chosen combination would otherwise still underdeliver
 
 ## 7. Flow Control Mechanics
 

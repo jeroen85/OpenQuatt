@@ -96,6 +96,8 @@ Controleer eerst of de gebruikte kamer- en setpointwaarden kloppen. Te warm gedr
 
 Daarna kun je pas kijken naar een minder agressieve afstelling. In `Power House` betekent dat vaak eerst minder comfortmarge of een kortere `Power House demand fall time`, zodat gevraagde warmte sneller mag teruglopen.
 
+Als het vooral in `Duo` onrustig voelt, kijk dan eerst goed of het echt om comfort, om te korte compressor-runs of om optimizer-keuzes rond defrost gaat. Sinds de nieuwere duo-logica kijkt OpenQuatt bij defrost niet alleen naar een brede defrost-status, maar vooral naar de echte defrostfase via de `4-Way valve`. Daardoor hoort de regeling minder vroeg op te schalen en alleen extra te compenseren als de gekozen combinatie anders nog duidelijk tekort zou komen.
+
 ### De flow lijkt goed, maar verwarmen blijft toch geblokkeerd
 
 Dan is de kans groot dat een timer, veiligheid of bronkeuze meespeelt. Kijk naar:
