@@ -46,6 +46,34 @@ globals:
     type: int
     restore_value: no
     initial_value: '0'
+  - id: cic_request_count
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: cic_success_count
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: cic_failure_count
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: cic_last_request_start_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: cic_last_duration_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: cic_max_duration_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: cic_last_status_code
+    type: int
+    restore_value: no
+    initial_value: '0'
 
 # ----------------------------
 # CONTROL INPUTS
@@ -162,6 +190,9 @@ script:
   - id: cic_fetch
     mode: single
     then:
+      - lambda: |-
+          id(cic_request_count)++;
+          id(cic_last_request_start_ms) = (uint32_t) millis();
       - http_request.get:
           id: req
           url: !lambda 'return id(cic_feed_url).state;'
@@ -170,9 +201,18 @@ script:
           on_response:
             then:
               - lambda: |-
+                  const uint32_t now_ms = (uint32_t) millis();
+                  const uint32_t start_ms = id(cic_last_request_start_ms);
+                  if (start_ms > 0 && now_ms >= start_ms) {
+                    const uint32_t duration_ms = now_ms - start_ms;
+                    id(cic_last_duration_ms) = duration_ms;
+                    if (duration_ms > id(cic_max_duration_ms)) id(cic_max_duration_ms) = duration_ms;
+                  }
                   const int status_code = response->status_code;
+                  id(cic_last_status_code) = status_code;
                   if (status_code != 200) {
                     // status != 200 counts as an error -> increase backoff (max 120s)
+                    id(cic_failure_count)++;
                     id(cic_mark_failure).execute();
                     id(cic_backoff_increase).execute();
                     return;
@@ -236,11 +276,13 @@ script:
                   });
 
                   if (ok) {
+                    id(cic_success_count)++;
                     id(cic_mark_success).execute();
                     // success -> reset backoff to 5s
                     id(cic_backoff_reset).execute();
                   } else {
                     // Invalid JSON/body counts as an error.
+                    id(cic_failure_count)++;
                     id(cic_mark_failure).execute();
                     id(cic_backoff_increase).execute();
                   }
@@ -248,6 +290,15 @@ script:
           on_error:
             then:
               - lambda: |-
+                  const uint32_t now_ms = (uint32_t) millis();
+                  const uint32_t start_ms = id(cic_last_request_start_ms);
+                  if (start_ms > 0 && now_ms >= start_ms) {
+                    const uint32_t duration_ms = now_ms - start_ms;
+                    id(cic_last_duration_ms) = duration_ms;
+                    if (duration_ms > id(cic_max_duration_ms)) id(cic_max_duration_ms) = duration_ms;
+                  }
+                  id(cic_last_status_code) = -1;
+                  id(cic_failure_count)++;
                   id(cic_mark_failure).execute();
                   id(cic_backoff_increase).execute();
 
@@ -377,6 +428,68 @@ sensor:
     update_interval: never
     web_server:
       sorting_group_id: oq_cic
+  - platform: template
+    id: cic_request_count_sensor
+    name: "CIC - Request Count"
+    entity_category: diagnostic
+    accuracy_decimals: 0
+    update_interval: 10s
+    lambda: |-
+      return id(cic_request_count);
+    web_server:
+      sorting_group_id: oq_cic
+  - platform: template
+    id: cic_success_count_sensor
+    name: "CIC - Success Count"
+    entity_category: diagnostic
+    accuracy_decimals: 0
+    update_interval: 10s
+    lambda: |-
+      return id(cic_success_count);
+    web_server:
+      sorting_group_id: oq_cic
+  - platform: template
+    id: cic_failure_count_sensor
+    name: "CIC - Failure Count"
+    entity_category: diagnostic
+    accuracy_decimals: 0
+    update_interval: 10s
+    lambda: |-
+      return id(cic_failure_count);
+    web_server:
+      sorting_group_id: oq_cic
+  - platform: template
+    id: cic_last_duration_sensor
+    name: "CIC - Last Request Duration"
+    entity_category: diagnostic
+    unit_of_measurement: ms
+    accuracy_decimals: 0
+    update_interval: 10s
+    lambda: |-
+      return id(cic_last_duration_ms);
+    web_server:
+      sorting_group_id: oq_cic
+  - platform: template
+    id: cic_max_duration_sensor
+    name: "CIC - Max Request Duration"
+    entity_category: diagnostic
+    unit_of_measurement: ms
+    accuracy_decimals: 0
+    update_interval: 10s
+    lambda: |-
+      return id(cic_max_duration_ms);
+    web_server:
+      sorting_group_id: oq_cic
+  - platform: template
+    id: cic_last_status_code_sensor
+    name: "CIC - Last Status Code"
+    entity_category: diagnostic
+    accuracy_decimals: 0
+    update_interval: 10s
+    lambda: |-
+      return id(cic_last_status_code);
+    web_server:
+      sorting_group_id: oq_cic
 
 # ----------------------------
 # DIAGNOSTICS
@@ -419,35 +532,6 @@ binary_sensor:
 interval:
   - interval: ${cic_poll_tick_ms}ms
     then:
-      - lambda: |-
-          const uint32_t now = millis();
-          const uint32_t last_success_ms = id(cic_last_success_ms);
-          const bool has_success = (last_success_ms != 0);
-          const bool stale = !has_success || ((int32_t)(now - last_success_ms) >= (int32_t)${cic_stale_after_ms});
-          auto publish_binary_if_changed = [](auto *binary, bool value) {
-            if (binary == nullptr) return;
-            if (binary->state != value) binary->publish_state(value);
-          };
-          auto publish_float_if_changed = [](auto *sensor, float value) {
-            if (sensor == nullptr) return;
-            const float cur = sensor->state;
-            const bool cur_nan = isnan(cur);
-            const bool new_nan = isnan(value);
-            if (cur_nan != new_nan || (!new_nan && fabsf(cur - value) > 0.001f)) {
-              sensor->publish_state(value);
-            }
-          };
-          if (has_success) {
-            publish_float_if_changed(id(cic_last_success_age_s), (float)(now - last_success_ms) / 1000.0f);
-          } else {
-            publish_float_if_changed(id(cic_last_success_age_s), NAN);
-          }
-
-          publish_binary_if_changed(id(cic_data_stale), stale);
-          if (stale) {
-            // Fail-safe: external feed is stale/unreliable -> invalidate CIC measurements.
-            id(cic_invalidate_feed_signals).execute();
-          }
       - if:
           condition:
             switch.is_off: cic_enable
@@ -463,6 +547,35 @@ interval:
                 id(cic_invalidate_feed_signals).execute();
             - script.stop: cic_fetch
           else:
+            - lambda: |-
+                const uint32_t now = millis();
+                const uint32_t last_success_ms = id(cic_last_success_ms);
+                const bool has_success = (last_success_ms != 0);
+                const bool stale = !has_success || ((int32_t)(now - last_success_ms) >= (int32_t)${cic_stale_after_ms});
+                auto publish_binary_if_changed = [](auto *binary, bool value) {
+                  if (binary == nullptr) return;
+                  if (binary->state != value) binary->publish_state(value);
+                };
+                auto publish_float_if_changed = [](auto *sensor, float value) {
+                  if (sensor == nullptr) return;
+                  const float cur = sensor->state;
+                  const bool cur_nan = isnan(cur);
+                  const bool new_nan = isnan(value);
+                  if (cur_nan != new_nan || (!new_nan && fabsf(cur - value) > 0.001f)) {
+                    sensor->publish_state(value);
+                  }
+                };
+                if (has_success) {
+                  publish_float_if_changed(id(cic_last_success_age_s), (float)(now - last_success_ms) / 1000.0f);
+                } else {
+                  publish_float_if_changed(id(cic_last_success_age_s), NAN);
+                }
+
+                publish_binary_if_changed(id(cic_data_stale), stale);
+                if (stale) {
+                  // Fail-safe: external feed is stale/unreliable -> invalidate CIC measurements.
+                  id(cic_invalidate_feed_signals).execute();
+                }
             - if:
                 condition:
                   lambda: |-
