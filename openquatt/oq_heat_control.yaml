@@ -1232,9 +1232,9 @@ interval:
               const float thermal_tie_band_w = fmaxf(150.0f, 0.05f * fmaxf(P_target, 1000.0f));
               const float thermal_keep_margin_w = fminf(90.0f, thermal_tie_band_w * 0.5f);
               float topology_power_margin_w = ${oq_optimizer_topology_power_margin_w};
-              if (isnan(topology_power_margin_w) || topology_power_margin_w < 0.0f) topology_power_margin_w = 80.0f;
+              if (isnan(topology_power_margin_w) || topology_power_margin_w < 0.0f) topology_power_margin_w = 150.0f;
               float topology_heat_advantage_w = ${oq_optimizer_topology_heat_advantage_w};
-              if (isnan(topology_heat_advantage_w) || topology_heat_advantage_w < 0.0f) topology_heat_advantage_w = 300.0f;
+              if (isnan(topology_heat_advantage_w) || topology_heat_advantage_w < 0.0f) topology_heat_advantage_w = 450.0f;
               const float pel_switch_margin_w = 150.0f;
               const float soft_switch_margin_w = 40.0f;
               struct DuoCandidate {
@@ -1384,16 +1384,15 @@ interval:
                 const bool hold_window_active =
                     (id(oq_duo_dispatch_hold_until_ms) > 0) &&
                     (now_ms < id(oq_duo_dispatch_hold_until_ms));
-                const bool small_topology_power_gap =
-                    topology_change &&
-                    (fabsf(best_candidate.p_el_w - current_candidate.p_el_w) <= topology_power_margin_w);
-                const bool switching_to_higher_pel =
-                    topology_change &&
-                    (best_candidate.p_el_w > (current_candidate.p_el_w + topology_power_margin_w));
+                const bool topology_change_allowed =
+                    !topology_change ||
+                    (best_candidate.err_w + topology_heat_advantage_w < current_candidate.err_w) ||
+                    (best_candidate.p_el_w + topology_power_margin_w < current_candidate.p_el_w);
                 const bool hold_active =
                     hold_window_active &&
                     current_heat_ok &&
-                    (switching_to_higher_pel || small_topology_power_gap);
+                    topology_change &&
+                    !topology_change_allowed;
                 const bool better_soft_guard =
                     current_candidate.over_soft_w > (best_candidate.over_soft_w + soft_switch_margin_w);
                 const float efficiency_switch_margin_w =
@@ -1404,6 +1403,9 @@ interval:
                 if (hold_active && current_heat_ok) {
                   keep_current = true;
                   optimizer_reason = (hp1_valve_def || hp2_valve_def) ? "defrost_hold" : "hold_active";
+                } else if (topology_change && !topology_change_allowed && current_heat_ok) {
+                  keep_current = true;
+                  optimizer_reason = "hold_active";
                 } else if (!current_heat_ok) {
                   optimizer_reason = "better_heat";
                 } else if (better_soft_guard) {
@@ -1685,7 +1687,11 @@ interval:
           // Runtime is per-compressor and user-tunable, with a hard lower bound of 300 s.
           // Skipped during an absolute water-temperature hard trip.
           // =========================
-          const int min_rt_s = (int) roundf(id(oq_min_runtime_min).state);
+          int min_rt_s = (int) roundf(id(oq_min_runtime_min).state);
+          // Keep the runtime floor hard in code as well. Older installs may still
+          // restore a pre-migration numeric value such as 60, even though the UI
+          // slider now starts at 300 s.
+          if (min_rt_s > 0 && min_rt_s < 300) min_rt_s = 300;
           if (!id(oq_water_temp_hard_trip_active) && min_rt_s > 0) {
             // HP1/HP2: if request is 0 but measured heating start is still within
             // the minimum runtime window, keep that compressor alive at >=1.

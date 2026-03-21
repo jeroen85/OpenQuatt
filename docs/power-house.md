@@ -269,7 +269,7 @@ De Duo-keuze loopt in `Power House` grofweg zo:
 3. kies normaal de topology met het laagste elektrische verbruik;
 4. laat een minder zuinige topology alleen winnen als die de warmtevraag duidelijk beter volgt;
 5. wissel niet voor mini-verschillen;
-6. rem dure single-versus-duowissels kort af om geflipper te voorkomen.
+6. rem single-versus-duowissels af als het alternatief maar een klein voordeel heeft.
 
 Dat betekent:
 
