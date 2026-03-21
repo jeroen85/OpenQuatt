@@ -1668,6 +1668,7 @@ views:
 
               Kies per signaal de bron die OpenQuatt gebruikt.
               De `Geselecteerde` waarde hoort de gekozen bron direct te volgen.
+              Zo zie je snel of de effectieve regelinput overeenkomt met wat je verwacht.
 
               Gebruik dit blok voor:
               - bronkeuze tijdens tuning
@@ -1677,6 +1678,9 @@ views:
               - bij `Flow bron = Outdoor unit` in een Duo-opstelling verschijnt een extra
                 keuze voor `Flowmeter HP1`, `Flowmeter HP2` of de bestaande lokale
                 aggregatie van HP1/HP2
+
+              De lokale aggregatie van `HP1/HP2` is in principe het gemiddelde van beide
+              flowmeters.
 
               </details>
             text_only: true
@@ -1740,29 +1744,20 @@ views:
                 entities:
                   - entity: select.openquatt_flow_source
                     name: Flow bron
+                  - type: conditional
+                    row:
+                      entity: select.openquatt_outdoor_unit_flow_mode
+                      name: Buitenunit flowmodus
+                    conditions:
+                      - condition: state
+                        entity: select.openquatt_flow_source
+                        state: Outdoor unit
                   - entity: sensor.openquatt_flow_average_selected
                     name: Geselecteerde flow
                   - entity: sensor.openquatt_flow_average_local
                     name: Flow (buitenunit)
                   - entity: sensor.openquatt_cic_flowrate_filtered
                     name: Flow (CIC)
-              - type: conditional
-                conditions:
-                  - condition: state
-                    entity: select.openquatt_flow_source
-                    state: Outdoor unit
-                card:
-                  type: entities
-                  show_header_toggle: false
-                  entities:
-                    - entity: select.openquatt_outdoor_unit_flow_mode
-                      name: Buitenunit flowmodus
-                    - entity: sensor.openquatt_hp1_flow
-                      name: Flowmeter HP1
-                    - entity: sensor.openquatt_hp2_flow
-                      name: Flowmeter HP2
-                    - entity: sensor.openquatt_flow_average_local
-                      name: Lokale aggregatie HP1/HP2
           - type: vertical-stack
             cards:
               - type: heading
@@ -1783,10 +1778,6 @@ views:
                     name: Buitentemperatuur (buitenunit)
                   - entity: sensor.openquatt_ha_outside_temperature
                     name: Buitentemperatuur (HA-invoer)
-                  - type: attribute
-                    entity: select.openquatt_outside_temperature_source
-                    attribute: options
-                    name: Beschikbare bronopties
           - type: vertical-stack
             cards:
               - type: heading

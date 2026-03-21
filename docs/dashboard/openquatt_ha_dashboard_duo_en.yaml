@@ -1580,6 +1580,7 @@ views:
 
               Select which source OpenQuatt should use per signal.
               The `Selected` value should directly follow the chosen source.
+              This makes it easy to verify that the effective control input matches your expectation.
 
               Use this block for:
               - source selection during tuning
@@ -1589,6 +1590,8 @@ views:
               - in Duo, `Flow source = Outdoor unit` reveals an extra choice for
                 `Flowmeter HP1`, `Flowmeter HP2`, or the existing local HP1/HP2
                 aggregate
+
+              The local `HP1/HP2` aggregate is, in principle, the average of both flowmeters.
 
               </details>
             text_only: true
@@ -1650,29 +1653,20 @@ views:
                 entities:
                   - entity: select.openquatt_flow_source
                     name: Flow source
+                  - type: conditional
+                    row:
+                      entity: select.openquatt_outdoor_unit_flow_mode
+                      name: Outdoor unit flow mode
+                    conditions:
+                      - condition: state
+                        entity: select.openquatt_flow_source
+                        state: Outdoor unit
                   - entity: sensor.openquatt_flow_average_selected
                     name: Selected flow rate
                   - entity: sensor.openquatt_flow_average_local
                     name: Flow rate (Outdoor unit)
                   - entity: sensor.openquatt_cic_flowrate_filtered
                     name: Flow rate (CIC)
-              - type: conditional
-                conditions:
-                  - condition: state
-                    entity: select.openquatt_flow_source
-                    state: Outdoor unit
-                card:
-                  type: entities
-                  show_header_toggle: false
-                  entities:
-                    - entity: select.openquatt_outdoor_unit_flow_mode
-                      name: Outdoor unit flow mode
-                    - entity: sensor.openquatt_hp1_flow
-                      name: Flowmeter HP1
-                    - entity: sensor.openquatt_hp2_flow
-                      name: Flowmeter HP2
-                    - entity: sensor.openquatt_flow_average_local
-                      name: Local aggregate HP1/HP2
           - type: vertical-stack
             cards:
               - type: heading
@@ -1693,10 +1687,6 @@ views:
                     name: Outside temperature (Outdoor unit)
                   - entity: sensor.openquatt_ha_outside_temperature
                     name: Outside temperature (HA Input)
-                  - type: attribute
-                    entity: select.openquatt_outside_temperature_source
-                    attribute: options
-                    name: Available source options
           - type: vertical-stack
             cards:
               - type: heading

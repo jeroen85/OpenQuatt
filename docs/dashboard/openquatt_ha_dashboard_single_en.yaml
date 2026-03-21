@@ -1334,6 +1334,7 @@ views:
 
               Select which source OpenQuatt should use per signal.
               The `Selected` value should directly follow the chosen source.
+              This makes it easy to verify that the effective control input matches your expectation.
 
               Use this block for:
               - source selection during tuning
@@ -1427,10 +1428,6 @@ views:
                     name: Outside temperature (Outdoor unit)
                   - entity: sensor.openquatt_ha_outside_temperature
                     name: Outside temperature (HA Input)
-                  - type: attribute
-                    entity: select.openquatt_outside_temperature_source
-                    attribute: options
-                    name: Available source options
           - type: vertical-stack
             cards:
               - type: heading
