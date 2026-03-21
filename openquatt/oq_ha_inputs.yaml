@@ -15,6 +15,9 @@
 #
 # ==============================================================================
 
+packages:
+  oq_ha_cooling_inputs: !include oq_ha_cooling_inputs.yaml
+
 sensor:
   - platform: homeassistant
     id: outside_temp_ha
@@ -65,5 +68,16 @@ sensor:
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 2
+    web_server:
+      sorting_group_id: oq_ha
+
+binary_sensor:
+  - platform: homeassistant
+    id: cooling_enable_ha
+    name: "HA - Cooling Enable"
+    entity_id: ${ha_cooling_enable_entity_id}
+    internal: false
+    icon: mdi:snowflake-check
+    device_class: cold
     web_server:
       sorting_group_id: oq_ha

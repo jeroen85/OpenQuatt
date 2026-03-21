@@ -6,14 +6,14 @@
 #   Determines the active Control Mode (CM) as central state machine and publishes the system decision to the other packages.
 #
 # Role in architecture:
-#   Single owner of Control Mode; coordinates subsystems by selecting CM (CM0/CM1/CM2/CM3/CM98).
+#   Single owner of Control Mode; coordinates subsystems by selecting CM (CM0/CM1/CM2/CM3/CM5/CM98).
 #
 # What this package DOES do:
-#   - Determines base mode (idle / heating / frost) based on heat demand and conditions
+#   - Determines base mode (idle / heating / cooling / frost) based on demand and conditions
 #   - Applies flow override: with insufficient flow -> CM1 (holding)
 #   - Supports test override: Force CM0/CM1 and Diagnostic Force CM98 (auto-expire)
 #   - Automatically switches CM2 <-> CM3 based on thermal deficit (`oq_P_deficit_w`) with timers/hysteresis
-#   - Publishes current CM as text_sensor (for example 'CM2', 'CM3')
+#   - Publishes current CM as text_sensor (for example 'CM2', 'CM3', 'CM5')
 #
 # What this package DOES NOT do:
 #   - Does not control compressor levels directly (heat-control does)
@@ -30,6 +30,7 @@
 #   - CM1: holding (heat demand but insufficient flow)
 #   - CM2: heating (HP only)
 #   - CM3: heating (HP + boiler auxiliary heating)
+#   - CM5: passive cooling
 #   - CM98: frost
 #
 # Safety / fail-safe:
@@ -65,7 +66,7 @@ globals:
   - id: oq_cm1_next_after
     type: int
     restore_value: false
-    initial_value: '0'  # 0=CM0, 2=CM2, 98=CM98
+    initial_value: '0'  # 0=CM0, 2=CM2, 5=CM5, 98=CM98
 
   # Flow interlock timers
   - id: oq_lowflow_since_ms
@@ -140,7 +141,7 @@ globals:
   - id: oq_control_mode_code
     type: int
     restore_value: false
-    initial_value: '0'  # 0,1,2,3,98
+    initial_value: '0'  # 0,1,2,3,5,98
 
   # ----------------------------
   # Power limiter (16A guard) - total demand cap
@@ -682,6 +683,7 @@ interval:
           };
           auto cm_code_to_id = [](int cm) -> const char* {
             if (cm == 98) return "CM98";
+            if (cm == 5) return "CM5";
             if (cm == 3) return "CM3";
             if (cm == 2) return "CM2";
             if (cm == 1) return "CM1";
@@ -693,6 +695,7 @@ interval:
             if (strcmp(cm_id, "CM1") == 0) return std::string("CM1 - Preflow/Postflow");
             if (strcmp(cm_id, "CM2") == 0) return std::string("CM2 - Heating - Heat Pump Only");
             if (strcmp(cm_id, "CM3") == 0) return std::string("CM3 - Heating - Heat Pump + Boiler");
+            if (strcmp(cm_id, "CM5") == 0) return std::string("CM5 - Passive Cooling");
             if (strcmp(cm_id, "CM98") == 0) return std::string("CM98 - Anti-Freeze Protection - Water Circulation");
             return std::string("Unknown");
           };
@@ -702,14 +705,20 @@ interval:
           };
 
           // -------------------------------------------------
-          // 1) Heat demand
-          //    Baseline: demand_filtered > 0
+          // 1) Thermal demand
+          //    Baseline heating demand: demand_filtered > 0
+          //    Baseline cooling demand: selected enable + request + permit
           //    CM2 idle-exit: if both HPs are commanded/measured idle
           //    for a while, force demand false to allow CM2->CM1->CM0.
           // -------------------------------------------------
           const char* cur_cm_state = id(oq_control_mode).state.c_str();
           const bool in_cm2 = strcmp(cur_cm_state, "CM2") == 0;
-          const bool heating_req_raw = (id(oq_demand_filtered) > 0);
+          const bool heating_req_raw = (id(oq_heating_demand_filtered) > 0);
+          const bool cooling_req_raw =
+              id(cooling_enable_selected).has_state() && id(cooling_enable_selected).state &&
+              id(cooling_request_active).has_state() && id(cooling_request_active).state &&
+              id(cooling_permitted_core).has_state() && id(cooling_permitted_core).state;
+          const bool cooling_req = cooling_req_raw;
           const bool power_house_active = (id(oq_heat_mode_code) == 0);
 
           const int hp1_lvl = id(hp1_last_applied_level);
@@ -729,12 +738,18 @@ interval:
           const bool hp2_mode_valid = !isnan(hp2_mode_raw);
           const bool hp1_heating = hp1_mode_valid && ((int) roundf(hp1_mode_raw) == 2);
           const bool hp2_heating = hp2_mode_valid && ((int) roundf(hp2_mode_raw) == 2);
+          const bool hp1_cooling = hp1_mode_valid && ((int) roundf(hp1_mode_raw) == 1);
+          const bool hp2_cooling = hp2_mode_valid && ((int) roundf(hp2_mode_raw) == 1);
           const bool hp1_target_heating =
               id(hp1_set_working_mode).has_state() && id(hp1_set_working_mode).current_option() == "Heating";
           const bool hp2_target_heating =
               id(${supervisory_secondary_set_working_mode_id}).has_state() && id(${supervisory_secondary_set_working_mode_id}).current_option() == "Heating";
-          const bool hp1_active_guard = hp1_heating || hp1_target_heating || (hp1_lvl > 0);
-          const bool hp2_active_guard = hp2_heating || hp2_target_heating || (hp2_lvl > 0);
+          const bool hp1_target_cooling =
+              id(hp1_set_working_mode).has_state() && id(hp1_set_working_mode).current_option() == "Cooling";
+          const bool hp2_target_cooling =
+              id(${supervisory_secondary_set_working_mode_id}).has_state() && id(${supervisory_secondary_set_working_mode_id}).current_option() == "Cooling";
+          const bool hp1_active_guard = hp1_heating || hp1_cooling || hp1_target_heating || hp1_target_cooling || (hp1_lvl > 0);
+          const bool hp2_active_guard = hp2_heating || hp2_cooling || hp2_target_heating || hp2_target_cooling || (hp2_lvl > 0);
           const bool any_hp_active_guard = hp1_active_guard || hp2_active_guard;
           #else
           const int hp2_lvl = 0;
@@ -744,9 +759,12 @@ interval:
           const float hp1_mode_raw = id(hp1_working_mode).state;
           const bool hp1_mode_valid = !isnan(hp1_mode_raw);
           const bool hp1_heating = hp1_mode_valid && ((int) roundf(hp1_mode_raw) == 2);
+          const bool hp1_cooling = hp1_mode_valid && ((int) roundf(hp1_mode_raw) == 1);
           const bool hp1_target_heating =
               id(hp1_set_working_mode).has_state() && id(hp1_set_working_mode).current_option() == "Heating";
-          const bool hp1_active_guard = hp1_heating || hp1_target_heating || (hp1_lvl > 0);
+          const bool hp1_target_cooling =
+              id(hp1_set_working_mode).has_state() && id(hp1_set_working_mode).current_option() == "Cooling";
+          const bool hp1_active_guard = hp1_heating || hp1_cooling || hp1_target_heating || hp1_target_cooling || (hp1_lvl > 0);
           const bool hp2_active_guard = false;
           const bool any_hp_active_guard = hp1_active_guard;
           #endif
@@ -930,6 +948,8 @@ interval:
               last_cm2_idle_exit_reason);
           publish_binary_if_changed(id(oq_cm2_reentry_block_active_bs), reentry_block_active);
 
+          const bool thermal_req = heating_req || cooling_req_raw;
+
           // -------------------------------------------------
           // 1b) Shadow heat-enable arbiter (diagnostics only)
           //     States: IDLE/PREHEAT/HEATING/POSTFLOW/LOCKOUT
@@ -1025,8 +1045,8 @@ interval:
           const bool flow_valid = !isnan(flow);
           const bool flow_low = (!flow_valid) || (flow < min_flow_lph);
 
-          if (!heating_req) {
-            // No heating: reset flow interlock state
+          if (!thermal_req) {
+            // No active thermal request: reset flow interlock state
             id(oq_lowflow_since_ms) = 0;
             id(oq_flow_recover_since_ms) = 0;
             id(oq_lowflow_fault_active) = false;
@@ -1059,7 +1079,7 @@ interval:
           const bool flow_ok = flow_valid && (flow >= min_flow_lph);
 
           // Internal interlock: only enforced when heating is requested.
-          const bool min_flow_ok = heating_req ? (!id(oq_lowflow_fault_active) && flow_ok) : true;
+          const bool min_flow_ok = thermal_req ? (!id(oq_lowflow_fault_active) && flow_ok) : true;
 
           // Publish lowflow fault status (writes-only-on-change)
           publish_binary_if_changed(id(oq_lowflow_fault_active_bs), id(oq_lowflow_fault_active));
@@ -1090,7 +1110,7 @@ interval:
           const float outside_c = id(outside_temp_selected).state;
 
           bool frost = false;
-          if (!heating_req) {
+          if (!thermal_req) {
             if (isnan(outside_c)) {
               frost = !frost_nan_grace_active; // fail-safe after startup grace
             } else {
@@ -1111,17 +1131,18 @@ interval:
             // Helper: start CM1 window
             auto start_cm1 = [&](int next_after)->void {
               id(oq_cm1_until_ms) = now_ms + prepost_ms;
-              id(oq_cm1_next_after) = next_after; // 0=CM0, 2=CM2, 98=CM98
+              id(oq_cm1_next_after) = next_after; // 0=CM0, 2=CM2, 5=CM5, 98=CM98
             };
 
             // Determine base target (without CM1 timer)
             int base_target = 0; // CM0
-            if (heating_req) base_target = 2;     // CM2 desired
-            else if (frost)  base_target = 98;    // CM98 desired
-            else             base_target = 0;     // CM0
+            if (cooling_req) base_target = 5;     // CM5 desired
+            else if (heating_req) base_target = 2; // CM2 desired
+            else if (frost)  base_target = 98;     // CM98 desired
+            else             base_target = 0;      // CM0
 
-            // Apply flow interlock: if heating requested but low-flow fault => cannot go to CM2
-            if (heating_req && (id(oq_lowflow_fault_active) || flow_low)) {
+            // Apply flow interlock: if thermal output is requested but low-flow fault => hold in CM1.
+            if (thermal_req && (id(oq_lowflow_fault_active) || flow_low)) {
               base_target = 1; // force CM1 as safe holding state
             }
 
@@ -1175,29 +1196,34 @@ interval:
               if (cm1_timer_running && strcmp(cur_cm, "CM1") == 0) {
                 desired_local = 1;
 
-              // 2) If we're in CM1 and timer just expired -> advance to next_after
-              } else if (cm1_timer_expired && strcmp(cur_cm, "CM1") == 0) {
-                if (cm1_next_after == 2) {
-                  if (heating_req && base_target == 2) desired_local = 2;
-                  else if (base_target == 98)          desired_local = 98;
-                  else                                 desired_local = 0;
-                } else if (cm1_next_after == 0) {
-                  // Re-evaluate heating/frost when postflow expires.
-                  // If demand recovered during CM1-postflow, resume CM2 directly
-                  // instead of forcing an avoidable CM0 hop (anti-flip/chatter).
-                  // Scope this behavior to heating-curve strategy only; keep
-                  // Power House behavior unchanged.
-                  if (id(oq_heat_mode_code) == 1 && heating_req && base_target == 2) desired_local = 2;
-                  else if (base_target == 98)          desired_local = 98;
-                  else                                 desired_local = 0;
-                } else if (cm1_next_after == 98) {
-                  desired_local = 98;
-                } else {
-                  desired_local = (base_target == 2) ? 2 : (base_target == 98 ? 98 : 0);
-                }
+                  // 2) If we're in CM1 and timer just expired -> advance to next_after
+                  } else if (cm1_timer_expired && strcmp(cur_cm, "CM1") == 0) {
+                    if (cm1_next_after == 2) {
+                      if (heating_req && base_target == 2) desired_local = 2;
+                      else if (base_target == 98)          desired_local = 98;
+                      else                                 desired_local = 0;
+                    } else if (cm1_next_after == 5) {
+                      if (cooling_req && base_target == 5) desired_local = 5;
+                      else if (base_target == 98)          desired_local = 98;
+                      else                                 desired_local = 0;
+                    } else if (cm1_next_after == 0) {
+                      // Re-evaluate heating/frost when postflow expires.
+                      // If demand recovered during CM1-postflow, resume CM2/CM5 directly
+                      // instead of forcing an avoidable CM0 hop (anti-flip/chatter).
+                      // Scope this behavior to heating-curve strategy only; keep
+                      // Power House behavior unchanged.
+                      if (cooling_req && base_target == 5) desired_local = 5;
+                      else if (id(oq_heat_mode_code) == 1 && heating_req && base_target == 2) desired_local = 2;
+                      else if (base_target == 98)          desired_local = 98;
+                      else                                 desired_local = 0;
+                    } else if (cm1_next_after == 98) {
+                      desired_local = 98;
+                    } else {
+                      desired_local = (base_target == 5) ? 5 : ((base_target == 2) ? 2 : (base_target == 98 ? 98 : 0));
+                    }
 
-                ESP_LOGI("supervisory", "CM1 expired: next_after=%d, heating_req=%d, base_target=%d -> desired=%d",
-                         cm1_next_after, (int) heating_req, base_target, desired_local);
+                    ESP_LOGI("supervisory", "CM1 expired: next_after=%d, heating_req=%d, cooling_req=%d, base_target=%d -> desired=%d",
+                             cm1_next_after, (int) heating_req, (int) cooling_req, base_target, desired_local);
 
                 // Clear CM1 window only AFTER we have used next_after
                 id(oq_cm1_until_ms) = 0;
@@ -1209,7 +1235,18 @@ interval:
                   id(oq_cm1_next_after) = 0;
                 }
 
-                if (heating_req) {
+                if (cooling_req) {
+                  if (base_target == 5) {
+                    if (strcmp(cur_cm, "CM5") == 0) {
+                      desired_local = 5;
+                    } else {
+                      start_cm1(5);
+                      desired_local = 1;
+                    }
+                  } else {
+                    desired_local = 1; // flow interlock holding state
+                  }
+                } else if (heating_req) {
                   if (base_target == 2) {
                     if (strcmp(cur_cm, "CM2") == 0) {
                       desired_local = 2;
@@ -1221,7 +1258,7 @@ interval:
                     desired_local = 1; // flow interlock holding state
                   }
                 } else {
-                  if (strcmp(cur_cm, "CM2") == 0) {
+                  if (strcmp(cur_cm, "CM2") == 0 || strcmp(cur_cm, "CM5") == 0) {
                     start_cm1(0); // postflow to CM0
                     desired_local = 1;
                   } else {
@@ -1232,9 +1269,9 @@ interval:
 
               // Safety: never leave CM1 to CM0 while any HP still reports/targets activity.
               // Keep CM1 (pump-on holding state) until both HPs are effectively idle.
-              if (strcmp(cur_cm, "CM1") == 0 && !heating_req && base_target == 0 && any_hp_active_guard) {
-                desired_local = 1;
-              }
+                  if (strcmp(cur_cm, "CM1") == 0 && !thermal_req && base_target == 0 && any_hp_active_guard) {
+                    desired_local = 1;
+                  }
 
               // CM3 (boiler assist) auto-switching
               // Promote/Demote: deficit-based (thermal deficit) + timers/hysteresis
@@ -1244,15 +1281,20 @@ interval:
               const bool need_on = (!isnan(deficit_w) && deficit_w >= on_th);
               const bool ok_off  = (isnan(deficit_w) || deficit_w <= off_th);
 
-              const int cm_now = (strcmp(cur_cm, "CM3") == 0) ? 3 : (strcmp(cur_cm, "CM2") == 0) ? 2 : (strcmp(cur_cm, "CM1") == 0) ? 1 : (strcmp(cur_cm, "CM98") == 0) ? 98 : 0;
+                  const int cm_now =
+                      (strcmp(cur_cm, "CM3") == 0) ? 3 :
+                      (strcmp(cur_cm, "CM2") == 0) ? 2 :
+                      (strcmp(cur_cm, "CM5") == 0) ? 5 :
+                      (strcmp(cur_cm, "CM1") == 0) ? 1 :
+                      (strcmp(cur_cm, "CM98") == 0) ? 98 : 0;
               const uint32_t T_ON_MS = (uint32_t)(${oq_cm3_promote_s}UL * 1000UL);
               const uint32_t T_OFF_MS = (uint32_t)(${oq_cm3_demote_s}UL * 1000UL);
               const uint32_t MIN_CM3_MS = (uint32_t)(${oq_cm3_min_run_s}UL * 1000UL);
               const uint32_t MIN_CM2_MS = (uint32_t)(${oq_cm2_min_run_s}UL * 1000UL);
 
-              if (cm_now == 2) {
-                if (now_ms - id(oq_cm_last_change_ms) >= MIN_CM2_MS) {
-                  if (need_on) {
+                  if (cm_now == 2) {
+                    if (now_ms - id(oq_cm_last_change_ms) >= MIN_CM2_MS) {
+                      if (need_on) {
                     if (id(oq_cm3_need_since_ms) == 0) id(oq_cm3_need_since_ms) = now_ms;
                     if (now_ms - id(oq_cm3_need_since_ms) >= T_ON_MS) desired_local = 3;
                   } else {

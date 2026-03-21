@@ -50,6 +50,14 @@ Dit is meestal de eerste plek bij onlogische waarden. Hier zie je:
 
 Als hier de verkeerde bron gekozen is, raken ook andere schermen al snel misleidend. Daarom is dit meestal de eerste controle.
 
+Bij cooling is deze tab extra belangrijk. Daar configureer je ook:
+
+- de cooling enable bron;
+- het aantal koelruimtes;
+- de dauwpunt-, temperatuur- en RH-bronnen die via Home Assistant-proxy's worden ingelezen.
+
+Als deze bronlaag niet klopt, is ook de cooling-tab niet betrouwbaar.
+
 ### Flow
 
 Gebruik deze tab als:
@@ -74,6 +82,18 @@ Deze tab is bedoeld voor gedrag dat niet direct verklaarbaar is. Bijvoorbeeld wa
 - het systeem snel schakelt;
 - je wilt begrijpen waarom OpenQuatt juist wel of niet doorzet.
 
+### Koeling
+
+Gebruik deze tab zodra je passive cooling gebruikt of voorbereidt. Hier zie je onder meer:
+
+- of cooling request actief is;
+- of cooling op dit moment toegestaan is;
+- waarom cooling eventueel geblokkeerd wordt;
+- welk dauwpunt en welke minimale veilige aanvoer actief zijn;
+- welk cooling-target en welke ruwe cooling demand OpenQuatt nu gebruikt.
+
+De cooling-tab is dus vooral een runtime- en veiligheidsweergave. De bronkeuze zelf doe je op `Sensorconfiguratie`.
+
 ## Tabs voor gevorderden
 
 ### Instellingen
@@ -95,6 +115,11 @@ Als je snel wilt beoordelen of alles normaal werkt, controleer dan deze vijf pun
 3. debiet logisch;
 4. geen duidelijke fout- of storingssignalen;
 5. gedrag past bij de warmtevraag in huis.
+
+Gebruik je cooling, voeg dan ook deze twee controles toe:
+
+6. dauwpuntbron geldig;
+7. cooling niet geblokkeerd door flow of veilige aanvoergrens.
 
 ## Wat betekent `Gekozen`?
 

@@ -9,11 +9,13 @@
 # 5) Aggregation/energy telemetry
 # 6) External inputs (CIC)
 # 7) External HA proxy inputs
-# 8) Local sensors
-# 9) Source selection and merged selected-source signals
-# 10) Debug/testing utilities
-# 11) Web UI
-# 12) Per-HP hardware adapters
+# 8) External HA cooling proxy inputs
+# 9) Local sensors
+# 10) Source selection and merged selected-source signals
+# 11) Cooling safety / dew point aggregation
+# 12) Debug/testing utilities
+# 13) Web UI
+# 14) Per-HP hardware adapters
 # ==============================================================================
 # Shared modules use `*_secondary_*` template vars so topology wiring stays
 # centralized in package files and avoids duplicated module files.

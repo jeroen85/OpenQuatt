@@ -1,0 +1,224 @@
+# ==============================================================================
+# OpenQuatt - Passive Cooling Control
+# ==============================================================================
+#
+# Goal:
+#   Build the first dedicated cooling control path on top of the cooling safety
+#   signals. This layer produces a conservative supply target and a separate
+#   cooling demand `f` without touching the existing heating strategy.
+#
+# Scope:
+#   - Derive a safe cooling supply target from dew point + user floor
+#   - Run a small water-temperature PI(D) loop for cooling only
+#   - Publish `oq_cooling_demand_raw` (0..20) as the future shared dispatcher input
+#
+# ==============================================================================
+
+globals:
+  - id: oq_cooling_demand_raw
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_cooling_pid_integral
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+
+  - id: oq_cooling_pid_last_error_c
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+
+  - id: oq_cooling_last_loop_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
+number:
+  - platform: template
+    id: cooling_min_supply_temp
+    name: "Cooling Minimum Supply Temp"
+    icon: mdi:thermometer-chevron-down
+    unit_of_measurement: "°C"
+    min_value: 16.0
+    max_value: 24.0
+    step: 0.5
+    mode: slider
+    optimistic: true
+    restore_value: true
+    initial_value: 18.0
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_control
+
+  - platform: template
+    id: cooling_demand_max_f
+    name: "Cooling Demand Max"
+    icon: mdi:gauge
+    unit_of_measurement: "step"
+    min_value: 0
+    max_value: 20
+    step: 1
+    mode: slider
+    optimistic: true
+    restore_value: true
+    initial_value: 4
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_control
+
+  - platform: template
+    id: cooling_pid_kp
+    name: "Cooling PID Kp"
+    icon: mdi:chart-bell-curve-cumulative
+    min_value: 0.0
+    max_value: 10.0
+    step: 0.1
+    mode: slider
+    optimistic: true
+    restore_value: true
+    initial_value: 3.0
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+  - platform: template
+    id: cooling_pid_ki
+    name: "Cooling PID Ki"
+    icon: mdi:chart-timeline-variant
+    min_value: 0.0
+    max_value: 2.0
+    step: 0.01
+    mode: slider
+    optimistic: true
+    restore_value: true
+    initial_value: 0.12
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+  - platform: template
+    id: cooling_pid_kd
+    name: "Cooling PID Kd"
+    icon: mdi:chart-line
+    min_value: 0.0
+    max_value: 2.0
+    step: 0.01
+    mode: slider
+    optimistic: true
+    restore_value: true
+    initial_value: 0.0
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+sensor:
+  - platform: template
+    id: cooling_supply_target
+    name: "Cooling Supply Target"
+    icon: mdi:target
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 5s
+    lambda: |-
+      // Cooling may never target below the configured floor or the dew-point-safe floor.
+      float target_c = id(cooling_min_supply_temp).state;
+      if (id(minimum_safe_supply_temp).has_state() && !isnan(id(minimum_safe_supply_temp).state)) {
+        target_c = fmaxf(target_c, id(minimum_safe_supply_temp).state);
+      }
+      return target_c;
+    web_server:
+      sorting_group_id: oq_temperatures
+
+  - platform: template
+    id: cooling_supply_error
+    name: "Cooling Supply Error"
+    icon: mdi:delta
+    unit_of_measurement: "°C"
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 5s
+    lambda: |-
+      if (!id(cooling_supply_target).has_state() || isnan(id(cooling_supply_target).state)) return NAN;
+      if (!id(oq_system_supply_temp).has_state() || isnan(id(oq_system_supply_temp).state)) return NAN;
+      // Positive error means the supply is warmer than target, so more cooling may be requested.
+      return id(oq_system_supply_temp).state - id(cooling_supply_target).state;
+    web_server:
+      sorting_group_id: oq_temperatures
+
+  - platform: template
+    id: oq_cooling_demand_raw_sensor
+    name: "Cooling Demand (raw)"
+    icon: mdi:speedometer-medium
+    unit_of_measurement: "step"
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return (float) id(oq_cooling_demand_raw);
+
+interval:
+  - interval: 5s
+    then:
+      - lambda: |-
+          // Resolve loop timing and reset the controller cleanly when cooling is not allowed.
+          const uint32_t now_ms = (uint32_t) millis();
+          float dt_s = 5.0f;
+          if (id(oq_cooling_last_loop_ms) > 0 && now_ms > id(oq_cooling_last_loop_ms)) {
+            dt_s = (float) (now_ms - id(oq_cooling_last_loop_ms)) / 1000.0f;
+          }
+          if (dt_s < 0.1f) dt_s = 0.1f;
+          if (dt_s > 15.0f) dt_s = 15.0f;
+          id(oq_cooling_last_loop_ms) = now_ms;
+
+          const bool active =
+              id(cooling_enable_selected).state &&
+              id(cooling_request_active).state &&
+              id(cooling_permitted).state;
+
+          if (!active ||
+              !id(cooling_supply_target).has_state() || isnan(id(cooling_supply_target).state) ||
+              !id(oq_system_supply_temp).has_state() || isnan(id(oq_system_supply_temp).state)) {
+            id(oq_cooling_demand_raw) = 0;
+            id(oq_cooling_pid_integral) = 0.0f;
+            id(oq_cooling_pid_last_error_c) = 0.0f;
+            return;
+          }
+
+          // Cooling PI(D): positive error means the system supply is still warmer than target.
+          const float error_c = id(oq_system_supply_temp).state - id(cooling_supply_target).state;
+          float kp = id(cooling_pid_kp).state;
+          float ki = id(cooling_pid_ki).state;
+          float kd = id(cooling_pid_kd).state;
+          if (isnan(kp) || kp < 0.0f) kp = 0.0f;
+          if (isnan(ki) || ki < 0.0f) ki = 0.0f;
+          if (isnan(kd) || kd < 0.0f) kd = 0.0f;
+
+          float integral = id(oq_cooling_pid_integral);
+          integral += error_c * dt_s;
+          if (integral < -20.0f) integral = -20.0f;
+          if (integral > 20.0f) integral = 20.0f;
+
+          float derivative = 0.0f;
+          if (dt_s > 0.0f) {
+            derivative = (error_c - id(oq_cooling_pid_last_error_c)) / dt_s;
+          }
+
+          float out = (kp * error_c) + (ki * integral) + (kd * derivative);
+          if (out < 0.0f) out = 0.0f;
+
+          int demand_max = (int) lroundf(id(cooling_demand_max_f).state);
+          if (demand_max < 0) demand_max = 0;
+          if (demand_max > 20) demand_max = 20;
+          int demand = (int) lroundf(out);
+          if (demand < 0) demand = 0;
+          if (demand > demand_max) demand = demand_max;
+
+          id(oq_cooling_pid_integral) = integral;
+          id(oq_cooling_pid_last_error_c) = error_c;
+          id(oq_cooling_demand_raw) = demand;

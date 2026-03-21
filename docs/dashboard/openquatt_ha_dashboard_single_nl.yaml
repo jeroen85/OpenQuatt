@@ -1130,6 +1130,80 @@ views:
         content: |-
           # <ha-icon icon="mdi:radiator"></ha-icon> Warmteregeling
           Warmtevraag, warmteverdeling en compressorbelasting.
+  - title: Koeling
+    path: cooling
+    icon: mdi:snowflake-thermometer
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:state-machine
+            heading: Koelstatus
+            heading_style: title
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_control_mode
+                name: Control mode
+              - entity: sensor.openquatt_control_mode_label
+                name: Control mode (label)
+              - entity: binary_sensor.openquatt_cooling_enable_selected
+                name: Geselecteerde koeltoestemming
+              - entity: binary_sensor.openquatt_cooling_request_active
+                name: Cooling request active
+              - entity: binary_sensor.openquatt_cooling_permitted
+                name: Cooling permitted
+              - entity: sensor.openquatt_cooling_block_reason
+                name: Cooling block reason
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:water-thermometer
+            heading: Dauwpuntveiligheid
+            heading_style: title
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_cooling_room_count_selected
+                name: Cooling room count
+              - entity: sensor.openquatt_cooling_valid_room_count
+                name: Cooling valid room count
+              - entity: binary_sensor.openquatt_cooling_dew_point_available
+                name: Cooling dew point available
+              - entity: sensor.openquatt_cooling_dew_point_selected
+                name: Cooling dew point (selected)
+              - entity: sensor.openquatt_cooling_safety_margin_selected
+                name: Cooling safety margin
+              - entity: sensor.openquatt_cooling_minimum_safe_supply_temp
+                name: Cooling minimum safe supply temp
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:gauge
+            heading: Koelregeling
+            heading_style: title
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_cooling_supply_target
+                name: Cooling supply target
+              - entity: sensor.openquatt_cooling_supply_error
+                name: Cooling supply error
+              - entity: sensor.openquatt_cooling_demand_raw
+                name: Cooling demand (raw)
+              - entity: number.openquatt_cooling_minimum_supply_temp
+                name: Cooling minimum supply temp
+              - entity: number.openquatt_cooling_demand_max
+                name: Cooling demand max
+    cards: []
+    header:
+      card:
+        type: markdown
+        content: |-
+          # <ha-icon icon="mdi:snowflake-thermometer"></ha-icon> Koeling
+          Bekijk permissies, dauwpuntveiligheid en het CM5-koelregelpad.
   - title: HP1
     path: hp1
     icon: mdi:heat-pump-outline
@@ -1519,6 +1593,28 @@ views:
           - type: vertical-stack
             cards:
               - type: heading
+                icon: mdi:snowflake-check
+                heading: Koeltoestemming bronnen
+                heading_style: subtitle
+                grid_options:
+                  columns: 12
+                  rows: 1
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: select.openquatt_cooling_enable_source
+                    name: Koeltoestemming bron
+                  - entity: sensor.openquatt_cooling_enable_effective_source
+                    name: Effectieve koeltoestemmingsbron
+                  - entity: binary_sensor.openquatt_cooling_enable_selected
+                    name: Geselecteerde koeltoestemming
+                  - entity: binary_sensor.openquatt_cic_ot_cooling_enabled
+                    name: Koeltoestemming (CIC OT)
+                  - entity: binary_sensor.openquatt_ha_cooling_enable
+                    name: Koeltoestemming (HA-invoer)
+          - type: vertical-stack
+            cards:
+              - type: heading
                 icon: mdi:swap-horizontal-bold
                 heading: HA-terugval bij CIC-uitval
                 heading_style: subtitle
@@ -1560,7 +1656,9 @@ views:
                   - `sensor.water_supply_temperature`
                   - `sensor.thermostat_setpoint`
                   - `sensor.thermostat_room_temperature`
+                  - `input_boolean.cooling_enable`
                   - `climate.woonkamer | current_temperature`
+                  - `climate.woonkamer | hvac_mode`
 
                   Optioneel attribuutformaat:
                   - `entity_id|attribute_name`
@@ -1580,6 +1678,61 @@ views:
                     name: Bronentity setpoint
                   - entity: input_text.openquatt_source_room_temperature
                     name: Bronentity ruimtetemperatuur
+                  - entity: input_text.openquatt_source_cooling_enable
+                    name: Bronentity koeltoestemming
+          - type: vertical-stack
+            visibility:
+              - condition: state
+                entity: binary_sensor.openquatt_ha_dynamic_cooling_package_active
+                state: 'on'
+            cards:
+              - type: heading
+                icon: mdi:floor-plan
+                heading: Cooling room bronentities
+                heading_style: subtitle
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: input_number.openquatt_cooling_room_count
+                    name: Cooling room count
+                  - entity: input_number.openquatt_cooling_safety_margin
+                    name: Cooling safety margin
+                  - entity: input_text.openquatt_source_cooling_room_1_dew_point
+                    name: Cooling room 1 dauwpuntentity
+                  - entity: input_text.openquatt_source_cooling_room_1_temperature
+                    name: Cooling room 1 temperatuurentity
+                  - entity: input_text.openquatt_source_cooling_room_1_humidity
+                    name: Cooling room 1 luchtvochtigheidentity
+                  - entity: input_text.openquatt_source_cooling_room_2_dew_point
+                    name: Cooling room 2 dauwpuntentity
+                  - entity: input_text.openquatt_source_cooling_room_2_temperature
+                    name: Cooling room 2 temperatuurentity
+                  - entity: input_text.openquatt_source_cooling_room_2_humidity
+                    name: Cooling room 2 luchtvochtigheidentity
+                  - entity: input_text.openquatt_source_cooling_room_3_dew_point
+                    name: Cooling room 3 dauwpuntentity
+                  - entity: input_text.openquatt_source_cooling_room_3_temperature
+                    name: Cooling room 3 temperatuurentity
+                  - entity: input_text.openquatt_source_cooling_room_3_humidity
+                    name: Cooling room 3 luchtvochtigheidentity
+                  - entity: input_text.openquatt_source_cooling_room_4_dew_point
+                    name: Cooling room 4 dauwpuntentity
+                  - entity: input_text.openquatt_source_cooling_room_4_temperature
+                    name: Cooling room 4 temperatuurentity
+                  - entity: input_text.openquatt_source_cooling_room_4_humidity
+                    name: Cooling room 4 luchtvochtigheidentity
+                  - entity: input_text.openquatt_source_cooling_room_5_dew_point
+                    name: Cooling room 5 dauwpuntentity
+                  - entity: input_text.openquatt_source_cooling_room_5_temperature
+                    name: Cooling room 5 temperatuurentity
+                  - entity: input_text.openquatt_source_cooling_room_5_humidity
+                    name: Cooling room 5 luchtvochtigheidentity
+                  - entity: input_text.openquatt_source_cooling_room_6_dew_point
+                    name: Cooling room 6 dauwpuntentity
+                  - entity: input_text.openquatt_source_cooling_room_6_temperature
+                    name: Cooling room 6 temperatuurentity
+                  - entity: input_text.openquatt_source_cooling_room_6_humidity
+                    name: Cooling room 6 luchtvochtigheidentity
           - type: vertical-stack
             cards:
               - type: heading
@@ -1598,7 +1751,7 @@ views:
                   OpenQuatt dienen.
 
 
-                  De status `Valid` hoort voor alle vier signalen op `on` te
+                  De status `Valid` hoort voor alle vijf signalen op `on` te
                   staan.
 
                   Als `Valid` op `off` staat, is de huidige bron niet numeriek.
@@ -1629,6 +1782,10 @@ views:
                     name: Proxy ruimtetemperatuur
                   - entity: binary_sensor.openquatt_ext_room_temperature_valid
                     name: Ruimtetemperatuur bron valid
+                  - entity: binary_sensor.openquatt_ext_cooling_enable
+                    name: Proxy koeltoestemming
+                  - entity: binary_sensor.openquatt_ext_cooling_enable_valid
+                    name: Koeltoestemming bron valid
           - type: vertical-stack
             cards:
               - type: heading
@@ -1640,7 +1797,7 @@ views:
                   <details>
                   <summary><strong>Uitleg</strong></summary>
 
-                  Dit zijn de vier HA-invoerwaarden zoals OpenQuatt ze ontvangt.
+                  Dit zijn de vijf HA-invoerwaarden zoals OpenQuatt ze ontvangt.
                   Deze horen de proxywaarden uit het middelste blok te volgen.
 
                   Blijft een waarde op `Unknown`, controleer dan eerst of de
@@ -1659,6 +1816,8 @@ views:
                     name: HA - Thermostat Doeltemperatuur
                   - entity: sensor.openquatt_ha_thermostat_room_temperature
                     name: HA - Thermostaat kamertemperatuur
+                  - entity: binary_sensor.openquatt_ha_cooling_enable
+                    name: HA - Koeltoestemming
         column_span: 3
         visibility:
           - condition: state
@@ -1678,8 +1837,9 @@ views:
               `openquatt_ha_dynamic_sources_package.yaml` is niet geladen.  
 
               Met dit optionele package kun je in Home Assistant zelf de
-              bron-entities voor buiten-, aanvoer-, kamer- en
-              setpointtemperatuur kiezen, zonder OpenQuatt opnieuw te flashen.
+              bron-entities voor buiten-, aanvoer-, kamer-,
+              setpointtemperatuur en koeltoestemming kiezen, zonder OpenQuatt
+              opnieuw te flashen.
 
 
               Na installatie verschijnen hier extra configuratieblokken voor
