@@ -1067,6 +1067,80 @@ views:
         content: |-
           # <ha-icon icon="mdi:radiator"></ha-icon> Heat control
           Heat demand, heat allocation, and compressor loading.
+  - title: Cooling
+    path: cooling
+    icon: mdi:snowflake-thermometer
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:state-machine
+            heading: Cooling state
+            heading_style: title
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_control_mode
+                name: Control mode
+              - entity: sensor.openquatt_control_mode_label
+                name: Control mode (label)
+              - entity: binary_sensor.openquatt_cooling_enable_selected
+                name: Selected cooling enable
+              - entity: binary_sensor.openquatt_cooling_request_active
+                name: Cooling request active
+              - entity: binary_sensor.openquatt_cooling_permitted
+                name: Cooling permitted
+              - entity: sensor.openquatt_cooling_block_reason
+                name: Cooling block reason
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:water-thermometer
+            heading: Dew point safety
+            heading_style: title
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_cooling_room_count_selected
+                name: Cooling room count
+              - entity: sensor.openquatt_cooling_valid_room_count
+                name: Cooling valid room count
+              - entity: binary_sensor.openquatt_cooling_dew_point_available
+                name: Cooling dew point available
+              - entity: sensor.openquatt_cooling_dew_point_selected
+                name: Cooling dew point (selected)
+              - entity: sensor.openquatt_cooling_safety_margin_selected
+                name: Cooling safety margin
+              - entity: sensor.openquatt_cooling_minimum_safe_supply_temp
+                name: Cooling minimum safe supply temp
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:gauge
+            heading: Cooling control
+            heading_style: title
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.openquatt_cooling_supply_target
+                name: Cooling supply target
+              - entity: sensor.openquatt_cooling_supply_error
+                name: Cooling supply error
+              - entity: sensor.openquatt_cooling_demand_raw
+                name: Cooling demand (raw)
+              - entity: number.openquatt_cooling_minimum_supply_temp
+                name: Cooling minimum supply temp
+              - entity: number.openquatt_cooling_demand_max
+                name: Cooling demand max
+    cards: []
+    header:
+      card:
+        type: markdown
+        content: |-
+          # <ha-icon icon="mdi:snowflake-thermometer"></ha-icon> Cooling
+          Inspect passive-cooling permission, dew-point safety, and the CM5 control path.
   - title: HP1
     path: hp1
     icon: mdi:heat-pump-outline
@@ -1540,6 +1614,59 @@ views:
                     name: Room temperature source entity
                   - entity: input_text.openquatt_source_cooling_enable
                     name: Cooling enable source entity
+          - type: vertical-stack
+            visibility:
+              - condition: state
+                entity: binary_sensor.openquatt_ha_dynamic_cooling_package_active
+                state: 'on'
+            cards:
+              - type: heading
+                icon: mdi:floor-plan
+                heading: Cooling room source entities
+                heading_style: subtitle
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: input_number.openquatt_cooling_room_count
+                    name: Cooling room count
+                  - entity: input_number.openquatt_cooling_safety_margin
+                    name: Cooling safety margin
+                  - entity: input_text.openquatt_source_cooling_room_1_dew_point
+                    name: Cooling room 1 dew point entity
+                  - entity: input_text.openquatt_source_cooling_room_1_temperature
+                    name: Cooling room 1 temperature entity
+                  - entity: input_text.openquatt_source_cooling_room_1_humidity
+                    name: Cooling room 1 humidity entity
+                  - entity: input_text.openquatt_source_cooling_room_2_dew_point
+                    name: Cooling room 2 dew point entity
+                  - entity: input_text.openquatt_source_cooling_room_2_temperature
+                    name: Cooling room 2 temperature entity
+                  - entity: input_text.openquatt_source_cooling_room_2_humidity
+                    name: Cooling room 2 humidity entity
+                  - entity: input_text.openquatt_source_cooling_room_3_dew_point
+                    name: Cooling room 3 dew point entity
+                  - entity: input_text.openquatt_source_cooling_room_3_temperature
+                    name: Cooling room 3 temperature entity
+                  - entity: input_text.openquatt_source_cooling_room_3_humidity
+                    name: Cooling room 3 humidity entity
+                  - entity: input_text.openquatt_source_cooling_room_4_dew_point
+                    name: Cooling room 4 dew point entity
+                  - entity: input_text.openquatt_source_cooling_room_4_temperature
+                    name: Cooling room 4 temperature entity
+                  - entity: input_text.openquatt_source_cooling_room_4_humidity
+                    name: Cooling room 4 humidity entity
+                  - entity: input_text.openquatt_source_cooling_room_5_dew_point
+                    name: Cooling room 5 dew point entity
+                  - entity: input_text.openquatt_source_cooling_room_5_temperature
+                    name: Cooling room 5 temperature entity
+                  - entity: input_text.openquatt_source_cooling_room_5_humidity
+                    name: Cooling room 5 humidity entity
+                  - entity: input_text.openquatt_source_cooling_room_6_dew_point
+                    name: Cooling room 6 dew point entity
+                  - entity: input_text.openquatt_source_cooling_room_6_temperature
+                    name: Cooling room 6 temperature entity
+                  - entity: input_text.openquatt_source_cooling_room_6_humidity
+                    name: Cooling room 6 humidity entity
           - type: vertical-stack
             cards:
               - type: heading
