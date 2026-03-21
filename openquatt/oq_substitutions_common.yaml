@@ -133,6 +133,7 @@ ha_outside_temp_entity_id: "sensor.openquatt_ext_outdoor_temperature"      # HA 
 ha_water_supply_temp_entity_id: "sensor.openquatt_ext_water_supply_temperature" # HA proxy entity for water supply temperature [degC].
 ha_room_setpoint_entity_id: "sensor.openquatt_ext_room_setpoint"           # HA proxy entity for thermostat room setpoint [degC].
 ha_room_temp_entity_id: "sensor.openquatt_ext_room_temperature"             # HA proxy entity for thermostat room temperature [degC].
+ha_cooling_enable_entity_id: "binary_sensor.openquatt_ext_cooling_enable"   # HA proxy entity for external cooling enable.
 
 # ----------------------------
 # HP IO (MODBUS POLLING)

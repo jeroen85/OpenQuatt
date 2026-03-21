@@ -1712,6 +1712,28 @@ views:
           - type: vertical-stack
             cards:
               - type: heading
+                icon: mdi:snowflake-check
+                heading: Cooling enable sources
+                heading_style: subtitle
+                grid_options:
+                  columns: 12
+                  rows: 1
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: select.openquatt_cooling_enable_source
+                    name: Cooling enable source
+                  - entity: sensor.openquatt_cooling_enable_effective_source
+                    name: Effective cooling enable source
+                  - entity: binary_sensor.openquatt_cooling_enable_selected
+                    name: Selected cooling enable
+                  - entity: binary_sensor.openquatt_cic_ot_cooling_enabled
+                    name: Cooling enable (CIC OT)
+                  - entity: binary_sensor.openquatt_ha_cooling_enable
+                    name: Cooling enable (HA Input)
+          - type: vertical-stack
+            cards:
+              - type: heading
                 icon: mdi:swap-horizontal-bold
                 heading: HA fallback for CIC outage
                 heading_style: subtitle
@@ -1753,7 +1775,9 @@ views:
                   - `sensor.water_supply_temperature`
                   - `sensor.thermostat_setpoint`
                   - `sensor.thermostat_room_temperature`
+                  - `input_boolean.cooling_enable`
                   - `climate.living_room | current_temperature`
+                  - `climate.living_room | hvac_mode`
 
                   Optional attribute format:
                   - `entity_id|attribute_name`
@@ -1773,6 +1797,8 @@ views:
                     name: Setpoint source entity
                   - entity: input_text.openquatt_source_room_temperature
                     name: Room temperature source entity
+                  - entity: input_text.openquatt_source_cooling_enable
+                    name: Cooling enable source entity
           - type: vertical-stack
             cards:
               - type: heading
@@ -1787,7 +1813,7 @@ views:
                   These are the stable HA proxy entities used as the contract towards
                   OpenQuatt.
 
-                  `Valid` should be `on` for all four signals.
+                  `Valid` should be `on` for all five signals.
                   If `Valid` is `off`, the current source is not numeric.
                   In that case the proxy value is `Unavailable` until the source
                   becomes valid again.
@@ -1812,6 +1838,10 @@ views:
                     name: Proxy room temperature
                   - entity: binary_sensor.openquatt_ext_room_temperature_valid
                     name: Room temperature source valid
+                  - entity: binary_sensor.openquatt_ext_cooling_enable
+                    name: Proxy cooling enable
+                  - entity: binary_sensor.openquatt_ext_cooling_enable_valid
+                    name: Cooling enable source valid
           - type: vertical-stack
             cards:
               - type: heading
@@ -1823,7 +1853,7 @@ views:
                   <details>
                   <summary><strong>Explanation</strong></summary>
 
-                  These are the four HA input signals as received by OpenQuatt.
+                  These are the five HA input signals as received by OpenQuatt.
                   They should follow the proxy values shown in the middle panel.
 
                   If a value stays `Unknown`, first check whether the matching
@@ -1842,6 +1872,8 @@ views:
                     name: HA - Thermostat Setpoint
                   - entity: sensor.openquatt_ha_thermostat_room_temperature
                     name: HA - Thermostat Room Temperature
+                  - entity: binary_sensor.openquatt_ha_cooling_enable
+                    name: HA - Cooling Enable
         column_span: 3
         visibility:
           - condition: state
@@ -1861,8 +1893,8 @@ views:
               `openquatt_ha_dynamic_sources_package.yaml` is not loaded.  
 
               With this optional package you can choose the Home Assistant source
-              entities for outside, water supply, room, and setpoint
-              temperature at runtime, without reflashing OpenQuatt.
+              entities for outside, water supply, room, setpoint, and cooling
+              enable at runtime, without reflashing OpenQuatt.
 
 
               After installation, extra configuration blocks for dynamic source

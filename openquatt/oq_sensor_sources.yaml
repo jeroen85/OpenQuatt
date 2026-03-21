@@ -131,7 +131,39 @@ select:
     web_server:
       sorting_group_id: oq_cic
 
+  - platform: template
+    name: "Cooling Enable Source"
+    id: cooling_enable_source
+    icon: mdi:source-branch
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    options:
+      - CIC
+      - HA input
+      - CIC or HA input
+    initial_option: CIC or HA input
+    web_server:
+      sorting_group_id: oq_cic
+
 binary_sensor:
+  - platform: template
+    id: cooling_enable_selected
+    name: "Cooling Enable (Selected)"
+    icon: mdi:snowflake-check
+    device_class: cold
+    lambda: |-
+      if (!id(cooling_enable_source).has_state()) return false;
+      const auto source = id(cooling_enable_source).current_option();
+      const bool cic_enabled = id(ot_cooling_enabled).has_state() && id(ot_cooling_enabled).state;
+      const bool ha_enabled = id(cooling_enable_ha).has_state() && id(cooling_enable_ha).state;
+      if (source == "CIC") return cic_enabled;
+      if (source == "HA input") return ha_enabled;
+      if (source == "CIC or HA input") return cic_enabled || ha_enabled;
+      return false;
+    web_server:
+      sorting_group_id: oq_cic
+
   - platform: template
     id: oq_room_cic_failover_active_bs
     name: "Room CIC Failover Active"
@@ -157,6 +189,32 @@ text_sensor:
     icon: mdi:source-branch
     update_interval: never
     entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_cic
+
+  - platform: template
+    id: oq_cooling_enable_effective_source
+    name: "Cooling Enable Effective Source"
+    icon: mdi:source-branch
+    entity_category: diagnostic
+    update_interval: 5s
+    lambda: |-
+      // Report which raw source is currently granting cooling enable.
+      if (!id(cooling_enable_source).has_state()) return {"Unknown"};
+
+      const auto source = id(cooling_enable_source).current_option();
+      const bool cic_enabled = id(ot_cooling_enabled).has_state() && id(ot_cooling_enabled).state;
+      const bool ha_enabled = id(cooling_enable_ha).has_state() && id(cooling_enable_ha).state;
+
+      if (source == "CIC") return {cic_enabled ? "CIC" : "None"};
+      if (source == "HA input") return {ha_enabled ? "HA input" : "None"};
+      if (source == "CIC or HA input") {
+        if (cic_enabled && ha_enabled) return {"CIC + HA input"};
+        if (cic_enabled) return {"CIC"};
+        if (ha_enabled) return {"HA input"};
+        return {"None"};
+      }
+      return {"Unknown"};
     web_server:
       sorting_group_id: oq_cic
 

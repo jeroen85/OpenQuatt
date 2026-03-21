@@ -1803,6 +1803,28 @@ views:
           - type: vertical-stack
             cards:
               - type: heading
+                icon: mdi:snowflake-check
+                heading: Koeltoestemming bronnen
+                heading_style: subtitle
+                grid_options:
+                  columns: 12
+                  rows: 1
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: select.openquatt_cooling_enable_source
+                    name: Koeltoestemming bron
+                  - entity: sensor.openquatt_cooling_enable_effective_source
+                    name: Effectieve koeltoestemmingsbron
+                  - entity: binary_sensor.openquatt_cooling_enable_selected
+                    name: Geselecteerde koeltoestemming
+                  - entity: binary_sensor.openquatt_cic_ot_cooling_enabled
+                    name: Koeltoestemming (CIC OT)
+                  - entity: binary_sensor.openquatt_ha_cooling_enable
+                    name: Koeltoestemming (HA-invoer)
+          - type: vertical-stack
+            cards:
+              - type: heading
                 icon: mdi:swap-horizontal-bold
                 heading: HA-terugval bij CIC-uitval
                 heading_style: subtitle
@@ -1844,7 +1866,9 @@ views:
                   - `sensor.water_supply_temperature`
                   - `sensor.thermostat_setpoint`
                   - `sensor.thermostat_room_temperature`
+                  - `input_boolean.cooling_enable`
                   - `climate.woonkamer | current_temperature`
+                  - `climate.woonkamer | hvac_mode`
 
                   Optioneel attribuutformaat:
                   - `entity_id|attribute_name`
@@ -1864,6 +1888,8 @@ views:
                     name: Bronentity setpoint
                   - entity: input_text.openquatt_source_room_temperature
                     name: Bronentity ruimtetemperatuur
+                  - entity: input_text.openquatt_source_cooling_enable
+                    name: Bronentity koeltoestemming
           - type: vertical-stack
             cards:
               - type: heading
@@ -1882,7 +1908,7 @@ views:
                   OpenQuatt dienen.
 
 
-                  De status `Valid` hoort voor alle vier signalen op `on` te
+                  De status `Valid` hoort voor alle vijf signalen op `on` te
                   staan.
 
                   Als `Valid` op `off` staat, is de huidige bron niet numeriek.
@@ -1913,6 +1939,10 @@ views:
                     name: Proxy ruimtetemperatuur
                   - entity: binary_sensor.openquatt_ext_room_temperature_valid
                     name: Ruimtetemperatuur bron valid
+                  - entity: binary_sensor.openquatt_ext_cooling_enable
+                    name: Proxy koeltoestemming
+                  - entity: binary_sensor.openquatt_ext_cooling_enable_valid
+                    name: Koeltoestemming bron valid
           - type: vertical-stack
             cards:
               - type: heading
@@ -1924,7 +1954,7 @@ views:
                   <details>
                   <summary><strong>Uitleg</strong></summary>
 
-                  Dit zijn de vier HA-invoerwaarden zoals OpenQuatt ze ontvangt.
+                  Dit zijn de vijf HA-invoerwaarden zoals OpenQuatt ze ontvangt.
                   Deze horen de proxywaarden uit het middelste blok te volgen.
 
                   Blijft een waarde op `Unknown`, controleer dan eerst of de
@@ -1943,6 +1973,8 @@ views:
                     name: HA - Thermostat Doeltemperatuur
                   - entity: sensor.openquatt_ha_thermostat_room_temperature
                     name: HA - Thermostaat kamertemperatuur
+                  - entity: binary_sensor.openquatt_ha_cooling_enable
+                    name: HA - Koeltoestemming
         column_span: 3
         visibility:
           - condition: state
@@ -1962,8 +1994,9 @@ views:
               `openquatt_ha_dynamic_sources_package.yaml` is niet geladen.  
 
               Met dit optionele package kun je in Home Assistant zelf de
-              bron-entities voor buiten-, aanvoer-, kamer- en
-              setpointtemperatuur kiezen, zonder OpenQuatt opnieuw te flashen.
+              bron-entities voor buiten-, aanvoer-, kamer-,
+              setpointtemperatuur en koeltoestemming kiezen, zonder OpenQuatt
+              opnieuw te flashen.
 
 
               Na installatie verschijnen hier extra configuratieblokken voor

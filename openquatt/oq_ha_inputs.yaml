@@ -67,3 +67,14 @@ sensor:
     accuracy_decimals: 2
     web_server:
       sorting_group_id: oq_ha
+
+binary_sensor:
+  - platform: homeassistant
+    id: cooling_enable_ha
+    name: "HA - Cooling Enable"
+    entity_id: ${ha_cooling_enable_entity_id}
+    internal: false
+    icon: mdi:snowflake-check
+    device_class: cold
+    web_server:
+      sorting_group_id: oq_ha

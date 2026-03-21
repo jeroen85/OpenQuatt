@@ -9,6 +9,7 @@
 #       sensor.openquatt_ext_water_supply_temperature
 #       sensor.openquatt_ext_room_setpoint
 #       sensor.openquatt_ext_room_temperature
+#       binary_sensor.openquatt_ext_cooling_enable
 #
 # Install (Home Assistant):
 #   1) Enable packages in configuration.yaml:
@@ -16,7 +17,7 @@
 #          packages: !include_dir_named packages
 #   2) Copy this file to: /config/packages/openquatt_dynamic_sources.yaml
 #   3) Reload Template Entities (or restart Home Assistant).
-#   4) Set the four input_text helpers once to your own source entity IDs.
+#   4) Set the five input_text helpers once to your own source entity IDs.
 #
 # Notes:
 #   - Trigger interval is 15s to support dynamic entity_id references.
@@ -26,6 +27,8 @@
 #     Whitespace around "|" is ignored.
 #   - Setpoint/room-temperature proxies also support climate attributes:
 #       temperature / current_temperature
+#   - Cooling-enable proxies support boolean-like states such as:
+#       on/off, true/false, 1/0, cool/cooling, heat_cool
 # ==============================================================================
 
 input_text:
@@ -53,6 +56,12 @@ input_text:
     mode: text
     max: 100
 
+  openquatt_source_cooling_enable:
+    name: OpenQuatt source cooling enable
+    icon: mdi:snowflake-check
+    mode: text
+    max: 100
+
 template:
   - binary_sensor:
       - name: OpenQuatt HA Dynamic Sources Package Active
@@ -66,6 +75,7 @@ template:
           - input_text.openquatt_source_water_supply_temperature
           - input_text.openquatt_source_room_setpoint
           - input_text.openquatt_source_room_temperature
+          - input_text.openquatt_source_cooling_enable
       - platform: time_pattern
         seconds: "/15"
     sensor:
@@ -302,6 +312,59 @@ template:
             {{ parts[1] | trim if (parts | length > 1) else '' }}
 
     binary_sensor:
+      - name: OpenQuatt Ext Cooling Enable
+        unique_id: openquatt_ext_cooling_enable
+        icon: mdi:snowflake-check
+        availability: >-
+          {% set selector = states('input_text.openquatt_source_cooling_enable') | trim %}
+          {% set parts = selector.split('|', 1) %}
+          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
+          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
+          {% set raw = state_attr(entity, attr_name) if entity and attr_name else (states(entity) if entity else none) %}
+          {% set ns = namespace(value=none) %}
+          {% if raw is sameas true or raw is sameas false %}
+            {% set ns.value = raw %}
+          {% elif raw is number %}
+            {% set ns.value = (raw | float(0)) > 0 %}
+          {% elif raw is string %}
+            {% set text = raw | trim | lower %}
+            {% if text in ['on', 'true', '1', 'cool', 'cooling', 'heat_cool', 'enabled'] %}
+              {% set ns.value = true %}
+            {% elif text in ['off', 'false', '0', 'heat', 'idle', 'disabled'] %}
+              {% set ns.value = false %}
+            {% endif %}
+          {% endif %}
+          {{ ns.value is not none }}
+        state: >-
+          {% set selector = states('input_text.openquatt_source_cooling_enable') | trim %}
+          {% set parts = selector.split('|', 1) %}
+          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
+          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
+          {% set raw = state_attr(entity, attr_name) if entity and attr_name else (states(entity) if entity else none) %}
+          {% set ns = namespace(value=false) %}
+          {% if raw is sameas true or raw is sameas false %}
+            {% set ns.value = raw %}
+          {% elif raw is number %}
+            {% set ns.value = (raw | float(0)) > 0 %}
+          {% elif raw is string %}
+            {% set text = raw | trim | lower %}
+            {% if text in ['on', 'true', '1', 'cool', 'cooling', 'heat_cool', 'enabled'] %}
+              {% set ns.value = true %}
+            {% elif text in ['off', 'false', '0', 'heat', 'idle', 'disabled'] %}
+              {% set ns.value = false %}
+            {% endif %}
+          {% endif %}
+          {{ ns.value }}
+        attributes:
+          source_entity: >-
+            {% set selector = states('input_text.openquatt_source_cooling_enable') | trim %}
+            {% set parts = selector.split('|', 1) %}
+            {{ parts[0] | trim if (parts | length > 0) else '' }}
+          source_attribute: >-
+            {% set selector = states('input_text.openquatt_source_cooling_enable') | trim %}
+            {% set parts = selector.split('|', 1) %}
+            {{ parts[1] | trim if (parts | length > 1) else '' }}
+
       - name: OpenQuatt Ext Outdoor Temperature Valid
         unique_id: openquatt_ext_outdoor_temperature_valid
         icon: mdi:check-decagram
@@ -435,5 +498,38 @@ template:
             {{ parts[0] | trim if (parts | length > 0) else '' }}
           source_attribute: >-
             {% set selector = states('input_text.openquatt_source_room_temperature') | trim %}
+            {% set parts = selector.split('|', 1) %}
+            {{ parts[1] | trim if (parts | length > 1) else '' }}
+
+      - name: OpenQuatt Ext Cooling Enable Valid
+        unique_id: openquatt_ext_cooling_enable_valid
+        icon: mdi:check-decagram
+        state: >-
+          {% set selector = states('input_text.openquatt_source_cooling_enable') | trim %}
+          {% set parts = selector.split('|', 1) %}
+          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
+          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
+          {% set raw = state_attr(entity, attr_name) if entity and attr_name else (states(entity) if entity else none) %}
+          {% set ns = namespace(value=none) %}
+          {% if raw is sameas true or raw is sameas false %}
+            {% set ns.value = raw %}
+          {% elif raw is number %}
+            {% set ns.value = (raw | float(0)) > 0 %}
+          {% elif raw is string %}
+            {% set text = raw | trim | lower %}
+            {% if text in ['on', 'true', '1', 'cool', 'cooling', 'heat_cool', 'enabled'] %}
+              {% set ns.value = true %}
+            {% elif text in ['off', 'false', '0', 'heat', 'idle', 'disabled'] %}
+              {% set ns.value = false %}
+            {% endif %}
+          {% endif %}
+          {{ ns.value is not none }}
+        attributes:
+          source_entity: >-
+            {% set selector = states('input_text.openquatt_source_cooling_enable') | trim %}
+            {% set parts = selector.split('|', 1) %}
+            {{ parts[0] | trim if (parts | length > 0) else '' }}
+          source_attribute: >-
+            {% set selector = states('input_text.openquatt_source_cooling_enable') | trim %}
             {% set parts = selector.split('|', 1) %}
             {{ parts[1] | trim if (parts | length > 1) else '' }}
