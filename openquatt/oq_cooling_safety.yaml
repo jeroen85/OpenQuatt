@@ -16,12 +16,79 @@
 
 binary_sensor:
   - platform: template
+    id: cooling_request_active
+    name: "Cooling Request Active"
+    icon: mdi:snowflake-thermometer
+    device_class: running
+    lambda: |-
+      // First conservative request gate: only cool when the room is measurably above setpoint.
+      if (!id(room_temp_selected).has_state() || isnan(id(room_temp_selected).state)) return false;
+      if (!id(room_setpoint_selected).has_state() || isnan(id(room_setpoint_selected).state)) return false;
+      return id(room_temp_selected).state > (id(room_setpoint_selected).state + 0.4f);
+    web_server:
+      sorting_group_id: oq_cic
+
+  - platform: template
+    id: cooling_permitted
+    name: "Cooling Permitted"
+    icon: mdi:shield-check
+    device_class: running
+    lambda: |-
+      // Cooling may only proceed when dew point data and flow are both trustworthy.
+      const bool rooms_configured =
+          id(cooling_room_count_selected).has_state() && !isnan(id(cooling_room_count_selected).state) &&
+          id(cooling_room_count_selected).state >= 1.0f;
+      const bool valid_rooms =
+          id(cooling_valid_room_count).has_state() && !isnan(id(cooling_valid_room_count).state) &&
+          id(cooling_valid_room_count).state >= 1.0f;
+      const bool dew_point_ok =
+          id(cooling_dew_point_available).state &&
+          id(cooling_dew_point_selected).has_state() && !isnan(id(cooling_dew_point_selected).state) &&
+          id(minimum_safe_supply_temp).has_state() && !isnan(id(minimum_safe_supply_temp).state);
+      const bool flow_valid = id(flow_rate_selected).has_state() && !isnan(id(flow_rate_selected).state);
+      const bool flow_ok = flow_valid && (id(flow_rate_selected).state >= (float) ${oq_cm_min_flow_lph});
+      return rooms_configured && valid_rooms && dew_point_ok && flow_ok && !id(oq_lowflow_fault_active);
+    web_server:
+      sorting_group_id: oq_cic
+
+  - platform: template
     id: cooling_dew_point_available
     name: "Cooling Dew Point Available"
     icon: mdi:water-check
     device_class: connectivity
     lambda: |-
       return id(cooling_dew_point_selected).has_state() && !isnan(id(cooling_dew_point_selected).state);
+    web_server:
+      sorting_group_id: oq_cic
+
+text_sensor:
+  - platform: template
+    id: cooling_block_reason
+    name: "Cooling Block Reason"
+    icon: mdi:information-outline
+    entity_category: diagnostic
+    update_interval: 5s
+    lambda: |-
+      // Report the first blocking condition in operator-friendly terms.
+      if (!id(cooling_room_count_selected).has_state() || isnan(id(cooling_room_count_selected).state) ||
+          id(cooling_room_count_selected).state < 1.0f) {
+        return {"No cooling rooms configured"};
+      }
+      if (!id(cooling_valid_room_count).has_state() || isnan(id(cooling_valid_room_count).state) ||
+          id(cooling_valid_room_count).state < 1.0f) {
+        return {"No valid dew point input"};
+      }
+      if (!id(cooling_dew_point_available).state ||
+          !id(minimum_safe_supply_temp).has_state() || isnan(id(minimum_safe_supply_temp).state)) {
+        return {"Safe supply floor unavailable"};
+      }
+      if (!id(flow_rate_selected).has_state() || isnan(id(flow_rate_selected).state)) {
+        return {"Flow unavailable"};
+      }
+      if (id(oq_lowflow_fault_active) || id(flow_rate_selected).state < (float) ${oq_cm_min_flow_lph}) {
+        return {"Flow too low"};
+      }
+      return {"Ready"};
     web_server:
       sorting_group_id: oq_cic
 
