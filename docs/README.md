@@ -28,5 +28,6 @@ Gebruik je de standaardfirmware, dan is de web installer uit de README meestal d
 - [Power House](power-house.md): aparte uitleg van huismodel, comfortlogica, rise/fall time, laaglastgedrag en Duo-keuze.
 - [Water Temperature Control](water-temperature-control.md): aparte uitleg van stooklijn, PID, COAST/OFF-gedrag en Duo-hysterese.
 - [Regelgedrag van OpenQuatt](regelgedrag-van-openquatt.md): systeemstanden, overgangen en flowregeling.
+- [Passive Cooling](passive-cooling.md): eerste ontwerpkeuzes voor koelen, dauwpuntveiligheid en bronselectie.
 - [Instellingen en meetwaarden](instellingen-en-meetwaarden.md): compile-time en runtime instellingen, plus de belangrijkste meetwaarden.
 - [Ontwikkelen op Mac en WSL](ontwikkelen-op-mac-en-wsl.md): aanbevolen lokale ontwikkelworkflow voor onderhoud en builds.
