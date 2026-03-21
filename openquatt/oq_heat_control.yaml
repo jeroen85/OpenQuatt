@@ -108,7 +108,7 @@ globals:
     restore_value: false
     initial_value: '0'
 
-  # Last heat mode code observed by heat-control loop (0=Power House, 1=Heating Curve).
+  # Last control flavor observed by heat-control loop (0=Power House, 1=Heating Curve, 2=Cooling).
   - id: oq_heat_last_mode_code
     type: int
     restore_value: false
@@ -525,8 +525,13 @@ interval:
     then:
       - lambda: |-
           const uint32_t now_ms = (uint32_t) millis();
+          const int cm_code = id(oq_control_mode_code);
+          const bool is_cooling_mode = (cm_code == 5);
           const int heat_mode_code = id(oq_heat_mode_code);
-          const bool is_curve_mode = (heat_mode_code == 1);
+          const bool is_curve_mode = (heat_mode_code == 1) || is_cooling_mode;
+          const int control_flavor_code = is_cooling_mode ? 2 : heat_mode_code;
+          const char* active_thermal_mode_opt = is_cooling_mode ? "Cooling" : "Heating";
+          const int active_thermal_mode_code = is_cooling_mode ? 1 : 2;
           const uint32_t loop_target_ms = (uint32_t) ((is_curve_mode ? ${oq_heat_loop_curve_s} : ${oq_heat_loop_powerhouse_s}) * 1000UL);
 
           // After any controller reboot we intentionally keep all heat outputs blocked for a while.
@@ -546,8 +551,8 @@ interval:
           id(oq_boot_startup_inhibit_active) = startup_inhibit_active;
 
           // On mode switch, execute immediately on this tick instead of waiting for previous cadence window.
-          if (id(oq_heat_last_mode_code) != heat_mode_code) {
-            id(oq_heat_last_mode_code) = heat_mode_code;
+          if (id(oq_heat_last_mode_code) != control_flavor_code) {
+            id(oq_heat_last_mode_code) = control_flavor_code;
             id(oq_heat_last_loop_ms) = 0;
           }
 
@@ -566,9 +571,10 @@ interval:
           // =========================
           // 1) Demand path (0..20)
           // - Heating-curve: PID demand is leading (no extra filter layer)
+          // - Cooling CM5: dedicated cooling PI demand is leading
           // - Power House: filtered demand path keeps legacy ramp behavior
           // =========================
-          int raw = id(oq_demand_raw);
+          int raw = is_cooling_mode ? id(oq_cooling_demand_raw) : id(oq_demand_raw);
           raw = std::max(0, std::min(demand_max_f, raw));
 
           int ramp_up_step_min = (int) lroundf(id(oq_demand_filter_ramp_up_step_min).state);
@@ -579,7 +585,7 @@ interval:
 
           int f = prev_f;
           if (is_curve_mode) {
-            // Keep PID in the lead for heating-curve control.
+            // Keep the dedicated direct-demand controller in the lead for curve/cooling control.
             f = raw;
             id(oq_demand_filter_ramp_up_budget) = 0.0f;
           } else {
@@ -612,39 +618,40 @@ interval:
           f_cap = std::max(0, std::min(demand_max_f, f_cap));
           if (f > f_cap) f = f_cap;
 
-          // Track the moment each HP is actually measured in Heating.
+          // Track the moment each HP is actually measured in an active thermal mode.
           // This is the runtime anchor for the minimum runtime guard. It avoids
           // starting the timer too early on request/apply transitions that occur
-          // before the compressor truly enters Heating mode.
+          // before the compressor truly enters Heating/Cooling mode.
           const float hp1_mode_runtime_raw = id(hp1_working_mode).state;
-          const bool hp1_measured_heating =
-              !isnan(hp1_mode_runtime_raw) && ((int) roundf(hp1_mode_runtime_raw) == 2);
-          if (hp1_measured_heating && !id(hp1_prev_heating_mode_active)) {
+          const bool hp1_measured_thermal =
+              !isnan(hp1_mode_runtime_raw) &&
+              ((((int) roundf(hp1_mode_runtime_raw)) == 1) || (((int) roundf(hp1_mode_runtime_raw)) == 2));
+          if (hp1_measured_thermal && !id(hp1_prev_heating_mode_active)) {
             id(hp1_last_real_heat_start_ms) = now_ms;
           }
-          id(hp1_prev_heating_mode_active) = hp1_measured_heating;
+          id(hp1_prev_heating_mode_active) = hp1_measured_thermal;
           #if OQ_TOPOLOGY_DUO
           const float hp2_mode_runtime_raw = id(${hc_secondary_working_mode_id}).state;
-          const bool hp2_measured_heating =
-              !isnan(hp2_mode_runtime_raw) && ((int) roundf(hp2_mode_runtime_raw) == 2);
-          if (hp2_measured_heating && !id(hp2_prev_heating_mode_active)) {
+          const bool hp2_measured_thermal =
+              !isnan(hp2_mode_runtime_raw) &&
+              ((((int) roundf(hp2_mode_runtime_raw)) == 1) || (((int) roundf(hp2_mode_runtime_raw)) == 2));
+          if (hp2_measured_thermal && !id(hp2_prev_heating_mode_active)) {
             id(hp2_last_real_heat_start_ms) = now_ms;
           }
-          id(hp2_prev_heating_mode_active) = hp2_measured_heating;
+          id(hp2_prev_heating_mode_active) = hp2_measured_thermal;
           #else
-          const bool hp2_measured_heating = false;
+          const bool hp2_measured_thermal = false;
           #endif
 
           // =========================
           // 1b) Control Mode gating
-          // CM2 and CM3 may activate HPs.
+          // CM2/CM3/CM5 may activate HPs.
           // In CM0/CM1/CM98: force Standby + level 0 and stop further HP control.
           // =========================
-          const int cm_code = id(oq_control_mode_code);
-          const bool cm_allows_hp = (cm_code == 2 || cm_code == 3);
+          const bool cm_allows_hp = (cm_code == 2 || cm_code == 3 || cm_code == 5);
           auto publish_debug = [&](int req1, int req2, int app1, int app2)->void {
             static std::string last_debug = "";
-            const char *mode_s = is_curve_mode ? "CURVE" : "PH";
+            const char *mode_s = is_cooling_mode ? "COOL" : (is_curve_mode ? "CURVE" : "PH");
             const int phase_code = id(oq_curve_phase_code);
             const char *phase_s = "OFF";
             if (phase_code == 1) phase_s = "HEAT";
@@ -652,7 +659,7 @@ interval:
             const uint32_t off_since_ms = id(oq_curve_off_since_ms);
             uint32_t off_age_s = 0;
             if (off_since_ms > 0 && now_ms > off_since_ms) off_age_s = (now_ms - off_since_ms) / 1000UL;
-            const float spw = id(oq_supply_target_temp).state;
+            const float spw = is_cooling_mode ? id(cooling_supply_target).state : id(oq_supply_target_temp).state;
             const float pv = id(oq_system_supply_temp).state;
             const float room_c = id(room_temp_selected).state;
             const float room_sp_c = id(room_setpoint_selected).state;
@@ -747,8 +754,8 @@ interval:
           auto apply_defrost_stop_hold = [&](bool is_hp1, int retained_level)->bool {
             if (retained_level <= 0) return false;
 
-            // Keep the HP in Heating and preserve its last non-zero level until defrost clears.
-            const char* opt = "Heating";
+            // Keep the HP in the active thermal mode and preserve its last non-zero level until defrost clears.
+            const char* opt = active_thermal_mode_opt;
             if (is_hp1) {
               if (!id(hp1_set_working_mode).has_state() || id(hp1_set_working_mode).current_option() != opt) {
                 auto c = id(hp1_set_working_mode).make_call();
@@ -1029,7 +1036,11 @@ interval:
             if (emergency_hold_min < 1) emergency_hold_min = 1;
 
             float temp_err_c = NAN;
-            if (!isnan(id(oq_supply_target_temp).state) && !isnan(id(oq_system_supply_temp).state)) {
+            if (is_cooling_mode) {
+              if (!isnan(id(cooling_supply_target).state) && !isnan(id(oq_system_supply_temp).state)) {
+                temp_err_c = id(oq_system_supply_temp).state - id(cooling_supply_target).state;
+              }
+            } else if (!isnan(id(oq_supply_target_temp).state) && !isnan(id(oq_system_supply_temp).state)) {
               temp_err_c = id(oq_supply_target_temp).state - id(oq_system_supply_temp).state;
             }
 
@@ -1704,7 +1715,7 @@ interval:
                 (now_ms > id(hp1_last_real_heat_start_ms)) &&
                 ((uint32_t)(now_ms - id(hp1_last_real_heat_start_ms)) < min_rt_ms);
             if (hp1_req == 0 && hp1_min_runtime_active &&
-                (id(hp1_last_applied_level) > 0 || hp1_measured_heating)) {
+                (id(hp1_last_applied_level) > 0 || hp1_measured_thermal)) {
               hp1_req = pick_allowed(1, true);
             }
 
@@ -1714,7 +1725,7 @@ interval:
                 (now_ms > id(hp2_last_real_heat_start_ms)) &&
                 ((uint32_t)(now_ms - id(hp2_last_real_heat_start_ms)) < min_rt_ms);
             if (hp2_req == 0 && hp2_min_runtime_active &&
-                (id(${hc_secondary_last_applied_level_id}) > 0 || hp2_measured_heating)) {
+                (id(${hc_secondary_last_applied_level_id}) > 0 || hp2_measured_thermal)) {
               hp2_req = pick_allowed(1, false);
             }
             #else
@@ -1725,8 +1736,8 @@ interval:
           // =========================
           // 7) Working mode gate + apply compressor
           // =========================
-          auto set_mode = [&](bool is_hp1, bool heating) {
-            const char* opt = heating ? "Heating" : "Standby";
+          auto set_mode = [&](bool is_hp1, bool active) {
+            const char* opt = active ? active_thermal_mode_opt : "Standby";
             if (is_hp1) {
               if (id(hp1_set_working_mode).current_option() != opt) {
                 auto c = id(hp1_set_working_mode).make_call();
@@ -1742,14 +1753,14 @@ interval:
             }
           };
 
-          auto mode_is_heating = [&](bool is_hp1)->bool {
+          auto mode_is_active_thermal = [&](bool is_hp1)->bool {
             float m = is_hp1 ? id(hp1_working_mode).state : id(${hc_secondary_working_mode_id}).state;
             if (isnan(m)) return false;
-            return ((int) roundf(m)) == 2;
+            return ((int) roundf(m)) == active_thermal_mode_code;
           };
-          auto mode_target_is_heating = [&](bool is_hp1)->bool {
-            if (is_hp1) return id(hp1_set_working_mode).has_state() && id(hp1_set_working_mode).current_option() == "Heating";
-            return id(${hc_secondary_set_working_mode_id}).has_state() && id(${hc_secondary_set_working_mode_id}).current_option() == "Heating";
+          auto mode_target_is_active_thermal = [&](bool is_hp1)->bool {
+            if (is_hp1) return id(hp1_set_working_mode).has_state() && id(hp1_set_working_mode).current_option() == active_thermal_mode_opt;
+            return id(${hc_secondary_set_working_mode_id}).has_state() && id(${hc_secondary_set_working_mode_id}).current_option() == active_thermal_mode_opt;
           };
 
           // Note: options must exactly match the options map in oq_HP_io.yaml (levels 0..10)
@@ -1778,7 +1789,7 @@ interval:
               }
             }
 
-            // at heat demand always switch to heating; with no demand switch to standby
+            // With active demand, switch to the current thermal mode; otherwise standby.
             if (req_level > 0) set_mode(is_hp1, true);
             else set_mode(is_hp1, false);
 
@@ -1795,9 +1806,10 @@ interval:
             // Re-validate allowed levels after cap, otherwise a disabled cap-level can slip through.
             applied = pick_allowed_capped(applied, is_hp1, cap);
 
-            // Normative rule: compressor >0 only when heating mode is measured OR command target is already heating.
-            // This avoids losing a full control cycle on mode-transition latency.
-            if (req_level > 0 && !mode_is_heating(is_hp1) && !mode_target_is_heating(is_hp1)) {
+            // Normative rule: compressor >0 only when the active thermal mode is measured
+            // or the command target is already on that mode. This avoids losing a full
+            // control cycle on mode-transition latency.
+            if (req_level > 0 && !mode_is_active_thermal(is_hp1) && !mode_target_is_active_thermal(is_hp1)) {
               applied = 0;
             }
 
@@ -1862,12 +1874,14 @@ interval:
               else id(${hc_secondary_last_stop_ms_id}) = now_ms;
             }
 
-            // Runtime counting: only count when the specific unit is measured in Heating mode.
+            // Runtime counting: only count when the specific unit is measured in an active thermal mode.
             // This avoids overcounting during command/mode transition, standby, or fault situations.
             if (new_lvl > 0 && dt_ms > 0) {
               const float working_mode_raw = is_hp1 ? id(hp1_working_mode).state : id(${hc_secondary_working_mode_id}).state;
-              const bool heating_now = !isnan(working_mode_raw) && ((int) roundf(working_mode_raw) == 2);
-              if (heating_now) {
+              const bool thermal_now =
+                  !isnan(working_mode_raw) &&
+                  ((((int) roundf(working_mode_raw)) == 1) || (((int) roundf(working_mode_raw)) == 2));
+              if (thermal_now) {
                 uint32_t &runtime_accum_ms = is_hp1 ? id(hp1_runtime_accum_ms) : id(hp2_runtime_accum_ms);
                 int &runtime_minutes = is_hp1 ? id(hp1_minutes) : id(${hc_secondary_minutes_id});
                 uint32_t sum_ms = runtime_accum_ms + dt_ms;
