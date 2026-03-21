@@ -13,6 +13,9 @@
 #
 # ==============================================================================
 
+packages:
+  oq_cooling_safety: !include oq_cooling_safety.yaml
+
 globals:
   - id: oq_room_temp_failover_active
     type: bool
