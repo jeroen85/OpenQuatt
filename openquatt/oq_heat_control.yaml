@@ -49,6 +49,12 @@ globals:
     restore_value: false
     initial_value: '0'
 
+  # Heating-only filtered demand (0..20), kept separate from CM5 cooling demand.
+  - id: oq_heating_demand_filtered
+    type: int
+    restore_value: false
+    initial_value: '0'
+
   # Power House telemetry (W)
   - id: oq_P_hp_cap_w
     type: float
@@ -609,6 +615,7 @@ interval:
           }
           f = std::max(0, std::min(demand_max_f, f));
           id(oq_demand_filtered) = f;
+          id(oq_heating_demand_filtered) = is_cooling_mode ? 0 : f;
 
           // =========================
           // 1a-2) Power limiter cap (total demand)
@@ -998,137 +1005,10 @@ interval:
             const bool d1_pre = hp1_valve_def;
             const bool d2_pre = hp2_valve_def;
 
-            // Telemetry + deficit calculation also in heating-curve mode (for CM3 + dual-enable hysteresis).
-            publish_capacity_and_deficit(id(oq_phouse_req_w));
-
-            // Curve mode: single-HP-first. Dual HP is enabled only by sustained high single-HP level.
-            int dual_on_lvl = (int) roundf(id(oq_dual_hp_enable_level).state);
-            if (dual_on_lvl < 1) dual_on_lvl = 1;
-            if (dual_on_lvl > max_level) dual_on_lvl = max_level;
-            int dual_off_lvl = dual_on_lvl - 1;
-            if (dual_off_lvl < 1) dual_off_lvl = 1;
-
-            int dual_on_hold_min = (int) roundf(id(oq_dual_hp_enable_hold_min).state);
-            int dual_off_hold_min = (int) roundf(id(oq_dual_hp_disable_hold_min).state);
-            if (dual_on_hold_min < 1) dual_on_hold_min = 1;
-            if (dual_off_hold_min < 1) dual_off_hold_min = 1;
-
-            // Hydraulic systems react slowly; dual emergency path is intentionally conservative.
-            int startup_grace_s = 480;      // Balanced default: 8 min single-HP settle
-            int emergency_hold_min = 6;     // Balanced default: sustained deficit before forcing dual
-            float emergency_temp_err_c = 1.50f;
-            float dual_disable_temp_err_max_c = 0.50f;
-            if (id(oq_curve_control_profile).has_state()) {
-              const auto profile = id(oq_curve_control_profile).current_option();
-              if (profile == "Comfort") {
-                startup_grace_s = 300;
-                emergency_hold_min = 4;
-                emergency_temp_err_c = 1.20f;
-                dual_disable_temp_err_max_c = 0.70f;
-              } else if (profile == "Stable") {
-                startup_grace_s = 600;
-                emergency_hold_min = 8;
-                emergency_temp_err_c = 1.80f;
-                dual_disable_temp_err_max_c = 0.40f;
-              }
-            }
-            if (startup_grace_s < 0) startup_grace_s = 0;
-            if (emergency_hold_min < 1) emergency_hold_min = 1;
-
-            float temp_err_c = NAN;
             if (is_cooling_mode) {
-              if (!isnan(id(cooling_supply_target).state) && !isnan(id(oq_system_supply_temp).state)) {
-                temp_err_c = id(oq_system_supply_temp).state - id(cooling_supply_target).state;
-              }
-            } else if (!isnan(id(oq_supply_target_temp).state) && !isnan(id(oq_system_supply_temp).state)) {
-              temp_err_c = id(oq_supply_target_temp).state - id(oq_system_supply_temp).state;
-            }
-
-            auto max_allowed_level_for_hp = [&](bool is_hp1)->int {
-              int lvl_max = 0;
-              for (int lvl = level_cap; lvl >= 1; lvl--) {
-                if (level_allowed(is_hp1, lvl)) {
-                  lvl_max = lvl;
-                  break;
-                }
-              }
-              return lvl_max;
-            };
-
-            const int lead_max_single = max_allowed_level_for_hp(lead_is_hp1);
-            const int lag_max_single = max_allowed_level_for_hp(!lead_is_hp1);
-            const int single_limit_lvl = std::max(lead_max_single, lag_max_single);
-            int single_req_lvl = f;
-            if (single_req_lvl < 0) single_req_lvl = 0;
-            if (single_limit_lvl > 0 && single_req_lvl > single_limit_lvl) single_req_lvl = single_limit_lvl;
-
-            const bool demand_active = (f > 0);
-            const bool beyond_single_capacity = demand_active && (single_limit_lvl > 0) && (f > single_limit_lvl);
-            const bool severe_level_pressure =
-                (single_limit_lvl > 0) && (single_req_lvl >= std::min(max_level, dual_on_lvl + 2));
-            const bool severe_temp_deficit = !isnan(temp_err_c) && (temp_err_c >= emergency_temp_err_c);
-            const bool startup_grace_active =
-                (startup_grace_s > 0) &&
-                (((lead_is_hp1 ? id(hp1_last_start_ms) : id(${hc_secondary_last_start_ms_id})) > 0) &&
-                 (now_ms > (lead_is_hp1 ? id(hp1_last_start_ms) : id(${hc_secondary_last_start_ms_id}))) &&
-                 ((now_ms - (lead_is_hp1 ? id(hp1_last_start_ms) : id(${hc_secondary_last_start_ms_id}))) <
-                  (uint32_t) startup_grace_s * 1000UL));
-
-            bool force_dual_capacity = false;
-            const bool emergency_dual_condition =
-                demand_active && beyond_single_capacity && severe_level_pressure &&
-                (severe_temp_deficit || single_req_lvl >= (max_level - 1)) && !startup_grace_active;
-            if (emergency_dual_condition) {
-              id(oq_dual_hp_emergency_hold_elapsed_accum_min) += dt_s / 60.0f;
-            } else {
-              id(oq_dual_hp_emergency_hold_elapsed_accum_min) = 0.0f;
-            }
-            id(oq_dual_hp_emergency_hold_elapsed_min) =
-                (int) floorf(id(oq_dual_hp_emergency_hold_elapsed_accum_min) + 1e-3f);
-            if (id(oq_dual_hp_emergency_hold_elapsed_accum_min) >= (float) emergency_hold_min) {
-              force_dual_capacity = true;
-            }
-            const bool force_dual_defrost = demand_active && (d1_pre && d2_pre);
-            const bool dual_on_condition =
-                demand_active && (force_dual_capacity || force_dual_defrost || (single_req_lvl >= dual_on_lvl));
-            const bool dual_off_condition =
-                (!force_dual_capacity) && (!force_dual_defrost) && (single_req_lvl <= dual_off_lvl) &&
-                (isnan(temp_err_c) || temp_err_c <= dual_disable_temp_err_max_c);
-
-            if (!demand_active) {
-              id(oq_dual_hp_enabled) = false;
-              id(oq_dual_hp_enable_hold_elapsed_min) = 0;
-              id(oq_dual_hp_disable_hold_elapsed_min) = 0;
-              id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
-              id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
-              id(oq_dual_hp_emergency_hold_elapsed_min) = 0;
-              id(oq_dual_hp_emergency_hold_elapsed_accum_min) = 0.0f;
-            } else {
-              if (dual_on_condition) id(oq_dual_hp_enable_hold_elapsed_accum_min) += dt_s / 60.0f;
-              else id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
-
-              if (dual_off_condition) id(oq_dual_hp_disable_hold_elapsed_accum_min) += dt_s / 60.0f;
-              else id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
-
-              if (!id(oq_dual_hp_enabled) &&
-                  id(oq_dual_hp_enable_hold_elapsed_accum_min) >= (float) dual_on_hold_min) {
-                id(oq_dual_hp_enabled) = true;
-                id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
-              } else if (id(oq_dual_hp_enabled) &&
-                         id(oq_dual_hp_disable_hold_elapsed_accum_min) >= (float) dual_off_hold_min) {
-                id(oq_dual_hp_enabled) = false;
-                id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
-              }
-
-              id(oq_dual_hp_enable_hold_elapsed_min) = (int) floorf(id(oq_dual_hp_enable_hold_elapsed_accum_min) + 1e-3f);
-              id(oq_dual_hp_disable_hold_elapsed_min) = (int) floorf(id(oq_dual_hp_disable_hold_elapsed_accum_min) + 1e-3f);
-            }
-
-            const bool dual_enabled = demand_active && (force_dual_capacity || force_dual_defrost || id(oq_dual_hp_enabled));
-
-            if (!dual_enabled) {
-              // Single-HP-first with owner latch: only reselect owner from full idle.
+              // CM5 stays explicitly single-HP-first until duo cooling is tuned separately.
               int owner = id(oq_curve_single_owner_hp);
+              const bool demand_active = (f > 0);
               const bool prev_hp1_on = (id(hp1_last_applied_level) > 0);
               const bool prev_hp2_on = (id(${hc_secondary_last_applied_level_id}) > 0);
 
@@ -1142,19 +1022,169 @@ interval:
                 owner = lead_is_hp1 ? 1 : 2;
               }
 
-              id(oq_curve_single_owner_hp) = owner;
+              reset_dual_runtime_state(owner);
+              id(oq_P_hp_cap_w) = 0.0f;
+              id(oq_P_deficit_w) = 0.0f;
+
               if (owner == 1) hp1_req = f;
               else if (owner == 2) hp2_req = f;
               else if (lead_is_hp1) hp1_req = f;
               else hp2_req = f;
             } else {
-              id(oq_curve_single_owner_hp) = 0;
-              // When dual is enabled, split evenly and keep odd step on runtime lead.
-              hp1_req = f / 2;
-              hp2_req = f / 2;
-              if ((f % 2) == 1) {
-                if (lead_is_hp1) hp1_req += 1;
-                else             hp2_req += 1;
+              // Telemetry + deficit calculation also in heating-curve mode (for CM3 + dual-enable hysteresis).
+              publish_capacity_and_deficit(id(oq_phouse_req_w));
+
+              // Curve mode: single-HP-first. Dual HP is enabled only by sustained high single-HP level.
+              int dual_on_lvl = (int) roundf(id(oq_dual_hp_enable_level).state);
+              if (dual_on_lvl < 1) dual_on_lvl = 1;
+              if (dual_on_lvl > max_level) dual_on_lvl = max_level;
+              int dual_off_lvl = dual_on_lvl - 1;
+              if (dual_off_lvl < 1) dual_off_lvl = 1;
+
+              int dual_on_hold_min = (int) roundf(id(oq_dual_hp_enable_hold_min).state);
+              int dual_off_hold_min = (int) roundf(id(oq_dual_hp_disable_hold_min).state);
+              if (dual_on_hold_min < 1) dual_on_hold_min = 1;
+              if (dual_off_hold_min < 1) dual_off_hold_min = 1;
+
+              // Hydraulic systems react slowly; dual emergency path is intentionally conservative.
+              int startup_grace_s = 480;      // Balanced default: 8 min single-HP settle
+              int emergency_hold_min = 6;     // Balanced default: sustained deficit before forcing dual
+              float emergency_temp_err_c = 1.50f;
+              float dual_disable_temp_err_max_c = 0.50f;
+              if (id(oq_curve_control_profile).has_state()) {
+                const auto profile = id(oq_curve_control_profile).current_option();
+                if (profile == "Comfort") {
+                  startup_grace_s = 300;
+                  emergency_hold_min = 4;
+                  emergency_temp_err_c = 1.20f;
+                  dual_disable_temp_err_max_c = 0.70f;
+                } else if (profile == "Stable") {
+                  startup_grace_s = 600;
+                  emergency_hold_min = 8;
+                  emergency_temp_err_c = 1.80f;
+                  dual_disable_temp_err_max_c = 0.40f;
+                }
+              }
+              if (startup_grace_s < 0) startup_grace_s = 0;
+              if (emergency_hold_min < 1) emergency_hold_min = 1;
+
+              float temp_err_c = NAN;
+              if (!isnan(id(oq_supply_target_temp).state) && !isnan(id(oq_system_supply_temp).state)) {
+                temp_err_c = id(oq_supply_target_temp).state - id(oq_system_supply_temp).state;
+              }
+
+              auto max_allowed_level_for_hp = [&](bool is_hp1)->int {
+                int lvl_max = 0;
+                for (int lvl = level_cap; lvl >= 1; lvl--) {
+                  if (level_allowed(is_hp1, lvl)) {
+                    lvl_max = lvl;
+                    break;
+                  }
+                }
+                return lvl_max;
+              };
+
+              const int lead_max_single = max_allowed_level_for_hp(lead_is_hp1);
+              const int lag_max_single = max_allowed_level_for_hp(!lead_is_hp1);
+              const int single_limit_lvl = std::max(lead_max_single, lag_max_single);
+              int single_req_lvl = f;
+              if (single_req_lvl < 0) single_req_lvl = 0;
+              if (single_limit_lvl > 0 && single_req_lvl > single_limit_lvl) single_req_lvl = single_limit_lvl;
+
+              const bool demand_active = (f > 0);
+              const bool beyond_single_capacity = demand_active && (single_limit_lvl > 0) && (f > single_limit_lvl);
+              const bool severe_level_pressure =
+                  (single_limit_lvl > 0) && (single_req_lvl >= std::min(max_level, dual_on_lvl + 2));
+              const bool severe_temp_deficit = !isnan(temp_err_c) && (temp_err_c >= emergency_temp_err_c);
+              const bool startup_grace_active =
+                  (startup_grace_s > 0) &&
+                  (((lead_is_hp1 ? id(hp1_last_start_ms) : id(${hc_secondary_last_start_ms_id})) > 0) &&
+                   (now_ms > (lead_is_hp1 ? id(hp1_last_start_ms) : id(${hc_secondary_last_start_ms_id}))) &&
+                   ((now_ms - (lead_is_hp1 ? id(hp1_last_start_ms) : id(${hc_secondary_last_start_ms_id}))) <
+                    (uint32_t) startup_grace_s * 1000UL));
+
+              bool force_dual_capacity = false;
+              const bool emergency_dual_condition =
+                  demand_active && beyond_single_capacity && severe_level_pressure &&
+                  (severe_temp_deficit || single_req_lvl >= (max_level - 1)) && !startup_grace_active;
+              if (emergency_dual_condition) {
+                id(oq_dual_hp_emergency_hold_elapsed_accum_min) += dt_s / 60.0f;
+              } else {
+                id(oq_dual_hp_emergency_hold_elapsed_accum_min) = 0.0f;
+              }
+              id(oq_dual_hp_emergency_hold_elapsed_min) =
+                  (int) floorf(id(oq_dual_hp_emergency_hold_elapsed_accum_min) + 1e-3f);
+              if (id(oq_dual_hp_emergency_hold_elapsed_accum_min) >= (float) emergency_hold_min) {
+                force_dual_capacity = true;
+              }
+              const bool force_dual_defrost = demand_active && (d1_pre && d2_pre);
+              const bool dual_on_condition =
+                  demand_active && (force_dual_capacity || force_dual_defrost || (single_req_lvl >= dual_on_lvl));
+              const bool dual_off_condition =
+                  (!force_dual_capacity) && (!force_dual_defrost) && (single_req_lvl <= dual_off_lvl) &&
+                  (isnan(temp_err_c) || temp_err_c <= dual_disable_temp_err_max_c);
+
+              if (!demand_active) {
+                id(oq_dual_hp_enabled) = false;
+                id(oq_dual_hp_enable_hold_elapsed_min) = 0;
+                id(oq_dual_hp_disable_hold_elapsed_min) = 0;
+                id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
+                id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
+                id(oq_dual_hp_emergency_hold_elapsed_min) = 0;
+                id(oq_dual_hp_emergency_hold_elapsed_accum_min) = 0.0f;
+              } else {
+                if (dual_on_condition) id(oq_dual_hp_enable_hold_elapsed_accum_min) += dt_s / 60.0f;
+                else id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
+
+                if (dual_off_condition) id(oq_dual_hp_disable_hold_elapsed_accum_min) += dt_s / 60.0f;
+                else id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
+
+                if (!id(oq_dual_hp_enabled) &&
+                    id(oq_dual_hp_enable_hold_elapsed_accum_min) >= (float) dual_on_hold_min) {
+                  id(oq_dual_hp_enabled) = true;
+                  id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
+                } else if (id(oq_dual_hp_enabled) &&
+                           id(oq_dual_hp_disable_hold_elapsed_accum_min) >= (float) dual_off_hold_min) {
+                  id(oq_dual_hp_enabled) = false;
+                  id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
+                }
+
+                id(oq_dual_hp_enable_hold_elapsed_min) = (int) floorf(id(oq_dual_hp_enable_hold_elapsed_accum_min) + 1e-3f);
+                id(oq_dual_hp_disable_hold_elapsed_min) = (int) floorf(id(oq_dual_hp_disable_hold_elapsed_accum_min) + 1e-3f);
+              }
+
+              const bool dual_enabled = demand_active && (force_dual_capacity || force_dual_defrost || id(oq_dual_hp_enabled));
+
+              if (!dual_enabled) {
+                // Single-HP-first with owner latch: only reselect owner from full idle.
+                int owner = id(oq_curve_single_owner_hp);
+                const bool prev_hp1_on = (id(hp1_last_applied_level) > 0);
+                const bool prev_hp2_on = (id(${hc_secondary_last_applied_level_id}) > 0);
+
+                if (!demand_active) {
+                  owner = 0;
+                } else if (prev_hp1_on && !prev_hp2_on) {
+                  owner = 1;
+                } else if (prev_hp2_on && !prev_hp1_on) {
+                  owner = 2;
+                } else if (owner != 1 && owner != 2) {
+                  owner = lead_is_hp1 ? 1 : 2;
+                }
+
+                id(oq_curve_single_owner_hp) = owner;
+                if (owner == 1) hp1_req = f;
+                else if (owner == 2) hp2_req = f;
+                else if (lead_is_hp1) hp1_req = f;
+                else hp2_req = f;
+              } else {
+                id(oq_curve_single_owner_hp) = 0;
+                // When dual is enabled, split evenly and keep odd step on runtime lead.
+                hp1_req = f / 2;
+                hp2_req = f / 2;
+                if ((f % 2) == 1) {
+                  if (lead_is_hp1) hp1_req += 1;
+                  else             hp2_req += 1;
+                }
               }
             }
 

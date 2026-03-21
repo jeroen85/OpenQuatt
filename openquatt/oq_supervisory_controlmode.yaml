@@ -713,12 +713,12 @@ interval:
           // -------------------------------------------------
           const char* cur_cm_state = id(oq_control_mode).state.c_str();
           const bool in_cm2 = strcmp(cur_cm_state, "CM2") == 0;
-          const bool in_cm5 = strcmp(cur_cm_state, "CM5") == 0;
-          const bool heating_req_raw = (id(oq_demand_filtered) > 0);
-          const bool cooling_req =
+          const bool heating_req_raw = (id(oq_heating_demand_filtered) > 0);
+          const bool cooling_req_raw =
               id(cooling_enable_selected).has_state() && id(cooling_enable_selected).state &&
               id(cooling_request_active).has_state() && id(cooling_request_active).state &&
-              id(cooling_permitted).has_state() && id(cooling_permitted).state;
+              id(cooling_permitted_core).has_state() && id(cooling_permitted_core).state;
+          const bool cooling_req = cooling_req_raw;
           const bool power_house_active = (id(oq_heat_mode_code) == 0);
 
           const int hp1_lvl = id(hp1_last_applied_level);
@@ -948,7 +948,7 @@ interval:
               last_cm2_idle_exit_reason);
           publish_binary_if_changed(id(oq_cm2_reentry_block_active_bs), reentry_block_active);
 
-          const bool thermal_req = heating_req || cooling_req;
+          const bool thermal_req = heating_req || cooling_req_raw;
 
           // -------------------------------------------------
           // 1b) Shadow heat-enable arbiter (diagnostics only)

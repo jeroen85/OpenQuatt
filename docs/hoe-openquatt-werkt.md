@@ -93,6 +93,40 @@ Die geselecteerde aanvoertemperatuur kan uit de lokale ESP-sensor, uit CIC of ui
 
 Je hoeft daarvoor niet eerst de interne berekening te kennen. Relevanter is welke strategie in jouw installatie het meest stabiele en voorspelbare gedrag geeft.
 
+## Passive cooling
+
+Passive cooling vraagt een andere veiligheidslogica dan verwarmen. Het belangrijkste verschil is dat bij koelen niet alleen comfort telt, maar vooral het risico op condensvorming.
+
+Daarom werkt OpenQuatt bij cooling in grote lijnen zo:
+
+- er is een aparte control mode voor cooling;
+- dauwpuntinformatie is leidend voor de minimale veilige aanvoertemperatuur;
+- flowbewaking blijft net zo belangrijk als bij verwarmen;
+- zonder bruikbare dauwpuntinformatie hoort normale cooling niet vrijgegeven te worden.
+
+Praktisch betekent dit dat OpenQuatt cooling niet behandelt als "negatief verwarmen". Er is een eigen koelvraag, een eigen veilige aanvoergrens en een aparte bewakingslaag bovenop de warmtepompsturing.
+
+### Waar komt het dauwpunt vandaan?
+
+OpenQuatt kan voor cooling gebruikmaken van:
+
+- een directe dauwpuntmeting;
+- een berekend dauwpunt uit temperatuur en relatieve luchtvochtigheid;
+- meerdere ruimtes, waarbij de hoogste geldige dauwpuntwaarde leidend mag zijn.
+
+Voor centrale vloerkoeling is dat laatste belangrijk: de vochtigste relevante ruimte is maatgevend voor het condensrisico.
+
+### Wat blijft gedeeld met heating?
+
+Niet alles is anders. De warmtepompsturing zelf blijft zoveel mogelijk gedeeld:
+
+- compressorlevels;
+- minimum on/off tijden;
+- runtimebewaking;
+- rustige op- en afbouw van de units.
+
+Het verschil zit dus vooral in de vraagvorming en de veiligheidsgrenzen, niet in het idee dat de compressor ineens totaal anders zou moeten worden aangestuurd.
+
 ## Single en Duo
 
 Bij `Single` is er een warmtepomp. Bij `Duo` zijn het er twee.

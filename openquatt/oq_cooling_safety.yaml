@@ -55,6 +55,24 @@ number:
 
 binary_sensor:
   - platform: template
+    id: cooling_permitted_core
+    name: "Cooling Permitted Core"
+    internal: true
+    lambda: |-
+      // Core cooling preconditions that are independent from the live flow interlock.
+      const bool rooms_configured =
+          id(cooling_room_count_selected).has_state() && !isnan(id(cooling_room_count_selected).state) &&
+          id(cooling_room_count_selected).state >= 1.0f;
+      const bool valid_rooms =
+          id(cooling_valid_room_count).has_state() && !isnan(id(cooling_valid_room_count).state) &&
+          id(cooling_valid_room_count).state >= 1.0f;
+      const bool dew_point_ok =
+          id(cooling_dew_point_available).state &&
+          id(cooling_dew_point_selected).has_state() && !isnan(id(cooling_dew_point_selected).state) &&
+          id(minimum_safe_supply_temp).has_state() && !isnan(id(minimum_safe_supply_temp).state);
+      return rooms_configured && valid_rooms && dew_point_ok;
+
+  - platform: template
     id: cooling_request_active
     name: "Cooling Request Active"
     icon: mdi:snowflake-thermometer
@@ -93,20 +111,12 @@ binary_sensor:
     icon: mdi:shield-check
     device_class: running
     lambda: |-
-      // Cooling may only proceed when dew point data and flow are both trustworthy.
-      const bool rooms_configured =
-          id(cooling_room_count_selected).has_state() && !isnan(id(cooling_room_count_selected).state) &&
-          id(cooling_room_count_selected).state >= 1.0f;
-      const bool valid_rooms =
-          id(cooling_valid_room_count).has_state() && !isnan(id(cooling_valid_room_count).state) &&
-          id(cooling_valid_room_count).state >= 1.0f;
-      const bool dew_point_ok =
-          id(cooling_dew_point_available).state &&
-          id(cooling_dew_point_selected).has_state() && !isnan(id(cooling_dew_point_selected).state) &&
-          id(minimum_safe_supply_temp).has_state() && !isnan(id(minimum_safe_supply_temp).state);
+      // User-facing permission includes both the core cooling prerequisites and the live flow guard.
+      const bool core_ok =
+          id(cooling_permitted_core).has_state() && id(cooling_permitted_core).state;
       const bool flow_valid = id(flow_rate_selected).has_state() && !isnan(id(flow_rate_selected).state);
       const bool flow_ok = flow_valid && (id(flow_rate_selected).state >= (float) ${oq_cm_min_flow_lph});
-      return rooms_configured && valid_rooms && dew_point_ok && flow_ok && !id(oq_lowflow_fault_active);
+      return core_ok && flow_ok && !id(oq_lowflow_fault_active);
     web_server:
       sorting_group_id: oq_cic
 
@@ -137,8 +147,7 @@ text_sensor:
           id(cooling_valid_room_count).state < 1.0f) {
         return {"No valid dew point input"};
       }
-      if (!id(cooling_dew_point_available).state ||
-          !id(minimum_safe_supply_temp).has_state() || isnan(id(minimum_safe_supply_temp).state)) {
+      if (!id(cooling_permitted_core).has_state() || !id(cooling_permitted_core).state) {
         return {"Safe supply floor unavailable"};
       }
       if (!id(flow_rate_selected).has_state() || isnan(id(flow_rate_selected).state)) {
