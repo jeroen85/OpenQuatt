@@ -521,6 +521,54 @@ Extra stabilisatie:
 - minimum off-time
 - cooldown voordat opnieuw gestart mag worden
 
+### Fase 4c: Een Eigen Cooling-PID, Geen Hergebruik Van De Heating-Curve PID
+
+Doel:
+
+- cooling een eigen regelkring geven zonder de bestaande heating-curve logica te
+  vervuilen
+
+Belangrijke ontwerpkeuze:
+
+- niet meeliften op de room-/comfort-PID van de heating-curve strategy
+- wel hetzelfde technische patroon hergebruiken: een supply-temperature PID die
+  een genormaliseerde vraag naar heatpump-control stuurt
+
+Aanbevolen cooling-regelkring:
+
+- `PV = oq_system_supply_temp`
+- `SP = cooling_supply_target`
+
+Waarbij:
+
+- `cooling_supply_target` altijd begrensd blijft door dauwpuntveiligheid
+- `cooling_supply_target` nooit onder `minimum_safe_supply_temp` mag komen
+
+Praktisch betekent dit:
+
+- kamerwarmte bepaalt of er een koelvraag is
+- dauwpunt bepaalt hoe koud de aanvoer veilig mag worden
+- de cooling-PID bepaalt vervolgens hoe hard de compressor moet werken om die
+  veilige aanvoertemperatuur te benaderen
+
+Dus:
+
+- kamerregeling beslist `of` cooling nodig is
+- dauwpuntveiligheid beslist `hoe koud` het water maximaal mag worden
+- de cooling-PID levert het `gaspedaal`
+
+Uitgang van de cooling-PID:
+
+- een eigen genormaliseerde koelvraag, bijvoorbeeld `f_cool` in hetzelfde
+  bereik als de bestaande heat demand (`0..20`)
+
+Voordeel van deze knip:
+
+- heating-curve PID blijft exclusief voor verwarmen
+- cooling krijgt een eigen tuning
+- de compressor-actuatorlaag kan gedeeld blijven
+- debugging wordt veel duidelijker
+
 ### Fase 4b: `cooling_permitted` Eenvoudig Houden
 
 Doel:
@@ -584,14 +632,31 @@ Fail-safe gedrag:
 
 Doel:
 
-- daadwerkelijke koelactuatie uit heating packages houden
+- daadwerkelijke koelactuatie loskoppelen van heating strategy, maar zo veel
+  mogelijk gedeelde compressorlogica behouden
 
 Richting:
 
-- aparte cooling-control package
+- aparte cooling-control package voor demand- en targetvorming
+- gedeelde `heatpump control`-laag voor compressor dispatch en guardrails
 - working mode naar `Cooling`
 - conservatief starten
 - compressor rustig opbouwen
+
+Wat gedeeld moet blijven:
+
+- minimum runtime per HP
+- minimum off-time per HP
+- runtime balancing / lead-keuze
+- single-vs-duo dispatch
+- level-apply en start/stop logging
+
+Wat cooling zelf moet aanleveren:
+
+- `cooling_request_active`
+- `cooling_supply_target`
+- `f_cool`
+- gevraagde warmtepompmodus `Cooling`
 
 Eerste versie:
 
@@ -670,4 +735,6 @@ De aanbevolen lijn voor OpenQuatt is:
 6. flowbewaking net zo serieus behandelen als bij heating
 7. `cooling_enable_selected`, `cooling_request_active` en `cooling_permitted`
    als eenvoudige kernsignalen gebruiken
-8. cooling als aparte control mode en apart regelpad behandelen
+8. cooling een eigen supply-temperature PID geven
+9. compressorlevels via een gedeelde heatpump-control laag blijven aansturen
+10. cooling als aparte control mode en apart regelpad behandelen
