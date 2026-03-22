@@ -958,7 +958,7 @@ interval:
             return hp_has_any_allowed_level(is_hp1) && !hp_restart_blocked(is_hp1);
           };
           auto hp_can_prearm_thermal = [&](bool is_hp1)->bool {
-            return hp_is_online(is_hp1) && hp_has_any_allowed_level(is_hp1);
+            return hp_has_any_allowed_level(is_hp1);
           };
           auto hp_last_activity_ms = [&](bool is_hp1)->uint32_t {
             const uint32_t last_start_ms =
