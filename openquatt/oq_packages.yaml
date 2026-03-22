@@ -49,6 +49,7 @@ oq_heat_control: !include
     hc_secondary_last_start_ms_id: "hp2_last_start_ms"
     hc_secondary_last_stop_ms_id: "hp2_last_stop_ms"
     hc_secondary_minutes_id: "hp2_minutes"
+    hc_secondary_is_online_id: "hp2_is_online"
     hc_secondary_set_working_mode_id: "hp2_set_working_mode"
     hc_secondary_working_mode_id: "hp2_working_mode"
     hc_secondary_4_way_valve_id: "hp2_4_way_valve"
