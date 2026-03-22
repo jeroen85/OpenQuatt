@@ -290,12 +290,13 @@ Het doel daarvan is:
 
 Tijdens defrost wordt een warmtepomp niet als "normaal beschikbaar" gezien. OpenQuatt houdt rekening met:
 
+- de `defrost bit` als vroege waarschuwing: de gezonde unit mag dan alvast naar `Heating`, maar nog zonder extra compressorlevel;
 - lager effectief thermisch vermogen van een defrostende unit, maar pas zodra de `4-Way valve` aangeeft dat de echte defrost loopt;
 - geen zware voorbelasting alleen omdat de bredere defrost-status al actief is;
 - alleen een extra stapje op de andere unit als de gekozen combinatie anders nog duidelijk tekortkomt;
 - terughoudender wisselgedrag tijdens echte defrost, met snellere terugkeer naar normaal gedrag zodra die fase voorbij is.
 
-Dat voorkomt dat de optimizer een defrostende unit te optimistisch inschat.
+Dat voorkomt dat de optimizer een defrostende unit te optimistisch inschat, terwijl de tweede warmtepomp wel al klaar kan staan op het moment dat de echte defrost begint.
 
 ## Laaglastgedrag en anti-pendelen
 

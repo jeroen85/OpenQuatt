@@ -961,6 +961,9 @@ interval:
           auto hp_can_take_cooling_start = [&](bool is_hp1)->bool {
             return hp_is_online(is_hp1) && hp_has_any_allowed_level(is_hp1) && !hp_restart_blocked(is_hp1);
           };
+          auto hp_can_prearm_thermal = [&](bool is_hp1)->bool {
+            return hp_is_online(is_hp1) && hp_has_any_allowed_level(is_hp1);
+          };
           auto hp_last_activity_ms = [&](bool is_hp1)->uint32_t {
             const uint32_t last_start_ms =
                 is_hp1 ? id(hp1_last_start_ms) : id(${hc_secondary_last_start_ms_id});
@@ -986,6 +989,8 @@ interval:
           const bool hp2_valve_def = false;
           const bool hp2_available = false;
           #endif
+          bool hp1_prearm_mode = false;
+          bool hp2_prearm_mode = false;
           // Command levels may remain active during defrost; model it as thermal derating.
           const bool hp1_available = true;
           // Defrost behavior is configured via substitutions:
@@ -1520,16 +1525,34 @@ interval:
               hp2_req = chosen_candidate.valid ? chosen_candidate.l2 : 0;
               publish_optimizer_reason(optimizer_reason);
 
-              // Single-defrost compensation: only help during real valve-on defrost,
-              // and only when the chosen candidate still underdelivers materially.
-              // If duo dispatch already covers the request well enough, extra boost
-              // just creates the overshoot spikes we saw in history.
+              // Defrost handling has two phases:
+              // 1) defrost bit ON, valve still OFF: optionally pre-arm the healthy HP by
+              //    switching its working mode to Heating while keeping compressor level at 0.
+              //    This removes mode-transition latency without adding early thermal power.
+              // 2) 4-way valve ON: only then allow real level boost, and only when the
+              //    chosen candidate still underdelivers materially.
               int def_comp_min_f = (int) roundf(${oq_defrost_comp_min_f});
               if (def_comp_min_f < 0) def_comp_min_f = 0;
               if (def_comp_min_f > demand_max_f) def_comp_min_f = demand_max_f;
               int def_comp_boost = (int) roundf(${oq_defrost_comp_boost_steps});
               if (def_comp_boost < 0) def_comp_boost = 0;
               if (def_comp_boost > 3) def_comp_boost = 3;
+              const bool hp1_prearm_window = hp1_def && !hp1_valve_def;
+              const bool hp2_prearm_window = hp2_def && !hp2_valve_def;
+              const bool allow_defrost_prearm =
+                  (f >= def_comp_min_f) &&
+                  chosen_candidate.valid &&
+                  (chosen_candidate.active_hp_count == 1);
+              if (allow_defrost_prearm) {
+                if (hp1_prearm_window && !hp2_def && !hp2_valve_def &&
+                    hp1_req > 0 && hp2_req == 0 && hp_can_prearm_thermal(false)) {
+                  hp2_prearm_mode = true;
+                }
+                if (hp2_prearm_window && !hp1_def && !hp1_valve_def &&
+                    hp2_req > 0 && hp1_req == 0 && hp_can_prearm_thermal(true)) {
+                  hp1_prearm_mode = true;
+                }
+              }
               const bool chosen_underdelivers =
                   chosen_candidate.valid && (chosen_candidate.p_th_w + thermal_tie_band_w < P_target);
               const bool allow_defrost_boost =
@@ -1547,6 +1570,8 @@ interval:
                   hp1_req = std::min(level_cap, hp1_req + def_comp_boost);
                   publish_optimizer_reason("defrost_boost");
                 }
+              } else if (hp1_prearm_mode || hp2_prearm_mode) {
+                publish_optimizer_reason("defrost_prearm");
               }
             }
           }
@@ -1846,7 +1871,16 @@ interval:
           // Note: options must exactly match the options map in oq_HP_io.yaml (levels 0..10)
           const char* lvl_opts[11] = {"0","1","2","3","4","5","6","7","8","9","10"};
 
-          auto apply_level = [&](bool is_hp1, int req_level)->int {
+          bool hp1_force_active_mode = false;
+          #if OQ_TOPOLOGY_DUO
+          bool hp2_force_active_mode = false;
+          if (is_power_house) {
+            hp1_force_active_mode = hp1_prearm_mode;
+            hp2_force_active_mode = hp2_prearm_mode;
+          }
+          #endif
+
+          auto apply_level = [&](bool is_hp1, int req_level, bool force_active_mode)->int {
             req_level = std::max(min_level, std::min(max_level, req_level));
             const int prev_applied = is_hp1 ? id(hp1_last_applied_level) : id(${hc_secondary_last_applied_level_id});
             const int retained_level = defrost_stop_hold_level(is_hp1);
@@ -1870,7 +1904,9 @@ interval:
             }
 
             // With active demand, switch to the current thermal mode; otherwise standby.
-            if (req_level > 0) set_mode(is_hp1, true);
+            // Defrost pre-arm may also request Heating mode while keeping level 0, so the
+            // support HP is ready before the 4-way valve makes thermal power go negative.
+            if (req_level > 0 || force_active_mode) set_mode(is_hp1, true);
             else set_mode(is_hp1, false);
 
             int applied = req_level;
@@ -1921,9 +1957,9 @@ interval:
             return applied;
           };
 
-          int hp1_applied = apply_level(true, hp1_req);
+          int hp1_applied = apply_level(true, hp1_req, hp1_force_active_mode);
           #if OQ_TOPOLOGY_DUO
-          int hp2_applied = apply_level(false, hp2_req);
+          int hp2_applied = apply_level(false, hp2_req, hp2_force_active_mode);
           const int prev_topology_count =
               (id(hp1_last_applied_level) > 0 ? 1 : 0) + (id(${hc_secondary_last_applied_level_id}) > 0 ? 1 : 0);
           const int new_topology_count = (hp1_applied > 0 ? 1 : 0) + (hp2_applied > 0 ? 1 : 0);
