@@ -941,10 +941,6 @@ interval:
             }
             return false;
           };
-          auto hp_is_online = [&](bool is_hp1)->bool {
-            if (is_hp1) return id(hp1_is_online);
-            return id(${hc_secondary_is_online_id});
-          };
           auto hp_restart_blocked = [&](bool is_hp1)->bool {
             const int prev_applied = is_hp1 ? id(hp1_last_applied_level) : id(${hc_secondary_last_applied_level_id});
             if (prev_applied > 0) return false;
@@ -959,7 +955,7 @@ interval:
             return (uint32_t)(now_ms - last_stop_ms) < min_off_ms;
           };
           auto hp_can_take_cooling_start = [&](bool is_hp1)->bool {
-            return hp_is_online(is_hp1) && hp_has_any_allowed_level(is_hp1) && !hp_restart_blocked(is_hp1);
+            return hp_has_any_allowed_level(is_hp1) && !hp_restart_blocked(is_hp1);
           };
           auto hp_can_prearm_thermal = [&](bool is_hp1)->bool {
             return hp_is_online(is_hp1) && hp_has_any_allowed_level(is_hp1);
