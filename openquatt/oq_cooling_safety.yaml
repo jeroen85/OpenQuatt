@@ -22,6 +22,22 @@ globals:
 
 number:
   - platform: template
+    id: cooling_safety_margin
+    name: "Cooling Safety Margin"
+    icon: mdi:shield-thermometer
+    unit_of_measurement: "°C"
+    min_value: 0.0
+    max_value: 4.0
+    step: 0.1
+    mode: box
+    optimistic: true
+    restore_value: true
+    initial_value: 2.0
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_control
+
+  - platform: template
     id: cooling_request_on_delta
     name: "Cooling Request On Delta"
     icon: mdi:thermometer-plus
@@ -263,11 +279,7 @@ sensor:
     accuracy_decimals: 1
     update_interval: 10s
     lambda: |-
-      // Keep a sane default even when HA has not provided the helper value yet.
-      float margin_c = 2.0f;
-      if (id(cooling_safety_margin_ha).has_state() && !isnan(id(cooling_safety_margin_ha).state)) {
-        margin_c = id(cooling_safety_margin_ha).state;
-      }
+      float margin_c = id(cooling_safety_margin).state;
       if (margin_c < 0.0f) margin_c = 0.0f;
       if (margin_c > 4.0f) margin_c = 4.0f;
       return margin_c;

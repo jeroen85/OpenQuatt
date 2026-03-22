@@ -1079,6 +1079,8 @@ views:
             icon: mdi:state-machine
             heading: Cooling state
             heading_style: title
+          - type: tile
+            entity: input_boolean.koeling_aan
           - type: entities
             show_header_toggle: false
             entities:
@@ -1134,6 +1136,9 @@ views:
                 name: Cooling minimum supply temp
               - entity: number.openquatt_cooling_demand_max
                 name: Cooling demand max
+              - entity: number.openquatt_cooling_safety_margin
+                name: Cooling safety margin
+                icon: mdi:delta
     cards: []
     header:
       card:
@@ -1615,59 +1620,6 @@ views:
                   - entity: input_text.openquatt_source_cooling_enable
                     name: Cooling enable source entity
           - type: vertical-stack
-            visibility:
-              - condition: state
-                entity: binary_sensor.openquatt_ha_dynamic_cooling_package_active
-                state: 'on'
-            cards:
-              - type: heading
-                icon: mdi:floor-plan
-                heading: Cooling room source entities
-                heading_style: subtitle
-              - type: entities
-                show_header_toggle: false
-                entities:
-                  - entity: input_number.openquatt_cooling_room_count
-                    name: Cooling room count
-                  - entity: input_number.openquatt_cooling_safety_margin
-                    name: Cooling safety margin
-                  - entity: input_text.openquatt_source_cooling_room_1_dew_point
-                    name: Cooling room 1 dew point entity
-                  - entity: input_text.openquatt_source_cooling_room_1_temperature
-                    name: Cooling room 1 temperature entity
-                  - entity: input_text.openquatt_source_cooling_room_1_humidity
-                    name: Cooling room 1 humidity entity
-                  - entity: input_text.openquatt_source_cooling_room_2_dew_point
-                    name: Cooling room 2 dew point entity
-                  - entity: input_text.openquatt_source_cooling_room_2_temperature
-                    name: Cooling room 2 temperature entity
-                  - entity: input_text.openquatt_source_cooling_room_2_humidity
-                    name: Cooling room 2 humidity entity
-                  - entity: input_text.openquatt_source_cooling_room_3_dew_point
-                    name: Cooling room 3 dew point entity
-                  - entity: input_text.openquatt_source_cooling_room_3_temperature
-                    name: Cooling room 3 temperature entity
-                  - entity: input_text.openquatt_source_cooling_room_3_humidity
-                    name: Cooling room 3 humidity entity
-                  - entity: input_text.openquatt_source_cooling_room_4_dew_point
-                    name: Cooling room 4 dew point entity
-                  - entity: input_text.openquatt_source_cooling_room_4_temperature
-                    name: Cooling room 4 temperature entity
-                  - entity: input_text.openquatt_source_cooling_room_4_humidity
-                    name: Cooling room 4 humidity entity
-                  - entity: input_text.openquatt_source_cooling_room_5_dew_point
-                    name: Cooling room 5 dew point entity
-                  - entity: input_text.openquatt_source_cooling_room_5_temperature
-                    name: Cooling room 5 temperature entity
-                  - entity: input_text.openquatt_source_cooling_room_5_humidity
-                    name: Cooling room 5 humidity entity
-                  - entity: input_text.openquatt_source_cooling_room_6_dew_point
-                    name: Cooling room 6 dew point entity
-                  - entity: input_text.openquatt_source_cooling_room_6_temperature
-                    name: Cooling room 6 temperature entity
-                  - entity: input_text.openquatt_source_cooling_room_6_humidity
-                    name: Cooling room 6 humidity entity
-          - type: vertical-stack
             cards:
               - type: heading
                 icon: mdi:database-arrow-right
@@ -1780,6 +1732,193 @@ views:
           - condition: state
             entity: binary_sensor.openquatt_ha_dynamic_sources_package_active
             state_not: 'on'
+      - type: grid
+        cards:
+          - type: heading
+            heading: Cooling - Dew point, temperature, humidity sources
+            heading_style: title
+            icon: mdi:snowflake
+            grid_options:
+              columns: full
+              rows: 1
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Explanation</strong></summary>
+
+              Configure the dew point, temperature, and humidity source per room
+              for cooling.
+
+              Prefer a direct dew point entity per room. If you do not have one,
+              enter temperature and relative humidity instead.
+
+              OpenQuatt prefers the direct dew point per room and otherwise
+              computes dew point from temperature + RH. For system safety it
+              then uses the highest valid room value.
+
+              Increase `Number of rooms` first; the input fields per room will
+              appear below.
+              </details>
+            text_only: true
+            grid_options:
+              columns: full
+          - type: tile
+            entity: input_number.openquatt_cooling_room_count
+            name: Number of rooms
+            hide_state: true
+            vertical: false
+            features:
+              - type: numeric-input
+                style: buttons
+            features_position: inline
+          - type: heading
+            icon: mdi:home-thermometer-outline
+            heading: Rooms
+            heading_style: subtitle
+          - type: markdown
+            content: >
+              **No rooms configured**
+
+
+              The configured room count is 0. Increase the number of rooms to
+              show the input fields.
+            visibility:
+              - condition: numeric_state
+                entity: input_number.openquatt_cooling_room_count
+                below: 1
+          - type: vertical-stack
+            cards:
+              - type: heading
+                icon: mdi:home-thermometer
+                heading: Room 1
+                heading_style: subtitle
+                grid_options:
+                  columns: 12
+                  rows: 1
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: input_text.openquatt_source_cooling_room_1_dew_point
+                    name: Cooling room 1 dew point entity
+                  - entity: input_text.openquatt_source_cooling_room_1_temperature
+                    name: Cooling room 1 temperature entity
+                  - entity: input_text.openquatt_source_cooling_room_1_humidity
+                    name: Cooling room 1 humidity entity
+            visibility:
+              - condition: numeric_state
+                entity: input_number.openquatt_cooling_room_count
+                above: 0
+          - type: vertical-stack
+            cards:
+              - type: heading
+                icon: mdi:home-thermometer
+                heading: Room 2
+                heading_style: subtitle
+                grid_options:
+                  columns: 12
+                  rows: 1
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: input_text.openquatt_source_cooling_room_2_dew_point
+                    name: Cooling room 2 dew point entity
+                  - entity: input_text.openquatt_source_cooling_room_2_temperature
+                    name: Cooling room 2 temperature entity
+                  - entity: input_text.openquatt_source_cooling_room_2_humidity
+                    name: Cooling room 2 humidity entity
+            visibility:
+              - condition: numeric_state
+                entity: input_number.openquatt_cooling_room_count
+                above: 1
+          - type: vertical-stack
+            cards:
+              - type: heading
+                icon: mdi:home-thermometer
+                heading: Room 3
+                heading_style: subtitle
+                grid_options:
+                  columns: 12
+                  rows: 1
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: input_text.openquatt_source_cooling_room_3_dew_point
+                    name: Cooling room 3 dew point entity
+                  - entity: input_text.openquatt_source_cooling_room_3_temperature
+                    name: Cooling room 3 temperature entity
+                  - entity: input_text.openquatt_source_cooling_room_3_humidity
+                    name: Cooling room 3 humidity entity
+            visibility:
+              - condition: numeric_state
+                entity: input_number.openquatt_cooling_room_count
+                above: 2
+          - type: vertical-stack
+            cards:
+              - type: heading
+                icon: mdi:home-thermometer
+                heading: Room 4
+                heading_style: subtitle
+                grid_options:
+                  columns: 12
+                  rows: 1
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: input_text.openquatt_source_cooling_room_4_dew_point
+                    name: Cooling room 4 dew point entity
+                  - entity: input_text.openquatt_source_cooling_room_4_temperature
+                    name: Cooling room 4 temperature entity
+                  - entity: input_text.openquatt_source_cooling_room_4_humidity
+                    name: Cooling room 4 humidity entity
+            visibility:
+              - condition: numeric_state
+                entity: input_number.openquatt_cooling_room_count
+                above: 3
+          - type: vertical-stack
+            cards:
+              - type: heading
+                icon: mdi:home-thermometer
+                heading: Room 5
+                heading_style: subtitle
+                grid_options:
+                  columns: 12
+                  rows: 1
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: input_text.openquatt_source_cooling_room_5_dew_point
+                    name: Cooling room 5 dew point entity
+                  - entity: input_text.openquatt_source_cooling_room_5_temperature
+                    name: Cooling room 5 temperature entity
+                  - entity: input_text.openquatt_source_cooling_room_5_humidity
+                    name: Cooling room 5 humidity entity
+            visibility:
+              - condition: numeric_state
+                entity: input_number.openquatt_cooling_room_count
+                above: 4
+          - type: vertical-stack
+            cards:
+              - type: heading
+                icon: mdi:home-thermometer
+                heading: Room 6
+                heading_style: subtitle
+                grid_options:
+                  columns: 12
+                  rows: 1
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: input_text.openquatt_source_cooling_room_6_dew_point
+                    name: Cooling room 6 dew point entity
+                  - entity: input_text.openquatt_source_cooling_room_6_temperature
+                    name: Cooling room 6 temperature entity
+                  - entity: input_text.openquatt_source_cooling_room_6_humidity
+                    name: Cooling room 6 humidity entity
+            visibility:
+              - condition: numeric_state
+                entity: input_number.openquatt_cooling_room_count
+                above: 5
+        column_span: 3
       - type: grid
         cards:
           - type: heading

@@ -135,7 +135,6 @@ ha_room_setpoint_entity_id: "sensor.openquatt_ext_room_setpoint"           # HA 
 ha_room_temp_entity_id: "sensor.openquatt_ext_room_temperature"             # HA proxy entity for thermostat room temperature [degC].
 ha_cooling_enable_entity_id: "binary_sensor.openquatt_ext_cooling_enable"   # HA proxy entity for external cooling enable.
 ha_cooling_room_count_entity_id: "sensor.openquatt_ext_cooling_room_count"  # HA proxy entity for configured cooling room count.
-ha_cooling_safety_margin_entity_id: "sensor.openquatt_ext_cooling_safety_margin" # HA proxy entity for cooling safety margin [degC].
 ha_cooling_room_1_dew_point_entity_id: "sensor.openquatt_ext_cooling_room_1_dew_point_direct" # HA proxy for cooling room 1 dew point [degC].
 ha_cooling_room_1_temp_entity_id: "sensor.openquatt_ext_cooling_room_1_temperature" # HA proxy for cooling room 1 temperature [degC].
 ha_cooling_room_1_humidity_entity_id: "sensor.openquatt_ext_cooling_room_1_humidity" # HA proxy for cooling room 1 humidity [%].

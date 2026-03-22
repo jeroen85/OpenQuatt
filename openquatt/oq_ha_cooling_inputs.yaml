@@ -23,17 +23,6 @@ sensor:
       sorting_group_id: oq_ha
 
   - platform: homeassistant
-    id: cooling_safety_margin_ha
-    name: "HA - Cooling Safety Margin"
-    entity_id: ${ha_cooling_safety_margin_entity_id}
-    internal: false
-    icon: mdi:shield-thermometer
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
-    web_server:
-      sorting_group_id: oq_ha
-
-  - platform: homeassistant
     id: cooling_room_1_dew_point_direct_ha
     name: "HA - Cooling Room 1 Dew Point"
     entity_id: ${ha_cooling_room_1_dew_point_entity_id}
@@ -266,4 +255,3 @@ sensor:
     accuracy_decimals: 1
     web_server:
       sorting_group_id: oq_ha
-

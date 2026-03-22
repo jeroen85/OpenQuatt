@@ -6,7 +6,6 @@
 #   - User can configure up to 6 cooling-room source entities in Home Assistant.
 #   - This package publishes stable proxy sensors consumed by OpenQuatt ESPHome:
 #       sensor.openquatt_ext_cooling_room_count
-#       sensor.openquatt_ext_cooling_safety_margin
 #       sensor.openquatt_ext_cooling_room_<n>_dew_point_direct
 #       sensor.openquatt_ext_cooling_room_<n>_temperature
 #       sensor.openquatt_ext_cooling_room_<n>_humidity
@@ -17,7 +16,7 @@
 #          packages: !include_dir_named packages
 #   2) Copy this file to: /config/packages/openquatt_dynamic_cooling.yaml
 #   3) Reload Template Entities (or restart Home Assistant).
-#   4) Set room count, safety margin, and the per-room source helpers.
+#   4) Set room count and the per-room source helpers.
 #
 # Notes:
 #   - Trigger interval is 15s to support dynamic entity_id references.
@@ -38,16 +37,6 @@ input_number:
     max: 6
     step: 1
     mode: box
-
-  openquatt_cooling_safety_margin:
-    name: OpenQuatt cooling safety margin
-    icon: mdi:shield-thermometer
-    min: 0
-    max: 4
-    step: 0.1
-    unit_of_measurement: "°C"
-    mode: box
-    initial: 2.0
 
 input_text:
   openquatt_source_cooling_room_1_dew_point:
@@ -156,7 +145,6 @@ template:
       - platform: state
         entity_id:
           - input_number.openquatt_cooling_room_count
-          - input_number.openquatt_cooling_safety_margin
           - input_text.openquatt_source_cooling_room_1_dew_point
           - input_text.openquatt_source_cooling_room_1_temperature
           - input_text.openquatt_source_cooling_room_1_humidity
@@ -182,13 +170,6 @@ template:
         unique_id: openquatt_ext_cooling_room_count
         icon: mdi:counter
         state: "{{ states('input_number.openquatt_cooling_room_count') | float(0) | round(0) }}"
-
-      - name: OpenQuatt Ext Cooling Safety Margin
-        unique_id: openquatt_ext_cooling_safety_margin
-        unit_of_measurement: "°C"
-        state_class: measurement
-        icon: mdi:shield-thermometer
-        state: "{{ states('input_number.openquatt_cooling_safety_margin') | float(2.0) | round(1) }}"
 
       - name: OpenQuatt Ext Cooling Room 1 Dew Point Direct
         unique_id: openquatt_ext_cooling_room_1_dew_point_direct

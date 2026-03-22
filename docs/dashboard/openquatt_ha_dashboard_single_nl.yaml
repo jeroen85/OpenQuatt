@@ -1142,6 +1142,8 @@ views:
             icon: mdi:state-machine
             heading: Koelstatus
             heading_style: title
+          - type: tile
+            entity: input_boolean.koeling_aan
           - type: entities
             show_header_toggle: false
             entities:
@@ -1197,6 +1199,9 @@ views:
                 name: Cooling minimum supply temp
               - entity: number.openquatt_cooling_demand_max
                 name: Cooling demand max
+              - entity: number.openquatt_cooling_safety_margin
+                name: Cooling safety margin
+                icon: mdi:delta
     cards: []
     header:
       card:
@@ -1681,59 +1686,6 @@ views:
                   - entity: input_text.openquatt_source_cooling_enable
                     name: Bronentity koeltoestemming
           - type: vertical-stack
-            visibility:
-              - condition: state
-                entity: binary_sensor.openquatt_ha_dynamic_cooling_package_active
-                state: 'on'
-            cards:
-              - type: heading
-                icon: mdi:floor-plan
-                heading: Cooling room bronentities
-                heading_style: subtitle
-              - type: entities
-                show_header_toggle: false
-                entities:
-                  - entity: input_number.openquatt_cooling_room_count
-                    name: Cooling room count
-                  - entity: input_number.openquatt_cooling_safety_margin
-                    name: Cooling safety margin
-                  - entity: input_text.openquatt_source_cooling_room_1_dew_point
-                    name: Cooling room 1 dauwpuntentity
-                  - entity: input_text.openquatt_source_cooling_room_1_temperature
-                    name: Cooling room 1 temperatuurentity
-                  - entity: input_text.openquatt_source_cooling_room_1_humidity
-                    name: Cooling room 1 luchtvochtigheidentity
-                  - entity: input_text.openquatt_source_cooling_room_2_dew_point
-                    name: Cooling room 2 dauwpuntentity
-                  - entity: input_text.openquatt_source_cooling_room_2_temperature
-                    name: Cooling room 2 temperatuurentity
-                  - entity: input_text.openquatt_source_cooling_room_2_humidity
-                    name: Cooling room 2 luchtvochtigheidentity
-                  - entity: input_text.openquatt_source_cooling_room_3_dew_point
-                    name: Cooling room 3 dauwpuntentity
-                  - entity: input_text.openquatt_source_cooling_room_3_temperature
-                    name: Cooling room 3 temperatuurentity
-                  - entity: input_text.openquatt_source_cooling_room_3_humidity
-                    name: Cooling room 3 luchtvochtigheidentity
-                  - entity: input_text.openquatt_source_cooling_room_4_dew_point
-                    name: Cooling room 4 dauwpuntentity
-                  - entity: input_text.openquatt_source_cooling_room_4_temperature
-                    name: Cooling room 4 temperatuurentity
-                  - entity: input_text.openquatt_source_cooling_room_4_humidity
-                    name: Cooling room 4 luchtvochtigheidentity
-                  - entity: input_text.openquatt_source_cooling_room_5_dew_point
-                    name: Cooling room 5 dauwpuntentity
-                  - entity: input_text.openquatt_source_cooling_room_5_temperature
-                    name: Cooling room 5 temperatuurentity
-                  - entity: input_text.openquatt_source_cooling_room_5_humidity
-                    name: Cooling room 5 luchtvochtigheidentity
-                  - entity: input_text.openquatt_source_cooling_room_6_dew_point
-                    name: Cooling room 6 dauwpuntentity
-                  - entity: input_text.openquatt_source_cooling_room_6_temperature
-                    name: Cooling room 6 temperatuurentity
-                  - entity: input_text.openquatt_source_cooling_room_6_humidity
-                    name: Cooling room 6 luchtvochtigheidentity
-          - type: vertical-stack
             cards:
               - type: heading
                 icon: mdi:database-arrow-right
@@ -1857,6 +1809,193 @@ views:
           - condition: state
             entity: binary_sensor.openquatt_ha_dynamic_sources_package_active
             state_not: 'on'
+      - type: grid
+        cards:
+          - type: heading
+            heading: Koeling - Dauwpunt-, temperatuur-, vochtigheidsmetingen
+            heading_style: title
+            icon: mdi:snowflake
+            grid_options:
+              columns: full
+              rows: 1
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Uitleg</strong></summary>
+
+              Configureer hier per kamer de dauwpunt-, temperatuur- en
+              luchtvochtigheidsbron voor cooling.
+
+              Gebruik per kamer bij voorkeur een directe dauwpuntentity. Heb je
+              die niet, vul dan temperatuur en relatieve luchtvochtigheid in.
+
+              OpenQuatt gebruikt per kamer eerst het directe dauwpunt en
+              berekent anders zelf het dauwpunt uit temperatuur + RH. Voor de
+              systeembeveiliging telt daarna de hoogste geldige kamerwaarde.
+
+              Verhoog eerst `Aantal kamers`; daarna verschijnen de invoervelden
+              per kamer.
+              </details>
+            text_only: true
+            grid_options:
+              columns: full
+          - type: tile
+            entity: input_number.openquatt_cooling_room_count
+            name: Aantal kamers
+            hide_state: true
+            vertical: false
+            features:
+              - type: numeric-input
+                style: buttons
+            features_position: inline
+          - type: heading
+            icon: mdi:home-thermometer-outline
+            heading: Kamers
+            heading_style: subtitle
+          - type: markdown
+            content: >
+              **Geen kamers geconfigureerd**
+
+
+              Het aantal ingegeven kamers is 0. Verhoog het aantal kamers om de
+              inputvelden zichtbaar te maken.
+            visibility:
+              - condition: numeric_state
+                entity: input_number.openquatt_cooling_room_count
+                below: 1
+          - type: vertical-stack
+            cards:
+              - type: heading
+                icon: mdi:home-thermometer
+                heading: Kamer 1
+                heading_style: subtitle
+                grid_options:
+                  columns: 12
+                  rows: 1
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: input_text.openquatt_source_cooling_room_1_dew_point
+                    name: Cooling room 1 dauwpuntentity
+                  - entity: input_text.openquatt_source_cooling_room_1_temperature
+                    name: Cooling room 1 temperatuurentity
+                  - entity: input_text.openquatt_source_cooling_room_1_humidity
+                    name: Cooling room 1 luchtvochtigheidentity
+            visibility:
+              - condition: numeric_state
+                entity: input_number.openquatt_cooling_room_count
+                above: 0
+          - type: vertical-stack
+            cards:
+              - type: heading
+                icon: mdi:home-thermometer
+                heading: Kamer 2
+                heading_style: subtitle
+                grid_options:
+                  columns: 12
+                  rows: 1
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: input_text.openquatt_source_cooling_room_2_dew_point
+                    name: Cooling room 2 dauwpuntentity
+                  - entity: input_text.openquatt_source_cooling_room_2_temperature
+                    name: Cooling room 2 temperatuurentity
+                  - entity: input_text.openquatt_source_cooling_room_2_humidity
+                    name: Cooling room 2 luchtvochtigheidentity
+            visibility:
+              - condition: numeric_state
+                entity: input_number.openquatt_cooling_room_count
+                above: 1
+          - type: vertical-stack
+            cards:
+              - type: heading
+                icon: mdi:home-thermometer
+                heading: Kamer 3
+                heading_style: subtitle
+                grid_options:
+                  columns: 12
+                  rows: 1
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: input_text.openquatt_source_cooling_room_3_dew_point
+                    name: Cooling room 3 dauwpuntentity
+                  - entity: input_text.openquatt_source_cooling_room_3_temperature
+                    name: Cooling room 3 temperatuurentity
+                  - entity: input_text.openquatt_source_cooling_room_3_humidity
+                    name: Cooling room 3 luchtvochtigheidentity
+            visibility:
+              - condition: numeric_state
+                entity: input_number.openquatt_cooling_room_count
+                above: 2
+          - type: vertical-stack
+            cards:
+              - type: heading
+                icon: mdi:home-thermometer
+                heading: Kamer 4
+                heading_style: subtitle
+                grid_options:
+                  columns: 12
+                  rows: 1
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: input_text.openquatt_source_cooling_room_4_dew_point
+                    name: Cooling room 4 dauwpuntentity
+                  - entity: input_text.openquatt_source_cooling_room_4_temperature
+                    name: Cooling room 4 temperatuurentity
+                  - entity: input_text.openquatt_source_cooling_room_4_humidity
+                    name: Cooling room 4 luchtvochtigheidentity
+            visibility:
+              - condition: numeric_state
+                entity: input_number.openquatt_cooling_room_count
+                above: 3
+          - type: vertical-stack
+            cards:
+              - type: heading
+                icon: mdi:home-thermometer
+                heading: Kamer 5
+                heading_style: subtitle
+                grid_options:
+                  columns: 12
+                  rows: 1
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: input_text.openquatt_source_cooling_room_5_dew_point
+                    name: Cooling room 5 dauwpuntentity
+                  - entity: input_text.openquatt_source_cooling_room_5_temperature
+                    name: Cooling room 5 temperatuurentity
+                  - entity: input_text.openquatt_source_cooling_room_5_humidity
+                    name: Cooling room 5 luchtvochtigheidentity
+            visibility:
+              - condition: numeric_state
+                entity: input_number.openquatt_cooling_room_count
+                above: 4
+          - type: vertical-stack
+            cards:
+              - type: heading
+                icon: mdi:home-thermometer
+                heading: Kamer 6
+                heading_style: subtitle
+                grid_options:
+                  columns: 12
+                  rows: 1
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: input_text.openquatt_source_cooling_room_6_dew_point
+                    name: Cooling room 6 dauwpuntentity
+                  - entity: input_text.openquatt_source_cooling_room_6_temperature
+                    name: Cooling room 6 temperatuurentity
+                  - entity: input_text.openquatt_source_cooling_room_6_humidity
+                    name: Cooling room 6 luchtvochtigheidentity
+            visibility:
+              - condition: numeric_state
+                entity: input_number.openquatt_cooling_room_count
+                above: 5
+        column_span: 3
       - type: grid
         cards:
           - type: heading
