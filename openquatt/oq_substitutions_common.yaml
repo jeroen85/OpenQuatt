@@ -64,6 +64,7 @@ oq_strategy_loop_s: "5"                               # Interval for strategy ca
 oq_strategy_demand_max_f: "20.0"                      # Upper bound of demand scale for mapping PID/power -> f.
 oq_temp_guard_delta_c: "0.5"                          # Minimum valid margin between T0 and Tc in the house model [°C].
 oq_ph_deadband_default_k: "0.14"                      # Default Power House room-error deadband [K].
+oq_outside_temp_stale_s: "1200"                       # Ignore a local HP outside temperature if it stays unchanged this long while that HP otherwise still shows fresh activity [s].
 
 # ----------------------------
 # HEAT CONTROL

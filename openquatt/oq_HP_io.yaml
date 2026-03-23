@@ -77,6 +77,16 @@ globals:
     restore_value: false
     initial_value: '0'
 
+  - id: ${hp_id}_outside_temp_last_change_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
+  - id: ${hp_id}_outside_temp_activity_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
   # Modbus controller online/offline
   - id: ${hp_id}_is_online
     type: bool
@@ -284,6 +294,10 @@ sensor:
     register_type: holding
     address: 2099
     #skip_updates: 0
+    on_value:
+      then:
+        - lambda: |-
+            id(${hp_id}_outside_temp_activity_ms) = millis();
     web_server:
       sorting_group_id: oq_${hp_id}
 
@@ -449,6 +463,12 @@ sensor:
           min_value: -30
           max_value: 100
           ignore_out_of_range: true
+    on_value:
+      then:
+        - lambda: |-
+            const uint32_t now_ms = millis();
+            id(${hp_id}_outside_temp_last_change_ms) = now_ms;
+            id(${hp_id}_outside_temp_activity_ms) = now_ms;
     web_server:
       sorting_group_id: oq_${hp_id}
 
@@ -728,6 +748,10 @@ sensor:
     accuracy_decimals: 2
     filters:
       - multiply: 0.618
+    on_value:
+      then:
+        - lambda: |-
+            id(${hp_id}_outside_temp_activity_ms) = millis();
     web_server:
       sorting_group_id: oq_${hp_id}
 
@@ -912,6 +936,10 @@ binary_sensor:
     address: 2108
     bitmask: 0x40
     skip_updates: ${oq_skip_10s}
+    on_state:
+      then:
+        - lambda: |-
+            id(${hp_id}_outside_temp_activity_ms) = millis();
     web_server:
       sorting_group_id: oq_${hp_id}
 
@@ -982,6 +1010,10 @@ binary_sensor:
     register_type: holding
     address: 2118
     #skip_updates: 0
+    on_state:
+      then:
+        - lambda: |-
+            id(${hp_id}_outside_temp_activity_ms) = millis();
     web_server:
       sorting_group_id: oq_${hp_id}
 

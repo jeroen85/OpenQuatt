@@ -936,11 +936,31 @@ sensor:
     web_server:
       sorting_group_id: oq_temperatures
     lambda: |-
+      // Ignore a local HP reading if that specific outside-temperature register stays
+      // frozen while the rest of the same HP still shows fresh activity.
+      const uint32_t now_ms = millis();
+      uint32_t stale_s = (uint32_t) ${oq_outside_temp_stale_s};
+      const uint32_t stale_ms = stale_s * 1000UL;
+      const bool dual_local_sources = (${secondary_outside_is_distinct} != 0);
       const float hp1_outside_c = id(hp1_outside_temp).state;
       const float hp2_outside_c = id(${secondary_outside_temp_id}).state;
 
-      const bool hp1_valid = !isnan(hp1_outside_c);
-      const bool hp2_valid = !isnan(hp2_outside_c);
+      auto trusted_local_outside = [&](float outside_c, uint32_t last_change_ms, uint32_t activity_ms)->bool {
+        if (isnan(outside_c)) return false;
+        if (!dual_local_sources || stale_ms == 0) return true;
+        if (last_change_ms == 0 || activity_ms == 0) return true;
+        if (activity_ms <= last_change_ms) return true;
+        if (now_ms <= last_change_ms || now_ms <= activity_ms) return true;
+        const bool outside_old = (uint32_t) (now_ms - last_change_ms) >= stale_ms;
+        const bool hp_recently_active = (uint32_t) (now_ms - activity_ms) < stale_ms;
+        if (outside_old && hp_recently_active) return false;
+        return true;
+      };
+
+      const bool hp1_valid =
+          trusted_local_outside(hp1_outside_c, id(hp1_outside_temp_last_change_ms), id(hp1_outside_temp_activity_ms));
+      const bool hp2_valid =
+          trusted_local_outside(hp2_outside_c, id(${secondary_outside_last_change_ms_id}), id(${secondary_outside_activity_ms_id}));
 
       if (hp1_valid && hp2_valid) return std::min(hp1_outside_c, hp2_outside_c);
       if (hp1_valid) return hp1_outside_c;

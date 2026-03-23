@@ -253,7 +253,7 @@ Belangrijke instellingen en signalen:
 
 Dit is vaak de belangrijkste groep bij onverklaarbaar gedrag. Als de geselecteerde bron niet klopt, helpt fijnregelen vrijwel nooit.
 
-Voor `Outside Temperature Source` is ook de optie `Lowest valid` beschikbaar. Dan vergelijkt OpenQuatt de lokale buitenunitmeting en de HA-invoer, gebruikt alleen geldige waarden en kiest de laagste van de twee.
+Voor `Outside Temperature Source` is ook de optie `Lowest valid` beschikbaar. Dan vergelijkt OpenQuatt de lokale buitenunitmeting en de HA-invoer, gebruikt alleen geldige waarden en kiest de laagste van de twee. In de lokale Duo-aggregatie telt een HP-buitenwaarde bovendien tijdelijk niet mee als die te lang exact stil blijft staan terwijl diezelfde warmtepomp verder nog wel verse activiteit laat zien.
 
 Bij een Duo-installatie en `Flow Source = Outdoor unit` is er ook een extra keuze voor de lokale flowbepaling:
 

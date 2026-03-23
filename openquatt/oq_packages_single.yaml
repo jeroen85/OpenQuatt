@@ -21,6 +21,9 @@ oq_heating_strategy: !include
   file: oq_heating_strategy.yaml
   vars:
     secondary_outside_temp_id: "hp1_outside_temp"
+    secondary_outside_last_change_ms_id: "hp1_outside_temp_last_change_ms"
+    secondary_outside_activity_ms_id: "hp1_outside_temp_activity_ms"
+    secondary_outside_is_distinct: "0"
     secondary_water_out_temp_id: "hp1_water_out_temp"
     secondary_last_applied_level_id: "hp1_last_applied_level"
     secondary_working_mode_id: "hp1_working_mode"
