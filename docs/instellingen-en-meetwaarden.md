@@ -199,7 +199,7 @@ Belangrijk onderscheid:
 - `oq_hp_min_off_s` is juist wel compile-time en bepaalt de minimale uit-tijd per compressor voor elke restart, ook in `Power House`.
 - `oq_optimizer_topology_power_margin_w` en `oq_optimizer_topology_heat_advantage_w` zijn compile-time marges voor de single-versus-duokeuze in `Power House`.
 
-Je hoeft in `Power House` dus geen aparte single-versus-duo voorkeur af te stellen. De bedoeling is juist dat OpenQuatt zelf eerst naar efficientie kijkt, een minder zuinige topology alleen laat winnen bij duidelijk betere warmtematch, en een recente topologywissel niet laat plaatsvinden voor een klein voordeel. Rond defrost gebruikt OpenQuatt de `defrost bit` als vroege voorbereiding en de `4-Way valve` als echte trigger voor thermische ondersteuning, zodat te vroege voorbelasting wordt vermeden maar de tweede unit wel op tijd klaar kan staan.
+Je hoeft in `Power House` dus geen aparte single-versus-duo voorkeur af te stellen. De bedoeling is juist dat OpenQuatt zelf eerst naar efficientie kijkt, een minder zuinige topology alleen laat winnen bij duidelijk betere warmtematch, en een recente topologywissel niet laat plaatsvinden voor een klein voordeel. Rond defrost wordt een tweede warmtepomp niet speciaal opgestart vanuit single; alleen als duo al actief is mag de gezonde unit tijdens echte `4-Way valve`-defrost beperkt extra ondersteunen.
 
 ### Flow en pompregeling
 
