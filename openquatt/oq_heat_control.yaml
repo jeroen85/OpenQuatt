@@ -875,7 +875,9 @@ interval:
           //    - POWER HOUSE: level optimization on thermal power (W) via hp_perf_map.h
           // =========================
 
-          const bool is_power_house = (id(oq_heat_mode_code) != 1);
+          // CM5 must never inherit the heating strategy dispatcher. Cooling has its
+          // own demand path and owner selection, regardless of the selected heating mode.
+          const bool is_power_house = !is_cooling_mode && (id(oq_heat_mode_code) != 1);
 
           // Lead HP = fewest runtime minutes
           #if OQ_TOPOLOGY_DUO
