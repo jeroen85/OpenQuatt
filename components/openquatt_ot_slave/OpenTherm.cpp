@@ -63,7 +63,7 @@ void OpenTherm::begin(void(*handleInterruptCallback)(void), void(*processRespons
 	output_config.intr_type = GPIO_INTR_DISABLE;
 	ESP_ERROR_CHECK(gpio_config(&output_config));
 
-	const bool wants_rx = handleInterruptCallback != NULL;
+	const bool wants_rx = (handleInterruptCallback != NULL) || (processResponseCallback != NULL);
 	this->pCallbackUser = pCallbackUser;
 	activateBoiler();
 	status = OpenThermStatus::READY;
