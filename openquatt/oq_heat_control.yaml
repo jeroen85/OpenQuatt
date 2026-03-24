@@ -733,6 +733,19 @@ interval:
             return idx.has_value() ? (int) idx.value() : -1;
           };
 
+          auto hp_mode_is_cooling = [&](bool is_hp1)->bool {
+            const float mode_raw = is_hp1 ? id(hp1_working_mode).state : id(${hc_secondary_working_mode_id}).state;
+            return !isnan(mode_raw) && ((int) roundf(mode_raw) == 1);
+          };
+
+          auto hp_mode_target_is_cooling = [&](bool is_hp1)->bool {
+            if (is_hp1) {
+              return id(hp1_set_working_mode).has_state() && id(hp1_set_working_mode).current_option() == "Cooling";
+            }
+            return id(${hc_secondary_set_working_mode_id}).has_state() &&
+                   id(${hc_secondary_set_working_mode_id}).current_option() == "Cooling";
+          };
+
           auto valve_defrost_active = [&](bool is_hp1)->bool {
             if (is_hp1) return id(hp1_4_way_valve).state;
             #if OQ_TOPOLOGY_DUO
@@ -748,6 +761,11 @@ interval:
             // caused the duo optimizer to pre-load far too aggressively.
             const bool defrost_active = valve_defrost_active(is_hp1);
             if (!defrost_active) return 0;
+
+            // During passive cooling the reverse valve is expected to be active; do not
+            // mistake that for a heating defrost hold or CM1/CM0 transitions may re-arm
+            // the unit in the wrong thermal mode while leaving CM5.
+            if (hp_mode_is_cooling(is_hp1) || hp_mode_target_is_cooling(is_hp1)) return 0;
 
             const int selected_level = hp_selected_level(is_hp1);
             if (selected_level > 0) return selected_level;
