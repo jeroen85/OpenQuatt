@@ -758,10 +758,12 @@ interval:
             return 0;
           };
 
-          auto apply_defrost_stop_hold = [&](bool is_hp1, int retained_level)->bool {
+          auto apply_active_mode_hold = [&](bool is_hp1, int retained_level)->bool {
             if (retained_level <= 0) return false;
 
-            // Keep the HP in the active thermal mode and preserve its last non-zero level until defrost clears.
+            // Keep the HP in the active thermal mode and preserve a non-zero level.
+            // Used both for real defrost hold and for enforcing compressor minimum runtime
+            // when supervisory CM gating would otherwise stop the unit too early.
             const char* opt = active_thermal_mode_opt;
             if (is_hp1) {
               if (!id(hp1_set_working_mode).has_state() || id(hp1_set_working_mode).current_option() != opt) {
@@ -792,7 +794,7 @@ interval:
 
           auto force_standby = [&](bool is_hp1)->bool {
             const int retained_level = defrost_stop_hold_level(is_hp1);
-            if (apply_defrost_stop_hold(is_hp1, retained_level)) return false;
+            if (apply_active_mode_hold(is_hp1, retained_level)) return false;
 
             const char* opt = "Standby";
             if (is_hp1) {
@@ -844,14 +846,56 @@ interval:
             id(oq_duo_dispatch_hold_until_ms) = 0;
           };
 
+          int min_rt_s = (int) roundf(id(oq_min_runtime_min).state);
+          // Keep the runtime floor hard in code as well. Older installs may still
+          // restore a pre-migration numeric value such as 60, even though the UI
+          // slider now starts at 300 s.
+          if (min_rt_s > 0 && min_rt_s < 300) min_rt_s = 300;
+          const uint32_t min_rt_ms = (min_rt_s > 0) ? ((uint32_t) min_rt_s * 1000UL) : 0;
+          auto min_runtime_hold_level = [&](bool is_hp1)->int {
+            if (id(oq_water_temp_hard_trip_active) || min_rt_ms == 0) return 0;
+            const uint32_t last_real_start_ms = is_hp1 ? id(hp1_last_real_heat_start_ms) : id(hp2_last_real_heat_start_ms);
+            if (last_real_start_ms == 0 || now_ms <= last_real_start_ms) return 0;
+            if ((uint32_t)(now_ms - last_real_start_ms) >= min_rt_ms) return 0;
+
+            const int last_applied = is_hp1 ? id(hp1_last_applied_level) : id(${hc_secondary_last_applied_level_id});
+            const bool measured_thermal = is_hp1 ? hp1_measured_thermal : hp2_measured_thermal;
+            if (!(last_applied > 0 || measured_thermal)) return 0;
+
+            (void) is_hp1;
+            return 1;
+          };
+
           if (!cm_allows_hp) {
-            // Force both units to Standby + level 0, except while a unit is still in defrost.
-            const bool hp1_stopped = force_standby(true);
-            const int hp1_hold_level = hp1_stopped ? 0 : defrost_stop_hold_level(true);
+            // Outside CM2/CM3/CM5 we normally force both units to Standby + level 0.
+            // Two exceptions may keep a unit alive:
+            // 1) real defrost hold while the 4-way valve is active
+            // 2) per-compressor minimum runtime, so a recent real heating start is not
+            //    cut short by a quick fallback to CM1/CM0 after a marginal start
+            const int hp1_runtime_hold_level = min_runtime_hold_level(true);
+            bool hp1_stopped = true;
+            int hp1_hold_level = 0;
+            if (hp1_runtime_hold_level > 0) {
+              apply_active_mode_hold(true, hp1_runtime_hold_level);
+              hp1_stopped = false;
+              hp1_hold_level = hp1_runtime_hold_level;
+            } else {
+              hp1_stopped = force_standby(true);
+              hp1_hold_level = hp1_stopped ? 0 : defrost_stop_hold_level(true);
+            }
             #if OQ_TOPOLOGY_DUO
-            const bool hp2_stopped = force_standby(false);
-            const int hp2_hold_level = hp2_stopped ? 0 : defrost_stop_hold_level(false);
-            const bool any_defrost_hold = (hp1_hold_level > 0) || (hp2_hold_level > 0);
+            const int hp2_runtime_hold_level = min_runtime_hold_level(false);
+            bool hp2_stopped = true;
+            int hp2_hold_level = 0;
+            if (hp2_runtime_hold_level > 0) {
+              apply_active_mode_hold(false, hp2_runtime_hold_level);
+              hp2_stopped = false;
+              hp2_hold_level = hp2_runtime_hold_level;
+            } else {
+              hp2_stopped = force_standby(false);
+              hp2_hold_level = hp2_stopped ? 0 : defrost_stop_hold_level(false);
+            }
+            const bool any_hold = (hp1_hold_level > 0) || (hp2_hold_level > 0);
             #else
             const int hp2_hold_level = 0;
             #endif
@@ -862,9 +906,9 @@ interval:
             #endif
             reset_dual_runtime_state(0);
             #if OQ_TOPOLOGY_DUO
-            publish_optimizer_reason(any_defrost_hold ? "defrost_protect_hold" : "inactive");
+            publish_optimizer_reason(any_hold ? "keep_current" : "inactive");
             #else
-            publish_optimizer_reason(hp1_hold_level > 0 ? "defrost_protect_hold" : "inactive");
+            publish_optimizer_reason(hp1_hold_level > 0 ? "keep_current" : "inactive");
             #endif
             publish_debug(hp1_hold_level, hp2_hold_level, hp1_hold_level, hp2_hold_level);
             return;
@@ -1776,18 +1820,12 @@ interval:
           // Runtime is per-compressor and user-tunable, with a hard lower bound of 300 s.
           // Skipped during an absolute water-temperature hard trip.
           // =========================
-          int min_rt_s = (int) roundf(id(oq_min_runtime_min).state);
-          // Keep the runtime floor hard in code as well. Older installs may still
-          // restore a pre-migration numeric value such as 60, even though the UI
-          // slider now starts at 300 s.
-          if (min_rt_s > 0 && min_rt_s < 300) min_rt_s = 300;
           if (!id(oq_water_temp_hard_trip_active) && min_rt_s > 0) {
             // HP1/HP2: if request is 0 but measured heating start is still within
             // the minimum runtime window, keep that compressor alive at >=1.
             // This guard intentionally keys off real heating start instead of the
             // earlier apply transition, so short mode-transition delays do not
             // silently consume most of the runtime window.
-            const uint32_t min_rt_ms = (uint32_t) min_rt_s * 1000UL;
             const bool hp1_min_runtime_active =
                 (id(hp1_last_real_heat_start_ms) > 0) &&
                 (now_ms > id(hp1_last_real_heat_start_ms)) &&
@@ -1850,7 +1888,7 @@ interval:
             const int retained_level = defrost_stop_hold_level(is_hp1);
 
             if (req_level == 0 && retained_level > 0) {
-              apply_defrost_stop_hold(is_hp1, retained_level);
+              apply_active_mode_hold(is_hp1, retained_level);
               publish_optimizer_reason("defrost_protect_hold");
               return retained_level;
             }
@@ -1892,7 +1930,7 @@ interval:
             }
 
             if (applied == 0 && retained_level > 0) {
-              apply_defrost_stop_hold(is_hp1, retained_level);
+              apply_active_mode_hold(is_hp1, retained_level);
               publish_optimizer_reason("defrost_protect_hold");
               return retained_level;
             }
