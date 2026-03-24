@@ -44,6 +44,7 @@ oq_cm2_idle_exit_s: "90"                              # Exit CM2 if both HPs are
 oq_low_load_fallback_off_w: "900"                     # Internal fallback OFF threshold when no dynamic low-load input is available [W].
 oq_low_load_fallback_on_w: "1300"                     # Internal fallback ON threshold when no dynamic low-load input is available [W].
 oq_low_load_dyn_cache_max_s: "60"                     # Maximum age for reusing last-known-good dynamic low-load thresholds [s].
+oq_ph_start_confirm_s: "120"                          # Require sustained demand for this long before Power House may leave idle [s].
 oq_cm_frost_on_c: "5.0"                               # Frost protection enable threshold [°C].
 oq_cm_frost_off_c: "6.0"                              # Frost protection disable threshold (hysteresis) [°C].
 oq_cm_frost_nan_grace_s: "30"                         # Startup grace before NaN outside temp triggers frost fail-safe [s].

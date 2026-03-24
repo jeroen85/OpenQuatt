@@ -1,6 +1,6 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.components import sensor, binary_sensor, switch, number, text_sensor
+from esphome.components import sensor, binary_sensor, switch
 from esphome.automation import maybe_simple_id
 from esphome import pins
 from esphome.const import *
@@ -15,7 +15,7 @@ openquatt_ot_slave_ns = cg.esphome_ns.namespace("OpenQuattOTSlave")
 
 OpenQuattOTSlaveComponent = openquatt_ot_slave_ns.class_("OpenQuattOTSlave", cg.PollingComponent)
 
-AUTO_LOAD = ['sensor', 'binary_sensor', 'switch', 'number', 'text_sensor']
+AUTO_LOAD = ['sensor', 'binary_sensor', 'switch']
 
 CONFIG_SCHEMA = cv.Schema(
     {

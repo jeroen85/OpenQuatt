@@ -8,12 +8,10 @@
 #include "OpenTherm.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
-#include "esphome/components/text_sensor/text_sensor.h"
 #ifdef USE_OTA_STATE_LISTENER
 #include "esphome/components/ota/ota_backend.h"
 #endif
 #include "switch.h"
-#include "number.h"
 
 // Ensure that all component macros are defined, even if the component is not used
 #ifndef OPENQUATT_OT_SLAVE_SENSOR_LIST
@@ -22,14 +20,8 @@
 #ifndef OPENQUATT_OT_SLAVE_BINARY_SENSOR_LIST
 #define OPENQUATT_OT_SLAVE_BINARY_SENSOR_LIST(F, sep)
 #endif
-#ifndef OPENQUATT_OT_SLAVE_TEXT_SENSOR_LIST
-#define OPENQUATT_OT_SLAVE_TEXT_SENSOR_LIST(F, sep)
-#endif
 #ifndef OPENQUATT_OT_SLAVE_SWITCH_LIST
 #define OPENQUATT_OT_SLAVE_SWITCH_LIST(F, sep)
-#endif
-#ifndef OPENQUATT_OT_SLAVE_NUMBER_LIST
-#define OPENQUATT_OT_SLAVE_NUMBER_LIST(F, sep)
 #endif
 #ifndef OPENQUATT_OT_SLAVE_OUTPUT_LIST
 #define OPENQUATT_OT_SLAVE_OUTPUT_LIST(F, sep)
@@ -78,14 +70,8 @@ namespace esphome {
 			#define OPENQUATT_OT_SLAVE_SET_BINARY_SENSOR(entity) void set_ ## entity(binary_sensor::BinarySensor* binary_sensor) { this->entity = binary_sensor; }
 			OPENQUATT_OT_SLAVE_BINARY_SENSOR_LIST(OPENQUATT_OT_SLAVE_SET_BINARY_SENSOR, )
 
-			#define OPENQUATT_OT_SLAVE_SET_TEXT_SENSOR(entity) void set_ ## entity(text_sensor::TextSensor* text_sensor) { this->entity = text_sensor; }
-			OPENQUATT_OT_SLAVE_TEXT_SENSOR_LIST(OPENQUATT_OT_SLAVE_SET_TEXT_SENSOR, )
-
 			#define OPENQUATT_OT_SLAVE_SET_SWITCH(entity) void set_ ## entity(OpenQuattOTSlaveSwitch* sw) { this->entity = sw; }
 			OPENQUATT_OT_SLAVE_SWITCH_LIST(OPENQUATT_OT_SLAVE_SET_SWITCH, )
-
-			#define OPENQUATT_OT_SLAVE_SET_NUMBER(entity) void set_ ## entity(OpenQuattOTSlaveNumber* number) { this->entity = number; }
-			OPENQUATT_OT_SLAVE_NUMBER_LIST(OPENQUATT_OT_SLAVE_SET_NUMBER, )
 
 			#define OPENQUATT_OT_SLAVE_SET_OUTPUT(entity) void set_ ## entity(OpenthermOutput* output) { this->entity = output; }
 			OPENQUATT_OT_SLAVE_OUTPUT_LIST(OPENQUATT_OT_SLAVE_SET_OUTPUT, )
@@ -145,69 +131,20 @@ namespace esphome {
 					float t_dhw_set = 40.0f;
 				};
 
-				struct ProtocolDebugState {
-					uint32_t rx_success_count = 0;
-					uint32_t rx_invalid_count = 0;
-					uint32_t rx_timeout_count = 0;
-					uint32_t rx_invalid_parity_count = 0;
-					uint32_t rx_invalid_message_count = 0;
-						uint32_t rx_glitch_reject_count = 0;
-						uint32_t rx_edge_overflow_count = 0;
-						uint32_t rx_decode_reset_count = 0;
-						uint32_t rx_ignored_start_count = 0;
-						uint32_t rx_ignored_cooldown_count = 0;
-						uint32_t rx_ignored_quiet_gap_count = 0;
-						uint32_t rx_resync_count = 0;
-						uint32_t rx_max_bad_start_streak = 0;
-						uint32_t rx_rmt_short_duration_count = 0;
-						uint32_t rx_rmt_long_duration_count = 0;
-						uint32_t rx_rmt_bad_pair_count = 0;
-						uint32_t rx_rmt_frame_size_mismatch_count = 0;
-						uint32_t rx_rmt_last_symbol_count = 0;
-						uint32_t rx_rmt_last_half_bit_count = 0;
-						uint32_t rx_rmt_last_bad_duration_us = 0;
-					uint32_t tx_rmt_unavailable_count = 0;
-					uint32_t tx_queue_fail_count = 0;
-					int last_request_id = -1;
-					int last_error_id = -1;
-					std::string last_request = "none";
-					std::string last_error = "none";
-					std::string last_driver_error = "none";
-					std::string rx_backend = "unknown";
-					std::string compatibility_mode = "standard";
-				};
-
-				struct RuntimeMetricsState {
-					unsigned long last_success_ms = 0;
-					uint32_t last_callback_duration_us = 0;
-					uint32_t max_callback_duration_us = 0;
-					uint32_t last_response_latency_us = 0;
-					uint32_t max_response_latency_us = 0;
-					uint32_t last_loop_gap_ms = 0;
-					uint32_t max_loop_gap_ms = 0;
-				};
-
 				uint8_t m_pinThermostatIn = 0;
 				uint8_t m_pinThermostatOut = 0;
 
 				bool m_enabled = true;
-				bool m_debug_enabled = false;
 				bool m_minimal_runtime_mode = false;
 				bool m_response_enabled = true;
 				bool m_updatePrepareActive = false;
 				unsigned long m_lastMasterStatusMs = 0;
 				unsigned long m_t6CompatUntilMs = 0;
-				unsigned long m_lastProtocolDebugPublishMs = 0;
-				unsigned long m_lastRuntimeMetricsSnapshotMs = 0;
 				unsigned long m_otStartNotBeforeMs = 0;
 				unsigned long m_otBusIdleSinceMs = 0;
 				unsigned long m_runtimeGraceUntilMs = 0;
-				uint32_t m_lastRuntimeMetricsSnapshotSuccessCount = 0;
 				MasterState m_master_state{};
 				SlaveState m_slave_state{};
-				ProtocolDebugState m_protocol_debug_state{};
-				RuntimeMetricsState m_runtime_metrics_state{};
-				bool m_protocolDebugDirty = true;
 				float m_lastPublishedTBoiler = NAN;
 				float m_lastPublishedTRet = NAN;
 				float m_lastPublishedMaxTSet = NAN;
@@ -216,38 +153,6 @@ namespace esphome {
 				float m_lastPublishedTSet = NAN;
 				float m_lastPublishedTRoomSet = NAN;
 				float m_lastPublishedTRoom = NAN;
-				float m_lastPublishedRXSuccessCount = NAN;
-				float m_lastPublishedRXInvalidCount = NAN;
-				float m_lastPublishedRXTimeoutCount = NAN;
-				float m_lastPublishedRXInvalidParityCount = NAN;
-				float m_lastPublishedRXInvalidMessageCount = NAN;
-					float m_lastPublishedRXGlitchRejectCount = NAN;
-					float m_lastPublishedRXEdgeOverflowCount = NAN;
-					float m_lastPublishedRXDecodeResetCount = NAN;
-					float m_lastPublishedRXIgnoredStartCount = NAN;
-					float m_lastPublishedRXIgnoredCooldownCount = NAN;
-					float m_lastPublishedRXIgnoredQuietGapCount = NAN;
-					float m_lastPublishedRXResyncCount = NAN;
-					float m_lastPublishedRXMaxBadStartStreak = NAN;
-					float m_lastPublishedRXRmtShortDurationCount = NAN;
-					float m_lastPublishedRXRmtLongDurationCount = NAN;
-					float m_lastPublishedRXRmtBadPairCount = NAN;
-					float m_lastPublishedRXRmtFrameSizeMismatchCount = NAN;
-					float m_lastPublishedRXRmtLastSymbolCount = NAN;
-					float m_lastPublishedRXRmtLastHalfBitCount = NAN;
-					float m_lastPublishedRXRmtLastBadDurationUs = NAN;
-					float m_lastPublishedTXRmtUnavailableCount = NAN;
-					float m_lastPublishedTXQueueFailCount = NAN;
-					float m_lastPublishedRXSuccessRate = NAN;
-				float m_lastPublishedLastSuccessAgeMs = NAN;
-				float m_lastPublishedLastCallbackDurationUs = NAN;
-				float m_lastPublishedMaxCallbackDurationUs = NAN;
-				float m_lastPublishedLastResponseLatencyUs = NAN;
-				float m_lastPublishedMaxResponseLatencyUs = NAN;
-				float m_lastPublishedLastLoopGapMs = NAN;
-				float m_lastPublishedMaxLoopGapMs = NAN;
-				float m_lastPublishedLastRequestID = NAN;
-				float m_lastPublishedLastErrorID = NAN;
 				int m_lastPublishedSlaveMemberID = -1;
 				int m_lastPublishedMasterMemberID = -1;
 				int8_t m_lastPublishedMasterCHEnableBinary = -1;
@@ -258,18 +163,10 @@ namespace esphome {
 				int8_t m_lastPublishedSlaveCoolingActive = -1;
 				int8_t m_lastPublishedSlaveDiagnostic = -1;
 				int8_t m_lastPublishedEnabled = -1;
-				int8_t m_lastPublishedDebugEnabled = -1;
-				std::string m_lastPublishedLastRequest = "";
-				std::string m_lastPublishedLastError = "";
-				std::string m_lastPublishedLastDriverError = "";
-				std::string m_lastPublishedRXBackend = "";
-				std::string m_lastPublishedCompatibilityMode = "";
 				bool m_otStarted = false;
 				bool m_otStartPending = false;
 				bool m_otaActive = false;
 				OpenTherm *m_ot_thermostat_ = nullptr;
-
-				unsigned long m_msLastLoop=0;
 					
 					// Use macros to create fields for every entity specified in the ESPHome configuration
 			#define OPENQUATT_OT_SLAVE_DECLARE_SENSOR(entity) sensor::Sensor* entity = nullptr;
@@ -278,14 +175,8 @@ namespace esphome {
 			#define OPENQUATT_OT_SLAVE_DECLARE_BINARY_SENSOR(entity) binary_sensor::BinarySensor* entity = nullptr;
 			OPENQUATT_OT_SLAVE_BINARY_SENSOR_LIST(OPENQUATT_OT_SLAVE_DECLARE_BINARY_SENSOR, )
 
-			#define OPENQUATT_OT_SLAVE_DECLARE_TEXT_SENSOR(entity) text_sensor::TextSensor* entity = nullptr;
-			OPENQUATT_OT_SLAVE_TEXT_SENSOR_LIST(OPENQUATT_OT_SLAVE_DECLARE_TEXT_SENSOR, )
-
 			#define OPENQUATT_OT_SLAVE_DECLARE_SWITCH(entity) OpenQuattOTSlaveSwitch* entity = nullptr;
 			OPENQUATT_OT_SLAVE_SWITCH_LIST(OPENQUATT_OT_SLAVE_DECLARE_SWITCH, )
-
-			#define OPENQUATT_OT_SLAVE_DECLARE_NUMBER(entity) OpenQuattOTSlaveNumber* entity = nullptr;
-			OPENQUATT_OT_SLAVE_NUMBER_LIST(OPENQUATT_OT_SLAVE_DECLARE_NUMBER, )
 
 			#define OPENQUATT_OT_SLAVE_DECLARE_OUTPUT(entity) OpenthermOutput* entity = nullptr;
 			OPENQUATT_OT_SLAVE_OUTPUT_LIST(OPENQUATT_OT_SLAVE_DECLARE_OUTPUT, )
@@ -302,9 +193,6 @@ namespace esphome {
 				void refresh_master_runtime_state_();
 				void refresh_slave_runtime_state_();
 				void publish_slave_runtime_state_();
-				void publish_protocol_debug_state_();
-				void record_protocol_event_(unsigned long request, OpenThermResponseStatus status, OpenThermMessageType requestType,
-				                           OpenThermMessageID requestDataID, uint16_t requestData);
 				void note_t6_compat_handshake_(OpenThermMessageID dataID, uint16_t data);
 				bool is_t6_compat_active_() const;
 				void sync_switch_states_();
@@ -313,10 +201,6 @@ namespace esphome {
 				void stop_opentherm_();
 				void try_start_opentherm_();
 				void set_enabled_(bool enabled);
-				void set_debug_enabled_(bool enabled) {
-					m_debug_enabled = enabled;
-					m_protocolDebugDirty = true;
-				}
 				
 				void processRequestThermostat(unsigned long request, OpenThermResponseStatus status);		
 				

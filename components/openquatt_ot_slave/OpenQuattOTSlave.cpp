@@ -24,30 +24,6 @@ namespace message_data {
     bool parse_flag8_hb_6(const unsigned long response) { return response & 0b0100000000000000; }
     bool parse_flag8_hb_7(const unsigned long response) { return response & 0b1000000000000000; }
 
-    std::string get_flag_str_value(esphome::text_sensor::TextSensor* sensor, bool bActive)
-    {
-    	if(bActive)
-    		return "ON";
-	else
-    		return "OFF";
-    }
-    std::string parse_flag8_lb_0_str(esphome::text_sensor::TextSensor* sensor, const unsigned long response) { return get_flag_str_value(sensor, parse_flag8_lb_0(response)); }
-    std::string parse_flag8_lb_1_str(esphome::text_sensor::TextSensor* sensor, const unsigned long response) { return get_flag_str_value(sensor, parse_flag8_lb_1(response)); }
-    std::string parse_flag8_lb_2_str(esphome::text_sensor::TextSensor* sensor, const unsigned long response) { return get_flag_str_value(sensor, parse_flag8_lb_2(response)); }
-    std::string parse_flag8_lb_3_str(esphome::text_sensor::TextSensor* sensor, const unsigned long response) { return get_flag_str_value(sensor, parse_flag8_lb_3(response)); }
-    std::string parse_flag8_lb_4_str(esphome::text_sensor::TextSensor* sensor, const unsigned long response) { return get_flag_str_value(sensor, parse_flag8_lb_4(response)); }
-    std::string parse_flag8_lb_5_str(esphome::text_sensor::TextSensor* sensor, const unsigned long response) { return get_flag_str_value(sensor, parse_flag8_lb_5(response)); }
-    std::string parse_flag8_lb_6_str(esphome::text_sensor::TextSensor* sensor, const unsigned long response) { return get_flag_str_value(sensor, parse_flag8_lb_6(response)); }
-    std::string parse_flag8_lb_7_str(esphome::text_sensor::TextSensor* sensor, const unsigned long response) { return get_flag_str_value(sensor, parse_flag8_lb_7(response)); }
-    std::string parse_flag8_hb_0_str(esphome::text_sensor::TextSensor* sensor, const unsigned long response) { return get_flag_str_value(sensor, parse_flag8_hb_0(response)); }
-    std::string parse_flag8_hb_1_str(esphome::text_sensor::TextSensor* sensor, const unsigned long response) { return get_flag_str_value(sensor, parse_flag8_hb_1(response)); }
-    std::string parse_flag8_hb_2_str(esphome::text_sensor::TextSensor* sensor, const unsigned long response) { return get_flag_str_value(sensor, parse_flag8_hb_2(response)); }
-    std::string parse_flag8_hb_3_str(esphome::text_sensor::TextSensor* sensor, const unsigned long response) { return get_flag_str_value(sensor, parse_flag8_hb_3(response)); }
-    std::string parse_flag8_hb_4_str(esphome::text_sensor::TextSensor* sensor, const unsigned long response) { return get_flag_str_value(sensor, parse_flag8_hb_4(response)); }
-    std::string parse_flag8_hb_5_str(esphome::text_sensor::TextSensor* sensor, const unsigned long response) { return get_flag_str_value(sensor, parse_flag8_hb_5(response)); }
-    std::string parse_flag8_hb_6_str(esphome::text_sensor::TextSensor* sensor, const unsigned long response) { return get_flag_str_value(sensor, parse_flag8_hb_6(response)); }
-    std::string parse_flag8_hb_7_str(esphome::text_sensor::TextSensor* sensor, const unsigned long response) { return get_flag_str_value(sensor, parse_flag8_hb_7(response)); }
-
     uint8_t parse_u8_lb(const unsigned long response) { return (uint8_t) (response & 0xff); }
     uint8_t parse_u8_hb(const unsigned long response) { return (uint8_t) ((response >> 8) & 0xff); }
     int8_t parse_s8_lb(const unsigned long response) { return (int8_t) (response & 0xff); }
@@ -96,7 +72,6 @@ namespace esphome {
 	// CH-enable "blinking" effect in Home Assistant.
 	static constexpr unsigned long MASTER_STATUS_TIMEOUT_MS = 30000;
 	static constexpr unsigned long T6_COMPAT_WINDOW_MS = 300000;
-	static constexpr unsigned long PROTOCOL_DEBUG_PUBLISH_INTERVAL_MS = 5000;
 	static constexpr unsigned long OT_STARTUP_SETTLE_MS = 1000;
 	static constexpr unsigned long OT_BUS_IDLE_MIN_MS = 100;
 	static constexpr unsigned long OT_STARTUP_FORCE_MS = 5000;
@@ -113,15 +88,6 @@ namespace esphome {
 			case OpenThermMessageType::UNKNOWN_DATA_ID: return "UNKNOWN_DATA_ID";
 			default: return "UNKNOWN";
 		}
-	}
-	static std::string format_ot_frame_(const char *direction, unsigned long frame, OpenThermMessageType type,
-	                                    OpenThermMessageID data_id, uint16_t data,
-	                                    const char *status_or_label) {
-		char buffer[160];
-		std::snprintf(buffer, sizeof(buffer), "%s %s id=%d data=0x%04X frame=0x%08lX %s",
-		              direction, message_type_to_string_(type), static_cast<int>(data_id), data, frame,
-		              status_or_label);
-		return std::string(buffer);
 	}
 	static unsigned long now_millis() {
 		return static_cast<unsigned long>(esp_timer_get_time() / 1000ULL);
@@ -251,18 +217,15 @@ namespace esphome {
 			ESP_LOGCONFIG(TAG, "  Response enabled: %s", YESNO(m_response_enabled));
 			ESP_LOGCONFIG(TAG, "  Sensors: %s", SHOW(OPENQUATT_OT_SLAVE_SENSOR_LIST(ID, )));
 			ESP_LOGCONFIG(TAG, "  Binary sensors: %s", SHOW(OPENQUATT_OT_SLAVE_BINARY_SENSOR_LIST(ID, )));
-		ESP_LOGCONFIG(TAG, "  Text sensors: %s", SHOW(OPENQUATT_OT_SLAVE_TEXT_SENSOR_LIST(ID, )));
 		ESP_LOGCONFIG(TAG, "  Switches: %s", SHOW(OPENQUATT_OT_SLAVE_SWITCH_LIST(ID, )));
 		ESP_LOGCONFIG(TAG, "  Input sensors: %s", SHOW(OPENQUATT_OT_SLAVE_INPUT_SENSOR_LIST(ID, )));
 		ESP_LOGCONFIG(TAG, "  Outputs: %s", SHOW(OPENQUATT_OT_SLAVE_OUTPUT_LIST(ID, )));
-		ESP_LOGCONFIG(TAG, "  Numbers: %s", SHOW(OPENQUATT_OT_SLAVE_NUMBER_LIST(ID, )));
 	}
 
 	        void OpenQuattOTSlave::setup() 
 	        {
 		        m_ot_thermostat_=new OpenTherm(m_pinThermostatIn, m_pinThermostatOut, true);
 		        m_otStarted = false;
-		        m_lastRuntimeMetricsSnapshotMs = now_millis();
 #ifdef USE_OTA_STATE_LISTENER
 		        ota::get_global_ota_callback()->add_global_state_listener(this);
 #endif
@@ -271,17 +234,10 @@ namespace esphome {
 				this->enabled_switch->set_write_callback([this](bool state) { this->set_enabled_(state); });
 			}
 #endif
-#ifdef OPENQUATT_OT_SLAVE_HAS_SWITCH_debug_enabled
-			if (this->debug_enabled_switch != nullptr) {
-				this->debug_enabled_switch->set_write_callback([this](bool state) { this->set_debug_enabled_(state); });
-			}
-#endif
 			sync_switch_states_();
-			m_msLastLoop=now_millis();
 			refresh_slave_runtime_state_();
 			publish_master_runtime_state_();
 			publish_slave_runtime_state_();
-			publish_protocol_debug_state_();
 			if (m_enabled) {
 				schedule_opentherm_start_();
 			}
@@ -330,13 +286,10 @@ namespace esphome {
 			if(request==0)
 				return;				
 
-		const uint64_t callback_started_us = esp_timer_get_time();
 		OpenThermMessageType requestType=m_ot_thermostat_->getMessageType(request);
 		OpenThermMessageID requestDataID=m_ot_thermostat_->getDataID(request);
 		uint16_t requestData=(uint16_t)request;
 		unsigned long response = 0;
-		OpenThermMessageType responseType = OpenThermMessageType::UNKNOWN_DATA_ID;
-		bool response_sent = false;
 		if(status==OpenThermResponseStatus::SUCCESS)
 		{			
 			parseRequest(requestType, requestDataID, requestData);
@@ -345,43 +298,12 @@ namespace esphome {
 			}
 				if(response != 0)
 				{
-					// Send the OT response as soon as possible; extra formatting/logging here can
-					// add enough latency for picky thermostats to briefly report comms loss.
-					responseType = m_ot_thermostat_->getMessageType(response);
-					const uint32_t response_latency_us = static_cast<uint32_t>(esp_timer_get_time() - callback_started_us);
-					m_runtime_metrics_state.last_response_latency_us = response_latency_us;
-					if (response_latency_us > m_runtime_metrics_state.max_response_latency_us) {
-						m_runtime_metrics_state.max_response_latency_us = response_latency_us;
-					}
-					response_sent = m_ot_thermostat_->sendResponse(response);
+					m_ot_thermostat_->sendResponse(response);
 				}
 			}
 
-		const uint32_t callback_duration_us = static_cast<uint32_t>(esp_timer_get_time() - callback_started_us);
-		m_runtime_metrics_state.last_callback_duration_us = callback_duration_us;
-		if (callback_duration_us > m_runtime_metrics_state.max_callback_duration_us) {
-			m_runtime_metrics_state.max_callback_duration_us = callback_duration_us;
-		}
 		if (m_minimal_runtime_mode) {
-			if (status == OpenThermResponseStatus::SUCCESS) {
-				m_runtime_metrics_state.last_success_ms = now_millis();
-			}
 			return;
-		}
-
-		record_protocol_event_(request, status, requestType, requestDataID, requestData);
-
-		if (m_debug_enabled) {
-			auto request_summary = format_ot_frame_("REQ", request, requestType, requestDataID, requestData,
-			                                       m_ot_thermostat_->statusToString(status));
-			ESP_LOGD(TAG, "%s", request_summary.c_str());
-			if (status == OpenThermResponseStatus::SUCCESS && response != 0) {
-				auto response_summary = format_ot_frame_("RSP", response, responseType, requestDataID, static_cast<uint16_t>(response), "READY");
-				ESP_LOGD(TAG, "%s", response_summary.c_str());
-			}
-		}
-		if (response_sent || status != OpenThermResponseStatus::SUCCESS) {
-			m_protocolDebugDirty = true;
 		}
 		}
 
@@ -516,31 +438,14 @@ namespace esphome {
 				}
 			};
 
-			auto publish_int_if_changed = [](sensor::Sensor *sensor, int value, int &last_value) {
-				if (sensor == nullptr || value < 0 || last_value == value) {
-					return;
-				}
-				sensor->publish_state(value);
-				last_value = value;
-			};
-
 			#ifdef OPENQUATT_OT_SLAVE_HAS_SWITCH_enabled
 			publish_switch_if_changed(this->enabled_switch, m_enabled, m_lastPublishedEnabled);
-			#endif
-			#ifdef OPENQUATT_OT_SLAVE_HAS_SWITCH_debug_enabled
-			publish_switch_if_changed(this->debug_enabled_switch, m_debug_enabled, m_lastPublishedDebugEnabled);
 			#endif
 			#ifdef OPENQUATT_OT_SLAVE_HAS_BINARY_SENSOR_master_ch_enable
 			publish_binary_if_changed(this->master_ch_enable_binary_sensor, m_master_state.ch_enable, m_lastPublishedMasterCHEnableBinary);
 			#endif
 			#ifdef OPENQUATT_OT_SLAVE_HAS_BINARY_SENSOR_master_cooling_enable
 			publish_binary_if_changed(this->master_cooling_enable_binary_sensor, m_master_state.cooling_enable, m_lastPublishedMasterCoolingEnableBinary);
-			#endif
-			#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_master_memberid
-			publish_int_if_changed(this->master_memberid_sensor, m_master_state.member_id, m_lastPublishedMasterMemberID);
-			#endif
-			#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_master_ot_version
-			publish_float_if_changed(this->master_ot_version_sensor, m_master_state.ot_version, m_lastPublishedMasterOTVersion);
 			#endif
 			#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_t_set
 			publish_float_if_changed(this->t_set_sensor, m_master_state.t_set, m_lastPublishedTSet);
@@ -599,11 +504,6 @@ namespace esphome {
 #ifdef OPENQUATT_OT_SLAVE_HAS_SWITCH_enabled
 			if (this->enabled_switch != nullptr && this->enabled_switch->state != m_enabled) {
 				set_enabled_(this->enabled_switch->state);
-			}
-#endif
-#ifdef OPENQUATT_OT_SLAVE_HAS_SWITCH_debug_enabled
-			if (this->debug_enabled_switch != nullptr && this->debug_enabled_switch->state != m_debug_enabled) {
-				set_debug_enabled_(this->debug_enabled_switch->state);
 			}
 #endif
 		}
@@ -681,254 +581,6 @@ namespace esphome {
 			#endif
 		}
 
-		void OpenQuattOTSlave::publish_protocol_debug_state_()
-		{
-			const unsigned long now_ms = now_millis();
-			if (m_lastProtocolDebugPublishMs != 0 &&
-			    (now_ms - m_lastProtocolDebugPublishMs) < PROTOCOL_DEBUG_PUBLISH_INTERVAL_MS) {
-				return;
-			}
-
-				if (m_ot_thermostat_ != nullptr) {
-					m_protocol_debug_state.rx_glitch_reject_count = m_ot_thermostat_->getGlitchRejectCount();
-					m_protocol_debug_state.rx_edge_overflow_count = m_ot_thermostat_->getEdgeOverflowCount();
-					m_protocol_debug_state.rx_decode_reset_count = m_ot_thermostat_->getDecodeResetCount();
-					m_protocol_debug_state.rx_ignored_start_count = m_ot_thermostat_->getIgnoredStartCount();
-					m_protocol_debug_state.rx_ignored_cooldown_count = m_ot_thermostat_->getIgnoredCooldownCount();
-					m_protocol_debug_state.rx_ignored_quiet_gap_count = m_ot_thermostat_->getIgnoredQuietGapCount();
-					m_protocol_debug_state.rx_resync_count = m_ot_thermostat_->getResyncCount();
-					m_protocol_debug_state.rx_max_bad_start_streak = m_ot_thermostat_->getMaxConsecutiveBadStartCount();
-					m_protocol_debug_state.rx_rmt_short_duration_count = m_ot_thermostat_->getRmtShortDurationCount();
-					m_protocol_debug_state.rx_rmt_long_duration_count = m_ot_thermostat_->getRmtLongDurationCount();
-					m_protocol_debug_state.rx_rmt_bad_pair_count = m_ot_thermostat_->getRmtBadPairCount();
-					m_protocol_debug_state.rx_rmt_frame_size_mismatch_count = m_ot_thermostat_->getRmtFrameSizeMismatchCount();
-					m_protocol_debug_state.rx_rmt_last_symbol_count = m_ot_thermostat_->getRmtLastSymbolCount();
-					m_protocol_debug_state.rx_rmt_last_half_bit_count = m_ot_thermostat_->getRmtLastHalfBitCount();
-					m_protocol_debug_state.rx_rmt_last_bad_duration_us = m_ot_thermostat_->getRmtLastBadDurationUs();
-					m_protocol_debug_state.tx_rmt_unavailable_count = m_ot_thermostat_->getTxRmtUnavailableCount();
-					m_protocol_debug_state.tx_queue_fail_count = m_ot_thermostat_->getTxQueueFailCount();
-					m_protocol_debug_state.last_driver_error = m_ot_thermostat_->getLastDriverErrorString();
-					m_protocol_debug_state.rx_backend = m_ot_thermostat_->getRxBackendString();
-				}
-
-			auto publish_float_if_changed = [](sensor::Sensor *sensor, float value, float &last_value) {
-				if (sensor == nullptr) {
-					return;
-				}
-				if (std::isnan(last_value) || std::fabs(last_value - value) > 0.001f) {
-					sensor->publish_state(value);
-					last_value = value;
-				}
-			};
-
-			auto publish_text_if_changed = [](text_sensor::TextSensor *sensor, const std::string &value, std::string &last_value) {
-				if (sensor == nullptr || last_value == value) {
-					return;
-				}
-				sensor->publish_state(value);
-				last_value = value;
-			};
-
-			float rx_success_rate = 0.0f;
-			if (m_lastRuntimeMetricsSnapshotMs != 0 && now_ms > m_lastRuntimeMetricsSnapshotMs) {
-				const unsigned long elapsed_ms = now_ms - m_lastRuntimeMetricsSnapshotMs;
-				if (elapsed_ms > 0) {
-					const uint32_t delta_success = m_protocol_debug_state.rx_success_count - m_lastRuntimeMetricsSnapshotSuccessCount;
-					rx_success_rate = (static_cast<float>(delta_success) * 1000.0f) / static_cast<float>(elapsed_ms);
-				}
-			}
-
-			float last_success_age_ms = NAN;
-			if (m_runtime_metrics_state.last_success_ms != 0 && now_ms >= m_runtime_metrics_state.last_success_ms) {
-				last_success_age_ms = static_cast<float>(now_ms - m_runtime_metrics_state.last_success_ms);
-			}
-
-			#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_rx_success_count
-			publish_float_if_changed(this->rx_success_count_sensor, static_cast<float>(m_protocol_debug_state.rx_success_count), m_lastPublishedRXSuccessCount);
-			#endif
-			#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_rx_invalid_count
-			publish_float_if_changed(this->rx_invalid_count_sensor, static_cast<float>(m_protocol_debug_state.rx_invalid_count), m_lastPublishedRXInvalidCount);
-			#endif
-			#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_rx_timeout_count
-			publish_float_if_changed(this->rx_timeout_count_sensor, static_cast<float>(m_protocol_debug_state.rx_timeout_count), m_lastPublishedRXTimeoutCount);
-			#endif
-			#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_rx_invalid_parity_count
-			publish_float_if_changed(this->rx_invalid_parity_count_sensor, static_cast<float>(m_protocol_debug_state.rx_invalid_parity_count), m_lastPublishedRXInvalidParityCount);
-			#endif
-			#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_rx_invalid_message_count
-			publish_float_if_changed(this->rx_invalid_message_count_sensor, static_cast<float>(m_protocol_debug_state.rx_invalid_message_count), m_lastPublishedRXInvalidMessageCount);
-			#endif
-			#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_rx_glitch_reject_count
-			publish_float_if_changed(this->rx_glitch_reject_count_sensor, static_cast<float>(m_protocol_debug_state.rx_glitch_reject_count), m_lastPublishedRXGlitchRejectCount);
-			#endif
-			#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_rx_edge_overflow_count
-			publish_float_if_changed(this->rx_edge_overflow_count_sensor, static_cast<float>(m_protocol_debug_state.rx_edge_overflow_count), m_lastPublishedRXEdgeOverflowCount);
-			#endif
-				#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_rx_decode_reset_count
-				publish_float_if_changed(this->rx_decode_reset_count_sensor, static_cast<float>(m_protocol_debug_state.rx_decode_reset_count), m_lastPublishedRXDecodeResetCount);
-				#endif
-				#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_rx_ignored_start_count
-				publish_float_if_changed(this->rx_ignored_start_count_sensor, static_cast<float>(m_protocol_debug_state.rx_ignored_start_count), m_lastPublishedRXIgnoredStartCount);
-				#endif
-				#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_rx_ignored_cooldown_count
-				publish_float_if_changed(this->rx_ignored_cooldown_count_sensor, static_cast<float>(m_protocol_debug_state.rx_ignored_cooldown_count), m_lastPublishedRXIgnoredCooldownCount);
-				#endif
-				#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_rx_ignored_quiet_gap_count
-				publish_float_if_changed(this->rx_ignored_quiet_gap_count_sensor, static_cast<float>(m_protocol_debug_state.rx_ignored_quiet_gap_count), m_lastPublishedRXIgnoredQuietGapCount);
-				#endif
-				#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_rx_resync_count
-				publish_float_if_changed(this->rx_resync_count_sensor, static_cast<float>(m_protocol_debug_state.rx_resync_count), m_lastPublishedRXResyncCount);
-				#endif
-				#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_rx_max_bad_start_streak
-				publish_float_if_changed(this->rx_max_bad_start_streak_sensor, static_cast<float>(m_protocol_debug_state.rx_max_bad_start_streak), m_lastPublishedRXMaxBadStartStreak);
-				#endif
-				#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_rx_rmt_short_duration_count
-				publish_float_if_changed(this->rx_rmt_short_duration_count_sensor, static_cast<float>(m_protocol_debug_state.rx_rmt_short_duration_count), m_lastPublishedRXRmtShortDurationCount);
-				#endif
-				#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_rx_rmt_long_duration_count
-				publish_float_if_changed(this->rx_rmt_long_duration_count_sensor, static_cast<float>(m_protocol_debug_state.rx_rmt_long_duration_count), m_lastPublishedRXRmtLongDurationCount);
-				#endif
-				#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_rx_rmt_bad_pair_count
-				publish_float_if_changed(this->rx_rmt_bad_pair_count_sensor, static_cast<float>(m_protocol_debug_state.rx_rmt_bad_pair_count), m_lastPublishedRXRmtBadPairCount);
-				#endif
-				#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_rx_rmt_frame_size_mismatch_count
-				publish_float_if_changed(this->rx_rmt_frame_size_mismatch_count_sensor, static_cast<float>(m_protocol_debug_state.rx_rmt_frame_size_mismatch_count), m_lastPublishedRXRmtFrameSizeMismatchCount);
-				#endif
-				#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_rx_rmt_last_symbol_count
-				publish_float_if_changed(this->rx_rmt_last_symbol_count_sensor, static_cast<float>(m_protocol_debug_state.rx_rmt_last_symbol_count), m_lastPublishedRXRmtLastSymbolCount);
-				#endif
-				#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_rx_rmt_last_half_bit_count
-				publish_float_if_changed(this->rx_rmt_last_half_bit_count_sensor, static_cast<float>(m_protocol_debug_state.rx_rmt_last_half_bit_count), m_lastPublishedRXRmtLastHalfBitCount);
-				#endif
-				#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_rx_rmt_last_bad_duration_us
-				publish_float_if_changed(this->rx_rmt_last_bad_duration_us_sensor, static_cast<float>(m_protocol_debug_state.rx_rmt_last_bad_duration_us), m_lastPublishedRXRmtLastBadDurationUs);
-				#endif
-				#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_tx_rmt_unavailable_count
-				publish_float_if_changed(this->tx_rmt_unavailable_count_sensor, static_cast<float>(m_protocol_debug_state.tx_rmt_unavailable_count), m_lastPublishedTXRmtUnavailableCount);
-				#endif
-				#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_tx_queue_fail_count
-				publish_float_if_changed(this->tx_queue_fail_count_sensor, static_cast<float>(m_protocol_debug_state.tx_queue_fail_count), m_lastPublishedTXQueueFailCount);
-				#endif
-				#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_rx_success_rate
-				publish_float_if_changed(this->rx_success_rate_sensor, rx_success_rate, m_lastPublishedRXSuccessRate);
-				#endif
-			#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_last_success_age_ms
-			if (!std::isnan(last_success_age_ms)) {
-				publish_float_if_changed(this->last_success_age_ms_sensor, last_success_age_ms, m_lastPublishedLastSuccessAgeMs);
-			}
-			#endif
-			#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_last_callback_duration_us
-			publish_float_if_changed(this->last_callback_duration_us_sensor, static_cast<float>(m_runtime_metrics_state.last_callback_duration_us), m_lastPublishedLastCallbackDurationUs);
-			#endif
-			#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_max_callback_duration_us
-			publish_float_if_changed(this->max_callback_duration_us_sensor, static_cast<float>(m_runtime_metrics_state.max_callback_duration_us), m_lastPublishedMaxCallbackDurationUs);
-			#endif
-			#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_last_response_latency_us
-			publish_float_if_changed(this->last_response_latency_us_sensor, static_cast<float>(m_runtime_metrics_state.last_response_latency_us), m_lastPublishedLastResponseLatencyUs);
-			#endif
-			#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_max_response_latency_us
-			publish_float_if_changed(this->max_response_latency_us_sensor, static_cast<float>(m_runtime_metrics_state.max_response_latency_us), m_lastPublishedMaxResponseLatencyUs);
-			#endif
-			#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_last_loop_gap_ms
-			publish_float_if_changed(this->last_loop_gap_ms_sensor, static_cast<float>(m_runtime_metrics_state.last_loop_gap_ms), m_lastPublishedLastLoopGapMs);
-			#endif
-			#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_max_loop_gap_ms
-			publish_float_if_changed(this->max_loop_gap_ms_sensor, static_cast<float>(m_runtime_metrics_state.max_loop_gap_ms), m_lastPublishedMaxLoopGapMs);
-			#endif
-			#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_last_request_id
-			if (m_protocol_debug_state.last_request_id >= 0) {
-				publish_float_if_changed(this->last_request_id_sensor, static_cast<float>(m_protocol_debug_state.last_request_id), m_lastPublishedLastRequestID);
-			}
-			#endif
-			#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_last_error_id
-			if (m_protocol_debug_state.last_error_id >= 0) {
-				publish_float_if_changed(this->last_error_id_sensor, static_cast<float>(m_protocol_debug_state.last_error_id), m_lastPublishedLastErrorID);
-			}
-			#endif
-			#ifdef OPENQUATT_OT_SLAVE_HAS_TEXT_SENSOR_last_request
-			if (m_debug_enabled || m_protocol_debug_state.rx_invalid_count > 0) {
-				publish_text_if_changed(this->last_request_text_sensor, m_protocol_debug_state.last_request, m_lastPublishedLastRequest);
-			}
-			#endif
-			#ifdef OPENQUATT_OT_SLAVE_HAS_TEXT_SENSOR_last_error
-			publish_text_if_changed(this->last_error_text_sensor, m_protocol_debug_state.last_error, m_lastPublishedLastError);
-			#endif
-			#ifdef OPENQUATT_OT_SLAVE_HAS_TEXT_SENSOR_last_driver_error
-			publish_text_if_changed(this->last_driver_error_text_sensor, m_protocol_debug_state.last_driver_error, m_lastPublishedLastDriverError);
-			#endif
-			#ifdef OPENQUATT_OT_SLAVE_HAS_TEXT_SENSOR_rx_backend
-			publish_text_if_changed(this->rx_backend_text_sensor, m_protocol_debug_state.rx_backend, m_lastPublishedRXBackend);
-			#endif
-			#ifdef OPENQUATT_OT_SLAVE_HAS_TEXT_SENSOR_compatibility_mode
-			publish_text_if_changed(this->compatibility_mode_text_sensor, m_protocol_debug_state.compatibility_mode, m_lastPublishedCompatibilityMode);
-			#endif
-
-			m_lastRuntimeMetricsSnapshotMs = now_ms;
-			m_lastRuntimeMetricsSnapshotSuccessCount = m_protocol_debug_state.rx_success_count;
-			m_lastProtocolDebugPublishMs = now_ms;
-			m_protocolDebugDirty = false;
-		}
-
-		void OpenQuattOTSlave::record_protocol_event_(unsigned long request, OpenThermResponseStatus status,
-		                                             OpenThermMessageType requestType, OpenThermMessageID requestDataID,
-		                                             uint16_t requestData)
-		{
-			m_protocol_debug_state.last_request_id = static_cast<int>(requestDataID);
-			const bool keep_request_summary = m_debug_enabled || status != OpenThermResponseStatus::SUCCESS;
-			std::string request_summary;
-			if (keep_request_summary) {
-				request_summary = format_ot_frame_("REQ", request, requestType, requestDataID, requestData,
-				                                  m_ot_thermostat_->statusToString(status));
-				m_protocol_debug_state.last_request = request_summary;
-			}
-			if (keep_request_summary || status != OpenThermResponseStatus::SUCCESS) {
-				m_protocolDebugDirty = true;
-			}
-
-			switch (status) {
-				case OpenThermResponseStatus::SUCCESS:
-					m_protocol_debug_state.rx_success_count++;
-					m_runtime_metrics_state.last_success_ms = now_millis();
-					break;
-				case OpenThermResponseStatus::TIMEOUT:
-					m_protocol_debug_state.rx_timeout_count++;
-					m_protocol_debug_state.rx_invalid_count++;
-					m_protocol_debug_state.last_error_id = static_cast<int>(requestDataID);
-					m_protocol_debug_state.last_error = request_summary;
-					break;
-				case OpenThermResponseStatus::INVALID:
-					m_protocol_debug_state.rx_invalid_count++;
-					m_protocol_debug_state.last_error_id = static_cast<int>(requestDataID);
-					m_protocol_debug_state.last_error = request_summary;
-					break;
-				case OpenThermResponseStatus::INVALID_PARITY:
-					m_protocol_debug_state.rx_invalid_count++;
-					m_protocol_debug_state.rx_invalid_parity_count++;
-					m_protocol_debug_state.last_error_id = static_cast<int>(requestDataID);
-					m_protocol_debug_state.last_error = request_summary;
-					break;
-				case OpenThermResponseStatus::INVALID_MESSAGE:
-					m_protocol_debug_state.rx_invalid_count++;
-					m_protocol_debug_state.rx_invalid_message_count++;
-					m_protocol_debug_state.last_error_id = static_cast<int>(requestDataID);
-					m_protocol_debug_state.last_error = request_summary;
-					break;
-				case OpenThermResponseStatus::NONE:
-				default:
-					break;
-			}
-
-			if (status == OpenThermResponseStatus::SUCCESS) {
-				if (requestDataID == OpenThermMessageID::OpenThermVersionSlave) {
-					m_t6CompatUntilMs = now_millis() + T6_COMPAT_WINDOW_MS;
-					m_protocol_debug_state.compatibility_mode = "t6-handshake";
-				} else if (requestDataID == OpenThermMessageID::OpenThermVersionMaster ||
-				           requestDataID == OpenThermMessageID::MasterVersion) {
-					note_t6_compat_handshake_(requestDataID, requestData);
-				}
-			}
-		}
-
 		void OpenQuattOTSlave::note_t6_compat_handshake_(OpenThermMessageID dataID, uint16_t data)
 		{
 			if (dataID == OpenThermMessageID::OpenThermVersionMaster) {
@@ -943,7 +595,6 @@ namespace esphome {
 					m_t6CompatUntilMs = now_millis() + T6_COMPAT_WINDOW_MS;
 				}
 			}
-			m_protocol_debug_state.compatibility_mode = is_t6_compat_active_() ? "t6-handshake" : "standard";
 		}
 
 		bool OpenQuattOTSlave::is_t6_compat_active_() const
@@ -1079,18 +730,9 @@ namespace esphome {
             return traits;
         }*/
 
-	        void OpenQuattOTSlave::loop() 
-	        {        	
-	        	const unsigned long now_ms = now_millis();
-	        	if (m_msLastLoop != 0) {
-	        		const uint32_t loop_gap_ms = static_cast<uint32_t>(now_ms - m_msLastLoop);
-	        		m_runtime_metrics_state.last_loop_gap_ms = loop_gap_ms;
-	        		if (loop_gap_ms > m_runtime_metrics_state.max_loop_gap_ms) {
-	        			m_runtime_metrics_state.max_loop_gap_ms = loop_gap_ms;
-	        		}
-	        	}
+	        void OpenQuattOTSlave::loop()
+	        {
 	        	sync_switch_states_();
-	        	m_msLastLoop = now_ms;
 	        	if (!m_otaActive && !m_updatePrepareActive && m_enabled && !m_otStarted && m_ot_thermostat_ != NULL) {
 	        		if (!m_otStartPending) {
 	        			schedule_opentherm_start_();
@@ -1107,11 +749,9 @@ namespace esphome {
 		if (m_minimal_runtime_mode) {
 			return;
 		}
-		m_protocol_debug_state.compatibility_mode = is_t6_compat_active_() ? "t6-handshake" : "standard";
 		publish_master_runtime_state_();
 		refresh_slave_runtime_state_();
 		publish_slave_runtime_state_();
-		publish_protocol_debug_state_();
 	}
 	
 	    } // namespace OpenQuattOTSlave
