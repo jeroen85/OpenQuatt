@@ -58,8 +58,6 @@ enum OpenThermMessageType {
 	UNKNOWN_DATA_ID = 0b111
 };
 
-typedef OpenThermMessageType OpenThermRequestType; // for backwared compatibility
-
 enum OpenThermMessageID {
 	Status=0, // flag8 / flag8  Master and Slave Status flags.
 	TSet, // f8.8  Control setpoint  ie CH  water temperature setpoint (°C)
@@ -169,56 +167,19 @@ public:
 	void begin(void(*handleInterruptCallback)(void));
 	void begin(void(*handleInterruptCallback)(void), void(*processResponseCallback)(unsigned long, OpenThermResponseStatus, void *), void *pCallbackUser);
 	bool isReady();
-	unsigned long sendRequest(unsigned long request);
 	bool sendResponse(unsigned long request);
-	bool sendRequestAsync(unsigned long request);
-
-	bool sendRequestTimer(unsigned long request);
-	bool sendResponseTimer(unsigned long response);
 	
 	unsigned long buildRequest(OpenThermMessageType type, OpenThermMessageID id, unsigned int data);
 	unsigned long buildResponse(OpenThermMessageType type, OpenThermMessageID id, unsigned int data);
-	unsigned long getLastResponse();
-	OpenThermResponseStatus getLastResponseStatus();
-	OpenThermDriverError getLastDriverError() const;
-		const char *getLastDriverErrorString() const;
-		const char *getRxBackendString() const;
-		uint32_t getGlitchRejectCount() const;
-		uint32_t getEdgeOverflowCount() const;
-		uint32_t getDecodeResetCount() const;
-		uint32_t getIgnoredStartCount() const;
-		uint32_t getIgnoredCooldownCount() const;
-		uint32_t getIgnoredQuietGapCount() const;
-		uint32_t getResyncCount() const;
-		uint32_t getMaxConsecutiveBadStartCount() const;
-		uint32_t getRmtShortDurationCount() const;
-		uint32_t getRmtLongDurationCount() const;
-		uint32_t getRmtBadPairCount() const;
-		uint32_t getRmtFrameSizeMismatchCount() const;
-		uint32_t getRmtLastSymbolCount() const;
-		uint32_t getRmtLastHalfBitCount() const;
-		uint32_t getRmtLastBadDurationUs() const;
-		uint32_t getTxRmtUnavailableCount() const;
-		uint32_t getTxQueueFailCount() const;
-		const char *statusToString(OpenThermResponseStatus status);
-	void handleInterrupt();
 	bool process();
 	void end();
-
-	void handleTimerInterrupt();
 
 	bool parity(unsigned long frame);
 	OpenThermMessageType getMessageType(unsigned long message);
 	OpenThermMessageID getDataID(unsigned long frame);
-	const char *messageTypeToString(OpenThermMessageType message_type);
 	bool isValidParity(unsigned long message);
 	bool isValidRequest(unsigned long request);
 	bool isValidResponse(unsigned long response);
-
-	//requests
-	unsigned long buildSetBoilerStatusRequest(bool enableCentralHeating, bool enableHotWater = false, bool enableCooling = false, bool enableOutsideTemperatureCompensation = false, bool enableCentralHeating2 = false);
-	unsigned long buildSetBoilerTemperatureRequest(float temperature);
-	unsigned long buildGetBoilerTemperatureRequest();
 
 	//responses
 	bool isFault(unsigned long response);
@@ -229,24 +190,8 @@ public:
 	bool isDiagnostic(unsigned long response);
 	uint16_t getUInt(const unsigned long response) const;
 	float getFloat(const unsigned long response) const;	
-	unsigned int temperatureToData(float temperature);
-
-	//basic requests
-	unsigned long setBoilerStatus(bool enableCentralHeating, bool enableHotWater = false, bool enableCooling = false, bool enableOutsideTemperatureCompensation = false, bool enableCentralHeating2 = false);
-	bool setBoilerTemperature(float temperature);
-	float getBoilerTemperature();
-	float getReturnTemperature();
-	bool setDHWSetpoint(float temperature);
-	float getDHWTemperature();
-	float getModulation();
-	float getPressure();
-	unsigned char getFault();
 
 private:
-	struct EdgeEvent {
-		uint32_t timestamp;
-		uint8_t level;
-	};
 	const int inPin;
 	const int outPin;
 	const bool isSlave;
@@ -254,13 +199,9 @@ private:
 	volatile unsigned long response;
 	volatile OpenThermResponseStatus responseStatus;
 	volatile unsigned long responseTimestamp;
-	volatile uint8_t responseBitIndex;
-	volatile unsigned long lastInterruptTs = 0;
 	uint32_t cycles_per_us_ = 240;
 	bool rx_rmt_ready_ = false;
-	bool isr_registered_ = false;
 	portMUX_TYPE mux_ = portMUX_INITIALIZER_UNLOCKED;
-	static constexpr uint8_t EDGE_QUEUE_SIZE = 96;
 	static constexpr size_t RX_CAPTURE_SYMBOLS = 96;
 	static constexpr uint8_t RX_FRAME_QUEUE_SIZE = 4;
 	struct RxFrame {
@@ -268,80 +209,38 @@ private:
 		uint8_t symbol_count;
 		rmt_symbol_word_t symbols[RX_CAPTURE_SYMBOLS];
 	};
-	EdgeEvent edge_queue_[EDGE_QUEUE_SIZE]{};
 	rmt_symbol_word_t rx_symbols_[RX_CAPTURE_SYMBOLS]{};
 	RxFrame rx_frame_queue_[RX_FRAME_QUEUE_SIZE]{};
-	volatile uint8_t edge_head_ = 0;
-	volatile uint8_t edge_tail_ = 0;
 	volatile uint8_t rx_frame_head_ = 0;
 	volatile uint8_t rx_frame_tail_ = 0;
-		volatile bool edge_overflow_ = false;
-		volatile uint32_t last_edge_ts_ = 0;
-		volatile uint32_t glitch_reject_count_ = 0;
-		volatile uint32_t edge_overflow_count_ = 0;
-		uint32_t decode_reset_count_ = 0;
-		uint32_t ignored_start_count_ = 0;
-		uint32_t ignored_cooldown_count_ = 0;
-		uint32_t ignored_quiet_gap_count_ = 0;
-		uint32_t resync_count_ = 0;
-		uint32_t consecutive_bad_start_count_ = 0;
-		uint32_t max_consecutive_bad_start_count_ = 0;
-		uint32_t rmt_short_duration_count_ = 0;
-		uint32_t rmt_long_duration_count_ = 0;
-		uint32_t rmt_bad_pair_count_ = 0;
-		uint32_t rmt_frame_size_mismatch_count_ = 0;
-		uint32_t rmt_last_symbol_count_ = 0;
-		uint32_t rmt_last_half_bit_count_ = 0;
-		uint32_t rmt_last_bad_duration_us_ = 0;
-		uint32_t tx_rmt_unavailable_count_ = 0;
-		uint32_t tx_queue_fail_count_ = 0;
-		bool invalid_requires_cooldown_ = false;
-		volatile OpenThermDriverError last_driver_error_ = OpenThermDriverError::DRIVER_ERROR_NONE;
-		uint32_t last_processed_edge_ts_ = 0;
-		uint32_t start_accept_not_before_ts_ = 0;
-		uint32_t delay_until_ts_ = 0;
-		gpio_glitch_filter_handle_t rx_glitch_filter_ = nullptr;
-		rmt_channel_handle_t rx_channel_ = nullptr;
-		rmt_channel_handle_t tx_channel_ = nullptr;
-		rmt_encoder_handle_t tx_encoder_ = nullptr;
-		rmt_symbol_word_t tx_symbols_[34]{};
-		volatile bool tx_in_progress_ = false;
+	volatile bool edge_overflow_ = false;
+	uint32_t delay_until_ts_ = 0;
+	gpio_glitch_filter_handle_t rx_glitch_filter_ = nullptr;
+	rmt_channel_handle_t rx_channel_ = nullptr;
+	rmt_channel_handle_t tx_channel_ = nullptr;
+	rmt_encoder_handle_t tx_encoder_ = nullptr;
+	rmt_symbol_word_t tx_symbols_[34]{};
+	volatile bool tx_in_progress_ = false;
 	volatile bool tx_complete_ = false;
 	bool tx_rmt_ready_ = false;
 		
-		int readState();
-		void setActiveState();
 		void setIdleState();
 		void activateBoiler();
-			void reset_receive_state_();
-			bool pop_edge_(EdgeEvent &edge);
-			void process_edge_(uint32_t timestamp, int state);
-			void note_driver_error_(OpenThermDriverError error);
-			void note_bad_start_();
-			void reset_bad_start_streak_();
-			uint32_t current_resync_cooldown_us_() const;
-			void arm_resync_cooldown_(uint32_t timestamp);
-			void reject_tentative_start_(OpenThermDriverError error, uint32_t timestamp);
-			void fail_frame_(OpenThermDriverError error, uint32_t timestamp);
-			bool init_rx_glitch_filter_();
-			void deinit_rx_glitch_filter_();
-			bool init_rx_channel_();
-			void deinit_rx_channel_();
-			bool queue_edge_(uint32_t timestamp, int state);
-			bool queue_rx_frame_(const rmt_symbol_word_t *symbols, size_t num_symbols, uint32_t done_ts_cycles);
-			bool pop_rx_frame_(RxFrame &frame);
-			bool ingest_rmt_symbols_(const rmt_symbol_word_t *symbols, size_t num_symbols, uint32_t done_ts_cycles);
-			bool decode_rmt_frame_(const RxFrame &frame, unsigned long &decoded_frame, OpenThermDriverError &error);
-			void process_rmt_frame_(const RxFrame &frame);
-			bool arm_rmt_receive_();
-			bool init_tx_channel_();
-			bool queue_frame_tx_(unsigned long frame);
+		void reset_receive_state_();
+		bool init_rx_glitch_filter_();
+		void deinit_rx_glitch_filter_();
+		bool init_rx_channel_();
+		void deinit_rx_channel_();
+		bool queue_rx_frame_(const rmt_symbol_word_t *symbols, size_t num_symbols, uint32_t done_ts_cycles);
+		bool pop_rx_frame_(RxFrame &frame);
+		bool decode_rmt_frame_(const RxFrame &frame, unsigned long &decoded_frame, OpenThermDriverError &error);
+		void process_rmt_frame_(const RxFrame &frame);
+		bool arm_rmt_receive_();
+		bool init_tx_channel_();
+		bool queue_frame_tx_(unsigned long frame);
 
-		void sendBit(bool high);
 		static bool IRAM_ATTR rx_done_callback_(rmt_channel_handle_t rx_chan, const rmt_rx_done_event_data_t *edata, void *user_ctx);
 		static bool IRAM_ATTR tx_done_callback_(rmt_channel_handle_t tx_chan, const rmt_tx_done_event_data_t *edata, void *user_ctx);
-		static void IRAM_ATTR gpio_isr_handler(void *arg);
-	void(*handleInterruptCallback)();
 	void(*processResponseCallback)(unsigned long, OpenThermResponseStatus, void *);
 	void *pCallbackUser;	
 };

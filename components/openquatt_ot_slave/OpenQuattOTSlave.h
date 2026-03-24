@@ -45,7 +45,6 @@ namespace esphome {
 			void set_pin_thermostat_out(uint8_t pin) { m_pinThermostatOut=pin; }
 			
 			void set_enabled(bool enabled) { set_enabled_(enabled); }
-			void set_minimal_runtime_mode(bool enabled) { m_minimal_runtime_mode = enabled; }
 			void set_response_enabled(bool enabled) { m_response_enabled = enabled; }
 			void set_ch_enable(bool bCHEnable) { m_master_state.ch_enable = bCHEnable; }
 			void set_cooling_enable(bool bCoolingEnable) { m_master_state.cooling_enable = bCoolingEnable; }
@@ -135,7 +134,6 @@ namespace esphome {
 				uint8_t m_pinThermostatOut = 0;
 
 				bool m_enabled = true;
-				bool m_minimal_runtime_mode = false;
 				bool m_response_enabled = true;
 				bool m_updatePrepareActive = false;
 				unsigned long m_lastMasterStatusMs = 0;
@@ -187,7 +185,6 @@ namespace esphome {
 			#define OPENQUATT_OT_SLAVE_DECLARE_INPUT_SENSOR(entity) sensor::Sensor* entity = nullptr;
 			OPENQUATT_OT_SLAVE_INPUT_SENSOR_LIST(OPENQUATT_OT_SLAVE_DECLARE_INPUT_SENSOR, )
 			    
-				static void IRAM_ATTR handleInterruptThermostat();
 				unsigned long build_slave_response_(OpenThermMessageType type, OpenThermMessageID dataID, uint16_t data);
 				uint16_t build_slave_status_(uint16_t master_status) const;
 				uint16_t build_slave_config_() const;

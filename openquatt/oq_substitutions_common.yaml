@@ -120,7 +120,6 @@ oq_boiler_loop_s: "5"                                 # Main interval for boiler
 # OPEN THERM SLAVE
 # ----------------------------
 oq_ot_enabled_default: "false"                        # Default runtime state of the OT slave bus handler.
-oq_ot_minimal_runtime_default: "false"                # Full OT runtime enabled by default; isolation modes are now opt-in for targeted debugging.
 oq_ot_response_enabled_default: "true"                # Allow the OT slave to answer thermostat requests by default.
 
 # ----------------------------

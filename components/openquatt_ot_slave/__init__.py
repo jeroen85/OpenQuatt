@@ -23,7 +23,6 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Required("pin_thermostat_in"): pins.internal_gpio_input_pin_number,
         cv.Required("pin_thermostat_out"): pins.internal_gpio_output_pin_number,
         cv.Optional("enabled", True): cv.boolean,
-        cv.Optional("minimal_runtime_mode", False): cv.boolean,
         cv.Optional("response_enabled", True): cv.boolean,
         cv.Optional("ch_enable", True): cv.boolean,
         cv.Optional("cooling_enable", False): cv.boolean,

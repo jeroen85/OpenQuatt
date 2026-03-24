@@ -113,7 +113,7 @@ namespace esphome {
 			if (m_ot_thermostat_ == NULL || m_otStarted || m_otaActive || !m_enabled) {
 				return;
 			}
-			m_ot_thermostat_->begin(handleInterruptThermostat, processRequestThermostat, this);
+			m_ot_thermostat_->begin(nullptr, processRequestThermostat, this);
 			m_otStarted = true;
 			m_otStartPending = false;
 			m_otBusIdleSinceMs = 0;
@@ -218,7 +218,6 @@ namespace esphome {
 			ESP_LOGCONFIG(TAG, "  Default Tboiler: %.1f C", m_slave_state.t_boiler);
 			ESP_LOGCONFIG(TAG, "  Default Tret: %.1f C", m_slave_state.t_ret);
 			ESP_LOGCONFIG(TAG, "  Default MaxTSet: %.1f C", m_slave_state.max_t_set);
-			ESP_LOGCONFIG(TAG, "  Minimal runtime mode: %s", YESNO(m_minimal_runtime_mode));
 			ESP_LOGCONFIG(TAG, "  Response enabled: %s", YESNO(m_response_enabled));
 			ESP_LOGCONFIG(TAG, "  Sensors: %s", SHOW(OPENQUATT_OT_SLAVE_SENSOR_LIST(ID, )));
 			ESP_LOGCONFIG(TAG, "  Binary sensors: %s", SHOW(OPENQUATT_OT_SLAVE_BINARY_SENSOR_LIST(ID, )));
@@ -279,13 +278,6 @@ namespace esphome {
 		}
 #endif
 
-	void IRAM_ATTR OpenQuattOTSlave::handleInterruptThermostat()
-	{
-		// OpenTherm installs its own GPIO ISR and uses itself as the ISR callback
-		// argument. The component still passes a non-null function pointer to begin()
-		// to activate that code path, but it does not need additional ISR work here.
-	}
-
 			void OpenQuattOTSlave::processRequestThermostat(unsigned long request, OpenThermResponseStatus status)
 			{
 			if(request==0)
@@ -307,10 +299,6 @@ namespace esphome {
 					m_ot_thermostat_->sendResponse(response);
 				}
 			}
-
-		if (m_minimal_runtime_mode) {
-			return;
-		}
 		}
 
 		void OpenQuattOTSlave::parseRequest(OpenThermMessageType type, OpenThermMessageID dataID, uint16_t data)
@@ -764,9 +752,6 @@ namespace esphome {
 	void OpenQuattOTSlave::update()
 	{
 		refresh_master_runtime_state_();
-		if (m_minimal_runtime_mode) {
-			return;
-		}
 		publish_master_runtime_state_();
 		refresh_slave_runtime_state_();
 		publish_slave_runtime_state_();

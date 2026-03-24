@@ -21,7 +21,6 @@ openquatt_ot_slave:
   pin_thermostat_in: ${oq_ot_thermostat_in_pin}
   pin_thermostat_out: ${oq_ot_thermostat_out_pin}
   enabled: ${oq_ot_enabled_default}
-  minimal_runtime_mode: ${oq_ot_minimal_runtime_default}
   response_enabled: ${oq_ot_response_enabled_default}
 
 globals:
