@@ -1692,8 +1692,10 @@ views:
                     name: Effective room temperature source
                   - entity: sensor.openquatt_room_temperature_selected
                     name: Selected room temperature
-                  - entity: sensor.openquatt_cic_ot_room_temperature
-                    name: Room temperature (CIC OT)
+                  - entity: sensor.openquatt_cic_room_temperature
+                    name: Room temperature (CIC)
+                  - entity: sensor.openquatt_ot_room_temperature
+                    name: Room temperature (OT thermostat)
                   - entity: sensor.openquatt_ha_thermostat_room_temperature
                     name: Room temperature (HA Input)
           - type: vertical-stack
@@ -1784,8 +1786,10 @@ views:
                     name: Effective room setpoint source
                   - entity: sensor.openquatt_room_setpoint_selected
                     name: Selected room setpoint
-                  - entity: sensor.openquatt_cic_ot_room_setpoint
-                    name: Room setpoint (CIC OT)
+                  - entity: sensor.openquatt_cic_room_setpoint
+                    name: Room setpoint (CIC)
+                  - entity: sensor.openquatt_ot_room_setpoint
+                    name: Room setpoint (OT thermostat)
                   - entity: sensor.openquatt_ha_thermostat_setpoint
                     name: Room setpoint (HA Input)
           - type: vertical-stack
@@ -1806,8 +1810,8 @@ views:
                     name: Effective cooling enable source
                   - entity: binary_sensor.openquatt_cooling_enable_selected
                     name: Selected cooling enable
-                  - entity: binary_sensor.openquatt_cic_ot_cooling_enabled
-                    name: Cooling enable (CIC OT)
+                  - entity: binary_sensor.openquatt_cic_cooling_enabled
+                    name: Cooling enable (CIC)
                   - entity: binary_sensor.openquatt_ha_cooling_enable
                     name: Cooling enable (HA Input)
           - type: vertical-stack
@@ -1991,6 +1995,48 @@ views:
           - condition: state
             entity: binary_sensor.openquatt_ha_dynamic_sources_package_active
             state_not: 'on'
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:thermostat-box
+            heading: OpenTherm thermostat
+            heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Explanation</strong></summary>
+
+              This block shows the direct OpenTherm thermostat link.
+              Use it to verify that OpenQuatt sees thermostat heat/cooling intent
+              and room values without going through CIC or Home Assistant.
+
+              Check these first when OT behavior looks wrong:
+              - `OpenTherm Enabled`
+              - `OT link problem`
+              - `Thermostat CH enable`
+              - `Control setpoint`
+              - `Room setpoint`
+              - `Room temperature`
+
+              </details>
+            text_only: true
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: switch.openquatt_opentherm_enabled
+                name: OpenTherm Enabled
+              - entity: binary_sensor.openquatt_ot_link_problem
+                name: OT link problem
+              - entity: binary_sensor.openquatt_ot_thermostat_ch_enable
+                name: Thermostat CH enable
+              - entity: binary_sensor.openquatt_ot_thermostat_cooling_enable
+                name: Thermostat cooling enable
+              - entity: sensor.openquatt_ot_control_setpoint
+                name: Control setpoint
+              - entity: sensor.openquatt_ot_room_setpoint
+                name: Room setpoint
+              - entity: sensor.openquatt_ot_room_temperature
+                name: Room temperature
       - type: grid
         cards:
           - type: heading
