@@ -105,6 +105,7 @@ sensor:
 # ----------------------------
 interval:
   - interval: ${oq_boiler_loop_s}s
+    startup_delay: 4600ms
     then:
       - lambda: |-
           // Boiler follows Control Mode CM3, but the shared water-temperature model

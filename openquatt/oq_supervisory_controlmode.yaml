@@ -555,6 +555,7 @@ sensor:
 # ----------------------------
 interval:
   - interval: ${oq_supervisory_loop_s}s
+    startup_delay: 0s
     then:
       - lambda: |-
           // -------------------------------------------------

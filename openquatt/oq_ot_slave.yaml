@@ -1,0 +1,134 @@
+# ==============================================================================
+# OpenQuatt - OpenTherm Thermostat Slave Bridge
+# ==============================================================================
+#
+# Product scope:
+#   - Expose a local OpenTherm slave endpoint towards a thermostat
+#   - Publish thermostat intent (room temp / setpoint / CH / cooling)
+#   - Feed selected OpenQuatt runtime values back to the thermostat
+#   - No temporary OT protocol diagnostics in the product package
+#
+# ==============================================================================
+
+external_components:
+  - source:
+      type: local
+      path: components
+    components: [openquatt_ot_slave]
+
+openquatt_ot_slave:
+  id: oq_ot_slave_hub
+  pin_thermostat_in: ${oq_ot_thermostat_in_pin}
+  pin_thermostat_out: ${oq_ot_thermostat_out_pin}
+  enabled: ${oq_ot_enabled_default}
+  minimal_runtime_mode: ${oq_ot_minimal_runtime_default}
+  response_enabled: ${oq_ot_response_enabled_default}
+
+globals:
+  - id: oq_ot_fault_active
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+  - id: oq_ot_diagnostic_active
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+switch:
+  - platform: openquatt_ot_slave
+    openquatt_ot_slave_id: oq_ot_slave_hub
+    enabled:
+      id: oq_ot_slave_enabled
+      name: "OpenTherm Enabled"
+      entity_category: config
+      icon: mdi:thermostat-cog
+
+binary_sensor:
+  - platform: openquatt_ot_slave
+    openquatt_ot_slave_id: oq_ot_slave_hub
+    master_ch_enable:
+      id: ot_thermostat_ch_enable
+      name: "OT - Thermostat CH Enable"
+      icon: mdi:radiator
+    master_cooling_enable:
+      id: ot_thermostat_cooling_enable
+      name: "OT - Thermostat Cooling Enable"
+      icon: mdi:snowflake
+
+sensor:
+  - platform: openquatt_ot_slave
+    openquatt_ot_slave_id: oq_ot_slave_hub
+    t_set:
+      id: ot_thermostat_control_setpoint
+      name: "OT - Control Setpoint"
+      icon: mdi:thermostat
+    t_roomset:
+      id: ot_thermostat_room_setpoint
+      name: "OT - Room Setpoint"
+      icon: mdi:home-thermometer-outline
+    t_room:
+      id: ot_thermostat_room_temp
+      name: "OT - Room Temperature"
+      icon: mdi:home-thermometer
+
+interval:
+  - interval: 2s
+    then:
+      - lambda: |-
+          // Push canonical OpenQuatt runtime into the OT slave model off the ISR path.
+          if (id(water_supply_temp_selected).has_state() && !isnan(id(water_supply_temp_selected).state)) {
+            id(oq_ot_slave_hub).set_slave_t_boiler(id(water_supply_temp_selected).state);
+          }
+          if (id(hp1_water_in_temp).has_state() && !isnan(id(hp1_water_in_temp).state)) {
+            id(oq_ot_slave_hub).set_slave_t_ret(id(hp1_water_in_temp).state);
+          }
+          if (id(max_water_temp_limit_c).has_state() && !isnan(id(max_water_temp_limit_c).state)) {
+            id(oq_ot_slave_hub).set_slave_max_t_set(id(max_water_temp_limit_c).state);
+          }
+          if (id(outside_temp_selected).has_state() && !isnan(id(outside_temp_selected).state)) {
+            id(oq_ot_slave_hub).set_slave_t_outside(id(outside_temp_selected).state);
+          }
+
+          float ot_rel_mod_level = id(oq_demand_filtered) * 5.0f;
+          if (ot_rel_mod_level < 0.0f) ot_rel_mod_level = 0.0f;
+          if (ot_rel_mod_level > 100.0f) ot_rel_mod_level = 100.0f;
+          id(oq_ot_slave_hub).set_slave_rel_mod_level(ot_rel_mod_level);
+          id(oq_ot_slave_hub).set_slave_ch_pressure(1.5f);
+
+          auto is_active_problem = [](auto *binary) -> bool {
+            return binary != nullptr && binary->has_state() && binary->state;
+          };
+          auto is_active_mode = [](int level, auto *mode_sensor, int target_mode) -> bool {
+            return level > 0 &&
+                   mode_sensor != nullptr &&
+                   mode_sensor->has_state() &&
+                   !isnan(mode_sensor->state) &&
+                   (static_cast<int>(roundf(mode_sensor->state)) == target_mode);
+          };
+
+          const bool hp1_heating_active = is_active_mode(id(hp1_last_applied_level), id(hp1_working_mode), 2);
+          const bool hp2_heating_active =
+              (${ot_secondary_present} != 0) &&
+              is_active_mode(id(${ot_secondary_last_applied_level_id}), id(${ot_secondary_working_mode_id}), 2);
+          const bool hp1_cooling_active = is_active_mode(id(hp1_last_applied_level), id(hp1_working_mode), 1);
+          const bool hp2_cooling_active =
+              (${ot_secondary_present} != 0) &&
+              is_active_mode(id(${ot_secondary_last_applied_level_id}), id(${ot_secondary_working_mode_id}), 1);
+          const bool boiler_on = id(boiler_active).has_state() && id(boiler_active).state;
+          const bool ch_active = hp1_heating_active || hp2_heating_active || boiler_on;
+          const bool cooling_active = hp1_cooling_active || hp2_cooling_active;
+
+          const bool hp1_fault = is_active_problem(id(hp1_ot_fault_active));
+          const bool hp2_fault =
+              (${ot_secondary_present} != 0) && is_active_problem(id(${ot_secondary_fault_binary_sensor_id}));
+          const bool lowflow_fault = id(oq_lowflow_fault_active);
+          const bool temp_trip = id(oq_water_temp_trip_active) || id(oq_water_temp_hard_trip_active);
+
+          id(oq_ot_fault_active) = hp1_fault || hp2_fault;
+          id(oq_ot_diagnostic_active) = id(oq_ot_fault_active) || lowflow_fault || temp_trip;
+
+          id(oq_ot_slave_hub).set_slave_ch_active(ch_active);
+          id(oq_ot_slave_hub).set_slave_flame_on(ch_active);
+          id(oq_ot_slave_hub).set_slave_cooling_active(cooling_active);
+          id(oq_ot_slave_hub).set_slave_fault(id(oq_ot_fault_active));
+          id(oq_ot_slave_hub).set_slave_diagnostic(id(oq_ot_diagnostic_active));

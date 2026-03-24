@@ -12,10 +12,11 @@
 # 8) External HA cooling proxy inputs
 # 9) Local sensors
 # 10) Source selection and merged selected-source signals
-# 11) Cooling safety / dew point aggregation
-# 12) Debug/testing utilities
-# 13) Web UI
-# 14) Per-HP hardware adapters
+# 11) OpenTherm thermostat bridge
+# 12) Cooling safety / dew point aggregation
+# 13) Debug/testing utilities
+# 14) Web UI
+# 15) Per-HP hardware adapters
 # ==============================================================================
 # Shared modules use `*_secondary_*` template vars so topology wiring stays
 # centralized in package files and avoids duplicated module files.
@@ -93,6 +94,13 @@ oq_sensor_sources: !include
   vars:
     sensor_sources_duo_flow_internal: "false"
     flow_secondary_flow_sensor_id: "hp2_flow"
+oq_ot_slave: !include
+  file: oq_ot_slave.yaml
+  vars:
+    ot_secondary_present: "1"
+    ot_secondary_last_applied_level_id: "hp2_last_applied_level"
+    ot_secondary_working_mode_id: "hp2_working_mode"
+    ot_secondary_fault_binary_sensor_id: "hp2_ot_fault_active"
 oq_debug_testing: !include oq_debug_testing.yaml
 oq_debug_testing_duo: !include oq_debug_testing_duo.yaml
 oq_webserver: !include oq_webserver.yaml
