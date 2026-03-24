@@ -54,6 +54,11 @@ binary_sensor:
       id: ot_thermostat_cooling_enable
       name: "OT - Thermostat Cooling Enable"
       icon: mdi:snowflake
+    link_problem:
+      id: ot_link_problem
+      name: "OT - Link Problem"
+      entity_category: diagnostic
+      icon: mdi:alert-circle-outline
 
 sensor:
   - platform: openquatt_ot_slave

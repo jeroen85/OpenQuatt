@@ -139,6 +139,8 @@ namespace esphome {
 				bool m_response_enabled = true;
 				bool m_updatePrepareActive = false;
 				unsigned long m_lastMasterStatusMs = 0;
+				unsigned long m_lastSuccessfulFrameMs = 0;
+				unsigned long m_linkProblemGraceUntilMs = 0;
 				unsigned long m_t6CompatUntilMs = 0;
 				unsigned long m_otStartNotBeforeMs = 0;
 				unsigned long m_otBusIdleSinceMs = 0;
@@ -157,6 +159,7 @@ namespace esphome {
 				int m_lastPublishedMasterMemberID = -1;
 				int8_t m_lastPublishedMasterCHEnableBinary = -1;
 				int8_t m_lastPublishedMasterCoolingEnableBinary = -1;
+				int8_t m_lastPublishedLinkProblem = -1;
 				int8_t m_lastPublishedSlaveFault = -1;
 				int8_t m_lastPublishedSlaveCHActive = -1;
 				int8_t m_lastPublishedSlaveFlameOn = -1;

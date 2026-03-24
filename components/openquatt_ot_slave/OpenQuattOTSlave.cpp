@@ -71,6 +71,8 @@ namespace esphome {
 	// other IDs. Keep the last known master status long enough to avoid a spurious
 	// CH-enable "blinking" effect in Home Assistant.
 	static constexpr unsigned long MASTER_STATUS_TIMEOUT_MS = 30000;
+	static constexpr unsigned long OT_LINK_PROBLEM_GRACE_MS = 120000;
+	static constexpr unsigned long OT_LINK_PROBLEM_TIMEOUT_MS = 120000;
 	static constexpr unsigned long T6_COMPAT_WINDOW_MS = 300000;
 	static constexpr unsigned long OT_STARTUP_SETTLE_MS = 1000;
 	static constexpr unsigned long OT_BUS_IDLE_MIN_MS = 100;
@@ -116,6 +118,7 @@ namespace esphome {
 			m_otStartPending = false;
 			m_otBusIdleSinceMs = 0;
 			m_runtimeGraceUntilMs = now_millis() + MASTER_STATUS_TIMEOUT_MS;
+			m_linkProblemGraceUntilMs = now_millis() + OT_LINK_PROBLEM_GRACE_MS;
 		}
 
 		void OpenQuattOTSlave::stop_opentherm_()
@@ -123,6 +126,8 @@ namespace esphome {
 			m_otStartPending = false;
 			m_otBusIdleSinceMs = 0;
 			m_runtimeGraceUntilMs = 0;
+			m_linkProblemGraceUntilMs = 0;
+			m_lastSuccessfulFrameMs = 0;
 			if (m_ot_thermostat_ == NULL || !m_otStarted) {
 				return;
 			}
@@ -291,7 +296,8 @@ namespace esphome {
 		uint16_t requestData=(uint16_t)request;
 		unsigned long response = 0;
 		if(status==OpenThermResponseStatus::SUCCESS)
-		{			
+		{
+			m_lastSuccessfulFrameMs = now_millis();
 			parseRequest(requestType, requestDataID, requestData);
 			if (m_response_enabled) {
 				response = build_slave_response_(requestType, requestDataID, requestData);
@@ -446,6 +452,18 @@ namespace esphome {
 			#endif
 			#ifdef OPENQUATT_OT_SLAVE_HAS_BINARY_SENSOR_master_cooling_enable
 			publish_binary_if_changed(this->master_cooling_enable_binary_sensor, m_master_state.cooling_enable, m_lastPublishedMasterCoolingEnableBinary);
+			#endif
+			#ifdef OPENQUATT_OT_SLAVE_HAS_BINARY_SENSOR_link_problem
+			bool link_problem = false;
+			if (m_enabled && m_otStarted && !m_otaActive && !m_updatePrepareActive) {
+				const unsigned long now_ms = now_millis();
+				const bool grace_active = m_linkProblemGraceUntilMs != 0 && now_ms < m_linkProblemGraceUntilMs;
+				if (!grace_active) {
+					link_problem = (m_lastSuccessfulFrameMs == 0) ||
+					               ((now_ms - m_lastSuccessfulFrameMs) > OT_LINK_PROBLEM_TIMEOUT_MS);
+				}
+			}
+			publish_binary_if_changed(this->link_problem_binary_sensor, link_problem, m_lastPublishedLinkProblem);
 			#endif
 			#ifdef OPENQUATT_OT_SLAVE_HAS_SENSOR_t_set
 			publish_float_if_changed(this->t_set_sensor, m_master_state.t_set, m_lastPublishedTSet);

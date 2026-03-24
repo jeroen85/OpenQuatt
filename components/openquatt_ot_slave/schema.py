@@ -3,7 +3,9 @@ from typing import Dict, Generic, NotRequired, TypedDict, TypeVar
 from esphome.const import (
     DEVICE_CLASS_COLD,
     DEVICE_CLASS_HEAT,
+    DEVICE_CLASS_PROBLEM,
     DEVICE_CLASS_TEMPERATURE,
+    ENTITY_CATEGORY_DIAGNOSTIC,
     ENTITY_CATEGORY_CONFIG,
     STATE_CLASS_MEASUREMENT,
 )
@@ -127,6 +129,18 @@ BINARY_SENSORS: Schema[BinarySensorSchema] = Schema(
                 "icon": "mdi:snowflake",
                 "message": "Status",
                 "message_data": "flag8_hb_2",
+                "init": False,
+                "update_time": -1,
+            }
+        ),
+        "link_problem": BinarySensorSchema(
+            {
+                "description": "Signals when the OT link has not seen a successful request for too long",
+                "device_class": DEVICE_CLASS_PROBLEM,
+                "icon": "mdi:alert-circle-outline",
+                "entity_category": ENTITY_CATEGORY_DIAGNOSTIC,
+                "message": "Status",
+                "message_data": "flag8_lb_0",
                 "init": False,
                 "update_time": -1,
             }
