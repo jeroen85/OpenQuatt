@@ -141,6 +141,26 @@ ha_outside_temp_entity_id: "sensor.openquatt_ext_outdoor_temperature"      # HA 
 ha_water_supply_temp_entity_id: "sensor.openquatt_ext_water_supply_temperature" # HA proxy entity for water supply temperature [degC].
 ha_room_setpoint_entity_id: "sensor.openquatt_ext_room_setpoint"           # HA proxy entity for thermostat room setpoint [degC].
 ha_room_temp_entity_id: "sensor.openquatt_ext_room_temperature"             # HA proxy entity for thermostat room temperature [degC].
+ha_cooling_enable_entity_id: "binary_sensor.openquatt_ext_cooling_enable"   # HA proxy entity for external cooling enable.
+ha_cooling_room_count_entity_id: "sensor.openquatt_ext_cooling_room_count"  # HA proxy entity for configured cooling room count.
+ha_cooling_room_1_dew_point_entity_id: "sensor.openquatt_ext_cooling_room_1_dew_point_direct" # HA proxy for cooling room 1 dew point [degC].
+ha_cooling_room_1_temp_entity_id: "sensor.openquatt_ext_cooling_room_1_temperature" # HA proxy for cooling room 1 temperature [degC].
+ha_cooling_room_1_humidity_entity_id: "sensor.openquatt_ext_cooling_room_1_humidity" # HA proxy for cooling room 1 humidity [%].
+ha_cooling_room_2_dew_point_entity_id: "sensor.openquatt_ext_cooling_room_2_dew_point_direct" # HA proxy for cooling room 2 dew point [degC].
+ha_cooling_room_2_temp_entity_id: "sensor.openquatt_ext_cooling_room_2_temperature" # HA proxy for cooling room 2 temperature [degC].
+ha_cooling_room_2_humidity_entity_id: "sensor.openquatt_ext_cooling_room_2_humidity" # HA proxy for cooling room 2 humidity [%].
+ha_cooling_room_3_dew_point_entity_id: "sensor.openquatt_ext_cooling_room_3_dew_point_direct" # HA proxy for cooling room 3 dew point [degC].
+ha_cooling_room_3_temp_entity_id: "sensor.openquatt_ext_cooling_room_3_temperature" # HA proxy for cooling room 3 temperature [degC].
+ha_cooling_room_3_humidity_entity_id: "sensor.openquatt_ext_cooling_room_3_humidity" # HA proxy for cooling room 3 humidity [%].
+ha_cooling_room_4_dew_point_entity_id: "sensor.openquatt_ext_cooling_room_4_dew_point_direct" # HA proxy for cooling room 4 dew point [degC].
+ha_cooling_room_4_temp_entity_id: "sensor.openquatt_ext_cooling_room_4_temperature" # HA proxy for cooling room 4 temperature [degC].
+ha_cooling_room_4_humidity_entity_id: "sensor.openquatt_ext_cooling_room_4_humidity" # HA proxy for cooling room 4 humidity [%].
+ha_cooling_room_5_dew_point_entity_id: "sensor.openquatt_ext_cooling_room_5_dew_point_direct" # HA proxy for cooling room 5 dew point [degC].
+ha_cooling_room_5_temp_entity_id: "sensor.openquatt_ext_cooling_room_5_temperature" # HA proxy for cooling room 5 temperature [degC].
+ha_cooling_room_5_humidity_entity_id: "sensor.openquatt_ext_cooling_room_5_humidity" # HA proxy for cooling room 5 humidity [%].
+ha_cooling_room_6_dew_point_entity_id: "sensor.openquatt_ext_cooling_room_6_dew_point_direct" # HA proxy for cooling room 6 dew point [degC].
+ha_cooling_room_6_temp_entity_id: "sensor.openquatt_ext_cooling_room_6_temperature" # HA proxy for cooling room 6 temperature [degC].
+ha_cooling_room_6_humidity_entity_id: "sensor.openquatt_ext_cooling_room_6_humidity" # HA proxy for cooling room 6 humidity [%].
 
 # ----------------------------
 # HP IO (MODBUS POLLING)
