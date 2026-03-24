@@ -33,9 +33,9 @@ modbus_controller:
   - id: ${hp_id}
     address: ${device_address}
     modbus_id: mod_bus
-    update_interval: 5s
-    command_throttle: 200ms
-    max_cmd_retries: 2
+    update_interval: ${oq_modbus_update_interval_s}s
+    command_throttle: ${oq_modbus_command_throttle_ms}ms
+    max_cmd_retries: ${oq_modbus_max_cmd_retries}
     offline_skip_updates: 5
     setup_priority: -10
     on_offline:

@@ -13,7 +13,7 @@
 device_name: "openquatt"                              # Internal ESPHome device ID / hostname base.
 friendly_name: OpenQuatt                              # Display name in Home Assistant / UI.
 project_name: "openquatt.openquatt"                   # ESPHome project identifier shown in firmware metadata.
-project_version: "v0.22.0"                            # ESPHome project version shown in firmware metadata.
+project_version: "v0.24.0"                            # ESPHome project version shown in firmware metadata.
 release_channel: "main"                               # Firmware release channel shown in diagnostics (`main` or `dev`).
 hp_perf_map_header: "openquatt/includes/hp_perf_map.h" # C++ performance-map header include path.
 
@@ -44,7 +44,7 @@ oq_cm2_idle_exit_s: "90"                              # Exit CM2 if both HPs are
 oq_low_load_fallback_off_w: "900"                     # Internal fallback OFF threshold when no dynamic low-load input is available [W].
 oq_low_load_fallback_on_w: "1300"                     # Internal fallback ON threshold when no dynamic low-load input is available [W].
 oq_low_load_dyn_cache_max_s: "60"                     # Maximum age for reusing last-known-good dynamic low-load thresholds [s].
-oq_ph_start_confirm_s: "120"                          # Require sustained demand for this long before Power House may leave idle [s].
+oq_ph_start_confirm_s: "30"                           # Power House start confirmation: demand must stay active for this time before CM1/CM2 startup [s].
 oq_cm_frost_on_c: "5.0"                               # Frost protection enable threshold [°C].
 oq_cm_frost_off_c: "6.0"                              # Frost protection disable threshold (hysteresis) [°C].
 oq_cm_frost_nan_grace_s: "30"                         # Startup grace before NaN outside temp triggers frost fail-safe [s].
@@ -64,7 +64,7 @@ oq_strategy_loop_s: "5"                               # Interval for strategy ca
 oq_strategy_demand_max_f: "20.0"                      # Upper bound of demand scale for mapping PID/power -> f.
 oq_temp_guard_delta_c: "0.5"                          # Minimum valid margin between T0 and Tc in the house model [°C].
 oq_ph_deadband_default_k: "0.14"                      # Default Power House room-error deadband [K].
-oq_outside_temp_stale_s: "120"                        # Ignore a local outdoor reading when it stays frozen while the same HP still shows fresh activity [s].
+oq_outside_temp_stale_s: "1200"                       # Ignore a local outdoor reading when it stays frozen while the same HP still shows fresh activity [s].
 
 # ----------------------------
 # HEAT CONTROL
@@ -76,8 +76,8 @@ oq_cop_min_input_w: "10.0"                            # Minimum electrical input
 oq_hp_min_off_s: "240"                                # Minimum per-HP off-time before any restart [s].
 oq_optimizer_soft_w: "3400.0"                         # Soft limit for electrical HP power in optimizer [W]; peak limit follows oq_power_peak_w.
 oq_optimizer_penalty_per_w: "5.0"                     # Cost factor above soft limit [cost/W].
-oq_optimizer_topology_power_margin_w: "40.0"          # Required power delta before a single<->duo topology switch counts as a meaningful efficiency gain [W].
-oq_optimizer_topology_heat_advantage_w: "225.0"       # Required heat-match advantage before a less-efficient topology may override the efficiency-first choice [W].
+oq_optimizer_topology_power_margin_w: "150.0"         # Required power delta before a single<->duo topology switch counts as a meaningful efficiency gain [W].
+oq_optimizer_topology_heat_advantage_w: "450.0"       # Required heat-match advantage before a less-efficient topology may override the efficiency-first choice [W].
 oq_defrost_power_factor: "0.764"                      # Thermal derate on a defrosting HP in duo dispatch.
 oq_defrost_comp_min_f: "6"                            # Minimum demand f before single-defrost compensation is applied.
 oq_defrost_comp_boost_steps: "1"                      # Extra level steps on non-defrost HP during single-defrost compensation.
