@@ -110,8 +110,10 @@ void OpenTherm::activateBoiler() {
 
 void OpenTherm::reset_receive_state_() {
 	portENTER_CRITICAL(&mux_);
+#if OQ_OT_RMT_SUPPORTED
 	rx_frame_head_ = 0;
 	rx_frame_tail_ = 0;
+#endif
 	edge_overflow_ = false;
 	portEXIT_CRITICAL(&mux_);
 	response = 0;
@@ -189,12 +191,18 @@ bool OpenTherm::init_tx_channel_() {
 }
 
 bool OpenTherm::init_rx_glitch_filter_() {
+#if !OQ_OT_RMT_SUPPORTED
+	rx_glitch_filter_ = nullptr;
+	return false;
+#else
 	if (rx_glitch_filter_ != nullptr) {
 		return true;
 	}
 
 	gpio_pin_glitch_filter_config_t config{};
+#ifdef GLITCH_FILTER_CLK_SRC_DEFAULT
 	config.clk_src = GLITCH_FILTER_CLK_SRC_DEFAULT;
+#endif
 	config.gpio_num = static_cast<gpio_num_t>(inPin);
 
 	esp_err_t err = gpio_new_pin_glitch_filter(&config, &rx_glitch_filter_);
@@ -214,15 +222,21 @@ bool OpenTherm::init_rx_glitch_filter_() {
 
 	ESP_LOGI(TAG, "Enabled RX pin glitch filter on GPIO%d", inPin);
 	return true;
+#endif
 }
 
 void OpenTherm::deinit_rx_glitch_filter_() {
+#if !OQ_OT_RMT_SUPPORTED
+	rx_glitch_filter_ = nullptr;
+	return;
+#else
 	if (rx_glitch_filter_ == nullptr) {
 		return;
 	}
 	gpio_glitch_filter_disable(rx_glitch_filter_);
 	gpio_del_glitch_filter(rx_glitch_filter_);
 	rx_glitch_filter_ = nullptr;
+#endif
 }
 
 bool OpenTherm::init_rx_channel_() {
