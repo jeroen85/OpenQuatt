@@ -20,6 +20,7 @@ bool read_bit(unsigned long value, int index) {
 }
 }  // namespace
 
+#if OQ_OT_RMT_SUPPORTED
 static constexpr uint32_t OT_TX_RESOLUTION_HZ = 1000000;
 static constexpr uint32_t OT_RX_RESOLUTION_HZ = 1000000;
 static constexpr uint16_t OT_HALF_BIT_US = 500;
@@ -30,6 +31,7 @@ static constexpr uint32_t OT_RMT_HALF_BIT_MAX_US = 620;
 static constexpr uint32_t OT_RMT_FULL_BIT_MIN_US = 880;
 static constexpr uint32_t OT_RMT_FULL_BIT_MAX_US = 1120;
 static constexpr uint32_t OT_RX_SIGNAL_MAX_US = 2500;
+#endif
 static constexpr uint32_t OT_FRAME_DELAY_US = 100000;
 
 OpenTherm::OpenTherm(int inPin, int outPin, bool isSlave):
@@ -118,6 +120,11 @@ void OpenTherm::reset_receive_state_() {
 }
 
 bool OpenTherm::init_tx_channel_() {
+#if !OQ_OT_RMT_SUPPORTED
+	ESP_LOGW(TAG, "OpenTherm TX unavailable on this target: newer RMT driver headers missing");
+	tx_rmt_ready_ = false;
+	return false;
+#else
 	if (tx_rmt_ready_) {
 		return true;
 	}
@@ -178,6 +185,7 @@ bool OpenTherm::init_tx_channel_() {
 	tx_in_progress_ = false;
 	tx_rmt_ready_ = true;
 	return true;
+#endif
 }
 
 bool OpenTherm::init_rx_glitch_filter_() {
@@ -218,6 +226,11 @@ void OpenTherm::deinit_rx_glitch_filter_() {
 }
 
 bool OpenTherm::init_rx_channel_() {
+#if !OQ_OT_RMT_SUPPORTED
+	ESP_LOGW(TAG, "OpenTherm RX unavailable on this target: newer RMT driver headers missing");
+	rx_rmt_ready_ = false;
+	return false;
+#else
 	if (rx_rmt_ready_) {
 		return true;
 	}
@@ -267,9 +280,14 @@ bool OpenTherm::init_rx_channel_() {
 
 	ESP_LOGI(TAG, "Enabled RMT RX capture on GPIO%d", inPin);
 	return true;
+#endif
 }
 
 void OpenTherm::deinit_rx_channel_() {
+#if !OQ_OT_RMT_SUPPORTED
+	rx_rmt_ready_ = false;
+	return;
+#else
 	if (rx_channel_ == nullptr) {
 		rx_rmt_ready_ = false;
 		return;
@@ -278,8 +296,10 @@ void OpenTherm::deinit_rx_channel_() {
 	rmt_del_channel(rx_channel_);
 	rx_channel_ = nullptr;
 	rx_rmt_ready_ = false;
+#endif
 }
 
+#if OQ_OT_RMT_SUPPORTED
 bool IRAM_ATTR OpenTherm::queue_rx_frame_(const rmt_symbol_word_t *symbols, size_t num_symbols, uint32_t done_ts_cycles) {
 	if (symbols == nullptr || num_symbols == 0) {
 		return true;
@@ -452,6 +472,9 @@ void OpenTherm::process_rmt_frame_(const RxFrame &frame) {
 }
 
 bool IRAM_ATTR OpenTherm::arm_rmt_receive_() {
+#if !OQ_OT_RMT_SUPPORTED
+	return false;
+#else
 	if (!rx_rmt_ready_ || rx_channel_ == nullptr) {
 		return false;
 	}
@@ -465,6 +488,7 @@ bool IRAM_ATTR OpenTherm::arm_rmt_receive_() {
 	rx_receive_config.signal_range_max_ns = OT_RX_SIGNAL_MAX_US * 1000U;
 	rx_receive_config.flags.en_partial_rx = false;
 	return rmt_receive(rx_channel_, rx_symbols_, sizeof(rx_symbols_), &rx_receive_config) == ESP_OK;
+#endif
 }
 
 bool IRAM_ATTR OpenTherm::rx_done_callback_(rmt_channel_handle_t, const rmt_rx_done_event_data_t *edata, void *user_ctx) {
@@ -484,8 +508,13 @@ bool IRAM_ATTR OpenTherm::tx_done_callback_(rmt_channel_handle_t, const rmt_tx_d
 	}
 	return false;
 }
+#endif
 
 bool OpenTherm::queue_frame_tx_(unsigned long frame) {
+#if !OQ_OT_RMT_SUPPORTED
+	(void) frame;
+	return false;
+#else
 	if (!tx_rmt_ready_ || tx_channel_ == nullptr || tx_encoder_ == nullptr) {
 		return false;
 	}
@@ -527,6 +556,7 @@ bool OpenTherm::queue_frame_tx_(unsigned long frame) {
 		return false;
 	}
 	return true;
+#endif
 }
 
 bool OpenTherm::sendResponse(unsigned long request)
@@ -545,6 +575,7 @@ bool OpenTherm::sendResponse(unsigned long request)
 
 bool OpenTherm::process()
 {
+#if OQ_OT_RMT_SUPPORTED
 	RxFrame frame{};
 	while (pop_rx_frame_(frame)) {
 		process_rmt_frame_(frame);
@@ -624,6 +655,27 @@ bool OpenTherm::process()
 		}
 	}
 	return bDidProcessMessage;
+#else
+	const OpenThermStatus st = status;
+	const unsigned long current_response = response;
+	bool bDidProcessMessage = false;
+
+	if (st == OpenThermStatus::REQUEST_SENDING) {
+		status = OpenThermStatus::READY;
+		responseTimestamp = now_cycles();
+	}
+
+	if (st != OpenThermStatus::NOT_INITIALIZED && st != OpenThermStatus::READY &&
+	    st != OpenThermStatus::DELAY) {
+		status = OpenThermStatus::READY;
+		responseStatus = OpenThermResponseStatus::TIMEOUT;
+		if (processResponseCallback != NULL) {
+			processResponseCallback(current_response, OpenThermResponseStatus::TIMEOUT, pCallbackUser);
+			bDidProcessMessage = true;
+		}
+	}
+	return bDidProcessMessage;
+#endif
 }
 
 bool OpenTherm::parity(unsigned long frame) //odd parity
@@ -688,6 +740,7 @@ bool OpenTherm::isValidRequest(unsigned long request)
 
 void OpenTherm::end() {
 	deinit_rx_channel_();
+#if OQ_OT_RMT_SUPPORTED
 	if (tx_channel_ != nullptr) {
 		if (tx_in_progress_) {
 			rmt_tx_wait_all_done(tx_channel_, 50);
@@ -704,6 +757,7 @@ void OpenTherm::end() {
 		rmt_del_channel(tx_channel_);
 		tx_channel_ = nullptr;
 	}
+#endif
 	deinit_rx_glitch_filter_();
 	tx_rmt_ready_ = false;
 	reset_receive_state_();

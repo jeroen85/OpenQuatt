@@ -16,10 +16,21 @@ P MGS-TYPE SPARE DATA-ID  DATA-VALUE
 #include <stdint.h>
 #include "driver/gpio.h"
 #include "driver/gpio_filter.h"
+// The production OT path targets the newer ESP-IDF RMT driver API used on the
+// ESP32-S3 OT hardware. Some classic ESP32 build targets in CI still compile
+// this component even though OT is not wired there, and their packaged SDKs may
+// not expose the same RMT headers consistently. Keep a small compile-time
+// fallback so those legacy targets continue to build; if OpenQuatt eventually
+// standardizes fully on ESP32-S3, this branch can likely be removed again.
+#if __has_include("driver/rmt_common.h") && __has_include("driver/rmt_encoder.h") && __has_include("driver/rmt_rx.h") && __has_include("driver/rmt_tx.h")
+#define OQ_OT_RMT_SUPPORTED 1
 #include "driver/rmt_common.h"
 #include "driver/rmt_encoder.h"
 #include "driver/rmt_rx.h"
 #include "driver/rmt_tx.h"
+#else
+#define OQ_OT_RMT_SUPPORTED 0
+#endif
 #include "esp_cpu.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/portmacro.h"
@@ -200,8 +211,9 @@ private:
 	volatile OpenThermResponseStatus responseStatus;
 	volatile unsigned long responseTimestamp;
 	uint32_t cycles_per_us_ = 240;
-	bool rx_rmt_ready_ = false;
 	portMUX_TYPE mux_ = portMUX_INITIALIZER_UNLOCKED;
+#if OQ_OT_RMT_SUPPORTED
+	bool rx_rmt_ready_ = false;
 	static constexpr size_t RX_CAPTURE_SYMBOLS = 96;
 	static constexpr uint8_t RX_FRAME_QUEUE_SIZE = 4;
 	struct RxFrame {
@@ -223,24 +235,35 @@ private:
 	volatile bool tx_in_progress_ = false;
 	volatile bool tx_complete_ = false;
 	bool tx_rmt_ready_ = false;
-		
-		void setIdleState();
-		void activateBoiler();
-		void reset_receive_state_();
-		bool init_rx_glitch_filter_();
-		void deinit_rx_glitch_filter_();
-		bool init_rx_channel_();
-		void deinit_rx_channel_();
-		bool queue_rx_frame_(const rmt_symbol_word_t *symbols, size_t num_symbols, uint32_t done_ts_cycles);
-		bool pop_rx_frame_(RxFrame &frame);
-		bool decode_rmt_frame_(const RxFrame &frame, unsigned long &decoded_frame, OpenThermDriverError &error);
-		void process_rmt_frame_(const RxFrame &frame);
-		bool arm_rmt_receive_();
-		bool init_tx_channel_();
-		bool queue_frame_tx_(unsigned long frame);
+#else
+	bool rx_rmt_ready_ = false;
+	volatile bool edge_overflow_ = false;
+	uint32_t delay_until_ts_ = 0;
+	gpio_glitch_filter_handle_t rx_glitch_filter_ = nullptr;
+	volatile bool tx_in_progress_ = false;
+	volatile bool tx_complete_ = false;
+	bool tx_rmt_ready_ = false;
+#endif
 
-		static bool IRAM_ATTR rx_done_callback_(rmt_channel_handle_t rx_chan, const rmt_rx_done_event_data_t *edata, void *user_ctx);
-		static bool IRAM_ATTR tx_done_callback_(rmt_channel_handle_t tx_chan, const rmt_tx_done_event_data_t *edata, void *user_ctx);
+	void setIdleState();
+	void activateBoiler();
+	void reset_receive_state_();
+	bool init_rx_glitch_filter_();
+	void deinit_rx_glitch_filter_();
+	bool init_rx_channel_();
+	void deinit_rx_channel_();
+	bool arm_rmt_receive_();
+	bool init_tx_channel_();
+	bool queue_frame_tx_(unsigned long frame);
+#if OQ_OT_RMT_SUPPORTED
+	bool queue_rx_frame_(const rmt_symbol_word_t *symbols, size_t num_symbols, uint32_t done_ts_cycles);
+	bool pop_rx_frame_(RxFrame &frame);
+	bool decode_rmt_frame_(const RxFrame &frame, unsigned long &decoded_frame, OpenThermDriverError &error);
+	void process_rmt_frame_(const RxFrame &frame);
+
+	static bool IRAM_ATTR rx_done_callback_(rmt_channel_handle_t rx_chan, const rmt_rx_done_event_data_t *edata, void *user_ctx);
+	static bool IRAM_ATTR tx_done_callback_(rmt_channel_handle_t tx_chan, const rmt_tx_done_event_data_t *edata, void *user_ctx);
+#endif
 	void(*processResponseCallback)(unsigned long, OpenThermResponseStatus, void *);
 	void *pCallbackUser;	
 };
