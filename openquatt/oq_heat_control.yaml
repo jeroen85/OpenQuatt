@@ -738,12 +738,31 @@ interval:
             return !isnan(mode_raw) && ((int) roundf(mode_raw) == 1);
           };
 
+          auto hp_mode_is_heating = [&](bool is_hp1)->bool {
+            const float mode_raw = is_hp1 ? id(hp1_working_mode).state : id(${hc_secondary_working_mode_id}).state;
+            return !isnan(mode_raw) && ((int) roundf(mode_raw) == 2);
+          };
+
           auto hp_mode_target_is_cooling = [&](bool is_hp1)->bool {
             if (is_hp1) {
               return id(hp1_set_working_mode).has_state() && id(hp1_set_working_mode).current_option() == "Cooling";
             }
             return id(${hc_secondary_set_working_mode_id}).has_state() &&
                    id(${hc_secondary_set_working_mode_id}).current_option() == "Cooling";
+          };
+
+          auto hp_mode_target_is_heating = [&](bool is_hp1)->bool {
+            if (is_hp1) {
+              return id(hp1_set_working_mode).has_state() && id(hp1_set_working_mode).current_option() == "Heating";
+            }
+            return id(${hc_secondary_set_working_mode_id}).has_state() &&
+                   id(${hc_secondary_set_working_mode_id}).current_option() == "Heating";
+          };
+
+          auto hp_hold_mode_opt = [&](bool is_hp1)->const char* {
+            if (hp_mode_is_cooling(is_hp1) || hp_mode_target_is_cooling(is_hp1)) return "Cooling";
+            if (hp_mode_is_heating(is_hp1) || hp_mode_target_is_heating(is_hp1)) return "Heating";
+            return active_thermal_mode_opt;
           };
 
           auto valve_defrost_active = [&](bool is_hp1)->bool {
@@ -782,7 +801,7 @@ interval:
             // Keep the HP in the active thermal mode and preserve a non-zero level.
             // Used both for real defrost hold and for enforcing compressor minimum runtime
             // when supervisory CM gating would otherwise stop the unit too early.
-            const char* opt = active_thermal_mode_opt;
+            const char* opt = hp_hold_mode_opt(is_hp1);
             if (is_hp1) {
               if (!id(hp1_set_working_mode).has_state() || id(hp1_set_working_mode).current_option() != opt) {
                 auto c = id(hp1_set_working_mode).make_call();
