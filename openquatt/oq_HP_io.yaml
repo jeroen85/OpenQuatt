@@ -33,9 +33,9 @@ modbus_controller:
   - id: ${hp_id}
     address: ${device_address}
     modbus_id: mod_bus
-    update_interval: 5s
-    command_throttle: 200ms
-    max_cmd_retries: 2
+    update_interval: ${oq_modbus_update_interval_s}s
+    command_throttle: ${oq_modbus_command_throttle_ms}ms
+    max_cmd_retries: ${oq_modbus_max_cmd_retries}
     offline_skip_updates: 5
     setup_priority: -10
     on_offline:
@@ -1650,6 +1650,43 @@ binary_sensor:
     web_server:
       sorting_group_id: oq_diagnostics_hp
 
+  - platform: template
+    id: ${hp_id}_ot_fault_active
+    name: "${prefix}OT fault active"
+    internal: true
+    device_class: problem
+    lambda: |-
+      // OT fault should only reflect explicit failure bits, not protection or cycle states.
+      return
+          id(${hp_id}_fail_outdoor_ambient_temp).state ||
+          id(${hp_id}_fail_outdoor_evap_temp).state ||
+          id(${hp_id}_fail_gas_discharge_temp).state ||
+          id(${hp_id}_fail_gas_return_temp).state ||
+          id(${hp_id}_fail_evap_pressure).state ||
+          id(${hp_id}_fail_condenser_pressure).state ||
+          id(${hp_id}_fail_high_pressure_lock).state ||
+          id(${hp_id}_fail_low_pressure_lock).state ||
+          id(${hp_id}_fail_dc_fan_a).state ||
+          id(${hp_id}_fail_evap_pressure_lock).state ||
+          id(${hp_id}_fail_condenser_pressure_lock).state ||
+          id(${hp_id}_fail_evi_pressure).state ||
+          id(${hp_id}_fail_evi_inlet_temp).state ||
+          id(${hp_id}_fail_evi_outlet_temp).state ||
+          id(${hp_id}_fail_master_slave_comm).state ||
+          id(${hp_id}_fail_pcb_module_comm).state ||
+          id(${hp_id}_fail_phase_open_short).state ||
+          id(${hp_id}_fail_phase_overload).state ||
+          id(${hp_id}_fail_compressor_driver).state ||
+          id(${hp_id}_fail_module_vdc).state ||
+          id(${hp_id}_fail_ac_current).state ||
+          id(${hp_id}_fail_eeprom).state ||
+          id(${hp_id}_fail_fan_pcb).state ||
+          id(${hp_id}_fail_inlet_water_temp).state ||
+          id(${hp_id}_fail_outlet_water_temp).state ||
+          id(${hp_id}_fail_inner_coil_temp).state ||
+          id(${hp_id}_fail_reserved_temp).state ||
+          id(${hp_id}_fail_dc_water_pump).state;
+
   # ----------------------------
   # TEXT SENSOR
   # ----------------------------
@@ -1748,6 +1785,7 @@ text_sensor:
       if (id(${hp_id}_fail_dc_water_pump).state) add("DC water pump failure");
 
       return s.empty() ? std::string("None") : s;
+
 
   - platform: template
     id: ${hp_id}_pcb_firmware_version

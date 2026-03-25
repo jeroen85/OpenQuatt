@@ -528,6 +528,7 @@ interval:
 # - allowed-level mapping + min-runtime + apply + runtime bookkeeping
 # ----------------------------
   - interval: ${oq_heat_loop_tick_s}s
+    startup_delay: 4000ms
     then:
       - lambda: |-
           const uint32_t now_ms = (uint32_t) millis();

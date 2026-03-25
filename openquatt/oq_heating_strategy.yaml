@@ -1309,6 +1309,7 @@ text_sensor:
 # ----------------------------
 interval:
   - interval: ${oq_strategy_loop_s}s
+    startup_delay: 800ms
     then:
       - lambda: |-
           // Select mode via stable option index (0=Power House, 1=Heating Curve)

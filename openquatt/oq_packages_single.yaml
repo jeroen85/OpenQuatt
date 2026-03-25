@@ -80,6 +80,13 @@ oq_sensor_sources: !include
   vars:
     sensor_sources_duo_flow_internal: "true"
     flow_secondary_flow_sensor_id: "hp1_flow"
+oq_ot_slave: !include
+  file: oq_ot_slave.yaml
+  vars:
+    ot_secondary_present: "0"
+    ot_secondary_last_applied_level_id: "hp1_last_applied_level"
+    ot_secondary_working_mode_id: "hp1_working_mode"
+    ot_secondary_fault_binary_sensor_id: "hp1_ot_fault_active"
 oq_debug_testing: !include oq_debug_testing.yaml
 oq_webserver: !include oq_webserver.yaml
 heatpump1: !include

@@ -1507,8 +1507,10 @@ views:
                     name: Effectieve kamertemperatuurbron
                   - entity: sensor.openquatt_room_temperature_selected
                     name: Geselecteerde kamertemperatuur
-                  - entity: sensor.openquatt_cic_ot_room_temperature
-                    name: Kamertemperatuur (CIC OT)
+                  - entity: sensor.openquatt_cic_room_temperature
+                    name: Kamertemperatuur (CIC)
+                  - entity: sensor.openquatt_ot_room_temperature
+                    name: Kamertemperatuur (OT-thermostaat)
                   - entity: sensor.openquatt_ha_thermostat_room_temperature
                     name: Kamertemperatuur (HA-invoer)
           - type: vertical-stack
@@ -1591,8 +1593,10 @@ views:
                     name: Effectieve setpointbron
                   - entity: sensor.openquatt_room_setpoint_selected
                     name: Geselecteerd kamer setpoint
-                  - entity: sensor.openquatt_cic_ot_room_setpoint
-                    name: Kamer setpoint (CIC OT)
+                  - entity: sensor.openquatt_cic_room_setpoint
+                    name: Kamer setpoint (CIC)
+                  - entity: sensor.openquatt_ot_room_setpoint
+                    name: Kamer setpoint (OT-thermostaat)
                   - entity: sensor.openquatt_ha_thermostat_setpoint
                     name: Kamer setpoint (HA-invoer)
           - type: vertical-stack
@@ -1613,8 +1617,8 @@ views:
                     name: Effectieve koeltoestemmingsbron
                   - entity: binary_sensor.openquatt_cooling_enable_selected
                     name: Geselecteerde koeltoestemming
-                  - entity: binary_sensor.openquatt_cic_ot_cooling_enabled
-                    name: Koeltoestemming (CIC OT)
+                  - entity: binary_sensor.openquatt_cic_cooling_enabled
+                    name: Koeltoestemming (CIC)
                   - entity: binary_sensor.openquatt_ha_cooling_enable
                     name: Koeltoestemming (HA-invoer)
           - type: vertical-stack
@@ -1809,6 +1813,49 @@ views:
           - condition: state
             entity: binary_sensor.openquatt_ha_dynamic_sources_package_active
             state_not: 'on'
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:thermostat-box
+            heading: OpenTherm-thermostaat
+            heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Uitleg</strong></summary>
+
+              Dit blok toont de directe OpenTherm-thermostaatkoppeling.
+              Gebruik het om te controleren dat OpenQuatt warmtevraag,
+              koelvraag en kamerwaarden rechtstreeks van de thermostaat ziet,
+              dus buiten CIC of Home Assistant om.
+
+              Controleer bij afwijkingen eerst:
+              - `OpenTherm Enabled`
+              - `OT link problem`
+              - `Thermostaat CH enable`
+              - `Control setpoint`
+              - `Room setpoint`
+              - `Room temperature`
+
+              </details>
+            text_only: true
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: switch.openquatt_opentherm_enabled
+                name: OpenTherm Enabled
+              - entity: binary_sensor.openquatt_ot_link_problem
+                name: OT link problem
+              - entity: binary_sensor.openquatt_ot_thermostat_ch_enable
+                name: Thermostaat CH enable
+              - entity: binary_sensor.openquatt_ot_thermostat_cooling_enable
+                name: Thermostaat cooling enable
+              - entity: sensor.openquatt_ot_control_setpoint
+                name: Control setpoint
+              - entity: sensor.openquatt_ot_room_setpoint
+                name: Room setpoint
+              - entity: sensor.openquatt_ot_room_temperature
+                name: Room temperature
       - type: grid
         cards:
           - type: heading
