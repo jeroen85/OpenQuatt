@@ -202,7 +202,7 @@ views:
               legend: true
               labels: false
             points_per_hour: 30
-            hours_to_show: 24
+            hours_to_show: 12
             line_width: 2
             hour24: true
             height: 80
@@ -1998,48 +1998,6 @@ views:
       - type: grid
         cards:
           - type: heading
-            icon: mdi:thermostat-box
-            heading: OpenTherm thermostat
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-              <summary><strong>Explanation</strong></summary>
-
-              This block shows the direct OpenTherm thermostat link.
-              Use it to verify that OpenQuatt sees thermostat heat/cooling intent
-              and room values without going through CIC or Home Assistant.
-
-              Check these first when OT behavior looks wrong:
-              - `OpenTherm Enabled`
-              - `OT link problem`
-              - `Thermostat CH enable`
-              - `Control setpoint`
-              - `Room setpoint`
-              - `Room temperature`
-
-              </details>
-            text_only: true
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: switch.openquatt_opentherm_enabled
-                name: OpenTherm Enabled
-              - entity: binary_sensor.openquatt_ot_link_problem
-                name: OT link problem
-              - entity: binary_sensor.openquatt_ot_thermostat_ch_enable
-                name: Thermostat CH enable
-              - entity: binary_sensor.openquatt_ot_thermostat_cooling_enable
-                name: Thermostat cooling enable
-              - entity: sensor.openquatt_ot_control_setpoint
-                name: Control setpoint
-              - entity: sensor.openquatt_ot_room_setpoint
-                name: Room setpoint
-              - entity: sensor.openquatt_ot_room_temperature
-                name: Room temperature
-      - type: grid
-        cards:
-          - type: heading
             heading: Cooling - Dew point, temperature, humidity sources
             heading_style: title
             icon: mdi:snowflake
@@ -2224,6 +2182,48 @@ views:
                 entity: input_number.openquatt_cooling_room_count
                 above: 5
         column_span: 3
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:thermostat-box
+            heading: OpenTherm thermostat
+            heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Explanation</strong></summary>
+
+              This block shows the direct OpenTherm thermostat link.
+              Use it to verify that OpenQuatt sees thermostat heat/cooling intent
+              and room values without going through CIC or Home Assistant.
+
+              Check these first when OT behavior looks wrong:
+              - `OpenTherm Enabled`
+              - `OT link problem`
+              - `Thermostat CH enable`
+              - `Control setpoint`
+              - `Room setpoint`
+              - `Room temperature`
+
+              </details>
+            text_only: true
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: switch.openquatt_opentherm_enabled
+                name: OpenTherm Enabled
+              - entity: binary_sensor.openquatt_ot_link_problem
+                name: OT link problem
+              - entity: binary_sensor.openquatt_ot_thermostat_ch_enable
+                name: Thermostat CH enable
+              - entity: binary_sensor.openquatt_ot_thermostat_cooling_enable
+                name: Thermostat cooling enable
+              - entity: sensor.openquatt_ot_control_setpoint
+                name: Control setpoint
+              - entity: sensor.openquatt_ot_room_setpoint
+                name: Room setpoint
+              - entity: sensor.openquatt_ot_room_temperature
+                name: Room temperature
       - type: grid
         cards:
           - type: heading
