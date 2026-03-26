@@ -1419,7 +1419,6 @@ views:
               - source selection during tuning
               - quick comparison between CIC, local, and HA Input
               - validation of the effective control input
-              - verification of automatic HA fallback to HA inputs during CIC outages
 
               </details>
             text_only: true
@@ -1555,24 +1554,6 @@ views:
                     name: Cooling enable (CIC)
                   - entity: binary_sensor.openquatt_ha_cooling_enable
                     name: Cooling enable (HA Input)
-          - type: vertical-stack
-            cards:
-              - type: heading
-                icon: mdi:swap-horizontal-bold
-                heading: HA fallback for CIC outage
-                heading_style: subtitle
-                grid_options:
-                  columns: 12
-                  rows: 1
-              - type: entities
-                show_header_toggle: false
-                entities:
-                  - entity: switch.openquatt_room_cic_auto_failover
-                    name: Automatic HA fallback
-                  - entity: binary_sensor.openquatt_room_cic_failover_active
-                    name: HA fallback active
-                  - entity: sensor.openquatt_room_cic_failover_status
-                    name: HA fallback status
         column_span: 3
       - type: grid
         cards:

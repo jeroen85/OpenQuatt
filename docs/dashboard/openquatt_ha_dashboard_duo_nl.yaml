@@ -1762,10 +1762,6 @@ views:
               - snelle vergelijking tussen CIC, lokaal en HA input
 
               - validatie van de effectieve regelinput
-
-              - controle van automatische HA-terugval naar HA-inputs bij
-              CIC-uitval
-
               - bij `Flow bron = Outdoor unit` in een Duo-opstelling verschijnt
               een extra
                 keuze voor `Flowmeter HP1`, `Flowmeter HP2` of de bestaande lokale
@@ -1921,24 +1917,6 @@ views:
                     name: Koeltoestemming (CIC)
                   - entity: binary_sensor.openquatt_ha_cooling_enable
                     name: Koeltoestemming (HA-invoer)
-          - type: vertical-stack
-            cards:
-              - type: heading
-                icon: mdi:swap-horizontal-bold
-                heading: HA-terugval bij CIC-uitval
-                heading_style: subtitle
-                grid_options:
-                  columns: 12
-                  rows: 1
-              - type: entities
-                show_header_toggle: false
-                entities:
-                  - entity: switch.openquatt_room_cic_auto_failover
-                    name: Automatische HA-terugval
-                  - entity: binary_sensor.openquatt_room_cic_failover_active
-                    name: HA-terugval actief
-                  - entity: sensor.openquatt_room_cic_failover_status
-                    name: Status HA-terugval
         column_span: 3
       - type: grid
         cards:

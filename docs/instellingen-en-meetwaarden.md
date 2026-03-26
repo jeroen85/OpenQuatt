@@ -101,7 +101,6 @@ Belangrijk: `oq_flow_mismatch_threshold_lph` en `oq_flow_mismatch_hyst_lph` zijn
 - `cic_backoff_max_ms`
 - `cic_stale_after_ms`
 - `cic_feed_error_trip_n`
-- `oq_room_cic_recovery_hold_default_min`
 - `ha_outside_temp_entity_id`
 - `ha_room_setpoint_entity_id`
 - `ha_room_temp_entity_id`
@@ -126,13 +125,12 @@ Deze instellingen gebruik je als eerste als je gedrag wilt begrenzen of verklare
 
 Praktisch bepaal je hiermee hoeveel ruimte OpenQuatt krijgt, wanneer stille uren gelden en hoe snel het systeem naar ketelhulp of terugschakelen beweegt. De vaste low-load fallbackdrempels zitten intern in substitutions; tijdens runtime tune je vooral de dynamische factoren, hysterese en re-entry block.
 
-### Bronselectie en failover
+### Bronselectie
 
 Belangrijke runtime-instellingen in deze groep zijn:
 
 - `Room Temperature Source`
 - `Room Setpoint Source`
-- `Room CIC Auto Failover`
 
 ### Verwarmingsstrategie
 
@@ -248,8 +246,6 @@ Belangrijke instellingen en signalen:
 - `Room Setpoint Source`
 - `Room Temperature Effective Source`
 - `Room Setpoint Effective Source`
-- `Room CIC Failover Active`
-- `Room CIC Failover Status`
 
 Dit is vaak de belangrijkste groep bij onverklaarbaar gedrag. Als de geselecteerde bron niet klopt, helpt fijnregelen vrijwel nooit.
 
