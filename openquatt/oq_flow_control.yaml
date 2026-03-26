@@ -354,8 +354,9 @@ interval:
           static int  stable_cnt = 0;           // stability counter for last_good_pwm
           static bool pi_failsafe = false;       // latched per tick
 
-          // Setpoint ramp state
+          // Setpoint ramp + PI memory state
           static float sp_f = NAN;
+          static float last_pi_e = 0.0f;
 
           // Explicit execution mode keeps the control flow readable and makes
           // status publishing deterministic.
@@ -401,6 +402,7 @@ interval:
             id(oq_flow_i) = 0.0f;
             startup_hold = STARTUP_HOLD_TICKS;
             sp_f = NAN;
+            last_pi_e = 0.0f;
             stable_cnt = 0;
           };
           // Compact one-line diagnostics to compare mode decisions over time.
@@ -441,6 +443,7 @@ interval:
               pwm_local = kFailsafeIpwm;
               ESP_LOGW("flow", "Flow PI failsafe: sp=%0.1f pv=%0.1f -> forcing iPWM=%d", sp_target, pv, kFailsafeIpwm);
               id(oq_flow_i) = 0.0f;
+              last_pi_e = 0.0f;
               stable_cnt = 0;
               sp_f = NAN;
               return pwm_local;
@@ -474,8 +477,32 @@ interval:
             const float kp = id(oq_flow_kp).state;
             const float ki = id(oq_flow_ki).state;
 
-            id(oq_flow_i) += e * dt;
-            id(oq_flow_i) = fmaxf(-6000.0f, fminf(6000.0f, id(oq_flow_i)));
+            // Anti-windup:
+            // - keep I inactive during large setpoint / plant transients
+            // - quickly bleed stored I when we cross the setpoint
+            // - slowly unwind I inside the deadband so it cannot keep pushing past target
+            constexpr float i_active_band_lph = 60.0f;
+            constexpr float i_cross_keep = 0.25f;
+            constexpr float i_deadband_keep = 0.60f;
+            constexpr float i_large_err_keep = 0.35f;
+            const bool have_e = (e > 0.0f) || (e < 0.0f);
+            const bool have_last_e = (last_pi_e > 0.0f) || (last_pi_e < 0.0f);
+            const bool sign_flip = have_e && have_last_e && ((e > 0.0f) != (last_pi_e > 0.0f));
+
+            if (sign_flip) {
+              id(oq_flow_i) *= i_cross_keep;
+            }
+
+            if (!have_e) {
+              id(oq_flow_i) *= i_deadband_keep;
+            } else if (fabsf(e) <= i_active_band_lph) {
+              id(oq_flow_i) += e * dt;
+            } else {
+              id(oq_flow_i) *= i_large_err_keep;
+            }
+
+            id(oq_flow_i) = fmaxf(-4000.0f, fminf(4000.0f, id(oq_flow_i)));
+            last_pi_e = e;
 
             float u = kp * e + ki * id(oq_flow_i);
             // Asymmetric action limit: allow faster "pump harder" corrections (u_up)
@@ -545,6 +572,7 @@ interval:
           if (mode != id(oq_flow_last_mode)) {
             id(oq_flow_i) = 0.0f;
             sp_f = NAN;
+            last_pi_e = 0.0f;
             stable_cnt = 0;
           }
           id(oq_flow_last_mode) = mode;
@@ -583,12 +611,14 @@ interval:
             stable_cnt = 0;
             pi_failsafe = false;
             sp_f = NAN;
+            last_pi_e = 0.0f;
             exec_mode = FLOW_MODE_MANUAL;
           } else if (is_frost) {
             pwm = (int) roundf(id(oq_flow_frost_pwm).state);
             pwm = clamp_iPWM(pwm);
             stable_cnt = 0;
             pi_failsafe = false;
+            last_pi_e = 0.0f;
             exec_mode = FLOW_MODE_FROST;
           } else {
             pwm = run_auto_pi(pwm);
