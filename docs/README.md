@@ -35,3 +35,4 @@ Passive cooling wordt nu in hoofdlijnen beschreven in:
 - [Regelgedrag van OpenQuatt](regelgedrag-van-openquatt.md): systeemstanden, overgangen en flowregeling.
 - [Instellingen en meetwaarden](instellingen-en-meetwaarden.md): compile-time en runtime instellingen, plus de belangrijkste meetwaarden.
 - [Ontwikkelen op Mac en WSL](ontwikkelen-op-mac-en-wsl.md): aanbevolen lokale ontwikkelworkflow voor onderhoud en builds.
+- [OpenQuatt CiC Bridge](cic-bridge/README.md): aanvullende bridge-docs en een ESPHome-config om CiC-Modbusverkeer uit bestaande OpenQuatt-entities te emuleren.

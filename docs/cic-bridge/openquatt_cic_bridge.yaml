@@ -1,0 +1,702 @@
+substitutions:
+  device_name: openquatt-cic-bridge
+  friendly_name: OpenQuatt CiC Bridge
+  ha_entity_prefix: openquatt
+
+wifi:
+  networks:
+    - ssid: !secret wifi_ssid
+      password: !secret wifi_password
+  reboot_timeout: 0s
+  fast_connect: true
+  power_save_mode: high
+  min_auth_mode: wpa2
+
+api:
+
+ota:
+  - platform: esphome
+
+logger:
+  level: WARN
+  baud_rate: 0
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  min_version: 2026.3.0
+  name_add_mac_suffix: false
+  on_boot:
+    priority: -100
+    then:
+      - logger.log: "OpenQuatt CiC Bridge gestart in dual Modbus bridge mode"
+
+esp32:
+  board: esp32-s3-devkitc-1
+  flash_size: 8MB
+  variant: esp32s3
+  cpu_frequency: 240MHz
+  framework:
+    type: esp-idf
+    version: recommended
+    sdkconfig_options:
+      COMPILER_OPTIMIZATION_SIZE: y
+      CONFIG_BT_ENABLED: n
+
+uart:
+  - id: mod_bus
+    tx_pin: GPIO6
+    rx_pin: GPIO5
+    baud_rate: 19200
+    data_bits: 8
+    stop_bits: 1
+    parity: EVEN
+    rx_full_threshold: 1
+    rx_timeout: 1
+    debug:
+      direction: BOTH
+
+modbus:
+  - uart_id: mod_bus
+    id: modbus1
+    role: server
+    send_wait_time: 50ms
+
+text_sensor:
+  - platform: homeassistant
+    id: hp1_set_working_mode_ha
+    entity_id: select.${ha_entity_prefix}_hp1_set_working_mode
+    internal: true
+  - platform: homeassistant
+    id: hp1_set_compressor_level_ha
+    entity_id: select.${ha_entity_prefix}_hp1_set_compressor_level
+    internal: true
+  - platform: homeassistant
+    id: hp1_silent_mode_ha
+    entity_id: select.${ha_entity_prefix}_hp1_silent_mode
+    internal: true
+  - platform: homeassistant
+    id: hp1_set_pump_mode_ha
+    entity_id: select.${ha_entity_prefix}_hp1_set_pump_mode
+    internal: true
+
+  - platform: homeassistant
+    id: hp2_set_working_mode_ha
+    entity_id: select.${ha_entity_prefix}_hp2_set_working_mode
+    internal: true
+  - platform: homeassistant
+    id: hp2_set_compressor_level_ha
+    entity_id: select.${ha_entity_prefix}_hp2_set_compressor_level
+    internal: true
+  - platform: homeassistant
+    id: hp2_silent_mode_ha
+    entity_id: select.${ha_entity_prefix}_hp2_silent_mode
+    internal: true
+  - platform: homeassistant
+    id: hp2_set_pump_mode_ha
+    entity_id: select.${ha_entity_prefix}_hp2_set_pump_mode
+    internal: true
+
+number:
+  - platform: homeassistant
+    id: hp1_set_pump_speed_ha
+    entity_id: number.${ha_entity_prefix}_hp1_set_pump_speed
+    internal: true
+
+  - platform: homeassistant
+    id: hp2_set_pump_speed_ha
+    entity_id: number.${ha_entity_prefix}_hp2_set_pump_speed
+    internal: true
+
+sensor:
+  - platform: homeassistant
+    id: hp1_r2099
+    entity_id: sensor.${ha_entity_prefix}_hp1_working_mode
+    internal: true
+  - platform: homeassistant
+    id: hp1_r2100
+    entity_id: sensor.${ha_entity_prefix}_hp1_ac_voltage
+    internal: true
+  - platform: homeassistant
+    id: hp1_r2101
+    entity_id: sensor.${ha_entity_prefix}_hp1_ac_current
+    internal: true
+  - platform: homeassistant
+    id: hp1_r2102
+    entity_id: sensor.${ha_entity_prefix}_hp1_compressor_frequency_demand
+    internal: true
+  - platform: homeassistant
+    id: hp1_r2103
+    entity_id: sensor.${ha_entity_prefix}_hp1_compressor_frequency
+    internal: true
+  - platform: homeassistant
+    id: hp1_r2104
+    entity_id: sensor.${ha_entity_prefix}_hp1_fan_speed_max
+    internal: true
+  - platform: homeassistant
+    id: hp1_r2105
+    entity_id: sensor.${ha_entity_prefix}_hp1_fan_speed
+    internal: true
+  - platform: homeassistant
+    id: hp1_r2107
+    entity_id: sensor.${ha_entity_prefix}_hp1_eev_steps
+    internal: true
+  - platform: template
+    id: hp1_r2108
+    internal: true
+    lambda: |-
+      uint16_t bits = 0;
+      if (id(hp1_fan_low_speed_mode_ha).state) bits |= 0x1;
+      if (id(hp1_bottom_plate_heater_ha).state) bits |= 0x4;
+      if (id(hp1_crankcase_heater_ha).state) bits |= 0x8;
+      if (id(hp1_fan_defrost_mode_ha).state) bits |= 0x10;
+      if (id(hp1_fan_high_speed_mode_ha).state) bits |= 0x20;
+      if (id(hp1_four_way_valve_ha).state) bits |= 0x40;
+      if (id(hp1_pump_relay_ha).state) bits |= 0x800;
+      return bits;
+  - platform: homeassistant
+    id: hp1_r2110
+    entity_id: sensor.${ha_entity_prefix}_hp1_outside_temperature
+    internal: true
+  - platform: homeassistant
+    id: hp1_r2111
+    entity_id: sensor.${ha_entity_prefix}_hp1_evaporator_coil_temperature
+    internal: true
+  - platform: homeassistant
+    id: hp1_r2112
+    entity_id: sensor.${ha_entity_prefix}_hp1_gas_discharge_temperature
+    internal: true
+  - platform: homeassistant
+    id: hp1_r2113
+    entity_id: sensor.${ha_entity_prefix}_hp1_gas_return_temperature
+    internal: true
+  - platform: homeassistant
+    id: hp1_r2116
+    entity_id: sensor.${ha_entity_prefix}_hp1_evaporator_pressure
+    internal: true
+  - platform: homeassistant
+    id: hp1_r2117
+    entity_id: sensor.${ha_entity_prefix}_hp1_condenser_pressure
+    internal: true
+  - platform: template
+    id: hp1_r2118
+    internal: true
+    lambda: |-
+      return id(hp1_defrost_ha).state ? 1 : 0;
+  - platform: template
+    id: hp1_r2122
+    internal: true
+    lambda: |-
+      return 0x011E;
+  - platform: homeassistant
+    id: hp1_r2131
+    entity_id: sensor.${ha_entity_prefix}_hp1_condensing_temperature
+    internal: true
+  - platform: homeassistant
+    id: hp1_r2132
+    entity_id: sensor.${ha_entity_prefix}_hp1_evaporating_temperature
+    internal: true
+  - platform: homeassistant
+    id: hp1_r2133
+    entity_id: sensor.${ha_entity_prefix}_hp1_water_in_temperature
+    internal: true
+  - platform: homeassistant
+    id: hp1_r2134
+    entity_id: sensor.${ha_entity_prefix}_hp1_water_out_temperature
+    internal: true
+  - platform: homeassistant
+    id: hp1_r2135
+    entity_id: sensor.${ha_entity_prefix}_hp1_inner_coil_temperature
+    internal: true
+  - platform: homeassistant
+    id: hp1_r2137
+    entity_id: sensor.${ha_entity_prefix}_hp1_pump_power
+    internal: true
+  - platform: homeassistant
+    id: hp1_r2138
+    entity_id: sensor.${ha_entity_prefix}_hp1_flow
+    internal: true
+
+  - platform: homeassistant
+    id: hp2_r2099
+    entity_id: sensor.${ha_entity_prefix}_hp2_working_mode
+    internal: true
+  - platform: homeassistant
+    id: hp2_r2100
+    entity_id: sensor.${ha_entity_prefix}_hp2_ac_voltage
+    internal: true
+  - platform: homeassistant
+    id: hp2_r2101
+    entity_id: sensor.${ha_entity_prefix}_hp2_ac_current
+    internal: true
+  - platform: homeassistant
+    id: hp2_r2102
+    entity_id: sensor.${ha_entity_prefix}_hp2_compressor_frequency_demand
+    internal: true
+  - platform: homeassistant
+    id: hp2_r2103
+    entity_id: sensor.${ha_entity_prefix}_hp2_compressor_frequency
+    internal: true
+  - platform: homeassistant
+    id: hp2_r2104
+    entity_id: sensor.${ha_entity_prefix}_hp2_fan_speed_max
+    internal: true
+  - platform: homeassistant
+    id: hp2_r2105
+    entity_id: sensor.${ha_entity_prefix}_hp2_fan_speed
+    internal: true
+  - platform: homeassistant
+    id: hp2_r2107
+    entity_id: sensor.${ha_entity_prefix}_hp2_eev_steps
+    internal: true
+  - platform: template
+    id: hp2_r2108
+    internal: true
+    lambda: |-
+      uint16_t bits = 0;
+      if (id(hp2_fan_low_speed_mode_ha).state) bits |= 0x1;
+      if (id(hp2_bottom_plate_heater_ha).state) bits |= 0x4;
+      if (id(hp2_crankcase_heater_ha).state) bits |= 0x8;
+      if (id(hp2_fan_defrost_mode_ha).state) bits |= 0x10;
+      if (id(hp2_fan_high_speed_mode_ha).state) bits |= 0x20;
+      if (id(hp2_four_way_valve_ha).state) bits |= 0x40;
+      if (id(hp2_pump_relay_ha).state) bits |= 0x800;
+      return bits;
+  - platform: homeassistant
+    id: hp2_r2110
+    entity_id: sensor.${ha_entity_prefix}_hp2_outside_temperature
+    internal: true
+  - platform: homeassistant
+    id: hp2_r2111
+    entity_id: sensor.${ha_entity_prefix}_hp2_evaporator_coil_temperature
+    internal: true
+  - platform: homeassistant
+    id: hp2_r2112
+    entity_id: sensor.${ha_entity_prefix}_hp2_gas_discharge_temperature
+    internal: true
+  - platform: homeassistant
+    id: hp2_r2113
+    entity_id: sensor.${ha_entity_prefix}_hp2_gas_return_temperature
+    internal: true
+  - platform: homeassistant
+    id: hp2_r2116
+    entity_id: sensor.${ha_entity_prefix}_hp2_evaporator_pressure
+    internal: true
+  - platform: homeassistant
+    id: hp2_r2117
+    entity_id: sensor.${ha_entity_prefix}_hp2_condenser_pressure
+    internal: true
+  - platform: template
+    id: hp2_r2118
+    internal: true
+    lambda: |-
+      return id(hp2_defrost_ha).state ? 1 : 0;
+  - platform: template
+    id: hp2_r2122
+    internal: true
+    lambda: |-
+      return 0x011E;
+  - platform: homeassistant
+    id: hp2_r2131
+    entity_id: sensor.${ha_entity_prefix}_hp2_condensing_temperature
+    internal: true
+  - platform: homeassistant
+    id: hp2_r2132
+    entity_id: sensor.${ha_entity_prefix}_hp2_evaporating_temperature
+    internal: true
+  - platform: homeassistant
+    id: hp2_r2133
+    entity_id: sensor.${ha_entity_prefix}_hp2_water_in_temperature
+    internal: true
+  - platform: homeassistant
+    id: hp2_r2134
+    entity_id: sensor.${ha_entity_prefix}_hp2_water_out_temperature
+    internal: true
+  - platform: homeassistant
+    id: hp2_r2135
+    entity_id: sensor.${ha_entity_prefix}_hp2_inner_coil_temperature
+    internal: true
+  - platform: homeassistant
+    id: hp2_r2137
+    entity_id: sensor.${ha_entity_prefix}_hp2_pump_power
+    internal: true
+  - platform: homeassistant
+    id: hp2_r2138
+    entity_id: sensor.${ha_entity_prefix}_hp2_flow
+    internal: true
+
+binary_sensor:
+  - platform: homeassistant
+    id: hp1_fan_low_speed_mode_ha
+    entity_id: binary_sensor.${ha_entity_prefix}_hp1_fan_low_speed_mode
+    internal: true
+  - platform: homeassistant
+    id: hp1_bottom_plate_heater_ha
+    entity_id: binary_sensor.${ha_entity_prefix}_hp1_bottom_plate_heater
+    internal: true
+  - platform: homeassistant
+    id: hp1_crankcase_heater_ha
+    entity_id: binary_sensor.${ha_entity_prefix}_hp1_crankcase_heater
+    internal: true
+  - platform: homeassistant
+    id: hp1_fan_defrost_mode_ha
+    entity_id: binary_sensor.${ha_entity_prefix}_hp1_fan_defrost_mode
+    internal: true
+  - platform: homeassistant
+    id: hp1_fan_high_speed_mode_ha
+    entity_id: binary_sensor.${ha_entity_prefix}_hp1_fan_high_speed_mode
+    internal: true
+  - platform: homeassistant
+    id: hp1_four_way_valve_ha
+    entity_id: binary_sensor.${ha_entity_prefix}_hp1_4_way_valve
+    internal: true
+  - platform: homeassistant
+    id: hp1_pump_relay_ha
+    entity_id: binary_sensor.${ha_entity_prefix}_hp1_dc_pump_relay
+    internal: true
+  - platform: homeassistant
+    id: hp1_defrost_ha
+    entity_id: binary_sensor.${ha_entity_prefix}_hp1_defrost
+    internal: true
+
+  - platform: homeassistant
+    id: hp2_fan_low_speed_mode_ha
+    entity_id: binary_sensor.${ha_entity_prefix}_hp2_fan_low_speed_mode
+    internal: true
+  - platform: homeassistant
+    id: hp2_bottom_plate_heater_ha
+    entity_id: binary_sensor.${ha_entity_prefix}_hp2_bottom_plate_heater
+    internal: true
+  - platform: homeassistant
+    id: hp2_crankcase_heater_ha
+    entity_id: binary_sensor.${ha_entity_prefix}_hp2_crankcase_heater
+    internal: true
+  - platform: homeassistant
+    id: hp2_fan_defrost_mode_ha
+    entity_id: binary_sensor.${ha_entity_prefix}_hp2_fan_defrost_mode
+    internal: true
+  - platform: homeassistant
+    id: hp2_fan_high_speed_mode_ha
+    entity_id: binary_sensor.${ha_entity_prefix}_hp2_fan_high_speed_mode
+    internal: true
+  - platform: homeassistant
+    id: hp2_four_way_valve_ha
+    entity_id: binary_sensor.${ha_entity_prefix}_hp2_4_way_valve
+    internal: true
+  - platform: homeassistant
+    id: hp2_pump_relay_ha
+    entity_id: binary_sensor.${ha_entity_prefix}_hp2_dc_pump_relay
+    internal: true
+  - platform: homeassistant
+    id: hp2_defrost_ha
+    entity_id: binary_sensor.${ha_entity_prefix}_hp2_defrost
+    internal: true
+
+modbus_controller:
+  - id: hp1_server
+    address: 1
+    modbus_id: modbus1
+    setup_priority: -100
+    update_interval: never
+    server_courtesy_response:
+      enabled: true
+      register_last_address: 5000
+      register_value: 0
+    server_registers:
+      - address: 1999
+        value_type: U_WORD
+        read_lambda: |-
+          if (id(hp1_set_compressor_level_ha).state.empty()) return 0;
+          return static_cast<uint16_t>(atoi(id(hp1_set_compressor_level_ha).state.c_str()));
+        write_lambda: |-
+          ESP_LOGI("modbus_server", "HP1 R1999 compressor level <- %u", x);
+          return true;
+      - address: 2006
+        value_type: U_WORD
+        read_lambda: |-
+          return id(hp1_silent_mode_ha).state == "On" ? 1 : 0;
+        write_lambda: |-
+          ESP_LOGI("modbus_server", "HP1 R2006 silent mode <- %u", x);
+          return true;
+      - address: 2010
+        value_type: U_WORD
+        read_lambda: |-
+          return id(hp1_set_pump_mode_ha).state == "On" ? 4096 : 0;
+        write_lambda: |-
+          ESP_LOGI("modbus_server", "HP1 R2010 pump mode <- %u", x);
+          return true;
+      - address: 2015
+        value_type: U_WORD
+        read_lambda: |-
+          const float v = id(hp1_set_pump_speed_ha).state;
+          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf(v));
+        write_lambda: |-
+          ESP_LOGI("modbus_server", "HP1 R2015 pump level <- %u", x);
+          return true;
+      - address: 3999
+        value_type: U_WORD
+        read_lambda: |-
+          if (id(hp1_set_working_mode_ha).state == "Cooling") return 1;
+          if (id(hp1_set_working_mode_ha).state == "Heating") return 2;
+          return 0;
+        write_lambda: |-
+          ESP_LOGI("modbus_server", "HP1 R3999 working mode <- %u", x);
+          return true;
+      - address: 2099
+        value_type: U_WORD
+        read_lambda: |-
+          const float v = id(hp1_r2099).state;
+          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf(v));
+      - address: 2100
+        value_type: U_WORD
+        read_lambda: |-
+          const float v = id(hp1_r2100).state;
+          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf(v));
+      - address: 2101
+        value_type: U_WORD
+        read_lambda: |-
+          const float v = id(hp1_r2101).state;
+          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf(v * 10.0f));
+      - address: 2102
+        value_type: U_WORD
+        read_lambda: |-
+          const float v = id(hp1_r2102).state;
+          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf(v));
+      - address: 2103
+        value_type: U_WORD
+        read_lambda: |-
+          const float v = id(hp1_r2103).state;
+          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf(v));
+      - address: 2104
+        value_type: U_WORD
+        read_lambda: |-
+          const float v = id(hp1_r2104).state;
+          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf(v));
+      - address: 2105
+        value_type: U_WORD
+        read_lambda: |-
+          const float v = id(hp1_r2105).state;
+          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf(v));
+      - address: 2106
+        value_type: U_WORD
+        read_lambda: |-
+          return 0;
+      - address: 2107
+        value_type: U_WORD
+        read_lambda: |-
+          const float v = id(hp1_r2107).state;
+          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf(v));
+      - address: 2108
+        value_type: U_WORD
+        read_lambda: |-
+          const float v = id(hp1_r2108).state;
+          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf(v));
+      - address: 2109
+        value_type: U_WORD
+        read_lambda: |-
+          return 0;
+      - address: 2110
+        value_type: U_WORD
+        read_lambda: |-
+          const float v = id(hp1_r2110).state;
+          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf((v * 100.0f) + 3000.0f));
+      - address: 2111
+        value_type: U_WORD
+        read_lambda: |-
+          const float v = id(hp1_r2111).state;
+          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf((v * 100.0f) + 3000.0f));
+      - address: 2112
+        value_type: U_WORD
+        read_lambda: |-
+          const float v = id(hp1_r2112).state;
+          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf((v * 100.0f) + 3000.0f));
+      - address: 2113
+        value_type: U_WORD
+        read_lambda: |-
+          const float v = id(hp1_r2113).state;
+          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf((v * 100.0f) + 3000.0f));
+      - address: 2114
+        value_type: U_WORD
+        read_lambda: |-
+          return 0;
+      - address: 2116
+        value_type: U_WORD
+        read_lambda: |-
+          const float v = id(hp1_r2116).state;
+          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf(v * 10.0f));
+      - address: 2117
+        value_type: U_WORD
+        read_lambda: |-
+          const float v = id(hp1_r2117).state;
+          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf(v * 10.0f));
+      - address: 2118
+        value_type: U_WORD
+        read_lambda: |-
+          const float v = id(hp1_r2118).state;
+          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf(v));
+      - address: 2122
+        value_type: U_WORD
+        read_lambda: |-
+          const float v = id(hp1_r2122).state;
+          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf(v));
+      - address: 2131
+        value_type: U_WORD
+        read_lambda: |-
+          const float v = id(hp1_r2131).state;
+          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf((v * 100.0f) + 3000.0f));
+      - address: 2132
+        value_type: U_WORD
+        read_lambda: |-
+          const float v = id(hp1_r2132).state;
+          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf((v * 100.0f) + 3000.0f));
+      - address: 2133
+        value_type: U_WORD
+        read_lambda: |-
+          const float v = id(hp1_r2133).state;
+          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf((v * 100.0f) + 3000.0f));
+      - address: 2134
+        value_type: U_WORD
+        read_lambda: |-
+          const float v = id(hp1_r2134).state;
+          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf((v * 100.0f) + 3000.0f));
+      - address: 2135
+        value_type: U_WORD
+        read_lambda: |-
+          const float v = id(hp1_r2135).state;
+          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf((v * 100.0f) + 3000.0f));
+      - address: 2136
+        value_type: U_WORD
+        read_lambda: |-
+          return 0;
+      - address: 2137
+        value_type: U_WORD
+        read_lambda: |-
+          const float v = id(hp1_r2137).state;
+          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf(v * 10.0f));
+      - address: 2138
+        value_type: U_WORD
+        read_lambda: |-
+          const float v = id(hp1_r2138).state;
+          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf(v / 0.618f));
+      # The real HP returns 0xFFFF across this product-version block.
+      - address: 11160
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11161
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11162
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11163
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11164
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11165
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11166
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11167
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11168
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11169
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11170
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11171
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11172
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11173
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11174
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11175
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11176
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11177
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11178
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11179
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      # The real HP returns 0xFFFF across this PCB-serial block.
+      - address: 11219
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11220
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11221
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11222
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11223
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11224
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11225
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11226
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11227
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11228
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11229
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11230
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11231
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11232
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11233
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11234
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11235
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11236
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11237
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
+      - address: 11238
+        value_type: U_WORD
+        read_lambda: return 0xFFFF;
