@@ -1859,6 +1859,11 @@ interval:
           // Skipped during an absolute water-temperature hard trip.
           // =========================
           if (!id(oq_water_temp_hard_trip_active) && min_rt_s > 0) {
+            const bool cooling_floor_trip =
+                is_cooling_mode &&
+                id(minimum_safe_supply_temp).has_state() && !isnan(id(minimum_safe_supply_temp).state) &&
+                id(oq_system_supply_temp).has_state() && !isnan(id(oq_system_supply_temp).state) &&
+                (id(oq_system_supply_temp).state <= (id(minimum_safe_supply_temp).state + 0.10f));
             // HP1/HP2: if request is 0 but measured heating start is still within
             // the minimum runtime window, keep that compressor alive at >=1.
             // This guard intentionally keys off real heating start instead of the
@@ -1868,7 +1873,7 @@ interval:
                 (id(hp1_last_real_heat_start_ms) > 0) &&
                 (now_ms > id(hp1_last_real_heat_start_ms)) &&
                 ((uint32_t)(now_ms - id(hp1_last_real_heat_start_ms)) < min_rt_ms);
-            if (hp1_req == 0 && hp1_min_runtime_active &&
+            if (hp1_req == 0 && !cooling_floor_trip && hp1_min_runtime_active &&
                 (id(hp1_last_applied_level) > 0 || hp1_measured_thermal)) {
               hp1_req = pick_allowed(1, true);
             }
@@ -1878,7 +1883,7 @@ interval:
                 (id(hp2_last_real_heat_start_ms) > 0) &&
                 (now_ms > id(hp2_last_real_heat_start_ms)) &&
                 ((uint32_t)(now_ms - id(hp2_last_real_heat_start_ms)) < min_rt_ms);
-            if (hp2_req == 0 && hp2_min_runtime_active &&
+            if (hp2_req == 0 && !cooling_floor_trip && hp2_min_runtime_active &&
                 (id(${hc_secondary_last_applied_level_id}) > 0 || hp2_measured_thermal)) {
               hp2_req = pick_allowed(1, false);
             }

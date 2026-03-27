@@ -166,6 +166,9 @@ interval:
   - interval: 5s
     then:
       - lambda: |-
+          const float near_safe_floor_limit_c = 0.30f;
+          const float stop_safe_floor_limit_c = 0.10f;
+
           // Resolve loop timing and reset the controller cleanly when cooling is not allowed.
           const uint32_t now_ms = (uint32_t) millis();
           float dt_s = 5.0f;
@@ -200,24 +203,46 @@ interval:
           if (isnan(kd) || kd < 0.0f) kd = 0.0f;
 
           float integral = id(oq_cooling_pid_integral);
-          integral += error_c * dt_s;
-          if (integral < -20.0f) integral = -20.0f;
-          if (integral > 20.0f) integral = 20.0f;
 
           float derivative = 0.0f;
           if (dt_s > 0.0f) {
             derivative = (error_c - id(oq_cooling_pid_last_error_c)) / dt_s;
           }
 
-          float out = (kp * error_c) + (ki * integral) + (kd * derivative);
-          if (out < 0.0f) out = 0.0f;
-
           int demand_max = (int) lroundf(id(cooling_demand_max_f).state);
           if (demand_max < 0) demand_max = 0;
           if (demand_max > 20) demand_max = 20;
+
+          // Keep the integrator from "sticking" to level 1 when the supply is already
+          // at or below target, and stop winding up while the output is saturated high.
+          const float out_before_integral_update = (kp * error_c) + (ki * integral) + (kd * derivative);
+          if (error_c <= 0.0f) {
+            integral = 0.0f;
+          } else if (error_c < near_safe_floor_limit_c) {
+            integral = fmaxf(0.0f, integral - dt_s);
+          } else if (out_before_integral_update < (float) demand_max) {
+            integral += error_c * dt_s;
+          }
+          if (integral < -20.0f) integral = -20.0f;
+          if (integral > 20.0f) integral = 20.0f;
+
+          float out = (kp * error_c) + (ki * integral) + (kd * derivative);
+          if (out < 0.0f) out = 0.0f;
           int demand = (int) lroundf(out);
           if (demand < 0) demand = 0;
           if (demand > demand_max) demand = demand_max;
+
+          // Add a small explicit approach zone near the dew-point-safe floor.
+          if (id(minimum_safe_supply_temp).has_state() && !isnan(id(minimum_safe_supply_temp).state)) {
+            const float safe_gap_c = id(oq_system_supply_temp).state - id(minimum_safe_supply_temp).state;
+            if (safe_gap_c <= stop_safe_floor_limit_c) {
+              demand = 0;
+              integral = 0.0f;
+            } else if (safe_gap_c <= near_safe_floor_limit_c) {
+              if (demand > 1) demand = 1;
+              integral = fminf(integral, 1.0f);
+            }
+          }
 
           id(oq_cooling_pid_integral) = integral;
           id(oq_cooling_pid_last_error_c) = error_c;
