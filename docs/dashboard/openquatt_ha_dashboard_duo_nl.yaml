@@ -2766,7 +2766,7 @@ views:
         cards:
           - type: heading
             icon: mdi:speedometer-medium
-            heading: Allowed compressor levels
+            heading: Uitgesloten compressorlevels
             heading_style: title
           - type: markdown
             content: >-
@@ -2775,19 +2775,19 @@ views:
               <summary><strong>Uitleg parameters</strong></summary>
 
 
-              - Deze switches begrenzen welke compressorlevels per HP gebruikt
-              mogen worden.
+              - Kies hier maximaal twee compressorlevels per HP die de
+              verdelingslogica moet overslaan.
 
-              - `Aan` betekent: level mag door de verdelingslogica gekozen
-              worden.
+              - `None` betekent: geen uitsluiting in dat slot.
 
-              - `Uit` betekent: level wordt overgeslagen.
+              - Als een gevraagd level is uitgesloten, zoekt OpenQuatt eerst een
+              lager level en daarna pas een hoger level.
 
-              - Meestal laat je alle levels aan; schakel alleen uit voor testen,
-              geluid of specifieke beperkingen.
+              - Meestal laat je beide slots op `None`; gebruik uitsluitingen
+              alleen voor testen, geluid of specifieke beperkingen.
 
-              - Houd per HP minimaal een aaneengesloten reeks levels actief om
-              onnodige sprongen te voorkomen.
+              - Als beide slots hetzelfde level kiezen, telt dat gewoon als
+              een enkele uitsluiting.
 
 
               </details>
@@ -2796,53 +2796,25 @@ views:
               columns: full
               rows: auto
           - type: entities
-            title: HP1 allowed levels
+            title: HP1 uitgesloten levels
             show_header_toggle: false
             entities:
-              - entity: switch.openquatt_hp1_allowed_level_1_h_30hz_c_30hz
-                name: L1 (H30/C30)
-              - entity: switch.openquatt_hp1_allowed_level_2_h_39hz_c_36hz
-                name: L2 (H39/C36)
-              - entity: switch.openquatt_hp1_allowed_level_3_h_49hz_c_42hz
-                name: L3 (H49/C42)
-              - entity: switch.openquatt_hp1_allowed_level_4_h_55hz_c_47hz
-                name: L4 (H55/C47)
-              - entity: switch.openquatt_hp1_allowed_level_5_h_61hz_c_52hz
-                name: L5 (H61/C52)
-              - entity: switch.openquatt_hp1_allowed_level_6_h_67hz_c_56hz
-                name: L6 (H67/C56)
-              - entity: switch.openquatt_hp1_allowed_level_7_h_72hz_c_61hz
-                name: L7 (H72/C61)
-              - entity: switch.openquatt_hp1_allowed_level_8_h_79hz_c_66hz
-                name: L8 (H79/C66)
-              - entity: switch.openquatt_hp1_allowed_level_9_h_85hz_c_71hz
-                name: L9 (H85/C71)
-              - entity: switch.openquatt_hp1_allowed_level_10_h_90hz_c_74hz
-                name: L10 (H90/C74)
+              - entity: select.openquatt_hp1_excluded_compressor_level_a
+                name: Excluded level A
+              - entity: select.openquatt_hp1_excluded_compressor_level_b
+                name: Excluded level B
+              - entity: sensor.openquatt_hp1_excluded_compressor_levels
+                name: Actieve uitsluitingen
           - type: entities
-            title: HP2 allowed levels
+            title: HP2 uitgesloten levels
             show_header_toggle: false
             entities:
-              - entity: switch.openquatt_hp2_allowed_level_1_h_30hz_c_30hz
-                name: L1 (H30/C30)
-              - entity: switch.openquatt_hp2_allowed_level_2_h_39hz_c_36hz
-                name: L2 (H39/C36)
-              - entity: switch.openquatt_hp2_allowed_level_3_h_49hz_c_42hz
-                name: L3 (H49/C42)
-              - entity: switch.openquatt_hp2_allowed_level_4_h_55hz_c_47hz
-                name: L4 (H55/C47)
-              - entity: switch.openquatt_hp2_allowed_level_5_h_61hz_c_52hz
-                name: L5 (H61/C52)
-              - entity: switch.openquatt_hp2_allowed_level_6_h_67hz_c_56hz
-                name: L6 (H67/C56)
-              - entity: switch.openquatt_hp2_allowed_level_7_h_72hz_c_61hz
-                name: L7 (H72/C61)
-              - entity: switch.openquatt_hp2_allowed_level_8_h_79hz_c_66hz
-                name: L8 (H79/C66)
-              - entity: switch.openquatt_hp2_allowed_level_9_h_85hz_c_71hz
-                name: L9 (H85/C71)
-              - entity: switch.openquatt_hp2_allowed_level_10_h_90hz_c_74hz
-                name: L10 (H90/C74)
+              - entity: select.openquatt_hp2_excluded_compressor_level_a
+                name: Excluded level A
+              - entity: select.openquatt_hp2_excluded_compressor_level_b
+                name: Excluded level B
+              - entity: sensor.openquatt_hp2_excluded_compressor_levels
+                name: Actieve uitsluitingen
     header:
       card:
         type: markdown

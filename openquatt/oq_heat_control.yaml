@@ -984,37 +984,45 @@ interval:
           const int min_level = 0;
           const int max_level = 10;
 
-          // Single source of truth for level enable switches to avoid drift between branches.
+          auto excluded_option_matches_level = [&](const std::string &opt, int level)->bool {
+            switch (level) {
+              case 1: return opt == "L1 (H30/C30)";
+              case 2: return opt == "L2 (H39/C36)";
+              case 3: return opt == "L3 (H49/C42)";
+              case 4: return opt == "L4 (H55/C47)";
+              case 5: return opt == "L5 (H61/C52)";
+              case 6: return opt == "L6 (H67/C56)";
+              case 7: return opt == "L7 (H72/C61)";
+              case 8: return opt == "L8 (H79/C66)";
+              case 9: return opt == "L9 (H85/C71)";
+              case 10: return opt == "L10 (H90/C74)";
+              default: return false;
+            }
+          };
+
+          // Single source of truth for per-HP level exclusions to avoid drift between branches.
           auto level_allowed = [&](bool is_hp1, int level)->bool {
+            if (level <= 0 || level > max_level) return true;
+
             if (is_hp1) {
-              switch (level) {
-                case 1: return id(hp1_lvl_1).state;
-                case 2: return id(hp1_lvl_2).state;
-                case 3: return id(hp1_lvl_3).state;
-                case 4: return id(hp1_lvl_4).state;
-                case 5: return id(hp1_lvl_5).state;
-                case 6: return id(hp1_lvl_6).state;
-                case 7: return id(hp1_lvl_7).state;
-                case 8: return id(hp1_lvl_8).state;
-                case 9: return id(hp1_lvl_9).state;
-                case 10: return id(hp1_lvl_10).state;
-                default: return true;  // level 0 or out of range
-              }
+              const std::string excl_a = id(hp1_excluded_level_a).has_state()
+                                             ? id(hp1_excluded_level_a).current_option()
+                                             : std::string("None");
+              const std::string excl_b = id(hp1_excluded_level_b).has_state()
+                                             ? id(hp1_excluded_level_b).current_option()
+                                             : std::string("None");
+              return !excluded_option_matches_level(excl_a, level) &&
+                     !excluded_option_matches_level(excl_b, level);
             }
             #if OQ_TOPOLOGY_DUO
-            switch (level) {
-              case 1: return id(${hc_secondary_lvl_1_id}).state;
-              case 2: return id(${hc_secondary_lvl_2_id}).state;
-              case 3: return id(${hc_secondary_lvl_3_id}).state;
-              case 4: return id(${hc_secondary_lvl_4_id}).state;
-              case 5: return id(${hc_secondary_lvl_5_id}).state;
-              case 6: return id(${hc_secondary_lvl_6_id}).state;
-              case 7: return id(${hc_secondary_lvl_7_id}).state;
-              case 8: return id(${hc_secondary_lvl_8_id}).state;
-              case 9: return id(${hc_secondary_lvl_9_id}).state;
-              case 10: return id(${hc_secondary_lvl_10_id}).state;
-              default: return true;  // level 0 or out of range
-            }
+            const std::string excl_a = id(${hc_secondary_excluded_level_a_id}).has_state()
+                                           ? id(${hc_secondary_excluded_level_a_id}).current_option()
+                                           : std::string("None");
+            const std::string excl_b = id(${hc_secondary_excluded_level_b_id}).has_state()
+                                           ? id(${hc_secondary_excluded_level_b_id}).current_option()
+                                           : std::string("None");
+            return !excluded_option_matches_level(excl_a, level) &&
+                   !excluded_option_matches_level(excl_b, level);
             #else
             return false;
             #endif
@@ -1712,9 +1720,9 @@ interval:
           #endif
 
           // =========================
-          // 4) Allowed levels (1..10)
+          // 4) Allowed levels after applying up to two explicit exclusions per HP.
           //    - level 0 always allowed
-          //    - if requested level is not allowed: search down first, then up
+          //    - if requested level is excluded: search down first, then up
           // =========================
           auto pick_allowed = [&](int req, bool is_hp1)->int {
             if (req <= 0) return 0;
@@ -1962,7 +1970,7 @@ interval:
                                     : (int) roundf(id(oq_day_max_level).state);
             cap = std::max(min_level, std::min(max_level, cap));
             if (applied > cap) applied = cap;
-            // Re-validate allowed levels after cap, otherwise a disabled cap-level can slip through.
+            // Re-validate exclusions after cap, otherwise an excluded cap-level can slip through.
             applied = pick_allowed_capped(applied, is_hp1, cap);
 
             // Normative rule: compressor >0 only when the active thermal mode is measured

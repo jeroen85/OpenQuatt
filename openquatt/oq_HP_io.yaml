@@ -167,6 +167,53 @@ select:
     web_server:
       sorting_group_id: oq_${hp_id}
 
+# Per-HP compressor level exclusions are modeled as up to two explicit blocked levels.
+  - platform: template
+    id: ${hp_id}_excluded_level_a
+    name: "${prefix}Excluded compressor level A"
+    icon: mdi:speedometer-slow
+    optimistic: true
+    restore_value: true
+    initial_option: "None"
+    options:
+      - "None"
+      - "L1 (H30/C30)"
+      - "L2 (H39/C36)"
+      - "L3 (H49/C42)"
+      - "L4 (H55/C47)"
+      - "L5 (H61/C52)"
+      - "L6 (H67/C56)"
+      - "L7 (H72/C61)"
+      - "L8 (H79/C66)"
+      - "L9 (H85/C71)"
+      - "L10 (H90/C74)"
+    web_server:
+      sorting_group_id: oq_advanced_levels_${hp_id}
+      sorting_weight: 41
+
+  - platform: template
+    id: ${hp_id}_excluded_level_b
+    name: "${prefix}Excluded compressor level B"
+    icon: mdi:speedometer-slow
+    optimistic: true
+    restore_value: true
+    initial_option: "None"
+    options:
+      - "None"
+      - "L1 (H30/C30)"
+      - "L2 (H39/C36)"
+      - "L3 (H49/C42)"
+      - "L4 (H55/C47)"
+      - "L5 (H61/C52)"
+      - "L6 (H67/C56)"
+      - "L7 (H72/C61)"
+      - "L8 (H79/C66)"
+      - "L9 (H85/C71)"
+      - "L10 (H90/C74)"
+    web_server:
+      sorting_group_id: oq_advanced_levels_${hp_id}
+      sorting_weight: 42
+
 # ----------------------------
 # NUMBER
 # ----------------------------
@@ -185,101 +232,6 @@ number:
     skip_updates: ${oq_skip_10s}
     web_server:
       sorting_group_id: oq_${hp_id}
-
-# ----------------------------
-# SWITCH
-# ----------------------------
-switch:
-  - platform: template
-    id: ${hp_id}_lvl_1
-    name: "${prefix}Allowed level 1 (H:30Hz, C:30Hz)"
-    icon: mdi:speedometer
-    restore_mode: RESTORE_DEFAULT_ON
-    optimistic: true
-    web_server:
-      sorting_group_id: oq_advanced_levels_${hp_id}
-
-  - platform: template
-    id: ${hp_id}_lvl_2
-    name: "${prefix}Allowed level 2 (H:39Hz, C:36Hz)"
-    icon: mdi:speedometer
-    restore_mode: RESTORE_DEFAULT_ON
-    optimistic: true
-    web_server:
-      sorting_group_id: oq_advanced_levels_${hp_id}
-
-  - platform: template
-    id: ${hp_id}_lvl_3
-    name: "${prefix}Allowed level 3 (H:49Hz, C:42Hz)"
-    icon: mdi:speedometer
-    restore_mode: RESTORE_DEFAULT_ON
-    optimistic: true
-    web_server:
-      sorting_group_id: oq_advanced_levels_${hp_id}
-
-  - platform: template
-    id: ${hp_id}_lvl_4
-    name: "${prefix}Allowed level 4 (H:55Hz, C:47Hz)"
-    icon: mdi:speedometer
-    restore_mode: RESTORE_DEFAULT_ON
-    optimistic: true
-    web_server:
-      sorting_group_id: oq_advanced_levels_${hp_id}
-
-  - platform: template
-    id: ${hp_id}_lvl_5
-    name: "${prefix}Allowed level 5 (H:61Hz, C:52Hz)"
-    icon: mdi:speedometer
-    restore_mode: RESTORE_DEFAULT_ON
-    optimistic: true
-    web_server:
-      sorting_group_id: oq_advanced_levels_${hp_id}
-
-  - platform: template
-    id: ${hp_id}_lvl_6
-    name: "${prefix}Allowed level 6 (H:67Hz, C:56Hz)"
-    icon: mdi:speedometer
-    restore_mode: RESTORE_DEFAULT_ON
-    optimistic: true
-    web_server:
-      sorting_group_id: oq_advanced_levels_${hp_id}
-
-  - platform: template
-    id: ${hp_id}_lvl_7
-    name: "${prefix}Allowed level 7 (H:72Hz, C:61Hz)"
-    icon: mdi:speedometer
-    restore_mode: RESTORE_DEFAULT_ON
-    optimistic: true
-    web_server:
-      sorting_group_id: oq_advanced_levels_${hp_id}
-
-  - platform: template
-    id: ${hp_id}_lvl_8
-    name: "${prefix}Allowed level 8 (H:79Hz, C:66Hz)"
-    icon: mdi:speedometer
-    restore_mode: RESTORE_DEFAULT_ON
-    optimistic: true
-    web_server:
-      sorting_group_id: oq_advanced_levels_${hp_id}
-
-  - platform: template
-    id: ${hp_id}_lvl_9
-    name: "${prefix}Allowed level 9 (H:85Hz, C:71Hz)"
-    icon: mdi:speedometer
-    restore_mode: RESTORE_DEFAULT_ON
-    optimistic: true
-    web_server:
-      sorting_group_id: oq_advanced_levels_${hp_id}
-
-  - platform: template
-    id: ${hp_id}_lvl_10
-    name: "${prefix}Allowed level 10 (H:90Hz, C:74Hz)"
-    icon: mdi:speedometer
-    restore_mode: RESTORE_DEFAULT_ON
-    optimistic: true
-    web_server:
-      sorting_group_id: oq_advanced_levels_${hp_id}
-      sorting_weight: 51
 
 # ----------------------------
 # SENSOR
@@ -1719,6 +1671,33 @@ text_sensor:
           return std::string(buf);
         }
       }
+
+  - platform: template
+    id: ${hp_id}_excluded_levels_summary
+    name: "${prefix}Excluded compressor levels"
+    icon: mdi:speedometer-slow
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_advanced_levels_${hp_id}
+      sorting_weight: 43
+    lambda: |-
+      const std::string a = id(${hp_id}_excluded_level_a).has_state()
+                                ? id(${hp_id}_excluded_level_a).current_option()
+                                : std::string("None");
+      const std::string b = id(${hp_id}_excluded_level_b).has_state()
+                                ? id(${hp_id}_excluded_level_b).current_option()
+                                : std::string("None");
+
+      if (a == "None" && b == "None") {
+        return std::string("None");
+      }
+      if (a == "None") {
+        return b;
+      }
+      if (b == "None" || a == b) {
+        return a;
+      }
+      return a + ", " + b;
 
   - platform: template
     id: ${hp_id}_active_failures_list
