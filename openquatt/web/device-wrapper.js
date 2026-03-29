@@ -2,7 +2,7 @@
   const currentScript = document.currentScript;
   const baseUrl = currentScript ? new URL(".", currentScript.src).toString() : "";
   const officialUrl = "https://oi.esphome.io/v3/www.js";
-  const onboardingUrl = baseUrl ? new URL("onboarding.js", baseUrl).toString() : "";
+  const appUrl = baseUrl ? new URL("openquatt-app.js", baseUrl).toString() : "";
 
   function loadScript(src) {
     return new Promise((resolve, reject) => {
@@ -40,8 +40,8 @@
   }
 
   loadScript(officialUrl)
-    .then(() => loadScript(onboardingUrl))
+    .then(() => loadScript(appUrl))
     .catch((error) => {
-      console.error("OpenQuatt onboarding wrapper failed to load", error);
+      console.error("OpenQuatt app wrapper failed to load", error);
     });
 })();

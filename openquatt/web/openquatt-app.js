@@ -8,7 +8,7 @@
       id: "strategy",
       kicker: "Stap 1",
       title: "Kies de verwarmingsstrategie",
-      copy: "Begin met de hoofdstrategie. In de route-1 app schrijft dit direct naar de echte control-mode entity, zonder extra onboarding-proxy.",
+      copy: "Begin met de hoofdstrategie. In de route-1 app schrijft dit direct naar de echte control-mode entity, zonder extra Quick Start-proxy.",
       fields: [
         {
           title: "Verwarmingsstrategie",
@@ -56,7 +56,7 @@
       id: "confirm",
       kicker: "Stap 4",
       title: "Bevestigen en afronden",
-      copy: "De samenvatting wordt de bevestigingsstap. Zo blijft de onboardinglaag licht, terwijl de echte device-instellingen de bron van waarheid blijven.",
+      copy: "De samenvatting wordt de bevestigingsstap. Zo blijft de Quick Start-laag licht, terwijl de echte device-instellingen de bron van waarheid blijven.",
       fields: [
         {
           title: "Toepassen en afronden",
@@ -64,7 +64,7 @@
         },
         {
           title: "Opnieuw beginnen",
-          copy: "Zet de onboarding terug naar Quick Start. Voorlopig worden tuningwaarden nog niet automatisch naar defaults teruggezet.",
+          copy: "Zet Quick Start terug naar het begin. Voorlopig worden tuningwaarden nog niet automatisch naar defaults teruggezet.",
         },
       ],
     },
@@ -90,7 +90,7 @@
     },
     {
       title: "Compressor exclusions",
-      copy: "Nuttig voor technische diagnose en hardware-specifieke tuning, maar waarschijnlijk te diep voor onboarding.",
+      copy: "Nuttig voor technische diagnose en hardware-specifieke tuning, maar waarschijnlijk te diep voor Quick Start.",
       fields: [
         "HP1 - Excluded compressor level A",
         "HP1 - Excluded compressor level B",
@@ -138,6 +138,8 @@
     hp1Mode: { domain: "text_sensor", name: "HP1 - Working Mode Label" },
     hp1Failures: { domain: "text_sensor", name: "HP1 - Active Failures List" },
     hp1Defrost: { domain: "binary_sensor", name: "HP1 - Defrost" },
+    hp1BottomPlate: { domain: "binary_sensor", name: "HP1 - Bottom plate heater" },
+    hp1Crankcase: { domain: "binary_sensor", name: "HP1 - Crankcase heater" },
     hp2Power: { domain: "sensor", name: "HP2 - Power Input", optional: true },
     hp2Heat: { domain: "sensor", name: "HP2 - Heat Power", optional: true },
     hp2Cop: { domain: "sensor", name: "HP2 - COP", optional: true },
@@ -148,14 +150,53 @@
     hp2Mode: { domain: "text_sensor", name: "HP2 - Working Mode Label", optional: true },
     hp2Failures: { domain: "text_sensor", name: "HP2 - Active Failures List", optional: true },
     hp2Defrost: { domain: "binary_sensor", name: "HP2 - Defrost", optional: true },
+    hp2BottomPlate: { domain: "binary_sensor", name: "HP2 - Bottom plate heater", optional: true },
+    hp2Crankcase: { domain: "binary_sensor", name: "HP2 - Crankcase heater", optional: true },
     apply: { domain: "button", name: "Apply & Finish" },
     reset: { domain: "button", name: "Start Over" },
   };
 
+  const QUICK_START_VIEW = "quickstart";
   const APP_VIEWS = [
-    { id: "onboarding", label: "Onboarding" },
+    { id: QUICK_START_VIEW, label: "Quick Start" },
     { id: "overview", label: "Overzicht" },
     { id: "settings", label: "Instellingen" },
+  ];
+  const HP_PANEL_CONFIGS = [
+    {
+      title: "HP1",
+      accent: "blue",
+      keys: {
+        power: "hp1Power",
+        heat: "hp1Heat",
+        cop: "hp1Cop",
+        freq: "hp1Freq",
+        waterIn: "hp1WaterIn",
+        waterOut: "hp1WaterOut",
+        mode: "hp1Mode",
+        failures: "hp1Failures",
+        defrost: "hp1Defrost",
+        bottomPlate: "hp1BottomPlate",
+        crankcase: "hp1Crankcase",
+      },
+    },
+    {
+      title: "HP2",
+      accent: "orange",
+      keys: {
+        power: "hp2Power",
+        heat: "hp2Heat",
+        cop: "hp2Cop",
+        freq: "hp2Freq",
+        waterIn: "hp2WaterIn",
+        waterOut: "hp2WaterOut",
+        mode: "hp2Mode",
+        failures: "hp2Failures",
+        defrost: "hp2Defrost",
+        bottomPlate: "hp2BottomPlate",
+        crankcase: "hp2Crankcase",
+      },
+    },
   ];
 
   const CURVE_POINTS = [
@@ -193,6 +234,8 @@
     "hp1Mode",
     "hp1Failures",
     "hp1Defrost",
+    "hp1BottomPlate",
+    "hp1Crankcase",
     "hp2Power",
     "hp2Heat",
     "hp2Cop",
@@ -202,6 +245,8 @@
     "hp2Mode",
     "hp2Failures",
     "hp2Defrost",
+    "hp2BottomPlate",
+    "hp2Crankcase",
   ];
   const SETTINGS_KEYS = [
     "strategy",
@@ -212,6 +257,9 @@
     ...CURVE_POINTS.map((point) => point.key),
   ];
   const POLL_INTERVAL_MS = 4000;
+  const FLOW_DASH_CYCLE_PX = 22;
+  const FLOW_OFFSET_PX_PER_SEC = FLOW_DASH_CYCLE_PX / 1.7;
+  const FAN_ROTATION_DEG_PER_SEC = 360 / 3.2;
 
   const state = {
     mounted: false,
@@ -236,6 +284,12 @@
     drafts: {},
     focusedField: "",
     draggingCurveKey: "",
+    motionFrame: 0,
+    motionStartedAt: 0,
+    motionTargets: {
+      pipeFlows: [],
+      fanBlades: [],
+    },
   };
 
   function getStoredOverviewTheme() {
@@ -290,6 +344,14 @@
     }
     window.addEventListener("pointermove", handlePointerMove);
     window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("oq-mock-updated", handleMockUpdated);
+  }
+
+  function handleMockUpdated() {
+    if (!state.mounted) {
+      return;
+    }
+    void syncEntities();
   }
 
   function mountWhenReady() {
@@ -323,7 +385,85 @@
     root.addEventListener("focusout", handleFocusChange);
     root.addEventListener("pointerdown", handlePointerDown);
     state.root = root;
+    clearLegacyMotionVariables();
+    startMotionLoop();
     render();
+  }
+
+  function clearLegacyMotionVariables() {
+    if (!state.root) {
+      return;
+    }
+
+    state.root.style.removeProperty("--oq-flow-offset");
+    state.root.style.removeProperty("--oq-flow-offset-reverse");
+    state.root.style.removeProperty("--oq-fan-rotation");
+    if (!state.root.getAttribute("style")) {
+      state.root.removeAttribute("style");
+    }
+  }
+
+  function refreshMotionTargets() {
+    state.motionTargets = {
+      pipeFlows: [],
+      fanBlades: [],
+    };
+
+    if (!state.root) {
+      return;
+    }
+
+    const boards = state.root.querySelectorAll(".oq-hp-schematic-board.is-running");
+    boards.forEach((board) => {
+      board.querySelectorAll(".oq-hp-tech-pipe-flow").forEach((node) => {
+        state.motionTargets.pipeFlows.push(node);
+      });
+      board.querySelectorAll(".oq-hp-tech-fan-blades").forEach((node) => {
+        state.motionTargets.fanBlades.push(node);
+      });
+    });
+  }
+
+  function syncMotionVariables(now = performance.now()) {
+    if (!state.root) {
+      return;
+    }
+
+    if (state.motionTargets.pipeFlows.length === 0
+      && state.motionTargets.fanBlades.length === 0) {
+      refreshMotionTargets();
+    }
+
+    if (!state.motionStartedAt) {
+      state.motionStartedAt = now;
+    }
+
+    const elapsedSeconds = (now - state.motionStartedAt) / 1000;
+    const flowOffset = -((elapsedSeconds * FLOW_OFFSET_PX_PER_SEC) % FLOW_DASH_CYCLE_PX);
+    const fanRotation = (elapsedSeconds * FAN_ROTATION_DEG_PER_SEC) % 360;
+
+    state.motionTargets.pipeFlows.forEach((node) => {
+      node.style.strokeDashoffset = `${flowOffset.toFixed(3)}px`;
+    });
+    state.motionTargets.fanBlades.forEach((node) => {
+      node.style.transform = `rotate(${fanRotation.toFixed(3)}deg)`;
+    });
+  }
+
+  function tickMotion(now) {
+    syncMotionVariables(now);
+    state.motionFrame = window.requestAnimationFrame(tickMotion);
+  }
+
+  function startMotionLoop() {
+    if (state.motionFrame) {
+      return;
+    }
+
+    const now = performance.now();
+    state.motionStartedAt = now;
+    syncMotionVariables(now);
+    state.motionFrame = window.requestAnimationFrame(tickMotion);
   }
 
   function getBasePath() {
@@ -406,6 +546,8 @@
           ...(state.entities[key] || {}),
           ...payload,
         };
+      } else if (ENTITY_DEFS[key]?.optional) {
+        delete state.entities[key];
       } else if (!ENTITY_DEFS[key]?.optional && !firstError) {
         firstError = result.reason.message || String(result.reason);
       }
@@ -425,7 +567,7 @@
     state.complete = state.summary.includes("setup complete");
     state.stage = state.complete ? "Gereed" : "Quick Start";
     if (!state.appView) {
-      state.appView = state.complete ? "overview" : "onboarding";
+      state.appView = state.complete ? "overview" : QUICK_START_VIEW;
     }
   }
 
@@ -461,7 +603,9 @@
 
     try {
       await refreshEntities(keys, "state");
-      render();
+      if (!patchOverviewDom()) {
+        render();
+      }
     } catch (error) {
       state.controlError = `Helperstatus kon niet worden geladen. ${error.message}`;
       render();
@@ -675,9 +819,9 @@
       }
       state.controlNotice = action === "apply"
         ? "Setup gemarkeerd als afgerond."
-        : "Onboarding teruggezet naar Quick Start. Huidige tuningwaarden blijven voorlopig staan.";
+        : "Quick Start teruggezet naar het begin. Huidige tuningwaarden blijven voorlopig staan.";
       await refreshEntities(["summary"], "state");
-      state.appView = action === "apply" ? "overview" : "onboarding";
+      state.appView = action === "apply" ? "overview" : QUICK_START_VIEW;
     } catch (error) {
       state.controlError = `Actie mislukt voor "${entity.name}". ${error.message}`;
     } finally {
@@ -810,7 +954,7 @@
       <section class="oq-helper-mode-panel">
         <div class="oq-helper-mode-head">
           <p class="oq-helper-label">Verplicht Voor Power House</p>
-          <p class="oq-helper-section-copy">Deze twee waarden bepalen het huisverliesmodel. Ze horen als expliciete onboarding-inputs zichtbaar te zijn, niet verstopt in advanced tuning.</p>
+          <p class="oq-helper-section-copy">Deze twee waarden bepalen het huisverliesmodel. Ze horen als expliciete Quick Start-inputs zichtbaar te zijn, niet verstopt in advanced tuning.</p>
         </div>
         <div class="oq-helper-control-grid">
           ${renderNumberInputField("housePower", "Rated maximum house power", "Verwachte piekwarmtevraag van de woning op het koude referentiepunt.")}
@@ -912,7 +1056,7 @@
       <section class="oq-helper-panel">
         <p class="oq-helper-label">Stap 1</p>
         <h2 class="oq-helper-section-title">Kies de verwarmingsstrategie</h2>
-        <p class="oq-helper-section-copy">Dit is het belangrijkste keuzepunt. Zodra de gebruiker een strategie kiest, moet de onboarding alleen de relevante verplichte inputs tonen.</p>
+        <p class="oq-helper-section-copy">Dit is het belangrijkste keuzepunt. Zodra de gebruiker een strategie kiest, moet Quick Start alleen de relevante verplichte inputs tonen.</p>
         <div class="oq-helper-fields oq-helper-fields--spaced">
           ${renderSelectField("strategy", "Verwarmingsstrategie", "Power House vraagt om huis-modelinputs. Heating Curve vraagt om de zes Tsupply-curvepunten.")}
         </div>
@@ -955,7 +1099,7 @@
       <section class="oq-helper-panel">
         <p class="oq-helper-label">Stap 4</p>
         <h2 class="oq-helper-section-title">Bevestigen en afronden</h2>
-        <p class="oq-helper-section-copy">De app gebruikt dit als laatste bevestigingsstap, terwijl de firmware alleen de echte instellingen en een kleine onboarding-flag bewaart.</p>
+        <p class="oq-helper-section-copy">De app gebruikt dit als laatste bevestigingsstap, terwijl de firmware alleen de echte instellingen en een kleine Quick Start-flag bewaart.</p>
         <div class="oq-helper-fields oq-helper-fields--spaced">
           ${renderFieldList((QUICK_STEPS.find((step) => step.id === "confirm") || QUICK_STEPS[3]).fields)}
         </div>
@@ -1102,6 +1246,14 @@
     return `${value > 0 ? "+" : ""}${value.toFixed(1)} °C`;
   }
 
+  function formatNumericState(value, decimals, unit = "") {
+    const numeric = Number(value);
+    if (Number.isNaN(numeric)) {
+      return "—";
+    }
+    return `${numeric.toFixed(decimals)}${unit ? ` ${unit}` : ""}`;
+  }
+
   function formatWorkingMode(value) {
     const raw = String(value || "").trim();
     if (!raw || raw === "Unknown") {
@@ -1127,16 +1279,17 @@
     return raw;
   }
 
-  function renderHpSchematicMetric(label, value, tone = "neutral") {
+  function renderTechPipeLayer(id, tone, d, animated = true) {
     return `
-      <div class="oq-hp-schematic-metric oq-hp-schematic-metric--${escapeHtml(tone)}">
-        <span>${escapeHtml(label)}</span>
-        <strong>${escapeHtml(value)}</strong>
-      </div>
+      <g class="oq-hp-tech-pipe oq-hp-tech-pipe--${escapeHtml(tone)}" data-oq-pipe="${escapeHtml(id)}">
+        <path class="oq-hp-tech-pipe-base" d="${escapeHtml(d)}" />
+        <path class="oq-hp-tech-pipe-core" d="${escapeHtml(d)}" />
+        ${animated ? `<path class="oq-hp-tech-pipe-flow" d="${escapeHtml(d)}" />` : ""}
+      </g>
     `;
   }
 
-  function renderHeatPumpSchematic(title, keys, accent, mode, defrostActive, failures, running) {
+  function buildHeatPumpSchematicModel(title, keys, accent, mode, defrostActive, failures, running) {
     const freqValue = getEntityNumericValue(keys.freq);
     const freqText = Number.isNaN(freqValue) ? "—" : String(Math.round(freqValue));
     const powerValue = getEntityNumericValue(keys.power);
@@ -1144,111 +1297,242 @@
     const animated = running || (!Number.isNaN(freqValue) && freqValue > 0) || (!Number.isNaN(powerValue) && powerValue > 80) || (!Number.isNaN(heatValue) && heatValue > 150);
     const statusText = animated ? "Actief" : "Idle";
     const failureText = failures === "Geen actieve storingen" ? "Geen storingen" : failures;
+    const warningActive = failureText !== "Geen storingen";
+    const defrostText = defrostActive ? "Actief" : "Uit";
     const waterOutText = getEntityStateText(keys.waterOut);
     const waterInText = getEntityStateText(keys.waterIn);
-    const powerText = getEntityStateText(keys.power);
-    const heatText = getEntityStateText(keys.heat);
-    const copText = getEntityStateText(keys.cop);
+    const bottomPlateActive = isEntityActive(keys.bottomPlate);
+    const crankcaseActive = isEntityActive(keys.crankcase);
+    const powerText = formatNumericState(powerValue, 0, "W");
+    const heatText = formatNumericState(heatValue, 0, "W");
+    const copText = formatNumericState(getEntityNumericValue(keys.cop), 1);
+    const fanRpmText = Number.isNaN(freqValue) || freqValue <= 0
+      ? "0 rpm"
+      : `${Math.round(freqValue * 18.5)} rpm`;
+    const reverseCycle = defrostActive || mode === "Koelen";
+    const leftExchangerTitle = reverseCycle ? "Verdamper" : "Condensor";
+    const rightExchangerTitle = reverseCycle ? "Condensor" : "Verdamper";
+    const supplyLineTone = reverseCycle ? "return" : "supply";
+    const returnLineTone = reverseCycle ? "supply" : "return";
+    const lineJumpLeft = 360;
+    const lineJumpRight = 384;
+    const lineJumpPeakY = 214;
+    const hotgasValveHeat = "M278 220 C278 228 273 234 266 234";
+    const hotgasValveCool = "M278 220 C278 228 283 234 290 234";
+    const suctionValveHeat = "M290 234 C284 234 279 240 278 248";
+    const suctionValveCool = "M266 234 C272 234 277 240 278 248";
+    const hotgasExternal = reverseCycle
+      ? `M290 234 H${lineJumpLeft} Q372 ${lineJumpPeakY} ${lineJumpRight} 234 H436 V134 H480`
+      : "M266 234 H180 V134 H164";
+    const suctionExternal = reverseCycle
+      ? "M164 134 H180 V234 H266"
+      : `M480 134 H436 V234 H${lineJumpRight} Q372 ${lineJumpPeakY} ${lineJumpLeft} 234 H290`;
+    const compressorDischarge = "M296 150 H278 V220";
+    const compressorSuction = "M278 248 V268 H372 V150 H356";
+    const liquidPath = reverseCycle ? "M480 294 H337" : "M164 294 H315";
+    const expansionPath = reverseCycle ? "M315 294 H164" : "M337 294 H480";
     const boardClass = [
       "oq-hp-schematic-board",
       `oq-hp-schematic-board--${accent}`,
       animated ? "is-running" : "",
+      reverseCycle ? "is-reversed" : "",
       defrostActive ? "is-defrost" : "",
     ].filter(Boolean).join(" ");
 
+    return {
+      title,
+      boardClass,
+      statusText,
+      failureText,
+      warningActive,
+      defrostActive,
+      defrostText,
+      mode,
+      reverseCycle,
+      compressorFreqText: `${freqText} Hz`,
+      leftExchangerTitle,
+      rightExchangerTitle,
+      supplyLineTone,
+      returnLineTone,
+      waterOutText,
+      waterInText,
+      bottomPlateActive,
+      crankcaseActive,
+      powerText,
+      heatText,
+      copText,
+      fanRpmText,
+      hotgasValveHeat,
+      hotgasValveCool,
+      suctionValveHeat,
+      suctionValveCool,
+      leftValveTone: reverseCycle ? "suction" : "hotgas",
+      rightValveTone: reverseCycle ? "hotgas" : "suction",
+      pipes: {
+        supply: { tone: supplyLineTone, d: "M104 134 H18", animated: false },
+        return: { tone: returnLineTone, d: "M18 294 H104", animated: false },
+        compressorDischarge: { tone: "hotgas", d: compressorDischarge, animated: true },
+        hotgasExternal: { tone: "hotgas", d: hotgasExternal, animated: true },
+        liquid: { tone: "liquid", d: liquidPath, animated: true },
+        expansion: { tone: "expansion", d: expansionPath, animated: true },
+        suctionExternal: { tone: "suction", d: suctionExternal, animated: true },
+        suctionCompressor: { tone: "suction", d: compressorSuction, animated: true },
+      },
+    };
+  }
+
+  function renderHeatPumpSchematic(model) {
+    const svgIdBase = String(model.title || "hp").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const condWaterHeatGradientId = `${svgIdBase}-cond-water-heat`;
+    const condWaterCoolGradientId = `${svgIdBase}-cond-water-cool`;
+    const condRefGradientId = `${svgIdBase}-cond-ref`;
+    const activeCondWaterGradientId = model.reverseCycle ? condWaterCoolGradientId : condWaterHeatGradientId;
     return `
-      <div class="${escapeHtml(boardClass)}">
+      <div class="${escapeHtml(model.boardClass)}" data-oq-hp-board="${escapeHtml(model.title)}">
         <div class="oq-hp-tech-shell">
-          <div class="oq-hp-tech-head">
-            <span class="oq-hp-tech-kicker">Buitendeel</span>
-            <span class="oq-hp-tech-status">${escapeHtml(statusText)}</span>
-          </div>
-          <svg class="oq-hp-tech-svg" viewBox="0 0 620 360" role="img" aria-label="${escapeHtml(title)} technische schematic">
-            <rect class="oq-hp-tech-frame" x="18" y="28" width="584" height="314" rx="22" />
+          <div class="oq-hp-tech-visual">
+            <svg class="oq-hp-tech-svg" viewBox="0 0 620 360" role="img" aria-label="${escapeHtml(model.title)} technische schematic">
+              <defs>
+              <linearGradient id="${escapeHtml(condWaterHeatGradientId)}" x1="0" y1="1" x2="0" y2="0">
+                <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.92"></stop>
+                <stop offset="18%" stop-color="#60a5fa" stop-opacity="0.82"></stop>
+                <stop offset="50%" stop-color="#8b8fdb" stop-opacity="0.38"></stop>
+                <stop offset="82%" stop-color="#f87171" stop-opacity="0.82"></stop>
+                <stop offset="100%" stop-color="#ef4444" stop-opacity="0.92"></stop>
+              </linearGradient>
+              <linearGradient id="${escapeHtml(condWaterCoolGradientId)}" x1="0" y1="1" x2="0" y2="0">
+                <stop offset="0%" stop-color="#ef4444" stop-opacity="0.92"></stop>
+                <stop offset="18%" stop-color="#f87171" stop-opacity="0.82"></stop>
+                <stop offset="50%" stop-color="#8b8fdb" stop-opacity="0.38"></stop>
+                <stop offset="82%" stop-color="#60a5fa" stop-opacity="0.82"></stop>
+                <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.92"></stop>
+              </linearGradient>
+              <linearGradient id="${escapeHtml(condRefGradientId)}" x1="0" y1="1" x2="0" y2="0">
+                <stop offset="0%" stop-color="#16a34a" stop-opacity="0.12"></stop>
+                <stop offset="52%" stop-color="#86efac" stop-opacity="0.08"></stop>
+                <stop offset="100%" stop-color="#4ade80" stop-opacity="0.22"></stop>
+              </linearGradient>
+              </defs>
+              <rect class="oq-hp-tech-frame" x="18" y="28" width="584" height="314" rx="22" />
 
-            <text class="oq-hp-tech-title" x="126" y="74">Condensor</text>
-            <text class="oq-hp-tech-title" x="310" y="74">Compressor</text>
-            <text class="oq-hp-tech-title" x="394" y="74">4-wegklep</text>
-            <text class="oq-hp-tech-title" x="516" y="74">Verdamper</text>
-
-            <text class="oq-hp-tech-water-label" x="34" y="112">Aanvoer</text>
-            <text class="oq-hp-tech-water-value" x="34" y="136">${escapeHtml(waterOutText)}</text>
-            <text class="oq-hp-tech-water-label" x="34" y="264">Retour</text>
-            <text class="oq-hp-tech-water-value" x="34" y="288">${escapeHtml(waterInText)}</text>
-
-            <g class="oq-hp-tech-chip">
-              <rect x="246" y="82" width="128" height="34" rx="10" />
-              <text class="oq-hp-tech-chip-text" x="310" y="104">${escapeHtml(`${freqText} Hz · ${powerText}`)}</text>
-            </g>
+            <text class="oq-hp-tech-title" x="134" y="76" data-oq-bind="left-exchanger-title">${escapeHtml(model.leftExchangerTitle)}</text>
+            <text class="oq-hp-tech-title" x="326" y="76">Compressor</text>
+            <text class="oq-hp-tech-title" x="510" y="76" data-oq-bind="right-exchanger-title">${escapeHtml(model.rightExchangerTitle)}</text>
 
             <g class="oq-hp-tech-condensor">
-              <rect class="oq-hp-tech-condensor-shell" x="104" y="94" width="58" height="190" rx="16" />
-              <path class="oq-hp-tech-condensor-band" d="M118 104 V274" />
+              <rect class="oq-hp-tech-condensor-shell" x="104" y="118" width="60" height="192" rx="18" />
+              <rect class="oq-hp-tech-condensor-water" x="112" y="124" width="20" height="180" rx="10" fill="url(#${escapeHtml(activeCondWaterGradientId)})" data-oq-bind="cond-water" />
+              <rect class="oq-hp-tech-condensor-ref-column" x="136" y="124" width="20" height="180" rx="10" fill="url(#${escapeHtml(condRefGradientId)})" />
+              <path class="oq-hp-tech-condensor-divider" d="M134 128 V300" />
             </g>
 
             <g class="oq-hp-tech-compressor">
-              <rect class="oq-hp-tech-compressor-body" x="280" y="132" width="60" height="92" rx="18" />
-              <path class="oq-hp-tech-compressor-lines" d="M294 154 H326 M294 170 H326 M294 186 H326" />
+              <rect class="oq-hp-tech-compressor-body" x="306" y="118" width="40" height="70" rx="17" />
+              <rect class="oq-hp-tech-compressor-port" x="296" y="140" width="10" height="20" rx="5" />
+              <rect class="oq-hp-tech-compressor-port" x="346" y="140" width="10" height="20" rx="5" />
+              <path class="oq-hp-tech-compressor-lines" d="M316 134 H336 M316 148 H336 M316 162 H336" />
+              <text class="oq-hp-tech-compressor-freq" x="326" y="180" data-oq-bind="compressor-freq">${escapeHtml(model.compressorFreqText)}</text>
             </g>
 
             <g class="oq-hp-tech-4way">
-              <rect class="oq-hp-tech-4way-body" x="388" y="146" width="28" height="44" rx="10" />
-              <path class="oq-hp-tech-4way-mark" d="M402 152 V184 M392 168 H412" />
+              <rect class="oq-hp-tech-4way-body" x="264" y="220" width="28" height="28" rx="9" />
+              <rect class="oq-hp-tech-4way-actuator" x="259" y="229" width="5" height="10" rx="2.5" />
+              <circle class="oq-hp-tech-4way-port oq-hp-tech-4way-port--${model.leftValveTone}" cx="266" cy="234" r="3.2" />
+              <circle class="oq-hp-tech-4way-port oq-hp-tech-4way-port--hotgas" cx="278" cy="220" r="3.2" />
+              <circle class="oq-hp-tech-4way-port oq-hp-tech-4way-port--${model.rightValveTone}" cx="290" cy="234" r="3.2" />
+              <circle class="oq-hp-tech-4way-port oq-hp-tech-4way-port--suction" cx="278" cy="248" r="3.2" />
+              <path class="oq-hp-tech-4way-route oq-hp-tech-4way-route--heat oq-hp-tech-4way-route--hotgas" d="${escapeHtml(model.hotgasValveHeat)}" />
+              <path class="oq-hp-tech-4way-route oq-hp-tech-4way-route--heat oq-hp-tech-4way-route--suction" d="${escapeHtml(model.suctionValveHeat)}" />
+              <path class="oq-hp-tech-4way-route oq-hp-tech-4way-route--cool oq-hp-tech-4way-route--hotgas" d="${escapeHtml(model.hotgasValveCool)}" />
+              <path class="oq-hp-tech-4way-route oq-hp-tech-4way-route--cool oq-hp-tech-4way-route--suction" d="${escapeHtml(model.suctionValveCool)}" />
             </g>
 
             <g class="oq-hp-tech-valve">
-              <path class="oq-hp-tech-valve-mark" d="M298 254 L322 278 M322 254 L298 278" />
+              <rect class="oq-hp-tech-eev-mask" x="311" y="283" width="30" height="22" rx="4" />
+              <polygon class="oq-hp-tech-eev-shape" points="315,284 326,294 315,304" />
+              <polygon class="oq-hp-tech-eev-shape" points="337,284 326,294 337,304" />
             </g>
 
             <g class="oq-hp-tech-evaporator">
-              <rect class="oq-hp-tech-evaporator-shell" x="480" y="94" width="56" height="190" rx="16" />
-              <path class="oq-hp-tech-evaporator-lines" d="M492 110 H524 M492 122 H524 M492 134 H524 M492 146 H524 M492 158 H524 M492 170 H524 M492 182 H524 M492 194 H524 M492 206 H524 M492 218 H524 M492 230 H524 M492 242 H524 M492 254 H524" />
-            </g>
-
-            <g class="oq-hp-tech-fan">
-              <circle class="oq-hp-tech-fan-ring" cx="560" cy="188" r="34" />
-              <circle class="oq-hp-tech-fan-core" cx="560" cy="188" r="8" />
-              <g class="oq-hp-tech-fan-blades">
-                <path d="M560 154 C571 168 572 179 560 188 C548 179 549 168 560 154 Z" />
-                <path d="M594 188 C579 196 568 197 560 188 C568 179 579 180 594 188 Z" />
-                <path d="M560 222 C549 208 548 197 560 188 C572 197 571 208 560 222 Z" />
+              <rect class="oq-hp-tech-evaporator-shell" x="480" y="118" width="60" height="192" rx="18" />
+              <path class="oq-hp-tech-evaporator-lines" d="M492 130 H526 M492 142 H526 M492 154 H526 M492 166 H526 M492 178 H526 M492 190 H526 M492 202 H526 M492 214 H526 M492 226 H526 M492 238 H526 M492 250 H526 M492 262 H526 M492 274 H526 M492 286 H526 M492 298 H526" />
+              <g class="oq-hp-tech-defrost-badge" transform="translate(532 116)">
+                <g class="oq-hp-tech-defrost-icon">
+                  <path class="oq-hp-tech-defrost-glyph" d="M8 17.85C8 19.04 7.11 20 6 20S4 19.04 4 17.85C4 16.42 6 14 6 14S8 16.42 8 17.85M16.46 12V10.56L18.46 9.43L20.79 10.05L21.31 8.12L19.54 7.65L20 5.88L18.07 5.36L17.45 7.69L15.45 8.82L13 7.38V5.12L14.71 3.41L13.29 2L12 3.29L10.71 2L9.29 3.41L11 5.12V7.38L8.5 8.82L6.5 7.69L5.92 5.36L4 5.88L4.47 7.65L2.7 8.12L3.22 10.05L5.55 9.43L7.55 10.56V12H2V13H22V12H16.46M9.5 12V10.56L12 9.11L14.5 10.56V12H9.5M20 17.85C20 19.04 19.11 20 18 20S16 19.04 16 17.85C16 16.42 18 14 18 14S20 16.42 20 17.85M14 20.85C14 22.04 13.11 23 12 23S10 22.04 10 20.85C10 19.42 12 17 12 17S14 19.42 14 20.85Z" />
+                </g>
               </g>
             </g>
 
-            <path class="oq-hp-tech-line oq-hp-tech-line--supply" d="M18 124 H104" />
-            <path class="oq-hp-tech-line oq-hp-tech-line--return" d="M18 274 H104" />
-            <path class="oq-hp-tech-line oq-hp-tech-line--hotgas" d="M340 168 H388" />
-            <path class="oq-hp-tech-line oq-hp-tech-line--hotgas" d="M388 168 H232 Q194 168 162 124" />
-            <path class="oq-hp-tech-line oq-hp-tech-line--liquid" d="M162 258 H248 Q284 258 310 266" />
-            <path class="oq-hp-tech-line oq-hp-tech-line--expansion" d="M322 266 H480" />
-            <path class="oq-hp-tech-line oq-hp-tech-line--suction" d="M480 124 H444 Q418 124 402 146" />
-            <path class="oq-hp-tech-line oq-hp-tech-line--suction" d="M402 190 V208 Q402 224 386 224 H340" />
+            <g class="oq-hp-tech-fan">
+              <circle class="oq-hp-tech-fan-ring" cx="550" cy="214" r="34" />
+              <circle class="oq-hp-tech-fan-core" cx="550" cy="214" r="8" />
+              <g class="oq-hp-tech-fan-blades">
+                <path d="M550 180 C561 192 562 203 550 214 C538 203 539 192 550 180 Z" />
+                <path d="M584 214 C572 225 561 226 550 214 C561 202 572 203 584 214 Z" />
+                <path d="M550 248 C539 236 538 225 550 214 C562 225 561 236 550 248 Z" />
+                <path d="M516 214 C528 203 539 202 550 214 C539 226 528 225 516 214 Z" />
+              </g>
+              <g class="oq-hp-tech-fan-chip" transform="translate(526 258)">
+                <rect x="0" y="0" width="48" height="18" rx="8" />
+                <text class="oq-hp-tech-fan-chip-text" x="24" y="12" data-oq-bind="fan-rpm">${escapeHtml(model.fanRpmText)}</text>
+              </g>
+            </g>
 
-            <path class="oq-hp-tech-flow oq-hp-tech-flow--supply" d="M18 124 H104" />
-            <path class="oq-hp-tech-flow oq-hp-tech-flow--return" d="M18 274 H104" />
-            <path class="oq-hp-tech-flow oq-hp-tech-flow--hotgas" d="M340 168 H388" />
-            <path class="oq-hp-tech-flow oq-hp-tech-flow--hotgas" d="M388 168 H232 Q194 168 162 124" />
-            <path class="oq-hp-tech-flow oq-hp-tech-flow--liquid" d="M162 258 H248 Q284 258 310 266" />
-            <path class="oq-hp-tech-flow oq-hp-tech-flow--expansion" d="M322 266 H480" />
-            <path class="oq-hp-tech-flow oq-hp-tech-flow--suction" d="M480 124 H444 Q418 124 402 146" />
-            <path class="oq-hp-tech-flow oq-hp-tech-flow--suction" d="M402 190 V208 Q402 224 386 224 H340" />
+            <g class="oq-hp-tech-bottom-heater ${model.bottomPlateActive ? "is-active" : ""}" data-oq-bind="bottom-heater">
+              <path class="oq-hp-tech-bottom-heater-glow" d="M475 320 L485 314 L495 320 L505 314 L515 320 L525 314 L535 320 L545 314" />
+              <path class="oq-hp-tech-bottom-heater-core" d="M475 320 L485 314 L495 320 L505 314 L515 320 L525 314 L535 320 L545 314" />
+            </g>
 
-            <text class="oq-hp-tech-note" x="170" y="300">Heat out ${escapeHtml(heatText)}</text>
-            <text class="oq-hp-tech-note" x="386" y="212">V4</text>
-            <text class="oq-hp-tech-note" x="448" y="300">${defrostActive ? "Defrost actief" : "Defrost uit"}</text>
-          </svg>
+            <g class="oq-hp-tech-crankcase-heater ${model.crankcaseActive ? "is-active" : ""}" data-oq-bind="crankcase-heater">
+              <path class="oq-hp-tech-crankcase-heater-glow" d="M302 206 L310 201 L318 206 L326 201 L334 206 L342 201 L350 206" />
+              <path class="oq-hp-tech-crankcase-heater-core" d="M302 206 L310 201 L318 206 L326 201 L334 206 L342 201 L350 206" />
+            </g>
+
+            ${renderTechPipeLayer("supply", model.pipes.supply.tone, model.pipes.supply.d, false)}
+            ${renderTechPipeLayer("return", model.pipes.return.tone, model.pipes.return.d, false)}
+            ${renderTechPipeLayer("compressor-discharge", model.pipes.compressorDischarge.tone, model.pipes.compressorDischarge.d)}
+            ${renderTechPipeLayer("liquid", model.pipes.liquid.tone, model.pipes.liquid.d)}
+            ${renderTechPipeLayer("expansion", model.pipes.expansion.tone, model.pipes.expansion.d)}
+            ${renderTechPipeLayer("suction-compressor", model.pipes.suctionCompressor.tone, model.pipes.suctionCompressor.d)}
+            ${renderTechPipeLayer("hotgas-external", model.pipes.hotgasExternal.tone, model.pipes.hotgasExternal.d)}
+            ${renderTechPipeLayer("suction-external", model.pipes.suctionExternal.tone, model.pipes.suctionExternal.d)}
+
+            <g class="oq-hp-tech-water-badge oq-hp-tech-water-badge--${model.supplyLineTone}" transform="translate(8 142)" data-oq-bind="supply-badge">
+              <rect x="0" y="0" width="64" height="24" rx="10" />
+              <text class="oq-hp-tech-water-badge-label" x="8" y="10">Aanvoer</text>
+              <text class="oq-hp-tech-water-badge-value" x="8" y="19" data-oq-bind="supply-value">${escapeHtml(model.waterOutText)}</text>
+            </g>
+
+            <g class="oq-hp-tech-water-badge oq-hp-tech-water-badge--${model.returnLineTone}" transform="translate(8 302)" data-oq-bind="return-badge">
+              <rect x="0" y="0" width="64" height="24" rx="10" />
+              <text class="oq-hp-tech-water-badge-label" x="8" y="10">Retour</text>
+              <text class="oq-hp-tech-water-badge-value" x="8" y="19" data-oq-bind="return-value">${escapeHtml(model.waterInText)}</text>
+            </g>
+
+            <g class="oq-hp-tech-pump oq-hp-tech-pump--${model.returnLineTone}">
+              <circle class="oq-hp-tech-pump-ring" cx="88" cy="294" r="16" />
+              <circle class="oq-hp-tech-pump-core" cx="88" cy="294" r="3.5" />
+              <path class="oq-hp-tech-pump-blade" d="M81 287 L96 294 L81 301 Z" />
+            </g>
+
+            </svg>
+          </div>
           <div class="oq-hp-tech-footer">
             <div class="oq-hp-tech-footer-item">
               <span>Werkmodus</span>
-              <strong>${escapeHtml(mode)}</strong>
+              <strong data-oq-bind="footer-mode">${escapeHtml(model.mode)}</strong>
+            </div>
+            <div class="oq-hp-tech-footer-item">
+              <span>Power in</span>
+              <strong data-oq-bind="footer-power">${escapeHtml(model.powerText)}</strong>
+            </div>
+            <div class="oq-hp-tech-footer-item">
+              <span>Heat out</span>
+              <strong data-oq-bind="footer-heat">${escapeHtml(model.heatText)}</strong>
             </div>
             <div class="oq-hp-tech-footer-item">
               <span>COP</span>
-              <strong>${escapeHtml(copText)}</strong>
-            </div>
-            <div class="oq-hp-tech-footer-item oq-hp-tech-footer-item--wide">
-              <span>Actieve storingen</span>
-              <strong>${escapeHtml(failureText)}</strong>
+              <strong data-oq-bind="footer-cop">${escapeHtml(model.copText)}</strong>
             </div>
           </div>
         </div>
@@ -1339,24 +1623,40 @@
     const defrostActive = isEntityActive(keys.defrost);
     const failures = formatFailures(getEntityStateText(keys.failures, "None"));
     const running = mode === "Verwarmen" || mode === "Koelen" || defrostActive;
+    const schematicModel = buildHeatPumpSchematicModel(title, keys, accent, mode, defrostActive, failures, running);
 
     if (state.hpVisualMode === "schematic") {
       return `
-        <section class="oq-overview-hp oq-overview-hp--${escapeHtml(accent)}">
+        <section class="oq-overview-hp oq-overview-hp--${escapeHtml(accent)}" data-oq-hp-panel="${escapeHtml(title)}">
           <div class="oq-overview-hp-head">
             <div>
-              <p class="oq-helper-label">${escapeHtml(title)}</p>
               <h3>${escapeHtml(title)}</h3>
             </div>
-            <span class="oq-overview-chip oq-overview-chip--${running ? "active" : "neutral"}">${running ? "Actief" : "Idle"}</span>
+            <div class="oq-overview-hp-status">
+              <div class="oq-overview-warning ${schematicModel.warningActive ? "is-visible" : ""}" data-oq-bind="panel-warning">
+                <button
+                  class="oq-overview-warning-button"
+                  type="button"
+                  aria-label="${escapeHtml(`Waarschuwing: ${schematicModel.failureText}`)}"
+                >
+                  <svg class="oq-overview-warning-icon" viewBox="0 0 20 18" aria-hidden="true">
+                    <path d="M10 1.6 L18.2 16.4 H1.8 Z" />
+                    <rect x="9.1" y="5.4" width="1.8" height="5.8" rx="0.9" />
+                    <circle cx="10" cy="13.6" r="1.1" />
+                  </svg>
+                </button>
+                <div class="oq-overview-warning-tooltip" role="tooltip" data-oq-bind="warning-text">${escapeHtml(schematicModel.failureText)}</div>
+              </div>
+              <span class="oq-overview-chip oq-overview-chip--${running ? "active" : "neutral"}" data-oq-bind="panel-status">${running ? "Actief" : "Idle"}</span>
+            </div>
           </div>
-          ${renderHeatPumpSchematic(title, keys, accent, mode, defrostActive, failures, running)}
+          ${renderHeatPumpSchematic(schematicModel)}
         </section>
       `;
     }
 
     return `
-      <section class="oq-overview-hp oq-overview-hp--${escapeHtml(accent)}">
+      <section class="oq-overview-hp oq-overview-hp--${escapeHtml(accent)}" data-oq-hp-panel="${escapeHtml(title)}">
         <div class="oq-overview-hp-head">
           <div>
             <p class="oq-helper-label">${escapeHtml(title)}</p>
@@ -1392,9 +1692,14 @@
     `;
   }
 
+  function getHeatPumpPanels() {
+    return HP_PANEL_CONFIGS.filter((panel) => hasEntity(panel.keys.power));
+  }
+
   function renderOverviewView() {
     const strategyLabel = isCurveMode() ? "Heating Curve" : "Power House";
     const targetKey = isCurveMode() ? "curveSupplyTarget" : "maxWater";
+    const heatPumpPanels = getHeatPumpPanels();
 
     return `
       <section class="oq-helper-panel oq-helper-panel--flush">
@@ -1403,7 +1708,7 @@
             <div>
               <p class="oq-helper-label">Overzicht</p>
               <h2 class="oq-helper-section-title">OpenQuatt live overzicht</h2>
-              <p class="oq-helper-section-copy">Dit is de richting voor de pagina na onboarding: compacte status bovenaan, het thermische beeld in het midden en de warmtepompen duidelijk als eersteklas onderdeel van het systeem.</p>
+              <p class="oq-helper-section-copy">Dit is de richting voor de pagina na Quick Start: compacte status bovenaan, het thermische beeld in het midden en de warmtepompen duidelijk als eersteklas onderdeel van het systeem.</p>
             </div>
             <div class="oq-overview-head-actions">
               <button class="oq-helper-button oq-helper-button--ghost oq-overview-theme-toggle" type="button" data-oq-action="toggle-overview-theme">
@@ -1448,33 +1753,213 @@
               </div>
             </section>
           </div>
-          <div class="oq-overview-hp-grid">
-            ${renderHeatPumpPanel("HP1", {
-              power: "hp1Power",
-              heat: "hp1Heat",
-              cop: "hp1Cop",
-              freq: "hp1Freq",
-              waterIn: "hp1WaterIn",
-              waterOut: "hp1WaterOut",
-              mode: "hp1Mode",
-              failures: "hp1Failures",
-              defrost: "hp1Defrost",
-            }, "blue")}
-            ${renderHeatPumpPanel("HP2", {
-              power: "hp2Power",
-              heat: "hp2Heat",
-              cop: "hp2Cop",
-              freq: "hp2Freq",
-              waterIn: "hp2WaterIn",
-              waterOut: "hp2WaterOut",
-              mode: "hp2Mode",
-              failures: "hp2Failures",
-              defrost: "hp2Defrost",
-            }, "orange")}
+          <div class="oq-overview-hp-grid ${heatPumpPanels.length === 1 ? "oq-overview-hp-grid--single" : ""}">
+            ${heatPumpPanels.map((panel) => renderHeatPumpPanel(panel.title, panel.keys, panel.accent)).join("")}
           </div>
         </div>
       </section>
     `;
+  }
+
+  function setTextContent(root, selector, value) {
+    if (!root) {
+      return;
+    }
+    const node = root.querySelector(selector);
+    if (node && node.textContent !== value) {
+      node.textContent = value;
+    }
+  }
+
+  function setVariantClass(node, prefix, value, variants) {
+    if (!node) {
+      return;
+    }
+    const target = `${prefix}${value}`;
+    const current = variants
+      .map((variant) => `${prefix}${variant}`)
+      .find((variantClass) => node.classList.contains(variantClass));
+
+    if (current === target) {
+      return;
+    }
+
+    variants.forEach((variant) => node.classList.remove(`${prefix}${variant}`));
+    node.classList.add(target);
+  }
+
+  function updatePipeGroup(root, id, tone, d) {
+    const group = root.querySelector(`[data-oq-pipe="${id}"]`);
+    if (!group) {
+      return;
+    }
+    setVariantClass(group, "oq-hp-tech-pipe--", tone, ["supply", "return", "hotgas", "liquid", "expansion", "suction"]);
+    group.querySelectorAll("path").forEach((path) => {
+      if (path.getAttribute("d") !== d) {
+        path.setAttribute("d", d);
+      }
+    });
+  }
+
+  function patchHeatPumpPanel(panel, title, keys, accent) {
+    if (!panel) {
+      return;
+    }
+
+    const mode = formatWorkingMode(getEntityStateText(keys.mode, "Unknown"));
+    const defrostActive = isEntityActive(keys.defrost);
+    const failures = formatFailures(getEntityStateText(keys.failures, "None"));
+    const running = mode === "Verwarmen" || mode === "Koelen" || defrostActive;
+    const model = buildHeatPumpSchematicModel(title, keys, accent, mode, defrostActive, failures, running);
+    const headStatus = panel.querySelector('[data-oq-bind="panel-status"]');
+    if (headStatus) {
+      headStatus.textContent = model.statusText;
+      headStatus.classList.toggle("oq-overview-chip--active", running);
+      headStatus.classList.toggle("oq-overview-chip--neutral", !running);
+    }
+    const headWarning = panel.querySelector('[data-oq-bind="panel-warning"]');
+    if (headWarning) {
+      headWarning.classList.toggle("is-visible", model.warningActive);
+      const warningText = headWarning.querySelector('[data-oq-bind="warning-text"]');
+      if (warningText && warningText.textContent !== model.failureText) {
+        warningText.textContent = model.failureText;
+      }
+      const warningButton = headWarning.querySelector(".oq-overview-warning-button");
+      if (warningButton) {
+        warningButton.setAttribute("aria-label", `Waarschuwing: ${model.failureText}`);
+      }
+    }
+
+    const board = panel.querySelector("[data-oq-hp-board]");
+    if (!board) {
+      return;
+    }
+
+    if (board.className !== model.boardClass) {
+      board.className = model.boardClass;
+    }
+    setTextContent(board, '[data-oq-bind="status"]', model.statusText);
+    setTextContent(board, '[data-oq-bind="left-exchanger-title"]', model.leftExchangerTitle);
+    setTextContent(board, '[data-oq-bind="right-exchanger-title"]', model.rightExchangerTitle);
+    setTextContent(board, '[data-oq-bind="compressor-freq"]', model.compressorFreqText);
+    setTextContent(board, '[data-oq-bind="supply-value"]', model.waterOutText);
+    setTextContent(board, '[data-oq-bind="return-value"]', model.waterInText);
+    setTextContent(board, '[data-oq-bind="footer-mode"]', model.mode);
+    setTextContent(board, '[data-oq-bind="footer-power"]', model.powerText);
+    setTextContent(board, '[data-oq-bind="footer-heat"]', model.heatText);
+    setTextContent(board, '[data-oq-bind="footer-cop"]', model.copText);
+    setTextContent(board, '[data-oq-bind="fan-rpm"]', model.fanRpmText);
+    const bottomHeater = board.querySelector('[data-oq-bind="bottom-heater"]');
+    if (bottomHeater) {
+      bottomHeater.classList.toggle("is-active", model.bottomPlateActive);
+    }
+    const crankcaseHeater = board.querySelector('[data-oq-bind="crankcase-heater"]');
+    if (crankcaseHeater) {
+      crankcaseHeater.classList.toggle("is-active", model.crankcaseActive);
+    }
+
+    setVariantClass(board.querySelector('[data-oq-bind="supply-badge"]'), "oq-hp-tech-water-badge--", model.supplyLineTone, ["supply", "return"]);
+    setVariantClass(board.querySelector('[data-oq-bind="return-badge"]'), "oq-hp-tech-water-badge--", model.returnLineTone, ["supply", "return"]);
+    setVariantClass(board.querySelector(".oq-hp-tech-pump"), "oq-hp-tech-pump--", model.returnLineTone, ["supply", "return"]);
+    const condWater = board.querySelector('[data-oq-bind="cond-water"]');
+    if (condWater) {
+      const svgIdBase = String(model.title || "hp").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const fillId = model.reverseCycle ? `${svgIdBase}-cond-water-cool` : `${svgIdBase}-cond-water-heat`;
+      const fillValue = `url(#${fillId})`;
+      if (condWater.getAttribute("fill") !== fillValue) {
+        condWater.setAttribute("fill", fillValue);
+      }
+    }
+
+    Object.entries(model.pipes).forEach(([id, pipe]) => {
+      updatePipeGroup(board, id.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`), pipe.tone, pipe.d);
+    });
+    refreshMotionTargets();
+  }
+
+  function patchOverviewDom() {
+    if (!state.root || !state.helperOpen || state.appView !== "overview" || state.hpVisualMode !== "schematic") {
+      return false;
+    }
+
+    const board = state.root.querySelector(".oq-overview-board");
+    if (!board) {
+      return false;
+    }
+
+    const strategyLabel = isCurveMode() ? "Heating Curve" : "Power House";
+    const targetKey = isCurveMode() ? "curveSupplyTarget" : "maxWater";
+    const status = board.querySelector(".oq-overview-status");
+    const top = board.querySelector(".oq-overview-top");
+    const system = board.querySelector(".oq-overview-system");
+    const temps = board.querySelector(".oq-overview-temps");
+    const hpGrid = board.querySelector(".oq-overview-hp-grid");
+    const heatPumpPanels = getHeatPumpPanels();
+
+    if (status) {
+      status.innerHTML = `
+        ${renderOverviewStatusChip("Strategie", strategyLabel, "blue")}
+        ${renderOverviewStatusChip("Control mode", getEntityStateText("controlModeLabel"), "neutral")}
+        ${renderOverviewStatusChip("Flow mode", getEntityStateText("flowMode"), "neutral")}
+        ${renderOverviewStatusChip("Silent", isEntityActive("silentActive") ? "Actief" : "Uit", isEntityActive("silentActive") ? "active" : "neutral")}
+        ${renderOverviewStatusChip("Sticky pump", isEntityActive("stickyActive") ? "Actief" : "Uit", isEntityActive("stickyActive") ? "active" : "neutral")}
+      `;
+    }
+
+    if (top) {
+      top.innerHTML = `
+        ${renderOverviewStatCard("totalPower", "Power in", "blue", "systeem totaal")}
+        ${renderOverviewStatCard("totalHeat", "Heat out", "orange", "thermisch vermogen")}
+        ${renderOverviewStatCard("totalCop", "COP", "green", "systeemefficiency")}
+        ${renderOverviewStatCard("flowSelected", "Flow", "sky", "pomp + distributie")}
+      `;
+    }
+
+    if (system) {
+      system.innerHTML = `
+        <div class="oq-overview-system-copy">
+          <h3>Warmtevraag</h3>
+          <p>Afgeleide indicatie van hoeveel warmte de woning nu vraagt.</p>
+        </div>
+        ${renderHomeDemandCard()}
+      `;
+    }
+
+    if (temps) {
+      temps.innerHTML = `
+        <div class="oq-overview-system-copy">
+          <h3>Temperaturen</h3>
+          <p>Belangrijkste temperatuurwaarden voor comfort en regeling.</p>
+        </div>
+        <div class="oq-overview-temps-list">
+          ${renderTempRow("Kamertemperatuur", "roomTemp")}
+          ${renderTempRow("Kamer setpoint", "roomSetpoint")}
+          ${renderTempRow("Aanvoertemperatuur", "supplyTemp")}
+          ${renderTempRow(isCurveMode() ? "Curve target" : "Max watertemperatuur", targetKey)}
+        </div>
+      `;
+    }
+
+    if (!hpGrid) {
+      return false;
+    }
+
+    const renderedPanels = hpGrid.querySelectorAll("[data-oq-hp-panel]");
+    if (renderedPanels.length !== heatPumpPanels.length) {
+      return false;
+    }
+
+    hpGrid.classList.toggle("oq-overview-hp-grid--single", heatPumpPanels.length === 1);
+    heatPumpPanels.forEach((panel) => {
+      patchHeatPumpPanel(
+        board.querySelector(`[data-oq-hp-panel="${panel.title}"]`),
+        panel.title,
+        panel.keys,
+        panel.accent,
+      );
+    });
+
+    return true;
   }
 
   function renderSettingsView() {
@@ -1567,7 +2052,7 @@
         </div>
         <p class="oq-helper-native-state">
           <strong>${state.nativeOpen ? "Nu zichtbaar." : "Standaard verborgen."}</strong>
-          ${state.nativeOpen ? " Gebruik dit voor ruwe entities, diagnose en tijdelijke gaten terwijl het OpenQuatt-appoppervlak verder groeit." : " Zo blijven onboarding, overzicht en instellingen visueel primair, terwijl de native fallback eronder behouden blijft."}
+          ${state.nativeOpen ? " Gebruik dit voor ruwe entities, diagnose en tijdelijke gaten terwijl het OpenQuatt-appoppervlak verder groeit." : " Zo blijven Quick Start, overzicht en instellingen visueel primair, terwijl de native fallback eronder behouden blijft."}
         </p>
       </section>
     `;
@@ -1639,7 +2124,7 @@
                   <h1>OpenQuatt app-voorbeeld</h1>
                 </div>
               </div>
-              <p class="oq-helper-lead">Nieuwe gebruikers starten met onboarding. Daarna hoort het device te landen op een strak OpenQuatt-overzicht met control mode, flow, temperaturen en de warmtepompen duidelijk in beeld. Instellingen moeten gestructureerd, uitlegbaar en aanpasbaar blijven.</p>
+              <p class="oq-helper-lead">Nieuwe gebruikers starten met Quick Start. Daarna hoort het device te landen op een strak OpenQuatt-overzicht met control mode, flow, temperaturen en de warmtepompen duidelijk in beeld. Instellingen moeten gestructureerd, uitlegbaar en aanpasbaar blijven.</p>
             </div>
             <button class="oq-helper-toggle" type="button" data-oq-action="toggle-helper">
               ${state.helperOpen ? "Helper inklappen" : "Helper uitklappen"}
@@ -1652,6 +2137,8 @@
         </div>
       </div>
     `;
+    clearLegacyMotionVariables();
+    refreshMotionTargets();
     syncNativeVisibility();
   }
 

@@ -2,11 +2,26 @@
   const DOMAINS = new Set(["select", "number", "sensor", "text_sensor", "binary_sensor", "button"]);
   const entities = new Map();
   const state = {
-    scenario: "heating",
+    scenario: "dual",
+    installation: "duo",
     complete: true,
     tick: 0,
     autoAnimate: true,
   };
+
+  const HP2_ENTITIES = [
+    ["sensor", "HP2 - Power Input", { value: 0, uom: "W" }],
+    ["sensor", "HP2 - Heat Power", { value: 0, uom: "W" }],
+    ["sensor", "HP2 - COP", { value: 0, uom: "" }],
+    ["sensor", "HP2 - Compressor frequency", { value: 0, uom: "Hz" }],
+    ["sensor", "HP2 - Water in temperature", { value: 25.4, uom: "°C" }],
+    ["sensor", "HP2 - Water out temperature", { value: 29.1, uom: "°C" }],
+    ["text_sensor", "HP2 - Working Mode Label", { state: "Standby", value: "Standby" }],
+    ["text_sensor", "HP2 - Active Failures List", { state: "None", value: "None" }],
+    ["binary_sensor", "HP2 - Defrost", { value: false }],
+    ["binary_sensor", "HP2 - Bottom plate heater", { value: true }],
+    ["binary_sensor", "HP2 - Crankcase heater", { value: true }],
+  ];
 
   function entityKey(domain, name) {
     return `${domain}/${name}`;
@@ -120,12 +135,6 @@
       ["HP1 - Compressor frequency", 0, "Hz"],
       ["HP1 - Water in temperature", 25.5, "°C"],
       ["HP1 - Water out temperature", 29.5, "°C"],
-      ["HP2 - Power Input", 0, "W"],
-      ["HP2 - Heat Power", 0, "W"],
-      ["HP2 - COP", 0, ""],
-      ["HP2 - Compressor frequency", 0, "Hz"],
-      ["HP2 - Water in temperature", 25.4, "°C"],
-      ["HP2 - Water out temperature", 29.1, "°C"],
     ].forEach(([name, value, uom]) => {
       setEntity("sensor", name, { value, uom });
     });
@@ -133,8 +142,6 @@
     [
       ["HP1 - Working Mode Label", "Standby"],
       ["HP1 - Active Failures List", "None"],
-      ["HP2 - Working Mode Label", "Standby"],
-      ["HP2 - Active Failures List", "None"],
     ].forEach(([name, value]) => {
       setEntity("text_sensor", name, { state: value, value });
     });
@@ -143,13 +150,44 @@
       ["Silent active", false],
       ["Sticky pump active", false],
       ["HP1 - Defrost", false],
-      ["HP2 - Defrost", false],
+      ["HP1 - Bottom plate heater", false],
+      ["HP1 - Crankcase heater", false],
     ].forEach(([name, value]) => {
       setEntity("binary_sensor", name, { value });
     });
 
+    seedHp2Entities();
+
     setEntity("button", "Apply & Finish", {});
     setEntity("button", "Start Over", {});
+  }
+
+  function seedHp2Entities() {
+    HP2_ENTITIES.forEach(([domain, name, payload]) => {
+      setEntity(domain, name, clone(payload));
+    });
+  }
+
+  function clearHp2Entities() {
+    HP2_ENTITIES.forEach(([domain, name]) => {
+      entities.delete(entityKey(domain, name));
+    });
+  }
+
+  function setInstallationMode(mode) {
+    state.installation = mode === "single" ? "single" : "duo";
+    if (state.installation === "single") {
+      clearHp2Entities();
+      if (state.scenario === "dual") {
+        state.scenario = "heating";
+      }
+    } else {
+      seedHp2Entities();
+    }
+  }
+
+  function notifyMockUpdated() {
+    window.dispatchEvent(new Event("oq-mock-updated"));
   }
 
   function computePreset() {
@@ -202,22 +240,34 @@
   }
 
   function applyScenario(name) {
+    if (state.installation === "single" && name === "dual") {
+      name = "heating";
+    }
     state.scenario = name;
     const t = state.tick / 5;
     const wave = (base, amp, offset = 0) => Number((base + Math.sin(t + offset) * amp).toFixed(1));
     const waveInt = (base, amp, offset = 0) => Math.round(base + Math.sin(t + offset) * amp);
+    const single = state.installation === "single";
 
     setBinary("Silent active", false);
     setBinary("Sticky pump active", false);
     setBinary("HP1 - Defrost", false);
-    setBinary("HP2 - Defrost", false);
+    setBinary("HP1 - Bottom plate heater", false);
+    setBinary("HP1 - Crankcase heater", false);
+    if (!single) {
+      setBinary("HP2 - Defrost", false);
+      setBinary("HP2 - Bottom plate heater", false);
+      setBinary("HP2 - Crankcase heater", false);
+    }
     setText("text_sensor", "HP1 - Active Failures List", "None");
-    setText("text_sensor", "HP2 - Active Failures List", "None");
+    if (!single) {
+      setText("text_sensor", "HP2 - Active Failures List", "None");
+    }
 
     if (name === "idle") {
       setText("text_sensor", "Control Mode (Label)", "CM98");
       setText("text_sensor", "Flow Mode", "Adaptive");
-      setNumber("Total Power Input", 10.3, "W");
+      setNumber("Total Power Input", single ? 5.2 : 10.3, "W");
       setNumber("Total Heat Power", 0, "W");
       setNumber("Total COP", 0);
       setNumber("Flow average (Selected)", 0, "L/h");
@@ -231,54 +281,66 @@
       setNumber("HP1 - Water in temperature", 25.6, "°C");
       setNumber("HP1 - Water out temperature", 26.0, "°C");
       setText("text_sensor", "HP1 - Working Mode Label", "Standby");
-      setNumber("HP2 - Power Input", 5.1, "W");
-      setNumber("HP2 - Heat Power", 0, "W");
-      setNumber("HP2 - COP", 0);
-      setNumber("HP2 - Compressor frequency", 0, "Hz");
-      setNumber("HP2 - Water in temperature", 25.4, "°C");
-      setNumber("HP2 - Water out temperature", 25.8, "°C");
-      setText("text_sensor", "HP2 - Working Mode Label", "Standby");
+      if (!single) {
+        setNumber("HP2 - Power Input", 5.1, "W");
+        setNumber("HP2 - Heat Power", 0, "W");
+        setNumber("HP2 - COP", 0);
+        setNumber("HP2 - Compressor frequency", 0, "Hz");
+        setNumber("HP2 - Water in temperature", 25.4, "°C");
+        setNumber("HP2 - Water out temperature", 25.8, "°C");
+        setText("text_sensor", "HP2 - Working Mode Label", "Standby");
+        setBinary("HP2 - Bottom plate heater", true);
+        setBinary("HP2 - Crankcase heater", true);
+      }
       return;
     }
 
     if (name === "heating") {
       setText("text_sensor", "Control Mode (Label)", "CM98");
       setText("text_sensor", "Flow Mode", "Adaptive");
-      setNumber("Total Power Input", wave(560, 55), "W");
-      setNumber("Total Heat Power", wave(2430, 190), "W");
-      setNumber("Total COP", Number((4.4 + Math.sin(t) * 0.22).toFixed(2)));
+      const hp1Power = wave(418, 22);
+      const hp1Heat = wave(1880, 120);
+      const hp1Cop = Number((4.55 + Math.sin(t) * 0.18).toFixed(2));
+      setNumber("Total Power Input", single ? hp1Power : wave(560, 55), "W");
+      setNumber("Total Heat Power", single ? hp1Heat : wave(2430, 190), "W");
+      setNumber("Total COP", single ? hp1Cop : Number((4.4 + Math.sin(t) * 0.22).toFixed(2)));
       setNumber("Flow average (Selected)", wave(780, 40), "L/h");
       setNumber("Room Temperature (Selected)", wave(20.2, 0.12), "°C");
       setNumber("Room Setpoint (Selected)", 21.0, "°C");
       setNumber("Water Supply Temp (Selected)", wave(31.4, 0.8), "°C");
-      setNumber("HP1 - Power Input", wave(418, 22), "W");
-      setNumber("HP1 - Heat Power", wave(1880, 120), "W");
-      setNumber("HP1 - COP", Number((4.55 + Math.sin(t) * 0.18).toFixed(2)));
+      setNumber("HP1 - Power Input", hp1Power, "W");
+      setNumber("HP1 - Heat Power", hp1Heat, "W");
+      setNumber("HP1 - COP", hp1Cop);
       setNumber("HP1 - Compressor frequency", waveInt(30, 3), "Hz");
       setNumber("HP1 - Water in temperature", wave(25.0, 0.4), "°C");
       setNumber("HP1 - Water out temperature", wave(30.5, 0.5), "°C");
       setText("text_sensor", "HP1 - Working Mode Label", "Heating");
-      setNumber("HP2 - Power Input", wave(110, 12, 0.7), "W");
-      setNumber("HP2 - Heat Power", wave(520, 60, 0.7), "W");
-      setNumber("HP2 - COP", Number((4.1 + Math.sin(t + 0.7) * 0.14).toFixed(2)));
-      setNumber("HP2 - Compressor frequency", waveInt(12, 2, 0.5), "Hz");
-      setNumber("HP2 - Water in temperature", wave(25.3, 0.3), "°C");
-      setNumber("HP2 - Water out temperature", wave(29.4, 0.4), "°C");
-      setText("text_sensor", "HP2 - Working Mode Label", "Standby");
+      if (!single) {
+        setNumber("HP2 - Power Input", wave(110, 12, 0.7), "W");
+        setNumber("HP2 - Heat Power", wave(520, 60, 0.7), "W");
+        setNumber("HP2 - COP", Number((4.1 + Math.sin(t + 0.7) * 0.14).toFixed(2)));
+        setNumber("HP2 - Compressor frequency", waveInt(12, 2, 0.5), "Hz");
+        setNumber("HP2 - Water in temperature", wave(25.3, 0.3), "°C");
+        setNumber("HP2 - Water out temperature", wave(29.4, 0.4), "°C");
+        setText("text_sensor", "HP2 - Working Mode Label", "Standby");
+        setBinary("HP2 - Bottom plate heater", false);
+        setBinary("HP2 - Crankcase heater", true);
+      }
       return;
     }
 
     if (name === "dual") {
       setText("text_sensor", "Control Mode (Label)", "CM99");
-      setText("text_sensor", "Flow Mode", "Dual assist");
+      setText("text_sensor", "Flow Mode", "Mixed test");
       setBinary("Silent active", true);
+      setText("text_sensor", "HP2 - Active Failures List", "Compressor oil return");
       setNumber("Total Power Input", wave(980, 60), "W");
-      setNumber("Total Heat Power", wave(4380, 240), "W");
-      setNumber("Total COP", Number((4.47 + Math.sin(t) * 0.14).toFixed(2)));
+      setNumber("Total Heat Power", wave(2260, 180), "W");
+      setNumber("Total COP", Number((2.28 + Math.sin(t) * 0.12).toFixed(2)));
       setNumber("Flow average (Selected)", wave(1220, 50), "L/h");
       setNumber("Room Temperature (Selected)", wave(19.8, 0.12), "°C");
       setNumber("Room Setpoint (Selected)", 21.0, "°C");
-      setNumber("Water Supply Temp (Selected)", wave(34.8, 0.7), "°C");
+      setNumber("Water Supply Temp (Selected)", wave(29.8, 0.6), "°C");
       setNumber("HP1 - Power Input", wave(470, 18), "W");
       setNumber("HP1 - Heat Power", wave(2080, 110), "W");
       setNumber("HP1 - COP", Number((4.42 + Math.sin(t) * 0.11).toFixed(2)));
@@ -287,12 +349,14 @@
       setNumber("HP1 - Water out temperature", wave(31.8, 0.5), "°C");
       setText("text_sensor", "HP1 - Working Mode Label", "Heating");
       setNumber("HP2 - Power Input", wave(420, 18, 0.4), "W");
-      setNumber("HP2 - Heat Power", wave(1980, 110, 0.4), "W");
-      setNumber("HP2 - COP", Number((4.33 + Math.sin(t + 0.4) * 0.1).toFixed(2)));
+      setNumber("HP2 - Heat Power", wave(-260, 40, 0.4), "W");
+      setNumber("HP2 - COP", Number((2.05 + Math.sin(t + 0.4) * 0.08).toFixed(2)));
       setNumber("HP2 - Compressor frequency", waveInt(31, 2, 0.4), "Hz");
-      setNumber("HP2 - Water in temperature", wave(25.0, 0.3), "°C");
-      setNumber("HP2 - Water out temperature", wave(31.1, 0.5), "°C");
-      setText("text_sensor", "HP2 - Working Mode Label", "Heating");
+      setNumber("HP2 - Water in temperature", wave(31.0, 0.4), "°C");
+      setNumber("HP2 - Water out temperature", wave(25.2, 0.3), "°C");
+      setText("text_sensor", "HP2 - Working Mode Label", "Cooling");
+      setBinary("HP2 - Bottom plate heater", true);
+      setBinary("HP2 - Crankcase heater", true);
       return;
     }
 
@@ -301,27 +365,36 @@
       setText("text_sensor", "Flow Mode", "Defrost recovery");
       setBinary("Sticky pump active", true);
       setBinary("HP1 - Defrost", true);
-      setNumber("Total Power Input", wave(610, 50), "W");
-      setNumber("Total Heat Power", wave(350, 40), "W");
-      setNumber("Total COP", Number((0.62 + Math.sin(t) * 0.08).toFixed(2)));
+      const hp1Power = wave(520, 16);
+      const hp1Heat = wave(160, 30);
+      const hp1Cop = Number((0.31 + Math.sin(t) * 0.03).toFixed(2));
+      setNumber("Total Power Input", single ? hp1Power : wave(610, 50), "W");
+      setNumber("Total Heat Power", single ? hp1Heat : wave(350, 40), "W");
+      setNumber("Total COP", single ? hp1Cop : Number((0.62 + Math.sin(t) * 0.08).toFixed(2)));
       setNumber("Flow average (Selected)", wave(920, 50), "L/h");
       setNumber("Room Temperature (Selected)", wave(20.0, 0.08), "°C");
       setNumber("Room Setpoint (Selected)", 21.0, "°C");
       setNumber("Water Supply Temp (Selected)", wave(27.4, 0.4), "°C");
-      setNumber("HP1 - Power Input", wave(520, 16), "W");
-      setNumber("HP1 - Heat Power", wave(160, 30), "W");
-      setNumber("HP1 - COP", Number((0.31 + Math.sin(t) * 0.03).toFixed(2)));
+      setNumber("HP1 - Power Input", hp1Power, "W");
+      setNumber("HP1 - Heat Power", hp1Heat, "W");
+      setNumber("HP1 - COP", hp1Cop);
       setNumber("HP1 - Compressor frequency", waveInt(39, 2), "Hz");
       setNumber("HP1 - Water in temperature", wave(29.8, 0.3), "°C");
       setNumber("HP1 - Water out temperature", wave(26.5, 0.3), "°C");
       setText("text_sensor", "HP1 - Working Mode Label", "Heating");
-      setNumber("HP2 - Power Input", wave(55, 4), "W");
-      setNumber("HP2 - Heat Power", 0, "W");
-      setNumber("HP2 - COP", 0);
-      setNumber("HP2 - Compressor frequency", 0, "Hz");
-      setNumber("HP2 - Water in temperature", wave(26.1, 0.2), "°C");
-      setNumber("HP2 - Water out temperature", wave(26.8, 0.2), "°C");
-      setText("text_sensor", "HP2 - Working Mode Label", "Standby");
+      setBinary("HP1 - Bottom plate heater", true);
+      setBinary("HP1 - Crankcase heater", true);
+      if (!single) {
+        setNumber("HP2 - Power Input", wave(55, 4), "W");
+        setNumber("HP2 - Heat Power", 0, "W");
+        setNumber("HP2 - COP", 0);
+        setNumber("HP2 - Compressor frequency", 0, "Hz");
+        setNumber("HP2 - Water in temperature", wave(26.1, 0.2), "°C");
+        setNumber("HP2 - Water out temperature", wave(26.8, 0.2), "°C");
+        setText("text_sensor", "HP2 - Working Mode Label", "Standby");
+        setBinary("HP2 - Bottom plate heater", false);
+        setBinary("HP2 - Crankcase heater", true);
+      }
       return;
     }
   }
@@ -331,6 +404,7 @@
     if (state.autoAnimate) {
       applyScenario(state.scenario);
       updateSummary();
+      notifyMockUpdated();
     }
   }
 
@@ -340,11 +414,13 @@
       applyPreset(value);
     }
     updateSummary();
+    notifyMockUpdated();
   }
 
   function handleNumberSet(name, value) {
     setNumber(name, Number(value));
     updateSummary();
+    notifyMockUpdated();
   }
 
   function handleButtonPress(name) {
@@ -354,6 +430,8 @@
       state.complete = false;
     }
     updateSummary();
+    renderToolbar();
+    notifyMockUpdated();
   }
 
   function parseMockRequest(input) {
@@ -423,13 +501,17 @@
       <div class="oq-dev-toolbar-head">
         <div>
           <h1>OpenQuatt lokale UI-preview</h1>
-          <p>Deze pagina laadt dezelfde <code>onboarding.js</code> en <code>onboarding.css</code> als het device, maar voedt ze met mockdata. Zo kunnen we layout, wording en states lokaal uitwerken zonder compile + OTA op elke iteratie.</p>
+          <p>Deze pagina laadt dezelfde <code>openquatt-app.js</code> en <code>openquatt-app.css</code> als het device, maar voedt ze met mockdata. Zo kunnen we layout, wording en states lokaal uitwerken zonder compile + OTA op elke iteratie.</p>
         </div>
         <div class="oq-dev-toolbar-actions">
+          <select id="oq-dev-installation">
+            <option value="single">Installatie: Single Quatt</option>
+            <option value="duo">Installatie: Duo Quatt</option>
+          </select>
           <select id="oq-dev-scenario">
             <option value="idle">Scenario: Idle</option>
             <option value="heating">Scenario: HP1 heating</option>
-            <option value="dual">Scenario: Dual heating</option>
+            ${state.installation === "duo" ? '<option value="dual">Scenario: HP1 heat + HP2 cool</option>' : ""}
             <option value="defrost">Scenario: Defrost</option>
           </select>
           <button type="button" id="oq-dev-toggle-animate">${state.autoAnimate ? "Pauzeer mockdata" : "Start mockdata"}</button>
@@ -437,11 +519,24 @@
         </div>
       </div>
       <div class="oq-dev-toolbar-status">
+        <span class="oq-dev-pill"><strong>Installatie</strong> ${state.installation === "single" ? "Single Quatt" : "Duo Quatt"}</span>
         <span class="oq-dev-pill"><strong>Scenario</strong> ${state.scenario}</span>
-        <span class="oq-dev-pill"><strong>Setup</strong> ${state.complete ? "afgerond" : "onboarding"}</span>
+        <span class="oq-dev-pill"><strong>Quick Start</strong> ${state.complete ? "afgerond" : "actief"}</span>
         <span class="oq-dev-pill"><strong>Datastroom</strong> ${state.autoAnimate ? "live mock" : "gepauzeerd"}</span>
       </div>
     `;
+
+    const installation = root.querySelector("#oq-dev-installation");
+    if (installation) {
+      installation.value = state.installation;
+      installation.onchange = () => {
+        setInstallationMode(installation.value);
+        applyScenario(state.scenario);
+        updateSummary();
+        renderToolbar();
+        notifyMockUpdated();
+      };
+    }
 
     const select = root.querySelector("#oq-dev-scenario");
     if (select) {
@@ -451,6 +546,7 @@
         applyScenario(state.scenario);
         updateSummary();
         renderToolbar();
+        notifyMockUpdated();
       };
     }
 
@@ -472,12 +568,12 @@
   }
 
   seedEntities();
+  setInstallationMode(state.installation);
   applyScenario(state.scenario);
   updateSummary();
   installFetchMock();
   document.addEventListener("DOMContentLoaded", renderToolbar, { once: true });
   window.setInterval(() => {
     stepSimulation();
-    renderToolbar();
   }, 1600);
 }());

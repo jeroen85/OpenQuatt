@@ -875,6 +875,10 @@
   margin-top: 16px;
 }
 
+.oq-overview-hp-grid--single {
+  grid-template-columns: 1fr;
+}
+
 .oq-overview-hp-head {
   display: flex;
   justify-content: space-between;
@@ -1326,6 +1330,10 @@
   height: auto;
 }
 
+.oq-hp-tech-visual {
+  position: relative;
+}
+
 .oq-hp-tech-frame {
   fill: rgba(17, 24, 39, 0.24);
   stroke: rgba(100, 116, 139, 0.34);
@@ -1348,17 +1356,45 @@
   text-anchor: middle;
 }
 
-.oq-hp-tech-water-label {
-  fill: #e5e7eb;
-  font-size: 15px;
-  font-weight: 700;
-}
-
 .oq-hp-tech-water-value,
 .oq-hp-tech-note {
   fill: #94a3b8;
   font-size: 12px;
   font-weight: 600;
+}
+
+.oq-hp-tech-water-badge rect {
+  fill: rgba(15, 23, 42, 0.62);
+  stroke: rgba(71, 85, 105, 0.3);
+  stroke-width: 1;
+}
+
+.oq-hp-tech-water-badge--supply rect {
+  fill: rgba(69, 10, 10, 0.38);
+  stroke: rgba(248, 113, 113, 0.32);
+}
+
+.oq-hp-tech-water-badge--return rect {
+  fill: rgba(8, 47, 73, 0.42);
+  stroke: rgba(96, 165, 250, 0.3);
+}
+
+.oq-hp-tech-water-badge-label {
+  fill: #cbd5e1;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.oq-hp-tech-water-badge-value {
+  fill: #f8fafc;
+  font-size: 9.5px;
+  font-weight: 700;
+}
+
+.oq-hp-tech-note--center {
+  text-anchor: middle;
 }
 
 .oq-hp-tech-chip rect {
@@ -1369,7 +1405,7 @@
 
 .oq-hp-tech-chip-text {
   fill: #f8fafc;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   text-anchor: middle;
 }
@@ -1377,22 +1413,45 @@
 .oq-hp-tech-condensor-shell,
 .oq-hp-tech-evaporator-shell {
   fill: rgba(255, 255, 255, 0.02);
-  stroke: rgba(148, 163, 184, 0.28);
-  stroke-width: 2;
+  stroke: rgba(148, 163, 184, 0.24);
+  stroke-width: 1.5;
 }
 
-.oq-hp-tech-condensor-band {
+.oq-hp-tech-condensor-water,
+.oq-hp-tech-condensor-ref-column {
+  opacity: 0.96;
+}
+
+.oq-hp-tech-condensor-divider {
   fill: none;
-  stroke: #a9bff8;
-  stroke-width: 26;
+  stroke: rgba(148, 163, 184, 0.22);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.oq-hp-tech-condensor-ref-line,
+.oq-hp-tech-condensor-ref-flow {
+  fill: none;
   stroke-linecap: round;
+}
+
+.oq-hp-tech-condensor-ref-line {
+  stroke: rgba(74, 222, 128, 0.35);
+  stroke-width: 4.5;
+}
+
+.oq-hp-tech-condensor-ref-flow {
+  stroke: #4ade80;
+  stroke-width: 2.6;
+  stroke-dasharray: 8 12;
+  stroke-dashoffset: 0;
 }
 
 .oq-hp-tech-evaporator-lines,
 .oq-hp-tech-compressor-lines {
   fill: none;
   stroke: rgba(148, 163, 184, 0.38);
-  stroke-width: 2;
+  stroke-width: 1.8;
   stroke-linecap: round;
 }
 
@@ -1402,81 +1461,355 @@
   stroke-width: 2;
 }
 
-.oq-hp-tech-4way-body {
-  fill: rgba(30, 41, 59, 0.9);
-  stroke: rgba(100, 116, 139, 0.42);
-  stroke-width: 2;
+.oq-hp-tech-compressor-port {
+  fill: rgba(255, 255, 255, 0.05);
+  stroke: rgba(100, 116, 139, 0.28);
+  stroke-width: 1.4;
 }
 
-.oq-hp-tech-4way-mark,
-.oq-hp-tech-valve-mark {
+.oq-hp-tech-compressor-freq {
+  fill: #e2e8f0;
+  font-size: 11px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+
+.oq-hp-tech-pump-ring {
+  fill: rgba(255, 255, 255, 0.04);
+  stroke: rgba(148, 163, 184, 0.3);
+  stroke-width: 1.4;
+}
+
+.oq-hp-tech-pump-core {
+  fill: #60a5fa;
+}
+
+.oq-hp-tech-pump-blade {
+  fill: #3b82f6;
+}
+
+.oq-hp-tech-pump--supply .oq-hp-tech-pump-core {
+  fill: #f87171;
+}
+
+.oq-hp-tech-pump--supply .oq-hp-tech-pump-blade {
+  fill: #ef4444;
+}
+
+.oq-hp-tech-4way-body {
+  fill: rgba(30, 41, 59, 0.96);
+  stroke: rgba(148, 163, 184, 0.56);
+  stroke-width: 2;
+  filter: drop-shadow(0 0 10px rgba(96, 165, 250, 0.08));
+}
+
+.oq-hp-tech-4way-actuator {
+  fill: rgba(148, 163, 184, 0.5);
+}
+
+.oq-hp-tech-4way-port {
+  fill: rgba(226, 232, 240, 0.45);
+  stroke: rgba(15, 23, 42, 0.4);
+  stroke-width: 0.8;
+}
+
+.oq-hp-tech-4way-port--hotgas {
+  fill: #22c55e;
+}
+
+.oq-hp-tech-4way-port--suction {
+  fill: #6ee7b7;
+}
+
+.oq-hp-tech-4way-route {
   fill: none;
-  stroke: #e5e7eb;
-  stroke-width: 2.5;
+  stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
+.oq-hp-tech-4way-route--hotgas {
+  stroke: #22c55e;
+}
+
+.oq-hp-tech-4way-route--suction {
+  stroke: #34d399;
+}
+
+.oq-hp-tech-eev-mask {
+  fill: #1e293b;
+}
+
+.oq-hp-tech-eev-shape {
+  fill: none;
+  stroke: #e5e7eb;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.oq-hp-schematic-board .oq-hp-tech-4way-route--cool {
+  opacity: 0;
+}
+
+.oq-hp-schematic-board.is-reversed .oq-hp-tech-4way-route--cool {
+  opacity: 1;
+}
+
+.oq-hp-schematic-board.is-reversed .oq-hp-tech-4way-route--heat {
+  opacity: 0;
+}
+
 .oq-hp-tech-fan-ring {
   fill: rgba(15, 23, 42, 0.22);
-  stroke: rgba(100, 116, 139, 0.34);
-  stroke-width: 2;
+  stroke: rgba(100, 116, 139, 0.3);
+  stroke-width: 1.6;
 }
 
 .oq-hp-tech-fan-core {
   fill: #9ca3af;
 }
 
-.oq-hp-tech-fan-blades {
-  fill: rgba(203, 213, 225, 0.82);
-  transform-origin: 560px 188px;
+.oq-hp-tech-fan-chip rect {
+  fill: rgba(15, 23, 42, 0.92);
+  stroke: rgba(71, 85, 105, 0.4);
+  stroke-width: 1;
 }
 
-.oq-hp-tech-line,
-.oq-hp-tech-flow {
+.oq-hp-tech-fan-chip-text {
+  fill: #e2e8f0;
+  font-size: 9px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+
+.oq-hp-tech-bottom-heater {
+  opacity: 0;
+  transition: opacity 180ms ease;
+  pointer-events: none;
+}
+
+.oq-hp-tech-bottom-heater.is-active {
+  opacity: 1;
+}
+
+.oq-hp-tech-bottom-heater-glow {
+  fill: none;
+  stroke: rgba(249, 115, 22, 0.26);
+  stroke-width: 9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.oq-hp-tech-bottom-heater-core {
+  fill: none;
+  stroke: #f97316;
+  stroke-opacity: 0.78;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.oq-hp-tech-crankcase-heater {
+  opacity: 0;
+  transition: opacity 180ms ease;
+  pointer-events: none;
+}
+
+.oq-hp-tech-crankcase-heater.is-active {
+  opacity: 1;
+}
+
+.oq-hp-tech-crankcase-heater-glow {
+  fill: none;
+  stroke: rgba(249, 115, 22, 0.18);
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.oq-hp-tech-crankcase-heater-core {
+  fill: none;
+  stroke: #fb923c;
+  stroke-opacity: 0.72;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.oq-overview-warning {
+  position: relative;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 160ms ease;
+  transform: translateY(-2px);
+}
+
+.oq-overview-warning.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.oq-overview-warning-button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid rgba(251, 191, 36, 0.42);
+  border-radius: 999px;
+  background: rgba(120, 53, 15, 0.34);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.24);
+  cursor: help;
+}
+
+.oq-overview-warning-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.oq-overview-warning-icon path {
+  fill: #fbbf24;
+}
+
+.oq-overview-warning-icon rect,
+.oq-overview-warning-icon circle {
+  fill: #422006;
+}
+
+.oq-overview-warning-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 180px;
+  max-width: 240px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(245, 158, 11, 0.32);
+  background: rgba(15, 23, 42, 0.96);
+  color: #f8fafc;
+  font-size: 0.84rem;
+  line-height: 1.35;
+  box-shadow: 0 16px 30px rgba(2, 6, 23, 0.34);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 160ms ease, transform 160ms ease;
+  z-index: 6;
+}
+
+.oq-overview-warning.is-visible:hover .oq-overview-warning-tooltip,
+.oq-overview-warning.is-visible:focus-within .oq-overview-warning-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.oq-hp-tech-defrost-icon {
+  filter: drop-shadow(0 1px 2px rgba(96, 165, 250, 0.14));
+}
+
+.oq-hp-tech-defrost-glyph {
+  fill: #93c5fd;
+  transform: translate(-10px, -10px) scale(0.84);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.oq-hp-tech-defrost-badge {
+  opacity: 0;
+  transform-origin: 532px 116px;
+  transition: opacity 180ms ease;
+  pointer-events: none;
+}
+
+.oq-hp-schematic-board.is-defrost .oq-hp-tech-defrost-badge {
+  opacity: 1;
+}
+
+.oq-hp-tech-fan-blades {
+  fill: rgba(203, 213, 225, 0.82);
+  transform-origin: 550px 214px;
+  transform: rotate(0deg);
+  will-change: transform;
+}
+
+.oq-hp-tech-pipe-base,
+.oq-hp-tech-pipe-core,
+.oq-hp-tech-pipe-flow {
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.oq-hp-tech-line {
+.oq-hp-tech-pipe-base {
   stroke-width: 10;
-  opacity: 0.26;
+  opacity: 0.14;
 }
 
-.oq-hp-tech-flow {
-  stroke-width: 6;
-  stroke-dasharray: 12 16;
+.oq-hp-tech-pipe-core {
+  stroke-width: 5;
+  opacity: 0.94;
 }
 
-.oq-hp-tech-line--supply,
-.oq-hp-tech-flow--supply {
+.oq-hp-tech-pipe-flow {
+  stroke-width: 3;
+  stroke-dasharray: 8 14;
+  stroke-dashoffset: 0;
+}
+
+.oq-hp-tech-pipe--supply .oq-hp-tech-pipe-base,
+.oq-hp-tech-pipe--supply .oq-hp-tech-pipe-core {
   stroke: #ef4444;
 }
 
-.oq-hp-tech-line--return,
-.oq-hp-tech-flow--return {
+.oq-hp-tech-pipe--supply .oq-hp-tech-pipe-flow {
+  stroke: #f87171;
+}
+
+.oq-hp-tech-pipe--return .oq-hp-tech-pipe-base,
+.oq-hp-tech-pipe--return .oq-hp-tech-pipe-core {
   stroke: #3b82f6;
 }
 
-.oq-hp-tech-line--hotgas,
-.oq-hp-tech-flow--hotgas {
+.oq-hp-tech-pipe--return .oq-hp-tech-pipe-flow {
+  stroke: #60a5fa;
+}
+
+.oq-hp-tech-pipe--hotgas .oq-hp-tech-pipe-base,
+.oq-hp-tech-pipe--hotgas .oq-hp-tech-pipe-core {
   stroke: #22c55e;
 }
 
-.oq-hp-tech-line--liquid,
-.oq-hp-tech-flow--liquid {
+.oq-hp-tech-pipe--hotgas .oq-hp-tech-pipe-flow {
+  stroke: #4ade80;
+}
+
+.oq-hp-tech-pipe--liquid .oq-hp-tech-pipe-base,
+.oq-hp-tech-pipe--liquid .oq-hp-tech-pipe-core {
+  stroke: #16a34a;
+}
+
+.oq-hp-tech-pipe--liquid .oq-hp-tech-pipe-flow {
   stroke: #22c55e;
 }
 
-.oq-hp-tech-line--expansion,
-.oq-hp-tech-flow--expansion {
-  stroke: #22c55e;
+.oq-hp-tech-pipe--expansion .oq-hp-tech-pipe-base,
+.oq-hp-tech-pipe--expansion .oq-hp-tech-pipe-core {
+  stroke: #10b981;
 }
 
-.oq-hp-tech-line--suction,
-.oq-hp-tech-flow--suction {
-  stroke: #22c55e;
+.oq-hp-tech-pipe--expansion .oq-hp-tech-pipe-flow {
+  stroke: #34d399;
+}
+
+.oq-hp-tech-pipe--suction .oq-hp-tech-pipe-base,
+.oq-hp-tech-pipe--suction .oq-hp-tech-pipe-core {
+  stroke: #34d399;
+}
+
+.oq-hp-tech-pipe--suction .oq-hp-tech-pipe-flow {
+  stroke: #6ee7b7;
 }
 
 .oq-hp-tech-footer-item {
@@ -1496,13 +1829,14 @@
   display: block;
   margin-top: 6px;
   color: #f8fafc;
-  font-size: 1rem;
+  font-size: 0.96rem;
   line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .oq-hp-tech-footer {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr) minmax(0, 0.95fr) minmax(0, 0.82fr);
   gap: 12px;
 }
 
@@ -1513,25 +1847,20 @@
   background: rgba(15, 23, 42, 0.42);
 }
 
-.oq-hp-tech-footer-item--wide strong {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.oq-hp-tech-pipe-flow,
+.oq-hp-tech-condensor-ref-flow {
+  stroke-dashoffset: 0;
+  will-change: stroke-dashoffset;
 }
 
-.oq-hp-schematic-board.is-running .oq-hp-tech-fan-blades {
-  animation: oq-hp-spin 3.2s linear infinite;
+.oq-hp-tech-fan-blades {
+  will-change: transform;
 }
 
-.oq-hp-schematic-board.is-running .oq-hp-tech-flow {
-  animation: oq-hp-flow-forward 1.7s linear infinite;
-}
-
-.oq-hp-schematic-board.is-defrost .oq-hp-tech-flow--suction,
-.oq-hp-schematic-board.is-defrost .oq-hp-tech-flow--expansion,
-.oq-hp-schematic-board.is-defrost .oq-hp-tech-note {
-  stroke: #fbbf24;
-  fill: #fbbf24;
+@media (max-width: 980px) {
+  .oq-hp-tech-footer {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .oq-overview-meter {

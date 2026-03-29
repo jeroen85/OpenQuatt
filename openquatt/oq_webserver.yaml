@@ -8,8 +8,8 @@
 web_server:
   port: 80
   version: 3
-  css_include: openquatt/web/onboarding.css
-  js_include: openquatt/web/onboarding.js
+  css_include: openquatt/web/openquatt-app.css
+  js_include: openquatt/web/openquatt-app.js
   js_url: "${oq_webserver_js_url}"
   sorting_groups:
     - id: oq_setup
