@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>OpenQuatt UI Preview</title>
+    <link rel="stylesheet" href="./onboarding.css">
+    <style>
+      :root {
+        color-scheme: light;
+      }
+
+      body {
+        margin: 0;
+        background: linear-gradient(180deg, #f6f2ea 0%, #f8fafc 100%);
+        font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+        color: #111827;
+      }
+
+      .oq-dev-page {
+        min-height: 100vh;
+        padding: 18px 0 36px;
+      }
+
+      .oq-dev-toolbar {
+        width: min(1440px, calc(100vw - 24px));
+        margin: 0 auto 14px;
+        padding: 16px 18px;
+        border-radius: 22px;
+        border: 1px solid rgba(203, 213, 225, 0.92);
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 16px 32px rgba(15, 23, 42, 0.06);
+      }
+
+      .oq-dev-toolbar-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: flex-start;
+      }
+
+      .oq-dev-toolbar h1 {
+        margin: 0;
+        font-size: 1.1rem;
+      }
+
+      .oq-dev-toolbar p {
+        margin: 6px 0 0;
+        color: #6b7280;
+        line-height: 1.5;
+      }
+
+      .oq-dev-toolbar-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .oq-dev-toolbar select,
+      .oq-dev-toolbar button {
+        border-radius: 999px;
+        border: 1px solid #dbe3ee;
+        background: #fff;
+        color: #111827;
+        font: inherit;
+      }
+
+      .oq-dev-toolbar select {
+        padding: 10px 14px;
+      }
+
+      .oq-dev-toolbar button {
+        padding: 10px 14px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .oq-dev-toolbar button:hover {
+        background: #f8fafc;
+      }
+
+      .oq-dev-toolbar-status {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 14px;
+      }
+
+      .oq-dev-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid #dbe3ee;
+        background: #fff;
+        color: #475569;
+        font-size: 0.92rem;
+      }
+
+      .oq-dev-pill strong {
+        color: #111827;
+      }
+
+      esp-app {
+        display: block;
+        min-height: 1px;
+      }
+
+      @media (max-width: 860px) {
+        .oq-dev-toolbar-head {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="oq-dev-page">
+      <div class="oq-dev-toolbar" id="oq-dev-toolbar"></div>
+      <esp-app></esp-app>
+    </div>
+    <script src="./mock-device.js"></script>
+    <script src="./onboarding.js"></script>
+  </body>
+</html>
