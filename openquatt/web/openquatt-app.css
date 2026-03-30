@@ -1351,7 +1351,7 @@
 
 .oq-hp-tech-title {
   fill: #f8fafc;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   text-anchor: middle;
 }
@@ -1363,34 +1363,38 @@
   font-weight: 600;
 }
 
-.oq-hp-tech-water-badge rect {
-  fill: rgba(15, 23, 42, 0.62);
-  stroke: rgba(71, 85, 105, 0.3);
-  stroke-width: 1;
+.oq-hp-tech-water-reading {
+  cursor: help;
 }
 
-.oq-hp-tech-water-badge--supply rect {
-  fill: rgba(69, 10, 10, 0.38);
-  stroke: rgba(248, 113, 113, 0.32);
+.oq-hp-tech-hotspot {
+  cursor: help;
 }
 
-.oq-hp-tech-water-badge--return rect {
-  fill: rgba(8, 47, 73, 0.42);
-  stroke: rgba(96, 165, 250, 0.3);
+.oq-hp-tech-hotspot-hit {
+  fill: rgba(255, 255, 255, 0.001);
+  stroke: none;
+  pointer-events: all;
 }
 
-.oq-hp-tech-water-badge-label {
-  fill: #cbd5e1;
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+.oq-hp-tech-water-reading-hit {
+  pointer-events: all;
 }
 
-.oq-hp-tech-water-badge-value {
+.oq-hp-tech-water-reading-value {
   fill: #f8fafc;
-  font-size: 9.5px;
+  font-size: 10.8px;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  paint-order: stroke;
+  stroke: rgba(15, 23, 42, 0.88);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+.oq-hp-tech-water-reading:focus .oq-hp-tech-water-reading-value,
+.oq-hp-tech-water-reading:focus-visible .oq-hp-tech-water-reading-value {
+  fill: #ffffff;
 }
 
 .oq-hp-tech-note--center {
@@ -1561,26 +1565,13 @@
 }
 
 .oq-hp-tech-fan-ring {
-  fill: rgba(15, 23, 42, 0.22);
-  stroke: rgba(100, 116, 139, 0.3);
-  stroke-width: 1.6;
+  fill: rgba(15, 23, 42, 0.14);
+  stroke: rgba(100, 116, 139, 0.22);
+  stroke-width: 1.4;
 }
 
 .oq-hp-tech-fan-core {
-  fill: #9ca3af;
-}
-
-.oq-hp-tech-fan-chip rect {
-  fill: rgba(15, 23, 42, 0.92);
-  stroke: rgba(71, 85, 105, 0.4);
-  stroke-width: 1;
-}
-
-.oq-hp-tech-fan-chip-text {
-  fill: #e2e8f0;
-  font-size: 9px;
-  font-weight: 700;
-  text-anchor: middle;
+  fill: rgba(203, 213, 225, 0.58);
 }
 
 .oq-hp-tech-bottom-heater {
@@ -1591,6 +1582,8 @@
 
 .oq-hp-tech-bottom-heater.is-active {
   opacity: 1;
+  pointer-events: visibleStroke;
+  cursor: help;
 }
 
 .oq-hp-tech-bottom-heater-glow {
@@ -1618,6 +1611,8 @@
 
 .oq-hp-tech-crankcase-heater.is-active {
   opacity: 1;
+  pointer-events: visibleStroke;
+  cursor: help;
 }
 
 .oq-hp-tech-crankcase-heater-glow {
@@ -1637,56 +1632,212 @@
   stroke-linejoin: round;
 }
 
-.oq-overview-warning {
-  position: relative;
+.oq-hp-tech-tooltip {
   opacity: 0;
   pointer-events: none;
+  transform: translateY(-4px) scale(0.98);
+  transform-origin: center;
   transition: opacity 160ms ease, transform 160ms ease;
-  transform: translateY(-2px);
+  filter: drop-shadow(0 14px 22px rgba(2, 6, 23, 0.34));
 }
 
-.oq-overview-warning.is-visible {
+.oq-hp-tech-tooltip-layer {
+  pointer-events: none;
+}
+
+.oq-hp-tech-tooltip-panel {
+  fill: #0f172a;
+  stroke-width: 1.1;
+}
+
+.oq-hp-tech-tooltip-accent {
   opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
 }
 
-.oq-overview-warning-button {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  padding: 0;
-  border: 1px solid rgba(251, 191, 36, 0.42);
-  border-radius: 999px;
-  background: rgba(120, 53, 15, 0.34);
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.24);
+.oq-hp-tech-tooltip-icon-wave {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.oq-hp-tech-tooltip-icon-svg {
+  overflow: hidden;
+}
+
+.oq-hp-tech-tooltip-icon-mdi {
+  fill: currentColor;
+}
+
+.oq-hp-tech-tooltip-icon-stroke {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.oq-hp-tech-tooltip-icon-fill {
+  fill: currentColor;
+}
+
+.oq-hp-tech-tooltip-kicker {
+  font-size: 8.8px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.oq-hp-tech-tooltip-detail {
+  fill: #f8fafc;
+  font-size: 11.4px;
+  font-weight: 700;
+}
+
+.oq-hp-tech-tooltip-pointer {
+  fill: #0f172a;
+  stroke-width: 1;
+  stroke-linejoin: round;
+}
+
+.oq-hp-tech-tooltip--warm {
+  color: #fb923c;
+}
+
+.oq-hp-tech-tooltip--warm .oq-hp-tech-tooltip-panel {
+  stroke: rgba(251, 146, 60, 0.3);
+}
+
+.oq-hp-tech-tooltip--warm .oq-hp-tech-tooltip-accent {
+  fill: rgba(249, 115, 22, 0.16);
+}
+
+.oq-hp-tech-tooltip--warm .oq-hp-tech-tooltip-kicker {
+  fill: #fdba74;
+}
+
+.oq-hp-tech-tooltip--warm .oq-hp-tech-tooltip-pointer {
+  stroke: rgba(251, 146, 60, 0.3);
+}
+
+.oq-hp-tech-tooltip--supply {
+  color: #f87171;
+}
+
+.oq-hp-tech-tooltip--supply .oq-hp-tech-tooltip-panel {
+  stroke: rgba(248, 113, 113, 0.32);
+}
+
+.oq-hp-tech-tooltip--supply .oq-hp-tech-tooltip-accent {
+  fill: rgba(248, 113, 113, 0.16);
+}
+
+.oq-hp-tech-tooltip--supply .oq-hp-tech-tooltip-kicker {
+  fill: #fecaca;
+}
+
+.oq-hp-tech-tooltip--supply .oq-hp-tech-tooltip-pointer {
+  stroke: rgba(248, 113, 113, 0.32);
+}
+
+.oq-hp-tech-tooltip--return {
+  color: #60a5fa;
+}
+
+.oq-hp-tech-tooltip--return .oq-hp-tech-tooltip-panel {
+  stroke: rgba(96, 165, 250, 0.3);
+}
+
+.oq-hp-tech-tooltip--return .oq-hp-tech-tooltip-accent {
+  fill: rgba(96, 165, 250, 0.15);
+}
+
+.oq-hp-tech-tooltip--return .oq-hp-tech-tooltip-kicker {
+  fill: #bfdbfe;
+}
+
+.oq-hp-tech-tooltip--return .oq-hp-tech-tooltip-pointer {
+  stroke: rgba(96, 165, 250, 0.3);
+}
+
+.oq-hp-tech-tooltip--component {
+  color: #7dd3fc;
+}
+
+.oq-hp-tech-tooltip--component .oq-hp-tech-tooltip-panel {
+  stroke: rgba(125, 211, 252, 0.28);
+}
+
+.oq-hp-tech-tooltip--component .oq-hp-tech-tooltip-accent {
+  fill: rgba(56, 189, 248, 0.16);
+}
+
+.oq-hp-tech-tooltip--component .oq-hp-tech-tooltip-kicker {
+  fill: #bae6fd;
+}
+
+.oq-hp-tech-tooltip--component .oq-hp-tech-tooltip-pointer {
+  stroke: rgba(125, 211, 252, 0.28);
+}
+
+.oq-hp-tech-tooltip.is-active,
+.oq-hp-tech-hotspot:hover + .oq-hp-tech-tooltip,
+.oq-hp-tech-hotspot:focus + .oq-hp-tech-tooltip,
+.oq-hp-tech-hotspot:focus-visible + .oq-hp-tech-tooltip,
+.oq-hp-tech-water-reading:hover + .oq-hp-tech-tooltip,
+.oq-hp-tech-water-reading:focus + .oq-hp-tech-tooltip,
+.oq-hp-tech-water-reading:focus-visible + .oq-hp-tech-tooltip,
+.oq-hp-schematic-board.is-defrost .oq-hp-tech-defrost-badge:hover + .oq-hp-tech-tooltip,
+.oq-hp-schematic-board.is-defrost .oq-hp-tech-defrost-badge:focus + .oq-hp-tech-tooltip,
+.oq-hp-schematic-board.is-defrost .oq-hp-tech-defrost-badge:focus-visible + .oq-hp-tech-tooltip,
+.oq-hp-tech-bottom-heater.is-active:hover + .oq-hp-tech-tooltip,
+.oq-hp-tech-bottom-heater.is-active:focus + .oq-hp-tech-tooltip,
+.oq-hp-tech-bottom-heater.is-active:focus-visible + .oq-hp-tech-tooltip,
+.oq-hp-tech-crankcase-heater.is-active:hover + .oq-hp-tech-tooltip,
+.oq-hp-tech-crankcase-heater.is-active:focus + .oq-hp-tech-tooltip,
+.oq-hp-tech-crankcase-heater.is-active:focus-visible + .oq-hp-tech-tooltip {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.oq-overview-chip-warning-icon {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+}
+
+.oq-overview-chip--warning {
+  position: relative;
+  gap: 8px;
+  border-color: rgba(245, 158, 11, 0.26);
+  background: rgba(120, 53, 15, 0.14);
+  color: var(--oq-overview-title);
   cursor: help;
+  overflow: visible;
 }
 
-.oq-overview-warning-icon {
-  width: 16px;
-  height: 16px;
+.oq-overview-board--light .oq-overview-chip--warning {
+  background: rgba(255, 251, 235, 0.96);
 }
 
-.oq-overview-warning-icon path {
-  fill: #fbbf24;
+.oq-overview-chip-warning-icon path {
+  fill: #f59e0b;
 }
 
-.oq-overview-warning-icon rect,
-.oq-overview-warning-icon circle {
-  fill: #422006;
+.oq-overview-chip-warning-icon rect,
+.oq-overview-chip-warning-icon circle {
+  fill: #78350f;
 }
 
-.oq-overview-warning-tooltip {
+.oq-overview-chip-warning-tooltip {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
   min-width: 180px;
-  max-width: 240px;
+  max-width: 260px;
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid rgba(245, 158, 11, 0.32);
+  border: 1px solid rgba(245, 158, 11, 0.22);
   background: rgba(15, 23, 42, 0.96);
   color: #f8fafc;
   font-size: 0.84rem;
@@ -1699,14 +1850,20 @@
   z-index: 6;
 }
 
-.oq-overview-warning.is-visible:hover .oq-overview-warning-tooltip,
-.oq-overview-warning.is-visible:focus-within .oq-overview-warning-tooltip {
+.oq-overview-chip--warning:hover .oq-overview-chip-warning-tooltip,
+.oq-overview-chip--warning:focus-visible .oq-overview-chip-warning-tooltip {
   opacity: 1;
   transform: translateY(0);
 }
 
 .oq-hp-tech-defrost-icon {
   filter: drop-shadow(0 1px 2px rgba(96, 165, 250, 0.14));
+}
+
+.oq-hp-tech-defrost-hit {
+  fill: rgba(255, 255, 255, 0.001);
+  stroke: none;
+  pointer-events: all;
 }
 
 .oq-hp-tech-defrost-glyph {
@@ -1718,17 +1875,19 @@
 
 .oq-hp-tech-defrost-badge {
   opacity: 0;
-  transform-origin: 532px 116px;
+  transform-origin: 532px 288px;
   transition: opacity 180ms ease;
   pointer-events: none;
 }
 
 .oq-hp-schematic-board.is-defrost .oq-hp-tech-defrost-badge {
   opacity: 1;
+  pointer-events: all;
+  cursor: help;
 }
 
 .oq-hp-tech-fan-blades {
-  fill: rgba(203, 213, 225, 0.82);
+  fill: rgba(203, 213, 225, 0.62);
   transform-origin: 550px 214px;
   transform: rotate(0deg);
   will-change: transform;
@@ -1819,9 +1978,9 @@
 .oq-hp-tech-footer-item span {
   display: block;
   color: #94a3b8;
-  font-size: 0.76rem;
+  font-size: 0.84rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
@@ -1829,7 +1988,7 @@
   display: block;
   margin-top: 6px;
   color: #f8fafc;
-  font-size: 0.96rem;
+  font-size: 1.04rem;
   line-height: 1.2;
   overflow-wrap: anywhere;
 }

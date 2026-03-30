@@ -14,11 +14,19 @@
     ["sensor", "HP2 - Heat Power", { value: 0, uom: "W" }],
     ["sensor", "HP2 - COP", { value: 0, uom: "" }],
     ["sensor", "HP2 - Compressor frequency", { value: 0, uom: "Hz" }],
+    ["sensor", "HP2 - Flow", { value: 0, uom: "L/h" }],
+    ["sensor", "HP2 - Evaporator coil temperature", { value: 0, uom: "\u00B0C" }],
+    ["sensor", "HP2 - Condenser pressure", { value: 0, uom: "bar" }],
+    ["sensor", "HP2 - Gas discharge temperature", { value: 0, uom: "\u00B0C" }],
+    ["sensor", "HP2 - Evaporator pressure", { value: 0, uom: "bar" }],
+    ["sensor", "HP2 - Gas return temperature", { value: 0, uom: "\u00B0C" }],
+    ["sensor", "HP2 - EEV steps", { value: 0, uom: "p" }],
     ["sensor", "HP2 - Water in temperature", { value: 25.4, uom: "°C" }],
     ["sensor", "HP2 - Water out temperature", { value: 29.1, uom: "°C" }],
     ["text_sensor", "HP2 - Working Mode Label", { state: "Standby", value: "Standby" }],
     ["text_sensor", "HP2 - Active Failures List", { state: "None", value: "None" }],
     ["binary_sensor", "HP2 - Defrost", { value: false }],
+    ["binary_sensor", "HP2 - 4-Way valve", { value: false }],
     ["binary_sensor", "HP2 - Bottom plate heater", { value: true }],
     ["binary_sensor", "HP2 - Crankcase heater", { value: true }],
   ];
@@ -80,6 +88,7 @@
 
   function seedEntities() {
     setEntity("text_sensor", "Summary", { state: "" });
+    setEntity("binary_sensor", "Setup Complete", { value: state.complete });
     setEntity("select", "Heating Control Mode", {
       value: "Power House",
       state: "Power House",
@@ -133,6 +142,13 @@
       ["HP1 - Heat Power", 0, "W"],
       ["HP1 - COP", 0, ""],
       ["HP1 - Compressor frequency", 0, "Hz"],
+      ["HP1 - Flow", 0, "L/h"],
+      ["HP1 - Evaporator coil temperature", 0, "\u00B0C"],
+      ["HP1 - Condenser pressure", 0, "bar"],
+      ["HP1 - Gas discharge temperature", 0, "\u00B0C"],
+      ["HP1 - Evaporator pressure", 0, "bar"],
+      ["HP1 - Gas return temperature", 0, "\u00B0C"],
+      ["HP1 - EEV steps", 0, "p"],
       ["HP1 - Water in temperature", 25.5, "°C"],
       ["HP1 - Water out temperature", 29.5, "°C"],
     ].forEach(([name, value, uom]) => {
@@ -150,6 +166,7 @@
       ["Silent active", false],
       ["Sticky pump active", false],
       ["HP1 - Defrost", false],
+      ["HP1 - 4-Way valve", false],
       ["HP1 - Bottom plate heater", false],
       ["HP1 - Crankcase heater", false],
     ].forEach(([name, value]) => {
@@ -219,6 +236,7 @@
     const water = Number(getEntity("number", "Maximum water temperature").value);
     const text = `${mode}, ${behavior}, ${preset} preset, day ${day.toFixed(0)}, silent ${silent.toFixed(0)}, max ${water.toFixed(1)} C${state.complete ? ", setup complete" : ""}`;
 
+    setBinary("Setup Complete", state.complete);
     setText("text_sensor", "Summary", text);
     setText("select", "Preset", preset);
   }
@@ -252,12 +270,16 @@
     setBinary("Silent active", false);
     setBinary("Sticky pump active", false);
     setBinary("HP1 - Defrost", false);
+    setBinary("HP1 - 4-Way valve", false);
     setBinary("HP1 - Bottom plate heater", false);
     setBinary("HP1 - Crankcase heater", false);
+    setNumber("HP1 - EEV steps", 0, "p");
     if (!single) {
       setBinary("HP2 - Defrost", false);
+      setBinary("HP2 - 4-Way valve", false);
       setBinary("HP2 - Bottom plate heater", false);
       setBinary("HP2 - Crankcase heater", false);
+      setNumber("HP2 - EEV steps", 0, "p");
     }
     setText("text_sensor", "HP1 - Active Failures List", "None");
     if (!single) {
@@ -278,6 +300,13 @@
       setNumber("HP1 - Heat Power", 0, "W");
       setNumber("HP1 - COP", 0);
       setNumber("HP1 - Compressor frequency", 0, "Hz");
+      setNumber("HP1 - Flow", 0, "L/h");
+      setNumber("HP1 - Evaporator coil temperature", 25.4, "\u00B0C");
+      setNumber("HP1 - Condenser pressure", 7.8, "bar");
+      setNumber("HP1 - Gas discharge temperature", 26.7, "\u00B0C");
+      setNumber("HP1 - Evaporator pressure", 7.6, "bar");
+      setNumber("HP1 - Gas return temperature", 25.8, "\u00B0C");
+      setNumber("HP1 - EEV steps", 0, "p");
       setNumber("HP1 - Water in temperature", 25.6, "°C");
       setNumber("HP1 - Water out temperature", 26.0, "°C");
       setText("text_sensor", "HP1 - Working Mode Label", "Standby");
@@ -286,6 +315,13 @@
         setNumber("HP2 - Heat Power", 0, "W");
         setNumber("HP2 - COP", 0);
         setNumber("HP2 - Compressor frequency", 0, "Hz");
+        setNumber("HP2 - Flow", 0, "L/h");
+        setNumber("HP2 - Evaporator coil temperature", 25.1, "\u00B0C");
+        setNumber("HP2 - Condenser pressure", 7.7, "bar");
+        setNumber("HP2 - Gas discharge temperature", 26.4, "\u00B0C");
+        setNumber("HP2 - Evaporator pressure", 7.5, "bar");
+        setNumber("HP2 - Gas return temperature", 25.5, "\u00B0C");
+        setNumber("HP2 - EEV steps", 0, "p");
         setNumber("HP2 - Water in temperature", 25.4, "°C");
         setNumber("HP2 - Water out temperature", 25.8, "°C");
         setText("text_sensor", "HP2 - Working Mode Label", "Standby");
@@ -312,6 +348,13 @@
       setNumber("HP1 - Heat Power", hp1Heat, "W");
       setNumber("HP1 - COP", hp1Cop);
       setNumber("HP1 - Compressor frequency", waveInt(30, 3), "Hz");
+      setNumber("HP1 - Flow", wave(790, 34), "L/h");
+      setNumber("HP1 - Evaporator coil temperature", wave(3.8, 0.7), "\u00B0C");
+      setNumber("HP1 - Condenser pressure", wave(22.8, 0.7), "bar");
+      setNumber("HP1 - Gas discharge temperature", wave(67.2, 1.6), "\u00B0C");
+      setNumber("HP1 - Evaporator pressure", wave(7.8, 0.2), "bar");
+      setNumber("HP1 - Gas return temperature", wave(8.2, 0.5), "\u00B0C");
+      setNumber("HP1 - EEV steps", waveInt(286, 18), "p");
       setNumber("HP1 - Water in temperature", wave(25.0, 0.4), "°C");
       setNumber("HP1 - Water out temperature", wave(30.5, 0.5), "°C");
       setText("text_sensor", "HP1 - Working Mode Label", "Heating");
@@ -320,6 +363,13 @@
         setNumber("HP2 - Heat Power", wave(520, 60, 0.7), "W");
         setNumber("HP2 - COP", Number((4.1 + Math.sin(t + 0.7) * 0.14).toFixed(2)));
         setNumber("HP2 - Compressor frequency", waveInt(12, 2, 0.5), "Hz");
+        setNumber("HP2 - Flow", wave(180, 20, 0.5), "L/h");
+        setNumber("HP2 - Evaporator coil temperature", wave(25.0, 0.4, 0.5), "\u00B0C");
+        setNumber("HP2 - Condenser pressure", wave(8.4, 0.2, 0.4), "bar");
+        setNumber("HP2 - Gas discharge temperature", wave(30.4, 0.6, 0.4), "\u00B0C");
+        setNumber("HP2 - Evaporator pressure", wave(8.1, 0.2, 0.4), "bar");
+        setNumber("HP2 - Gas return temperature", wave(24.6, 0.4, 0.4), "\u00B0C");
+        setNumber("HP2 - EEV steps", waveInt(32, 6, 0.5), "p");
         setNumber("HP2 - Water in temperature", wave(25.3, 0.3), "°C");
         setNumber("HP2 - Water out temperature", wave(29.4, 0.4), "°C");
         setText("text_sensor", "HP2 - Working Mode Label", "Standby");
@@ -345,6 +395,13 @@
       setNumber("HP1 - Heat Power", wave(2080, 110), "W");
       setNumber("HP1 - COP", Number((4.42 + Math.sin(t) * 0.11).toFixed(2)));
       setNumber("HP1 - Compressor frequency", waveInt(34, 2), "Hz");
+      setNumber("HP1 - Flow", wave(608, 22), "L/h");
+      setNumber("HP1 - Evaporator coil temperature", wave(1.6, 0.6), "\u00B0C");
+      setNumber("HP1 - Condenser pressure", wave(23.4, 0.8), "bar");
+      setNumber("HP1 - Gas discharge temperature", wave(69.4, 1.8), "\u00B0C");
+      setNumber("HP1 - Evaporator pressure", wave(8.1, 0.2), "bar");
+      setNumber("HP1 - Gas return temperature", wave(9.1, 0.5), "\u00B0C");
+      setNumber("HP1 - EEV steps", waveInt(302, 16), "p");
       setNumber("HP1 - Water in temperature", wave(25.2, 0.3), "°C");
       setNumber("HP1 - Water out temperature", wave(31.8, 0.5), "°C");
       setText("text_sensor", "HP1 - Working Mode Label", "Heating");
@@ -352,9 +409,17 @@
       setNumber("HP2 - Heat Power", wave(-260, 40, 0.4), "W");
       setNumber("HP2 - COP", Number((2.05 + Math.sin(t + 0.4) * 0.08).toFixed(2)));
       setNumber("HP2 - Compressor frequency", waveInt(31, 2, 0.4), "Hz");
+      setNumber("HP2 - Flow", wave(590, 18, 0.4), "L/h");
+      setNumber("HP2 - Evaporator coil temperature", wave(12.3, 0.5, 0.4), "\u00B0C");
+      setNumber("HP2 - Condenser pressure", wave(18.6, 0.6, 0.4), "bar");
+      setNumber("HP2 - Gas discharge temperature", wave(58.1, 1.5, 0.4), "\u00B0C");
+      setNumber("HP2 - Evaporator pressure", wave(6.9, 0.2, 0.4), "bar");
+      setNumber("HP2 - Gas return temperature", wave(11.2, 0.4, 0.4), "\u00B0C");
+      setNumber("HP2 - EEV steps", waveInt(338, 18, 0.4), "p");
       setNumber("HP2 - Water in temperature", wave(31.0, 0.4), "°C");
       setNumber("HP2 - Water out temperature", wave(25.2, 0.3), "°C");
       setText("text_sensor", "HP2 - Working Mode Label", "Cooling");
+      setBinary("HP2 - 4-Way valve", true);
       setBinary("HP2 - Bottom plate heater", true);
       setBinary("HP2 - Crankcase heater", true);
       return;
@@ -365,6 +430,7 @@
       setText("text_sensor", "Flow Mode", "Defrost recovery");
       setBinary("Sticky pump active", true);
       setBinary("HP1 - Defrost", true);
+      setBinary("HP1 - 4-Way valve", true);
       const hp1Power = wave(520, 16);
       const hp1Heat = wave(160, 30);
       const hp1Cop = Number((0.31 + Math.sin(t) * 0.03).toFixed(2));
@@ -379,6 +445,13 @@
       setNumber("HP1 - Heat Power", hp1Heat, "W");
       setNumber("HP1 - COP", hp1Cop);
       setNumber("HP1 - Compressor frequency", waveInt(39, 2), "Hz");
+      setNumber("HP1 - Flow", wave(530, 20), "L/h");
+      setNumber("HP1 - Evaporator coil temperature", wave(-4.4, 0.6), "\u00B0C");
+      setNumber("HP1 - Condenser pressure", wave(15.4, 0.5), "bar");
+      setNumber("HP1 - Gas discharge temperature", wave(47.8, 1.1), "\u00B0C");
+      setNumber("HP1 - Evaporator pressure", wave(4.8, 0.2), "bar");
+      setNumber("HP1 - Gas return temperature", wave(-1.8, 0.4), "\u00B0C");
+      setNumber("HP1 - EEV steps", waveInt(188, 14), "p");
       setNumber("HP1 - Water in temperature", wave(29.8, 0.3), "°C");
       setNumber("HP1 - Water out temperature", wave(26.5, 0.3), "°C");
       setText("text_sensor", "HP1 - Working Mode Label", "Heating");
@@ -389,6 +462,13 @@
         setNumber("HP2 - Heat Power", 0, "W");
         setNumber("HP2 - COP", 0);
         setNumber("HP2 - Compressor frequency", 0, "Hz");
+        setNumber("HP2 - Flow", wave(120, 12), "L/h");
+        setNumber("HP2 - Evaporator coil temperature", wave(24.8, 0.3), "\u00B0C");
+        setNumber("HP2 - Condenser pressure", wave(8.2, 0.2), "bar");
+        setNumber("HP2 - Gas discharge temperature", wave(29.1, 0.4), "\u00B0C");
+        setNumber("HP2 - Evaporator pressure", wave(7.9, 0.2), "bar");
+        setNumber("HP2 - Gas return temperature", wave(25.0, 0.3), "\u00B0C");
+        setNumber("HP2 - EEV steps", waveInt(24, 4), "p");
         setNumber("HP2 - Water in temperature", wave(26.1, 0.2), "°C");
         setNumber("HP2 - Water out temperature", wave(26.8, 0.2), "°C");
         setText("text_sensor", "HP2 - Working Mode Label", "Standby");
@@ -538,11 +618,11 @@
       };
     }
 
-    const select = root.querySelector("#oq-dev-scenario");
-    if (select) {
-      select.value = state.scenario;
-      select.onchange = () => {
-        state.scenario = select.value;
+    const scenario = root.querySelector("#oq-dev-scenario");
+    if (scenario) {
+      scenario.value = state.scenario;
+      scenario.onchange = () => {
+        state.scenario = scenario.value;
         applyScenario(state.scenario);
         updateSummary();
         renderToolbar();

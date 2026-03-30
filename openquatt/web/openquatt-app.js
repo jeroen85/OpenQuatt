@@ -102,6 +102,7 @@
 
   const ENTITY_DEFS = {
     summary: { domain: "text_sensor", name: "Summary" },
+    setupComplete: { domain: "binary_sensor", name: "Setup Complete", optional: true },
     strategy: { domain: "select", name: "Heating Control Mode" },
     controlModeLabel: { domain: "text_sensor", name: "Control Mode (Label)" },
     flowMode: { domain: "text_sensor", name: "Flow Mode" },
@@ -133,6 +134,12 @@
     hp1Cop: { domain: "sensor", name: "HP1 - COP" },
     hp1Compressor: { domain: "sensor", name: "HP1 compressor level" },
     hp1Freq: { domain: "sensor", name: "HP1 - Compressor frequency" },
+    hp1Flow: { domain: "sensor", name: "HP1 - Flow" },
+    hp1EvaporatorCoilTemp: { domain: "sensor", name: "HP1 - Evaporator coil temperature" },
+    hp1CondenserPressure: { domain: "sensor", name: "HP1 - Condenser pressure" },
+    hp1DischargeTemp: { domain: "sensor", name: "HP1 - Gas discharge temperature" },
+    hp1EvaporatorPressure: { domain: "sensor", name: "HP1 - Evaporator pressure" },
+    hp1ReturnTemp: { domain: "sensor", name: "HP1 - Gas return temperature" },
     hp1WaterIn: { domain: "sensor", name: "HP1 - Water in temperature" },
     hp1WaterOut: { domain: "sensor", name: "HP1 - Water out temperature" },
     hp1Mode: { domain: "text_sensor", name: "HP1 - Working Mode Label" },
@@ -140,11 +147,19 @@
     hp1Defrost: { domain: "binary_sensor", name: "HP1 - Defrost" },
     hp1BottomPlate: { domain: "binary_sensor", name: "HP1 - Bottom plate heater" },
     hp1Crankcase: { domain: "binary_sensor", name: "HP1 - Crankcase heater" },
+    hp1Eev: { domain: "sensor", name: "HP1 - EEV steps" },
+    hp1FourWay: { domain: "binary_sensor", name: "HP1 - 4-Way valve" },
     hp2Power: { domain: "sensor", name: "HP2 - Power Input", optional: true },
     hp2Heat: { domain: "sensor", name: "HP2 - Heat Power", optional: true },
     hp2Cop: { domain: "sensor", name: "HP2 - COP", optional: true },
     hp2Compressor: { domain: "sensor", name: "HP2 compressor level", optional: true },
     hp2Freq: { domain: "sensor", name: "HP2 - Compressor frequency", optional: true },
+    hp2Flow: { domain: "sensor", name: "HP2 - Flow", optional: true },
+    hp2EvaporatorCoilTemp: { domain: "sensor", name: "HP2 - Evaporator coil temperature", optional: true },
+    hp2CondenserPressure: { domain: "sensor", name: "HP2 - Condenser pressure", optional: true },
+    hp2DischargeTemp: { domain: "sensor", name: "HP2 - Gas discharge temperature", optional: true },
+    hp2EvaporatorPressure: { domain: "sensor", name: "HP2 - Evaporator pressure", optional: true },
+    hp2ReturnTemp: { domain: "sensor", name: "HP2 - Gas return temperature", optional: true },
     hp2WaterIn: { domain: "sensor", name: "HP2 - Water in temperature", optional: true },
     hp2WaterOut: { domain: "sensor", name: "HP2 - Water out temperature", optional: true },
     hp2Mode: { domain: "text_sensor", name: "HP2 - Working Mode Label", optional: true },
@@ -152,6 +167,8 @@
     hp2Defrost: { domain: "binary_sensor", name: "HP2 - Defrost", optional: true },
     hp2BottomPlate: { domain: "binary_sensor", name: "HP2 - Bottom plate heater", optional: true },
     hp2Crankcase: { domain: "binary_sensor", name: "HP2 - Crankcase heater", optional: true },
+    hp2Eev: { domain: "sensor", name: "HP2 - EEV steps", optional: true },
+    hp2FourWay: { domain: "binary_sensor", name: "HP2 - 4-Way valve", optional: true },
     apply: { domain: "button", name: "Apply & Finish" },
     reset: { domain: "button", name: "Start Over" },
   };
@@ -171,6 +188,12 @@
         heat: "hp1Heat",
         cop: "hp1Cop",
         freq: "hp1Freq",
+        flow: "hp1Flow",
+        evaporatorCoilTemp: "hp1EvaporatorCoilTemp",
+        condenserPressure: "hp1CondenserPressure",
+        dischargeTemp: "hp1DischargeTemp",
+        evaporatorPressure: "hp1EvaporatorPressure",
+        returnTemp: "hp1ReturnTemp",
         waterIn: "hp1WaterIn",
         waterOut: "hp1WaterOut",
         mode: "hp1Mode",
@@ -178,6 +201,8 @@
         defrost: "hp1Defrost",
         bottomPlate: "hp1BottomPlate",
         crankcase: "hp1Crankcase",
+        eev: "hp1Eev",
+        fourWay: "hp1FourWay",
       },
     },
     {
@@ -188,6 +213,12 @@
         heat: "hp2Heat",
         cop: "hp2Cop",
         freq: "hp2Freq",
+        flow: "hp2Flow",
+        evaporatorCoilTemp: "hp2EvaporatorCoilTemp",
+        condenserPressure: "hp2CondenserPressure",
+        dischargeTemp: "hp2DischargeTemp",
+        evaporatorPressure: "hp2EvaporatorPressure",
+        returnTemp: "hp2ReturnTemp",
         waterIn: "hp2WaterIn",
         waterOut: "hp2WaterOut",
         mode: "hp2Mode",
@@ -195,6 +226,8 @@
         defrost: "hp2Defrost",
         bottomPlate: "hp2BottomPlate",
         crankcase: "hp2Crankcase",
+        eev: "hp2Eev",
+        fourWay: "hp2FourWay",
       },
     },
   ];
@@ -229,6 +262,12 @@
     "hp1Heat",
     "hp1Cop",
     "hp1Freq",
+    "hp1Flow",
+    "hp1EvaporatorCoilTemp",
+    "hp1CondenserPressure",
+    "hp1DischargeTemp",
+    "hp1EvaporatorPressure",
+    "hp1ReturnTemp",
     "hp1WaterIn",
     "hp1WaterOut",
     "hp1Mode",
@@ -236,10 +275,18 @@
     "hp1Defrost",
     "hp1BottomPlate",
     "hp1Crankcase",
+    "hp1Eev",
+    "hp1FourWay",
     "hp2Power",
     "hp2Heat",
     "hp2Cop",
     "hp2Freq",
+    "hp2Flow",
+    "hp2EvaporatorCoilTemp",
+    "hp2CondenserPressure",
+    "hp2DischargeTemp",
+    "hp2EvaporatorPressure",
+    "hp2ReturnTemp",
     "hp2WaterIn",
     "hp2WaterOut",
     "hp2Mode",
@@ -247,6 +294,8 @@
     "hp2Defrost",
     "hp2BottomPlate",
     "hp2Crankcase",
+    "hp2Eev",
+    "hp2FourWay",
   ];
   const SETTINGS_KEYS = [
     "strategy",
@@ -564,7 +613,9 @@
   function applyDerivedState() {
     const summaryValue = state.entities.summary?.state || state.entities.summary?.value;
     state.summary = typeof summaryValue === "string" ? summaryValue : "Samenvatting niet beschikbaar";
-    state.complete = state.summary.includes("setup complete");
+    state.complete = hasEntity("setupComplete")
+      ? isEntityActive("setupComplete")
+      : state.summary.includes("setup complete");
     state.stage = state.complete ? "Gereed" : "Quick Start";
     if (!state.appView) {
       state.appView = state.complete ? "overview" : QUICK_START_VIEW;
@@ -589,11 +640,12 @@
     }
 
     const keys = state.appView === "overview"
-      ? [...OVERVIEW_KEYS, "summary"]
+      ? [...OVERVIEW_KEYS, "summary", "setupComplete"]
       : state.appView === "settings"
-        ? ["summary", ...SETTINGS_KEYS]
+        ? ["summary", "setupComplete", ...SETTINGS_KEYS]
         : [
             "summary",
+            "setupComplete",
             "strategy",
             "behavior",
             "preset",
@@ -820,7 +872,7 @@
       state.controlNotice = action === "apply"
         ? "Setup gemarkeerd als afgerond."
         : "Quick Start teruggezet naar het begin. Huidige tuningwaarden blijven voorlopig staan.";
-      await refreshEntities(["summary"], "state");
+      await refreshEntities(["summary", "setupComplete"], "state");
       state.appView = action === "apply" ? "overview" : QUICK_START_VIEW;
     } catch (error) {
       state.controlError = `Actie mislukt voor "${entity.name}". ${error.message}`;
@@ -1187,6 +1239,19 @@
     return Number.isNaN(value) ? NaN : value;
   }
 
+  function formatOverviewStatValue(key) {
+    const entity = state.entities[key];
+    if (!entity) {
+      return "—";
+    }
+    const numeric = getEntityNumericValue(key);
+    if (Number.isNaN(numeric)) {
+      return getEntityStateText(key);
+    }
+    const decimals = key.toLowerCase().includes("cop") ? 1 : 0;
+    return formatNumericState(numeric, decimals, entity.uom || "");
+  }
+
   function isEntityActive(key) {
     const entity = state.entities[key];
     if (!entity) {
@@ -1220,7 +1285,7 @@
     return `
       <article class="oq-overview-stat oq-overview-stat--${escapeHtml(tone)}">
         <p>${escapeHtml(label)}</p>
-        <strong>${escapeHtml(getEntityStateText(key))}</strong>
+        <strong>${escapeHtml(formatOverviewStatValue(key))}</strong>
         <span>${escapeHtml(note)}</span>
       </article>
     `;
@@ -1228,6 +1293,35 @@
 
   function renderOverviewStatusChip(label, value, tone = "neutral") {
     return `<span class="oq-overview-chip oq-overview-chip--${escapeHtml(tone)}"><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</span>`;
+  }
+
+  function renderHpPanelStatusChip(running) {
+    const tone = running ? "active" : "neutral";
+    const label = running ? "Actief" : "Idle";
+    return `<span class="oq-overview-chip oq-overview-chip--${escapeHtml(tone)}" data-oq-bind="panel-status">${escapeHtml(label)}</span>`;
+  }
+
+  function renderHpPanelWarningChip(failureText) {
+    return `
+      <span
+        class="oq-overview-chip oq-overview-chip--warning"
+        data-oq-bind="panel-warning"
+        tabindex="0"
+        aria-label="${escapeHtml(`Waarschuwing: ${failureText}`)}"
+      >
+        <svg class="oq-overview-chip-warning-icon" viewBox="0 0 20 18" aria-hidden="true">
+          <path d="M10 1.6 L18.2 16.4 H1.8 Z" />
+          <rect x="9.1" y="5.4" width="1.8" height="5.8" rx="0.9" />
+          <circle cx="10" cy="13.6" r="1.1" />
+        </svg>
+        <span>Waarschuwing</span>
+        <span class="oq-overview-chip-warning-tooltip" role="tooltip">${escapeHtml(failureText)}</span>
+      </span>
+    `;
+  }
+
+  function renderHpPanelStatusRow(running, warningActive, failureText) {
+    return `${warningActive ? renderHpPanelWarningChip(failureText) : ""}${renderHpPanelStatusChip(running)}`;
   }
 
   function renderTempRow(label, key, explicitValue = "") {
@@ -1252,6 +1346,25 @@
       return "—";
     }
     return `${numeric.toFixed(decimals)}${unit ? ` ${unit}` : ""}`;
+  }
+
+  function formatComponentPositionLabel(key) {
+    const entity = state.entities[key];
+    if (!entity) {
+      return "Positie: â€”";
+    }
+    const numeric = getEntityNumericValue(key);
+    if (!Number.isNaN(numeric)) {
+      return `Positie: ${formatNumericState(numeric, 0, entity.uom || "")}`;
+    }
+    return `Positie: ${getEntityStateText(key)}`;
+  }
+
+  function formatFourWayPositionLabel(key) {
+    if (!hasEntity(key)) {
+      return "Positie: â€”";
+    }
+    return `Positie: ${isEntityActive(key) ? "Koelen/Defrost" : "Verwarmen"}`;
   }
 
   function formatWorkingMode(value) {
@@ -1289,6 +1402,188 @@
     `;
   }
 
+  function renderTechTooltipIcon(icon, centerX, centerY) {
+    if (icon === "temperature") {
+      return `
+        <svg
+          class="oq-hp-tech-tooltip-icon-svg oq-hp-tech-tooltip-icon-svg--temperature"
+          x="${centerX - 10}"
+          y="${centerY - 10}"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path class="oq-hp-tech-tooltip-icon-mdi" d="M15 13V5A3 3 0 0 0 9 5V13A5 5 0 1 0 15 13M12 4A1 1 0 0 1 13 5V12H11V5A1 1 0 0 1 12 4Z" />
+        </svg>
+      `;
+    }
+    if (icon === "pressure") {
+      return `
+        <svg
+          class="oq-hp-tech-tooltip-icon-svg oq-hp-tech-tooltip-icon-svg--component"
+          x="${centerX - 10}"
+          y="${centerY - 10}"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            class="oq-hp-tech-tooltip-icon-mdi"
+            d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12C20,14.4 19,16.5 17.3,18C15.9,16.7 14,16 12,16C10,16 8.2,16.7 6.7,18C5,16.5 4,14.4 4,12A8,8 0 0,1 12,4M14,5.89C13.62,5.9 13.26,6.15 13.1,6.54L11.81,9.77L11.71,10C11,10.13 10.41,10.6 10.14,11.26C9.73,12.29 10.23,13.45 11.26,13.86C12.29,14.27 13.45,13.77 13.86,12.74C14.12,12.08 14,11.32 13.57,10.76L13.67,10.5L14.96,7.29L14.97,7.26C15.17,6.75 14.92,6.17 14.41,5.96C14.28,5.91 14.15,5.89 14,5.89M10,6A1,1 0 0,0 9,7A1,1 0 0,0 10,8A1,1 0 0,0 11,7A1,1 0 0,0 10,6M7,9A1,1 0 0,0 6,10A1,1 0 0,0 7,11A1,1 0 0,0 8,10A1,1 0 0,0 7,9M17,9A1,1 0 0,0 16,10A1,1 0 0,0 17,11A1,1 0 0,0 18,10A1,1 0 0,0 17,9Z"
+          />
+        </svg>
+      `;
+    }
+    if (icon === "defrost") {
+      return `
+        <svg
+          class="oq-hp-tech-tooltip-icon-svg oq-hp-tech-tooltip-icon-svg--component"
+          x="${centerX - 10}"
+          y="${centerY - 10}"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            class="oq-hp-tech-tooltip-icon-mdi"
+            d="M8 17.85C8 19.04 7.11 20 6 20S4 19.04 4 17.85C4 16.42 6 14 6 14S8 16.42 8 17.85M16.46 12V10.56L18.46 9.43L20.79 10.05L21.31 8.12L19.54 7.65L20 5.88L18.07 5.36L17.45 7.69L15.45 8.82L13 7.38V5.12L14.71 3.41L13.29 2L12 3.29L10.71 2L9.29 3.41L11 5.12V7.38L8.5 8.82L6.5 7.69L5.92 5.36L4 5.88L4.47 7.65L2.7 8.12L3.22 10.05L5.55 9.43L7.55 10.56V12H2V13H22V12H16.46M9.5 12V10.56L12 9.11L14.5 10.56V12H9.5M20 17.85C20 19.04 19.11 20 18 20S16 19.04 16 17.85C16 16.42 18 14 18 14S20 16.42 20 17.85M14 20.85C14 22.04 13.11 23 12 23S10 22.04 10 20.85C10 19.42 12 17 12 17S14 19.42 14 20.85Z"
+          />
+        </svg>
+      `;
+    }
+    if (icon === "flow") {
+      return `
+        <svg
+          class="oq-hp-tech-tooltip-icon-svg oq-hp-tech-tooltip-icon-svg--component"
+          x="${centerX - 10}"
+          y="${centerY - 10}"
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
+          aria-hidden="true"
+        >
+          <path class="oq-hp-tech-tooltip-icon-stroke" d="M3.5 8.2 C5.1 6.8 6.8 6.8 8.4 8.2 C10 9.6 11.7 9.6 13.3 8.2 C14.4 7.2 15.6 7 16.5 7.1" />
+          <path class="oq-hp-tech-tooltip-icon-stroke" d="M3.5 12.1 C5.1 10.7 6.8 10.7 8.4 12.1 C10 13.5 11.7 13.5 13.3 12.1 C14.4 11.1 15.6 10.9 16.5 11" />
+        </svg>
+      `;
+    }
+    if (icon === "fan") {
+      return `
+        <svg
+          class="oq-hp-tech-tooltip-icon-svg oq-hp-tech-tooltip-icon-svg--component"
+          x="${centerX - 10}"
+          y="${centerY - 10}"
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
+          aria-hidden="true"
+        >
+          <circle class="oq-hp-tech-tooltip-icon-fill" cx="10" cy="10" r="1.7" />
+          <path class="oq-hp-tech-tooltip-icon-fill" d="M10 3.1 C12.1 5 12.4 6.7 10.9 9.1 C9 8.9 8.1 7.7 8.2 6.1 C8.3 4.7 8.9 3.7 10 3.1 Z" />
+          <path class="oq-hp-tech-tooltip-icon-fill" d="M16.9 10 C15 12.1 13.3 12.4 10.9 10.9 C11.1 9 12.3 8.1 13.9 8.2 C15.3 8.3 16.3 8.9 16.9 10 Z" />
+          <path class="oq-hp-tech-tooltip-icon-fill" d="M10 16.9 C7.9 15 7.6 13.3 9.1 10.9 C11 11.1 11.9 12.3 11.8 13.9 C11.7 15.3 11.1 16.3 10 16.9 Z" />
+          <path class="oq-hp-tech-tooltip-icon-fill" d="M3.1 10 C5 7.9 6.7 7.6 9.1 9.1 C8.9 11 7.7 11.9 6.1 11.8 C4.7 11.7 3.7 11.1 3.1 10 Z" />
+        </svg>
+      `;
+    }
+    if (icon === "eev") {
+      return `
+        <svg
+          class="oq-hp-tech-tooltip-icon-svg oq-hp-tech-tooltip-icon-svg--component"
+          x="${centerX - 10}"
+          y="${centerY - 10}"
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
+          aria-hidden="true"
+        >
+          <polygon class="oq-hp-tech-tooltip-icon-fill" points="4.5,5.1 10,10 4.5,14.9" />
+          <polygon class="oq-hp-tech-tooltip-icon-fill" points="15.5,5.1 10,10 15.5,14.9" />
+        </svg>
+      `;
+    }
+    if (icon === "fourway") {
+      return `
+        <svg
+          class="oq-hp-tech-tooltip-icon-svg oq-hp-tech-tooltip-icon-svg--component"
+          x="${centerX - 10}"
+          y="${centerY - 10}"
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
+          aria-hidden="true"
+        >
+          <rect class="oq-hp-tech-tooltip-icon-stroke" x="7" y="7" width="6" height="6" rx="1.8" />
+          <path class="oq-hp-tech-tooltip-icon-stroke" d="M10 3.5 V7 M10 13 V16.5 M3.5 10 H7 M13 10 H16.5" />
+          <circle class="oq-hp-tech-tooltip-icon-fill" cx="10" cy="10" r="1.5" />
+        </svg>
+      `;
+    }
+    return `
+      <g class="oq-hp-tech-tooltip-icon-wrap" transform="translate(${centerX - 10} ${centerY - 10})">
+        <path class="oq-hp-tech-tooltip-icon-wave" d="M2 15 L7 9 L12 15 L17 9" />
+      </g>
+    `;
+  }
+
+  function renderTechTooltip({ bind, modifier, x, y, width, kicker, detail, detailBind = "", icon = "heater", direction = "down" }) {
+    const height = 44;
+    const badgeCx = x + 26;
+    const badgeCy = y + 22;
+    const detailBindAttr = detailBind ? ` data-oq-bind="${escapeHtml(detailBind)}"` : "";
+    let pointerPath = "";
+    if (direction === "up") {
+      const pointerMid = x + Math.round(width * 0.52);
+      pointerPath = `M${pointerMid - 6} ${y} L${pointerMid} ${y - 8} L${pointerMid + 6} ${y} Z`;
+    } else if (direction === "left") {
+      const pointerMid = y + Math.round(height * 0.5);
+      pointerPath = `M${x} ${pointerMid - 6} L${x - 8} ${pointerMid} L${x} ${pointerMid + 6} Z`;
+    } else if (direction === "right") {
+      const pointerMid = y + Math.round(height * 0.5);
+      pointerPath = `M${x + width} ${pointerMid - 6} L${x + width + 8} ${pointerMid} L${x + width} ${pointerMid + 6} Z`;
+    } else {
+      const pointerMid = x + Math.round(width * 0.52);
+      pointerPath = `M${pointerMid - 6} ${y + height} L${pointerMid} ${y + height + 8} L${pointerMid + 6} ${y + height} Z`;
+    }
+    return `
+      <g
+        class="oq-hp-tech-tooltip oq-hp-tech-tooltip--${escapeHtml(modifier)}"
+        data-oq-bind="${escapeHtml(bind)}-tooltip"
+        aria-hidden="true"
+      >
+        <rect class="oq-hp-tech-tooltip-panel" x="${x}" y="${y}" width="${width}" height="${height}" rx="12" />
+        <circle class="oq-hp-tech-tooltip-accent" cx="${badgeCx}" cy="${badgeCy}" r="11.5" />
+        ${renderTechTooltipIcon(icon, badgeCx, badgeCy)}
+        <text class="oq-hp-tech-tooltip-kicker" x="${x + 48}" y="${y + 16}">${escapeHtml(kicker)}</text>
+        <text class="oq-hp-tech-tooltip-detail" x="${x + 48}" y="${y + 32}"${detailBindAttr}>${escapeHtml(detail)}</text>
+        <path class="oq-hp-tech-tooltip-pointer" d="${pointerPath}" />
+      </g>
+    `;
+  }
+
+  function renderTechWaterReading({ bind, x, y, width, value, label, ariaLabel = "", align = "start" }) {
+    const resolvedAriaLabel = ariaLabel || `${label} temperatuur ${value}`;
+    const isEndAligned = align === "end";
+    const isCenterAligned = align === "center";
+    const textAnchor = isCenterAligned ? "middle" : isEndAligned ? "end" : "start";
+    const textX = isCenterAligned ? x + (width / 2) : isEndAligned ? x + width - 2 : x + 2;
+    return `
+      <g
+        class="oq-hp-tech-water-reading"
+        data-oq-bind="${escapeHtml(bind)}-reading"
+        data-oq-tooltip-target="${escapeHtml(bind)}"
+        tabindex="0"
+        aria-label="${escapeHtml(resolvedAriaLabel)}"
+      >
+        <rect class="oq-hp-tech-water-reading-hit" x="${x}" y="${y}" width="${width}" height="18" rx="9" fill="rgba(255,255,255,0.001)" stroke="none" />
+        <text class="oq-hp-tech-water-reading-value" x="${textX}" y="${y + 13}" text-anchor="${textAnchor}" data-oq-bind="${escapeHtml(bind)}-value">${escapeHtml(value)}</text>
+      </g>
+    `;
+  }
+
   function buildHeatPumpSchematicModel(title, keys, accent, mode, defrostActive, failures, running) {
     const freqValue = getEntityNumericValue(keys.freq);
     const freqText = Number.isNaN(freqValue) ? "—" : String(Math.round(freqValue));
@@ -1301,8 +1596,16 @@
     const defrostText = defrostActive ? "Actief" : "Uit";
     const waterOutText = getEntityStateText(keys.waterOut);
     const waterInText = getEntityStateText(keys.waterIn);
+    const flowText = getEntityStateText(keys.flow);
+    const evaporatorCoilTempText = getEntityStateText(keys.evaporatorCoilTemp);
+    const dischargePressureText = getEntityStateText(keys.condenserPressure);
+    const dischargeTempText = getEntityStateText(keys.dischargeTemp);
+    const suctionPressureText = getEntityStateText(keys.evaporatorPressure);
+    const suctionTempText = getEntityStateText(keys.returnTemp);
     const bottomPlateActive = isEntityActive(keys.bottomPlate);
     const crankcaseActive = isEntityActive(keys.crankcase);
+    const eevPositionText = formatComponentPositionLabel(keys.eev);
+    const fourWayPositionText = formatFourWayPositionLabel(keys.fourWay);
     const powerText = formatNumericState(powerValue, 0, "W");
     const heatText = formatNumericState(heatValue, 0, "W");
     const copText = formatNumericState(getEntityNumericValue(keys.cop), 1);
@@ -1356,8 +1659,16 @@
       returnLineTone,
       waterOutText,
       waterInText,
+      flowText,
+      evaporatorCoilTempText,
+      dischargePressureText,
+      dischargeTempText,
+      suctionPressureText,
+      suctionTempText,
       bottomPlateActive,
       crankcaseActive,
+      eevPositionText,
+      fourWayPositionText,
       powerText,
       heatText,
       copText,
@@ -1456,11 +1767,6 @@
             <g class="oq-hp-tech-evaporator">
               <rect class="oq-hp-tech-evaporator-shell" x="480" y="118" width="60" height="192" rx="18" />
               <path class="oq-hp-tech-evaporator-lines" d="M492 130 H526 M492 142 H526 M492 154 H526 M492 166 H526 M492 178 H526 M492 190 H526 M492 202 H526 M492 214 H526 M492 226 H526 M492 238 H526 M492 250 H526 M492 262 H526 M492 274 H526 M492 286 H526 M492 298 H526" />
-              <g class="oq-hp-tech-defrost-badge" transform="translate(532 116)">
-                <g class="oq-hp-tech-defrost-icon">
-                  <path class="oq-hp-tech-defrost-glyph" d="M8 17.85C8 19.04 7.11 20 6 20S4 19.04 4 17.85C4 16.42 6 14 6 14S8 16.42 8 17.85M16.46 12V10.56L18.46 9.43L20.79 10.05L21.31 8.12L19.54 7.65L20 5.88L18.07 5.36L17.45 7.69L15.45 8.82L13 7.38V5.12L14.71 3.41L13.29 2L12 3.29L10.71 2L9.29 3.41L11 5.12V7.38L8.5 8.82L6.5 7.69L5.92 5.36L4 5.88L4.47 7.65L2.7 8.12L3.22 10.05L5.55 9.43L7.55 10.56V12H2V13H22V12H16.46M9.5 12V10.56L12 9.11L14.5 10.56V12H9.5M20 17.85C20 19.04 19.11 20 18 20S16 19.04 16 17.85C16 16.42 18 14 18 14S20 16.42 20 17.85M14 20.85C14 22.04 13.11 23 12 23S10 22.04 10 20.85C10 19.42 12 17 12 17S14 19.42 14 20.85Z" />
-                </g>
-              </g>
             </g>
 
             <g class="oq-hp-tech-fan">
@@ -1472,20 +1778,6 @@
                 <path d="M550 248 C539 236 538 225 550 214 C562 225 561 236 550 248 Z" />
                 <path d="M516 214 C528 203 539 202 550 214 C539 226 528 225 516 214 Z" />
               </g>
-              <g class="oq-hp-tech-fan-chip" transform="translate(526 258)">
-                <rect x="0" y="0" width="48" height="18" rx="8" />
-                <text class="oq-hp-tech-fan-chip-text" x="24" y="12" data-oq-bind="fan-rpm">${escapeHtml(model.fanRpmText)}</text>
-              </g>
-            </g>
-
-            <g class="oq-hp-tech-bottom-heater ${model.bottomPlateActive ? "is-active" : ""}" data-oq-bind="bottom-heater">
-              <path class="oq-hp-tech-bottom-heater-glow" d="M475 320 L485 314 L495 320 L505 314 L515 320 L525 314 L535 320 L545 314" />
-              <path class="oq-hp-tech-bottom-heater-core" d="M475 320 L485 314 L495 320 L505 314 L515 320 L525 314 L535 320 L545 314" />
-            </g>
-
-            <g class="oq-hp-tech-crankcase-heater ${model.crankcaseActive ? "is-active" : ""}" data-oq-bind="crankcase-heater">
-              <path class="oq-hp-tech-crankcase-heater-glow" d="M302 206 L310 201 L318 206 L326 201 L334 206 L342 201 L350 206" />
-              <path class="oq-hp-tech-crankcase-heater-core" d="M302 206 L310 201 L318 206 L326 201 L334 206 L342 201 L350 206" />
             </g>
 
             ${renderTechPipeLayer("supply", model.pipes.supply.tone, model.pipes.supply.d, false)}
@@ -1497,23 +1789,312 @@
             ${renderTechPipeLayer("hotgas-external", model.pipes.hotgasExternal.tone, model.pipes.hotgasExternal.d)}
             ${renderTechPipeLayer("suction-external", model.pipes.suctionExternal.tone, model.pipes.suctionExternal.d)}
 
-            <g class="oq-hp-tech-water-badge oq-hp-tech-water-badge--${model.supplyLineTone}" transform="translate(8 142)" data-oq-bind="supply-badge">
-              <rect x="0" y="0" width="64" height="24" rx="10" />
-              <text class="oq-hp-tech-water-badge-label" x="8" y="10">Aanvoer</text>
-              <text class="oq-hp-tech-water-badge-value" x="8" y="19" data-oq-bind="supply-value">${escapeHtml(model.waterOutText)}</text>
-            </g>
-
-            <g class="oq-hp-tech-water-badge oq-hp-tech-water-badge--${model.returnLineTone}" transform="translate(8 302)" data-oq-bind="return-badge">
-              <rect x="0" y="0" width="64" height="24" rx="10" />
-              <text class="oq-hp-tech-water-badge-label" x="8" y="10">Retour</text>
-              <text class="oq-hp-tech-water-badge-value" x="8" y="19" data-oq-bind="return-value">${escapeHtml(model.waterInText)}</text>
-            </g>
-
             <g class="oq-hp-tech-pump oq-hp-tech-pump--${model.returnLineTone}">
               <circle class="oq-hp-tech-pump-ring" cx="88" cy="294" r="16" />
               <circle class="oq-hp-tech-pump-core" cx="88" cy="294" r="3.5" />
               <path class="oq-hp-tech-pump-blade" d="M81 287 L96 294 L81 301 Z" />
             </g>
+
+            ${renderTechWaterReading({
+              bind: "flow",
+              x: 52,
+              y: 308,
+              width: 72,
+              value: model.flowText,
+              label: "Flowrate",
+              ariaLabel: `Flowrate ${model.flowText}`,
+              align: "center",
+            })}
+            ${renderTechTooltip({
+              bind: "flow",
+              modifier: model.returnLineTone,
+              icon: "flow",
+              x: 110,
+              y: 276,
+              width: 126,
+              kicker: "Flowrate",
+              detail: "CV-circuit",
+              direction: "left",
+            })}
+
+            ${renderTechWaterReading({
+              bind: "discharge-pressure",
+              x: 218,
+              y: 138,
+              width: 50,
+              value: model.dischargePressureText,
+              label: "Persdruk",
+              ariaLabel: `Persdruk ${model.dischargePressureText}`,
+              align: "end",
+            })}
+            ${renderTechTooltip({
+              bind: "discharge-pressure",
+              modifier: "warm",
+              icon: "pressure",
+              x: 82,
+              y: 120,
+              width: 118,
+              kicker: "Druk",
+              detail: "Perszijde",
+              direction: "right",
+            })}
+
+            ${renderTechWaterReading({
+              bind: "discharge-temp",
+              x: 218,
+              y: 166,
+              width: 50,
+              value: model.dischargeTempText,
+              label: "Perstemperatuur",
+              ariaLabel: `Perstemperatuur ${model.dischargeTempText}`,
+              align: "end",
+            })}
+            ${renderTechTooltip({
+              bind: "discharge-temp",
+              modifier: "warm",
+              icon: "temperature",
+              x: 80,
+              y: 174,
+              width: 142,
+              kicker: "Temperatuur",
+              detail: "Perszijde",
+              direction: "right",
+            })}
+
+            ${renderTechWaterReading({
+              bind: "suction-pressure",
+              x: 378,
+              y: 138,
+              width: 50,
+              value: model.suctionPressureText,
+              label: "Zuigdruk",
+              ariaLabel: `Zuigdruk ${model.suctionPressureText}`,
+            })}
+            ${renderTechTooltip({
+              bind: "suction-pressure",
+              modifier: "component",
+              icon: "pressure",
+              x: 438,
+              y: 120,
+              width: 118,
+              kicker: "Druk",
+              detail: "Zuigzijde",
+              direction: "left",
+            })}
+
+            ${renderTechWaterReading({
+              bind: "suction-temp",
+              x: 378,
+              y: 166,
+              width: 50,
+              value: model.suctionTempText,
+              label: "Zuigtemperatuur",
+              ariaLabel: `Zuigtemperatuur ${model.suctionTempText}`,
+            })}
+            ${renderTechTooltip({
+              bind: "suction-temp",
+              modifier: "component",
+              icon: "temperature",
+              x: 414,
+              y: 174,
+              width: 142,
+              kicker: "Temperatuur",
+              detail: "Zuigzijde",
+              direction: "left",
+            })}
+
+            ${renderTechWaterReading({
+              bind: "evaporator-temp",
+              x: 484,
+              y: 154,
+              width: 52,
+              value: model.evaporatorCoilTempText,
+              label: "Verdampertemperatuur",
+              ariaLabel: `Verdampertemperatuur ${model.evaporatorCoilTempText}`,
+              align: "center",
+            })}
+            ${renderTechTooltip({
+              bind: "evaporator-temp",
+              modifier: "component",
+              icon: "temperature",
+              x: 344,
+              y: 136,
+              width: 132,
+              kicker: "Temperatuur",
+              detail: "Verdamper",
+              direction: "right",
+            })}
+
+            ${renderTechWaterReading({
+              bind: "fan-speed",
+              x: 520,
+              y: 258,
+              width: 60,
+              value: model.fanRpmText,
+              label: "Fan speed",
+              ariaLabel: `Fan speed ${model.fanRpmText}`,
+              align: "center",
+            })}
+            ${renderTechTooltip({
+              bind: "fan-speed",
+              modifier: "component",
+              icon: "fan",
+              x: 410,
+              y: 236,
+              width: 118,
+              kicker: "Fan",
+              detail: "Speed",
+              direction: "right",
+            })}
+
+            ${renderTechWaterReading({
+              bind: "supply",
+              x: 22,
+              y: 114,
+              width: 58,
+              value: model.waterOutText,
+              label: "Aanvoer",
+            })}
+            ${renderTechTooltip({
+              bind: "supply",
+              modifier: model.supplyLineTone,
+              icon: "temperature",
+              x: 96,
+              y: 96,
+              width: 124,
+              kicker: "Temperatuur",
+              detail: "Aanvoer",
+              direction: "left",
+            })}
+
+            ${renderTechWaterReading({
+              bind: "return",
+              x: 22,
+              y: 274,
+              width: 58,
+              value: model.waterInText,
+              label: "Retour",
+            })}
+            ${renderTechTooltip({
+              bind: "return",
+              modifier: model.returnLineTone,
+              icon: "temperature",
+              x: 96,
+              y: 252,
+              width: 124,
+              kicker: "Temperatuur",
+              detail: "Retour",
+              direction: "left",
+            })}
+
+            <g
+              class="oq-hp-tech-bottom-heater ${model.bottomPlateActive ? "is-active" : ""}"
+              data-oq-bind="bottom-heater"
+              data-oq-tooltip-target="bottom-heater"
+              tabindex="${model.bottomPlateActive ? "0" : "-1"}"
+              aria-label="Bottom plate heater actief"
+            >
+              <path class="oq-hp-tech-bottom-heater-glow" d="M475 320 L485 314 L495 320 L505 314 L515 320 L525 314 L535 320 L545 314" />
+              <path class="oq-hp-tech-bottom-heater-core" d="M475 320 L485 314 L495 320 L505 314 L515 320 L525 314 L535 320 L545 314" />
+            </g>
+            ${renderTechTooltip({
+              bind: "bottom-heater",
+              modifier: "warm",
+              x: 372,
+              y: 269,
+              width: 210,
+              kicker: "Verwarming",
+              detail: "Bodemplaatverwarming aan",
+            })}
+
+            <g
+              class="oq-hp-tech-crankcase-heater ${model.crankcaseActive ? "is-active" : ""}"
+              data-oq-bind="crankcase-heater"
+              data-oq-tooltip-target="crankcase-heater"
+              tabindex="${model.crankcaseActive ? "0" : "-1"}"
+              aria-label="Crank case heater actief"
+            >
+              <path class="oq-hp-tech-crankcase-heater-glow" d="M302 194 L310 189 L318 194 L326 189 L334 194 L342 189 L350 194" />
+              <path class="oq-hp-tech-crankcase-heater-core" d="M302 194 L310 189 L318 194 L326 189 L334 194 L342 189 L350 194" />
+            </g>
+            ${renderTechTooltip({
+              bind: "crankcase-heater",
+              modifier: "warm",
+              x: 224,
+              y: 142,
+              width: 172,
+              kicker: "Verwarming",
+              detail: "Carterverwarming aan",
+            })}
+
+            <g
+              class="oq-hp-tech-defrost-badge"
+              data-oq-bind="defrost-badge"
+              data-oq-tooltip-target="defrost-badge"
+              transform="translate(532 288)"
+              tabindex="${model.defrostActive ? "0" : "-1"}"
+              aria-label="Defrost actief"
+            >
+              <circle class="oq-hp-tech-defrost-hit" cx="0" cy="0" r="12" />
+              <g class="oq-hp-tech-defrost-icon">
+                <path class="oq-hp-tech-defrost-glyph" d="M8 17.85C8 19.04 7.11 20 6 20S4 19.04 4 17.85C4 16.42 6 14 6 14S8 16.42 8 17.85M16.46 12V10.56L18.46 9.43L20.79 10.05L21.31 8.12L19.54 7.65L20 5.88L18.07 5.36L17.45 7.69L15.45 8.82L13 7.38V5.12L14.71 3.41L13.29 2L12 3.29L10.71 2L9.29 3.41L11 5.12V7.38L8.5 8.82L6.5 7.69L5.92 5.36L4 5.88L4.47 7.65L2.7 8.12L3.22 10.05L5.55 9.43L7.55 10.56V12H2V13H22V12H16.46M9.5 12V10.56L12 9.11L14.5 10.56V12H9.5M20 17.85C20 19.04 19.11 20 18 20S16 19.04 16 17.85C16 16.42 18 14 18 14S20 16.42 20 17.85M14 20.85C14 22.04 13.11 23 12 23S10 22.04 10 20.85C10 19.42 12 17 12 17S14 19.42 14 20.85Z" />
+              </g>
+            </g>
+            ${renderTechTooltip({
+              bind: "defrost-badge",
+              modifier: "return",
+              icon: "defrost",
+              x: 398,
+              y: 266,
+              width: 118,
+              kicker: "Defrost",
+              detail: "Actief",
+              direction: "left",
+            })}
+
+            <g
+              class="oq-hp-tech-hotspot"
+              data-oq-bind="fourway-trigger"
+              data-oq-tooltip-target="fourway"
+              tabindex="0"
+              aria-label="${escapeHtml(`4-wegklep, ${model.fourWayPositionText}`)}"
+            >
+              <rect class="oq-hp-tech-hotspot-hit" x="252" y="208" width="52" height="52" rx="16" />
+            </g>
+            ${renderTechTooltip({
+              bind: "fourway",
+              modifier: "component",
+              icon: "fourway",
+              x: 308,
+              y: 198,
+              width: 196,
+              kicker: "4-wegklep",
+              detail: model.fourWayPositionText,
+              detailBind: "fourway-detail",
+              direction: "left",
+            })}
+
+            <g
+              class="oq-hp-tech-hotspot"
+              data-oq-bind="eev-trigger"
+              data-oq-tooltip-target="eev"
+              tabindex="0"
+              aria-label="${escapeHtml(`Electronic expansion valve, ${model.eevPositionText}`)}"
+            >
+              <rect class="oq-hp-tech-hotspot-hit" x="301" y="275" width="50" height="38" rx="12" />
+            </g>
+            ${renderTechTooltip({
+              bind: "eev",
+              modifier: "component",
+              icon: "eev",
+              x: 340,
+              y: 252,
+              width: 202,
+              kicker: "Electronic expansion valve",
+              detail: model.eevPositionText,
+              detailBind: "eev-detail",
+              direction: "left",
+            })}
 
             </svg>
           </div>
@@ -1633,21 +2214,7 @@
               <h3>${escapeHtml(title)}</h3>
             </div>
             <div class="oq-overview-hp-status">
-              <div class="oq-overview-warning ${schematicModel.warningActive ? "is-visible" : ""}" data-oq-bind="panel-warning">
-                <button
-                  class="oq-overview-warning-button"
-                  type="button"
-                  aria-label="${escapeHtml(`Waarschuwing: ${schematicModel.failureText}`)}"
-                >
-                  <svg class="oq-overview-warning-icon" viewBox="0 0 20 18" aria-hidden="true">
-                    <path d="M10 1.6 L18.2 16.4 H1.8 Z" />
-                    <rect x="9.1" y="5.4" width="1.8" height="5.8" rx="0.9" />
-                    <circle cx="10" cy="13.6" r="1.1" />
-                  </svg>
-                </button>
-                <div class="oq-overview-warning-tooltip" role="tooltip" data-oq-bind="warning-text">${escapeHtml(schematicModel.failureText)}</div>
-              </div>
-              <span class="oq-overview-chip oq-overview-chip--${running ? "active" : "neutral"}" data-oq-bind="panel-status">${running ? "Actief" : "Idle"}</span>
+              ${renderHpPanelStatusRow(running, schematicModel.warningActive, schematicModel.failureText)}
             </div>
           </div>
           ${renderHeatPumpSchematic(schematicModel)}
@@ -1662,7 +2229,9 @@
             <p class="oq-helper-label">${escapeHtml(title)}</p>
             <h3>${escapeHtml(title)}</h3>
           </div>
-          <span class="oq-overview-chip oq-overview-chip--${running ? "active" : "neutral"}">${running ? "Actief" : "Idle"}</span>
+          <div class="oq-overview-hp-status">
+            ${renderHpPanelStatusRow(running, schematicModel.warningActive, schematicModel.failureText)}
+          </div>
         </div>
         <div class="oq-overview-hp-stats">
           ${renderOverviewStatCard(keys.power, "Power in", "blue", "elektrisch ingangsvermogen")}
@@ -1801,6 +2370,89 @@
     });
   }
 
+  function hideTechTooltip(tooltip) {
+    if (!tooltip) {
+      return;
+    }
+    tooltip.classList.remove("is-active");
+    tooltip.setAttribute("aria-hidden", "true");
+  }
+
+  function showTechTooltip(board, layer, tooltip) {
+    if (!board || !layer || !tooltip) {
+      return;
+    }
+
+    board.querySelectorAll(".oq-hp-tech-tooltip.is-active").forEach((node) => {
+      if (node !== tooltip) {
+        hideTechTooltip(node);
+      }
+    });
+    layer.appendChild(tooltip);
+    tooltip.classList.add("is-active");
+    tooltip.setAttribute("aria-hidden", "false");
+  }
+
+  function wireTechTooltipTrigger(board, layer, trigger, tooltip) {
+    if (!board || !layer || !trigger || !tooltip || trigger.dataset.oqTooltipWired === "true") {
+      return;
+    }
+
+    trigger.dataset.oqTooltipWired = "true";
+    const hideIfIdle = () => {
+      if (trigger.matches(":hover") || document.activeElement === trigger) {
+        return;
+      }
+      hideTechTooltip(tooltip);
+    };
+
+    trigger.addEventListener("mouseenter", () => showTechTooltip(board, layer, tooltip));
+    trigger.addEventListener("mouseleave", hideIfIdle);
+    trigger.addEventListener("focus", () => showTechTooltip(board, layer, tooltip));
+    trigger.addEventListener("blur", hideIfIdle);
+  }
+
+  function ensureTechTooltipLayering(board) {
+    if (!board) {
+      return;
+    }
+
+    const svg = board.querySelector(".oq-hp-tech-svg");
+    if (!svg) {
+      return;
+    }
+
+    let layer = svg.querySelector(".oq-hp-tech-tooltip-layer");
+    if (!layer) {
+      layer = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      layer.setAttribute("class", "oq-hp-tech-tooltip-layer");
+      svg.appendChild(layer);
+    }
+
+    Array.from(svg.querySelectorAll(".oq-hp-tech-tooltip")).forEach((tooltip) => {
+      layer.appendChild(tooltip);
+    });
+
+    board.querySelectorAll("[data-oq-tooltip-target]").forEach((trigger) => {
+      const target = trigger.getAttribute("data-oq-tooltip-target");
+      if (!target) {
+        return;
+      }
+      const tooltip = board.querySelector(`[data-oq-bind="${target}-tooltip"]`);
+      wireTechTooltipTrigger(board, layer, trigger, tooltip);
+    });
+  }
+
+  function syncTechTooltipLayers(root = state.root) {
+    if (!root) {
+      return;
+    }
+
+    root.querySelectorAll("[data-oq-hp-board]").forEach((board) => {
+      ensureTechTooltipLayering(board);
+    });
+  }
+
   function patchHeatPumpPanel(panel, title, keys, accent) {
     if (!panel) {
       return;
@@ -1811,23 +2463,9 @@
     const failures = formatFailures(getEntityStateText(keys.failures, "None"));
     const running = mode === "Verwarmen" || mode === "Koelen" || defrostActive;
     const model = buildHeatPumpSchematicModel(title, keys, accent, mode, defrostActive, failures, running);
-    const headStatus = panel.querySelector('[data-oq-bind="panel-status"]');
+    const headStatus = panel.querySelector(".oq-overview-hp-status");
     if (headStatus) {
-      headStatus.textContent = model.statusText;
-      headStatus.classList.toggle("oq-overview-chip--active", running);
-      headStatus.classList.toggle("oq-overview-chip--neutral", !running);
-    }
-    const headWarning = panel.querySelector('[data-oq-bind="panel-warning"]');
-    if (headWarning) {
-      headWarning.classList.toggle("is-visible", model.warningActive);
-      const warningText = headWarning.querySelector('[data-oq-bind="warning-text"]');
-      if (warningText && warningText.textContent !== model.failureText) {
-        warningText.textContent = model.failureText;
-      }
-      const warningButton = headWarning.querySelector(".oq-overview-warning-button");
-      if (warningButton) {
-        warningButton.setAttribute("aria-label", `Waarschuwing: ${model.failureText}`);
-      }
+      headStatus.innerHTML = renderHpPanelStatusRow(running, model.warningActive, model.failureText);
     }
 
     const board = panel.querySelector("[data-oq-hp-board]");
@@ -1842,24 +2480,92 @@
     setTextContent(board, '[data-oq-bind="left-exchanger-title"]', model.leftExchangerTitle);
     setTextContent(board, '[data-oq-bind="right-exchanger-title"]', model.rightExchangerTitle);
     setTextContent(board, '[data-oq-bind="compressor-freq"]', model.compressorFreqText);
+    setTextContent(board, '[data-oq-bind="flow-value"]', model.flowText);
+    setTextContent(board, '[data-oq-bind="evaporator-temp-value"]', model.evaporatorCoilTempText);
+    setTextContent(board, '[data-oq-bind="discharge-pressure-value"]', model.dischargePressureText);
+    setTextContent(board, '[data-oq-bind="discharge-temp-value"]', model.dischargeTempText);
+    setTextContent(board, '[data-oq-bind="suction-pressure-value"]', model.suctionPressureText);
+    setTextContent(board, '[data-oq-bind="suction-temp-value"]', model.suctionTempText);
     setTextContent(board, '[data-oq-bind="supply-value"]', model.waterOutText);
     setTextContent(board, '[data-oq-bind="return-value"]', model.waterInText);
     setTextContent(board, '[data-oq-bind="footer-mode"]', model.mode);
     setTextContent(board, '[data-oq-bind="footer-power"]', model.powerText);
     setTextContent(board, '[data-oq-bind="footer-heat"]', model.heatText);
     setTextContent(board, '[data-oq-bind="footer-cop"]', model.copText);
-    setTextContent(board, '[data-oq-bind="fan-rpm"]', model.fanRpmText);
+    setTextContent(board, '[data-oq-bind="fan-speed-value"]', model.fanRpmText);
+    setTextContent(board, '[data-oq-bind="fourway-detail"]', model.fourWayPositionText);
+    setTextContent(board, '[data-oq-bind="eev-detail"]', model.eevPositionText);
     const bottomHeater = board.querySelector('[data-oq-bind="bottom-heater"]');
     if (bottomHeater) {
       bottomHeater.classList.toggle("is-active", model.bottomPlateActive);
+      bottomHeater.setAttribute("tabindex", model.bottomPlateActive ? "0" : "-1");
+      if (!model.bottomPlateActive) {
+        hideTechTooltip(board.querySelector('[data-oq-bind="bottom-heater-tooltip"]'));
+      }
     }
     const crankcaseHeater = board.querySelector('[data-oq-bind="crankcase-heater"]');
     if (crankcaseHeater) {
       crankcaseHeater.classList.toggle("is-active", model.crankcaseActive);
+      crankcaseHeater.setAttribute("tabindex", model.crankcaseActive ? "0" : "-1");
+      if (!model.crankcaseActive) {
+        hideTechTooltip(board.querySelector('[data-oq-bind="crankcase-heater-tooltip"]'));
+      }
+    }
+    const defrostBadge = board.querySelector('[data-oq-bind="defrost-badge"]');
+    if (defrostBadge) {
+      defrostBadge.setAttribute("tabindex", model.defrostActive ? "0" : "-1");
+      defrostBadge.setAttribute("aria-label", model.defrostActive ? "Defrost actief" : "Defrost uit");
+      if (!model.defrostActive) {
+        hideTechTooltip(board.querySelector('[data-oq-bind="defrost-badge-tooltip"]'));
+      }
     }
 
-    setVariantClass(board.querySelector('[data-oq-bind="supply-badge"]'), "oq-hp-tech-water-badge--", model.supplyLineTone, ["supply", "return"]);
-    setVariantClass(board.querySelector('[data-oq-bind="return-badge"]'), "oq-hp-tech-water-badge--", model.returnLineTone, ["supply", "return"]);
+    setVariantClass(board.querySelector('[data-oq-bind="supply-tooltip"]'), "oq-hp-tech-tooltip--", model.supplyLineTone, ["warm", "supply", "return"]);
+    setVariantClass(board.querySelector('[data-oq-bind="return-tooltip"]'), "oq-hp-tech-tooltip--", model.returnLineTone, ["warm", "supply", "return"]);
+    const supplyReading = board.querySelector('[data-oq-bind="supply-reading"]');
+    if (supplyReading) {
+      supplyReading.setAttribute("aria-label", `Aanvoer temperatuur ${model.waterOutText}`);
+    }
+    const flowReading = board.querySelector('[data-oq-bind="flow-reading"]');
+    if (flowReading) {
+      flowReading.setAttribute("aria-label", `Flowrate ${model.flowText}`);
+    }
+    const evaporatorTempReading = board.querySelector('[data-oq-bind="evaporator-temp-reading"]');
+    if (evaporatorTempReading) {
+      evaporatorTempReading.setAttribute("aria-label", `Verdampertemperatuur ${model.evaporatorCoilTempText}`);
+    }
+    const fanSpeedReading = board.querySelector('[data-oq-bind="fan-speed-reading"]');
+    if (fanSpeedReading) {
+      fanSpeedReading.setAttribute("aria-label", `Fan speed ${model.fanRpmText}`);
+    }
+    const dischargePressureReading = board.querySelector('[data-oq-bind="discharge-pressure-reading"]');
+    if (dischargePressureReading) {
+      dischargePressureReading.setAttribute("aria-label", `Persdruk ${model.dischargePressureText}`);
+    }
+    const dischargeTempReading = board.querySelector('[data-oq-bind="discharge-temp-reading"]');
+    if (dischargeTempReading) {
+      dischargeTempReading.setAttribute("aria-label", `Perstemperatuur ${model.dischargeTempText}`);
+    }
+    const returnReading = board.querySelector('[data-oq-bind="return-reading"]');
+    if (returnReading) {
+      returnReading.setAttribute("aria-label", `Retour temperatuur ${model.waterInText}`);
+    }
+    const suctionPressureReading = board.querySelector('[data-oq-bind="suction-pressure-reading"]');
+    if (suctionPressureReading) {
+      suctionPressureReading.setAttribute("aria-label", `Zuigdruk ${model.suctionPressureText}`);
+    }
+    const suctionTempReading = board.querySelector('[data-oq-bind="suction-temp-reading"]');
+    if (suctionTempReading) {
+      suctionTempReading.setAttribute("aria-label", `Zuigtemperatuur ${model.suctionTempText}`);
+    }
+    const fourWayTrigger = board.querySelector('[data-oq-bind="fourway-trigger"]');
+    if (fourWayTrigger) {
+      fourWayTrigger.setAttribute("aria-label", `4-wegklep, ${model.fourWayPositionText}`);
+    }
+    const eevTrigger = board.querySelector('[data-oq-bind="eev-trigger"]');
+    if (eevTrigger) {
+      eevTrigger.setAttribute("aria-label", `Electronic expansion valve, ${model.eevPositionText}`);
+    }
     setVariantClass(board.querySelector(".oq-hp-tech-pump"), "oq-hp-tech-pump--", model.returnLineTone, ["supply", "return"]);
     const condWater = board.querySelector('[data-oq-bind="cond-water"]');
     if (condWater) {
@@ -1874,6 +2580,7 @@
     Object.entries(model.pipes).forEach(([id, pipe]) => {
       updatePipeGroup(board, id.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`), pipe.tone, pipe.d);
     });
+    ensureTechTooltipLayering(board);
     refreshMotionTargets();
   }
 
@@ -2138,6 +2845,7 @@
       </div>
     `;
     clearLegacyMotionVariables();
+    syncTechTooltipLayers();
     refreshMotionTargets();
     syncNativeVisibility();
   }
