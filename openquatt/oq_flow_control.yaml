@@ -530,7 +530,6 @@ interval:
             // Keep manual-edge memory synchronized while idle.
             was_manual = want_manual;
             id(oq_flow_mode).publish_state("CM0");
-            publish_debug(FLOW_MODE_CM0, cm_code, (int) id(oq_flow_last_pwm));
             return;
           }
 
