@@ -1431,7 +1431,6 @@ interval:
             // ------------------------------------------------------------
             const float spw = id(oq_supply_target_temp).state;
             const float pv  = id(oq_system_supply_temp).state;
-
             if (isnan(spw) || isnan(pv)) {
               // Fail-safe: no valid PV/SP => no heat demand
               id(oq_demand_curve) = 0;

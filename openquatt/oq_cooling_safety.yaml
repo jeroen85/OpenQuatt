@@ -20,6 +20,45 @@ globals:
     restore_value: false
     initial_value: 'false'
 
+  - id: oq_cooling_room_count_selected_last_valid
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+  - id: oq_cooling_room_count_selected_last_valid_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_cooling_room_count_selected_hold_active
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+  - id: oq_cooling_valid_room_count_last_valid
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+  - id: oq_cooling_valid_room_count_last_valid_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_cooling_valid_room_count_hold_active
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+  - id: oq_cooling_dew_point_selected_last_valid_c
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+  - id: oq_cooling_dew_point_selected_last_valid_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_cooling_dew_point_selected_hold_active
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
 number:
   - platform: template
     id: cooling_safety_margin
@@ -262,12 +301,29 @@ sensor:
     accuracy_decimals: 0
     update_interval: 10s
     lambda: |-
-      // Clamp the HA helper to the supported 0..6 cooling-room range.
-      if (!id(cooling_room_count_ha).has_state() || isnan(id(cooling_room_count_ha).state)) return 0.0f;
-      int count = (int) lroundf(id(cooling_room_count_ha).state);
-      if (count < 0) count = 0;
-      if (count > 6) count = 6;
-      return (float) count;
+      // Hold the configured room count briefly through HA reload gaps.
+      const uint32_t hold_ms = (uint32_t)(${oq_selected_input_stale_hold_s}UL * 1000UL);
+      const uint32_t now_ms = (uint32_t) millis();
+
+      if (id(cooling_room_count_ha).has_state() && !isnan(id(cooling_room_count_ha).state)) {
+        int count = (int) lroundf(id(cooling_room_count_ha).state);
+        if (count < 0) count = 0;
+        if (count > 6) count = 6;
+        id(oq_cooling_room_count_selected_last_valid) = (float) count;
+        id(oq_cooling_room_count_selected_last_valid_ms) = now_ms;
+        id(oq_cooling_room_count_selected_hold_active) = false;
+        return (float) count;
+      }
+
+      id(oq_cooling_room_count_selected_hold_active) = false;
+      if (hold_ms > 0 &&
+          id(oq_cooling_room_count_selected_last_valid_ms) > 0 &&
+          (uint32_t)(now_ms - id(oq_cooling_room_count_selected_last_valid_ms)) < hold_ms) {
+        id(oq_cooling_room_count_selected_hold_active) = true;
+        return id(oq_cooling_room_count_selected_last_valid);
+      }
+
+      return 0.0f;
     web_server:
       sorting_group_id: oq_ha
 
@@ -419,7 +475,11 @@ sensor:
     accuracy_decimals: 0
     update_interval: 10s
     lambda: |-
-      // Count how many configured cooling rooms currently provide a usable dew point.
+      // Count how many configured cooling rooms provide a usable dew point.
+      // When all HA-backed room signals briefly disappear, keep the last valid
+      // count for a short grace period so cooling safety does not chatter.
+      const uint32_t hold_ms = (uint32_t)(${oq_selected_input_stale_hold_s}UL * 1000UL);
+      const uint32_t now_ms = (uint32_t) millis();
       int configured_count = (int) lroundf(id(cooling_room_count_selected).state);
       if (configured_count < 0) configured_count = 0;
       if (configured_count > 6) configured_count = 6;
@@ -435,7 +495,24 @@ sensor:
       if (configured_count >= 4) count_valid(id(cooling_room_4_dew_point_effective));
       if (configured_count >= 5) count_valid(id(cooling_room_5_dew_point_effective));
       if (configured_count >= 6) count_valid(id(cooling_room_6_dew_point_effective));
-      return (float) valid_count;
+
+      const bool signal_valid = (configured_count == 0) || (valid_count > 0);
+      if (signal_valid) {
+        id(oq_cooling_valid_room_count_last_valid) = (float) valid_count;
+        id(oq_cooling_valid_room_count_last_valid_ms) = now_ms;
+        id(oq_cooling_valid_room_count_hold_active) = false;
+        return (float) valid_count;
+      }
+
+      id(oq_cooling_valid_room_count_hold_active) = false;
+      if (hold_ms > 0 &&
+          id(oq_cooling_valid_room_count_last_valid_ms) > 0 &&
+          (uint32_t)(now_ms - id(oq_cooling_valid_room_count_last_valid_ms)) < hold_ms) {
+        id(oq_cooling_valid_room_count_hold_active) = true;
+        return id(oq_cooling_valid_room_count_last_valid);
+      }
+
+      return 0.0f;
     web_server:
       sorting_group_id: oq_ha
 
@@ -450,6 +527,9 @@ sensor:
     update_interval: 10s
     lambda: |-
       // Use the highest valid dew point among the configured cooling rooms.
+      // Hold the last valid aggregate briefly through HA reload gaps.
+      const uint32_t hold_ms = (uint32_t)(${oq_selected_input_stale_hold_s}UL * 1000UL);
+      const uint32_t now_ms = (uint32_t) millis();
       int configured_count = (int) lroundf(id(cooling_room_count_selected).state);
       if (configured_count < 0) configured_count = 0;
       if (configured_count > 6) configured_count = 6;
@@ -467,7 +547,25 @@ sensor:
       if (configured_count >= 4) consider(id(cooling_room_4_dew_point_effective));
       if (configured_count >= 5) consider(id(cooling_room_5_dew_point_effective));
       if (configured_count >= 6) consider(id(cooling_room_6_dew_point_effective));
-      return selected_c;
+
+      if (!isnan(selected_c)) {
+        id(oq_cooling_dew_point_selected_last_valid_c) = selected_c;
+        id(oq_cooling_dew_point_selected_last_valid_ms) = now_ms;
+        id(oq_cooling_dew_point_selected_hold_active) = false;
+        return selected_c;
+      }
+
+      id(oq_cooling_dew_point_selected_hold_active) = false;
+      if (configured_count > 0 &&
+          hold_ms > 0 &&
+          id(oq_cooling_dew_point_selected_last_valid_ms) > 0 &&
+          (uint32_t)(now_ms - id(oq_cooling_dew_point_selected_last_valid_ms)) < hold_ms &&
+          !isnan(id(oq_cooling_dew_point_selected_last_valid_c))) {
+        id(oq_cooling_dew_point_selected_hold_active) = true;
+        return id(oq_cooling_dew_point_selected_last_valid_c);
+      }
+
+      return NAN;
     web_server:
       sorting_group_id: oq_temperatures
 
