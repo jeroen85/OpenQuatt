@@ -240,6 +240,15 @@ sensor:
     entity_category: diagnostic
     web_server:
       sorting_group_id: oq_diagnostics
+
+  - platform: internal_temperature
+    name: ESP Internal Temperature
+    icon: mdi:thermometer-chip
+    update_interval: 60s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+
   - platform: wifi_signal
     name: WiFi Signal
     icon: mdi:wifi-arrow-left-right
