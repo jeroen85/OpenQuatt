@@ -295,7 +295,6 @@ Gebruik deze groep vooral voor onderhoud en diagnose, niet voor dagelijks gebrui
 - `Flow average (Selected)`
 - `Flow mismatch (HP1 vs HP2)`
 - `Flow Mode`
-- `Flow Debug State`
 
 ### Voor vermogen en prestaties
 

@@ -2742,13 +2742,6 @@ views:
               - `Comfort bias` toont de status van de adaptieve warm-bias
               regelaar.
 
-              - `Low-load dynamic thresholds` toont live of cached de
-              `pmin/off/on` drempels en valt anders terug op interne
-              fallbackwaarden.
-
-              - `Heat-enable state (shadow)` toont de shadow-arbiterstatus
-              (`IDLE/PREHEAT/HEATING/POSTFLOW/LOCKOUT`) voor strategievalidatie.
-
               Als `P_req` onverwacht hoog/laag is: controleer buitenbron, kamer
               setpoint/temp en de ramp/deadband instellingen.
 
@@ -2758,8 +2751,6 @@ views:
           - type: entities
             show_header_toggle: false
             entities:
-              - entity: sensor.openquatt_heat_enable_state_shadow
-                name: Heat-enable state (shadow)
               - entity: sensor.openquatt_outside_temperature_selected
                 name: Buitentemp (gekozen)
               - entity: sensor.openquatt_room_setpoint_selected
@@ -2774,8 +2765,6 @@ views:
                 name: P_house
               - entity: sensor.openquatt_power_house_p_req
                 name: P_req
-              - entity: sensor.openquatt_low_load_dynamic_thresholds
-                name: Low-load dynamic thresholds
       - type: grid
         column_span: 1
         cards:

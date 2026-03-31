@@ -177,7 +177,6 @@ Power House stability guards in supervisory:
 - low-load heat-request latch (OFF/ON hysteresis on `P_req`)
 - temporary CM2 re-entry block after CM2 idle-exit trip
 - CM2 startup-grace and high-load guard on idle-exit path
-- shadow heat-enable arbiter diagnostics (`IDLE/PREHEAT/HEATING/POSTFLOW/LOCKOUT`)
 - shared water-temperature limiter on effective `P_req` using `water_supply_temp_selected`
 - per-compressor minimum runtime once a compressor has started (user-tunable, lower bound `300 s`)
 
