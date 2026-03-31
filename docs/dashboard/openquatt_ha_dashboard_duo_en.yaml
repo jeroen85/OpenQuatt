@@ -2949,10 +2949,6 @@ views:
 
               - `Comfort bias` shows the adaptive warm-bias governor state.
 
-              - `Low-load dynamic thresholds` shows live or cached
-              `pmin/off/on` thresholds and falls back to internal defaults when
-              dynamic input is unavailable.
-
               If `P_req` looks unexpectedly high/low: check outside source, room
               setpoint/temp, and ramp/deadband tuning.
 
@@ -2976,8 +2972,6 @@ views:
                 name: P_house
               - entity: sensor.openquatt_power_house_p_req
                 name: P_req
-              - entity: sensor.openquatt_low_load_dynamic_thresholds
-                name: Low-load dynamic thresholds
       - type: grid
         column_span: 1
         cards:

@@ -304,16 +304,6 @@ text_sensor:
     web_server:
       sorting_group_id: oq_hydraulics
 
-  - platform: template
-    id: oq_flow_debug_state
-    name: "Flow Debug State"
-    icon: mdi:bug-outline
-    entity_category: diagnostic
-    disabled_by_default: true
-    update_interval: never
-    web_server:
-      sorting_group_id: oq_diagnostics
-
 # ----------------------------
 # MAIN LOOP (5s): PI + mode handling
 # ----------------------------
@@ -404,28 +394,6 @@ interval:
             sp_f = NAN;
             last_pi_e = 0.0f;
             stable_cnt = 0;
-          };
-          // Compact one-line diagnostics to compare mode decisions over time.
-          auto publish_debug = [&](FlowExecMode mode, int cm_code, int pwm) {
-            static std::string last_debug = "";
-            const char *mode_s = "AUTO";
-            switch (mode) {
-              case FLOW_MODE_CM0: mode_s = "CM0"; break;
-              case FLOW_MODE_AUTOTUNE: mode_s = "AUTOTUNE"; break;
-              case FLOW_MODE_MANUAL: mode_s = "MANUAL"; break;
-              case FLOW_MODE_FROST: mode_s = "CM98"; break;
-              case FLOW_MODE_AUTO_STARTING: mode_s = "AUTO_STARTING"; break;
-              case FLOW_MODE_AUTO_FAILSAFE: mode_s = "AUTO_FAILSAFE"; break;
-              default: mode_s = "AUTO"; break;
-            }
-            char buf[160];
-            snprintf(buf, sizeof(buf), "mode=%s cm=%d manual=%d failsafe=%d hold=%d pwm=%d",
-                     mode_s, cm_code, (int)(id(oq_flow_control_mode_code) == 1), (int)pi_failsafe, startup_hold, pwm);
-            const std::string s(buf);
-            if (s != last_debug) {
-              id(oq_flow_debug_state).publish_state(s.c_str());
-              last_debug = s;
-            }
           };
           // AUTO PI path only: setpoint ramp, PI, startup-hold, and last_good tracking.
           auto run_auto_pi = [&](int pwm_seed) -> int {
@@ -591,7 +559,6 @@ interval:
               id(oq_flow_mode).publish_state("AUTOTUNE");
               last_mode = "AUTOTUNE";
             }
-            publish_debug(FLOW_MODE_AUTOTUNE, cm_code, at_pwm);
             return;
           }
 
@@ -654,5 +621,3 @@ interval:
                      mode_txt.c_str(), id(oq_control_mode).state.c_str(), (int)want_manual, (int)pi_failsafe, startup_hold, pwm);
             last_mode = mode_txt;
           }
-
-          publish_debug(exec_mode, cm_code, pwm);

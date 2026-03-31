@@ -409,17 +409,6 @@ binary_sensor:
     web_server:
       sorting_group_id: oq_diagnostics
 
-  # DEBUG-RUNTIME START: CM2 low-load / idle-exit diagnostics
-  - platform: template
-    id: oq_cm2_reentry_block_active_bs
-    name: "CM2 re-entry block active"
-    icon: mdi:timer-lock-outline
-    device_class: running
-    entity_category: diagnostic
-    web_server:
-      sorting_group_id: oq_diagnostics
-  # DEBUG-RUNTIME END
-
 text_sensor:
   - platform: template
     id: oq_control_mode
@@ -471,6 +460,7 @@ text_sensor:
     icon: mdi:chart-bell-curve
     update_interval: 5s
     entity_category: diagnostic
+    disabled_by_default: true
     web_server:
       sorting_group_id: oq_diagnostics
     lambda: |-
@@ -492,15 +482,6 @@ text_sensor:
         snprintf(b, sizeof(b), "pmin=%.0fW off=%.0fW on=%.0fW", pmin, off, on);
       }
       return std::string(b);
-
-  - platform: template
-    id: oq_cm2_idle_exit_reason_ts
-    name: "CM2 idle-exit reason"
-    icon: mdi:information-outline
-    update_interval: never
-    entity_category: diagnostic
-    web_server:
-      sorting_group_id: oq_diagnostics
   # DEBUG-RUNTIME END
 sensor:
   - platform: template
@@ -911,14 +892,6 @@ interval:
               heating_req = false;
             }
           }
-          // DEBUG-RUNTIME: publish CM2 idle-exit reason + low-load re-entry block state.
-          static std::string last_cm2_idle_exit_reason;
-          publish_text_if_changed(
-              id(oq_cm2_idle_exit_reason_ts),
-              cm2_idle_exit_reason,
-              last_cm2_idle_exit_reason);
-          publish_binary_if_changed(id(oq_cm2_reentry_block_active_bs), reentry_block_active);
-
           const bool thermal_req = heating_req || cooling_req_raw;
 
           // -------------------------------------------------

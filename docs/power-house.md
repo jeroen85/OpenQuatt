@@ -303,9 +303,7 @@ Een belangrijk deel van `Power House` zit niet alleen in de warmtevraag, maar oo
 
 Belangrijke signalen:
 
-- `Low-load dynamic thresholds`
-- `CM2 idle-exit reason`
-- `CM2 re-entry block active`
+- `Low-load dynamic thresholds` (standaard verborgen)
 
 Wat daar gebeurt:
 
@@ -404,9 +402,7 @@ Bij `Duo` komen daar vaak bij:
 
 En voor laaglastgedrag:
 
-- `Low-load dynamic thresholds`
-- `CM2 idle-exit reason`
-- `CM2 re-entry block active`
+- `Low-load dynamic thresholds` (standaard verborgen)
 
 ## Veilige volgorde van afstellen
 
