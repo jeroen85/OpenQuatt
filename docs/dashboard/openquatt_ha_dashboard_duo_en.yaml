@@ -2953,10 +2953,6 @@ views:
               `pmin/off/on` thresholds and falls back to internal defaults when
               dynamic input is unavailable.
 
-              - `Heat-enable state (shadow)` shows the shadow arbiter state
-              (`IDLE/PREHEAT/HEATING/POSTFLOW/LOCKOUT`) for strategy
-              validation.
-
               If `P_req` looks unexpectedly high/low: check outside source, room
               setpoint/temp, and ramp/deadband tuning.
 
@@ -2966,8 +2962,6 @@ views:
           - type: entities
             show_header_toggle: false
             entities:
-              - entity: sensor.openquatt_heat_enable_state_shadow
-                name: Heat-enable state (shadow)
               - entity: sensor.openquatt_outside_temperature_selected
                 name: Outside temp (selected)
               - entity: sensor.openquatt_room_setpoint_selected

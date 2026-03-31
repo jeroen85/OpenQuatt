@@ -306,7 +306,6 @@ Belangrijke signalen:
 - `Low-load dynamic thresholds`
 - `CM2 idle-exit reason`
 - `CM2 re-entry block active`
-- `Heat-enable state (shadow)`
 
 Wat daar gebeurt:
 
@@ -408,7 +407,6 @@ En voor laaglastgedrag:
 - `Low-load dynamic thresholds`
 - `CM2 idle-exit reason`
 - `CM2 re-entry block active`
-- `Heat-enable state (shadow)`
 
 ## Veilige volgorde van afstellen
 

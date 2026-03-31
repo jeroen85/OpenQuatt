@@ -3104,9 +3104,6 @@ views:
               `pmin/off/on` drempels en valt anders terug op interne
               fallbackwaarden.
 
-              - `Heat-enable state (shadow)` toont de shadow-arbiterstatus
-              (`IDLE/PREHEAT/HEATING/POSTFLOW/LOCKOUT`) voor strategievalidatie.
-
               Als `P_req` onverwacht hoog/laag is: controleer buitenbron, kamer
               setpoint/temp en de ramp/deadband instellingen.
 
@@ -3116,8 +3113,6 @@ views:
           - type: entities
             show_header_toggle: false
             entities:
-              - entity: sensor.openquatt_heat_enable_state_shadow
-                name: Heat-enable state (shadow)
               - entity: sensor.openquatt_outside_temperature_selected
                 name: Buitentemp (gekozen)
               - entity: sensor.openquatt_room_setpoint_selected

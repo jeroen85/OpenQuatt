@@ -163,7 +163,7 @@ globals:
     type: int
     restore_value: false
     initial_value: '0'
-  # DEBUG-RUNTIME START: Power House low-load + shadow heat-enable diagnostics
+  # DEBUG-RUNTIME START: Power House low-load diagnostics
   # Dynamic low-load diagnostics (Power House)
   - id: oq_low_load_pmin_dyn_w
     type: float
@@ -189,27 +189,6 @@ globals:
     type: int
     restore_value: false
     initial_value: '0'  # 0=inactive,1=live,2=cached,3=fallback
-  # Shadow heat-enable arbiter state machine (diagnostics only).
-  - id: oq_heat_enable_state_shadow
-    type: int
-    restore_value: false
-    initial_value: '0'  # 0=IDLE,1=PREHEAT,2=HEATING,3=POSTFLOW,4=LOCKOUT
-  - id: oq_heat_enable_preheat_until_ms_shadow
-    type: uint32_t
-    restore_value: false
-    initial_value: '0'
-  - id: oq_heat_enable_postflow_until_ms_shadow
-    type: uint32_t
-    restore_value: false
-    initial_value: '0'
-  - id: oq_heat_enable_lockout_until_ms_shadow
-    type: uint32_t
-    restore_value: false
-    initial_value: '0'
-  - id: oq_heat_enable_last_on_ms_shadow
-    type: uint32_t
-    restore_value: false
-    initial_value: '0'
   # DEBUG-RUNTIME END
 
 # ----------------------------
@@ -485,7 +464,7 @@ text_sensor:
     web_server:
       sorting_group_id: oq_diagnostics
 
-  # DEBUG-RUNTIME START: Power House low-load + shadow heat-enable diagnostics
+  # DEBUG-RUNTIME START: Power House low-load diagnostics
   - platform: template
     id: oq_low_load_dyn_status
     name: "Low-load dynamic thresholds"
@@ -513,15 +492,6 @@ text_sensor:
         snprintf(b, sizeof(b), "pmin=%.0fW off=%.0fW on=%.0fW", pmin, off, on);
       }
       return std::string(b);
-
-  - platform: template
-    id: oq_heat_enable_state_shadow_ts
-    name: "Heat-enable state (shadow)"
-    icon: mdi:state-machine
-    update_interval: never
-    entity_category: diagnostic
-    web_server:
-      sorting_group_id: oq_diagnostics
 
   - platform: template
     id: oq_cm2_idle_exit_reason_ts
@@ -950,94 +920,6 @@ interval:
           publish_binary_if_changed(id(oq_cm2_reentry_block_active_bs), reentry_block_active);
 
           const bool thermal_req = heating_req || cooling_req_raw;
-
-          // -------------------------------------------------
-          // 1b) Shadow heat-enable arbiter (diagnostics only)
-          //     States: IDLE/PREHEAT/HEATING/POSTFLOW/LOCKOUT
-          // -------------------------------------------------
-          {
-            // DEBUG-RUNTIME: shadow state-machine for stepwise migration to a dedicated heat-enable arbiter.
-            const bool heat_req_shadow = heating_req;
-            const uint32_t min_run_ms = (uint32_t)(${oq_cm2_min_run_s}UL * 1000UL);
-            const uint32_t lockout_ms = power_house_active
-                ? (uint32_t) lroundf(id(oq_low_load_reentry_block_s).state) * 1000UL
-                : 0;
-
-            auto shadow_state_to_text = [](int st) -> const char* {
-              if (st == 1) return "PREHEAT";
-              if (st == 2) return "HEATING";
-              if (st == 3) return "POSTFLOW";
-              if (st == 4) return "LOCKOUT";
-              return "IDLE";
-            };
-
-            int st = id(oq_heat_enable_state_shadow);
-            if (st < 0 || st > 4) st = 0;
-
-            switch (st) {
-              case 0: { // IDLE
-                if (heat_req_shadow) {
-                  st = 1;
-                  id(oq_heat_enable_preheat_until_ms_shadow) = now_ms + prepost_ms;
-                }
-                break;
-              }
-              case 1: { // PREHEAT
-                if (!heat_req_shadow) {
-                  st = 0;
-                  id(oq_heat_enable_preheat_until_ms_shadow) = 0;
-                } else if (!ms_window_active(id(oq_heat_enable_preheat_until_ms_shadow))) {
-                  st = 2;
-                  id(oq_heat_enable_last_on_ms_shadow) = now_ms;
-                }
-                break;
-              }
-              case 2: { // HEATING
-                if (!heat_req_shadow &&
-                    (id(oq_heat_enable_last_on_ms_shadow) == 0 ||
-                     (uint32_t) (now_ms - id(oq_heat_enable_last_on_ms_shadow)) >= min_run_ms)) {
-                  st = 3;
-                  id(oq_heat_enable_postflow_until_ms_shadow) = now_ms + prepost_ms;
-                }
-                break;
-              }
-              case 3: { // POSTFLOW
-                if (heat_req_shadow) {
-                  st = 1;
-                  id(oq_heat_enable_preheat_until_ms_shadow) = now_ms + prepost_ms;
-                } else if (!ms_window_active(id(oq_heat_enable_postflow_until_ms_shadow))) {
-                  if (lockout_ms > 0) {
-                    st = 4;
-                    id(oq_heat_enable_lockout_until_ms_shadow) = now_ms + lockout_ms;
-                  } else {
-                    st = 0;
-                  }
-                }
-                break;
-              }
-              case 4: { // LOCKOUT
-                if (!ms_window_active(id(oq_heat_enable_lockout_until_ms_shadow))) {
-                  if (heat_req_shadow) {
-                    st = 1;
-                    id(oq_heat_enable_preheat_until_ms_shadow) = now_ms + prepost_ms;
-                  } else {
-                    st = 0;
-                  }
-                }
-                break;
-              }
-              default:
-                st = 0;
-                break;
-            }
-
-            id(oq_heat_enable_state_shadow) = st;
-            static std::string last_heat_enable_shadow_state;
-            publish_text_if_changed(
-                id(oq_heat_enable_state_shadow_ts),
-                std::string(shadow_state_to_text(st)),
-                last_heat_enable_shadow_state);
-          }
 
           // -------------------------------------------------
           // 2) Flow interlock status + timers
