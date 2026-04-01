@@ -3149,9 +3149,6 @@ views:
               - Vergelijk eerst `Aanvoerdoel` met `Werkelijke aanvoer (gekozen)`
               om de regelafwijking te zien.
 
-              - `Curvefase` (`HEAT`/`COAST`/`OFF`) verklaart de actuele fase van
-              de curve-regeling.
-
               - Gebruik `Stooklijn-PID` en `Reset PID-integraal` bij finetuning
               als de regeling te traag of te nerveus reageert.
 
