@@ -1292,6 +1292,7 @@ text_sensor:
     icon: mdi:state-machine
     update_interval: 5s
     entity_category: diagnostic
+    disabled_by_default: true
     web_server:
       sorting_group_id: oq_diagnostics
     lambda: |-

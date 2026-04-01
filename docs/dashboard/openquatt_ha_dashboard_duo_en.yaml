@@ -2997,9 +2997,6 @@ views:
               - First compare `Supply target` and `Supply actual` to see control
               error.
 
-              - `Curve phase` (`HEAT`/`COAST`/`OFF`) explains the current phase
-              of curve control.
-
               - Use `Heating Curve PID` and `Reset PID integral` for fine tuning
               when response is too slow or too nervous.
 
@@ -3020,8 +3017,6 @@ views:
                 name: Supply target
               - entity: sensor.openquatt_water_supply_temp_selected
                 name: Supply actual (selected)
-              - entity: sensor.openquatt_curve_phase
-                name: Curve phase
               - entity: button.openquatt_reset_heating_curve_pid_integral
                 name: Reset PID integral
     cards: []

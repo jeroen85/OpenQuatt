@@ -2814,8 +2814,6 @@ views:
                 name: Aanvoerdoel
               - entity: sensor.openquatt_water_supply_temp_selected
                 name: Werkelijke aanvoer (gekozen)
-              - entity: sensor.openquatt_curve_phase
-                name: Curvefase
               - entity: button.openquatt_reset_heating_curve_pid_integral
                 name: Reset PID-integraal
     cards: []
