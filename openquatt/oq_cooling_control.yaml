@@ -71,6 +71,7 @@ number:
   - platform: template
     id: cooling_pid_kp
     name: "Cooling PID Kp"
+    disabled_by_default: true
     icon: mdi:chart-bell-curve-cumulative
     min_value: 0.0
     max_value: 10.0
@@ -86,6 +87,7 @@ number:
   - platform: template
     id: cooling_pid_ki
     name: "Cooling PID Ki"
+    disabled_by_default: true
     icon: mdi:chart-timeline-variant
     min_value: 0.0
     max_value: 2.0
@@ -101,6 +103,7 @@ number:
   - platform: template
     id: cooling_pid_kd
     name: "Cooling PID Kd"
+    disabled_by_default: true
     icon: mdi:chart-line
     min_value: 0.0
     max_value: 2.0

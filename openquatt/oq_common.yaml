@@ -132,6 +132,7 @@ select:
   - platform: template
     name: "Debug Level"
     id: debug_level_select
+    disabled_by_default: true
     icon: mdi:lan
     web_server:
       sorting_group_id: oq_diagnostics
@@ -156,6 +157,7 @@ select:
   - platform: template
     name: "Debug Level Modbus"
     id: debug_level_modbus_master
+    disabled_by_default: true
     icon: mdi:lan
     web_server:
       sorting_group_id: oq_diagnostics

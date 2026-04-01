@@ -101,6 +101,7 @@ select:
     modbus_controller_id: ${hp_id}
     id: ${hp_id}_set_working_mode
     name: "${prefix}Set Working Mode"
+    disabled_by_default: true
     icon: "mdi:heat-pump-outline"
     address: 3999
     value_type: U_WORD
@@ -117,6 +118,7 @@ select:
     modbus_controller_id: ${hp_id}
     id: ${hp_id}_compressor_level
     name: "${prefix}Set Compressor Level"
+    disabled_by_default: true
     icon: "mdi:sine-wave"
     address: 1999
     value_type: U_WORD
@@ -141,6 +143,7 @@ select:
     modbus_controller_id: ${hp_id}
     id: ${hp_id}_low_noise_mode
     name: "${prefix}Silent Mode"
+    disabled_by_default: true
     icon: mdi:weather-night
     address: 2006
     value_type: U_WORD
@@ -156,6 +159,7 @@ select:
     modbus_controller_id: ${hp_id}
     id: ${hp_id}_set_pump_mode
     name: "${prefix}Set Pump Mode"
+    disabled_by_default: true
     icon: "mdi:pump"
     address: 2010
     value_type: U_WORD
@@ -541,6 +545,7 @@ sensor:
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
     name: "${prefix}Firmware EEPROM"
+    disabled_by_default: true
     icon: mdi:memory
     register_type: holding
     register_count: 4  # 2123 - 2127
@@ -552,6 +557,7 @@ sensor:
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
     name: "${prefix}Control board item number"
+    disabled_by_default: true
     icon: mdi:identifier
     register_type: holding
     register_count: 4  # 2127 - 2131
@@ -819,6 +825,7 @@ binary_sensor:
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
     name: "${prefix}Fan Low Speed Mode"
+    disabled_by_default: true
     icon: mdi:fan-speed-1
     device_class: running
     register_type: holding
@@ -857,6 +864,7 @@ binary_sensor:
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
     name: "${prefix}Fan Defrost Mode"
+    disabled_by_default: true
     icon: mdi:snowflake-melt
     device_class: running
     register_type: holding
@@ -869,6 +877,7 @@ binary_sensor:
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
     name: "${prefix}Fan High Speed Mode"
+    disabled_by_default: true
     icon: mdi:fan-speed-3
     device_class: running
     register_type: holding

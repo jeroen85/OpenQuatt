@@ -122,6 +122,7 @@ sensor:
     state_class: measurement
     accuracy_decimals: 0
     icon: mdi:timer-sand
+    disabled_by_default: true
     update_interval: never
     web_server:
       sorting_group_id: oq_cic
@@ -133,6 +134,7 @@ sensor:
     device_class: duration
     state_class: measurement
     accuracy_decimals: 0
+    disabled_by_default: true
     icon: mdi:timeline-clock-outline
     update_interval: never
     web_server:

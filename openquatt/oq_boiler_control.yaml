@@ -49,6 +49,7 @@ switch:
   - platform: output
     id: boiler_relay
     name: "Boiler relay"
+    disabled_by_default: true
     output: boiler_relay_out
     icon: mdi:water-boiler
     restore_mode: ALWAYS_OFF

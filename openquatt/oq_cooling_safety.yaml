@@ -79,6 +79,7 @@ number:
   - platform: template
     id: cooling_request_on_delta
     name: "Cooling Request On Delta"
+    disabled_by_default: true
     icon: mdi:thermometer-plus
     unit_of_measurement: "°C"
     min_value: 0.0
@@ -95,6 +96,7 @@ number:
   - platform: template
     id: cooling_request_off_delta
     name: "Cooling Request Off Delta"
+    disabled_by_default: true
     icon: mdi:thermometer-minus
     unit_of_measurement: "°C"
     min_value: 0.0

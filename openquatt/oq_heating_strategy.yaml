@@ -1178,6 +1178,7 @@ sensor:
   - platform: template
     id: oq_demand_curve_sensor
     name: "Demand Curve (raw)"
+    disabled_by_default: true
     icon: mdi:counter
     unit_of_measurement: "step"
     state_class: measurement
@@ -1191,6 +1192,7 @@ sensor:
   - platform: template
     id: oq_curve_demand_pre_guardrail_sensor
     name: "Demand Curve (pre-guardrail)"
+    disabled_by_default: true
     icon: mdi:counter
     unit_of_measurement: "step"
     state_class: measurement
@@ -1205,6 +1207,7 @@ sensor:
   - platform: template
     id: oq_curve_demand_post_guardrail_sensor
     name: "Demand Curve (post-guardrail)"
+    disabled_by_default: true
     icon: mdi:counter
     unit_of_measurement: "step"
     state_class: measurement
@@ -1219,6 +1222,7 @@ sensor:
   - platform: template
     id: oq_curve_restart_inhibit_sensor
     name: "Curve restart inhibit"
+    disabled_by_default: true
     icon: mdi:timer-sand-paused
     accuracy_decimals: 0
     update_interval: 5s
@@ -1232,6 +1236,7 @@ sensor:
   - platform: template
     id: oq_phouse_room_error_avg_c_sensor
     name: "Power House room error avg"
+    disabled_by_default: true
     icon: mdi:chart-timeline-variant
     unit_of_measurement: "°C"
     state_class: measurement

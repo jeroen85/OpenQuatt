@@ -2067,10 +2067,6 @@ views:
                 name: JSON feed OK
               - entity: binary_sensor.openquatt_cic_data_stale
                 name: Data verouderd
-              - entity: sensor.openquatt_cic_last_success_age
-                name: Tijd sinds laatste succes
-              - entity: sensor.openquatt_cic_polling_interval
-                name: Polling-interval
               - entity: text.openquatt_cic_feed_url
                 name: CIC feed URL
     cards: []
