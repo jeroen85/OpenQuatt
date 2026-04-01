@@ -219,6 +219,7 @@ sensor:
   - platform: dew_point
     id: cooling_room_1_dew_point_calc
     name: "Cooling Room 1 Dew Point (Calculated)"
+    internal: true
     temperature: cooling_room_1_temp_ha
     humidity: cooling_room_1_humidity_ha
     icon: mdi:water-thermometer
@@ -232,6 +233,7 @@ sensor:
   - platform: dew_point
     id: cooling_room_2_dew_point_calc
     name: "Cooling Room 2 Dew Point (Calculated)"
+    internal: true
     temperature: cooling_room_2_temp_ha
     humidity: cooling_room_2_humidity_ha
     icon: mdi:water-thermometer
@@ -245,6 +247,7 @@ sensor:
   - platform: dew_point
     id: cooling_room_3_dew_point_calc
     name: "Cooling Room 3 Dew Point (Calculated)"
+    internal: true
     temperature: cooling_room_3_temp_ha
     humidity: cooling_room_3_humidity_ha
     icon: mdi:water-thermometer
@@ -258,6 +261,7 @@ sensor:
   - platform: dew_point
     id: cooling_room_4_dew_point_calc
     name: "Cooling Room 4 Dew Point (Calculated)"
+    internal: true
     temperature: cooling_room_4_temp_ha
     humidity: cooling_room_4_humidity_ha
     icon: mdi:water-thermometer
@@ -271,6 +275,7 @@ sensor:
   - platform: dew_point
     id: cooling_room_5_dew_point_calc
     name: "Cooling Room 5 Dew Point (Calculated)"
+    internal: true
     temperature: cooling_room_5_temp_ha
     humidity: cooling_room_5_humidity_ha
     icon: mdi:water-thermometer
@@ -284,6 +289,7 @@ sensor:
   - platform: dew_point
     id: cooling_room_6_dew_point_calc
     name: "Cooling Room 6 Dew Point (Calculated)"
+    internal: true
     temperature: cooling_room_6_temp_ha
     humidity: cooling_room_6_humidity_ha
     icon: mdi:water-thermometer

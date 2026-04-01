@@ -1866,6 +1866,8 @@ views:
                     name: Cooling room 1 temperatuurentity
                   - entity: input_text.openquatt_source_cooling_room_1_humidity
                     name: Cooling room 1 luchtvochtigheidentity
+                  - entity: sensor.openquatt_cooling_room_1_dew_point_effective
+                    name: Actief dauwpunt
             visibility:
               - condition: numeric_state
                 entity: input_number.openquatt_cooling_room_count
@@ -1888,6 +1890,8 @@ views:
                     name: Cooling room 2 temperatuurentity
                   - entity: input_text.openquatt_source_cooling_room_2_humidity
                     name: Cooling room 2 luchtvochtigheidentity
+                  - entity: sensor.openquatt_cooling_room_2_dew_point_effective
+                    name: Actief dauwpunt
             visibility:
               - condition: numeric_state
                 entity: input_number.openquatt_cooling_room_count
@@ -1910,6 +1914,8 @@ views:
                     name: Cooling room 3 temperatuurentity
                   - entity: input_text.openquatt_source_cooling_room_3_humidity
                     name: Cooling room 3 luchtvochtigheidentity
+                  - entity: sensor.openquatt_cooling_room_3_dew_point_effective
+                    name: Actief dauwpunt
             visibility:
               - condition: numeric_state
                 entity: input_number.openquatt_cooling_room_count
@@ -1932,6 +1938,8 @@ views:
                     name: Cooling room 4 temperatuurentity
                   - entity: input_text.openquatt_source_cooling_room_4_humidity
                     name: Cooling room 4 luchtvochtigheidentity
+                  - entity: sensor.openquatt_cooling_room_4_dew_point_effective
+                    name: Actief dauwpunt
             visibility:
               - condition: numeric_state
                 entity: input_number.openquatt_cooling_room_count
@@ -1954,6 +1962,8 @@ views:
                     name: Cooling room 5 temperatuurentity
                   - entity: input_text.openquatt_source_cooling_room_5_humidity
                     name: Cooling room 5 luchtvochtigheidentity
+                  - entity: sensor.openquatt_cooling_room_5_dew_point_effective
+                    name: Actief dauwpunt
             visibility:
               - condition: numeric_state
                 entity: input_number.openquatt_cooling_room_count
@@ -1976,6 +1986,8 @@ views:
                     name: Cooling room 6 temperatuurentity
                   - entity: input_text.openquatt_source_cooling_room_6_humidity
                     name: Cooling room 6 luchtvochtigheidentity
+                  - entity: sensor.openquatt_cooling_room_6_dew_point_effective
+                    name: Actief dauwpunt
             visibility:
               - condition: numeric_state
                 entity: input_number.openquatt_cooling_room_count
