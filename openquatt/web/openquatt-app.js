@@ -530,6 +530,10 @@
   function mountPanel(app) {
     const root = document.createElement("section");
     root.id = "oq-helper-root";
+    root.lang = "nl-NL";
+    if (document.documentElement && !document.documentElement.lang) {
+      document.documentElement.lang = "nl-NL";
+    }
     app.parentNode.insertBefore(root, app);
     root.addEventListener("click", handleClick);
     root.addEventListener("change", handleChange);
@@ -669,14 +673,22 @@
       return "";
     }
 
-    const parts = value.split(":").map((part) => part.padStart(2, "0"));
-    if (parts.length === 2) {
-      return `${parts[0]}:${parts[1]}:00`;
+    const compactMatch = value.match(/^(\d{1,2}):?(\d{2})(?::?(\d{2}))?$/);
+    if (!compactMatch) {
+      return "";
     }
-    if (parts.length >= 3) {
-      return `${parts[0]}:${parts[1]}:${parts[2]}`;
+
+    const hours = Number(compactMatch[1]);
+    const minutes = Number(compactMatch[2]);
+    const seconds = Number(compactMatch[3] || "0");
+    if ([hours, minutes, seconds].some((part) => Number.isNaN(part))) {
+      return "";
     }
-    return value;
+    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59 || seconds < 0 || seconds > 59) {
+      return "";
+    }
+
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   }
 
   function toTimeInputValue(rawValue) {
@@ -843,11 +855,29 @@
     }
 
     if (entity.domain === "time") {
-      commitTime(field, normalizeTimeValue(event.target.value));
+      const normalized = normalizeTimeValue(event.target.value);
+      if (!normalized) {
+        state.controlError = `${entity.name} verwacht tijd als HH:MM.`;
+        render();
+        return;
+      }
+      commitTime(field, normalized);
     }
   }
 
   function handleClick(event) {
+    const timeControl = event.target.closest(".oq-settings-control--time");
+    if (timeControl) {
+      const timeInput = timeControl.querySelector('input[data-oq-field]');
+      if (timeInput && timeInput.type === "time" && typeof timeInput.showPicker === "function") {
+        try {
+          timeInput.showPicker();
+        } catch (_error) {
+          // Ignore browsers that block this call.
+        }
+      }
+    }
+
     const infoButton = event.target.closest('[data-oq-action="toggle-settings-info"]');
     const infoWrap = event.target.closest("[data-oq-settings-info]");
     if (infoButton) {
@@ -1233,6 +1263,25 @@
     `;
   }
 
+  function formatSettingsOptionLabel(option) {
+    const value = String(option || "").trim();
+    if (!value) {
+      return "";
+    }
+
+    const labels = {
+      None: "Geen",
+      Manual: "Handmatig",
+      Balanced: "Gebalanceerd",
+      Stable: "Stabiel",
+      Responsive: "Direct",
+      Calm: "Rustig",
+      Custom: "Aangepast",
+    };
+
+    return labels[value] || value;
+  }
+
   function renderSettingsSelectField(key, title, copy, className = "") {
     if (!hasEntity(key)) {
       return "";
@@ -1244,7 +1293,7 @@
     const controlMarkup = `
       <label class="oq-settings-control oq-settings-control--select">
         <select class="oq-helper-select" data-oq-field="${escapeHtml(key)}" ${state.loadingEntities ? "disabled" : ""}>
-          ${options.map((option) => `<option value="${escapeHtml(option)}" ${option === value ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}
+          ${options.map((option) => `<option value="${escapeHtml(option)}" ${option === value ? "selected" : ""}>${escapeHtml(formatSettingsOptionLabel(option))}</option>`).join("")}
         </select>
         <span class="oq-settings-select-caret" aria-hidden="true"></span>
       </label>
@@ -1295,7 +1344,7 @@
     const meta = getNumberMeta(key);
     const value = getEntityValue(key);
     const showUnit = options.showUnit !== false && Boolean(meta.uom);
-    const useInlineUnit = options.unitMode === "inside" && showUnit;
+    const useInlineUnit = showUnit && options.unitMode !== "outside";
     const controlMarkup = `
       <label class="oq-helper-control${showUnit && !useInlineUnit ? " oq-helper-control--split" : ""}${useInlineUnit ? " oq-helper-control--suffix" : ""}">
         <input
@@ -1349,6 +1398,37 @@
     return renderSettingsFieldCard(key, title, copy, controlMarkup, className);
   }
 
+  function renderSettingsMiniNumberField(key, title, copy, options = {}) {
+    if (!hasEntity(key)) {
+      return "";
+    }
+
+    const meta = getNumberMeta(key);
+    const value = getEntityValue(key);
+    const compact = options.compact === true;
+    return `
+      <article class="oq-settings-mini-field${compact ? " oq-settings-mini-field--compact" : ""}">
+        <div class="oq-settings-mini-copy">
+          <h5>${escapeHtml(title)}</h5>
+          ${copy ? `<p>${escapeHtml(copy)}</p>` : ""}
+        </div>
+        <label class="oq-helper-control oq-helper-control--suffix">
+          <input
+            class="oq-helper-input oq-helper-input--compact-number"
+            type="number"
+            data-oq-field="${escapeHtml(key)}"
+            min="${meta.min}"
+            max="${meta.max}"
+            step="${meta.step}"
+            value="${escapeHtml(value)}"
+            ${state.loadingEntities ? "disabled" : ""}
+          >
+          ${meta.uom ? `<span class="oq-helper-unit-chip">${escapeHtml(meta.uom)}</span>` : ""}
+        </label>
+      </article>
+    `;
+  }
+
   function renderSettingsTimeField(key, title, copy, className = "") {
     if (!hasEntity(key)) {
       return "";
@@ -1358,17 +1438,25 @@
     const controlMarkup = `
       <label class="oq-settings-control oq-settings-control--time">
         <input
-          class="oq-helper-input"
+          class="oq-helper-input oq-helper-input--time"
           type="time"
           step="60"
+          lang="nl-NL"
+          inputmode="numeric"
           data-oq-field="${escapeHtml(key)}"
           value="${escapeHtml(value)}"
           ${state.loadingEntities ? "disabled" : ""}
         >
+        <span class="oq-settings-time-icon" aria-hidden="true">
+          <svg viewBox="0 0 20 20" focusable="false">
+            <circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6" />
+            <path d="M10 6.2 V10 L12.9 11.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </span>
       </label>
     `;
 
-    return renderSettingsFieldCard(key, title, copy, controlMarkup, className);
+    return renderSettingsFieldCard(key, title, copy, controlMarkup, className || "oq-settings-field--time");
   }
 
   function renderSettingsSection(kicker, title, copy, body) {
@@ -1398,7 +1486,7 @@
       <div class="oq-settings-strategy-grid">
         <article class="oq-settings-strategy-card${curveActive ? "" : " is-active"}">
           <p class="oq-helper-label">Power House</p>
-          <h4>Modelgestuurde regeling</h4>
+          <h4>Modelgestuurde regeling (aanbevolen heating strategy)</h4>
           <p>Power House schat de warmtevraag van de woning op basis van buitentemperatuur en het ingestelde huisverliesmodel. De Quatt CiC werkt conceptueel ook in deze richting.</p>
           <ul class="oq-settings-strategy-points">
             <li>Gebruikt vooral <strong>Rated maximum house power</strong> en <strong>Maximum heating outdoor temperature</strong>.</li>
@@ -1422,34 +1510,135 @@
   }
 
   function renderPowerHouseResponseProfilesField() {
-    return renderSettingsOptionCardsField(
-      "phResponseProfile",
-      "Power House response profile",
-      "Kies hoe snel de vermogensvraag mag oplopen en terugvallen. De uitleg zit direct in de profielkeuze.",
+    if (!hasEntity("phResponseProfile")) {
+      return "";
+    }
+
+    const currentValue = String(getEntityValue("phResponseProfile") || "");
+    const busy = state.loadingEntities || state.busyAction === "save-phResponseProfile";
+    const options = [
       {
-        Calm: "Laat de warmtevraag rustiger oplopen en afbouwen. Geeft een stabieler systeembeeld met minder snelle correcties.",
-        Balanced: "De middenweg. Reageert vlot genoeg op veranderende vraag zonder nerveus te worden in normaal dagelijks gebruik.",
-        Responsive: "Laat de warmtevraag sneller meebewegen met veranderingen. Handig als je een directer reagerende regeling wilt.",
-        Custom: "Geeft rise- en fall-tijden vrij, zodat je zelf bepaalt hoe snel de warmtevraag op- en afbouwt.",
+        value: "Calm",
+        label: "Rustig",
+        copy: "Laat de warmtevraag rustiger oplopen en afbouwen. Geeft een stabieler systeembeeld met minder snelle correcties.",
       },
+      {
+        value: "Balanced",
+        label: "Gebalanceerd",
+        copy: "De middenweg. Reageert vlot genoeg op veranderende vraag zonder nerveus te worden in normaal dagelijks gebruik.",
+      },
+      {
+        value: "Responsive",
+        label: "Direct",
+        copy: "Laat de warmtevraag sneller meebewegen met veranderingen. Handig als je een directer reagerende regeling wilt.",
+      },
+      {
+        value: "Custom",
+        label: "Aangepast",
+        copy: "Geeft opbouw- en afbouwtijden vrij, zodat je zelf bepaalt hoe snel de warmtevraag op- en afbouwt.",
+      },
+    ];
+    const controlMarkup = `
+      <div class="oq-settings-choice-grid oq-settings-choice-grid--response">
+        ${options.map((option) => {
+          const isActive = option.value === currentValue;
+          const isExpanded = isActive && option.value === "Custom";
+          if (isExpanded) {
+            return `
+              <div class="oq-settings-choice-card oq-settings-choice-card--static oq-settings-choice-card--custom is-active is-expanded">
+                <span class="oq-settings-choice-title">${escapeHtml(option.label)}</span>
+                <span class="oq-settings-choice-copy">${escapeHtml("Bepaal zelf hoe snel de warmtevraag op- en afbouwt.")}</span>
+                <div class="oq-settings-choice-inline-grid">
+                  ${renderSettingsMiniNumberField("phDemandRiseTime", "Opbouwtijd", "", { compact: true })}
+                  ${renderSettingsMiniNumberField("phDemandFallTime", "Afbouwtijd", "", { compact: true })}
+                </div>
+              </div>
+            `;
+          }
+          return `
+            <button
+              class="oq-settings-choice-card${isActive ? " is-active" : ""}"
+              type="button"
+              data-oq-action="select-settings-option"
+              data-select-key="phResponseProfile"
+              data-select-option="${escapeHtml(option.value)}"
+              aria-pressed="${isActive ? "true" : "false"}"
+              ${busy ? "disabled" : ""}
+            >
+              <span class="oq-settings-choice-title">${escapeHtml(option.label)}</span>
+              <span class="oq-settings-choice-copy">${escapeHtml(option.copy)}</span>
+            </button>
+          `;
+        }).join("")}
+      </div>
+    `;
+
+    return renderSettingsFieldCard(
+      "phResponseProfile",
+      "Power House responsprofiel",
+      "Kies hoe snel de vermogensvraag mag oplopen en terugvallen. De uitleg zit direct in de profielkeuze.",
+      controlMarkup,
+      "oq-settings-field--span-2",
     );
   }
 
   function renderHeatingCurveProfileField() {
-    return renderSettingsOptionCardsField(
-      "curveControlProfile",
-      "Heating Curve Control Profile",
-      "Kies hoe comfortabel of stabiel de curve-regelaar reageert. De uitleg zit direct in de profielkeuze.",
+    if (!hasEntity("curveControlProfile")) {
+      return "";
+    }
+
+    const currentValue = String(getEntityValue("curveControlProfile") || "");
+    const busy = state.loadingEntities || state.busyAction === "save-curveControlProfile";
+    const options = [
       {
-        Comfort: "Start eerder, trimt fijner en reageert sneller op kamervraag. Handig als comfort en vlotte correctie voorop staan.",
-        Balanced: "De middenweg. Houdt de curve voorspelbaar en reageert vlot zonder onrustig te worden.",
-        Stable: "Filtert meer, maakt rustigere stappen en houdt langer vast. Past goed als je een kalmer systeembeeld wilt.",
+        value: "Comfort",
+        label: "Comfort",
+        copy: "Start eerder, trimt fijner en reageert sneller op kamervraag. Handig als comfort voorop staat.",
       },
+      {
+        value: "Balanced",
+        label: "Gebalanceerd",
+        copy: "De middenweg. Houdt Heating Curve voorspelbaar en reageert vlot zonder onrustig te worden.",
+      },
+      {
+        value: "Stable",
+        label: "Stabiel",
+        copy: "Filtert meer, maakt rustigere stappen en houdt langer vast. Past goed als je een kalmer systeembeeld wilt.",
+      },
+    ];
+
+    const controlMarkup = `
+      <div class="oq-settings-choice-grid oq-settings-choice-grid--curve">
+        ${options.map((option) => `
+          <button
+            class="oq-settings-choice-card${option.value === currentValue ? " is-active" : ""}"
+            type="button"
+            data-oq-action="select-settings-option"
+            data-select-key="curveControlProfile"
+            data-select-option="${escapeHtml(option.value)}"
+            aria-pressed="${option.value === currentValue ? "true" : "false"}"
+            ${busy ? "disabled" : ""}
+          >
+            <span class="oq-settings-choice-title">${escapeHtml(option.label)}</span>
+            <span class="oq-settings-choice-copy">${escapeHtml(option.copy)}</span>
+          </button>
+        `).join("")}
+      </div>
+    `;
+
+    return renderSettingsFieldCard(
+      "curveControlProfile",
+      "Heating Curve-regelprofiel",
+      "Kies hoe rustig of direct Heating Curve mag reageren. De uitleg zit direct in de profielkeuze.",
+      controlMarkup,
     );
   }
 
   function renderSettingsHeatPumpLimiterCard(title, keyA, keyB) {
-    const fields = [renderSettingsSelectField(keyA, "Excluded compressor level A", "Blokkeer desgewenst één compressortrap die je wilt vermijden."), renderSettingsSelectField(keyB, "Excluded compressor level B", "Tweede optionele blokkade voor een compressortrap die je niet wilt gebruiken.")]
+    const fields = [
+      renderSettingsSelectField(keyA, "1e compressorlevel uitsluiten", "Blokkeer desgewenst één compressortrap die je wilt vermijden."),
+      renderSettingsSelectField(keyB, "2e compressorlevel uitsluiten", "Tweede optionele blokkade voor een compressortrap die je niet wilt gebruiken."),
+    ]
       .filter(Boolean)
       .join("");
 
@@ -1492,14 +1681,16 @@
           <div class="oq-settings-subpanel-head">
             <p class="oq-helper-label">Heating Curve</p>
             <h4>Heating Curve</h4>
-            <p>Gebruik de curve als primaire regeling en leg vast wat er moet gebeuren als er geen buitentemperatuur beschikbaar is.</p>
+            <p>Gebruik Heating Curve als primaire regeling en leg vast wat er moet gebeuren als er geen buitentemperatuur beschikbaar is.</p>
           </div>
           <div class="oq-settings-grid">
             ${renderHeatingCurveProfileField()}
-            ${renderSettingsNumberField("curveFallbackSupply", "Curve Fallback Tsupply (No Outside Temp)", "Aanvoertemperatuur die gebruikt wordt als de buitentemperatuursensor niet beschikbaar is.")}
           </div>
           <div class="oq-settings-curve-shell">
             ${renderCurveGraph()}
+          </div>
+          <div class="oq-settings-grid oq-settings-grid--curve-fallback">
+            ${renderSettingsNumberField("curveFallbackSupply", "Fallback aanvoertemperatuur zonder buitentemp", "Aanvoertemperatuur die gebruikt wordt als de buitentemperatuursensor niet beschikbaar is.", "oq-settings-field--compact")}
           </div>
           ${renderSettingsCurveInputs()}
         </div>
@@ -1515,12 +1706,6 @@
             ${renderSettingsNumberField("houseOutdoorMax", "Maximum heating outdoor temperature", "Buitentemperatuur waarbij de woning praktisch geen verwarmingsvraag meer heeft. Deze waarde kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn.")}
             ${renderSettingsNumberField("housePower", "Rated maximum house power", "Geschatte piekwarmtevraag van de woning op het koude referentiepunt. Ook deze waarde kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn.")}
             ${renderPowerHouseResponseProfilesField()}
-            ${isCustomPowerHouseProfile()
-              ? renderSettingsNumberField("phDemandRiseTime", "Power House demand rise time", "Tijd waarmee de warmtevraag bij oplopende vraag naar het nieuwe niveau toeloopt.")
-              : ""}
-            ${isCustomPowerHouseProfile()
-              ? renderSettingsNumberField("phDemandFallTime", "Power House demand fall time", "Tijd waarmee de warmtevraag bij afnemende vraag weer terugzakt.")
-              : ""}
           </div>
         </div>
       `;
@@ -1546,8 +1731,8 @@
       "Beschermt het systeem tegen te hoge aanvoertemperaturen en bepaalt wanneer de tripgrens in beeld komt.",
       `
         <div class="oq-settings-grid">
-          ${renderSettingsNumberField("maxWater", "Maximum water temperature", "Normale bovengrens voor de watertemperatuur tijdens bedrijf.")}
-          ${renderSettingsNumberField("maxWaterTrip", "Maximum water temperature trip", "Veiligheidsgrens waarbij de regeling ingrijpt als de watertemperatuur te ver oploopt.")}
+          ${renderSettingsNumberField("maxWater", "Maximale watertemperatuur", "Normale bovengrens voor de watertemperatuur tijdens bedrijf.")}
+          ${renderSettingsNumberField("maxWaterTrip", "Tripgrens watertemperatuur", "Veiligheidsgrens waarbij de regeling hard ingrijpt als de watertemperatuur te ver oploopt.")}
         </div>
       `,
     );

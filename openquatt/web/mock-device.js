@@ -154,8 +154,8 @@
     [
       ["Flow Setpoint", 800, 0, 1500, 10, "L/h"],
       ["Manual iPWM", 400, 50, 850, 1, "iPWM"],
-      ["Day max level", 10, 0, 20, 1, ""],
-      ["Silent max level", 6, 0, 20, 1, ""],
+      ["Day max level", 10, 0, 10, 1, ""],
+      ["Silent max level", 6, 0, 10, 1, ""],
       ["Maximum water temperature", 56, 25, 75, 1, "°C"],
       ["Maximum water temperature trip", 65, 30, 85, 0.5, "°C"],
       ["Minimum runtime", 300, 300, 3600, 30, "s"],
