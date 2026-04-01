@@ -399,11 +399,14 @@
   background: var(--oq-helper-card);
   color: var(--oq-helper-ink);
   font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
   padding: 0 14px;
 }
 
 .oq-helper-input {
   padding-right: 10px;
+  font-variant-numeric: tabular-nums;
 }
 
 .oq-helper-select:focus,
@@ -667,6 +670,7 @@
 
 .oq-settings-choice-card {
   appearance: none;
+  font: inherit;
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
@@ -699,15 +703,15 @@
 }
 
 .oq-settings-choice-card--custom {
-  padding: 14px 14px 14px;
-  gap: 8px;
+  padding: 16px;
+  gap: 10px;
   align-content: start;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .oq-settings-choice-card--custom .oq-settings-choice-copy {
-  font-size: 0.96rem;
-  line-height: 1.45;
+  font-size: inherit;
+  line-height: 1.55;
 }
 
 .oq-settings-choice-card--static {
@@ -768,6 +772,14 @@
   align-items: start;
 }
 
+.oq-settings-choice-inline-grid--details {
+  margin-top: 12px;
+}
+
+.oq-settings-choice-inline-grid--inside-card {
+  margin-top: 2px;
+}
+
 .oq-settings-mini-field {
   box-sizing: border-box;
   display: grid;
@@ -777,6 +789,13 @@
   border-radius: var(--oq-helper-radius-md);
   border: 1px solid var(--oq-helper-line);
   background: rgba(255, 255, 255, 0.92);
+}
+
+.oq-settings-mini-copy-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .oq-settings-mini-copy h5 {
@@ -802,6 +821,16 @@
 
 .oq-settings-mini-field--compact .oq-settings-mini-copy h5 {
   font-size: 0.86rem;
+}
+
+.oq-settings-mini-field--compact .oq-settings-mini-copy-head {
+  gap: 8px;
+}
+
+.oq-settings-mini-field--compact .oq-settings-info-button {
+  width: 22px;
+  height: 22px;
+  font-size: 0.76rem;
 }
 
 .oq-settings-mini-field--compact .oq-helper-control {

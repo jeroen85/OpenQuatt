@@ -1406,11 +1406,16 @@
     const meta = getNumberMeta(key);
     const value = getEntityValue(key);
     const compact = options.compact === true;
+    const infoId = options.infoId || key;
+    const showCopy = options.showCopy !== false;
     return `
       <article class="oq-settings-mini-field${compact ? " oq-settings-mini-field--compact" : ""}">
         <div class="oq-settings-mini-copy">
-          <h5>${escapeHtml(title)}</h5>
-          ${copy ? `<p>${escapeHtml(copy)}</p>` : ""}
+          <div class="oq-settings-mini-copy-head">
+            <h5>${escapeHtml(title)}</h5>
+            ${copy ? renderSettingsInfoToggle(infoId, title, copy) : ""}
+          </div>
+          ${copy && showCopy ? `<p>${escapeHtml(copy)}</p>` : ""}
         </div>
         <label class="oq-helper-control oq-helper-control--suffix">
           <input
@@ -1542,15 +1547,14 @@
       <div class="oq-settings-choice-grid oq-settings-choice-grid--response">
         ${options.map((option) => {
           const isActive = option.value === currentValue;
-          const isExpanded = isActive && option.value === "Custom";
-          if (isExpanded) {
+          if (option.value === "Custom" && isActive) {
             return `
-              <div class="oq-settings-choice-card oq-settings-choice-card--static oq-settings-choice-card--custom is-active is-expanded">
+              <div class="oq-settings-choice-card oq-settings-choice-card--static oq-settings-choice-card--custom is-active">
                 <span class="oq-settings-choice-title">${escapeHtml(option.label)}</span>
-                <span class="oq-settings-choice-copy">${escapeHtml("Bepaal zelf hoe snel de warmtevraag op- en afbouwt.")}</span>
-                <div class="oq-settings-choice-inline-grid">
-                  ${renderSettingsMiniNumberField("phDemandRiseTime", "Opbouwtijd", "", { compact: true })}
-                  ${renderSettingsMiniNumberField("phDemandFallTime", "Afbouwtijd", "", { compact: true })}
+                <span class="oq-settings-choice-copy">${escapeHtml(option.copy)}</span>
+                <div class="oq-settings-choice-inline-grid oq-settings-choice-inline-grid--inside-card">
+                  ${renderSettingsMiniNumberField("phDemandRiseTime", "Opbouwtijd", "Tijd waarmee de warmtevraag bij oplopende vraag naar het nieuwe niveau toeloopt.", { compact: true, showCopy: false, infoId: "phDemandRiseTime-inline" })}
+                  ${renderSettingsMiniNumberField("phDemandFallTime", "Afbouwtijd", "Tijd waarmee de warmtevraag bij afnemende vraag weer terugzakt.", { compact: true, showCopy: false, infoId: "phDemandFallTime-inline" })}
                 </div>
               </div>
             `;
