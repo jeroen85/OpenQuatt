@@ -136,7 +136,6 @@ number:
   - platform: template
     id: oq_flow_kp
     name: "Flow PI Kp"
-    disabled_by_default: true
     icon: mdi:alpha-k-circle-outline
     mode: slider
     web_server:
@@ -152,7 +151,6 @@ number:
   - platform: template
     id: oq_flow_ki
     name: "Flow PI Ki"
-    disabled_by_default: true
     icon: mdi:alpha-i-circle-outline
     mode: slider
     web_server:

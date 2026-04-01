@@ -2283,6 +2283,32 @@ views:
       - type: grid
         cards:
           - type: heading
+            icon: mdi:tune-variant
+            heading: Flow tuning
+            heading_style: title
+          - type: markdown
+            content: >-
+              <details>
+
+              <summary><strong>Parameter explanation</strong></summary>
+
+
+              - **Flow PI Kp/Ki** defines flow-control dynamics; adjust in small
+              steps.
+
+
+              </details>
+            text_only: true
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: number.openquatt_flow_pi_kp
+                name: Flow PI Kp
+              - entity: number.openquatt_flow_pi_ki
+                name: Flow PI Ki
+      - type: grid
+        cards:
+          - type: heading
             icon: mdi:fire
             heading: Boiler control
             heading_style: title

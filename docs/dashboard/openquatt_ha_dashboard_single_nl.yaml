@@ -2373,6 +2373,32 @@ views:
       - type: grid
         cards:
           - type: heading
+            icon: mdi:tune-variant
+            heading: Flow afstellen
+            heading_style: title
+          - type: markdown
+            content: >-
+              <details>
+
+              <summary><strong>Uitleg parameters</strong></summary>
+
+
+              - **Flow PI Kp/Ki** bepaalt de dynamiek van flowregeling; wijzig
+              in kleine stappen.
+
+
+              </details>
+            text_only: true
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: number.openquatt_flow_pi_kp
+                name: Flow PI Kp
+              - entity: number.openquatt_flow_pi_ki
+                name: Flow PI Ki
+      - type: grid
+        cards:
+          - type: heading
             icon: mdi:fire
             heading: Ketelregeling
             heading_style: title
