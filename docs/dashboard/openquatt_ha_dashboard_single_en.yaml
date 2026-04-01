@@ -2590,6 +2590,7 @@ views:
 
               - `Status`: online/offline state of the ESP node.
               - `Uptime`: time since last reboot.
+              - `ESP Internal Temperature`: controller die temperature for enclosure/thermal diagnostics.
               - `IP Address`: current network address.
               - `WiFi SSID`: connected wireless network.
               - `WiFi Signal`: RSSI signal strength in dBm.
@@ -2606,6 +2607,8 @@ views:
                 name: Status
               - entity: sensor.openquatt_uptime
                 name: Uptime
+              - entity: sensor.openquatt_esp_internal_temperature
+                name: ESP Internal Temperature
               - entity: sensor.openquatt_ip_address
                 name: IP Address
               - entity: sensor.openquatt_wifi_ssid

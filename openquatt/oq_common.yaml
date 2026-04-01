@@ -243,7 +243,7 @@ sensor:
 
   - platform: internal_temperature
     name: ESP Internal Temperature
-    icon: mdi:thermometer-chip
+    icon: mdi:thermometer
     update_interval: 60s
     entity_category: diagnostic
     web_server:

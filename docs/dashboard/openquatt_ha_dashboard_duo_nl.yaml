@@ -3045,6 +3045,7 @@ views:
 
               - `Status`: online/offline van de ESP-node.
               - `Uptime`: tijd sinds laatste reboot.
+              - `ESP Internal Temperature`: interne controller-temperatuur voor behuizing/thermische diagnose.
               - `IP-adres`: huidig netwerkadres.
               - `Wifi-SSID`: verbonden draadloos netwerk.
               - `Wifi-signaal`: RSSI-signaalsterkte in dBm.
@@ -3061,6 +3062,8 @@ views:
                 name: Status
               - entity: sensor.openquatt_uptime
                 name: Uptime
+              - entity: sensor.openquatt_esp_internal_temperature
+                name: ESP Internal Temperature
               - entity: sensor.openquatt_ip_address
                 name: IP-adres
               - entity: sensor.openquatt_wifi_ssid
