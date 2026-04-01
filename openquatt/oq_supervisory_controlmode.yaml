@@ -217,6 +217,7 @@ number:
   - platform: template
     id: oq_sticky_pwm
     name: "Sticky pump iPWM"
+    disabled_by_default: true
     unit_of_measurement: "iPWM"
     mode: slider
     icon: mdi:pump

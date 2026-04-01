@@ -2573,45 +2573,6 @@ views:
       - type: grid
         cards:
           - type: heading
-            icon: mdi:tune-variant
-            heading: Flow tuning
-            heading_style: title
-          - type: markdown
-            content: >-
-              <details>
-
-              <summary><strong>Parameter explanation</strong></summary>
-
-
-              - **Auto start iPWM** is fallback start command; AUTO first uses remembered **last good iPWM** when valid.
-
-              - **CM98 iPWM** is the circulation setting for anti-freeze context.
-
-              - **Flow PI Kp/Ki** defines flow-control dynamics; adjust in small
-              steps.
-
-              - **Sticky pump iPWM** is mainly for service/maintenance and is
-              rarely adjusted.
-
-
-              </details>
-            text_only: true
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: number.openquatt_flow_auto_start_ipwm
-                name: Auto start iPWM
-              - entity: number.openquatt_frost_circulation_ipwm
-                name: CM98 iPWM
-              - entity: number.openquatt_flow_pi_kp
-                name: Flow PI Kp
-              - entity: number.openquatt_flow_pi_ki
-                name: Flow PI Ki
-              - entity: number.openquatt_sticky_pump_ipwm
-                name: Sticky pump iPWM
-      - type: grid
-        cards:
-          - type: heading
             icon: mdi:fire
             heading: Boiler control
             heading_style: title

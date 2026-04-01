@@ -2699,46 +2699,6 @@ views:
       - type: grid
         cards:
           - type: heading
-            icon: mdi:tune-variant
-            heading: Flow afstellen
-            heading_style: title
-          - type: markdown
-            content: >-
-              <details>
-
-              <summary><strong>Uitleg parameters</strong></summary>
-
-
-              - **Auto start iPWM** is een fallback startwaarde; AUTO gebruikt
-              eerst de onthouden **last good iPWM** als die geldig is.
-
-              - **CM98 iPWM** is de circulatiesetting voor anti-freeze context.
-
-              - **Flow PI Kp/Ki** bepaalt de dynamiek van flowregeling; wijzig
-              in kleine stappen.
-
-              - **Sticky pump iPWM** is vooral service/onderhoud en wordt zelden
-              aangepast.
-
-
-              </details>
-            text_only: true
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: number.openquatt_flow_auto_start_ipwm
-                name: Auto start iPWM
-              - entity: number.openquatt_frost_circulation_ipwm
-                name: CM98 iPWM
-              - entity: number.openquatt_flow_pi_kp
-                name: Flow PI Kp
-              - entity: number.openquatt_flow_pi_ki
-                name: Flow PI Ki
-              - entity: number.openquatt_sticky_pump_ipwm
-                name: Sticky pump iPWM
-      - type: grid
-        cards:
-          - type: heading
             icon: mdi:fire
             heading: Ketelregeling
             heading_style: title
