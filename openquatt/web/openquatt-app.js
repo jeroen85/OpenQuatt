@@ -104,13 +104,20 @@
     summary: { domain: "text_sensor", name: "Summary" },
     setupComplete: { domain: "binary_sensor", name: "Setup Complete", optional: true },
     strategy: { domain: "select", name: "Heating Control Mode" },
+    flowControlMode: { domain: "select", name: "Flow Control Mode" },
+    flowSetpoint: { domain: "number", name: "Flow Setpoint" },
+    manualIpwm: { domain: "number", name: "Manual iPWM" },
     controlModeLabel: { domain: "text_sensor", name: "Control Mode (Label)" },
     flowMode: { domain: "text_sensor", name: "Flow Mode" },
     behavior: { domain: "select", name: "Behavior" },
     preset: { domain: "select", name: "Preset" },
     dayMax: { domain: "number", name: "Day max level" },
     silentMax: { domain: "number", name: "Silent max level" },
+    silentStartTime: { domain: "time", name: "Silent start time" },
+    silentEndTime: { domain: "time", name: "Silent end time" },
     maxWater: { domain: "number", name: "Maximum water temperature" },
+    maxWaterTrip: { domain: "number", name: "Maximum water temperature trip" },
+    minRuntime: { domain: "number", name: "Minimum runtime" },
     totalPower: { domain: "sensor", name: "Total Power Input" },
     totalCop: { domain: "sensor", name: "Total COP" },
     totalHeat: { domain: "sensor", name: "Total Heat Power" },
@@ -123,19 +130,29 @@
     stickyActive: { domain: "binary_sensor", name: "Sticky pump active" },
     housePower: { domain: "number", name: "Rated maximum house power" },
     houseOutdoorMax: { domain: "number", name: "Maximum heating outdoor temperature" },
+    phResponseProfile: { domain: "select", name: "Power House response profile" },
+    phDemandRiseTime: { domain: "number", name: "Power House demand rise time" },
+    phDemandFallTime: { domain: "number", name: "Power House demand fall time" },
+    curveControlProfile: { domain: "select", name: "Heating Curve Control Profile" },
+    curveFallbackSupply: { domain: "number", name: "Curve Fallback Tsupply (No Outside Temp)" },
     curveM20: { domain: "number", name: "Curve Tsupply @ -20°C" },
     curveM10: { domain: "number", name: "Curve Tsupply @ -10°C" },
     curve0: { domain: "number", name: "Curve Tsupply @ 0°C" },
     curve5: { domain: "number", name: "Curve Tsupply @ 5°C" },
     curve10: { domain: "number", name: "Curve Tsupply @ 10°C" },
     curve15: { domain: "number", name: "Curve Tsupply @ 15°C" },
+    hp1ExcludedA: { domain: "select", name: "HP1 - Excluded compressor level A" },
+    hp1ExcludedB: { domain: "select", name: "HP1 - Excluded compressor level B" },
     hp1Power: { domain: "sensor", name: "HP1 - Power Input" },
     hp1Heat: { domain: "sensor", name: "HP1 - Heat Power" },
     hp1Cop: { domain: "sensor", name: "HP1 - COP" },
     hp1Compressor: { domain: "sensor", name: "HP1 compressor level" },
     hp1Freq: { domain: "sensor", name: "HP1 - Compressor frequency" },
+    hp1FanSpeed: { domain: "sensor", name: "HP1 - Fan speed" },
     hp1Flow: { domain: "sensor", name: "HP1 - Flow" },
     hp1EvaporatorCoilTemp: { domain: "sensor", name: "HP1 - Evaporator coil temperature" },
+    hp1InnerCoilTemp: { domain: "sensor", name: "HP1 - Inner coil temperature" },
+    hp1OutsideTemp: { domain: "sensor", name: "HP1 - Outside temperature" },
     hp1CondenserPressure: { domain: "sensor", name: "HP1 - Condenser pressure" },
     hp1DischargeTemp: { domain: "sensor", name: "HP1 - Gas discharge temperature" },
     hp1EvaporatorPressure: { domain: "sensor", name: "HP1 - Evaporator pressure" },
@@ -149,13 +166,18 @@
     hp1Crankcase: { domain: "binary_sensor", name: "HP1 - Crankcase heater" },
     hp1Eev: { domain: "sensor", name: "HP1 - EEV steps" },
     hp1FourWay: { domain: "binary_sensor", name: "HP1 - 4-Way valve" },
+    hp2ExcludedA: { domain: "select", name: "HP2 - Excluded compressor level A", optional: true },
+    hp2ExcludedB: { domain: "select", name: "HP2 - Excluded compressor level B", optional: true },
     hp2Power: { domain: "sensor", name: "HP2 - Power Input", optional: true },
     hp2Heat: { domain: "sensor", name: "HP2 - Heat Power", optional: true },
     hp2Cop: { domain: "sensor", name: "HP2 - COP", optional: true },
     hp2Compressor: { domain: "sensor", name: "HP2 compressor level", optional: true },
     hp2Freq: { domain: "sensor", name: "HP2 - Compressor frequency", optional: true },
+    hp2FanSpeed: { domain: "sensor", name: "HP2 - Fan speed", optional: true },
     hp2Flow: { domain: "sensor", name: "HP2 - Flow", optional: true },
     hp2EvaporatorCoilTemp: { domain: "sensor", name: "HP2 - Evaporator coil temperature", optional: true },
+    hp2InnerCoilTemp: { domain: "sensor", name: "HP2 - Inner coil temperature", optional: true },
+    hp2OutsideTemp: { domain: "sensor", name: "HP2 - Outside temperature", optional: true },
     hp2CondenserPressure: { domain: "sensor", name: "HP2 - Condenser pressure", optional: true },
     hp2DischargeTemp: { domain: "sensor", name: "HP2 - Gas discharge temperature", optional: true },
     hp2EvaporatorPressure: { domain: "sensor", name: "HP2 - Evaporator pressure", optional: true },
@@ -179,6 +201,7 @@
     { id: "overview", label: "Overzicht" },
     { id: "settings", label: "Instellingen" },
   ];
+  const APP_VIEW_IDS = new Set(APP_VIEWS.map((view) => view.id));
   const HP_PANEL_CONFIGS = [
     {
       title: "HP1",
@@ -188,8 +211,11 @@
         heat: "hp1Heat",
         cop: "hp1Cop",
         freq: "hp1Freq",
+        fanSpeed: "hp1FanSpeed",
         flow: "hp1Flow",
         evaporatorCoilTemp: "hp1EvaporatorCoilTemp",
+        innerCoilTemp: "hp1InnerCoilTemp",
+        outsideTemp: "hp1OutsideTemp",
         condenserPressure: "hp1CondenserPressure",
         dischargeTemp: "hp1DischargeTemp",
         evaporatorPressure: "hp1EvaporatorPressure",
@@ -213,8 +239,11 @@
         heat: "hp2Heat",
         cop: "hp2Cop",
         freq: "hp2Freq",
+        fanSpeed: "hp2FanSpeed",
         flow: "hp2Flow",
         evaporatorCoilTemp: "hp2EvaporatorCoilTemp",
+        innerCoilTemp: "hp2InnerCoilTemp",
+        outsideTemp: "hp2OutsideTemp",
         condenserPressure: "hp2CondenserPressure",
         dischargeTemp: "hp2DischargeTemp",
         evaporatorPressure: "hp2EvaporatorPressure",
@@ -241,8 +270,18 @@
     { key: "curve15", outdoor: 15, label: "15°C" },
   ];
 
-  const POWER_HOUSE_KEYS = ["housePower", "houseOutdoorMax"];
+  const POWER_HOUSE_KEYS = [
+    "housePower",
+    "houseOutdoorMax",
+    "phResponseProfile",
+    "phDemandRiseTime",
+    "phDemandFallTime",
+  ];
   const LIMIT_KEYS = ["dayMax", "silentMax", "maxWater"];
+  const FLOW_SETTING_KEYS = ["flowControlMode", "flowSetpoint", "manualIpwm"];
+  const CURVE_SETTING_KEYS = [...CURVE_POINTS.map((point) => point.key), "curveFallbackSupply", "curveControlProfile"];
+  const COMPRESSOR_SETTING_KEYS = ["minRuntime", "hp1ExcludedA", "hp1ExcludedB", "hp2ExcludedA", "hp2ExcludedB"];
+  const SILENT_SETTING_KEYS = ["silentStartTime", "silentEndTime", "silentMax", "dayMax"];
   const OVERVIEW_KEYS = [
     "summary",
     "strategy",
@@ -299,11 +338,13 @@
   ];
   const SETTINGS_KEYS = [
     "strategy",
-    "behavior",
-    "preset",
+    ...FLOW_SETTING_KEYS,
     ...LIMIT_KEYS,
     ...POWER_HOUSE_KEYS,
-    ...CURVE_POINTS.map((point) => point.key),
+    ...CURVE_SETTING_KEYS,
+    "maxWaterTrip",
+    ...COMPRESSOR_SETTING_KEYS,
+    ...SILENT_SETTING_KEYS,
   ];
   const POLL_INTERVAL_MS = 4000;
   const FLOW_DASH_CYCLE_PX = 22;
@@ -330,6 +371,7 @@
     complete: false,
     loadingEntities: true,
     entities: {},
+    settingsInfoOpen: "",
     drafts: {},
     focusedField: "",
     draggingCurveKey: "",
@@ -375,6 +417,67 @@
     }
   }
 
+  function getDefaultAppView() {
+    return state.complete ? "overview" : QUICK_START_VIEW;
+  }
+
+  function normalizeAppView(view) {
+    return APP_VIEW_IDS.has(view) ? view : "";
+  }
+
+  function getUrlAppView() {
+    try {
+      const url = new URL(window.location.href);
+      const queryView = normalizeAppView(url.searchParams.get("view") || "");
+      if (queryView) {
+        return queryView;
+      }
+
+      const hashView = normalizeAppView(url.hash.replace(/^#/, ""));
+      return hashView || "";
+    } catch (_error) {
+      return "";
+    }
+  }
+
+  function syncUrlAppView(mode = "replace") {
+    try {
+      const url = new URL(window.location.href);
+      const normalized = normalizeAppView(state.appView) || getDefaultAppView();
+      url.searchParams.set("view", normalized);
+      if (url.hash && normalizeAppView(url.hash.replace(/^#/, ""))) {
+        url.hash = "";
+      }
+
+      const method = mode === "push" ? "pushState" : "replaceState";
+      window.history[method]({ oqView: normalized }, "", url.toString());
+    } catch (_error) {
+      // Ignore history failures in embedded browsers.
+    }
+  }
+
+  function setAppView(view, options = {}) {
+    const normalized = normalizeAppView(view) || getDefaultAppView();
+    const mode = options.syncMode || "replace";
+    const changed = state.appView !== normalized;
+    state.appView = normalized;
+
+    if (changed || options.forceSync) {
+      syncUrlAppView(mode);
+    }
+  }
+
+  function handlePopState() {
+    const nextView = getUrlAppView() || getDefaultAppView();
+    if (nextView === state.appView) {
+      return;
+    }
+
+    state.appView = nextView;
+    render();
+    void syncEntities();
+  }
+
   function syncNativeVisibility() {
     if (!state.nativeApp) {
       return;
@@ -393,6 +496,7 @@
     }
     window.addEventListener("pointermove", handlePointerMove);
     window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("popstate", handlePopState);
     window.addEventListener("oq-mock-updated", handleMockUpdated);
   }
 
@@ -488,11 +592,12 @@
     }
 
     const elapsedSeconds = (now - state.motionStartedAt) / 1000;
-    const flowOffset = -((elapsedSeconds * FLOW_OFFSET_PX_PER_SEC) % FLOW_DASH_CYCLE_PX);
     const fanRotation = (elapsedSeconds * FAN_ROTATION_DEG_PER_SEC) % 360;
 
     state.motionTargets.pipeFlows.forEach((node) => {
-      node.style.strokeDashoffset = `${flowOffset.toFixed(3)}px`;
+      const speedMultiplier = node.dataset.oqFlowVariant === "water" ? 0.42 : 1;
+      const nodeOffset = -(elapsedSeconds * FLOW_OFFSET_PX_PER_SEC * speedMultiplier);
+      node.style.strokeDashoffset = `${nodeOffset.toFixed(3)}px`;
     });
     state.motionTargets.fanBlades.forEach((node) => {
       node.style.transform = `rotate(${fanRotation.toFixed(3)}deg)`;
@@ -529,6 +634,14 @@
     return String(value || "").includes("Water Temperature Control");
   }
 
+  function isManualFlowMode(value = getEntityValue("flowControlMode")) {
+    return String(value || "").toLowerCase().includes("manual");
+  }
+
+  function isCustomPowerHouseProfile(value = getEntityValue("phResponseProfile")) {
+    return String(value || "").toLowerCase().includes("custom");
+  }
+
   function getEntityValue(key) {
     if (Object.prototype.hasOwnProperty.call(state.drafts, key)) {
       return state.drafts[key];
@@ -548,6 +661,31 @@
       step: Number(entity.step ?? 1),
       uom: entity.uom || "",
     };
+  }
+
+  function normalizeTimeValue(rawValue) {
+    const value = String(rawValue || "").trim();
+    if (!value) {
+      return "";
+    }
+
+    const parts = value.split(":").map((part) => part.padStart(2, "0"));
+    if (parts.length === 2) {
+      return `${parts[0]}:${parts[1]}:00`;
+    }
+    if (parts.length >= 3) {
+      return `${parts[0]}:${parts[1]}:${parts[2]}`;
+    }
+    return value;
+  }
+
+  function toTimeInputValue(rawValue) {
+    const normalized = normalizeTimeValue(rawValue);
+    return normalized ? normalized.slice(0, 5) : "";
+  }
+
+  function getSettingsRefreshKeys() {
+    return [...new Set(["summary", "setupComplete", ...SETTINGS_KEYS])];
   }
 
   function formatValue(key, value = getEntityValue(key)) {
@@ -618,7 +756,7 @@
       : state.summary.includes("setup complete");
     state.stage = state.complete ? "Gereed" : "Quick Start";
     if (!state.appView) {
-      state.appView = state.complete ? "overview" : QUICK_START_VIEW;
+      setAppView(getUrlAppView() || getDefaultAppView(), { syncMode: "replace", forceSync: true });
     }
   }
 
@@ -701,11 +839,30 @@
 
     if (entity.domain === "number") {
       commitNumber(field, normalizeNumber(field, event.target.value));
+      return;
+    }
+
+    if (entity.domain === "time") {
+      commitTime(field, normalizeTimeValue(event.target.value));
     }
   }
 
   function handleClick(event) {
+    const infoButton = event.target.closest('[data-oq-action="toggle-settings-info"]');
+    const infoWrap = event.target.closest("[data-oq-settings-info]");
+    if (infoButton) {
+      const infoId = infoButton.dataset.infoId || "";
+      state.settingsInfoOpen = state.settingsInfoOpen === infoId ? "" : infoId;
+      render();
+      return;
+    }
+
     const button = event.target.closest("[data-oq-action]");
+    if (!button && state.settingsInfoOpen && !infoWrap) {
+      state.settingsInfoOpen = "";
+      render();
+      return;
+    }
     if (!button) {
       return;
     }
@@ -718,7 +875,7 @@
     }
 
     if (action === "select-view") {
-      state.appView = button.dataset.viewId || "overview";
+      setAppView(button.dataset.viewId || "overview", { syncMode: "push" });
       render();
       syncEntities();
       return;
@@ -751,6 +908,15 @@
     if (action === "select-step") {
       state.currentStep = button.dataset.stepId || "strategy";
       render();
+      return;
+    }
+
+    if (action === "select-settings-option") {
+      const key = button.dataset.selectKey || "";
+      const option = button.dataset.selectOption || "";
+      if (key && option && String(getEntityValue(key) || "") !== option) {
+        commitSelect(key, option);
+      }
       return;
     }
 
@@ -815,8 +981,12 @@
       }
       delete state.drafts[key];
       state.controlNotice = `${entity.name} bijgewerkt.`;
-      await refreshEntities(["summary", "strategy", "behavior", "preset"], "state");
-      if (key === "strategy") {
+      if (state.appView === "settings") {
+        await refreshEntities(getSettingsRefreshKeys(), "state");
+      } else {
+        await refreshEntities(["summary", "strategy", "behavior", "preset"], "state");
+      }
+      if (key === "strategy" && state.appView !== "settings") {
         await refreshEntities(isCurveMode(option) ? CURVE_POINTS.map((point) => point.key) : POWER_HOUSE_KEYS, "state");
       }
     } catch (error) {
@@ -846,7 +1016,33 @@
       }
       delete state.drafts[key];
       state.controlNotice = successNotice || `${entity.name} bijgewerkt.`;
-      await refreshEntities([key, "summary", "preset", "behavior"], "state");
+      await refreshEntities(state.appView === "settings" ? getSettingsRefreshKeys() : [key, "summary", "preset", "behavior"], "state");
+    } catch (error) {
+      state.controlError = `${entity.name} kon niet worden bijgewerkt. ${error.message}`;
+    } finally {
+      state.busyAction = "";
+      render();
+    }
+  }
+
+  async function commitTime(key, value) {
+    const entity = ENTITY_DEFS[key];
+    const normalized = normalizeTimeValue(value);
+    state.busyAction = `save-${key}`;
+    state.controlNotice = "";
+    state.controlError = "";
+    render();
+
+    try {
+      const response = await fetch(
+        `${buildEntityPath(entity.domain, entity.name, "set")}?value=${encodeURIComponent(normalized)}`,
+        { method: "POST" }
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      state.controlNotice = `${entity.name} bijgewerkt.`;
+      await refreshEntities(state.appView === "settings" ? getSettingsRefreshKeys() : [key, "summary"], "state");
     } catch (error) {
       state.controlError = `${entity.name} kon niet worden bijgewerkt. ${error.message}`;
     } finally {
@@ -873,7 +1069,7 @@
         ? "Setup gemarkeerd als afgerond."
         : "Quick Start teruggezet naar het begin. Huidige tuningwaarden blijven voorlopig staan.";
       await refreshEntities(["summary", "setupComplete"], "state");
-      state.appView = action === "apply" ? "overview" : QUICK_START_VIEW;
+      setAppView(action === "apply" ? "overview" : QUICK_START_VIEW, { syncMode: "replace" });
     } catch (error) {
       state.controlError = `Actie mislukt voor "${entity.name}". ${error.message}`;
     } finally {
@@ -999,6 +1195,399 @@
         </label>
       </article>
     `;
+  }
+
+  function renderSettingsInfoToggle(infoId, title, copy) {
+    if (!copy) {
+      return "";
+    }
+
+    return `
+      <div class="oq-settings-info${state.settingsInfoOpen === infoId ? " is-open" : ""}" data-oq-settings-info="${escapeHtml(infoId)}">
+        <button
+          class="oq-settings-info-button"
+          type="button"
+          data-oq-action="toggle-settings-info"
+          data-info-id="${escapeHtml(infoId)}"
+          aria-label="${escapeHtml(`Uitleg bij ${title}`)}"
+          aria-expanded="${state.settingsInfoOpen === infoId ? "true" : "false"}"
+        >i</button>
+        <div class="oq-settings-info-popover" ${state.settingsInfoOpen === infoId ? "" : "hidden"}>
+          <p>${escapeHtml(copy)}</p>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderSettingsFieldCard(fieldKey, title, copy, controlMarkup, className = "") {
+    return `
+      <article class="oq-settings-field${className ? ` ${className}` : ""}">
+        <div class="oq-settings-field-head">
+          <h3>${escapeHtml(title)}</h3>
+          ${renderSettingsInfoToggle(fieldKey, title, copy)}
+        </div>
+        <div class="oq-settings-field-control">
+          ${controlMarkup}
+        </div>
+      </article>
+    `;
+  }
+
+  function renderSettingsSelectField(key, title, copy, className = "") {
+    if (!hasEntity(key)) {
+      return "";
+    }
+
+    const entity = state.entities[key] || {};
+    const value = String(getEntityValue(key) || "");
+    const options = Array.isArray(entity.option) ? entity.option : [];
+    const controlMarkup = `
+      <label class="oq-settings-control oq-settings-control--select">
+        <select class="oq-helper-select" data-oq-field="${escapeHtml(key)}" ${state.loadingEntities ? "disabled" : ""}>
+          ${options.map((option) => `<option value="${escapeHtml(option)}" ${option === value ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}
+        </select>
+        <span class="oq-settings-select-caret" aria-hidden="true"></span>
+      </label>
+    `;
+
+    return renderSettingsFieldCard(key, title, copy, controlMarkup, className);
+  }
+
+  function renderSettingsOptionCardsField(key, title, copy, descriptions, className = "") {
+    if (!hasEntity(key)) {
+      return "";
+    }
+
+    const entity = state.entities[key] || {};
+    const currentValue = String(getEntityValue(key) || "");
+    const options = Array.isArray(entity.option) ? entity.option : [];
+    const busy = state.loadingEntities || state.busyAction === `save-${key}`;
+    const controlMarkup = `
+      <div class="oq-settings-choice-grid">
+        ${options.map((option) => {
+          const optionCopy = descriptions[option] || "";
+          return `
+            <button
+              class="oq-settings-choice-card${option === currentValue ? " is-active" : ""}"
+              type="button"
+              data-oq-action="select-settings-option"
+              data-select-key="${escapeHtml(key)}"
+              data-select-option="${escapeHtml(option)}"
+              aria-pressed="${option === currentValue ? "true" : "false"}"
+              ${busy ? "disabled" : ""}
+            >
+              <span class="oq-settings-choice-title">${escapeHtml(option)}</span>
+              ${optionCopy ? `<span class="oq-settings-choice-copy">${escapeHtml(optionCopy)}</span>` : ""}
+            </button>
+          `;
+        }).join("")}
+      </div>
+    `;
+
+    return renderSettingsFieldCard(key, title, copy, controlMarkup, className);
+  }
+
+  function renderSettingsNumberField(key, title, copy, className = "", options = {}) {
+    if (!hasEntity(key)) {
+      return "";
+    }
+
+    const meta = getNumberMeta(key);
+    const value = getEntityValue(key);
+    const showUnit = options.showUnit !== false && Boolean(meta.uom);
+    const useInlineUnit = options.unitMode === "inside" && showUnit;
+    const controlMarkup = `
+      <label class="oq-helper-control${showUnit && !useInlineUnit ? " oq-helper-control--split" : ""}${useInlineUnit ? " oq-helper-control--suffix" : ""}">
+        <input
+          class="oq-helper-input"
+          type="number"
+          data-oq-field="${escapeHtml(key)}"
+          min="${meta.min}"
+          max="${meta.max}"
+          step="${meta.step}"
+          value="${escapeHtml(value)}"
+          ${state.loadingEntities ? "disabled" : ""}
+        >
+        ${showUnit
+          ? useInlineUnit
+            ? `<span class="oq-helper-unit-chip">${escapeHtml(meta.uom || "")}</span>`
+            : `<span class="oq-helper-unit">${escapeHtml(meta.uom || "")}</span>`
+          : ""}
+      </label>
+    `;
+
+    return renderSettingsFieldCard(key, title, copy, controlMarkup, className);
+  }
+
+  function renderSettingsSliderField(key, title, copy, className = "") {
+    if (!hasEntity(key)) {
+      return "";
+    }
+
+    const meta = getNumberMeta(key);
+    const value = normalizeNumber(key, getEntityValue(key));
+    const controlMarkup = `
+      <label class="oq-helper-slider-field">
+        <div class="oq-helper-slider-meta">
+          <span>${escapeHtml(meta.min)}${escapeHtml(meta.uom || "")}</span>
+          <strong>${escapeHtml(formatValue(key, value))}</strong>
+          <span>${escapeHtml(meta.max)}${escapeHtml(meta.uom || "")}</span>
+        </div>
+        <input
+          class="oq-helper-range"
+          type="range"
+          data-oq-field="${escapeHtml(key)}"
+          min="${meta.min}"
+          max="${meta.max}"
+          step="${meta.step}"
+          value="${value}"
+          ${state.loadingEntities ? "disabled" : ""}
+        >
+      </label>
+    `;
+
+    return renderSettingsFieldCard(key, title, copy, controlMarkup, className);
+  }
+
+  function renderSettingsTimeField(key, title, copy, className = "") {
+    if (!hasEntity(key)) {
+      return "";
+    }
+
+    const value = toTimeInputValue(getEntityValue(key));
+    const controlMarkup = `
+      <label class="oq-settings-control oq-settings-control--time">
+        <input
+          class="oq-helper-input"
+          type="time"
+          step="60"
+          data-oq-field="${escapeHtml(key)}"
+          value="${escapeHtml(value)}"
+          ${state.loadingEntities ? "disabled" : ""}
+        >
+      </label>
+    `;
+
+    return renderSettingsFieldCard(key, title, copy, controlMarkup, className);
+  }
+
+  function renderSettingsSection(kicker, title, copy, body) {
+    return `
+      <section class="oq-settings-section">
+        <div class="oq-settings-section-head">
+          <p class="oq-helper-label">${escapeHtml(kicker)}</p>
+          <h3>${escapeHtml(title)}</h3>
+          <p>${escapeHtml(copy)}</p>
+        </div>
+        ${body}
+      </section>
+    `;
+  }
+
+  function renderSettingsCurveInputs() {
+    return `
+      <div class="oq-settings-curve-grid">
+        ${CURVE_POINTS.map((point) => renderSettingsNumberField(point.key, `Curve Tsupply @ ${point.label}`, `Aanvoertemperatuurdoel bij ${point.label} buitentemperatuur.`)).join("")}
+      </div>
+    `;
+  }
+
+  function renderHeatingStrategyExplainCards() {
+    const curveActive = isCurveMode();
+    return `
+      <div class="oq-settings-strategy-grid">
+        <article class="oq-settings-strategy-card${curveActive ? "" : " is-active"}">
+          <p class="oq-helper-label">Power House</p>
+          <h4>Modelgestuurde regeling</h4>
+          <p>Power House schat de warmtevraag van de woning op basis van buitentemperatuur en het ingestelde huisverliesmodel. De Quatt CiC werkt conceptueel ook in deze richting.</p>
+          <ul class="oq-settings-strategy-points">
+            <li>Gebruikt vooral <strong>Rated maximum house power</strong> en <strong>Maximum heating outdoor temperature</strong>.</li>
+            <li>Deze twee waarden kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn.</li>
+            <li>Stuurt de warmtevraag meer als systeemmodel dan als vaste temperatuurcurve.</li>
+            <li>Past goed als je het gedrag van de woning zelf centraal wilt zetten.</li>
+          </ul>
+        </article>
+        <article class="oq-settings-strategy-card${curveActive ? " is-active" : ""}">
+          <p class="oq-helper-label">Heating Curve</p>
+          <h4>Curvegestuurde regeling</h4>
+          <p>Heating Curve koppelt iedere buitentemperatuur aan een gewenste aanvoertemperatuur en regelt daar direct naartoe.</p>
+          <ul class="oq-settings-strategy-points">
+            <li>Gebruikt de curvepunten van <strong>-20°C t/m 15°C</strong> als hoofdlogica.</li>
+            <li>Maakt het gedrag voorspelbaar en herkenbaar voor wie gewend is aan een klassieke stooklijn.</li>
+            <li>Past goed als je de aanvoertemperatuur bewust per buitentemperatuur wilt finetunen.</li>
+          </ul>
+        </article>
+      </div>
+    `;
+  }
+
+  function renderPowerHouseResponseProfilesField() {
+    return renderSettingsOptionCardsField(
+      "phResponseProfile",
+      "Power House response profile",
+      "Kies hoe snel de vermogensvraag mag oplopen en terugvallen. De uitleg zit direct in de profielkeuze.",
+      {
+        Calm: "Laat de warmtevraag rustiger oplopen en afbouwen. Geeft een stabieler systeembeeld met minder snelle correcties.",
+        Balanced: "De middenweg. Reageert vlot genoeg op veranderende vraag zonder nerveus te worden in normaal dagelijks gebruik.",
+        Responsive: "Laat de warmtevraag sneller meebewegen met veranderingen. Handig als je een directer reagerende regeling wilt.",
+        Custom: "Geeft rise- en fall-tijden vrij, zodat je zelf bepaalt hoe snel de warmtevraag op- en afbouwt.",
+      },
+    );
+  }
+
+  function renderHeatingCurveProfileField() {
+    return renderSettingsOptionCardsField(
+      "curveControlProfile",
+      "Heating Curve Control Profile",
+      "Kies hoe comfortabel of stabiel de curve-regelaar reageert. De uitleg zit direct in de profielkeuze.",
+      {
+        Comfort: "Start eerder, trimt fijner en reageert sneller op kamervraag. Handig als comfort en vlotte correctie voorop staan.",
+        Balanced: "De middenweg. Houdt de curve voorspelbaar en reageert vlot zonder onrustig te worden.",
+        Stable: "Filtert meer, maakt rustigere stappen en houdt langer vast. Past goed als je een kalmer systeembeeld wilt.",
+      },
+    );
+  }
+
+  function renderSettingsHeatPumpLimiterCard(title, keyA, keyB) {
+    const fields = [renderSettingsSelectField(keyA, "Excluded compressor level A", "Blokkeer desgewenst één compressortrap die je wilt vermijden."), renderSettingsSelectField(keyB, "Excluded compressor level B", "Tweede optionele blokkade voor een compressortrap die je niet wilt gebruiken.")]
+      .filter(Boolean)
+      .join("");
+
+    if (!fields) {
+      return "";
+    }
+
+    return `
+      <article class="oq-settings-hp-group">
+        <header>
+          <h4>${escapeHtml(title)}</h4>
+        </header>
+        <div class="oq-settings-hp-group-grid">
+          ${fields}
+        </div>
+      </article>
+    `;
+  }
+
+  function renderSettingsFlowSection() {
+    return renderSettingsSection(
+      "Flow",
+      "Flowregeling",
+      "Bepaalt of OpenQuatt de pomp op flow regelt of met een vaste iPWM laat draaien.",
+      `
+        <div class="oq-settings-grid">
+          ${renderSettingsSelectField("flowControlMode", "Flow control mode", "Kies tussen regelen op flow of een vaste pompaansturing.")}
+          ${isManualFlowMode()
+            ? renderSettingsNumberField("manualIpwm", "Manual iPWM", "Vaste pompaansturing die direct wordt gebruikt wanneer de flowregeling op manual staat.")
+            : renderSettingsNumberField("flowSetpoint", "Flow setpoint", "Doelflow die de regeling probeert vast te houden zolang de flowregeling op flow setpoint staat.")}
+        </div>
+      `,
+    );
+  }
+
+  function renderSettingsHeatingSection() {
+    const strategyContent = isCurveMode()
+      ? `
+        <div class="oq-settings-subpanel">
+          <div class="oq-settings-subpanel-head">
+            <p class="oq-helper-label">Heating Curve</p>
+            <h4>Heating Curve</h4>
+            <p>Gebruik de curve als primaire regeling en leg vast wat er moet gebeuren als er geen buitentemperatuur beschikbaar is.</p>
+          </div>
+          <div class="oq-settings-grid">
+            ${renderHeatingCurveProfileField()}
+            ${renderSettingsNumberField("curveFallbackSupply", "Curve Fallback Tsupply (No Outside Temp)", "Aanvoertemperatuur die gebruikt wordt als de buitentemperatuursensor niet beschikbaar is.")}
+          </div>
+          <div class="oq-settings-curve-shell">
+            ${renderCurveGraph()}
+          </div>
+          ${renderSettingsCurveInputs()}
+        </div>
+      `
+      : `
+        <div class="oq-settings-subpanel">
+          <div class="oq-settings-subpanel-head">
+            <p class="oq-helper-label">Power House</p>
+            <h4>Power House</h4>
+            <p>Deze waarden voeden het huisverliesmodel. De bovenste twee waarden kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn, en de CiC werkt in grote lijnen op een vergelijkbaar modelmatig principe.</p>
+          </div>
+          <div class="oq-settings-grid">
+            ${renderSettingsNumberField("houseOutdoorMax", "Maximum heating outdoor temperature", "Buitentemperatuur waarbij de woning praktisch geen verwarmingsvraag meer heeft. Deze waarde kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn.")}
+            ${renderSettingsNumberField("housePower", "Rated maximum house power", "Geschatte piekwarmtevraag van de woning op het koude referentiepunt. Ook deze waarde kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn.")}
+            ${renderPowerHouseResponseProfilesField()}
+            ${isCustomPowerHouseProfile()
+              ? renderSettingsNumberField("phDemandRiseTime", "Power House demand rise time", "Tijd waarmee de warmtevraag bij oplopende vraag naar het nieuwe niveau toeloopt.")
+              : ""}
+            ${isCustomPowerHouseProfile()
+              ? renderSettingsNumberField("phDemandFallTime", "Power House demand fall time", "Tijd waarmee de warmtevraag bij afnemende vraag weer terugzakt.")
+              : ""}
+          </div>
+        </div>
+      `;
+
+    return renderSettingsSection(
+      "Heating strategy",
+      "Verwarmingsstrategie",
+      "Hier kies je de hoofdstrategie van de regeling. De relevante instellingen eronder wisselen automatisch mee.",
+      `
+        <div class="oq-settings-grid">
+          ${renderSettingsSelectField("strategy", "Heating Control Mode", "Bepaalt of OpenQuatt op Power House of op Heating Curve werkt.")}
+        </div>
+        ${renderHeatingStrategyExplainCards()}
+        ${strategyContent}
+      `,
+    );
+  }
+
+  function renderSettingsWaterSection() {
+    return renderSettingsSection(
+      "Maximale watertemperatuur",
+      "Watertemperatuur",
+      "Beschermt het systeem tegen te hoge aanvoertemperaturen en bepaalt wanneer de tripgrens in beeld komt.",
+      `
+        <div class="oq-settings-grid">
+          ${renderSettingsNumberField("maxWater", "Maximum water temperature", "Normale bovengrens voor de watertemperatuur tijdens bedrijf.")}
+          ${renderSettingsNumberField("maxWaterTrip", "Maximum water temperature trip", "Veiligheidsgrens waarbij de regeling ingrijpt als de watertemperatuur te ver oploopt.")}
+        </div>
+      `,
+    );
+  }
+
+  function renderSettingsCompressorSection() {
+    const hpGroups = [
+      renderSettingsHeatPumpLimiterCard("HP1", "hp1ExcludedA", "hp1ExcludedB"),
+      renderSettingsHeatPumpLimiterCard("HP2", "hp2ExcludedA", "hp2ExcludedB"),
+    ].filter(Boolean).join("");
+
+    return renderSettingsSection(
+      "Compressor",
+      "Compressor",
+      "Instellingen voor minimale draaitijd en eventuele compressortrappen die je bewust wilt uitsluiten.",
+      `
+        <div class="oq-settings-grid">
+          ${renderSettingsNumberField("minRuntime", "Minimum runtime", "Minimale draaitijd per verwarmingsrun om pendelen te voorkomen.")}
+        </div>
+        <div class="oq-settings-hp-columns${hasEntity("hp2ExcludedA") ? "" : " oq-settings-hp-columns--single"}">
+          ${hpGroups}
+        </div>
+      `,
+    );
+  }
+
+  function renderSettingsSilentSection() {
+    return renderSettingsSection(
+      "Silent mode",
+      "Silent mode",
+      "Bepaalt wanneer het stillere venster actief is en welke compressorlimieten overdag en in stilte gelden.",
+      `
+        <div class="oq-settings-grid">
+          ${renderSettingsTimeField("silentStartTime", "Silent start time", "Starttijd van het stille venster.")}
+          ${renderSettingsTimeField("silentEndTime", "Silent end time", "Eindtijd van het stille venster.")}
+          ${renderSettingsSliderField("silentMax", "Silent max level", "Maximum compressorlevel tijdens het stille venster.")}
+          ${renderSettingsSliderField("dayMax", "Day max level", "Maximum compressorlevel tijdens normaal dagbedrijf.")}
+        </div>
+      `,
+    );
   }
 
   function renderPowerHouseWorkspace() {
@@ -1392,12 +1981,12 @@
     return raw;
   }
 
-  function renderTechPipeLayer(id, tone, d, animated = true) {
+  function renderTechPipeLayer(id, tone, d, animated = true, flowVariant = "default") {
     return `
       <g class="oq-hp-tech-pipe oq-hp-tech-pipe--${escapeHtml(tone)}" data-oq-pipe="${escapeHtml(id)}">
         <path class="oq-hp-tech-pipe-base" d="${escapeHtml(d)}" />
         <path class="oq-hp-tech-pipe-core" d="${escapeHtml(d)}" />
-        ${animated ? `<path class="oq-hp-tech-pipe-flow" d="${escapeHtml(d)}" />` : ""}
+        ${animated ? `<path class="oq-hp-tech-pipe-flow" data-oq-flow-variant="${escapeHtml(flowVariant)}" d="${escapeHtml(d)}" />` : ""}
       </g>
     `;
   }
@@ -1598,6 +2187,8 @@
     const waterInText = getEntityStateText(keys.waterIn);
     const flowText = getEntityStateText(keys.flow);
     const evaporatorCoilTempText = getEntityStateText(keys.evaporatorCoilTemp);
+    const innerCoilTempText = getEntityStateText(keys.innerCoilTemp);
+    const outsideTempText = getEntityStateText(keys.outsideTemp);
     const dischargePressureText = getEntityStateText(keys.condenserPressure);
     const dischargeTempText = getEntityStateText(keys.dischargeTemp);
     const suctionPressureText = getEntityStateText(keys.evaporatorPressure);
@@ -1609,9 +2200,10 @@
     const powerText = formatNumericState(powerValue, 0, "W");
     const heatText = formatNumericState(heatValue, 0, "W");
     const copText = formatNumericState(getEntityNumericValue(keys.cop), 1);
-    const fanRpmText = Number.isNaN(freqValue) || freqValue <= 0
-      ? "0 rpm"
-      : `${Math.round(freqValue * 18.5)} rpm`;
+    const fanRpmValue = getEntityNumericValue(keys.fanSpeed);
+    const fanRpmText = Number.isNaN(fanRpmValue)
+      ? "—"
+      : `${Math.round(fanRpmValue)} rpm`;
     const reverseCycle = defrostActive || mode === "Koelen";
     const leftExchangerTitle = reverseCycle ? "Verdamper" : "Condensor";
     const rightExchangerTitle = reverseCycle ? "Condensor" : "Verdamper";
@@ -1661,6 +2253,8 @@
       waterInText,
       flowText,
       evaporatorCoilTempText,
+      innerCoilTempText,
+      outsideTempText,
       dischargePressureText,
       dischargeTempText,
       suctionPressureText,
@@ -1680,14 +2274,14 @@
       leftValveTone: reverseCycle ? "suction" : "hotgas",
       rightValveTone: reverseCycle ? "hotgas" : "suction",
       pipes: {
-        supply: { tone: supplyLineTone, d: "M104 134 H18", animated: false },
-        return: { tone: returnLineTone, d: "M18 294 H104", animated: false },
-        compressorDischarge: { tone: "hotgas", d: compressorDischarge, animated: true },
-        hotgasExternal: { tone: "hotgas", d: hotgasExternal, animated: true },
-        liquid: { tone: "liquid", d: liquidPath, animated: true },
-        expansion: { tone: "expansion", d: expansionPath, animated: true },
-        suctionExternal: { tone: "suction", d: suctionExternal, animated: true },
-        suctionCompressor: { tone: "suction", d: compressorSuction, animated: true },
+        supply: { tone: supplyLineTone, d: "M104 134 H18", animated: true, flowVariant: "water" },
+        return: { tone: returnLineTone, d: "M18 294 H104", animated: true, flowVariant: "water" },
+        compressorDischarge: { tone: "hotgas", d: compressorDischarge, animated: true, flowVariant: "default" },
+        hotgasExternal: { tone: "hotgas", d: hotgasExternal, animated: true, flowVariant: "default" },
+        liquid: { tone: "liquid", d: liquidPath, animated: true, flowVariant: "default" },
+        expansion: { tone: "expansion", d: expansionPath, animated: true, flowVariant: "default" },
+        suctionExternal: { tone: "suction", d: suctionExternal, animated: true, flowVariant: "default" },
+        suctionCompressor: { tone: "suction", d: compressorSuction, animated: true, flowVariant: "default" },
       },
     };
   }
@@ -1742,7 +2336,7 @@
               <rect class="oq-hp-tech-compressor-port" x="296" y="140" width="10" height="20" rx="5" />
               <rect class="oq-hp-tech-compressor-port" x="346" y="140" width="10" height="20" rx="5" />
               <path class="oq-hp-tech-compressor-lines" d="M316 134 H336 M316 148 H336 M316 162 H336" />
-              <text class="oq-hp-tech-compressor-freq" x="326" y="180" data-oq-bind="compressor-freq">${escapeHtml(model.compressorFreqText)}</text>
+              <text class="oq-hp-tech-compressor-freq" x="326" y="166" data-oq-bind="compressor-freq">${escapeHtml(model.compressorFreqText)}</text>
             </g>
 
             <g class="oq-hp-tech-4way">
@@ -1780,14 +2374,14 @@
               </g>
             </g>
 
-            ${renderTechPipeLayer("supply", model.pipes.supply.tone, model.pipes.supply.d, false)}
-            ${renderTechPipeLayer("return", model.pipes.return.tone, model.pipes.return.d, false)}
-            ${renderTechPipeLayer("compressor-discharge", model.pipes.compressorDischarge.tone, model.pipes.compressorDischarge.d)}
-            ${renderTechPipeLayer("liquid", model.pipes.liquid.tone, model.pipes.liquid.d)}
-            ${renderTechPipeLayer("expansion", model.pipes.expansion.tone, model.pipes.expansion.d)}
-            ${renderTechPipeLayer("suction-compressor", model.pipes.suctionCompressor.tone, model.pipes.suctionCompressor.d)}
-            ${renderTechPipeLayer("hotgas-external", model.pipes.hotgasExternal.tone, model.pipes.hotgasExternal.d)}
-            ${renderTechPipeLayer("suction-external", model.pipes.suctionExternal.tone, model.pipes.suctionExternal.d)}
+            ${renderTechPipeLayer("supply", model.pipes.supply.tone, model.pipes.supply.d, model.pipes.supply.animated, model.pipes.supply.flowVariant)}
+            ${renderTechPipeLayer("return", model.pipes.return.tone, model.pipes.return.d, model.pipes.return.animated, model.pipes.return.flowVariant)}
+            ${renderTechPipeLayer("compressor-discharge", model.pipes.compressorDischarge.tone, model.pipes.compressorDischarge.d, model.pipes.compressorDischarge.animated, model.pipes.compressorDischarge.flowVariant)}
+            ${renderTechPipeLayer("liquid", model.pipes.liquid.tone, model.pipes.liquid.d, model.pipes.liquid.animated, model.pipes.liquid.flowVariant)}
+            ${renderTechPipeLayer("expansion", model.pipes.expansion.tone, model.pipes.expansion.d, model.pipes.expansion.animated, model.pipes.expansion.flowVariant)}
+            ${renderTechPipeLayer("suction-compressor", model.pipes.suctionCompressor.tone, model.pipes.suctionCompressor.d, model.pipes.suctionCompressor.animated, model.pipes.suctionCompressor.flowVariant)}
+            ${renderTechPipeLayer("hotgas-external", model.pipes.hotgasExternal.tone, model.pipes.hotgasExternal.d, model.pipes.hotgasExternal.animated, model.pipes.hotgasExternal.flowVariant)}
+            ${renderTechPipeLayer("suction-external", model.pipes.suctionExternal.tone, model.pipes.suctionExternal.d, model.pipes.suctionExternal.animated, model.pipes.suctionExternal.flowVariant)}
 
             <g class="oq-hp-tech-pump oq-hp-tech-pump--${model.returnLineTone}">
               <circle class="oq-hp-tech-pump-ring" cx="88" cy="294" r="16" />
@@ -1904,9 +2498,31 @@
             })}
 
             ${renderTechWaterReading({
+              bind: "inner-coil-temp",
+              x: 120,
+              y: 166,
+              width: 52,
+              value: model.innerCoilTempText,
+              label: "Inner coil temperatuur",
+              ariaLabel: `Inner coil temperatuur ${model.innerCoilTempText}`,
+              align: "center",
+            })}
+            ${renderTechTooltip({
+              bind: "inner-coil-temp",
+              modifier: "component",
+              icon: "temperature",
+              x: 174,
+              y: 148,
+              width: 132,
+              kicker: "Temperatuur",
+              detail: "Condensor",
+              direction: "right",
+            })}
+
+            ${renderTechWaterReading({
               bind: "evaporator-temp",
               x: 484,
-              y: 154,
+              y: 166,
               width: 52,
               value: model.evaporatorCoilTempText,
               label: "Verdampertemperatuur",
@@ -1918,10 +2534,32 @@
               modifier: "component",
               icon: "temperature",
               x: 344,
-              y: 136,
+              y: 148,
               width: 132,
               kicker: "Temperatuur",
               detail: "Verdamper",
+              direction: "right",
+            })}
+
+            ${renderTechWaterReading({
+              bind: "outside-temp",
+              x: 548,
+              y: 110,
+              width: 48,
+              value: model.outsideTempText,
+              label: "Buitentemperatuur",
+              ariaLabel: `Buitentemperatuur ${model.outsideTempText}`,
+              align: "center",
+            })}
+            ${renderTechTooltip({
+              bind: "outside-temp",
+              modifier: "component",
+              icon: "temperature",
+              x: 424,
+              y: 92,
+              width: 136,
+              kicker: "Temperatuur",
+              detail: "Buitenlucht",
               direction: "right",
             })}
 
@@ -2037,7 +2675,35 @@
             >
               <circle class="oq-hp-tech-defrost-hit" cx="0" cy="0" r="12" />
               <g class="oq-hp-tech-defrost-icon">
-                <path class="oq-hp-tech-defrost-glyph" d="M8 17.85C8 19.04 7.11 20 6 20S4 19.04 4 17.85C4 16.42 6 14 6 14S8 16.42 8 17.85M16.46 12V10.56L18.46 9.43L20.79 10.05L21.31 8.12L19.54 7.65L20 5.88L18.07 5.36L17.45 7.69L15.45 8.82L13 7.38V5.12L14.71 3.41L13.29 2L12 3.29L10.71 2L9.29 3.41L11 5.12V7.38L8.5 8.82L6.5 7.69L5.92 5.36L4 5.88L4.47 7.65L2.7 8.12L3.22 10.05L5.55 9.43L7.55 10.56V12H2V13H22V12H16.46M9.5 12V10.56L12 9.11L14.5 10.56V12H9.5M20 17.85C20 19.04 19.11 20 18 20S16 19.04 16 17.85C16 16.42 18 14 18 14S20 16.42 20 17.85M14 20.85C14 22.04 13.11 23 12 23S10 22.04 10 20.85C10 19.42 12 17 12 17S14 19.42 14 20.85Z" />
+                <path class="oq-hp-tech-defrost-glyph" d="M16.46 12V10.56L18.46 9.43L20.79 10.05L21.31 8.12L19.54 7.65L20 5.88L18.07 5.36L17.45 7.69L15.45 8.82L13 7.38V5.12L14.71 3.41L13.29 2L12 3.29L10.71 2L9.29 3.41L11 5.12V7.38L8.5 8.82L6.5 7.69L5.92 5.36L4 5.88L4.47 7.65L2.7 8.12L3.22 10.05L5.55 9.43L7.55 10.56V12H2V13H22V12H16.46M9.5 12V10.56L12 9.11L14.5 10.56V12H9.5" />
+                <g class="oq-hp-tech-defrost-drips">
+                  <path class="oq-hp-tech-defrost-drip oq-hp-tech-defrost-drip--left" d="M8 17.85C8 19.04 7.11 20 6 20S4 19.04 4 17.85C4 16.42 6 14 6 14S8 16.42 8 17.85Z" />
+                  <path class="oq-hp-tech-defrost-drip oq-hp-tech-defrost-drip--right" d="M20 17.85C20 19.04 19.11 20 18 20S16 19.04 16 17.85C16 16.42 18 14 18 14S20 16.42 20 17.85Z" />
+                  <path class="oq-hp-tech-defrost-drip oq-hp-tech-defrost-drip--center" d="M14 20.85C14 22.04 13.11 23 12 23S10 22.04 10 20.85C10 19.42 12 17 12 17S14 19.42 14 20.85Z" />
+                </g>
+                <g class="oq-hp-tech-defrost-mists">
+                  <g transform="translate(6 20.45)">
+                    <g class="oq-hp-tech-defrost-mist oq-hp-tech-defrost-mist--left">
+                      <circle cx="0" cy="0" r="0.92" />
+                      <circle cx="-1.18" cy="0.34" r="0.58" />
+                      <circle cx="1.16" cy="0.38" r="0.54" />
+                    </g>
+                  </g>
+                  <g transform="translate(12 23.4)">
+                    <g class="oq-hp-tech-defrost-mist oq-hp-tech-defrost-mist--center">
+                      <circle cx="0" cy="0" r="1.08" />
+                      <circle cx="-1.42" cy="0.42" r="0.66" />
+                      <circle cx="1.38" cy="0.46" r="0.62" />
+                    </g>
+                  </g>
+                  <g transform="translate(18 20.45)">
+                    <g class="oq-hp-tech-defrost-mist oq-hp-tech-defrost-mist--right">
+                      <circle cx="0" cy="0" r="0.92" />
+                      <circle cx="-1.16" cy="0.38" r="0.54" />
+                      <circle cx="1.18" cy="0.34" r="0.58" />
+                    </g>
+                  </g>
+                </g>
               </g>
             </g>
             ${renderTechTooltip({
@@ -2049,6 +2715,27 @@
               width: 118,
               kicker: "Defrost",
               detail: "Actief",
+              direction: "left",
+            })}
+
+            <g
+              class="oq-hp-tech-hotspot"
+              data-oq-bind="compressor-freq-trigger"
+              data-oq-tooltip-target="compressor-freq"
+              tabindex="0"
+              aria-label="${escapeHtml(`Compressorfrequentie ${model.compressorFreqText}`)}"
+            >
+              <rect class="oq-hp-tech-hotspot-hit" x="300" y="148" width="52" height="26" rx="12" />
+            </g>
+            ${renderTechTooltip({
+              bind: "compressor-freq",
+              modifier: "component",
+              icon: "fan",
+              x: 366,
+              y: 130,
+              width: 136,
+              kicker: "Frequentie",
+              detail: "Compressor",
               direction: "left",
             })}
 
@@ -2481,7 +3168,9 @@
     setTextContent(board, '[data-oq-bind="right-exchanger-title"]', model.rightExchangerTitle);
     setTextContent(board, '[data-oq-bind="compressor-freq"]', model.compressorFreqText);
     setTextContent(board, '[data-oq-bind="flow-value"]', model.flowText);
+    setTextContent(board, '[data-oq-bind="inner-coil-temp-value"]', model.innerCoilTempText);
     setTextContent(board, '[data-oq-bind="evaporator-temp-value"]', model.evaporatorCoilTempText);
+    setTextContent(board, '[data-oq-bind="outside-temp-value"]', model.outsideTempText);
     setTextContent(board, '[data-oq-bind="discharge-pressure-value"]', model.dischargePressureText);
     setTextContent(board, '[data-oq-bind="discharge-temp-value"]', model.dischargeTempText);
     setTextContent(board, '[data-oq-bind="suction-pressure-value"]', model.suctionPressureText);
@@ -2530,9 +3219,21 @@
     if (flowReading) {
       flowReading.setAttribute("aria-label", `Flowrate ${model.flowText}`);
     }
+    const innerCoilTempReading = board.querySelector('[data-oq-bind="inner-coil-temp-reading"]');
+    if (innerCoilTempReading) {
+      innerCoilTempReading.setAttribute("aria-label", `Inner coil temperatuur ${model.innerCoilTempText}`);
+    }
     const evaporatorTempReading = board.querySelector('[data-oq-bind="evaporator-temp-reading"]');
     if (evaporatorTempReading) {
       evaporatorTempReading.setAttribute("aria-label", `Verdampertemperatuur ${model.evaporatorCoilTempText}`);
+    }
+    const outsideTempReading = board.querySelector('[data-oq-bind="outside-temp-reading"]');
+    if (outsideTempReading) {
+      outsideTempReading.setAttribute("aria-label", `Buitentemperatuur ${model.outsideTempText}`);
+    }
+    const compressorFreqTrigger = board.querySelector('[data-oq-bind="compressor-freq-trigger"]');
+    if (compressorFreqTrigger) {
+      compressorFreqTrigger.setAttribute("aria-label", `Compressorfrequentie ${model.compressorFreqText}`);
     }
     const fanSpeedReading = board.querySelector('[data-oq-bind="fan-speed-reading"]');
     if (fanSpeedReading) {
@@ -2673,44 +3374,14 @@
     return `
       <section class="oq-helper-panel">
         <p class="oq-helper-label">Instellingen</p>
-        <h2 class="oq-helper-section-title">Duidelijke instellingen met uitleg</h2>
-        <p class="oq-helper-section-copy">Dit is de route-1 richting voor instellingen: de app bepaalt uitleg, structuur en groepering, terwijl hij direct naar de canonieke OpenQuatt-entities schrijft.</p>
+        <h2 class="oq-helper-section-title">Regeling, limieten en stille modus</h2>
+        <p class="oq-helper-section-copy">Alle velden hieronder schrijven direct naar de echte OpenQuatt-entities. De app ordent ze in logische secties en laat uitleg pas zien wanneer je die nodig hebt.</p>
         <div class="oq-helper-settings-stack">
-          <section class="oq-helper-mode-panel">
-            <div class="oq-helper-mode-head">
-              <p class="oq-helper-label">Verwarming</p>
-              <p class="oq-helper-section-copy">De bovenste laag voor de dagelijkse regelkeuzes.</p>
-            </div>
-            <div class="oq-helper-control-grid">
-              ${renderSelectField("strategy", "Verwarmingsstrategie", "Hoofdmodel voor het gedrag van het device.")}
-              ${renderSelectField("behavior", "Gedrag", "Begrijpelijk responslabel dat mapped naar de actieve strategie.")}
-              ${renderSelectField("preset", "Preset", "Snel gegroepeerd startprofiel voor de gebruikelijke limieten.")}
-            </div>
-          </section>
-          <section class="oq-helper-mode-panel">
-            <div class="oq-helper-mode-head">
-              <p class="oq-helper-label">Grenzen</p>
-              <p class="oq-helper-section-copy">Praktische grenzen die nog steeds duidelijk in de hoofdinstellingen horen.</p>
-            </div>
-            <div class="oq-helper-control-grid">
-              ${renderSliderField("dayMax", "Dag max", "Maximaal compressorniveau tijdens dagbedrijf.")}
-              ${renderSliderField("silentMax", "Silent max", "Maximaal compressorniveau tijdens silent-bedrijf.")}
-              ${renderSliderField("maxWater", "Max watertemperatuur", "Bovengrens voor de watertemperatuur.")}
-            </div>
-          </section>
-          ${isCurveMode() ? renderCurveWorkspace() : renderPowerHouseWorkspace()}
-          <section class="oq-helper-panel oq-helper-panel--advanced">
-            <div class="oq-helper-advanced-head">
-              <div>
-                <p class="oq-helper-label">Advanced instellingen</p>
-                <p class="oq-helper-advanced-copy">We bepalen nog wat hier echt thuishoort, maar de structuur kan nu al veel duidelijker zijn dan de ruwe ESPHome-lijst.</p>
-              </div>
-              <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="toggle-advanced">
-                ${state.advancedOpen ? "Verberg advanced-kandidaten" : "Toon advanced-kandidaten"}
-              </button>
-            </div>
-            ${renderAdvancedList()}
-          </section>
+          ${renderSettingsFlowSection()}
+          ${renderSettingsHeatingSection()}
+          ${renderSettingsWaterSection()}
+          ${renderSettingsCompressorSection()}
+          ${renderSettingsSilentSection()}
         </div>
       </section>
     `;

@@ -1,5 +1,5 @@
 (function () {
-  const DOMAINS = new Set(["select", "number", "sensor", "text_sensor", "binary_sensor", "button"]);
+  const DOMAINS = new Set(["select", "number", "sensor", "text_sensor", "binary_sensor", "button", "time"]);
   const entities = new Map();
   const state = {
     scenario: "dual",
@@ -10,12 +10,17 @@
   };
 
   const HP2_ENTITIES = [
+    ["select", "HP2 - Excluded compressor level A", { value: "None", state: "None", option: ["None", "L1 (H30/C30)", "L2 (H39/C36)", "L3 (H49/C42)", "L4 (H55/C47)", "L5 (H61/C52)", "L6 (H67/C56)", "L7 (H72/C61)", "L8 (H79/C66)", "L9 (H85/C71)", "L10 (H90/C74)"] }],
+    ["select", "HP2 - Excluded compressor level B", { value: "None", state: "None", option: ["None", "L1 (H30/C30)", "L2 (H39/C36)", "L3 (H49/C42)", "L4 (H55/C47)", "L5 (H61/C52)", "L6 (H67/C56)", "L7 (H72/C61)", "L8 (H79/C66)", "L9 (H85/C71)", "L10 (H90/C74)"] }],
     ["sensor", "HP2 - Power Input", { value: 0, uom: "W" }],
     ["sensor", "HP2 - Heat Power", { value: 0, uom: "W" }],
     ["sensor", "HP2 - COP", { value: 0, uom: "" }],
     ["sensor", "HP2 - Compressor frequency", { value: 0, uom: "Hz" }],
+    ["sensor", "HP2 - Fan speed", { value: 0, uom: "rpm" }],
     ["sensor", "HP2 - Flow", { value: 0, uom: "L/h" }],
     ["sensor", "HP2 - Evaporator coil temperature", { value: 0, uom: "\u00B0C" }],
+    ["sensor", "HP2 - Inner coil temperature", { value: 0, uom: "\u00B0C" }],
+    ["sensor", "HP2 - Outside temperature", { value: 0, uom: "\u00B0C" }],
     ["sensor", "HP2 - Condenser pressure", { value: 0, uom: "bar" }],
     ["sensor", "HP2 - Gas discharge temperature", { value: 0, uom: "\u00B0C" }],
     ["sensor", "HP2 - Evaporator pressure", { value: 0, uom: "bar" }],
@@ -29,6 +34,20 @@
     ["binary_sensor", "HP2 - 4-Way valve", { value: false }],
     ["binary_sensor", "HP2 - Bottom plate heater", { value: true }],
     ["binary_sensor", "HP2 - Crankcase heater", { value: true }],
+  ];
+
+  const COMPRESSOR_LEVEL_OPTIONS = [
+    "None",
+    "L1 (H30/C30)",
+    "L2 (H39/C36)",
+    "L3 (H49/C42)",
+    "L4 (H55/C47)",
+    "L5 (H61/C52)",
+    "L6 (H67/C56)",
+    "L7 (H72/C61)",
+    "L8 (H79/C66)",
+    "L9 (H85/C71)",
+    "L10 (H90/C74)",
   ];
 
   function entityKey(domain, name) {
@@ -94,6 +113,11 @@
       state: "Power House",
       option: ["Power House", "Water Temperature Control (heating curve)"],
     });
+    setEntity("select", "Flow Control Mode", {
+      value: "Flow Setpoint",
+      state: "Flow Setpoint",
+      option: ["Flow Setpoint", "Manual PWM"],
+    });
     setEntity("text_sensor", "Control Mode (Label)", { state: "CM98" });
     setEntity("text_sensor", "Flow Mode", { state: "Adaptive" });
     setEntity("select", "Behavior", {
@@ -101,24 +125,51 @@
       state: "Balanced",
       option: ["Quiet", "Balanced", "Fast response"],
     });
+    setEntity("select", "Power House response profile", {
+      value: "Balanced",
+      state: "Balanced",
+      option: ["Calm", "Balanced", "Responsive", "Custom"],
+    });
+    setEntity("select", "Heating Curve Control Profile", {
+      value: "Balanced",
+      state: "Balanced",
+      option: ["Comfort", "Balanced", "Stable"],
+    });
     setEntity("select", "Preset", {
       value: "Balanced",
       state: "Balanced",
       option: ["Quiet", "Balanced", "High output", "Custom"],
     });
+    setEntity("select", "HP1 - Excluded compressor level A", {
+      value: "None",
+      state: "None",
+      option: COMPRESSOR_LEVEL_OPTIONS,
+    });
+    setEntity("select", "HP1 - Excluded compressor level B", {
+      value: "None",
+      state: "None",
+      option: COMPRESSOR_LEVEL_OPTIONS,
+    });
 
     [
+      ["Flow Setpoint", 800, 0, 1500, 10, "L/h"],
+      ["Manual iPWM", 400, 50, 850, 1, "iPWM"],
       ["Day max level", 10, 0, 20, 1, ""],
       ["Silent max level", 6, 0, 20, 1, ""],
       ["Maximum water temperature", 56, 25, 75, 1, "°C"],
+      ["Maximum water temperature trip", 65, 30, 85, 0.5, "°C"],
+      ["Minimum runtime", 300, 300, 3600, 30, "s"],
       ["Rated maximum house power", 4500, 500, 12000, 100, "W"],
       ["Maximum heating outdoor temperature", 16, -10, 25, 1, "°C"],
+      ["Power House demand rise time", 8, 2, 20, 1, "min"],
+      ["Power House demand fall time", 3, 1, 10, 1, "min"],
       ["Curve Tsupply @ -20°C", 48, 20, 70, 1, "°C"],
       ["Curve Tsupply @ -10°C", 43, 20, 70, 1, "°C"],
       ["Curve Tsupply @ 0°C", 38, 20, 70, 1, "°C"],
       ["Curve Tsupply @ 5°C", 34, 20, 70, 1, "°C"],
       ["Curve Tsupply @ 10°C", 30, 20, 70, 1, "°C"],
       ["Curve Tsupply @ 15°C", 27, 20, 70, 1, "°C"],
+      ["Curve Fallback Tsupply (No Outside Temp)", 40, 25, 70, 0.5, "°C"],
     ].forEach(([name, value, min, max, step, uom]) => {
       setEntity("number", name, {
         value,
@@ -126,6 +177,16 @@
         max_value: max,
         step,
         uom,
+      });
+    });
+
+    [
+      ["Silent start time", "19:00:00"],
+      ["Silent end time", "07:00:00"],
+    ].forEach(([name, value]) => {
+      setEntity("time", name, {
+        value,
+        state: value,
       });
     });
 
@@ -142,8 +203,11 @@
       ["HP1 - Heat Power", 0, "W"],
       ["HP1 - COP", 0, ""],
       ["HP1 - Compressor frequency", 0, "Hz"],
+      ["HP1 - Fan speed", 0, "rpm"],
       ["HP1 - Flow", 0, "L/h"],
       ["HP1 - Evaporator coil temperature", 0, "\u00B0C"],
+      ["HP1 - Inner coil temperature", 0, "\u00B0C"],
+      ["HP1 - Outside temperature", 0, "\u00B0C"],
       ["HP1 - Condenser pressure", 0, "bar"],
       ["HP1 - Gas discharge temperature", 0, "\u00B0C"],
       ["HP1 - Evaporator pressure", 0, "bar"],
@@ -300,8 +364,11 @@
       setNumber("HP1 - Heat Power", 0, "W");
       setNumber("HP1 - COP", 0);
       setNumber("HP1 - Compressor frequency", 0, "Hz");
+      setNumber("HP1 - Fan speed", 0, "rpm");
       setNumber("HP1 - Flow", 0, "L/h");
       setNumber("HP1 - Evaporator coil temperature", 25.4, "\u00B0C");
+      setNumber("HP1 - Inner coil temperature", 27.1, "\u00B0C");
+      setNumber("HP1 - Outside temperature", 11.8, "\u00B0C");
       setNumber("HP1 - Condenser pressure", 7.8, "bar");
       setNumber("HP1 - Gas discharge temperature", 26.7, "\u00B0C");
       setNumber("HP1 - Evaporator pressure", 7.6, "bar");
@@ -315,8 +382,11 @@
         setNumber("HP2 - Heat Power", 0, "W");
         setNumber("HP2 - COP", 0);
         setNumber("HP2 - Compressor frequency", 0, "Hz");
+        setNumber("HP2 - Fan speed", 0, "rpm");
         setNumber("HP2 - Flow", 0, "L/h");
         setNumber("HP2 - Evaporator coil temperature", 25.1, "\u00B0C");
+        setNumber("HP2 - Inner coil temperature", 26.5, "\u00B0C");
+        setNumber("HP2 - Outside temperature", 11.5, "\u00B0C");
         setNumber("HP2 - Condenser pressure", 7.7, "bar");
         setNumber("HP2 - Gas discharge temperature", 26.4, "\u00B0C");
         setNumber("HP2 - Evaporator pressure", 7.5, "bar");
@@ -348,8 +418,11 @@
       setNumber("HP1 - Heat Power", hp1Heat, "W");
       setNumber("HP1 - COP", hp1Cop);
       setNumber("HP1 - Compressor frequency", waveInt(30, 3), "Hz");
+      setNumber("HP1 - Fan speed", wave(562, 18), "rpm");
       setNumber("HP1 - Flow", wave(790, 34), "L/h");
       setNumber("HP1 - Evaporator coil temperature", wave(3.8, 0.7), "\u00B0C");
+      setNumber("HP1 - Inner coil temperature", wave(7.6, 0.6, 0.1), "\u00B0C");
+      setNumber("HP1 - Outside temperature", wave(4.9, 0.25, 0.12), "\u00B0C");
       setNumber("HP1 - Condenser pressure", wave(22.8, 0.7), "bar");
       setNumber("HP1 - Gas discharge temperature", wave(67.2, 1.6), "\u00B0C");
       setNumber("HP1 - Evaporator pressure", wave(7.8, 0.2), "bar");
@@ -363,8 +436,11 @@
         setNumber("HP2 - Heat Power", wave(520, 60, 0.7), "W");
         setNumber("HP2 - COP", Number((4.1 + Math.sin(t + 0.7) * 0.14).toFixed(2)));
         setNumber("HP2 - Compressor frequency", waveInt(12, 2, 0.5), "Hz");
+        setNumber("HP2 - Fan speed", wave(186, 10, 0.5), "rpm");
         setNumber("HP2 - Flow", wave(180, 20, 0.5), "L/h");
         setNumber("HP2 - Evaporator coil temperature", wave(25.0, 0.4, 0.5), "\u00B0C");
+        setNumber("HP2 - Inner coil temperature", wave(26.6, 0.35, 0.2), "\u00B0C");
+        setNumber("HP2 - Outside temperature", wave(4.7, 0.22, 0.18), "\u00B0C");
         setNumber("HP2 - Condenser pressure", wave(8.4, 0.2, 0.4), "bar");
         setNumber("HP2 - Gas discharge temperature", wave(30.4, 0.6, 0.4), "\u00B0C");
         setNumber("HP2 - Evaporator pressure", wave(8.1, 0.2, 0.4), "bar");
@@ -395,8 +471,11 @@
       setNumber("HP1 - Heat Power", wave(2080, 110), "W");
       setNumber("HP1 - COP", Number((4.42 + Math.sin(t) * 0.11).toFixed(2)));
       setNumber("HP1 - Compressor frequency", waveInt(34, 2), "Hz");
+      setNumber("HP1 - Fan speed", wave(629, 14), "rpm");
       setNumber("HP1 - Flow", wave(608, 22), "L/h");
       setNumber("HP1 - Evaporator coil temperature", wave(1.6, 0.6), "\u00B0C");
+      setNumber("HP1 - Inner coil temperature", wave(6.2, 0.5, 0.2), "\u00B0C");
+      setNumber("HP1 - Outside temperature", wave(5.2, 0.2, 0.05), "\u00B0C");
       setNumber("HP1 - Condenser pressure", wave(23.4, 0.8), "bar");
       setNumber("HP1 - Gas discharge temperature", wave(69.4, 1.8), "\u00B0C");
       setNumber("HP1 - Evaporator pressure", wave(8.1, 0.2), "bar");
@@ -409,8 +488,11 @@
       setNumber("HP2 - Heat Power", wave(-260, 40, 0.4), "W");
       setNumber("HP2 - COP", Number((2.05 + Math.sin(t + 0.4) * 0.08).toFixed(2)));
       setNumber("HP2 - Compressor frequency", waveInt(31, 2, 0.4), "Hz");
+      setNumber("HP2 - Fan speed", wave(185, 8, 0.4), "rpm");
       setNumber("HP2 - Flow", wave(590, 18, 0.4), "L/h");
       setNumber("HP2 - Evaporator coil temperature", wave(12.3, 0.5, 0.4), "\u00B0C");
+      setNumber("HP2 - Inner coil temperature", wave(8.7, 0.45, 0.15), "\u00B0C");
+      setNumber("HP2 - Outside temperature", wave(5.0, 0.18, 0.2), "\u00B0C");
       setNumber("HP2 - Condenser pressure", wave(18.6, 0.6, 0.4), "bar");
       setNumber("HP2 - Gas discharge temperature", wave(58.1, 1.5, 0.4), "\u00B0C");
       setNumber("HP2 - Evaporator pressure", wave(6.9, 0.2, 0.4), "bar");
@@ -445,8 +527,11 @@
       setNumber("HP1 - Heat Power", hp1Heat, "W");
       setNumber("HP1 - COP", hp1Cop);
       setNumber("HP1 - Compressor frequency", waveInt(39, 2), "Hz");
+      setNumber("HP1 - Fan speed", wave(676, 12), "rpm");
       setNumber("HP1 - Flow", wave(530, 20), "L/h");
       setNumber("HP1 - Evaporator coil temperature", wave(-4.4, 0.6), "\u00B0C");
+      setNumber("HP1 - Inner coil temperature", wave(22.4, 0.4, 0.25), "\u00B0C");
+      setNumber("HP1 - Outside temperature", wave(2.3, 0.18, 0.15), "\u00B0C");
       setNumber("HP1 - Condenser pressure", wave(15.4, 0.5), "bar");
       setNumber("HP1 - Gas discharge temperature", wave(47.8, 1.1), "\u00B0C");
       setNumber("HP1 - Evaporator pressure", wave(4.8, 0.2), "bar");
@@ -462,8 +547,11 @@
         setNumber("HP2 - Heat Power", 0, "W");
         setNumber("HP2 - COP", 0);
         setNumber("HP2 - Compressor frequency", 0, "Hz");
+        setNumber("HP2 - Fan speed", 0, "rpm");
         setNumber("HP2 - Flow", wave(120, 12), "L/h");
         setNumber("HP2 - Evaporator coil temperature", wave(24.8, 0.3), "\u00B0C");
+        setNumber("HP2 - Inner coil temperature", wave(26.2, 0.25, 0.1), "\u00B0C");
+        setNumber("HP2 - Outside temperature", wave(2.1, 0.15, 0.1), "\u00B0C");
         setNumber("HP2 - Condenser pressure", wave(8.2, 0.2), "bar");
         setNumber("HP2 - Gas discharge temperature", wave(29.1, 0.4), "\u00B0C");
         setNumber("HP2 - Evaporator pressure", wave(7.9, 0.2), "bar");
@@ -492,6 +580,17 @@
     setText("select", name, value);
     if (name === "Preset") {
       applyPreset(value);
+    } else if (name === "Power House response profile") {
+      if (value === "Calm") {
+        setNumber("Power House demand rise time", 12);
+        setNumber("Power House demand fall time", 5);
+      } else if (value === "Balanced") {
+        setNumber("Power House demand rise time", 8);
+        setNumber("Power House demand fall time", 3);
+      } else if (value === "Responsive") {
+        setNumber("Power House demand rise time", 5);
+        setNumber("Power House demand fall time", 2);
+      }
     }
     updateSummary();
     notifyMockUpdated();
@@ -499,6 +598,13 @@
 
   function handleNumberSet(name, value) {
     setNumber(name, Number(value));
+    updateSummary();
+    notifyMockUpdated();
+  }
+
+  function handleTimeSet(name, value) {
+    const normalized = String(value || "").trim().length === 5 ? `${value}:00` : String(value || "");
+    setText("time", name, normalized);
     updateSummary();
     notifyMockUpdated();
   }
@@ -554,10 +660,13 @@
 
       if (request.action === "set") {
         const rawValue = request.url.searchParams.get("value");
+        const optionValue = request.url.searchParams.get("option");
         if (request.domain === "select") {
-          handleSelectSet(request.name, rawValue || "");
+          handleSelectSet(request.name, optionValue || rawValue || "");
         } else if (request.domain === "number") {
           handleNumberSet(request.name, rawValue || "0");
+        } else if (request.domain === "time") {
+          handleTimeSet(request.name, rawValue || "");
         }
         return mockResponse(200, entity);
       }
