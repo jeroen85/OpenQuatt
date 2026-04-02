@@ -25,6 +25,15 @@
 # Ownership:
 #   - Only this package writes oq_demand_raw.
 #   - Heat control consumes oq_demand_raw and otherwise remains unchanged.
+#
+# Refactor note:
+#   - This file still mixes four logical layers:
+#     1) strategy manager / mode selection
+#     2) shared thermal guardrails and abstractions
+#     3) heating-curve implementation
+#     4) Power House implementation
+#   - On the thermal-control-refactor branch we keep behavior identical first and
+#     make those extraction seams explicit before splitting files.
 # ==============================================================================
 
 # ----------------------------
@@ -37,6 +46,9 @@ globals:
     restore_value: false
     initial_value: '0'
 
+  # ---------------------------------------------------------------------------
+  # Power House strategy state
+  # ---------------------------------------------------------------------------
   # Power House - requested house heat power (W)
   - id: oq_phouse_req_w
     type: float
@@ -54,6 +66,9 @@ globals:
     restore_value: false
     initial_value: '0'
 
+  # ---------------------------------------------------------------------------
+  # Heating-curve strategy state
+  # ---------------------------------------------------------------------------
   # Internal source (0..20) for heating-curve mode (PID -> demand)
   - id: oq_demand_curve
     type: int
@@ -110,6 +125,9 @@ globals:
     restore_value: false
     initial_value: '0'
 
+  # ---------------------------------------------------------------------------
+  # Strategy manager state
+  # ---------------------------------------------------------------------------
   - id: oq_heat_mode_code
     type: int
     restore_value: false
@@ -137,6 +155,9 @@ globals:
     restore_value: false
     initial_value: '0.0'
 
+  # ---------------------------------------------------------------------------
+  # Shared thermal guardrail state
+  # ---------------------------------------------------------------------------
   # Shared water-temperature guardrail state.
   # One model drives curve-target clamping, Power House limiting, boiler inhibit,
   # and the absolute hard trip seen by heat-control.
@@ -1019,6 +1040,7 @@ sensor:
       id(oq_curve_outside_ema_last_ms) = now_ms;
       return ema_c;
 
+  # Shared abstractions and derived telemetry.
   - platform: template
     id: oq_system_supply_temp
     name: "System Supply Temp (abstraction)"
@@ -1048,6 +1070,7 @@ sensor:
       }
       return supply_c;
 
+  # Shared Power House telemetry used by strategy and downstream dispatch.
   - platform: template
     id: oq_phouse_house_w
     name: "Power House – P_house"
@@ -1087,6 +1110,8 @@ sensor:
     lambda: |-
       return id(oq_phouse_req_w);
 
+  # Heating-curve target generation remains here until shared abstractions and
+  # strategy implementations are split into separate packages.
   - platform: template
     id: oq_supply_target_temp
     name: "Heating Curve Supply Target"
@@ -1312,12 +1337,18 @@ text_sensor:
 # INTERVAL (5s)
 #   * Power House: computes P_req (W) and compatible demand (0..20)
 #   * Heating Curve: runs the supply-temperature PID and provides demand (0..20)
+#   * Phase 1 refactor note: this interval still hosts both strategies plus the
+#     shared water guardrail; later phases will split those concerns physically.
 # ----------------------------
 interval:
   - interval: ${oq_strategy_loop_s}s
     startup_delay: 800ms
     then:
       - lambda: |-
+          // =========================
+          // 1) Strategy manager context
+          // Selects the active heating strategy and initializes shared helpers.
+          // =========================
           // Select mode via stable option index (0=Power House, 1=Heating Curve)
           const int heat_mode_code = id(oq_heat_control_mode).active_index().value_or(0) == 1 ? 1 : 0;
           id(oq_heat_mode_code) = heat_mode_code;
@@ -1337,6 +1368,11 @@ interval:
             return demand;
           };
 
+          // =========================
+          // 2) Shared thermal guardrail
+          // This state is strategy-agnostic and is the future extraction seam
+          // for a dedicated thermal-limits package.
+          // =========================
           // Shared water-temperature guardrail.
           // - `water_supply_temp_selected` is the authoritative supply reading for this feature.
           // - Power House applies a piecewise limiter on effective requested heat.
@@ -1428,6 +1464,10 @@ interval:
           id(oq_water_temp_trip_since_ms) = trip_since_ms;
           id(oq_water_temp_hard_trip_active) = hard_trip_active;
 
+          // =========================
+          // 3) Active strategy implementation
+          // Only one heating strategy writes oq_demand_raw per tick.
+          // =========================
           if (heat_mode_code == 1) {
             // ------------------------------------------------------------
             // HEATING CURVE MODE
@@ -1621,6 +1661,11 @@ interval:
       - if:
           condition:
             lambda: |-
+              // =========================
+              // 4) Heating-curve PID housekeeping
+              // Keep the integral empty whenever curve control is inactive or
+              // unable to deliver real heat.
+              // =========================
               // Anti-windup:
               // - if SP/PV drops out in heating-curve mode, reset integral term
               // - an absolute water-temperature hard trip forces heat output to zero

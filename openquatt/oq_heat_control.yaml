@@ -36,6 +36,12 @@
 #
 # Notes:
 #   - Demand filter and runtime guards intentionally favor stability over fast level changes.
+#   - This file still mixes three logical layers:
+#     1) shared demand normalization and safety gating
+#     2) strategy-specific dispatch (cooling / heating curve / Power House)
+#     3) actuator apply + runtime bookkeeping
+#   - On the thermal-control-refactor branch we keep behavior identical first and
+#     make those extraction seams explicit before splitting files.
 #
 # ==============================================================================
 
@@ -626,10 +632,13 @@ interval:
           f_cap = std::max(0, std::min(demand_max_f, f_cap));
           if (f > f_cap) f = f_cap;
 
+          // =========================
+          // 1a-3) Shared runtime anchors
           // Track the moment each HP is actually measured in an active thermal mode.
           // This is the runtime anchor for the minimum runtime guard. It avoids
           // starting the timer too early on request/apply transitions that occur
           // before the compressor truly enters Heating/Cooling mode.
+          // =========================
           const float hp1_mode_runtime_raw = id(hp1_working_mode).state;
           const bool hp1_measured_thermal =
               !isnan(hp1_mode_runtime_raw) &&
@@ -657,6 +666,12 @@ interval:
           // In CM0/CM1/CM98: force Standby + level 0 and stop further HP control.
           // =========================
           const bool cm_allows_hp = (cm_code == 2 || cm_code == 3 || cm_code == 5);
+
+          // =========================
+          // 1c) Shared debug + actuator helper layer
+          // These lambdas are strategy-agnostic and form the future extraction seam
+          // for the dedicated thermal actuator package.
+          // =========================
           auto publish_debug = [&](int req1, int req2, int app1, int app2)->void {
             static std::string last_debug = "";
             const char *mode_s = is_cooling_mode ? "COOL" : (is_curve_mode ? "CURVE" : "PH");
@@ -904,6 +919,10 @@ interval:
             return 1;
           };
 
+          // =========================
+          // 1d) Inactive-CM fast exit
+          // Shared standby/hold behavior runs before any dispatch logic.
+          // =========================
           if (!cm_allows_hp) {
             // Outside CM2/CM3/CM5 we normally force both units to Standby + level 0.
             // Two exceptions may keep a unit alive:
@@ -957,8 +976,11 @@ interval:
           //    - POWER HOUSE: level optimization on thermal power (W) via hp_perf_map.h
           // =========================
 
-          // CM5 must never inherit the heating strategy dispatcher. Cooling has its
-          // own demand path and owner selection, regardless of the selected heating mode.
+          // =========================
+          // 2a) Shared dispatch context
+          // From here down we only decide requested compressor levels per strategy.
+          // Cooling must never inherit the selected heating strategy dispatcher.
+          // =========================
           const bool is_power_house = !is_cooling_mode && (id(oq_heat_mode_code) != 1);
 
           // Lead HP = fewest runtime minutes
@@ -1121,12 +1143,18 @@ interval:
             id(oq_duo_dispatch_hold_until_ms) = 0;
             publish_optimizer_reason("curve_mode");
             // ------------------------------------------------------------
+            // CURVE / COOLING DISPATCH
+            // - CM5 uses the cooling-specific single-owner path
+            // - heating-curve mode uses single-HP-first dispatch with guarded dual enable
+            // ------------------------------------------------------------
             // HEATING CURVE MODE (demand path from heating-curve strategy)
             // ------------------------------------------------------------
             const bool d1_pre = hp1_valve_def;
             const bool d2_pre = hp2_valve_def;
 
             if (is_cooling_mode) {
+              // Cooling dispatch stays inside this branch for now so CM5 never
+              // reuses heating-strategy ownership or dual-optimizer behavior.
               // CM5 stays explicitly single-HP-first until duo cooling is tuned separately.
               int owner = id(oq_curve_single_owner_hp);
               const bool demand_active = (f > 0);
@@ -1329,6 +1357,9 @@ interval:
           } else {
             // ------------------------------------------------------------
             // POWER HOUSE MODE
+            // Power House keeps the legacy optimizer/fallback dispatch path in
+            // this file for now. This is the future extraction seam for a
+            // dedicated Power House dispatch module.
             // ------------------------------------------------------------
             // Inputs
             const float Pr = id(house_rated_power_w).state;              // rated house power (W)
@@ -1887,7 +1918,7 @@ interval:
           }
 
           // =========================
-          // 6) Minimum runtime (all strategies)
+          // 6) Post-dispatch runtime floor
           // Prevents very short compressor runs in both curve and Power House modes.
           // Runtime is per-compressor and user-tunable, with a hard lower bound of 300 s.
           // Skipped during an absolute water-temperature hard trip.
@@ -1927,7 +1958,9 @@ interval:
           }
 
           // =========================
-          // 7) Working mode gate + apply compressor
+          // 7) Shared actuator apply path
+          // From this point on the code is strategy-agnostic: it consumes only
+          // hp1_req/hp2_req and enforces the hardware write rules.
           // =========================
           auto set_mode = [&](bool is_hp1, bool active) {
             const char* opt = active ? active_thermal_mode_opt : "Standby";
@@ -2048,7 +2081,7 @@ interval:
           #endif
 
           // =========================
-          // 7) Start/stop logging + runtime minutes
+          // 8) Post-apply bookkeeping + diagnostics
           // =========================
           auto log_transition = [&](bool is_hp1, int new_lvl) {
             int &prev = is_hp1 ? id(hp1_last_applied_level) : id(${hc_secondary_last_applied_level_id});
