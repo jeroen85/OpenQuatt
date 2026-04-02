@@ -5,18 +5,19 @@
 # 1) Common platform runtime (API/OTA/UART/diagnostics)
 # 2) Supervisory/state
 # 3) Demand strategy
-# 4) Actuation layers (heat/flow/boiler)
-# 5) Aggregation/energy telemetry
-# 6) External inputs (CIC)
-# 7) External HA proxy inputs
-# 8) External HA cooling proxy inputs
-# 9) Local sensors
-# 10) Source selection and merged selected-source signals
-# 11) OpenTherm thermostat bridge
-# 12) Cooling safety / dew point aggregation
-# 13) Debug/testing utilities
-# 14) Web UI
-# 15) Per-HP hardware adapters
+# 4) Dispatch contract
+# 5) Actuation layers (heat/flow/boiler)
+# 6) Aggregation/energy telemetry
+# 7) External inputs (CIC)
+# 8) External HA proxy inputs
+# 9) External HA cooling proxy inputs
+# 10) Local sensors
+# 11) Source selection and merged selected-source signals
+# 12) OpenTherm thermostat bridge
+# 13) Cooling safety / dew point aggregation
+# 14) Debug/testing utilities
+# 15) Web UI
+# 16) Per-HP hardware adapters
 # ==============================================================================
 # Shared modules use `*_secondary_*` template vars so topology wiring stays
 # centralized in package files and avoids duplicated module files.
@@ -42,6 +43,7 @@ oq_heating_strategy: !include
     secondary_water_out_temp_id: "hp2_water_out_temp"
     secondary_last_applied_level_id: "hp2_last_applied_level"
     secondary_working_mode_id: "hp2_working_mode"
+oq_dispatch_contract: !include oq_dispatch_contract.yaml
 oq_heat_control: !include
   file: oq_heat_control.yaml
   vars:
