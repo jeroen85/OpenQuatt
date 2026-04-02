@@ -11,6 +11,18 @@ Het doel is dus niet alleen een schonere scheiding tussen heating en cooling, ma
 - dispatch-code die intent omzet naar expliciete warmtepompverzoeken
 - actuator-code als enige laag veilig naar hardware schrijft
 
+## Huidige stand van de refactor
+
+De doelarchitectuur hieronder is deels al fysiek ingevoerd in de branch die deze notitie gebruikt:
+
+- `openquatt/oq_thermal_limits.yaml` bestaat als eigen package
+- `openquatt/oq_dispatch_contract.yaml` bestaat als expliciete handoff-laag
+- `openquatt/oq_thermal_actuator.yaml` bestaat als enige writer naar HP mode/level
+- `openquatt/oq_cooling_dispatch.yaml` en `openquatt/oq_heating_curve_control.yaml` dragen al producer-logica
+- `openquatt/oq_power_house_control.yaml` draagt nu ook de Power House-producerlogica
+
+De belangrijkste resterende stap is nu beoordelen of de resterende generieke dispatch-shaping in `openquatt/oq_heat_control.yaml` nog verder opgesplitst moet worden.
+
 ## Kernprincipe
 
 De belangrijkste grens in de architectuur is:

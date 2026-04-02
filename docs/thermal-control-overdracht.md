@@ -2,11 +2,11 @@
 
 ## Huidige status
 
-- Branch: `codex/thermal-control-refactor`
-- Laatste commit op dit moment: `2d0f2f1` (`Introduce thermal dispatch contract`)
-- Vorige mijlpaal: `5c8abd1` (`Refactor thermal control phase 1 boundaries`)
+- Branch: `codex/thermal-control-phase3-limits`
+- Basis: `codex/thermal-control-refactor`
+- Huidige branch bouwt fase 3 en fase 4 voort op fase 1 en fase 2.
+- De eerste fysieke splitsing van fase 5 is ook gestart.
 - Er is bewust nog geen PR gemaakt.
-- De worktree was clean na het pushen van fase 2.
 
 ## Wat al is gedaan
 
@@ -47,13 +47,7 @@ Concreet:
 - er is een nieuw packagebestand toegevoegd: `oq_dispatch_contract.yaml`
 - de package-load-order kent nu expliciet een dispatch-laag tussen strategy en heat-control/apply
 - `oq_heat_control.yaml` publiceert nu een expliciet contract voordat actuatorprotecties worden toegepast
-- hetzelfde bestand leest daarna dat contract weer terug voor:
-  - exclusions
-  - slew limiting
-  - hard trip
-  - startup inhibit
-  - min-runtime
-  - working mode apply
+- dit contract bleef in fase 2 nog in hetzelfde bestand gekoppeld aan actuatorlogica
 
 ## Betekenis van het dispatch contract
 
@@ -126,89 +120,87 @@ Dat is bewust nog niet volledig losgetrokken.
 
 De echte actuatorisolatie hoort bij een latere fase.
 
+### 4. Thermal limits zijn nu een eigen package
+
+De gedeelde supply/water guardrail zit niet meer in `oq_heating_strategy.yaml`.
+
+Die policy woont nu in:
+
+- `openquatt/oq_thermal_limits.yaml`
+
+Dat betekent:
+
+- `oq_system_supply_temp` is nu expliciet een gedeelde abstrahering
+- water-temperature limiter / trip / hard-trip state hebben nu een eigen eigenaar
+- `oq_heating_strategy.yaml` leest deze shared state nu alleen nog als input
+
+### 5. Thermal actuator is nu een eigen package
+
+De directe HP mode/level writes zitten niet meer in `oq_heat_control.yaml`.
+
+Die laag woont nu in:
+
+- `openquatt/oq_thermal_actuator.yaml`
+
+Dat betekent:
+
+- `oq_heat_control.yaml` eindigt nu bij finalized actuator requests
+- `oq_thermal_actuator.yaml` consumeert `oq_dispatch_mode_code`
+- `oq_thermal_actuator.yaml` consumeert `oq_actuator_hp1_req` en `oq_actuator_hp2_req`
+- alleen `oq_thermal_actuator.yaml` schrijft nog naar:
+  - `hp1_set_working_mode`
+  - `hp2_set_working_mode`
+  - `hp1_compressor_level`
+  - `hp2_compressor_level`
+- post-apply bookkeeping en runtime-accumulatie hebben nu ook een expliciete eigenaar
+
+### 6. Cooling, heating-curve en Power House dispatch zijn nu eigen producers
+
+De directe curve- en cooling-dispatchlogica woont niet meer volledig in `oq_heat_control.yaml`.
+
+Nieuwe producer-files:
+
+- `openquatt/oq_cooling_dispatch.yaml`
+- `openquatt/oq_heating_curve_control.yaml`
+- `openquatt/oq_power_house_control.yaml`
+
+Dat betekent:
+
+- cooling owner-keuze en cooling request generation wonen nu in `oq_cooling_dispatch.yaml`
+- heating-curve single-vs-dual dispatch woont nu in `oq_heating_curve_control.yaml`
+- Power House demand filtering en topology-keuze wonen nu in `oq_power_house_control.yaml`
+- `oq_heat_control.yaml` leest deze producer-output nu terug en publiceert daarna nog steeds het dispatch contract
+- `oq_heat_control.yaml` houdt nu vooral de generieke post-dispatch shaping en actuator-handoff over
+
 ## Relevante bestanden om als eerste te lezen op de Mac
 
 In deze volgorde:
 
 1. `docs/thermal-control-architectuur.md`
 2. `docs/thermal-control-overdracht.md`
-3. `openquatt/oq_dispatch_contract.yaml`
-4. `openquatt/oq_heat_control.yaml`
-5. `openquatt/oq_heating_strategy.yaml`
-6. `openquatt/oq_packages.yaml`
-7. `openquatt/oq_packages_single.yaml`
+3. `openquatt/oq_thermal_limits.yaml`
+4. `openquatt/oq_heating_strategy.yaml`
+5. `openquatt/oq_dispatch_contract.yaml`
+6. `openquatt/oq_cooling_dispatch.yaml`
+7. `openquatt/oq_heating_curve_control.yaml`
+8. `openquatt/oq_power_house_control.yaml`
+9. `openquatt/oq_heat_control.yaml`
+10. `openquatt/oq_thermal_actuator.yaml`
+11. `openquatt/oq_packages.yaml`
+12. `openquatt/oq_packages_single.yaml`
 
 ## Aanbevolen vervolgstappen
 
-### Fase 3 - gedeelde thermal limits los trekken
+### Volgende stap - generieke shaping verder aanscherpen
 
 Doel:
 
-- shared thermal guardrails uit `oq_heating_strategy.yaml` halen
-- daar een eigen system/policy laag van maken
-
-Voorgestelde nieuwe file:
-
-- `openquatt/oq_thermal_limits.yaml`
-
-Wat daarheen moet:
-
-- `oq_system_supply_temp`
-- water temperature soft limit logic
-- boiler inhibit state
-- trip state
-- hard trip state
-- `oq_water_temp_limit_factor`
-
-Wat voorlopig compatibel mag blijven:
-
-- bestaande ID-namen mogen in eerste instantie hetzelfde blijven
-- consumers hoeven in deze stap nog niet allemaal om
-
-Succescriterium:
-
-- `oq_heating_strategy.yaml` bevat geen gedeelde thermal limit policy meer
-- curve en Power House gebruiken die gedeelde laag alleen nog als input
-
-### Fase 4 - actuatorlaag fysiek isoleren
-
-Doel:
-
-- alles wat direct naar HP mode/level schrijft uit `oq_heat_control.yaml` halen
-
-Voorgestelde nieuwe file:
-
-- `openquatt/oq_thermal_actuator.yaml`
-
-Wat daarheen moet:
-
-- `set_mode`
-- `apply_level`
-- mode gate logic
-- min off-time
-- defrost retain/hold behavior
-- runtime logging
-- transition bookkeeping
-
-Succescriterium:
-
-- alleen `oq_thermal_actuator.yaml` schrijft nog naar:
-  - `hp1_set_working_mode`
-  - `hp2_set_working_mode`
-  - `hp1_compressor_level`
-  - `hp2_compressor_level`
-
-### Fase 5 - strategy dispatch fysiek splitsen
-
-Doel:
-
-- Power House, heating curve en cooling uit `oq_heat_control.yaml` halen
+- bepalen of de resterende generieke request-shaping in `oq_heat_control.yaml` nog verder opgesplitst moet worden
 
 Voorgestelde files:
 
-- `openquatt/oq_heating_curve_control.yaml`
-- `openquatt/oq_power_house_control.yaml`
-- `openquatt/oq_cooling_control.yaml`
+- eventueel `openquatt/oq_dispatch_shaping.yaml`
+- eventueel `openquatt/oq_dispatch_diagnostics.yaml`
 
 Dan wordt:
 
@@ -217,12 +209,24 @@ Dan wordt:
 
 eindelijk ook fysiek gescheiden.
 
+Concreet wat nog in `oq_heat_control.yaml` zit en kandidaat is voor extractie:
+
+- gedeelde demand filtering en pre-actuator request shaping
+- dispatch-contract publicatie
+- curve-specifieke slew limiting
+- gedeelde debug/diagnostics rond dispatch en actuator-input
+
+Waarschijnlijke tussenstap:
+
+- eerst dit tussenpunt stabiel houden en gedrag laten landen
+- daarna beoordelen of contract-publicatie en generieke request-shaping in `oq_heat_control.yaml` moeten blijven of nog verder losgetrokken moeten worden
+
 ## Praktische start op macOS
 
 Aanbevolen stappen:
 
 1. Clone of fetch de repo
-2. Checkout branch `codex/thermal-control-refactor`
+2. Checkout branch `codex/thermal-control-phase3-limits`
 3. Lees eerst de twee docs
 4. Draai daarna de validatie
 
@@ -230,8 +234,8 @@ Indicatieve commands:
 
 ```bash
 git fetch origin
-git checkout codex/thermal-control-refactor
-git pull --ff-only origin codex/thermal-control-refactor
+git checkout codex/thermal-control-phase3-limits
+git pull --ff-only origin codex/thermal-control-phase3-limits
 ```
 
 Als `rg` nog niet beschikbaar is:
@@ -248,7 +252,7 @@ python3 scripts/dev.py validate --jobs 1
 
 ## Bekende validatiecontext
 
-De laatst gedraaide validatie gaf geen nieuwe fase-1/fase-2-specifieke fouten meer.
+De laatst gedraaide validatie gaf geen nieuwe fase-3-specifieke fouten meer.
 
 Er zijn wel bestaande repo-brede style/config meldingen buiten deze refactor, onder meer in:
 
@@ -277,10 +281,10 @@ Dus:
 
 Als er maar een beperkte sessie op de Mac beschikbaar is, pak dan alleen dit op:
 
-1. Maak `oq_thermal_limits.yaml`
-2. Verplaats de gedeelde water/supply guardrail daarheen
-3. Laat `oq_heating_strategy.yaml` die nieuwe shared outputs lezen
+1. Isoleer actuatorwrites in `oq_thermal_actuator.yaml`
+2. Laat `oq_heat_control.yaml` alleen dispatch en pre-actuator policy bepalen
+3. Laat downstream runtime/safety writes door de actuatorlaag doen
 4. Valideer
-5. Commit als fase 3
+5. Commit als fase 4
 
-Dat is de veiligste volgende stap.
+Dat is nu de veiligste volgende stap.

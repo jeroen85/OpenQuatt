@@ -1690,6 +1690,7 @@ text_sensor:
       sorting_group_id: oq_advanced_levels_${hp_id}
       sorting_weight: 43
     lambda: |-
+      // Summarize the two exclusion selectors into one compact diagnostic label.
       const std::string a = id(${hp_id}_excluded_level_a).has_state()
                                 ? id(${hp_id}_excluded_level_a).current_option()
                                 : std::string("None");

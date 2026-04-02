@@ -1,0 +1,389 @@
+# ==============================================================================
+# OpenQuatt - Heating Curve Control
+# ==============================================================================
+#
+# Goal:
+#   Owns the heating-curve dispatch producer.
+#
+# Ownership:
+#   - Computes direct heating-curve demand handoff state
+#   - Decides single-vs-dual curve topology
+#   - Publishes curve producer outputs for oq_heat_control to turn into the
+#     explicit dispatch contract
+# ==============================================================================
+
+globals:
+  - id: oq_curve_dispatch_last_loop_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_curve_dispatch_hp1_req
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_curve_dispatch_hp2_req
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_curve_dispatch_owner_hp
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  # 0=idle, 1=single_hp1, 2=single_hp2, 3=single_lead_hp1, 4=single_lead_hp2,
+  # 5=dual_emergency, 6=dual_defrost, 7=dual_enabled
+  - id: oq_curve_dispatch_reason_code
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+interval:
+  - interval: ${oq_heat_loop_tick_s}s
+    startup_delay: 4000ms
+    then:
+      - lambda: |-
+          // Heating-curve producer: owns direct demand and single-vs-dual dispatch.
+          const int cm_code = id(oq_control_mode_code);
+          const bool active = (cm_code != 5) && (id(oq_heat_mode_code) == 1);
+          if (!active) {
+            id(oq_curve_dispatch_last_loop_ms) = 0;
+            id(oq_curve_dispatch_hp1_req) = 0;
+            id(oq_curve_dispatch_hp2_req) = 0;
+            id(oq_curve_dispatch_owner_hp) = 0;
+            id(oq_curve_dispatch_reason_code) = 0;
+            return;
+          }
+
+          const uint32_t now_ms = (uint32_t) millis();
+          const uint32_t loop_target_ms = (uint32_t) (${oq_heat_loop_curve_s} * 1000UL);
+          if (id(oq_curve_dispatch_last_loop_ms) > 0 && now_ms > id(oq_curve_dispatch_last_loop_ms)) {
+            const uint32_t elapsed_ms = now_ms - id(oq_curve_dispatch_last_loop_ms);
+            if (elapsed_ms < loop_target_ms) return;
+          }
+          id(oq_curve_dispatch_last_loop_ms) = now_ms;
+
+          constexpr int min_level = 0;
+          constexpr int max_level = 10;
+          const int demand_max_f = (int) ${oq_strategy_demand_max_f};
+          int raw = id(oq_demand_raw);
+          raw = std::max(0, std::min(demand_max_f, raw));
+
+          id(oq_demand_filtered_prev) = id(oq_demand_filtered);
+          id(oq_demand_filtered) = raw;
+          id(oq_heating_demand_filtered) = raw;
+
+          int f = raw;
+          int f_cap = id(oq_power_cap_f);
+          f_cap = std::max(0, std::min(demand_max_f, f_cap));
+          if (f > f_cap) f = f_cap;
+
+          #if OQ_TOPOLOGY_DUO
+          const bool lead_is_hp1 = (id(hp1_minutes) <= id(${curve_secondary_minutes_id}));
+          #else
+          const bool lead_is_hp1 = true;
+          #endif
+          const int lead_code = lead_is_hp1 ? 1 : 2;
+          if (id(oq_last_lead_hp) != lead_code) id(oq_last_lead_hp) = lead_code;
+
+          auto excluded_option_matches_level = [&](const std::string &opt, int level)->bool {
+            switch (level) {
+              case 1: return opt == "L1 (H30/C30)";
+              case 2: return opt == "L2 (H39/C36)";
+              case 3: return opt == "L3 (H49/C42)";
+              case 4: return opt == "L4 (H55/C47)";
+              case 5: return opt == "L5 (H61/C52)";
+              case 6: return opt == "L6 (H67/C56)";
+              case 7: return opt == "L7 (H72/C61)";
+              case 8: return opt == "L8 (H79/C66)";
+              case 9: return opt == "L9 (H85/C71)";
+              case 10: return opt == "L10 (H90/C74)";
+              default: return false;
+            }
+          };
+
+          auto level_allowed = [&](bool is_hp1, int level)->bool {
+            if (level <= 0 || level > max_level) return true;
+
+            if (is_hp1) {
+              const std::string excl_a = id(hp1_excluded_level_a).has_state()
+                                             ? id(hp1_excluded_level_a).current_option()
+                                             : std::string("None");
+              const std::string excl_b = id(hp1_excluded_level_b).has_state()
+                                             ? id(hp1_excluded_level_b).current_option()
+                                             : std::string("None");
+              return !excluded_option_matches_level(excl_a, level) &&
+                     !excluded_option_matches_level(excl_b, level);
+            }
+            #if OQ_TOPOLOGY_DUO
+            const std::string excl_a = id(${curve_secondary_excluded_level_a_id}).has_state()
+                                           ? id(${curve_secondary_excluded_level_a_id}).current_option()
+                                           : std::string("None");
+            const std::string excl_b = id(${curve_secondary_excluded_level_b_id}).has_state()
+                                           ? id(${curve_secondary_excluded_level_b_id}).current_option()
+                                           : std::string("None");
+            return !excluded_option_matches_level(excl_a, level) &&
+                   !excluded_option_matches_level(excl_b, level);
+            #else
+            return false;
+            #endif
+          };
+
+          auto valve_defrost_active = [&](bool is_hp1)->bool {
+            if (is_hp1) return id(hp1_4_way_valve).state;
+            #if OQ_TOPOLOGY_DUO
+            return id(${curve_secondary_4_way_valve_id}).state;
+            #else
+            return false;
+            #endif
+          };
+
+          const float Tamb = id(outside_temp_selected).state;
+          const float Tsup = id(oq_system_supply_temp).state;
+          int level_cap = (int) roundf(id(oq_day_max_level).state);
+          if (id(oq_silent_active).state) level_cap = (int) roundf(id(oq_silent_max_level).state);
+          if (level_cap < min_level) level_cap = min_level;
+          if (level_cap > max_level) level_cap = max_level;
+
+          const bool hp1_valve_def = valve_defrost_active(true);
+          #if OQ_TOPOLOGY_DUO
+          const bool hp2_valve_def = valve_defrost_active(false);
+          const bool hp2_available = true;
+          #else
+          const bool hp2_valve_def = false;
+          const bool hp2_available = false;
+          #endif
+          const bool hp1_available = true;
+
+          float def_fac_cfg = ${oq_defrost_power_factor};
+          if (isnan(def_fac_cfg)) def_fac_cfg = 0.55f;
+          const float def_fac = fmaxf(0.10f, fminf(1.00f, def_fac_cfg));
+          const float hp1_th_fac = hp1_valve_def ? def_fac : 1.0f;
+          const float hp2_th_fac = hp2_valve_def ? def_fac : 1.0f;
+
+          auto max_cap_hp = [&](bool is_hp1)->float {
+            if ((is_hp1 && !hp1_available) || (!is_hp1 && !hp2_available)) return 0.0f;
+            float best = 0.0f;
+            for (int lvl = 1; lvl <= level_cap; lvl++) {
+              if (!level_allowed(is_hp1, lvl)) continue;
+              float p = oq_perf::interp_power_th_w(lvl, Tamb, Tsup);
+              if (!isnan(p)) p *= is_hp1 ? hp1_th_fac : hp2_th_fac;
+              if (!isnan(p) && p > best) best = p;
+            }
+            return best;
+          };
+
+          auto publish_capacity_and_deficit = [&](float requested_w)->float {
+            float cap_total = 0.0f;
+            if (!isnan(Tamb) && !isnan(Tsup)) {
+              cap_total = max_cap_hp(true) + max_cap_hp(false);
+            }
+            id(oq_P_hp_cap_w) = cap_total;
+
+            float req = requested_w;
+            if (isnan(req)) req = 0.0f;
+            float deficit = req - cap_total;
+            if (deficit < 0.0f) deficit = 0.0f;
+            id(oq_P_deficit_w) = deficit;
+            return cap_total;
+          };
+
+          auto reset_dual_runtime_state = [&](int owner)->void {
+            id(oq_dual_hp_enabled) = false;
+            id(oq_dual_hp_enable_hold_elapsed_min) = 0;
+            id(oq_dual_hp_disable_hold_elapsed_min) = 0;
+            id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
+            id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
+            id(oq_dual_hp_emergency_hold_elapsed_min) = 0;
+            id(oq_dual_hp_emergency_hold_elapsed_accum_min) = 0.0f;
+            id(oq_curve_single_owner_hp) = owner;
+            id(oq_duo_dispatch_hold_until_ms) = 0;
+          };
+
+          int hp1_req = 0;
+          int hp2_req = 0;
+          int owner = 0;
+          int reason_code = 0;
+
+          #if OQ_TOPOLOGY_DUO
+          publish_capacity_and_deficit(id(oq_phouse_req_w));
+          const bool d1_pre = hp1_valve_def;
+          const bool d2_pre = hp2_valve_def;
+
+          int dual_on_lvl = (int) roundf(id(oq_dual_hp_enable_level).state);
+          if (dual_on_lvl < 1) dual_on_lvl = 1;
+          if (dual_on_lvl > max_level) dual_on_lvl = max_level;
+          int dual_off_lvl = dual_on_lvl - 1;
+          if (dual_off_lvl < 1) dual_off_lvl = 1;
+
+          int dual_on_hold_min = (int) roundf(id(oq_dual_hp_enable_hold_min).state);
+          int dual_off_hold_min = (int) roundf(id(oq_dual_hp_disable_hold_min).state);
+          if (dual_on_hold_min < 1) dual_on_hold_min = 1;
+          if (dual_off_hold_min < 1) dual_off_hold_min = 1;
+
+          int startup_grace_s = 480;
+          int emergency_hold_min = 6;
+          float emergency_temp_err_c = 1.50f;
+          float dual_disable_temp_err_max_c = 0.50f;
+          if (id(oq_curve_control_profile).has_state()) {
+            const auto profile = id(oq_curve_control_profile).current_option();
+            if (profile == "Comfort") {
+              startup_grace_s = 300;
+              emergency_hold_min = 4;
+              emergency_temp_err_c = 1.20f;
+              dual_disable_temp_err_max_c = 0.70f;
+            } else if (profile == "Stable") {
+              startup_grace_s = 600;
+              emergency_hold_min = 8;
+              emergency_temp_err_c = 1.80f;
+              dual_disable_temp_err_max_c = 0.40f;
+            }
+          }
+          if (startup_grace_s < 0) startup_grace_s = 0;
+          if (emergency_hold_min < 1) emergency_hold_min = 1;
+
+          float temp_err_c = NAN;
+          if (!isnan(id(oq_supply_target_temp).state) && !isnan(id(oq_system_supply_temp).state)) {
+            temp_err_c = id(oq_supply_target_temp).state - id(oq_system_supply_temp).state;
+          }
+
+          auto max_allowed_level_for_hp = [&](bool is_hp1)->int {
+            int lvl_max = 0;
+            for (int lvl = level_cap; lvl >= 1; lvl--) {
+              if (level_allowed(is_hp1, lvl)) {
+                lvl_max = lvl;
+                break;
+              }
+            }
+            return lvl_max;
+          };
+
+          const int lead_max_single = max_allowed_level_for_hp(lead_is_hp1);
+          const int lag_max_single = max_allowed_level_for_hp(!lead_is_hp1);
+          const int single_limit_lvl = std::max(lead_max_single, lag_max_single);
+          int single_req_lvl = f;
+          if (single_req_lvl < 0) single_req_lvl = 0;
+          if (single_limit_lvl > 0 && single_req_lvl > single_limit_lvl) single_req_lvl = single_limit_lvl;
+
+          const bool demand_active = (f > 0);
+          const bool beyond_single_capacity = demand_active && (single_limit_lvl > 0) && (f > single_limit_lvl);
+          const bool severe_level_pressure =
+              (single_limit_lvl > 0) && (single_req_lvl >= std::min(max_level, dual_on_lvl + 2));
+          const bool severe_temp_deficit = !isnan(temp_err_c) && (temp_err_c >= emergency_temp_err_c);
+          const uint32_t lead_last_start_ms =
+              lead_is_hp1 ? id(hp1_last_start_ms) : id(${curve_secondary_last_start_ms_id});
+          const bool startup_grace_active =
+              (startup_grace_s > 0) &&
+              (lead_last_start_ms > 0) &&
+              (now_ms > lead_last_start_ms) &&
+              ((now_ms - lead_last_start_ms) < ((uint32_t) startup_grace_s * 1000UL));
+
+          bool force_dual_capacity = false;
+          const bool emergency_dual_condition =
+              demand_active && beyond_single_capacity && severe_level_pressure &&
+              (severe_temp_deficit || single_req_lvl >= (max_level - 1)) && !startup_grace_active;
+          if (emergency_dual_condition) {
+            id(oq_dual_hp_emergency_hold_elapsed_accum_min) += ((float) loop_target_ms / 1000.0f) / 60.0f;
+          } else {
+            id(oq_dual_hp_emergency_hold_elapsed_accum_min) = 0.0f;
+          }
+          id(oq_dual_hp_emergency_hold_elapsed_min) =
+              (int) floorf(id(oq_dual_hp_emergency_hold_elapsed_accum_min) + 1e-3f);
+          if (id(oq_dual_hp_emergency_hold_elapsed_accum_min) >= (float) emergency_hold_min) {
+            force_dual_capacity = true;
+          }
+          const bool force_dual_defrost = demand_active && (d1_pre && d2_pre);
+          const bool dual_on_condition =
+              demand_active && (force_dual_capacity || force_dual_defrost || (single_req_lvl >= dual_on_lvl));
+          const bool dual_off_condition =
+              (!force_dual_capacity) && (!force_dual_defrost) && (single_req_lvl <= dual_off_lvl) &&
+              (isnan(temp_err_c) || temp_err_c <= dual_disable_temp_err_max_c);
+
+          const float dt_min = ((float) loop_target_ms / 1000.0f) / 60.0f;
+          if (!demand_active) {
+            id(oq_dual_hp_enabled) = false;
+            id(oq_dual_hp_enable_hold_elapsed_min) = 0;
+            id(oq_dual_hp_disable_hold_elapsed_min) = 0;
+            id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
+            id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
+            id(oq_dual_hp_emergency_hold_elapsed_min) = 0;
+            id(oq_dual_hp_emergency_hold_elapsed_accum_min) = 0.0f;
+          } else {
+            if (dual_on_condition) id(oq_dual_hp_enable_hold_elapsed_accum_min) += dt_min;
+            else id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
+
+            if (dual_off_condition) id(oq_dual_hp_disable_hold_elapsed_accum_min) += dt_min;
+            else id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
+
+            if (!id(oq_dual_hp_enabled) &&
+                id(oq_dual_hp_enable_hold_elapsed_accum_min) >= (float) dual_on_hold_min) {
+              id(oq_dual_hp_enabled) = true;
+              id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
+            } else if (id(oq_dual_hp_enabled) &&
+                       id(oq_dual_hp_disable_hold_elapsed_accum_min) >= (float) dual_off_hold_min) {
+              id(oq_dual_hp_enabled) = false;
+              id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
+            }
+
+            id(oq_dual_hp_enable_hold_elapsed_min) =
+                (int) floorf(id(oq_dual_hp_enable_hold_elapsed_accum_min) + 1e-3f);
+            id(oq_dual_hp_disable_hold_elapsed_min) =
+                (int) floorf(id(oq_dual_hp_disable_hold_elapsed_accum_min) + 1e-3f);
+          }
+
+          const bool dual_enabled =
+              demand_active && (force_dual_capacity || force_dual_defrost || id(oq_dual_hp_enabled));
+
+          if (!dual_enabled) {
+            int single_owner = id(oq_curve_single_owner_hp);
+            const bool prev_hp1_on = (id(hp1_last_applied_level) > 0);
+            const bool prev_hp2_on = (id(${curve_secondary_last_applied_level_id}) > 0);
+
+            if (!demand_active) {
+              single_owner = 0;
+            } else if (prev_hp1_on && !prev_hp2_on) {
+              single_owner = 1;
+            } else if (prev_hp2_on && !prev_hp1_on) {
+              single_owner = 2;
+            } else if (single_owner != 1 && single_owner != 2) {
+              single_owner = lead_is_hp1 ? 1 : 2;
+            }
+
+            id(oq_curve_single_owner_hp) = single_owner;
+            if (single_owner == 1) hp1_req = f;
+            else if (single_owner == 2) hp2_req = f;
+            else if (lead_is_hp1) hp1_req = f;
+            else hp2_req = f;
+            owner = single_owner;
+            if (single_owner == 1) reason_code = 1;
+            else if (single_owner == 2) reason_code = 2;
+            else if (lead_is_hp1) reason_code = 3;
+            else reason_code = 4;
+          } else {
+            id(oq_curve_single_owner_hp) = 0;
+            hp1_req = f / 2;
+            hp2_req = f / 2;
+            if ((f % 2) == 1) {
+              if (lead_is_hp1) hp1_req += 1;
+              else hp2_req += 1;
+            }
+            owner = 0;
+            if (force_dual_capacity) reason_code = 5;
+            else if (force_dual_defrost) reason_code = 6;
+            else reason_code = 7;
+          }
+          #else
+          reset_dual_runtime_state(1);
+          publish_capacity_and_deficit(id(oq_phouse_req_w));
+          hp1_req = f;
+          hp2_req = 0;
+          owner = (f > 0) ? 1 : 0;
+          reason_code = (f > 0) ? 1 : 0;
+          #endif
+
+          id(oq_curve_dispatch_hp1_req) = hp1_req;
+          id(oq_curve_dispatch_hp2_req) = hp2_req;
+          id(oq_curve_dispatch_owner_hp) = owner;
+          id(oq_curve_dispatch_reason_code) = reason_code;

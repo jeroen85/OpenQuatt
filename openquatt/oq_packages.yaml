@@ -4,20 +4,23 @@
 # Package load order is intentional:
 # 1) Common platform runtime (API/OTA/UART/diagnostics)
 # 2) Supervisory/state
-# 3) Demand strategy
-# 4) Dispatch contract
-# 5) Actuation layers (heat/flow/boiler)
-# 6) Aggregation/energy telemetry
-# 7) External inputs (CIC)
-# 8) External HA proxy inputs
-# 9) External HA cooling proxy inputs
-# 10) Local sensors
-# 11) Source selection and merged selected-source signals
-# 12) OpenTherm thermostat bridge
-# 13) Cooling safety / dew point aggregation
-# 14) Debug/testing utilities
-# 15) Web UI
-# 16) Per-HP hardware adapters
+# 3) Thermal limits / abstractions
+# 4) Demand strategy
+# 5) Dispatch contract
+# 6) Strategy-specific dispatch producers
+# 7) Shared heat-control shaping + actuator layers
+# 8) Flow/boiler and other actuation followers
+# 9) Aggregation/energy telemetry
+# 10) External inputs (CIC)
+# 11) External HA proxy inputs
+# 12) External HA cooling proxy inputs
+# 13) Local sensors
+# 14) Source selection and merged selected-source signals
+# 15) OpenTherm thermostat bridge
+# 16) Cooling safety / dew point aggregation
+# 17) Debug/testing utilities
+# 18) Web UI
+# 19) Per-HP hardware adapters
 # ==============================================================================
 # Shared modules use `*_secondary_*` template vars so topology wiring stays
 # centralized in package files and avoids duplicated module files.
@@ -33,6 +36,10 @@ oq_supervisory_controlmode: !include
     supervisory_secondary_low_noise_mode_id: "hp2_low_noise_mode"
     supervisory_secondary_set_pump_mode_id: "hp2_set_pump_mode"
     supervisory_secondary_pump_speed_id: "hp2_pump_speed"
+oq_thermal_limits: !include
+  file: oq_thermal_limits.yaml
+  vars:
+    secondary_water_out_temp_id: "hp2_water_out_temp"
 oq_heating_strategy: !include
   file: oq_heating_strategy.yaml
   vars:
@@ -40,10 +47,36 @@ oq_heating_strategy: !include
     secondary_outside_last_change_ms_id: "hp2_outside_temp_last_change_ms"
     secondary_outside_activity_ms_id: "hp2_outside_temp_activity_ms"
     secondary_outside_is_distinct: "1"
-    secondary_water_out_temp_id: "hp2_water_out_temp"
     secondary_last_applied_level_id: "hp2_last_applied_level"
     secondary_working_mode_id: "hp2_working_mode"
 oq_dispatch_contract: !include oq_dispatch_contract.yaml
+oq_cooling_dispatch: !include
+  file: oq_cooling_dispatch.yaml
+  vars:
+    cc_secondary_minutes_id: "hp2_minutes"
+    cc_secondary_last_applied_level_id: "hp2_last_applied_level"
+    cc_secondary_last_start_ms_id: "hp2_last_start_ms"
+    cc_secondary_last_stop_ms_id: "hp2_last_stop_ms"
+    cc_secondary_excluded_level_a_id: "hp2_excluded_level_a"
+    cc_secondary_excluded_level_b_id: "hp2_excluded_level_b"
+oq_heating_curve_control: !include
+  file: oq_heating_curve_control.yaml
+  vars:
+    curve_secondary_minutes_id: "hp2_minutes"
+    curve_secondary_last_applied_level_id: "hp2_last_applied_level"
+    curve_secondary_last_start_ms_id: "hp2_last_start_ms"
+    curve_secondary_4_way_valve_id: "hp2_4_way_valve"
+    curve_secondary_excluded_level_a_id: "hp2_excluded_level_a"
+    curve_secondary_excluded_level_b_id: "hp2_excluded_level_b"
+oq_power_house_control: !include
+  file: oq_power_house_control.yaml
+  vars:
+    ph_secondary_minutes_id: "hp2_minutes"
+    ph_secondary_defrost_id: "hp2_defrost"
+    ph_secondary_last_applied_level_id: "hp2_last_applied_level"
+    ph_secondary_4_way_valve_id: "hp2_4_way_valve"
+    ph_secondary_excluded_level_a_id: "hp2_excluded_level_a"
+    ph_secondary_excluded_level_b_id: "hp2_excluded_level_b"
 oq_heat_control: !include
   file: oq_heat_control.yaml
   vars:
@@ -63,6 +96,19 @@ oq_heat_control: !include
     hc_dual_tuning_internal: "false"
     hc_hp2_diag_internal: "false"
     hc_runtime_reset_button_name: "Reset Runtime Counters (HP1+HP2)"
+oq_thermal_actuator: !include
+  file: oq_thermal_actuator.yaml
+  vars:
+    ta_secondary_compressor_level_id: "hp2_compressor_level"
+    ta_secondary_last_applied_level_id: "hp2_last_applied_level"
+    ta_secondary_last_start_ms_id: "hp2_last_start_ms"
+    ta_secondary_last_stop_ms_id: "hp2_last_stop_ms"
+    ta_secondary_minutes_id: "hp2_minutes"
+    ta_secondary_set_working_mode_id: "hp2_set_working_mode"
+    ta_secondary_working_mode_id: "hp2_working_mode"
+    ta_secondary_4_way_valve_id: "hp2_4_way_valve"
+    ta_secondary_excluded_level_a_id: "hp2_excluded_level_a"
+    ta_secondary_excluded_level_b_id: "hp2_excluded_level_b"
 oq_flow_control: !include
   file: oq_flow_control.yaml
   vars:

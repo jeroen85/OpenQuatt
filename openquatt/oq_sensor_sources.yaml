@@ -251,6 +251,7 @@ text_sensor:
     entity_category: diagnostic
     update_interval: 5s
     lambda: |-
+      // Report which selected-source inputs are currently being held through source dropouts.
       std::string active;
       auto add = [&](const char *label) {
         if (!active.empty()) active += ", ";
