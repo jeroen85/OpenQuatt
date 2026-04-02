@@ -36,7 +36,6 @@ Doel van fase 2 was een expliciete contractlaag tussen dispatch en actuatorpad i
 
 Dat is gedaan in:
 
-- `openquatt/oq_dispatch_contract.yaml`
 - `openquatt/oq_heat_control.yaml`
 - `openquatt/oq_packages.yaml`
 - `openquatt/oq_packages_single.yaml`
@@ -44,8 +43,8 @@ Dat is gedaan in:
 
 Concreet:
 
-- er is een nieuw packagebestand toegevoegd: `oq_dispatch_contract.yaml`
-- de package-load-order kent nu expliciet een dispatch-laag tussen strategy en heat-control/apply
+- er is een expliciet dispatch-contract ingevoerd
+- dat contract woont nu compact in `oq_heat_control.yaml`
 - `oq_heat_control.yaml` publiceert nu een expliciet contract voordat actuatorprotecties worden toegepast
 - dit contract bleef in fase 2 nog in hetzelfde bestand gekoppeld aan actuatorlogica
 
@@ -160,17 +159,34 @@ De directe curve- en cooling-dispatchlogica woont niet meer volledig in `oq_heat
 
 Nieuwe producer-files:
 
-- `openquatt/oq_cooling_dispatch.yaml`
+- `openquatt/oq_cooling_control.yaml`
 - `openquatt/oq_heating_curve_control.yaml`
 - `openquatt/oq_power_house_control.yaml`
 
 Dat betekent:
 
-- cooling owner-keuze en cooling request generation wonen nu in `oq_cooling_dispatch.yaml`
+- cooling demand, owner-keuze en cooling request generation wonen nu in `oq_cooling_control.yaml`
 - heating-curve single-vs-dual dispatch woont nu in `oq_heating_curve_control.yaml`
 - Power House demand filtering en topology-keuze wonen nu in `oq_power_house_control.yaml`
 - `oq_heat_control.yaml` leest deze producer-output nu terug en publiceert daarna nog steeds het dispatch contract
 - `oq_heat_control.yaml` houdt nu vooral de generieke post-dispatch shaping en actuator-handoff over
+
+### 7. Compacting pass op package-count
+
+De laatste stap heeft de refactor weer iets compacter gemaakt, zonder de hoofdgrenzen terug te draaien.
+
+Concreet:
+
+- `openquatt/oq_dispatch_contract.yaml` is teruggevouwen in `openquatt/oq_heat_control.yaml`
+- `openquatt/oq_cooling_dispatch.yaml` is teruggevouwen in `openquatt/oq_cooling_control.yaml`
+- de grote architectuurgrenzen blijven staan:
+  - thermal limits
+  - heating strategy
+  - cooling control
+  - heating-curve producer
+  - Power House producer
+  - heat-control shaping + contract
+  - thermal actuator
 
 ## Relevante bestanden om als eerste te lezen op de Mac
 
@@ -180,14 +196,13 @@ In deze volgorde:
 2. `docs/thermal-control-overdracht.md`
 3. `openquatt/oq_thermal_limits.yaml`
 4. `openquatt/oq_heating_strategy.yaml`
-5. `openquatt/oq_dispatch_contract.yaml`
-6. `openquatt/oq_cooling_dispatch.yaml`
-7. `openquatt/oq_heating_curve_control.yaml`
-8. `openquatt/oq_power_house_control.yaml`
-9. `openquatt/oq_heat_control.yaml`
-10. `openquatt/oq_thermal_actuator.yaml`
-11. `openquatt/oq_packages.yaml`
-12. `openquatt/oq_packages_single.yaml`
+5. `openquatt/oq_cooling_control.yaml`
+6. `openquatt/oq_heating_curve_control.yaml`
+7. `openquatt/oq_power_house_control.yaml`
+8. `openquatt/oq_heat_control.yaml`
+9. `openquatt/oq_thermal_actuator.yaml`
+10. `openquatt/oq_packages.yaml`
+11. `openquatt/oq_packages_single.yaml`
 
 ## Aanbevolen vervolgstappen
 

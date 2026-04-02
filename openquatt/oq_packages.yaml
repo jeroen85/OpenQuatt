@@ -5,22 +5,20 @@
 # 1) Common platform runtime (API/OTA/UART/diagnostics)
 # 2) Supervisory/state
 # 3) Thermal limits / abstractions
-# 4) Demand strategy
-# 5) Dispatch contract
-# 6) Strategy-specific dispatch producers
-# 7) Shared heat-control shaping + actuator layers
-# 8) Flow/boiler and other actuation followers
-# 9) Aggregation/energy telemetry
-# 10) External inputs (CIC)
-# 11) External HA proxy inputs
-# 12) External HA cooling proxy inputs
-# 13) Local sensors
-# 14) Source selection and merged selected-source signals
-# 15) OpenTherm thermostat bridge
-# 16) Cooling safety / dew point aggregation
-# 17) Debug/testing utilities
-# 18) Web UI
-# 19) Per-HP hardware adapters
+# 4) Demand strategy + cooling demand/control
+# 5) Heating dispatch producers
+# 6) Shared heat-control shaping + actuator layers
+# 7) Flow/boiler and other actuation followers
+# 8) Aggregation/energy telemetry
+# 9) External inputs (CIC)
+# 10) External HA proxy inputs
+# 11) External HA cooling proxy inputs
+# 12) Local sensors
+# 13) Source selection and merged selected-source signals
+# 14) OpenTherm thermostat bridge
+# 15) Debug/testing utilities
+# 16) Web UI
+# 17) Per-HP hardware adapters
 # ==============================================================================
 # Shared modules use `*_secondary_*` template vars so topology wiring stays
 # centralized in package files and avoids duplicated module files.
@@ -49,9 +47,8 @@ oq_heating_strategy: !include
     secondary_outside_is_distinct: "1"
     secondary_last_applied_level_id: "hp2_last_applied_level"
     secondary_working_mode_id: "hp2_working_mode"
-oq_dispatch_contract: !include oq_dispatch_contract.yaml
-oq_cooling_dispatch: !include
-  file: oq_cooling_dispatch.yaml
+oq_cooling_control: !include
+  file: oq_cooling_control.yaml
   vars:
     cc_secondary_minutes_id: "hp2_minutes"
     cc_secondary_last_applied_level_id: "hp2_last_applied_level"

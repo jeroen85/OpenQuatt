@@ -3,14 +3,15 @@
 # ==============================================================================
 #
 # Goal:
-#   Build the first dedicated cooling control path on top of the cooling safety
-#   signals. This layer produces a conservative supply target and a separate
-#   cooling demand `f` without touching the existing heating strategy.
+#   Own the complete passive-cooling path on top of the cooling safety signals.
+#   This layer produces a conservative supply target, a cooling demand `f`, and
+#   the downstream cooling owner/request handoff.
 #
 # Scope:
 #   - Derive a safe cooling supply target from dew point + user floor
 #   - Run a small water-temperature PI(D) loop for cooling only
-#   - Publish `oq_cooling_demand_raw` (0..20) as the future shared dispatcher input
+#   - Publish `oq_cooling_demand_raw` (0..20)
+#   - Choose the active cooling owner HP and publish cooling request handoff
 #
 # ==============================================================================
 
@@ -32,6 +33,32 @@ globals:
 
   - id: oq_cooling_last_loop_ms
     type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_cooling_dispatch_last_loop_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_cooling_dispatch_hp1_req
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_cooling_dispatch_hp2_req
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_cooling_dispatch_owner_hp
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  # 0=idle, 1=owner_hp1, 2=owner_hp2
+  - id: oq_cooling_dispatch_reason_code
+    type: int
     restore_value: false
     initial_value: '0'
 
@@ -250,3 +277,196 @@ interval:
           id(oq_cooling_pid_integral) = integral;
           id(oq_cooling_pid_last_error_c) = error_c;
           id(oq_cooling_demand_raw) = demand;
+
+  - interval: ${oq_heat_loop_tick_s}s
+    startup_delay: 4000ms
+    then:
+      - lambda: |-
+          // Cooling dispatch: owns single-owner cooling request handoff for CM5.
+          const int cm_code = id(oq_control_mode_code);
+          if (cm_code != 5) {
+            id(oq_cooling_dispatch_last_loop_ms) = 0;
+            id(oq_cooling_dispatch_hp1_req) = 0;
+            id(oq_cooling_dispatch_hp2_req) = 0;
+            id(oq_cooling_dispatch_owner_hp) = 0;
+            id(oq_cooling_dispatch_reason_code) = 0;
+            return;
+          }
+
+          const uint32_t now_ms = (uint32_t) millis();
+          const uint32_t loop_target_ms = (uint32_t) (${oq_heat_loop_curve_s} * 1000UL);
+          if (id(oq_cooling_dispatch_last_loop_ms) > 0 && now_ms > id(oq_cooling_dispatch_last_loop_ms)) {
+            const uint32_t elapsed_ms = now_ms - id(oq_cooling_dispatch_last_loop_ms);
+            if (elapsed_ms < loop_target_ms) return;
+          }
+          id(oq_cooling_dispatch_last_loop_ms) = now_ms;
+
+          constexpr int max_level = 10;
+          const int demand_max_f = (int) ${oq_strategy_demand_max_f};
+          int raw = id(oq_cooling_demand_raw);
+          raw = std::max(0, std::min(demand_max_f, raw));
+
+          id(oq_demand_filtered_prev) = id(oq_demand_filtered);
+          id(oq_demand_filtered) = raw;
+          id(oq_heating_demand_filtered) = 0;
+
+          int f = raw;
+          int f_cap = id(oq_power_cap_f);
+          f_cap = std::max(0, std::min(demand_max_f, f_cap));
+          if (f > f_cap) f = f_cap;
+
+          #if OQ_TOPOLOGY_DUO
+          const bool lead_is_hp1 = (id(hp1_minutes) <= id(${cc_secondary_minutes_id}));
+          #else
+          const bool lead_is_hp1 = true;
+          #endif
+
+          const int lead_code = lead_is_hp1 ? 1 : 2;
+          if (id(oq_last_lead_hp) != lead_code) id(oq_last_lead_hp) = lead_code;
+
+          auto excluded_option_matches_level = [&](const std::string &opt, int level)->bool {
+            switch (level) {
+              case 1: return opt == "L1 (H30/C30)";
+              case 2: return opt == "L2 (H39/C36)";
+              case 3: return opt == "L3 (H49/C42)";
+              case 4: return opt == "L4 (H55/C47)";
+              case 5: return opt == "L5 (H61/C52)";
+              case 6: return opt == "L6 (H67/C56)";
+              case 7: return opt == "L7 (H72/C61)";
+              case 8: return opt == "L8 (H79/C66)";
+              case 9: return opt == "L9 (H85/C71)";
+              case 10: return opt == "L10 (H90/C74)";
+              default: return false;
+            }
+          };
+
+          auto level_allowed = [&](bool is_hp1, int level)->bool {
+            if (level <= 0 || level > max_level) return true;
+
+            if (is_hp1) {
+              const std::string excl_a = id(hp1_excluded_level_a).has_state()
+                                             ? id(hp1_excluded_level_a).current_option()
+                                             : std::string("None");
+              const std::string excl_b = id(hp1_excluded_level_b).has_state()
+                                             ? id(hp1_excluded_level_b).current_option()
+                                             : std::string("None");
+              return !excluded_option_matches_level(excl_a, level) &&
+                     !excluded_option_matches_level(excl_b, level);
+            }
+            #if OQ_TOPOLOGY_DUO
+            const std::string excl_a = id(${cc_secondary_excluded_level_a_id}).has_state()
+                                           ? id(${cc_secondary_excluded_level_a_id}).current_option()
+                                           : std::string("None");
+            const std::string excl_b = id(${cc_secondary_excluded_level_b_id}).has_state()
+                                           ? id(${cc_secondary_excluded_level_b_id}).current_option()
+                                           : std::string("None");
+            return !excluded_option_matches_level(excl_a, level) &&
+                   !excluded_option_matches_level(excl_b, level);
+            #else
+            return false;
+            #endif
+          };
+
+          auto hp_has_any_allowed_level = [&](bool is_hp1)->bool {
+            for (int lvl = 1; lvl <= max_level; lvl++) {
+              if (level_allowed(is_hp1, lvl)) return true;
+            }
+            return false;
+          };
+
+          auto hp_restart_blocked = [&](bool is_hp1)->bool {
+            const int prev_applied = is_hp1 ? id(hp1_last_applied_level) : id(${cc_secondary_last_applied_level_id});
+            if (prev_applied > 0) return false;
+
+            int min_off_s = (int) ${oq_hp_min_off_s};
+            if (min_off_s <= 0) return false;
+
+            const uint32_t last_stop_ms = is_hp1 ? id(hp1_last_stop_ms) : id(${cc_secondary_last_stop_ms_id});
+            if (last_stop_ms == 0 || now_ms <= last_stop_ms) return false;
+
+            const uint32_t min_off_ms = (uint32_t) min_off_s * 1000UL;
+            return (uint32_t)(now_ms - last_stop_ms) < min_off_ms;
+          };
+
+          auto hp_can_take_cooling_start = [&](bool is_hp1)->bool {
+            return hp_has_any_allowed_level(is_hp1) && !hp_restart_blocked(is_hp1);
+          };
+
+          auto hp_last_activity_ms = [&](bool is_hp1)->uint32_t {
+            const uint32_t last_start_ms =
+                is_hp1 ? id(hp1_last_start_ms) : id(${cc_secondary_last_start_ms_id});
+            const uint32_t last_stop_ms =
+                is_hp1 ? id(hp1_last_stop_ms) : id(${cc_secondary_last_stop_ms_id});
+            return std::max(last_start_ms, last_stop_ms);
+          };
+
+          auto reset_dual_runtime_state = [&](int owner)->void {
+            id(oq_dual_hp_enabled) = false;
+            id(oq_dual_hp_enable_hold_elapsed_min) = 0;
+            id(oq_dual_hp_disable_hold_elapsed_min) = 0;
+            id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
+            id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
+            id(oq_dual_hp_emergency_hold_elapsed_min) = 0;
+            id(oq_dual_hp_emergency_hold_elapsed_accum_min) = 0.0f;
+            id(oq_curve_single_owner_hp) = owner;
+            id(oq_duo_dispatch_hold_until_ms) = 0;
+          };
+
+          int hp1_req = 0;
+          int hp2_req = 0;
+          int owner = 0;
+
+          #if OQ_TOPOLOGY_DUO
+          const bool demand_active = (f > 0);
+          const bool prev_hp1_on = (id(hp1_last_applied_level) > 0);
+          const bool prev_hp2_on = (id(${cc_secondary_last_applied_level_id}) > 0);
+          const bool hp1_can_start_cooling = hp_can_take_cooling_start(true);
+          const bool hp2_can_start_cooling = hp_can_take_cooling_start(false);
+          const uint32_t hp1_last_active_ms = hp_last_activity_ms(true);
+          const uint32_t hp2_last_active_ms = hp_last_activity_ms(false);
+          const int recent_owner =
+              (hp1_last_active_ms > hp2_last_active_ms) ? 1 :
+              (hp2_last_active_ms > hp1_last_active_ms) ? 2 : 0;
+
+          owner = id(oq_curve_single_owner_hp);
+          if (!demand_active) {
+            owner = 0;
+          } else if (prev_hp1_on && !prev_hp2_on) {
+            owner = 1;
+          } else if (prev_hp2_on && !prev_hp1_on) {
+            owner = 2;
+          } else {
+            const bool owner_ok =
+                (owner == 1 && hp1_can_start_cooling) ||
+                (owner == 2 && hp2_can_start_cooling);
+            if (!owner_ok) {
+              if (recent_owner == 1 && hp1_can_start_cooling) owner = 1;
+              else if (recent_owner == 2 && hp2_can_start_cooling) owner = 2;
+              else if (lead_is_hp1 && hp1_can_start_cooling) owner = 1;
+              else if (!lead_is_hp1 && hp2_can_start_cooling) owner = 2;
+              else if (hp1_can_start_cooling && !hp2_can_start_cooling) owner = 1;
+              else if (hp2_can_start_cooling && !hp1_can_start_cooling) owner = 2;
+              else if (hp1_can_start_cooling && hp2_can_start_cooling) owner = lead_is_hp1 ? 1 : 2;
+              else owner = 0;
+            }
+          }
+
+          reset_dual_runtime_state(owner);
+          if (owner == 1) hp1_req = f;
+          else if (owner == 2) hp2_req = f;
+          #else
+          reset_dual_runtime_state(1);
+          owner = (f > 0) ? 1 : 0;
+          hp1_req = f;
+          hp2_req = 0;
+          #endif
+
+          id(oq_P_hp_cap_w) = 0.0f;
+          id(oq_P_deficit_w) = 0.0f;
+
+          id(oq_cooling_dispatch_hp1_req) = hp1_req;
+          id(oq_cooling_dispatch_hp2_req) = hp2_req;
+          id(oq_cooling_dispatch_owner_hp) = owner;
+          if (owner == 1) id(oq_cooling_dispatch_reason_code) = 1;
+          else if (owner == 2) id(oq_cooling_dispatch_reason_code) = 2;
+          else id(oq_cooling_dispatch_reason_code) = 0;

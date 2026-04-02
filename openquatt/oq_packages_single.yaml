@@ -30,9 +30,8 @@ oq_heating_strategy: !include
     secondary_outside_is_distinct: "0"
     secondary_last_applied_level_id: "hp1_last_applied_level"
     secondary_working_mode_id: "hp1_working_mode"
-oq_dispatch_contract: !include oq_dispatch_contract.yaml
-oq_cooling_dispatch: !include
-  file: oq_cooling_dispatch.yaml
+oq_cooling_control: !include
+  file: oq_cooling_control.yaml
   vars:
     cc_secondary_minutes_id: "hp1_minutes"
     cc_secondary_last_applied_level_id: "hp1_last_applied_level"

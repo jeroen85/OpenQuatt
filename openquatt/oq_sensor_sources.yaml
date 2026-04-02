@@ -13,7 +13,6 @@
 
 packages:
   oq_cooling_safety: !include oq_cooling_safety.yaml
-  oq_cooling_control: !include oq_cooling_control.yaml
 
 globals:
   - id: oq_water_supply_temp_selected_last_valid_c
