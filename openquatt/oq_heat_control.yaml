@@ -1529,8 +1529,9 @@ interval:
               DuoCandidate best_duo_candidate{};
               const bool have_best_duo = pick_topology_candidate(2, best_duo_candidate);
               const bool valve_defrost_active = hp1_valve_def || hp2_valve_def;
-              const bool single_topology_active =
-                  ((last1 > 0) && (last2 <= 0)) || ((last1 <= 0) && (last2 > 0));
+              const bool hp1_single_active = (last1 > 0) && (last2 <= 0);
+              const bool hp2_single_active = (last1 <= 0) && (last2 > 0);
+              const bool single_topology_active = hp1_single_active || hp2_single_active;
 
               DuoCandidate best_candidate{};
               bool have_best_candidate = false;
@@ -1560,6 +1561,20 @@ interval:
               if (valve_defrost_active && single_topology_active && have_best_single &&
                   have_best_candidate && (best_candidate.active_hp_count == 2)) {
                 best_candidate = best_single_candidate;
+              }
+
+              // During real single-HP defrost, also keep the active single owner fixed.
+              // Normal runtime balancing may pick a different owner only from full idle;
+              // it must never repoint an already-running single topology to the other HP.
+              // Otherwise apply_level() can retain the defrosting compressor at a non-zero
+              // level and turn what looked like a single-HP handoff into effective duo.
+              if (valve_defrost_active && have_best_single && best_candidate.active_hp_count == 1) {
+                if (hp1_single_active && best_candidate.l1 <= 0 && best_single_candidate.l1 > 0) {
+                  best_candidate = best_single_candidate;
+                }
+                if (hp2_single_active && best_candidate.l2 <= 0 && best_single_candidate.l2 > 0) {
+                  best_candidate = best_single_candidate;
+                }
               }
 
               bool keep_current = false;
@@ -1656,7 +1671,7 @@ interval:
           if (!is_cooling_mode) {
             const bool single_req = ((hp1_req > 0) != (hp2_req > 0));
             const bool both_idle_prev = (id(hp1_last_applied_level) <= 0 && id(${hc_secondary_last_applied_level_id}) <= 0);
-            if (single_req && both_idle_prev && !(hp1_def || hp2_def)) {
+            if (single_req && both_idle_prev && !(hp1_def || hp2_def) && !(hp1_valve_def || hp2_valve_def)) {
               const int req_single = (hp1_req > 0) ? hp1_req : hp2_req;
               const bool lead_can = level_allowed(lead_is_hp1, req_single);
               const bool lag_can = level_allowed(!lead_is_hp1, req_single);
