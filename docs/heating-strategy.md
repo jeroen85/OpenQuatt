@@ -134,5 +134,6 @@ Geen van beide is "altijd beter". Het hangt af van:
 
 - [Power House](power-house.md)
 - [Water Temperature Control](water-temperature-control.md)
+- [Heating Strategy Development](heating-strategy-development.md)
 - [Hoe OpenQuatt werkt](hoe-openquatt-werkt.md)
 - [Regelgedrag van OpenQuatt](regelgedrag-van-openquatt.md)
