@@ -5,13 +5,13 @@
 # Goal:
 #   Own the complete passive-cooling path on top of the cooling safety signals.
 #   This layer produces a conservative supply target, a cooling demand `f`, and
-#   the downstream cooling compressor-request handoff.
+#   the downstream cooling compressor requests.
 #
 # Scope:
 #   - Derive a safe cooling supply target from dew point + user floor
 #   - Run a small water-temperature PI(D) loop for cooling only
 #   - Publish `oq_cooling_demand_raw` (0..20)
-#   - Choose the active cooling owner HP and publish cooling request handoff
+#   - Choose the active cooling owner HP and publish cooling requests
 #
 # ==============================================================================
 
@@ -282,7 +282,7 @@ interval:
     startup_delay: 4000ms
     then:
       - lambda: |-
-          // Cooling dispatch: owns single-owner cooling request handoff for CM5.
+          // Cooling strategy: owns single-owner cooling requests for CM5.
           const int cm_code = id(oq_control_mode_code);
           if (cm_code != 5) {
             id(oq_cooling_request_last_loop_ms) = 0;

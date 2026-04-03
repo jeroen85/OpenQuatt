@@ -2636,7 +2636,7 @@ views:
         cards:
           - type: heading
             icon: mdi:heat-wave
-            heading: Heat allocation
+            heading: Thermal request control
             heading_style: title
           - type: markdown
             content: >-

@@ -3,21 +3,21 @@
 # ==============================================================================
 #
 # Goal:
-#   Owns the complete Power House strategy implementation and compressor-request producer.
+#   Owns the complete Power House strategy implementation and its compressor-request output.
 #
 # Ownership:
 #   - Computes Power House requested heat and compatible demand from room/outside state
 #   - Publishes Power House tuning and diagnostics
 #   - Computes filtered Power House demand from oq_demand_raw
 #   - Chooses the Power House topology / compressor requests
-#   - Publishes request outputs for oq_thermal_request_control to hand off
-#     through the explicit request contract and downstream actuator handling
+#   - Publishes request outputs for oq_thermal_request_control through the
+#     shared request interface before downstream actuator handling
 # ==============================================================================
 
 globals:
   # Power House requested thermal power (W).
   # This is strategy-specific diagnostics/state and is not part of the generic
-  # heating-strategy contract.
+  # heating-strategy interface.
   - id: oq_phouse_req_w
     type: float
     restore_value: false
@@ -366,7 +366,7 @@ number:
       sorting_group_id: oq_tuning_heat
 
 text_sensor:
-  # DEBUG-RUNTIME START: Duo Power House dispatch reason
+  # DEBUG-RUNTIME START: Duo Power House request reason
   - platform: template
     id: oq_duo_optimizer_reason
     name: "Duo optimizer reason"
@@ -472,7 +472,7 @@ interval:
     startup_delay: 4000ms
     then:
       - lambda: |-
-          // Power House producer: owns filtered demand and PH topology selection.
+          // Power House strategy: owns filtered demand and PH topology selection.
           const int cm_code = id(oq_control_mode_code);
           const bool active = (cm_code != 5) && (id(oq_heat_mode_code) != 1);
           if (!active) {

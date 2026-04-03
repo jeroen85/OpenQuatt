@@ -3,7 +3,7 @@
 # ==============================================================================
 #
 # Goal:
-#   Own the shared strategy contract and active heating-strategy selection.
+#   Own the shared strategy interface and active heating-strategy selection.
 #
 # Responsibilities:
 #   - Publishes the active heating strategy as `oq_heat_mode_code`
@@ -37,7 +37,7 @@ globals:
     restore_value: false
     initial_value: '0'
 
-  # Strategy-local phase code published by the active producer.
+  # Strategy-local phase code published by the active strategy module.
   - id: oq_strategy_phase_code
     type: int
     restore_value: false
@@ -90,7 +90,7 @@ select:
       then:
         - climate.pid.reset_integral_term: oq_heating_curve_pid
         - lambda: |-
-            // Reset the shared strategy contract and curve-local state on mode switches.
+            // Reset the shared strategy interface and curve-local state on mode switches.
             id(oq_heat_mode_code) = (x == "Water Temperature Control (heating curve)") ? 1 : 0;
             id(oq_demand_raw) = 0;
             id(oq_strategy_phase_code) = 0;
@@ -296,8 +296,8 @@ interval:
       - lambda: |-
           id(oq_heat_mode_code) = id(oq_heat_control_mode).active_index().value_or(0) == 1 ? 1 : 0;
 
-          // Publish the shared strategy contract fields that are independent of
-          // the active producer implementation.
+          // Publish the shared strategy interface fields that are independent of
+          // the active strategy implementation.
           const int cm_code = id(oq_control_mode_code);
           if (cm_code == 5) id(oq_strategy_active_code) = 1;
           else if (id(oq_heat_mode_code) == 1) id(oq_strategy_active_code) = 2;

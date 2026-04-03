@@ -3,15 +3,15 @@
 # ==============================================================================
 #
 # Goal:
-#   Owns the complete heating-curve strategy and compressor-request producer.
+#   Owns the complete heating-curve strategy and its compressor-request output.
 #
 # Ownership:
 #   - Computes curve supply target generation and PID demand
 #   - Owns curve-specific hysteresis, phase state, and diagnostics
 #   - Decides single-vs-dual curve topology
 #   - Publishes level-derived capacity/deficit telemetry for supervisory CM3 logic
-#   - Publishes curve request outputs for oq_thermal_request_control to turn
-#     into the explicit request handoff
+#   - Publishes curve request outputs for oq_thermal_request_control to use as
+#     the shared request interface
 # ==============================================================================
 
 globals:
@@ -708,7 +708,7 @@ interval:
     then:
       - lambda: |-
           // Curve strategy loop: maintain PID target and publish curve demand.
-          // CM5 owns the thermal strategy contract while cooling is active, so the
+          // CM5 owns the thermal strategy interface while cooling is active, so the
           // curve path must go fully inactive there even when curve mode remains selected.
           const bool active = (id(oq_control_mode_code) != 5) && (id(oq_heat_mode_code) == 1);
           const int demand_max = (int) ${oq_strategy_demand_max_f};

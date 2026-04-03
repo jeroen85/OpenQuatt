@@ -22,7 +22,7 @@
 #
 # Key assumptions:
 #   - Strategy status is available via the shared `oq_strategy_*` contract
-#   - Thermal deficit (`oq_P_deficit_w`) is computed by the active producer path for CM2<->CM3 promotion/demotion
+#   - Thermal deficit (`oq_P_deficit_w`) is computed by the active strategy path for CM2<->CM3 promotion/demotion
 #   - Flow signal is available and sufficiently reliable for flow override
 #
 # Interaction with Control Modes:

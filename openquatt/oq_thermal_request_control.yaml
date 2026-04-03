@@ -3,7 +3,7 @@
 # ==============================================================================
 #
 # Goal:
-#   Consume strategy outputs, publish an explicit thermal request contract,
+#   Consume strategy outputs, publish an explicit thermal request interface,
 #   and prepare final actuator requests for HP1/HP2.
 #
 # Role in architecture:
@@ -11,13 +11,13 @@
 #   downstream thermal actuator.
 #
 # What this package DOES do:
-#   - Consumes oq_demand_raw (producer in oq_strategy_manager)
-#   - Consumes producer outputs from oq_cooling_strategy / oq_heating_curve_strategy / oq_power_house_strategy
+#   - Consumes oq_demand_raw (published by oq_strategy_manager)
+#   - Consumes strategy outputs from oq_cooling_strategy / oq_heating_curve_strategy / oq_power_house_strategy
 #   - Applies demand filtering to damp noise/jitter in heat demand
 #   - Applies caps/limits on `f` before split
-#   - Publishes `oq_request_*` as the explicit pre-actuator request handoff
+#   - Publishes `oq_request_*` as the explicit pre-actuator request interface
 #   - Publishes finalized actuator requests for the downstream thermal actuator
-#   - Owns shared request filtering, caps, guards, and actuator handoff logic
+#   - Owns shared request filtering, caps, guards, and actuator input logic
 #   - Consumes shared HP capacity/deficit (`oq_P_hp_cap_w`, `oq_P_deficit_w`) for supervisory/debug logic
 #
 # What this package DOES NOT do:
@@ -43,7 +43,7 @@
 #   - Demand filter and runtime guards intentionally favor stability over fast level changes.
 #   - This file now mixes:
 #     1) shared gating / runtime anchors
-#     2) explicit request-contract publication
+#     2) explicit request-interface publication
 #     3) final actuator-request preparation and safety gating
 #
 # ==============================================================================
@@ -52,7 +52,7 @@
 # INTERNAL STATE
 # ----------------------------
 globals:
-  # Explicit pre-actuator thermal request contract.
+  # Explicit pre-actuator thermal request interface.
   - id: oq_request_mode_code
     type: int
     restore_value: false
@@ -94,13 +94,13 @@ globals:
     restore_value: false
     initial_value: '0'
 
-  # Shared filtered demand owned by the active strategy request producer.
+  # Shared filtered demand owned by the active strategy module.
   - id: oq_demand_filtered
     type: int
     restore_value: false
     initial_value: '0'
 
-  # Previous filtered demand sample published by the active strategy request producer.
+  # Previous filtered demand sample published by the active strategy module.
   - id: oq_demand_filtered_prev
     type: int
     restore_value: false
@@ -123,7 +123,7 @@ globals:
     restore_value: false
     initial_value: '0.0'
 
-  # Shared curve request state, currently published by the curve producer.
+  # Shared curve request state, currently published by the curve strategy.
   - id: oq_dual_hp_enabled
     type: bool
     restore_value: false
@@ -555,7 +555,7 @@ interval:
 #   heating curve => single-HP/split
 #   power-house => compare best single-vs-duo candidates, prefer lower electrical input, then apply anti-flip guards
 # - shared capacity/deficit publication
-# - explicit request-contract publication
+# - explicit request-interface publication
 # - allowed-level mapping + min-runtime + apply + runtime bookkeeping
 # ----------------------------
   - interval: ${oq_heat_loop_tick_s}s
@@ -721,7 +721,7 @@ interval:
             }
           };
 
-          // DEBUG-RUNTIME: hidden text sensor that explains why the duo optimizer kept or changed dispatch.
+          // DEBUG-RUNTIME: hidden text sensor that explains why the duo optimizer kept or changed the request path.
           auto publish_optimizer_reason = [&](const char* reason)->void {
             #if OQ_TOPOLOGY_DUO
             static std::string last_optimizer_reason = "";
@@ -926,7 +926,7 @@ interval:
           // =========================
           // 2a) Shared request context
           // From here down we only decide requested compressor levels per strategy.
-          // Cooling must never inherit the selected heating strategy dispatcher.
+          // Cooling must never inherit the selected heating strategy path.
           // =========================
           const int active_request_strategy_code =
               is_cooling_mode ? request_strategy_cooling
@@ -1089,7 +1089,7 @@ interval:
           #endif
 
           // =========================
-          // 3) Request contract handoff
+          // 3) Request interface publication
           // Publish pre-protection requests so the downstream actuator path can
           // consume a stable interface before exclusions, slew limits and
           // runtime guards are applied.
@@ -1286,7 +1286,7 @@ interval:
           }
 
           // =========================
-          // 7) Thermal actuator handoff
+          // 7) Thermal actuator input
           // oq_thermal_actuator is now the only package that writes working mode
           // and compressor levels, and owns the post-apply bookkeeping.
           // =========================

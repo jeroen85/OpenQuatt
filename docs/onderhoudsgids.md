@@ -18,9 +18,9 @@ This guide keeps the configuration maintainable and predictable while preserving
 - Do not change control behavior during structural cleanup.
 - Keep ownership boundaries explicit:
   - `oq_supervisory_controlmode`: Control Mode/state machine, caps, low-flow timers/fault state
-  - `oq_strategy_manager`: shared strategy contract and active strategy selection
-  - `oq_heating_curve_strategy` / `oq_power_house_strategy` / `oq_cooling_strategy`: strategy-specific demand and compressor request production
-  - `oq_thermal_request_control`: shared request filtering, request guards, and actuator handoff preparation
+  - `oq_strategy_manager`: shared strategy interface and active strategy selection
+  - `oq_heating_curve_strategy` / `oq_power_house_strategy` / `oq_cooling_strategy`: strategy-specific demand and compressor request outputs
+  - `oq_thermal_request_control`: shared request filtering, request guards, and actuator input preparation
   - `oq_flow_control`: pump/flow PI control and flow mode execution
   - `oq_flow_autotune`: flow plant identification and PI gain suggestions
   - `oq_boiler_control`: boiler relay gate and max-temp safety

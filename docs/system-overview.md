@@ -9,7 +9,7 @@ This document explains the current OpenQuatt architecture as implemented in the 
 - [3. Core Runtime Loops](#3-core-runtime-loops)
 - [4. Data Pipeline](#4-data-pipeline)
 - [5. Heating Strategy Mechanics](#5-heating-strategy-mechanics)
-- [6. Allocation and Optimization Mechanics](#6-allocation-and-optimization-mechanics)
+- [6. Thermal Request Control Mechanics](#6-thermal-request-control-mechanics)
 - [7. Flow Control Mechanics](#7-flow-control-mechanics)
 - [8. Safety Model](#8-safety-model)
 - [9. Hardware Profiles and Pin Strategy](#9-hardware-profiles-and-pin-strategy)
@@ -67,7 +67,7 @@ This order mirrors data dependencies and ownership boundaries.
 OpenQuatt follows strict subsystem ownership:
 
 - **Control Mode state machine**: `oq_supervisory_controlmode`
-- **Shared heating strategy contract (`oq_heat_mode_code`, `oq_strategy_*`)**: `oq_strategy_manager`
+- **Shared heating strategy interface (`oq_heat_mode_code`, `oq_strategy_*`)**: `oq_strategy_manager`
 - **Heating-curve demand and compressor requests**: `oq_heating_curve_strategy`
 - **Power House demand and compressor requests**: `oq_power_house_strategy`
 - **Cooling demand and compressor requests**: `oq_cooling_strategy`
@@ -89,11 +89,11 @@ This prevents hidden control coupling and keeps debugging deterministic.
 | Subsystem | Interval | Purpose |
 |---|---:|---|
 | Supervisory | `${oq_supervisory_loop_s}` (default 5s) | Mode decisions, flow interlock, frost logic, power-cap safety net |
-| Strategy manager | `${oq_strategy_loop_s}` (default 5s) | Active strategy selection plus shared `oq_strategy_*` contract state |
+| Strategy manager | `${oq_strategy_loop_s}` (default 5s) | Active strategy selection plus shared `oq_strategy_*` interface state |
 | Heating curve | `${oq_strategy_loop_s}` plus `${oq_heat_loop_tick_s}` | Curve target generation, PID demand, and curve compressor requests |
 | Power House | `${oq_heat_loop_tick_s}` with effective cadence `${oq_heat_loop_powerhouse_s}` | Power model, filtered demand, and Power House compressor requests |
 | Cooling | `${oq_heat_loop_tick_s}` | Cooling target, PI demand, and cooling compressor requests |
-| Thermal request control | Tick `${oq_heat_loop_tick_s}` (default 5s), effective cadence `${oq_heat_loop_curve_s}` (Curve) / `${oq_heat_loop_powerhouse_s}` (Power House) | Shared request control, guards, and actuator handoff |
+| Thermal request control | Tick `${oq_heat_loop_tick_s}` (default 5s), effective cadence `${oq_heat_loop_curve_s}` (Curve) / `${oq_heat_loop_powerhouse_s}` (Power House) | Shared request control, guards, and actuator input |
 | Flow control | `${oq_flow_loop_s}` (default 5s) | Pump iPWM control (AUTO/MANUAL/FROST/autotune override) |
 | Boiler control | `${oq_boiler_loop_s}` (default 5s) | CM3 gating under the shared water-temperature guardrail |
 | CIC polling tick | `${cic_poll_tick_ms}` (default 5s) | Poll scheduler, stale detection, feed invalidation |
@@ -127,7 +127,7 @@ Strategy packages compute:
 - `oq_cooling_demand_raw` (`0..20`) for cooling
 - explicit `oq_strategy_*` status for downstream diagnostics and supervisory logic
 
-### 4.4 Allocation layer
+### 4.4 Thermal request layer
 
 `oq_thermal_request_control` computes:
 
@@ -213,7 +213,7 @@ Heating-curve stability guards around zero-demand edge:
 - explicit per-HP slew-rate limiting with slower up and faster down behavior
 - in heating-curve mode: single-HP-first allocation with dual-enable hysteresis and sequential HP step changes
 
-## 6. Allocation and Optimization Mechanics
+## 6. Thermal Request Control Mechanics
 
 `oq_thermal_request_control` enforces, in order:
 
