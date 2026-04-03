@@ -1,0 +1,485 @@
+# ==============================================================================
+# OpenQuatt - Passive Cooling Strategy
+# ==============================================================================
+#
+# Goal:
+#   Own the complete passive-cooling path on top of the cooling safety signals.
+#   This layer produces a conservative supply target, a cooling demand `f`, and
+#   the downstream cooling compressor requests.
+#
+# Scope:
+#   - Derive a safe cooling supply target from dew point + user floor
+#   - Run a small water-temperature PI(D) loop for cooling only
+#   - Publish `oq_cooling_demand_raw` (0..20)
+#   - Choose the active cooling owner HP and publish cooling requests
+#
+# ==============================================================================
+
+globals:
+  - id: oq_cooling_demand_raw
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_cooling_pid_integral
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+
+  - id: oq_cooling_pid_last_error_c
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+
+  - id: oq_cooling_last_loop_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_cooling_request_last_loop_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_cooling_request_hp1_level
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_cooling_request_hp2_level
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_cooling_request_owner_hp
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  # 0=idle, 1=owner_hp1, 2=owner_hp2
+  - id: oq_cooling_request_reason_code
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+number:
+  - platform: template
+    id: cooling_min_supply_temp
+    name: "Cooling Minimum Supply Temp"
+    icon: mdi:thermometer-chevron-down
+    unit_of_measurement: "°C"
+    min_value: 16.0
+    max_value: 24.0
+    step: 0.5
+    mode: slider
+    optimistic: true
+    restore_value: true
+    initial_value: 18.0
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_control
+
+  - platform: template
+    id: cooling_demand_max_f
+    name: "Cooling Demand Max"
+    icon: mdi:gauge
+    unit_of_measurement: "step"
+    min_value: 0
+    max_value: 20
+    step: 1
+    mode: slider
+    optimistic: true
+    restore_value: true
+    initial_value: 4
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_control
+
+  - platform: template
+    id: cooling_pid_kp
+    name: "Cooling PID Kp"
+    disabled_by_default: true
+    icon: mdi:chart-bell-curve-cumulative
+    min_value: 0.0
+    max_value: 10.0
+    step: 0.1
+    mode: slider
+    optimistic: true
+    restore_value: true
+    initial_value: 3.0
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+  - platform: template
+    id: cooling_pid_ki
+    name: "Cooling PID Ki"
+    disabled_by_default: true
+    icon: mdi:chart-timeline-variant
+    min_value: 0.0
+    max_value: 2.0
+    step: 0.01
+    mode: slider
+    optimistic: true
+    restore_value: true
+    initial_value: 0.12
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+  - platform: template
+    id: cooling_pid_kd
+    name: "Cooling PID Kd"
+    disabled_by_default: true
+    icon: mdi:chart-line
+    min_value: 0.0
+    max_value: 2.0
+    step: 0.01
+    mode: slider
+    optimistic: true
+    restore_value: true
+    initial_value: 0.0
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+sensor:
+  - platform: template
+    id: cooling_supply_target
+    name: "Cooling Supply Target"
+    icon: mdi:target
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 5s
+    lambda: |-
+      // Cooling may never target below the configured floor or the dew-point-safe floor.
+      float target_c = id(cooling_min_supply_temp).state;
+      if (id(minimum_safe_supply_temp).has_state() && !isnan(id(minimum_safe_supply_temp).state)) {
+        target_c = fmaxf(target_c, id(minimum_safe_supply_temp).state);
+      }
+      return target_c;
+    web_server:
+      sorting_group_id: oq_temperatures
+
+  - platform: template
+    id: cooling_supply_error
+    name: "Cooling Supply Error"
+    icon: mdi:delta
+    unit_of_measurement: "°C"
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 5s
+    lambda: |-
+      if (!id(cooling_supply_target).has_state() || isnan(id(cooling_supply_target).state)) return NAN;
+      if (!id(oq_system_supply_temp).has_state() || isnan(id(oq_system_supply_temp).state)) return NAN;
+      // Positive error means the supply is warmer than target, so more cooling may be requested.
+      return id(oq_system_supply_temp).state - id(cooling_supply_target).state;
+    web_server:
+      sorting_group_id: oq_temperatures
+
+  - platform: template
+    id: oq_cooling_demand_raw_sensor
+    name: "Cooling Demand (raw)"
+    icon: mdi:speedometer-medium
+    unit_of_measurement: "step"
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return (float) id(oq_cooling_demand_raw);
+
+interval:
+  - interval: 5s
+    then:
+      - lambda: |-
+          const float near_safe_floor_limit_c = 0.30f;
+          const float stop_safe_floor_limit_c = 0.10f;
+
+          // Resolve loop timing and reset the controller cleanly when cooling is not allowed.
+          const uint32_t now_ms = (uint32_t) millis();
+          float dt_s = 5.0f;
+          if (id(oq_cooling_last_loop_ms) > 0 && now_ms > id(oq_cooling_last_loop_ms)) {
+            dt_s = (float) (now_ms - id(oq_cooling_last_loop_ms)) / 1000.0f;
+          }
+          if (dt_s < 0.1f) dt_s = 0.1f;
+          if (dt_s > 15.0f) dt_s = 15.0f;
+          id(oq_cooling_last_loop_ms) = now_ms;
+
+          const bool active =
+              id(cooling_enable_selected).state &&
+              id(cooling_request_active).state &&
+              id(cooling_permitted).state;
+
+          if (!active ||
+              !id(cooling_supply_target).has_state() || isnan(id(cooling_supply_target).state) ||
+              !id(oq_system_supply_temp).has_state() || isnan(id(oq_system_supply_temp).state)) {
+            id(oq_cooling_demand_raw) = 0;
+            id(oq_cooling_pid_integral) = 0.0f;
+            id(oq_cooling_pid_last_error_c) = 0.0f;
+            return;
+          }
+
+          // Cooling PI(D): positive error means the system supply is still warmer than target.
+          const float error_c = id(oq_system_supply_temp).state - id(cooling_supply_target).state;
+          float kp = id(cooling_pid_kp).state;
+          float ki = id(cooling_pid_ki).state;
+          float kd = id(cooling_pid_kd).state;
+          if (isnan(kp) || kp < 0.0f) kp = 0.0f;
+          if (isnan(ki) || ki < 0.0f) ki = 0.0f;
+          if (isnan(kd) || kd < 0.0f) kd = 0.0f;
+
+          float integral = id(oq_cooling_pid_integral);
+
+          float derivative = 0.0f;
+          if (dt_s > 0.0f) {
+            derivative = (error_c - id(oq_cooling_pid_last_error_c)) / dt_s;
+          }
+
+          int demand_max = (int) lroundf(id(cooling_demand_max_f).state);
+          if (demand_max < 0) demand_max = 0;
+          if (demand_max > 20) demand_max = 20;
+
+          // Keep the integrator from "sticking" to level 1 when the supply is already
+          // at or below target, and stop winding up while the output is saturated high.
+          const float out_before_integral_update = (kp * error_c) + (ki * integral) + (kd * derivative);
+          if (error_c <= 0.0f) {
+            integral = 0.0f;
+          } else if (error_c < near_safe_floor_limit_c) {
+            integral = fmaxf(0.0f, integral - dt_s);
+          } else if (out_before_integral_update < (float) demand_max) {
+            integral += error_c * dt_s;
+          }
+          if (integral < -20.0f) integral = -20.0f;
+          if (integral > 20.0f) integral = 20.0f;
+
+          float out = (kp * error_c) + (ki * integral) + (kd * derivative);
+          if (out < 0.0f) out = 0.0f;
+          int demand = (int) lroundf(out);
+          if (demand < 0) demand = 0;
+          if (demand > demand_max) demand = demand_max;
+
+          // Add a small explicit approach zone near the dew-point-safe floor.
+          if (id(minimum_safe_supply_temp).has_state() && !isnan(id(minimum_safe_supply_temp).state)) {
+            const float safe_gap_c = id(oq_system_supply_temp).state - id(minimum_safe_supply_temp).state;
+            if (safe_gap_c <= stop_safe_floor_limit_c) {
+              demand = 0;
+              integral = 0.0f;
+            } else if (safe_gap_c <= near_safe_floor_limit_c) {
+              if (demand > 1) demand = 1;
+              integral = fminf(integral, 1.0f);
+            }
+          }
+
+          id(oq_cooling_pid_integral) = integral;
+          id(oq_cooling_pid_last_error_c) = error_c;
+          id(oq_cooling_demand_raw) = demand;
+
+  - interval: ${oq_heat_loop_tick_s}s
+    startup_delay: 4000ms
+    then:
+      - lambda: |-
+          // Cooling strategy: owns single-owner cooling requests for CM5.
+          const int cm_code = id(oq_control_mode_code);
+          if (cm_code != 5) {
+            id(oq_cooling_request_last_loop_ms) = 0;
+            id(oq_cooling_request_hp1_level) = 0;
+            id(oq_cooling_request_hp2_level) = 0;
+            id(oq_cooling_request_owner_hp) = 0;
+            id(oq_cooling_request_reason_code) = 0;
+            return;
+          }
+
+          const uint32_t now_ms = (uint32_t) millis();
+          const uint32_t loop_target_ms = (uint32_t) (${oq_heat_loop_curve_s} * 1000UL);
+          if (id(oq_cooling_request_last_loop_ms) > 0 && now_ms > id(oq_cooling_request_last_loop_ms)) {
+            const uint32_t elapsed_ms = now_ms - id(oq_cooling_request_last_loop_ms);
+            if (elapsed_ms < loop_target_ms) return;
+          }
+          id(oq_cooling_request_last_loop_ms) = now_ms;
+
+          constexpr int max_level = 10;
+          const int demand_max_f = (int) ${oq_strategy_demand_max_f};
+          int raw = id(oq_cooling_demand_raw);
+          raw = std::max(0, std::min(demand_max_f, raw));
+
+          id(oq_demand_filtered_prev) = id(oq_demand_filtered);
+          id(oq_demand_filtered) = raw;
+          id(oq_heating_demand_filtered) = 0;
+
+          int f = raw;
+          int f_cap = id(oq_power_cap_f);
+          f_cap = std::max(0, std::min(demand_max_f, f_cap));
+          if (f > f_cap) f = f_cap;
+
+          #if OQ_TOPOLOGY_DUO
+          const bool lead_is_hp1 = (id(hp1_minutes) <= id(${cc_secondary_minutes_id}));
+          #else
+          const bool lead_is_hp1 = true;
+          #endif
+
+          const int lead_code = lead_is_hp1 ? 1 : 2;
+          if (id(oq_last_lead_hp) != lead_code) id(oq_last_lead_hp) = lead_code;
+
+          auto excluded_option_matches_level = [&](const std::string &opt, int level)->bool {
+            switch (level) {
+              case 1: return opt == "L1 (H30/C30)";
+              case 2: return opt == "L2 (H39/C36)";
+              case 3: return opt == "L3 (H49/C42)";
+              case 4: return opt == "L4 (H55/C47)";
+              case 5: return opt == "L5 (H61/C52)";
+              case 6: return opt == "L6 (H67/C56)";
+              case 7: return opt == "L7 (H72/C61)";
+              case 8: return opt == "L8 (H79/C66)";
+              case 9: return opt == "L9 (H85/C71)";
+              case 10: return opt == "L10 (H90/C74)";
+              default: return false;
+            }
+          };
+
+          auto level_allowed = [&](bool is_hp1, int level)->bool {
+            if (level <= 0 || level > max_level) return true;
+
+            if (is_hp1) {
+              const std::string excl_a = id(hp1_excluded_level_a).has_state()
+                                             ? id(hp1_excluded_level_a).current_option()
+                                             : std::string("None");
+              const std::string excl_b = id(hp1_excluded_level_b).has_state()
+                                             ? id(hp1_excluded_level_b).current_option()
+                                             : std::string("None");
+              return !excluded_option_matches_level(excl_a, level) &&
+                     !excluded_option_matches_level(excl_b, level);
+            }
+            #if OQ_TOPOLOGY_DUO
+            const std::string excl_a = id(${cc_secondary_excluded_level_a_id}).has_state()
+                                           ? id(${cc_secondary_excluded_level_a_id}).current_option()
+                                           : std::string("None");
+            const std::string excl_b = id(${cc_secondary_excluded_level_b_id}).has_state()
+                                           ? id(${cc_secondary_excluded_level_b_id}).current_option()
+                                           : std::string("None");
+            return !excluded_option_matches_level(excl_a, level) &&
+                   !excluded_option_matches_level(excl_b, level);
+            #else
+            return false;
+            #endif
+          };
+
+          auto hp_has_any_allowed_level = [&](bool is_hp1)->bool {
+            for (int lvl = 1; lvl <= max_level; lvl++) {
+              if (level_allowed(is_hp1, lvl)) return true;
+            }
+            return false;
+          };
+
+          auto hp_restart_blocked = [&](bool is_hp1)->bool {
+            const int prev_applied = is_hp1 ? id(hp1_last_applied_level) : id(${cc_secondary_last_applied_level_id});
+            if (prev_applied > 0) return false;
+
+            int min_off_s = (int) ${oq_hp_min_off_s};
+            if (min_off_s <= 0) return false;
+
+            const uint32_t last_stop_ms = is_hp1 ? id(hp1_last_stop_ms) : id(${cc_secondary_last_stop_ms_id});
+            if (last_stop_ms == 0 || now_ms <= last_stop_ms) return false;
+
+            const uint32_t min_off_ms = (uint32_t) min_off_s * 1000UL;
+            return (uint32_t)(now_ms - last_stop_ms) < min_off_ms;
+          };
+
+          auto hp_can_take_cooling_start = [&](bool is_hp1)->bool {
+            return hp_has_any_allowed_level(is_hp1) && !hp_restart_blocked(is_hp1);
+          };
+
+          auto hp_last_activity_ms = [&](bool is_hp1)->uint32_t {
+            const uint32_t last_start_ms =
+                is_hp1 ? id(hp1_last_start_ms) : id(${cc_secondary_last_start_ms_id});
+            const uint32_t last_stop_ms =
+                is_hp1 ? id(hp1_last_stop_ms) : id(${cc_secondary_last_stop_ms_id});
+            return std::max(last_start_ms, last_stop_ms);
+          };
+
+          auto reset_dual_runtime_state = [&](int owner)->void {
+            id(oq_dual_hp_enabled) = false;
+            id(oq_dual_hp_enable_hold_elapsed_min) = 0;
+            id(oq_dual_hp_disable_hold_elapsed_min) = 0;
+            id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
+            id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
+            id(oq_dual_hp_emergency_hold_elapsed_min) = 0;
+            id(oq_dual_hp_emergency_hold_elapsed_accum_min) = 0.0f;
+            id(oq_curve_single_owner_hp) = owner;
+            id(oq_duo_request_hold_until_ms) = 0;
+          };
+
+          int hp1_req = 0;
+          int hp2_req = 0;
+          int owner = 0;
+
+          #if OQ_TOPOLOGY_DUO
+          const bool demand_active = (f > 0);
+          const bool prev_hp1_on = (id(hp1_last_applied_level) > 0);
+          const bool prev_hp2_on = (id(${cc_secondary_last_applied_level_id}) > 0);
+          const bool hp1_can_start_cooling = hp_can_take_cooling_start(true);
+          const bool hp2_can_start_cooling = hp_can_take_cooling_start(false);
+          const uint32_t hp1_last_active_ms = hp_last_activity_ms(true);
+          const uint32_t hp2_last_active_ms = hp_last_activity_ms(false);
+          const int recent_owner =
+              (hp1_last_active_ms > hp2_last_active_ms) ? 1 :
+              (hp2_last_active_ms > hp1_last_active_ms) ? 2 : 0;
+
+          owner = id(oq_curve_single_owner_hp);
+          if (!demand_active) {
+            owner = 0;
+          } else if (prev_hp1_on && !prev_hp2_on) {
+            owner = 1;
+          } else if (prev_hp2_on && !prev_hp1_on) {
+            owner = 2;
+          } else {
+            const bool owner_ok =
+                (owner == 1 && hp1_can_start_cooling) ||
+                (owner == 2 && hp2_can_start_cooling);
+            if (!owner_ok) {
+              if (recent_owner == 1 && hp1_can_start_cooling) owner = 1;
+              else if (recent_owner == 2 && hp2_can_start_cooling) owner = 2;
+              else if (lead_is_hp1 && hp1_can_start_cooling) owner = 1;
+              else if (!lead_is_hp1 && hp2_can_start_cooling) owner = 2;
+              else if (hp1_can_start_cooling && !hp2_can_start_cooling) owner = 1;
+              else if (hp2_can_start_cooling && !hp1_can_start_cooling) owner = 2;
+              else if (hp1_can_start_cooling && hp2_can_start_cooling) owner = lead_is_hp1 ? 1 : 2;
+              else owner = 0;
+            }
+          }
+
+          reset_dual_runtime_state(owner);
+          if (owner == 1) hp1_req = f;
+          else if (owner == 2) hp2_req = f;
+          #else
+          reset_dual_runtime_state(1);
+          owner = (f > 0) ? 1 : 0;
+          hp1_req = f;
+          hp2_req = 0;
+          #endif
+
+          id(oq_P_hp_cap_w) = 0.0f;
+          id(oq_P_deficit_w) = 0.0f;
+
+          id(oq_cooling_request_hp1_level) = hp1_req;
+          id(oq_cooling_request_hp2_level) = hp2_req;
+          id(oq_cooling_request_owner_hp) = owner;
+          if (owner == 1) id(oq_cooling_request_reason_code) = 1;
+          else if (owner == 2) id(oq_cooling_request_reason_code) = 2;
+          else id(oq_cooling_request_reason_code) = 0;
+
+          id(oq_strategy_phase_code) = (f > 0) ? 1 : 0;
+          id(oq_strategy_requested_power_w) = NAN;
+          id(oq_strategy_supply_target_temp) = id(cooling_supply_target).state;
+          id(oq_strategy_heat_request_active) = (f > 0);
+          id(oq_strategy_phase_text).publish_state((f > 0) ? "cool" : "idle");
+
+          char debug_buf[160];
+          snprintf(
+            debug_buf, sizeof(debug_buf),
+            "cool f=%d raw=%d owner=%d target=%.2f",
+            f, raw, owner, id(cooling_supply_target).state);
+          id(oq_strategy_debug_state).publish_state(debug_buf);

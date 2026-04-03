@@ -11,7 +11,7 @@
 # What this package DOES do:
 #   - Switch boiler relay via configured output pin (`oq_boiler_relay_pin`)
 #   - Enables boiler at CM3; disables in all other CMs
-#   - Follow the shared water-temperature guardrail state from `oq_heating_strategy`
+#   - Follow the shared water-temperature guardrail state from `oq_strategy_manager`
 #   - Publish optional diagnostics (for example boiler status / optionally derived power)
 #
 # What this package DOES NOT do:

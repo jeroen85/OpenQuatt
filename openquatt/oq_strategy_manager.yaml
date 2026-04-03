@@ -1,0 +1,308 @@
+# ==============================================================================
+# OpenQuatt - Strategy Manager
+# ==============================================================================
+#
+# Goal:
+#   Own the shared strategy interface and active heating-strategy selection.
+#
+# Responsibilities:
+#   - Publishes the active heating strategy as `oq_heat_mode_code`
+#   - Declares shared strategy output `oq_demand_raw`
+#   - Exposes the user-facing heating strategy selector and status
+#
+# Ownership:
+#   - Curve and Power House implementations write `oq_demand_raw` in their own modules
+#   - This package does not implement strategy-specific demand or compressor-request logic
+# ==============================================================================
+
+globals:
+  # Shared strategy output (0..20) consumed by downstream thermal-request control.
+  - id: oq_demand_raw
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  # 0=Power House, 1=Heating Curve
+  - id: oq_heat_mode_code
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  # Explicit strategy-status contract used by downstream diagnostics and
+  # supervisory logic. Cooling owns code 1 when CM5 is active; otherwise the
+  # selected heating strategy owns the remaining fields.
+  # 0=inactive, 1=cooling, 2=heating_curve, 3=power_house
+  - id: oq_strategy_active_code
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  # Strategy-local phase code published by the active strategy module.
+  - id: oq_strategy_phase_code
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_strategy_requested_power_w
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+
+  - id: oq_strategy_supply_target_temp
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+
+  - id: oq_strategy_heat_request_active
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+  - id: oq_strategy_water_limit_factor
+    type: float
+    restore_value: false
+    initial_value: '1.0'
+
+  - id: oq_strategy_water_trip_active
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+  - id: oq_strategy_water_hard_trip_active
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+select:
+  - platform: template
+    id: oq_heat_control_mode
+    name: "Heating Control Mode"
+    icon: mdi:tune-variant
+    optimistic: true
+    restore_value: true
+    options:
+      - Power House
+      - Water Temperature Control (heating curve)
+    initial_option: Power House
+    web_server:
+      sorting_group_id: oq_control
+    on_value:
+      then:
+        - climate.pid.reset_integral_term: oq_heating_curve_pid
+        - lambda: |-
+            // Reset the shared strategy interface and curve-local state on mode switches.
+            id(oq_heat_mode_code) = (x == "Water Temperature Control (heating curve)") ? 1 : 0;
+            id(oq_demand_raw) = 0;
+            id(oq_strategy_phase_code) = 0;
+            id(oq_strategy_requested_power_w) = NAN;
+            id(oq_strategy_supply_target_temp) = NAN;
+            id(oq_strategy_heat_request_active) = false;
+            id(oq_demand_curve) = 0;
+            id(oq_curve_heat_request_active) = false;
+            id(oq_curve_stop_arm_ms) = 0;
+            id(oq_curve_off_since_ms) = 0;
+            id(oq_curve_restart_inhibit_active) = false;
+            id(oq_curve_outside_ema_initialized) = false;
+            id(oq_curve_outside_ema_last_ms) = 0;
+            id(oq_strategy_phase_text).publish_state("idle");
+            id(oq_strategy_debug_state).publish_state("strategy_switch");
+
+text_sensor:
+  - platform: template
+    id: heating_strategy_status
+    name: "Heating Strategy"
+    icon: mdi:state-machine
+    update_interval: 5s
+    web_server:
+      sorting_group_id: oq_overview
+    lambda: |-
+      return std::string(id(oq_heat_control_mode).current_option().c_str());
+
+  - platform: template
+    id: oq_strategy_phase_text
+    name: "Strategy phase"
+    icon: mdi:state-machine
+    update_interval: never
+    entity_category: diagnostic
+    disabled_by_default: true
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return std::string("idle");
+
+  - platform: template
+    id: oq_strategy_debug_state
+    name: "Strategy debug state"
+    icon: mdi:text-box-search-outline
+    update_interval: never
+    entity_category: diagnostic
+    disabled_by_default: true
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return std::string("init");
+
+sensor:
+  - platform: template
+    id: outside_temp_hp_avg
+    name: "Outside Temperature (Local aggregated)"
+    icon: mdi:thermometer
+    internal: false
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      // Ignore a local HP reading if that specific outside-temperature register stays
+      // frozen while the rest of the same HP still shows fresh activity.
+      const uint32_t now_ms = millis();
+      uint32_t stale_s = (uint32_t) ${oq_outside_temp_stale_s};
+      const uint32_t stale_ms = stale_s * 1000UL;
+      const bool dual_local_sources = (${secondary_outside_is_distinct} != 0);
+      const float hp1_outside_c = id(hp1_outside_temp).state;
+      const float hp2_outside_c = id(${secondary_outside_temp_id}).state;
+
+      auto trusted_local_outside = [&](float outside_c, uint32_t last_change_ms, uint32_t activity_ms)->bool {
+        if (isnan(outside_c)) return false;
+        if (!dual_local_sources || stale_ms == 0) return true;
+        if (last_change_ms == 0 || activity_ms == 0) return true;
+        if (activity_ms <= last_change_ms) return true;
+        if (now_ms <= last_change_ms || now_ms <= activity_ms) return true;
+        const bool outside_old = (uint32_t) (now_ms - last_change_ms) >= stale_ms;
+        const bool hp_recently_active = (uint32_t) (now_ms - activity_ms) < stale_ms;
+        if (outside_old && hp_recently_active) return false;
+        return true;
+      };
+
+      const bool hp1_valid =
+          trusted_local_outside(hp1_outside_c, id(hp1_outside_temp_last_change_ms), id(hp1_outside_temp_activity_ms));
+      const bool hp2_valid =
+          trusted_local_outside(hp2_outside_c, id(${secondary_outside_last_change_ms_id}), id(${secondary_outside_activity_ms_id}));
+
+      if (hp1_valid && hp2_valid) return std::min(hp1_outside_c, hp2_outside_c);
+      if (hp1_valid) return hp1_outside_c;
+      if (hp2_valid) return hp2_outside_c;
+      return NAN;
+
+  - platform: template
+    id: oq_strategy_active_code_sensor
+    name: "Strategy active code"
+    icon: mdi:counter
+    accuracy_decimals: 0
+    update_interval: 5s
+    entity_category: diagnostic
+    disabled_by_default: true
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return (float) id(oq_strategy_active_code);
+
+  - platform: template
+    id: oq_strategy_phase_code_sensor
+    name: "Strategy phase code"
+    icon: mdi:counter
+    accuracy_decimals: 0
+    update_interval: 5s
+    entity_category: diagnostic
+    disabled_by_default: true
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return (float) id(oq_strategy_phase_code);
+
+  - platform: template
+    id: oq_strategy_requested_power_w_sensor
+    name: "Strategy requested power"
+    icon: mdi:flash-outline
+    unit_of_measurement: "W"
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    entity_category: diagnostic
+    disabled_by_default: true
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return id(oq_strategy_requested_power_w);
+
+  - platform: template
+    id: oq_strategy_supply_target_temp_sensor
+    name: "Strategy supply target"
+    icon: mdi:target
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 5s
+    entity_category: diagnostic
+    disabled_by_default: true
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return id(oq_strategy_supply_target_temp);
+
+  - platform: template
+    id: oq_strategy_water_limit_factor_sensor
+    name: "Strategy water limit factor"
+    icon: mdi:water-percent-alert
+    accuracy_decimals: 2
+    update_interval: 5s
+    entity_category: diagnostic
+    disabled_by_default: true
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return id(oq_strategy_water_limit_factor);
+
+binary_sensor:
+  - platform: template
+    id: oq_strategy_heat_request_active_sensor
+    name: "Strategy request active"
+    device_class: heat
+    entity_category: diagnostic
+    disabled_by_default: true
+    lambda: |-
+      return id(oq_strategy_heat_request_active);
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+  - platform: template
+    id: oq_strategy_water_trip_active_sensor
+    name: "Strategy water trip active"
+    entity_category: diagnostic
+    disabled_by_default: true
+    lambda: |-
+      return id(oq_strategy_water_trip_active);
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+  - platform: template
+    id: oq_strategy_water_hard_trip_active_sensor
+    name: "Strategy water hard trip active"
+    entity_category: diagnostic
+    disabled_by_default: true
+    lambda: |-
+      return id(oq_strategy_water_hard_trip_active);
+    web_server:
+      sorting_group_id: oq_diagnostics
+
+interval:
+  - interval: ${oq_strategy_loop_s}s
+    startup_delay: 800ms
+    then:
+      - lambda: |-
+          id(oq_heat_mode_code) = id(oq_heat_control_mode).active_index().value_or(0) == 1 ? 1 : 0;
+
+          // Publish the shared strategy interface fields that are independent of
+          // the active strategy implementation.
+          const int cm_code = id(oq_control_mode_code);
+          if (cm_code == 5) id(oq_strategy_active_code) = 1;
+          else if (id(oq_heat_mode_code) == 1) id(oq_strategy_active_code) = 2;
+          else id(oq_strategy_active_code) = 3;
+
+          id(oq_strategy_water_limit_factor) = id(oq_water_temp_limit_factor);
+          id(oq_strategy_water_trip_active) = id(oq_water_temp_trip_active);
+          id(oq_strategy_water_hard_trip_active) = id(oq_water_temp_hard_trip_active);

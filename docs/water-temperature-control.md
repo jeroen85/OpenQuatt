@@ -11,8 +11,9 @@ Het doel is dat je begrijpt:
 
 De uitleg is gebaseerd op de huidige code in:
 
-- `openquatt/oq_heating_strategy.yaml`
-- `openquatt/oq_heat_control.yaml`
+- `openquatt/oq_strategy_manager.yaml`
+- `openquatt/oq_heating_curve_strategy.yaml`
+- `openquatt/oq_thermal_request_control.yaml`
 
 ## Wat is Water Temperature Control?
 

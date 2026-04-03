@@ -9,7 +9,7 @@ This document explains the current OpenQuatt architecture as implemented in the 
 - [3. Core Runtime Loops](#3-core-runtime-loops)
 - [4. Data Pipeline](#4-data-pipeline)
 - [5. Heating Strategy Mechanics](#5-heating-strategy-mechanics)
-- [6. Allocation and Optimization Mechanics](#6-allocation-and-optimization-mechanics)
+- [6. Thermal Request Control Mechanics](#6-thermal-request-control-mechanics)
 - [7. Flow Control Mechanics](#7-flow-control-mechanics)
 - [8. Safety Model](#8-safety-model)
 - [9. Hardware Profiles and Pin Strategy](#9-hardware-profiles-and-pin-strategy)
@@ -40,19 +40,25 @@ Package include order is intentional:
 
 1. `oq_common`
 2. `oq_supervisory_controlmode`
-3. `oq_heating_strategy`
-4. `oq_heat_control`
-5. `oq_flow_control`
-6. `oq_flow_autotune`
-7. `oq_boiler_control`
-8. `oq_energy`
-9. `oq_cic`
-10. `oq_ha_inputs`
-11. `oq_local_sensors`
-12. `oq_sensor_sources`
-13. `oq_debug_testing`
-14. `oq_webserver`
-15. `oq_HP_io` (HP1 always; HP2 only on Duo)
+3. `oq_thermal_limits`
+4. `oq_strategy_manager`
+5. `oq_cooling_strategy`
+6. `oq_heating_curve_strategy`
+7. `oq_power_house_strategy`
+8. `oq_thermal_request_control`
+9. `oq_thermal_actuator`
+10. `oq_flow_control`
+11. `oq_flow_autotune`
+12. `oq_boiler_control`
+13. `oq_energy`
+14. `oq_cic`
+15. `oq_ha_inputs`
+16. `oq_local_sensors`
+17. `oq_sensor_sources`
+18. `oq_ot_slave`
+19. `oq_debug_testing`
+20. `oq_webserver`
+21. `oq_HP_io` (HP1 always; HP2 only on Duo)
 
 This order mirrors data dependencies and ownership boundaries.
 
@@ -61,8 +67,12 @@ This order mirrors data dependencies and ownership boundaries.
 OpenQuatt follows strict subsystem ownership:
 
 - **Control Mode state machine**: `oq_supervisory_controlmode`
-- **Raw demand (`oq_demand_raw`)**: `oq_heating_strategy`
-- **Compressor level allocation**: `oq_heat_control`
+- **Shared heating strategy interface (`oq_heat_mode_code`, `oq_strategy_*`)**: `oq_strategy_manager`
+- **Heating-curve demand and compressor requests**: `oq_heating_curve_strategy`
+- **Power House demand and compressor requests**: `oq_power_house_strategy`
+- **Cooling demand and compressor requests**: `oq_cooling_strategy`
+- **Thermal request control**: `oq_thermal_request_control`
+- **Safe HP mode/level writes**: `oq_thermal_actuator`
 - **Pump iPWM regulation**: `oq_flow_control`
 - **Boiler relay control**: `oq_boiler_control`
 - **External feed ingest**: `oq_cic`
@@ -79,8 +89,11 @@ This prevents hidden control coupling and keeps debugging deterministic.
 | Subsystem | Interval | Purpose |
 |---|---:|---|
 | Supervisory | `${oq_supervisory_loop_s}` (default 5s) | Mode decisions, flow interlock, frost logic, power-cap safety net |
-| Heating Strategy | `${oq_strategy_loop_s}` (default 5s) | Demand generation plus shared water-temperature limiting (Power House / heating-curve path) |
-| Heat allocation | Tick `${oq_heat_loop_tick_s}` (default 5s), effective cadence `${oq_heat_loop_curve_s}` (Curve) / `${oq_heat_loop_powerhouse_s}` (Power House) | Demand filtering, allocation, optimizer, level apply (per-minute tuning is elapsed-time scaled) |
+| Strategy manager | `${oq_strategy_loop_s}` (default 5s) | Active strategy selection plus shared `oq_strategy_*` interface state |
+| Heating curve | `${oq_strategy_loop_s}` plus `${oq_heat_loop_tick_s}` | Curve target generation, PID demand, and curve compressor requests |
+| Power House | `${oq_heat_loop_tick_s}` with effective cadence `${oq_heat_loop_powerhouse_s}` | Power model, filtered demand, and Power House compressor requests |
+| Cooling | `${oq_heat_loop_tick_s}` | Cooling target, PI demand, and cooling compressor requests |
+| Thermal request control | Tick `${oq_heat_loop_tick_s}` (default 5s), effective cadence `${oq_heat_loop_curve_s}` (Curve) / `${oq_heat_loop_powerhouse_s}` (Power House) | Shared request control, guards, and actuator input |
 | Flow control | `${oq_flow_loop_s}` (default 5s) | Pump iPWM control (AUTO/MANUAL/FROST/autotune override) |
 | Boiler control | `${oq_boiler_loop_s}` (default 5s) | CM3 gating under the shared water-temperature guardrail |
 | CIC polling tick | `${cic_poll_tick_ms}` (default 5s) | Poll scheduler, stale detection, feed invalidation |
@@ -108,14 +121,15 @@ Runtime selectors decide per signal whether selected values come from local, CIC
 
 ### 4.3 Demand layer
 
-`oq_heating_strategy` computes:
+Strategy packages compute:
 
-- `oq_demand_raw` (`0..20`)
-- strategy-specific telemetry (`P_house`, `P_req`, curve target/output)
+- `oq_demand_raw` (`0..20`) for the selected heating strategy
+- `oq_cooling_demand_raw` (`0..20`) for cooling
+- explicit `oq_strategy_*` status for downstream diagnostics and supervisory logic
 
-### 4.4 Allocation layer
+### 4.4 Thermal request layer
 
-`oq_heat_control` computes:
+`oq_thermal_request_control` computes:
 
 - `oq_demand_filtered`
 - HP level requests and applied levels
@@ -148,12 +162,12 @@ Runtime selectors decide per signal whether selected values come from local, CIC
 
 ### 4.8 Service and diagnostics layer
 
-`oq_common`, `oq_debug_testing`, and `oq_heat_control` provide:
+`oq_common`, `oq_debug_testing`, and `oq_thermal_request_control` provide:
 
 - firmware update entities, runtime update-channel select, and manual check trigger
 - runtime logger level controls
-- one-shot Modbus register read tools (HP1; HP2 probe on Duo entrypoints)
-- runtime balancing service entities from heat control (`Runtime lead HP`, runtime counter reset)
+- one-shot Modbus register read tools (HP1 always; HP2 only surfaced on Duo)
+- runtime balancing service entities from thermal request control (`Runtime lead HP`, runtime counter reset)
 
 ## 5. Heating Strategy Mechanics
 
@@ -199,9 +213,9 @@ Heating-curve stability guards around zero-demand edge:
 - explicit per-HP slew-rate limiting with slower up and faster down behavior
 - in heating-curve mode: single-HP-first allocation with dual-enable hysteresis and sequential HP step changes
 
-## 6. Allocation and Optimization Mechanics
+## 6. Thermal Request Control Mechanics
 
-`oq_heat_control` enforces, in order:
+`oq_thermal_request_control` enforces, in order:
 
 1. demand filter and clamp
 2. power cap clamp (`oq_power_cap_f`)
@@ -216,7 +230,7 @@ Demand filter behavior is asymmetric:
 - downward path follows demand immediately
 - upward path is rate-limited by runtime control `Demand filter ramp up` (step/min, Power House path)
 
-Power House duo dispatch works in simple steps:
+Power House duo request selection works in simple steps:
 
 - compare the best valid single-HP and dual-HP candidates separately
 - prefer the topology with the lower electrical input by default
@@ -248,8 +262,8 @@ Key behaviors:
 Safety is distributed but coordinated:
 
 - flow safety and CM gating in supervisory
-- compressor-zero enforcement outside CM2/CM3 in heat control
-- shared water-temperature limiter/trip across heating strategy, heat control, and boiler control
+- compressor-zero enforcement outside CM2/CM3 in thermal request control
+- shared water-temperature limiter/trip across strategy manager, thermal request control, and boiler control
 - stale feed invalidation in CIC ingest
 - conservative fallback on invalid numeric inputs
 

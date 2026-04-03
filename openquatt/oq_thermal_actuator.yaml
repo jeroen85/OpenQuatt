@@ -1,0 +1,389 @@
+# ==============================================================================
+# OpenQuatt - Thermal Actuator
+# ==============================================================================
+#
+# Goal:
+#   Applies finalized thermal requests to the heat pumps and owns the post-apply
+#   runtime bookkeeping.
+#
+# Ownership:
+#   - Consumes `oq_request_mode_code`
+#   - Consumes `oq_actuator_hp1_req` / `oq_actuator_hp2_req`
+#   - Is the only package that writes HP working mode and compressor levels
+# ==============================================================================
+
+# ----------------------------
+# INTERNAL STATE
+# ----------------------------
+globals:
+  - id: oq_thermal_actuator_last_loop_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
+# ----------------------------
+# INTERVAL (5s)
+#   * Applies finalized requests to HP mode / compressor levels
+#   * Maintains transition bookkeeping and runtime accumulation
+# ----------------------------
+interval:
+  - interval: ${oq_heat_loop_tick_s}s
+    startup_delay: 4000ms
+    then:
+      - lambda: |-
+          const uint32_t now_ms = (uint32_t) millis();
+          const int min_level = 0;
+          const int max_level = 10;
+
+          uint32_t dt_ms = (uint32_t) ${oq_heat_loop_tick_s} * 1000UL;
+          if (id(oq_thermal_actuator_last_loop_ms) > 0 && now_ms > id(oq_thermal_actuator_last_loop_ms)) {
+            dt_ms = now_ms - id(oq_thermal_actuator_last_loop_ms);
+            const uint32_t dt_cap_ms = ((uint32_t) ${oq_heat_loop_tick_s} * 1000UL) * 2UL;
+            if (dt_cap_ms > 0 && dt_ms > dt_cap_ms) dt_ms = dt_cap_ms;
+          }
+          id(oq_thermal_actuator_last_loop_ms) = now_ms;
+
+          auto publish_optimizer_reason = [&](const char* reason)->void {
+            #if OQ_TOPOLOGY_DUO
+            static std::string last_optimizer_reason = "";
+            const std::string s(reason);
+            if (s != last_optimizer_reason) {
+              id(oq_duo_optimizer_reason).publish_state(s.c_str());
+              last_optimizer_reason = s;
+            }
+            #else
+            (void) reason;
+            #endif
+          };
+
+          auto excluded_option_matches_level = [&](const std::string &opt, int level)->bool {
+            switch (level) {
+              case 1: return opt == "L1 (H30/C30)";
+              case 2: return opt == "L2 (H39/C36)";
+              case 3: return opt == "L3 (H49/C42)";
+              case 4: return opt == "L4 (H55/C47)";
+              case 5: return opt == "L5 (H61/C52)";
+              case 6: return opt == "L6 (H67/C56)";
+              case 7: return opt == "L7 (H72/C61)";
+              case 8: return opt == "L8 (H79/C66)";
+              case 9: return opt == "L9 (H85/C71)";
+              case 10: return opt == "L10 (H90/C74)";
+              default: return false;
+            }
+          };
+
+          auto level_allowed = [&](bool is_hp1, int level)->bool {
+            if (level <= 0 || level > max_level) return true;
+
+            if (is_hp1) {
+              const std::string excl_a = id(hp1_excluded_level_a).has_state()
+                                             ? id(hp1_excluded_level_a).current_option()
+                                             : std::string("None");
+              const std::string excl_b = id(hp1_excluded_level_b).has_state()
+                                             ? id(hp1_excluded_level_b).current_option()
+                                             : std::string("None");
+              return !excluded_option_matches_level(excl_a, level) &&
+                     !excluded_option_matches_level(excl_b, level);
+            }
+            #if OQ_TOPOLOGY_DUO
+            const std::string excl_a = id(${ta_secondary_excluded_level_a_id}).has_state()
+                                           ? id(${ta_secondary_excluded_level_a_id}).current_option()
+                                           : std::string("None");
+            const std::string excl_b = id(${ta_secondary_excluded_level_b_id}).has_state()
+                                           ? id(${ta_secondary_excluded_level_b_id}).current_option()
+                                           : std::string("None");
+            return !excluded_option_matches_level(excl_a, level) &&
+                   !excluded_option_matches_level(excl_b, level);
+            #else
+            return false;
+            #endif
+          };
+
+          auto pick_allowed_capped = [&](int req, bool is_hp1, int cap_level)->int {
+            if (req <= 0) return 0;
+            cap_level = std::max(min_level, std::min(max_level, cap_level));
+            if (cap_level <= 0) return 0;
+            req = std::max(1, std::min(cap_level, req));
+
+            if (level_allowed(is_hp1, req)) return req;
+
+            for (int l = req - 1; l >= 1; l--) if (level_allowed(is_hp1, l)) return l;
+            for (int l = req + 1; l <= cap_level; l++) if (level_allowed(is_hp1, l)) return l;
+
+            return 0;
+          };
+
+          auto hp_selected_level = [&](bool is_hp1)->int {
+            if (is_hp1) {
+              if (!id(hp1_compressor_level).has_state()) return -1;
+              auto idx = id(hp1_compressor_level).active_index();
+              return idx.has_value() ? (int) idx.value() : -1;
+            }
+            if (!id(${ta_secondary_compressor_level_id}).has_state()) return -1;
+            auto idx = id(${ta_secondary_compressor_level_id}).active_index();
+            return idx.has_value() ? (int) idx.value() : -1;
+          };
+
+          auto hp_mode_is_cooling = [&](bool is_hp1)->bool {
+            const float mode_raw = is_hp1 ? id(hp1_working_mode).state : id(${ta_secondary_working_mode_id}).state;
+            return !isnan(mode_raw) && ((int) roundf(mode_raw) == 1);
+          };
+
+          auto hp_mode_is_heating = [&](bool is_hp1)->bool {
+            const float mode_raw = is_hp1 ? id(hp1_working_mode).state : id(${ta_secondary_working_mode_id}).state;
+            return !isnan(mode_raw) && ((int) roundf(mode_raw) == 2);
+          };
+
+          auto hp_mode_target_is_cooling = [&](bool is_hp1)->bool {
+            if (is_hp1) {
+              return id(hp1_set_working_mode).has_state() && id(hp1_set_working_mode).current_option() == "Cooling";
+            }
+            return id(${ta_secondary_set_working_mode_id}).has_state() &&
+                   id(${ta_secondary_set_working_mode_id}).current_option() == "Cooling";
+          };
+
+          auto hp_mode_target_is_heating = [&](bool is_hp1)->bool {
+            if (is_hp1) {
+              return id(hp1_set_working_mode).has_state() && id(hp1_set_working_mode).current_option() == "Heating";
+            }
+            return id(${ta_secondary_set_working_mode_id}).has_state() &&
+                   id(${ta_secondary_set_working_mode_id}).current_option() == "Heating";
+          };
+
+          const int request_mode_code = id(oq_request_mode_code);
+          const bool request_thermal_active = (request_mode_code == 1 || request_mode_code == 2);
+          const char* request_thermal_mode_opt = (request_mode_code == 1) ? "Cooling" : "Heating";
+
+          auto hp_hold_mode_opt = [&](bool is_hp1)->const char* {
+            if (hp_mode_is_cooling(is_hp1) || hp_mode_target_is_cooling(is_hp1)) return "Cooling";
+            if (hp_mode_is_heating(is_hp1) || hp_mode_target_is_heating(is_hp1)) return "Heating";
+            return request_thermal_mode_opt;
+          };
+
+          auto valve_defrost_active = [&](bool is_hp1)->bool {
+            if (is_hp1) return id(hp1_4_way_valve).state;
+            #if OQ_TOPOLOGY_DUO
+            return id(${ta_secondary_4_way_valve_id}).state;
+            #else
+            return false;
+            #endif
+          };
+
+          auto defrost_stop_hold_level = [&](bool is_hp1)->int {
+            // Only keep the last non-zero level during real defrost, i.e. once the
+            // 4-way valve is active. The broader defrost bit can assert earlier and
+            // caused the duo optimizer to pre-load far too aggressively.
+            const bool defrost_active = valve_defrost_active(is_hp1);
+            if (!defrost_active) return 0;
+
+            // During passive cooling the reverse valve is expected to be active; do not
+            // mistake that for a heating defrost hold or CM1/CM0 transitions may re-arm
+            // the unit in the wrong thermal mode while leaving CM5.
+            if (hp_mode_is_cooling(is_hp1) || hp_mode_target_is_cooling(is_hp1)) return 0;
+
+            const int selected_level = hp_selected_level(is_hp1);
+            if (selected_level > 0) return selected_level;
+
+            const int prev_applied = is_hp1 ? id(hp1_last_applied_level) : id(${ta_secondary_last_applied_level_id});
+            if (prev_applied > 0) return prev_applied;
+
+            return 0;
+          };
+
+          auto apply_active_mode_hold = [&](bool is_hp1, int retained_level)->bool {
+            if (retained_level <= 0) return false;
+
+            // Keep the HP in the active thermal mode and preserve a non-zero level.
+            // Used when defrost retain/hold must override a zero request.
+            const char* opt = hp_hold_mode_opt(is_hp1);
+            if (is_hp1) {
+              if (!id(hp1_set_working_mode).has_state() || id(hp1_set_working_mode).current_option() != opt) {
+                auto c = id(hp1_set_working_mode).make_call();
+                c.set_option(opt);
+                c.perform();
+              }
+              if (hp_selected_level(true) != retained_level) {
+                auto c = id(hp1_compressor_level).make_call();
+                c.set_index(retained_level);
+                c.perform();
+              }
+            } else {
+              if (!id(${ta_secondary_set_working_mode_id}).has_state() || id(${ta_secondary_set_working_mode_id}).current_option() != opt) {
+                auto c = id(${ta_secondary_set_working_mode_id}).make_call();
+                c.set_option(opt);
+                c.perform();
+              }
+              if (hp_selected_level(false) != retained_level) {
+                auto c = id(${ta_secondary_compressor_level_id}).make_call();
+                c.set_index(retained_level);
+                c.perform();
+              }
+            }
+
+            return true;
+          };
+
+          auto set_mode = [&](bool is_hp1, bool active) {
+            const char* opt = (active && request_thermal_active) ? request_thermal_mode_opt : "Standby";
+            if (is_hp1) {
+              if (id(hp1_set_working_mode).current_option() != opt) {
+                auto c = id(hp1_set_working_mode).make_call();
+                c.set_option(opt);
+                c.perform();
+              }
+            } else {
+              if (id(${ta_secondary_set_working_mode_id}).current_option() != opt) {
+                auto c = id(${ta_secondary_set_working_mode_id}).make_call();
+                c.set_option(opt);
+                c.perform();
+              }
+            }
+          };
+
+          auto mode_is_active_thermal = [&](bool is_hp1)->bool {
+            const float mode_raw = is_hp1 ? id(hp1_working_mode).state : id(${ta_secondary_working_mode_id}).state;
+            if (isnan(mode_raw)) return false;
+            return request_thermal_active && (((int) roundf(mode_raw)) == request_mode_code);
+          };
+
+          auto mode_target_is_active_thermal = [&](bool is_hp1)->bool {
+            if (!request_thermal_active) return false;
+            if (is_hp1) {
+              return id(hp1_set_working_mode).has_state() &&
+                     id(hp1_set_working_mode).current_option() == request_thermal_mode_opt;
+            }
+            return id(${ta_secondary_set_working_mode_id}).has_state() &&
+                   id(${ta_secondary_set_working_mode_id}).current_option() == request_thermal_mode_opt;
+          };
+
+          // Note: options must exactly match the options map in oq_HP_io.yaml (levels 0..10)
+          const char* lvl_opts[11] = {"0","1","2","3","4","5","6","7","8","9","10"};
+
+          auto apply_level = [&](bool is_hp1, int req_level)->int {
+            req_level = std::max(min_level, std::min(max_level, req_level));
+            const int prev_applied = is_hp1 ? id(hp1_last_applied_level) : id(${ta_secondary_last_applied_level_id});
+            const int retained_level = defrost_stop_hold_level(is_hp1);
+
+            if (req_level == 0 && retained_level > 0) {
+              apply_active_mode_hold(is_hp1, retained_level);
+              publish_optimizer_reason("defrost_protect_hold");
+              return retained_level;
+            }
+
+            // Hard guardrail: after stop, enforce a universal per-HP minimum off-time before restart.
+            if (req_level > 0 && prev_applied == 0) {
+              int min_off_s = (int) ${oq_hp_min_off_s};
+              if (min_off_s < 0) min_off_s = 0;
+
+              const uint32_t last_stop_ms = is_hp1 ? id(hp1_last_stop_ms) : id(${ta_secondary_last_stop_ms_id});
+              if (min_off_s > 0 && last_stop_ms > 0 && now_ms > last_stop_ms) {
+                const uint32_t elapsed_off_ms = now_ms - last_stop_ms;
+                const uint32_t min_off_ms = (uint32_t) min_off_s * 1000UL;
+                if (elapsed_off_ms < min_off_ms) req_level = 0;
+              }
+            }
+
+            if (req_level > 0) set_mode(is_hp1, true);
+            else set_mode(is_hp1, false);
+
+            int applied = req_level;
+
+            // Silent/day cap
+            const bool silent_active = id(oq_silent_active).state;
+            int cap = silent_active ? (int) roundf(id(oq_silent_max_level).state)
+                                    : (int) roundf(id(oq_day_max_level).state);
+            cap = std::max(min_level, std::min(max_level, cap));
+            if (applied > cap) applied = cap;
+            applied = pick_allowed_capped(applied, is_hp1, cap);
+
+            // Normative rule: compressor >0 only when the active thermal mode is measured
+            // or the command target is already on that mode. This avoids losing a full
+            // control cycle on mode-transition latency.
+            if (req_level > 0 && !mode_is_active_thermal(is_hp1) && !mode_target_is_active_thermal(is_hp1)) {
+              applied = 0;
+            }
+
+            if (applied == 0 && retained_level > 0) {
+              apply_active_mode_hold(is_hp1, retained_level);
+              publish_optimizer_reason("defrost_protect_hold");
+              return retained_level;
+            }
+
+            if (is_hp1) {
+              auto idx = id(hp1_compressor_level).active_index();
+              const int cur = idx.has_value() ? (int) idx.value() : -1;
+              if (cur != applied) {
+                auto c = id(hp1_compressor_level).make_call();
+                c.set_option(lvl_opts[applied]);
+                c.perform();
+              }
+            } else {
+              auto idx = id(${ta_secondary_compressor_level_id}).active_index();
+              const int cur = idx.has_value() ? (int) idx.value() : -1;
+              if (cur != applied) {
+                auto c = id(${ta_secondary_compressor_level_id}).make_call();
+                c.set_option(lvl_opts[applied]);
+                c.perform();
+              }
+            }
+
+            return applied;
+          };
+
+          const int hp1_req = id(oq_actuator_hp1_req);
+          const int hp2_req = id(oq_actuator_hp2_req);
+          const int hp1_applied = apply_level(true, hp1_req);
+          #if OQ_TOPOLOGY_DUO
+          const int hp2_applied = apply_level(false, hp2_req);
+          const int prev_topology_count =
+              (id(hp1_last_applied_level) > 0 ? 1 : 0) + (id(${ta_secondary_last_applied_level_id}) > 0 ? 1 : 0);
+          const int new_topology_count = (hp1_applied > 0 ? 1 : 0) + (hp2_applied > 0 ? 1 : 0);
+          if (prev_topology_count > 0 && new_topology_count > 0 && prev_topology_count != new_topology_count) {
+            id(oq_duo_request_hold_until_ms) = now_ms + 180000UL;
+          }
+          #else
+          const int hp2_applied = 0;
+          #endif
+
+          auto log_transition = [&](bool is_hp1, int new_lvl) {
+            int &prev = is_hp1 ? id(hp1_last_applied_level) : id(${ta_secondary_last_applied_level_id});
+            if (prev != new_lvl) {
+              if (is_hp1) id(hp1_last_level_change_ms) = now_ms;
+              else id(hp2_last_level_change_ms) = now_ms;
+            }
+
+            if (prev == 0 && new_lvl > 0) {
+              if (is_hp1) id(hp1_last_start_ms) = now_ms;
+              else id(${ta_secondary_last_start_ms_id}) = now_ms;
+            } else if (prev > 0 && new_lvl == 0) {
+              if (is_hp1) id(hp1_last_stop_ms) = now_ms;
+              else id(${ta_secondary_last_stop_ms_id}) = now_ms;
+            }
+
+            // Runtime counting: only count when the specific unit is measured in an active thermal mode.
+            // This avoids overcounting during command/mode transition, standby, or fault situations.
+            if (new_lvl > 0 && dt_ms > 0) {
+              const float working_mode_raw = is_hp1 ? id(hp1_working_mode).state : id(${ta_secondary_working_mode_id}).state;
+              const bool thermal_now =
+                  !isnan(working_mode_raw) &&
+                  ((((int) roundf(working_mode_raw)) == 1) || (((int) roundf(working_mode_raw)) == 2));
+              if (thermal_now) {
+                uint32_t &runtime_accum_ms = is_hp1 ? id(hp1_runtime_accum_ms) : id(hp2_runtime_accum_ms);
+                int &runtime_minutes = is_hp1 ? id(hp1_minutes) : id(${ta_secondary_minutes_id});
+                uint32_t sum_ms = runtime_accum_ms + dt_ms;
+                if (sum_ms < runtime_accum_ms) sum_ms = 60000UL;  // overflow guard
+                runtime_accum_ms = sum_ms;
+                while (runtime_accum_ms >= 60000UL) {
+                  runtime_accum_ms -= 60000UL;
+                  runtime_minutes += 1;
+                }
+              }
+            }
+
+            prev = new_lvl;
+          };
+
+          log_transition(true, hp1_applied);
+          #if OQ_TOPOLOGY_DUO
+          log_transition(false, hp2_applied);
+          #endif
