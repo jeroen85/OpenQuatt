@@ -8,7 +8,6 @@
 # Responsibilities:
 #   - Selects the active heating strategy and publishes `oq_heat_mode_code`
 #   - Runs the heating-curve implementation and publishes `oq_demand_raw` in curve mode
-#   - Maintains a small set of shared strategy outputs used outside the strategy layer
 #
 # Transition:
 #   - Mode switch is immediate; on mode change, mode-local controller state is reinitialized.
@@ -33,13 +32,6 @@ globals:
     type: int
     restore_value: false
     initial_value: '0'
-
-  # Shared requested heat power (W) used by downstream CM3/dispatch logic.
-  # Power House writes the real request; heating curve publishes an estimate.
-  - id: oq_phouse_req_w
-    type: float
-    restore_value: false
-    initial_value: '0.0'
 
   # ---------------------------------------------------------------------------
   # Heating-curve strategy state
@@ -107,13 +99,6 @@ globals:
     type: int
     restore_value: false
     initial_value: '0'  # 0=Power House, 1=Heating Curve
-
-  # Shared effective room target used in diagnostics/debug output.
-  # Power House writes its biased target; heating curve mirrors room setpoint.
-  - id: oq_ph_room_target_effective_c
-    type: float
-    restore_value: false
-    initial_value: '0.0'
 
 # ----------------------------
 # CONTROL INPUTS
@@ -913,24 +898,10 @@ interval:
             int d_out = clamp_demand(id(oq_demand_curve));
             if (id(oq_water_temp_hard_trip_active)) d_out = 0;
             id(oq_demand_raw) = d_out;
-
-            // Power request (W) is also maintained in this mode (for deficit/CM3):
-            // Approximation: map demand (0..20) linearly to house_rated_power_w.
-            // This keeps deficit detection/CM3 behavior consistent between Power House and heating-curve mode.
-            const float Pr_est = id(house_rated_power_w).state;
-            float P_req_est = 0.0f;
-            if (!isnan(Pr_est) && Pr_est > 0.0f) {
-              P_req_est = (Pr_est * ((float)d_out / ${oq_strategy_demand_max_f}));
-              if (P_req_est < 0.0f) P_req_est = 0.0f;
-              if (P_req_est > Pr_est) P_req_est = Pr_est;
-            }
-            id(oq_phouse_req_w) = P_req_est;
-
-            id(oq_ph_room_target_effective_c) = id(room_setpoint_selected).state;
           } else {
             // Power House owns its own demand generation in oq_power_house_control.
-            // Here we only keep curve-side state shut down and leave shared outputs
-            // in a neutral state until the active PH strategy updates them.
+            // Here we only keep curve-side state shut down and leave Power House-owned
+            // diagnostics/state untouched until the active PH strategy updates them.
             if (id(oq_heating_curve_pid).mode != CLIMATE_MODE_OFF) {
               auto c0 = id(oq_heating_curve_pid).make_call();
               c0.set_mode(CLIMATE_MODE_OFF);
@@ -942,7 +913,6 @@ interval:
             id(oq_curve_restart_inhibit_active) = false;
             id(oq_demand_curve) = 0;
             id(oq_demand_raw) = 0;
-            id(oq_ph_room_target_effective_c) = id(room_setpoint_selected).state;
           }
       - if:
           condition:

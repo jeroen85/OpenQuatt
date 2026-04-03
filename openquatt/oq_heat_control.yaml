@@ -17,7 +17,7 @@
 #   - Publishes `oq_dispatch_*` as the explicit pre-actuator handoff
 #   - Publishes finalized actuator requests for the downstream thermal actuator
 #   - Owns generic post-dispatch shaping before the thermal actuator applies writes
-#   - Computes shared HP capacity/deficit (`oq_P_hp_cap_w`, `oq_P_deficit_w`) for supervisory CM3 logic
+#   - Consumes shared HP capacity/deficit (`oq_P_hp_cap_w`, `oq_P_deficit_w`) for supervisory/debug logic
 #
 # What this package DOES NOT do:
 #   - Has no dedicated temperature PID loop (strategy owns temperature-loop behavior)
@@ -680,9 +680,9 @@ interval:
             const float pv = id(oq_system_supply_temp).state;
             const float room_c = id(room_temp_selected).state;
             const float room_sp_c = id(room_setpoint_selected).state;
-            const float phouse_w = id(oq_phouse_house_w).state;
-            const float preq_w = id(oq_phouse_req_w);
-            const float room_target_c = id(oq_ph_room_target_effective_c);
+            const float phouse_w = is_power_house ? id(oq_phouse_house_w).state : NAN;
+            const float preq_w = is_power_house ? id(oq_phouse_req_w) : NAN;
+            const float room_target_c = is_power_house ? id(oq_ph_room_target_effective_c) : room_sp_c;
             const float tout_c = id(outside_temp_selected).state;
             const float wm1 = id(hp1_working_mode).state;
             float wm2 = 0.0f;

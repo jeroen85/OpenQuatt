@@ -15,6 +15,14 @@
 # ==============================================================================
 
 globals:
+  # Power House requested thermal power (W).
+  # This is strategy-specific diagnostics/state and is not part of the generic
+  # heating-strategy contract.
+  - id: oq_phouse_req_w
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+
   - id: oq_phouse_last_w
     type: float
     restore_value: false
@@ -44,6 +52,12 @@ globals:
     type: uint32_t
     restore_value: false
     initial_value: '0'
+
+  # Power House effective room target after comfort biasing.
+  - id: oq_ph_room_target_effective_c
+    type: float
+    restore_value: false
+    initial_value: '0.0'
 
   - id: oq_demand_filter_ramp_up_budget
     type: float

@@ -8,6 +8,7 @@
 # Ownership:
 #   - Computes direct heating-curve demand handoff state
 #   - Decides single-vs-dual curve topology
+#   - Publishes level-derived capacity/deficit telemetry for supervisory CM3 logic
 #   - Publishes curve producer outputs for oq_heat_control to turn into the
 #     explicit dispatch contract
 # ==============================================================================
@@ -163,6 +164,15 @@ interval:
           const float hp1_th_fac = hp1_valve_def ? def_fac : 1.0f;
           const float hp2_th_fac = hp2_valve_def ? def_fac : 1.0f;
 
+          auto power_for_level = [&](bool is_hp1, int level)->float {
+            if (level <= 0) return 0.0f;
+            if ((is_hp1 && !hp1_available) || (!is_hp1 && !hp2_available)) return 0.0f;
+            float p = oq_perf::interp_power_th_w(level, Tamb, Tsup);
+            if (isnan(p)) return 0.0f;
+            p *= is_hp1 ? hp1_th_fac : hp2_th_fac;
+            return isnan(p) ? 0.0f : p;
+          };
+
           auto max_cap_hp = [&](bool is_hp1)->float {
             if ((is_hp1 && !hp1_available) || (!is_hp1 && !hp2_available)) return 0.0f;
             float best = 0.0f;
@@ -175,15 +185,38 @@ interval:
             return best;
           };
 
-          auto publish_capacity_and_deficit = [&](float requested_w)->float {
+          auto requested_power_from_total_levels = [&](int total_level_request)->float {
+            int total_req = total_level_request;
+            if (total_req < 0) total_req = 0;
+            if (isnan(Tamb) || isnan(Tsup) || total_req <= 0) return 0.0f;
+
+            float best = 0.0f;
+            #if OQ_TOPOLOGY_DUO
+            const int nominal_cap_total = max_level * 2;
+            if (total_req > nominal_cap_total) total_req = nominal_cap_total;
+            for (int l1 = 0; l1 <= std::min(max_level, total_req); l1++) {
+              const int l2_max = std::min(max_level, total_req - l1);
+              for (int l2 = 0; l2 <= l2_max; l2++) {
+                if ((l1 + l2) > total_req) continue;
+                const float req_power = power_for_level(true, l1) + power_for_level(false, l2);
+                if (req_power > best) best = req_power;
+              }
+            }
+            #else
+            if (total_req > max_level) total_req = max_level;
+            best = power_for_level(true, total_req);
+            #endif
+            return best;
+          };
+
+          auto publish_capacity_and_deficit = [&](int requested_level_total)->float {
             float cap_total = 0.0f;
             if (!isnan(Tamb) && !isnan(Tsup)) {
               cap_total = max_cap_hp(true) + max_cap_hp(false);
             }
             id(oq_P_hp_cap_w) = cap_total;
 
-            float req = requested_w;
-            if (isnan(req)) req = 0.0f;
+            float req = requested_power_from_total_levels(requested_level_total);
             float deficit = req - cap_total;
             if (deficit < 0.0f) deficit = 0.0f;
             id(oq_P_deficit_w) = deficit;
@@ -208,7 +241,7 @@ interval:
           int reason_code = 0;
 
           #if OQ_TOPOLOGY_DUO
-          publish_capacity_and_deficit(id(oq_phouse_req_w));
+          publish_capacity_and_deficit(f);
           const bool d1_pre = hp1_valve_def;
           const bool d2_pre = hp2_valve_def;
 
@@ -376,7 +409,7 @@ interval:
           }
           #else
           reset_dual_runtime_state(1);
-          publish_capacity_and_deficit(id(oq_phouse_req_w));
+          publish_capacity_and_deficit(f);
           hp1_req = f;
           hp2_req = 0;
           owner = (f > 0) ? 1 : 0;
