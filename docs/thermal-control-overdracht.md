@@ -180,6 +180,7 @@ Concreet:
 
 - `openquatt/oq_dispatch_contract.yaml` is teruggevouwen in `openquatt/oq_heat_control.yaml`
 - `openquatt/oq_cooling_dispatch.yaml` is teruggevouwen in `openquatt/oq_cooling_control.yaml`
+- `openquatt/oq_ha_cooling_inputs.yaml` is teruggevouwen in `openquatt/oq_ha_inputs.yaml`
 - de grote architectuurgrenzen blijven staan:
   - thermal limits
   - heating strategy

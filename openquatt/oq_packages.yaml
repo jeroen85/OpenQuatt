@@ -12,13 +12,12 @@
 # 8) Aggregation/energy telemetry
 # 9) External inputs (CIC)
 # 10) External HA proxy inputs
-# 11) External HA cooling proxy inputs
-# 12) Local sensors
-# 13) Source selection and merged selected-source signals
-# 14) OpenTherm thermostat bridge
-# 15) Debug/testing utilities
-# 16) Web UI
-# 17) Per-HP hardware adapters
+# 11) Local sensors
+# 12) Source selection and merged selected-source signals
+# 13) OpenTherm thermostat bridge
+# 14) Debug/testing utilities
+# 15) Web UI
+# 16) Per-HP hardware adapters
 # ==============================================================================
 # Shared modules use `*_secondary_*` template vars so topology wiring stays
 # centralized in package files and avoids duplicated module files.

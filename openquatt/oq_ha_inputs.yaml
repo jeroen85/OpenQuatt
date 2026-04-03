@@ -5,18 +5,15 @@
 # Goal:
 #   Ingest selected Home Assistant proxy sensors as numeric inputs for OpenQuatt.
 #
-# Scope (phase 1):
-#   - Expose three HA-backed sensors in OpenQuatt entities.
-#   - Keep control behavior unchanged; no source-selection wiring yet.
+# Scope:
+#   - Fixed HA-backed temperature and thermostat proxy inputs
+#   - Fixed HA cooling proxy contracts used for passive-cooling safety
 #
 # Notes:
 #   - Entity IDs are compile-time substitutions in oq_substitutions_common.yaml.
 #   - These sensors are intended as stable HA proxy contracts.
 #
 # ==============================================================================
-
-packages:
-  oq_ha_cooling_inputs: !include oq_ha_cooling_inputs.yaml
 
 sensor:
   - platform: homeassistant
@@ -68,6 +65,250 @@ sensor:
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 2
+    web_server:
+      sorting_group_id: oq_ha
+
+  - platform: homeassistant
+    id: cooling_room_count_ha
+    name: "HA - Cooling Room Count"
+    entity_id: ${ha_cooling_room_count_entity_id}
+    internal: true
+    icon: mdi:counter
+    accuracy_decimals: 0
+    web_server:
+      sorting_group_id: oq_ha
+
+  - platform: homeassistant
+    id: cooling_room_1_dew_point_direct_ha
+    name: "HA - Cooling Room 1 Dew Point"
+    entity_id: ${ha_cooling_room_1_dew_point_entity_id}
+    internal: true
+    icon: mdi:water-thermometer
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    web_server:
+      sorting_group_id: oq_ha
+
+  - platform: homeassistant
+    id: cooling_room_1_temp_ha
+    name: "HA - Cooling Room 1 Temperature"
+    entity_id: ${ha_cooling_room_1_temp_entity_id}
+    internal: true
+    icon: mdi:home-thermometer
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    web_server:
+      sorting_group_id: oq_ha
+
+  - platform: homeassistant
+    id: cooling_room_1_humidity_ha
+    name: "HA - Cooling Room 1 Humidity"
+    entity_id: ${ha_cooling_room_1_humidity_entity_id}
+    internal: true
+    icon: mdi:water-percent
+    unit_of_measurement: "%"
+    device_class: humidity
+    state_class: measurement
+    accuracy_decimals: 1
+    web_server:
+      sorting_group_id: oq_ha
+
+  - platform: homeassistant
+    id: cooling_room_2_dew_point_direct_ha
+    name: "HA - Cooling Room 2 Dew Point"
+    entity_id: ${ha_cooling_room_2_dew_point_entity_id}
+    internal: true
+    icon: mdi:water-thermometer
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    web_server:
+      sorting_group_id: oq_ha
+
+  - platform: homeassistant
+    id: cooling_room_2_temp_ha
+    name: "HA - Cooling Room 2 Temperature"
+    entity_id: ${ha_cooling_room_2_temp_entity_id}
+    internal: true
+    icon: mdi:home-thermometer
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    web_server:
+      sorting_group_id: oq_ha
+
+  - platform: homeassistant
+    id: cooling_room_2_humidity_ha
+    name: "HA - Cooling Room 2 Humidity"
+    entity_id: ${ha_cooling_room_2_humidity_entity_id}
+    internal: true
+    icon: mdi:water-percent
+    unit_of_measurement: "%"
+    device_class: humidity
+    state_class: measurement
+    accuracy_decimals: 1
+    web_server:
+      sorting_group_id: oq_ha
+
+  - platform: homeassistant
+    id: cooling_room_3_dew_point_direct_ha
+    name: "HA - Cooling Room 3 Dew Point"
+    entity_id: ${ha_cooling_room_3_dew_point_entity_id}
+    internal: true
+    icon: mdi:water-thermometer
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    web_server:
+      sorting_group_id: oq_ha
+
+  - platform: homeassistant
+    id: cooling_room_3_temp_ha
+    name: "HA - Cooling Room 3 Temperature"
+    entity_id: ${ha_cooling_room_3_temp_entity_id}
+    internal: true
+    icon: mdi:home-thermometer
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    web_server:
+      sorting_group_id: oq_ha
+
+  - platform: homeassistant
+    id: cooling_room_3_humidity_ha
+    name: "HA - Cooling Room 3 Humidity"
+    entity_id: ${ha_cooling_room_3_humidity_entity_id}
+    internal: true
+    icon: mdi:water-percent
+    unit_of_measurement: "%"
+    device_class: humidity
+    state_class: measurement
+    accuracy_decimals: 1
+    web_server:
+      sorting_group_id: oq_ha
+
+  - platform: homeassistant
+    id: cooling_room_4_dew_point_direct_ha
+    name: "HA - Cooling Room 4 Dew Point"
+    entity_id: ${ha_cooling_room_4_dew_point_entity_id}
+    internal: true
+    icon: mdi:water-thermometer
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    web_server:
+      sorting_group_id: oq_ha
+
+  - platform: homeassistant
+    id: cooling_room_4_temp_ha
+    name: "HA - Cooling Room 4 Temperature"
+    entity_id: ${ha_cooling_room_4_temp_entity_id}
+    internal: true
+    icon: mdi:home-thermometer
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    web_server:
+      sorting_group_id: oq_ha
+
+  - platform: homeassistant
+    id: cooling_room_4_humidity_ha
+    name: "HA - Cooling Room 4 Humidity"
+    entity_id: ${ha_cooling_room_4_humidity_entity_id}
+    internal: true
+    icon: mdi:water-percent
+    unit_of_measurement: "%"
+    device_class: humidity
+    state_class: measurement
+    accuracy_decimals: 1
+    web_server:
+      sorting_group_id: oq_ha
+
+  - platform: homeassistant
+    id: cooling_room_5_dew_point_direct_ha
+    name: "HA - Cooling Room 5 Dew Point"
+    entity_id: ${ha_cooling_room_5_dew_point_entity_id}
+    internal: true
+    icon: mdi:water-thermometer
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    web_server:
+      sorting_group_id: oq_ha
+
+  - platform: homeassistant
+    id: cooling_room_5_temp_ha
+    name: "HA - Cooling Room 5 Temperature"
+    entity_id: ${ha_cooling_room_5_temp_entity_id}
+    internal: true
+    icon: mdi:home-thermometer
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    web_server:
+      sorting_group_id: oq_ha
+
+  - platform: homeassistant
+    id: cooling_room_5_humidity_ha
+    name: "HA - Cooling Room 5 Humidity"
+    entity_id: ${ha_cooling_room_5_humidity_entity_id}
+    internal: true
+    icon: mdi:water-percent
+    unit_of_measurement: "%"
+    device_class: humidity
+    state_class: measurement
+    accuracy_decimals: 1
+    web_server:
+      sorting_group_id: oq_ha
+
+  - platform: homeassistant
+    id: cooling_room_6_dew_point_direct_ha
+    name: "HA - Cooling Room 6 Dew Point"
+    entity_id: ${ha_cooling_room_6_dew_point_entity_id}
+    internal: true
+    icon: mdi:water-thermometer
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    web_server:
+      sorting_group_id: oq_ha
+
+  - platform: homeassistant
+    id: cooling_room_6_temp_ha
+    name: "HA - Cooling Room 6 Temperature"
+    entity_id: ${ha_cooling_room_6_temp_entity_id}
+    internal: true
+    icon: mdi:home-thermometer
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    web_server:
+      sorting_group_id: oq_ha
+
+  - platform: homeassistant
+    id: cooling_room_6_humidity_ha
+    name: "HA - Cooling Room 6 Humidity"
+    entity_id: ${ha_cooling_room_6_humidity_entity_id}
+    internal: true
+    icon: mdi:water-percent
+    unit_of_measurement: "%"
+    device_class: humidity
+    state_class: measurement
+    accuracy_decimals: 1
     web_server:
       sorting_group_id: oq_ha
 
