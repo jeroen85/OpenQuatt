@@ -4,19 +4,20 @@
 # Package load order is intentional:
 # 1) Common platform runtime (API/OTA/UART/diagnostics)
 # 2) Supervisory/state
-# 3) Demand strategy
-# 4) Actuation layers (heat/flow/boiler)
-# 5) Aggregation/energy telemetry
-# 6) External inputs (CIC)
-# 7) External HA proxy inputs
-# 8) External HA cooling proxy inputs
-# 9) Local sensors
-# 10) Source selection and merged selected-source signals
-# 11) OpenTherm thermostat bridge
-# 12) Cooling safety / dew point aggregation
-# 13) Debug/testing utilities
-# 14) Web UI
-# 15) Per-HP hardware adapters
+# 3) Thermal limits / abstractions
+# 4) Demand strategy + cooling demand/control
+# 5) Heating dispatch producers
+# 6) Shared heat-control shaping + actuator layers
+# 7) Flow/boiler and other actuation followers
+# 8) Aggregation/energy telemetry
+# 9) External inputs (CIC)
+# 10) External HA proxy inputs
+# 11) Local sensors
+# 12) Source selection and merged selected-source signals
+# 13) OpenTherm thermostat bridge
+# 14) Debug/testing utilities
+# 15) Web UI
+# 16) Per-HP hardware adapters
 # ==============================================================================
 # Shared modules use `*_secondary_*` template vars so topology wiring stays
 # centralized in package files and avoids duplicated module files.
