@@ -4,8 +4,9 @@ Deze pagina legt uit hoe `Power House` in OpenQuatt werkt. Het doel is dat je de
 
 De uitleg is gebaseerd op de huidige code in:
 
-- `openquatt/oq_heating_strategy.yaml`
-- `openquatt/oq_heat_control.yaml`
+- `openquatt/oq_strategy_manager.yaml`
+- `openquatt/oq_power_house_strategy.yaml`
+- `openquatt/oq_thermal_request_control.yaml`
 - `openquatt/oq_supervisory_controlmode.yaml`
 
 ## Wat is Power House?
@@ -46,7 +47,7 @@ Werk je liever direct met een stooklijn of aanvoertemperatuur, dan past `Water T
 3. corrigeer die vraag met kamerafwijking en comfortlogica;
 4. begrens de warmtevraag met deadband, opbouw-/afbouwtijd en watertempbegrenzing;
 5. vertaal de uitkomst naar compressorvraag;
-6. laat heat-control daar de beste Single- of Duo-verdeling bij zoeken;
+6. laat thermal request control daar de beste Single- of Duo-verdeling bij zoeken;
 7. laat supervisory bewaken of verwarmen in `CM2` logisch actief moet blijven.
 
 Die lagen zijn belangrijk. Vreemd gedrag komt vaak niet uit één losse parameter, maar uit de combinatie van:
@@ -230,7 +231,7 @@ Na alle bovenstaande stappen houdt OpenQuatt een begrensde warmtevraag over:
 
 - `P_req`
 
-Die vraag wordt vertaald naar een genormaliseerde demand-schaal (`0..20`) en daarna doorgegeven aan `oq_heat_control`.
+Die vraag wordt vertaald naar een genormaliseerde demand-schaal (`0..20`) en daarna doorgegeven aan `oq_thermal_request_control`.
 
 Daar begint de verdeling over de warmtepomp(en).
 

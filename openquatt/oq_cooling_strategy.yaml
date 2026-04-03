@@ -1,11 +1,11 @@
 # ==============================================================================
-# OpenQuatt - Passive Cooling Control
+# OpenQuatt - Passive Cooling Strategy
 # ==============================================================================
 #
 # Goal:
 #   Own the complete passive-cooling path on top of the cooling safety signals.
 #   This layer produces a conservative supply target, a cooling demand `f`, and
-#   the downstream cooling owner/request handoff.
+#   the downstream cooling compressor-request handoff.
 #
 # Scope:
 #   - Derive a safe cooling supply target from dew point + user floor

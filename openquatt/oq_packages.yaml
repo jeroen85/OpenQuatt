@@ -5,9 +5,9 @@
 # 1) Common platform runtime (API/OTA/UART/diagnostics)
 # 2) Supervisory/state
 # 3) Thermal limits / abstractions
-# 4) Demand strategy + cooling demand/control
-# 5) Heating dispatch producers
-# 6) Shared heat-control shaping + actuator layers
+# 4) Strategy manager + cooling strategy
+# 5) Heating strategy implementations
+# 6) Shared thermal-request control + actuator layers
 # 7) Flow/boiler and other actuation followers
 # 8) Aggregation/energy telemetry
 # 9) External inputs (CIC)
@@ -37,8 +37,8 @@ oq_thermal_limits: !include
   file: oq_thermal_limits.yaml
   vars:
     secondary_water_out_temp_id: "hp2_water_out_temp"
-oq_heating_strategy: !include
-  file: oq_heating_strategy.yaml
+oq_strategy_manager: !include
+  file: oq_strategy_manager.yaml
   vars:
     secondary_outside_temp_id: "hp2_outside_temp"
     secondary_outside_last_change_ms_id: "hp2_outside_temp_last_change_ms"
@@ -46,8 +46,8 @@ oq_heating_strategy: !include
     secondary_outside_is_distinct: "1"
     secondary_last_applied_level_id: "hp2_last_applied_level"
     secondary_working_mode_id: "hp2_working_mode"
-oq_cooling_control: !include
-  file: oq_cooling_control.yaml
+oq_cooling_strategy: !include
+  file: oq_cooling_strategy.yaml
   vars:
     cc_secondary_minutes_id: "hp2_minutes"
     cc_secondary_last_applied_level_id: "hp2_last_applied_level"
@@ -55,8 +55,8 @@ oq_cooling_control: !include
     cc_secondary_last_stop_ms_id: "hp2_last_stop_ms"
     cc_secondary_excluded_level_a_id: "hp2_excluded_level_a"
     cc_secondary_excluded_level_b_id: "hp2_excluded_level_b"
-oq_heating_curve_control: !include
-  file: oq_heating_curve_control.yaml
+oq_heating_curve_strategy: !include
+  file: oq_heating_curve_strategy.yaml
   vars:
     curve_secondary_minutes_id: "hp2_minutes"
     curve_secondary_last_applied_level_id: "hp2_last_applied_level"
@@ -65,8 +65,8 @@ oq_heating_curve_control: !include
     curve_secondary_4_way_valve_id: "hp2_4_way_valve"
     curve_secondary_excluded_level_a_id: "hp2_excluded_level_a"
     curve_secondary_excluded_level_b_id: "hp2_excluded_level_b"
-oq_power_house_control: !include
-  file: oq_power_house_control.yaml
+oq_power_house_strategy: !include
+  file: oq_power_house_strategy.yaml
   vars:
     ph_secondary_minutes_id: "hp2_minutes"
     ph_secondary_defrost_id: "hp2_defrost"
@@ -74,8 +74,8 @@ oq_power_house_control: !include
     ph_secondary_4_way_valve_id: "hp2_4_way_valve"
     ph_secondary_excluded_level_a_id: "hp2_excluded_level_a"
     ph_secondary_excluded_level_b_id: "hp2_excluded_level_b"
-oq_heat_control: !include
-  file: oq_heat_control.yaml
+oq_thermal_request_control: !include
+  file: oq_thermal_request_control.yaml
   vars:
     hc_secondary_power_input_id: "hp2_power_input"
     hc_secondary_heat_power_id: "hp2_heat_power"

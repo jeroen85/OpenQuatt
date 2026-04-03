@@ -1,17 +1,17 @@
 # ==============================================================================
-# OpenQuatt - Heating Curve Control
+# OpenQuatt - Heating Curve Strategy
 # ==============================================================================
 #
 # Goal:
-#   Owns the complete heating-curve strategy and dispatch producer.
+#   Owns the complete heating-curve strategy and compressor-request producer.
 #
 # Ownership:
 #   - Computes curve supply target generation and PID demand
 #   - Owns curve-specific hysteresis, phase state, and diagnostics
 #   - Decides single-vs-dual curve topology
 #   - Publishes level-derived capacity/deficit telemetry for supervisory CM3 logic
-#   - Publishes curve producer outputs for oq_heat_control to turn into the
-#     explicit dispatch contract
+#   - Publishes curve request outputs for oq_thermal_request_control to turn
+#     into the explicit request handoff
 # ==============================================================================
 
 globals:
@@ -799,7 +799,7 @@ interval:
     startup_delay: 4000ms
     then:
       - lambda: |-
-          // Heating-curve producer: owns direct demand and single-vs-dual dispatch.
+          // Heating-curve strategy: owns direct demand and single-vs-dual request split.
           const int cm_code = id(oq_control_mode_code);
           const bool active = (cm_code != 5) && (id(oq_heat_mode_code) == 1);
           if (!active) {

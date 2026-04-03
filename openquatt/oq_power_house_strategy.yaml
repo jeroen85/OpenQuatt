@@ -1,17 +1,17 @@
 # ==============================================================================
-# OpenQuatt - Power House Control
+# OpenQuatt - Power House Strategy
 # ==============================================================================
 #
 # Goal:
-#   Owns the complete Power House strategy implementation and dispatch producer.
+#   Owns the complete Power House strategy implementation and compressor-request producer.
 #
 # Ownership:
 #   - Computes Power House requested heat and compatible demand from room/outside state
 #   - Publishes Power House tuning and diagnostics
 #   - Computes filtered Power House demand from oq_demand_raw
 #   - Chooses the Power House topology / compressor requests
-#   - Publishes producer outputs for oq_heat_control to hand off through the
-#     dispatch contract and downstream actuator shaping
+#   - Publishes request outputs for oq_thermal_request_control to hand off
+#     through the explicit request contract and downstream actuator handling
 # ==============================================================================
 
 globals:

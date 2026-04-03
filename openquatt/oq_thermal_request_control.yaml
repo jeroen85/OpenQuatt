@@ -1,22 +1,23 @@
 # ==============================================================================
-# OpenQuatt – Heat Control (demand filtering + HP allocation)
+# OpenQuatt - Thermal Request Control
 # ==============================================================================
 #
 # Goal:
-#   Consumes normalized heat demand `f` (from strategy), computes an explicit
-#   dispatch contract, and maps that dispatch to compressor levels for HP1/HP2.
+#   Consume strategy outputs, publish an explicit thermal request contract,
+#   and prepare final actuator requests for HP1/HP2.
 #
 # Role in architecture:
-#   Owns compressor-level control, processes `f` (0-20), and distributes it over two heat pumps.
+#   Owns shared thermal-request control between strategy modules and the
+#   downstream thermal actuator.
 #
 # What this package DOES do:
-#   - Consumes oq_demand_raw (producer in oq_heating_strategy)
-#   - Consumes producer outputs from oq_cooling_control / oq_heating_curve_control / oq_power_house_control
+#   - Consumes oq_demand_raw (producer in oq_strategy_manager)
+#   - Consumes producer outputs from oq_cooling_strategy / oq_heating_curve_strategy / oq_power_house_strategy
 #   - Applies demand filtering to damp noise/jitter in heat demand
 #   - Applies caps/limits on `f` before split
-#   - Publishes `oq_dispatch_*` as the explicit pre-actuator handoff
+#   - Publishes `oq_dispatch_*` as the explicit pre-actuator request handoff
 #   - Publishes finalized actuator requests for the downstream thermal actuator
-#   - Owns generic post-dispatch shaping before the thermal actuator applies writes
+#   - Owns shared request filtering, caps, guards, and actuator handoff logic
 #   - Consumes shared HP capacity/deficit (`oq_P_hp_cap_w`, `oq_P_deficit_w`) for supervisory/debug logic
 #
 # What this package DOES NOT do:
@@ -36,14 +37,14 @@
 #
 # Safety / fail-safe:
 #   - With inactive CM: compressor levels 0 (no heat production)
-#   - Heat control is always subordinate to flow interlock via CM1
+#   - Thermal request control is always subordinate to flow interlock via CM1
 #
 # Notes:
 #   - Demand filter and runtime guards intentionally favor stability over fast level changes.
 #   - This file now mixes:
 #     1) shared gating / runtime anchors
-#     2) dispatch-contract publication
-#     3) actuator-request preparation and safety gating
+#     2) explicit request-contract publication
+#     3) final actuator-request preparation and safety gating
 #
 # ==============================================================================
 
@@ -51,7 +52,7 @@
 # INTERNAL STATE
 # ----------------------------
 globals:
-  # Explicit pre-actuator dispatch contract.
+  # Explicit pre-actuator thermal request contract.
   - id: oq_dispatch_mode_code
     type: int
     restore_value: false
@@ -93,13 +94,13 @@ globals:
     restore_value: false
     initial_value: '0'
 
-  # Shared filtered demand owned by the active dispatch producer.
+  # Shared filtered demand owned by the active strategy request producer.
   - id: oq_demand_filtered
     type: int
     restore_value: false
     initial_value: '0'
 
-  # Previous filtered demand sample published by the active dispatch producer.
+  # Previous filtered demand sample published by the active strategy request producer.
   - id: oq_demand_filtered_prev
     type: int
     restore_value: false
@@ -554,7 +555,7 @@ interval:
 #   heating curve => single-HP/split
 #   power-house => compare best single-vs-duo candidates, prefer lower electrical input, then apply anti-flip guards
 # - shared capacity/deficit publication
-# - dispatch contract publication
+# - explicit request-contract publication
 # - allowed-level mapping + min-runtime + apply + runtime bookkeeping
 # ----------------------------
   - interval: ${oq_heat_loop_tick_s}s
@@ -611,7 +612,7 @@ interval:
           // =========================
           // 1) Demand path (0..20)
           // Producer files now own the active demand path.
-          // Heat control reads the shared filtered demand as dispatch input.
+          // Thermal request control reads the shared filtered demand as strategy input.
           // =========================
           int raw = is_cooling_mode ? id(oq_cooling_demand_raw) : id(oq_demand_raw);
           raw = std::max(0, std::min(demand_max_f, raw));
@@ -1245,7 +1246,7 @@ interval:
           }
 
           // =========================
-          // 6) Post-dispatch runtime floor
+          // 6) Post-request runtime floor
           // Prevents very short compressor runs in both curve and Power House modes.
           // Runtime is per-compressor and user-tunable, with a hard lower bound of 300 s.
           // Skipped during an absolute water-temperature hard trip.

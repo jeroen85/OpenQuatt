@@ -1,9 +1,9 @@
 # ==============================================================================
-# OpenQuatt - Heating Strategy Manager
+# OpenQuatt - Strategy Manager
 # ==============================================================================
 #
 # Goal:
-#   Own the shared heating-strategy contract and active strategy selection.
+#   Own the shared strategy contract and active heating-strategy selection.
 #
 # Responsibilities:
 #   - Publishes the active heating strategy as `oq_heat_mode_code`
@@ -12,11 +12,11 @@
 #
 # Ownership:
 #   - Curve and Power House implementations write `oq_demand_raw` in their own modules
-#   - This package does not implement strategy-specific demand or dispatch logic
+#   - This package does not implement strategy-specific demand or compressor-request logic
 # ==============================================================================
 
 globals:
-  # Shared strategy output (0..20) consumed by downstream heat-control.
+  # Shared strategy output (0..20) consumed by downstream thermal-request control.
   - id: oq_demand_raw
     type: int
     restore_value: false
