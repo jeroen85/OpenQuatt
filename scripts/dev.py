@@ -39,6 +39,12 @@ STAGE_EXCLUDE_DIRS = {
 
 STAGE_EXCLUDE_FILES = ("*.pyc", "*.pyo")
 
+EFUSE_DUPLICATE_SOURCE = '"src/esp_efuse_fields.c"'
+EFUSE_PATCH_MARKER = (
+    "# OpenQuatt validate patch: target-specific sources.cmake already provides "
+    "esp_efuse_fields.c.\n"
+)
+
 
 def repo_root() -> Path:
     return Path(__file__).resolve().parent.parent
@@ -209,6 +215,75 @@ def tail_lines(path: Path, limit: int = 80) -> str:
     with path.open("r", encoding="utf-8", errors="replace") as handle:
         lines = handle.readlines()
     return "".join(lines[-limit:])
+
+
+def framework_espidf_package_dirs(pio_core_dir: Path) -> list[Path]:
+    candidates = [
+        pio_core_dir / "packages" / "framework-espidf",
+        Path.home() / ".platformio" / "packages" / "framework-espidf",
+    ]
+    seen: set[Path] = set()
+    dirs: list[Path] = []
+    for candidate in candidates:
+        resolved = candidate.expanduser()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        dirs.append(resolved)
+    return dirs
+
+
+def patch_framework_espidf_efuse(package_dir: Path) -> bool:
+    cmake_path = package_dir / "components" / "efuse" / "CMakeLists.txt"
+    if not cmake_path.is_file():
+        return False
+
+    text = cmake_path.read_text(encoding="utf-8")
+    if EFUSE_PATCH_MARKER in text:
+        return False
+    if EFUSE_DUPLICATE_SOURCE not in text:
+        return False
+
+    old = (
+        'list(APPEND srcs "src/esp_efuse_api.c"\n'
+        '                 "src/esp_efuse_fields.c"\n'
+        '                 "src/esp_efuse_utility.c"\n'
+        '                 "src/efuse_controller/keys/${type}/esp_efuse_api_key.c")'
+    )
+    new = (
+        EFUSE_PATCH_MARKER
+        +
+        'list(APPEND srcs "src/esp_efuse_api.c"\n'
+        '                 "src/esp_efuse_utility.c"\n'
+        '                 "src/efuse_controller/keys/${type}/esp_efuse_api_key.c")'
+    )
+    if old not in text:
+        raise SystemExit(
+            "framework-espidf efuse workaround could not be applied because the expected "
+            f"source block was not found in {cmake_path}"
+        )
+
+    cmake_path.write_text(text.replace(old, new, 1), encoding="utf-8")
+    return True
+
+
+def apply_framework_espidf_efuse_workaround(pio_core_dir: Path) -> list[Path]:
+    patched: list[Path] = []
+    for package_dir in framework_espidf_package_dirs(pio_core_dir):
+        if patch_framework_espidf_efuse(package_dir):
+            patched.append(package_dir)
+    return patched
+
+
+def has_framework_espidf_efuse_workaround(pio_core_dir: Path) -> bool:
+    for package_dir in framework_espidf_package_dirs(pio_core_dir):
+        cmake_path = package_dir / "components" / "efuse" / "CMakeLists.txt"
+        if not cmake_path.is_file():
+            continue
+        text = cmake_path.read_text(encoding="utf-8")
+        if EFUSE_PATCH_MARKER in text:
+            return True
+    return False
 
 
 def run_command(
@@ -472,6 +547,12 @@ def validate_command(args: argparse.Namespace) -> int:
             print("Validation complete.")
             return 0
 
+        patched_packages = apply_framework_espidf_efuse_workaround(pio_core_dir)
+        for package_dir in patched_packages:
+            print(f"[fix] patched framework-espidf efuse sources in {package_dir}")
+        if patched_packages:
+            shutil.rmtree(command_root / ".esphome" / "build", ignore_errors=True)
+
         compile_queue = list(args.configs)
         packages_dir = pio_core_dir / "packages"
         espressif_cache_dir = command_root / ".esphome" / ".espressif"
@@ -496,10 +577,33 @@ def validate_command(args: argparse.Namespace) -> int:
             )
             if exit_code != 0:
                 tail = tail_lines(log_path, limit=160)
+                efuse_duplicate = (
+                    "Multiple ways to build the same target were specified for:" in tail
+                    and "esp_efuse_fields.c.o" in tail
+                )
                 cache_race = (
                     ".esphome/.espressif/service_" in tail
                     and ("ArduinoJson" in tail or "idf_component_manager" in tail)
                 )
+                if efuse_duplicate:
+                    patched = apply_framework_espidf_efuse_workaround(pio_core_dir)
+                    if patched or has_framework_espidf_efuse_workaround(pio_core_dir):
+                        print(
+                            f"[retry] compile {config}: resetting build cache after framework-espidf "
+                            "efuse duplicate-target failure."
+                        )
+                        shutil.rmtree(command_root / ".esphome" / "build" / Path(config).stem, ignore_errors=True)
+                        exit_code = run_command(
+                            [*esphome_command, "compile", config],
+                            cwd=command_root,
+                            env=env,
+                            log_path=log_path,
+                            check=False,
+                        )
+                        if exit_code == 0:
+                            return config, exit_code, log_path
+                        tail = tail_lines(log_path, limit=160)
+
                 if cache_race:
                     print(
                         f"[retry] compile {config}: resetting ESP-IDF component cache after a generated-cache race."
