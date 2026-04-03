@@ -860,6 +860,7 @@ interval:
           }
 
           const uint32_t cm2_idle_exit_ms = (uint32_t)(${oq_cm2_idle_exit_s}UL * 1000UL);
+          const bool curve_mode_active = (strategy_active_code == 2);
           const uint32_t cm2_startup_grace_ms = (uint32_t)(${oq_cm2_min_run_s}UL * 1000UL);
           const bool cm2_startup_grace_active =
               in_cm2 && id(oq_cm2_entered_ms) != 0 &&
@@ -870,6 +871,7 @@ interval:
           std::string cm2_idle_exit_reason = "not_in_cm2";
           if (in_cm2) {
             if (!heating_req) cm2_idle_exit_reason = "no_heat_req";
+            else if (curve_mode_active) cm2_idle_exit_reason = "blocked_curve_mode";
             else if (!both_levels_off) cm2_idle_exit_reason = "levels_on";
             else if (!both_units_idle) cm2_idle_exit_reason = "units_not_idle";
             else if (cm2_startup_grace_active) cm2_idle_exit_reason = "blocked_startup_grace";
@@ -877,7 +879,7 @@ interval:
             else cm2_idle_exit_reason = "timing";
           }
           bool cm2_idle_exit_trip = false;
-          if (in_cm2 && heating_req && both_levels_off && both_units_idle &&
+          if (in_cm2 && heating_req && !curve_mode_active && both_levels_off && both_units_idle &&
               !cm2_startup_grace_active && !ph_high_load_idle_exit_block) {
             if (id(oq_cm2_idle_since_ms) == 0) id(oq_cm2_idle_since_ms) = now_ms;
             if ((uint32_t)(now_ms - id(oq_cm2_idle_since_ms)) >= cm2_idle_exit_ms) {
@@ -1112,7 +1114,9 @@ interval:
                   }
                 } else if (heating_req) {
                   if (base_target == 2) {
-                    if (strcmp(cur_cm, "CM2") == 0) {
+                    // Keep active heating transitions inside the heating states. CM3 -> CM2
+                    // should not force an artificial CM1 detour that drops compressor requests.
+                    if (strcmp(cur_cm, "CM2") == 0 || strcmp(cur_cm, "CM3") == 0) {
                       desired_local = 2;
                     } else {
                       start_cm1(2);
@@ -1137,46 +1141,55 @@ interval:
                     desired_local = 1;
                   }
 
-              // CM3 (boiler assist) auto-switching
-              // Promote/Demote: deficit-based (thermal deficit) + timers/hysteresis
-              const float deficit_w = id(oq_P_deficit_w);
-              const float on_th = id(oq_cm3_deficit_on_w).state;
-              const float off_th = id(oq_cm3_deficit_off_w).state;
-              const bool need_on = (!isnan(deficit_w) && deficit_w >= on_th);
-              const bool ok_off  = (isnan(deficit_w) || deficit_w <= off_th);
+              // CM3 (boiler assist) is a Power House-only feature. Heating-curve mode
+              // must never promote into boiler assist from deficit telemetry.
+              const int cm_now =
+                  (strcmp(cur_cm, "CM3") == 0) ? 3 :
+                  (strcmp(cur_cm, "CM2") == 0) ? 2 :
+                  (strcmp(cur_cm, "CM5") == 0) ? 5 :
+                  (strcmp(cur_cm, "CM1") == 0) ? 1 :
+                  (strcmp(cur_cm, "CM98") == 0) ? 98 : 0;
+              if (power_house_active) {
+                // CM3 (boiler assist) auto-switching
+                // Promote/Demote: deficit-based (thermal deficit) + timers/hysteresis
+                const float deficit_w = id(oq_P_deficit_w);
+                const float on_th = id(oq_cm3_deficit_on_w).state;
+                const float off_th = id(oq_cm3_deficit_off_w).state;
+                const bool need_on = (!isnan(deficit_w) && deficit_w >= on_th);
+                const bool ok_off  = (isnan(deficit_w) || deficit_w <= off_th);
+                const uint32_t T_ON_MS = (uint32_t)(${oq_cm3_promote_s}UL * 1000UL);
+                const uint32_t T_OFF_MS = (uint32_t)(${oq_cm3_demote_s}UL * 1000UL);
+                const uint32_t MIN_CM3_MS = (uint32_t)(${oq_cm3_min_run_s}UL * 1000UL);
+                const uint32_t MIN_CM2_MS = (uint32_t)(${oq_cm2_min_run_s}UL * 1000UL);
 
-                  const int cm_now =
-                      (strcmp(cur_cm, "CM3") == 0) ? 3 :
-                      (strcmp(cur_cm, "CM2") == 0) ? 2 :
-                      (strcmp(cur_cm, "CM5") == 0) ? 5 :
-                      (strcmp(cur_cm, "CM1") == 0) ? 1 :
-                      (strcmp(cur_cm, "CM98") == 0) ? 98 : 0;
-              const uint32_t T_ON_MS = (uint32_t)(${oq_cm3_promote_s}UL * 1000UL);
-              const uint32_t T_OFF_MS = (uint32_t)(${oq_cm3_demote_s}UL * 1000UL);
-              const uint32_t MIN_CM3_MS = (uint32_t)(${oq_cm3_min_run_s}UL * 1000UL);
-              const uint32_t MIN_CM2_MS = (uint32_t)(${oq_cm2_min_run_s}UL * 1000UL);
-
-                  if (cm_now == 2) {
-                    if (now_ms - id(oq_cm_last_change_ms) >= MIN_CM2_MS) {
-                      if (need_on) {
-                    if (id(oq_cm3_need_since_ms) == 0) id(oq_cm3_need_since_ms) = now_ms;
-                    if (now_ms - id(oq_cm3_need_since_ms) >= T_ON_MS) desired_local = 3;
-                  } else {
-                    id(oq_cm3_need_since_ms) = 0;
+                if (cm_now == 2) {
+                  if (now_ms - id(oq_cm_last_change_ms) >= MIN_CM2_MS) {
+                    if (need_on) {
+                      if (id(oq_cm3_need_since_ms) == 0) id(oq_cm3_need_since_ms) = now_ms;
+                      if (now_ms - id(oq_cm3_need_since_ms) >= T_ON_MS) desired_local = 3;
+                    } else {
+                      id(oq_cm3_need_since_ms) = 0;
+                    }
                   }
-                }
-              } else if (cm_now == 3) {
-                if (now_ms - id(oq_cm_last_change_ms) >= MIN_CM3_MS) {
-                  if (ok_off) {
-                    if (id(oq_cm3_demote_since_ms) == 0) id(oq_cm3_demote_since_ms) = now_ms;
-                    if (now_ms - id(oq_cm3_demote_since_ms) >= T_OFF_MS) desired_local = 2;
-                  } else {
-                    id(oq_cm3_demote_since_ms) = 0;
+                } else if (cm_now == 3) {
+                  if (now_ms - id(oq_cm_last_change_ms) >= MIN_CM3_MS) {
+                    if (ok_off) {
+                      if (id(oq_cm3_demote_since_ms) == 0) id(oq_cm3_demote_since_ms) = now_ms;
+                      if (now_ms - id(oq_cm3_demote_since_ms) >= T_OFF_MS) desired_local = 2;
+                    } else {
+                      id(oq_cm3_demote_since_ms) = 0;
+                    }
                   }
+                } else {
+                  id(oq_cm3_need_since_ms) = 0;
+                  id(oq_cm3_demote_since_ms) = 0;
                 }
               } else {
                 id(oq_cm3_need_since_ms) = 0;
                 id(oq_cm3_demote_since_ms) = 0;
+                if (cm_now == 3 && heating_req && base_target == 2) {
+                  desired_local = 2;
+                }
               }
             }
             return desired_local;
