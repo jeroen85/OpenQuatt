@@ -15,7 +15,7 @@ class ScenarioResult:
     details: str
 
 
-def hold_dispatch_mode_code(
+def hold_request_mode_code(
     hp1_hold: int,
     hp2_hold: int,
     hp1_cooling_hold: bool,
@@ -141,7 +141,7 @@ def runtime_floor_request(
 def actuator_mode_and_level(
     request_level: int,
     *,
-    dispatch_mode_code: int,
+    request_mode_code: int,
     previous_applied_level: int,
     min_off_blocked: bool,
     measured_mode_matches: bool,
@@ -150,16 +150,16 @@ def actuator_mode_and_level(
     silent_cap: int = 10,
     level_allowed: bool = True,
 ) -> tuple[str, int]:
-    dispatch_mode_name = {0: "Standby", 1: "Cooling", 2: "Heating"}[dispatch_mode_code]
-    dispatch_thermal_active = dispatch_mode_code in (1, 2)
+    request_mode_name = {0: "Standby", 1: "Cooling", 2: "Heating"}[request_mode_code]
+    request_thermal_active = request_mode_code in (1, 2)
 
     if request_level == 0 and retained_level > 0:
-        return dispatch_mode_name if dispatch_thermal_active else "Hold", retained_level
+        return request_mode_name if request_thermal_active else "Hold", retained_level
 
     if request_level > 0 and previous_applied_level == 0 and min_off_blocked:
         request_level = 0
 
-    mode_command = dispatch_mode_name if (request_level > 0 and dispatch_thermal_active) else "Standby"
+    mode_command = request_mode_name if (request_level > 0 and request_thermal_active) else "Standby"
     applied_level = min(request_level, silent_cap)
     if applied_level > 0 and not level_allowed:
         applied_level = 0
@@ -184,18 +184,18 @@ def run_scenarios() -> list[ScenarioResult]:
     def add(name: str, passed: bool, details: str) -> None:
         results.append(ScenarioResult(name=name, passed=passed, details=details))
 
-    cooling_hold_mode = hold_dispatch_mode_code(1, 0, True, False)
+    cooling_hold_mode = hold_request_mode_code(1, 0, True, False)
     add(
         "CM5 cooling hold stays cooling on inactive-CM exit",
         cooling_hold_mode == 1,
-        f"hold_dispatch_mode_code -> {cooling_hold_mode}",
+        f"hold_request_mode_code -> {cooling_hold_mode}",
     )
 
-    heating_hold_mode = hold_dispatch_mode_code(1, 0, False, False)
+    heating_hold_mode = hold_request_mode_code(1, 0, False, False)
     add(
         "Heating hold stays heating on inactive-CM exit",
         heating_hold_mode == 2,
-        f"hold_dispatch_mode_code -> {heating_hold_mode}",
+        f"hold_request_mode_code -> {heating_hold_mode}",
     )
 
     add(
@@ -318,7 +318,7 @@ def run_scenarios() -> list[ScenarioResult]:
 
     mode_command, applied_level = actuator_mode_and_level(
         3,
-        dispatch_mode_code=2,
+        request_mode_code=2,
         previous_applied_level=0,
         min_off_blocked=False,
         measured_mode_matches=False,
@@ -332,7 +332,7 @@ def run_scenarios() -> list[ScenarioResult]:
 
     mode_command, applied_level = actuator_mode_and_level(
         3,
-        dispatch_mode_code=2,
+        request_mode_code=2,
         previous_applied_level=0,
         min_off_blocked=True,
         measured_mode_matches=False,
@@ -346,7 +346,7 @@ def run_scenarios() -> list[ScenarioResult]:
 
     mode_command, applied_level = actuator_mode_and_level(
         0,
-        dispatch_mode_code=2,
+        request_mode_code=2,
         previous_applied_level=5,
         min_off_blocked=False,
         measured_mode_matches=True,

@@ -7,7 +7,7 @@
 #   runtime bookkeeping.
 #
 # Ownership:
-#   - Consumes `oq_dispatch_mode_code`
+#   - Consumes `oq_request_mode_code`
 #   - Consumes `oq_actuator_hp1_req` / `oq_actuator_hp2_req`
 #   - Is the only package that writes HP working mode and compressor levels
 # ==============================================================================
@@ -150,14 +150,14 @@ interval:
                    id(${ta_secondary_set_working_mode_id}).current_option() == "Heating";
           };
 
-          const int dispatch_mode_code = id(oq_dispatch_mode_code);
-          const bool dispatch_thermal_active = (dispatch_mode_code == 1 || dispatch_mode_code == 2);
-          const char* dispatch_thermal_mode_opt = (dispatch_mode_code == 1) ? "Cooling" : "Heating";
+          const int request_mode_code = id(oq_request_mode_code);
+          const bool request_thermal_active = (request_mode_code == 1 || request_mode_code == 2);
+          const char* request_thermal_mode_opt = (request_mode_code == 1) ? "Cooling" : "Heating";
 
           auto hp_hold_mode_opt = [&](bool is_hp1)->const char* {
             if (hp_mode_is_cooling(is_hp1) || hp_mode_target_is_cooling(is_hp1)) return "Cooling";
             if (hp_mode_is_heating(is_hp1) || hp_mode_target_is_heating(is_hp1)) return "Heating";
-            return dispatch_thermal_mode_opt;
+            return request_thermal_mode_opt;
           };
 
           auto valve_defrost_active = [&](bool is_hp1)->bool {
@@ -224,7 +224,7 @@ interval:
           };
 
           auto set_mode = [&](bool is_hp1, bool active) {
-            const char* opt = (active && dispatch_thermal_active) ? dispatch_thermal_mode_opt : "Standby";
+            const char* opt = (active && request_thermal_active) ? request_thermal_mode_opt : "Standby";
             if (is_hp1) {
               if (id(hp1_set_working_mode).current_option() != opt) {
                 auto c = id(hp1_set_working_mode).make_call();
@@ -243,17 +243,17 @@ interval:
           auto mode_is_active_thermal = [&](bool is_hp1)->bool {
             const float mode_raw = is_hp1 ? id(hp1_working_mode).state : id(${ta_secondary_working_mode_id}).state;
             if (isnan(mode_raw)) return false;
-            return dispatch_thermal_active && (((int) roundf(mode_raw)) == dispatch_mode_code);
+            return request_thermal_active && (((int) roundf(mode_raw)) == request_mode_code);
           };
 
           auto mode_target_is_active_thermal = [&](bool is_hp1)->bool {
-            if (!dispatch_thermal_active) return false;
+            if (!request_thermal_active) return false;
             if (is_hp1) {
               return id(hp1_set_working_mode).has_state() &&
-                     id(hp1_set_working_mode).current_option() == dispatch_thermal_mode_opt;
+                     id(hp1_set_working_mode).current_option() == request_thermal_mode_opt;
             }
             return id(${ta_secondary_set_working_mode_id}).has_state() &&
-                   id(${ta_secondary_set_working_mode_id}).current_option() == dispatch_thermal_mode_opt;
+                   id(${ta_secondary_set_working_mode_id}).current_option() == request_thermal_mode_opt;
           };
 
           // Note: options must exactly match the options map in oq_HP_io.yaml (levels 0..10)
@@ -339,7 +339,7 @@ interval:
               (id(hp1_last_applied_level) > 0 ? 1 : 0) + (id(${ta_secondary_last_applied_level_id}) > 0 ? 1 : 0);
           const int new_topology_count = (hp1_applied > 0 ? 1 : 0) + (hp2_applied > 0 ? 1 : 0);
           if (prev_topology_count > 0 && new_topology_count > 0 && prev_topology_count != new_topology_count) {
-            id(oq_duo_dispatch_hold_until_ms) = now_ms + 180000UL;
+            id(oq_duo_request_hold_until_ms) = now_ms + 180000UL;
           }
           #else
           const int hp2_applied = 0;

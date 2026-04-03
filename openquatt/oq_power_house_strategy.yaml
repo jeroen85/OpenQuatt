@@ -64,22 +64,22 @@ globals:
     restore_value: false
     initial_value: '0.0'
 
-  - id: oq_ph_dispatch_last_loop_ms
+  - id: oq_ph_request_last_loop_ms
     type: uint32_t
     restore_value: false
     initial_value: '0'
 
-  - id: oq_ph_dispatch_hp1_req
+  - id: oq_ph_request_hp1_level
     type: int
     restore_value: false
     initial_value: '0'
 
-  - id: oq_ph_dispatch_hp2_req
+  - id: oq_ph_request_hp2_level
     type: int
     restore_value: false
     initial_value: '0'
 
-  - id: oq_ph_dispatch_owner_hp
+  - id: oq_ph_request_owner_hp
     type: int
     restore_value: false
     initial_value: '0'
@@ -88,7 +88,7 @@ globals:
   # 4=fallback_duo, 5=keep_current, 6=hold_active, 7=defrost_hold,
   # 8=better_heat, 9=soft_guard, 10=less_power, 11=no_candidate,
   # 12=defrost_boost, 13=runtime_lead, 14=single_topology
-  - id: oq_ph_dispatch_reason_code
+  - id: oq_ph_request_reason_code
     type: int
     restore_value: false
     initial_value: '0'
@@ -476,11 +476,11 @@ interval:
           const int cm_code = id(oq_control_mode_code);
           const bool active = (cm_code != 5) && (id(oq_heat_mode_code) != 1);
           if (!active) {
-            id(oq_ph_dispatch_last_loop_ms) = 0;
-            id(oq_ph_dispatch_hp1_req) = 0;
-            id(oq_ph_dispatch_hp2_req) = 0;
-            id(oq_ph_dispatch_owner_hp) = 0;
-            id(oq_ph_dispatch_reason_code) = 0;
+            id(oq_ph_request_last_loop_ms) = 0;
+            id(oq_ph_request_hp1_level) = 0;
+            id(oq_ph_request_hp2_level) = 0;
+            id(oq_ph_request_owner_hp) = 0;
+            id(oq_ph_request_reason_code) = 0;
             id(oq_phouse_last_ms) = 0;
             id(oq_phouse_last_w) = 0.0f;
             id(oq_ph_comfort_bias_last_ms) = 0;
@@ -491,12 +491,12 @@ interval:
           const uint32_t now_ms = (uint32_t) millis();
           const uint32_t loop_target_ms = (uint32_t) (${oq_heat_loop_powerhouse_s} * 1000UL);
           float dt_s = (float) loop_target_ms / 1000.0f;
-          if (id(oq_ph_dispatch_last_loop_ms) > 0 && now_ms > id(oq_ph_dispatch_last_loop_ms)) {
-            const uint32_t elapsed_ms = now_ms - id(oq_ph_dispatch_last_loop_ms);
+          if (id(oq_ph_request_last_loop_ms) > 0 && now_ms > id(oq_ph_request_last_loop_ms)) {
+            const uint32_t elapsed_ms = now_ms - id(oq_ph_request_last_loop_ms);
             if (elapsed_ms < loop_target_ms) return;
             dt_s = (float) elapsed_ms / 1000.0f;
           }
-          id(oq_ph_dispatch_last_loop_ms) = now_ms;
+          id(oq_ph_request_last_loop_ms) = now_ms;
 
           constexpr float seconds_per_minute = 60.0f;
           const int demand_max_f = (int) ${oq_strategy_demand_max_f};
@@ -772,8 +772,8 @@ interval:
 
           int hp1_req = 0;
           int hp2_req = 0;
-          int dispatch_owner_hp = 0;
-          int dispatch_reason_code = 0;
+          int request_owner_hp = 0;
+          int request_reason_code = 0;
 
           #if OQ_TOPOLOGY_DUO
           const float Pr = id(house_rated_power_w).state;
@@ -785,8 +785,8 @@ interval:
           const float cap_total = publish_capacity_and_deficit(P_req_total);
           const bool perf_inputs_valid = !isnan(Tamb) && !isnan(Tsup) && level_cap > 0;
           if (!perf_inputs_valid) {
-            dispatch_reason_code = 1;
-            id(oq_duo_dispatch_hold_until_ms) = 0;
+            request_reason_code = 1;
+            id(oq_duo_request_hold_until_ms) = 0;
             int dual_on_f = (int) roundf(id(oq_dual_hp_enable_level).state);
             if (dual_on_f < 2) dual_on_f = 2;
             if (dual_on_f > demand_max_f) dual_on_f = demand_max_f;
@@ -830,8 +830,8 @@ interval:
             if (prefer_single && !needs_dual) {
               if (lead_is_hp1) hp1_req = f;
               else hp2_req = f;
-              dispatch_owner_hp = lead_is_hp1 ? 1 : 2;
-              dispatch_reason_code = lead_is_hp1 ? 2 : 3;
+              request_owner_hp = lead_is_hp1 ? 1 : 2;
+              request_reason_code = lead_is_hp1 ? 2 : 3;
             } else {
               hp1_req = f / 2;
               hp2_req = f / 2;
@@ -839,8 +839,8 @@ interval:
                 if (lead_is_hp1) hp1_req += 1;
                 else hp2_req += 1;
               }
-              dispatch_owner_hp = 0;
-              dispatch_reason_code = 4;
+              request_owner_hp = 0;
+              request_reason_code = 4;
             }
           } else {
             float P_target = P_req_total;
@@ -1019,8 +1019,8 @@ interval:
                   (best_candidate.active_hp_count > 0) &&
                   (current_candidate.active_hp_count != best_candidate.active_hp_count);
               const bool hold_window_active =
-                  (id(oq_duo_dispatch_hold_until_ms) > 0) &&
-                  (now_ms < id(oq_duo_dispatch_hold_until_ms));
+                  (id(oq_duo_request_hold_until_ms) > 0) &&
+                  (now_ms < id(oq_duo_request_hold_until_ms));
               const bool topology_change_allowed =
                   !topology_change ||
                   (best_candidate.err_w + topology_heat_advantage_w < current_candidate.err_w) ||
@@ -1064,7 +1064,7 @@ interval:
                 (keep_current && current_candidate.valid) ? current_candidate : best_candidate;
             hp1_req = chosen_candidate.valid ? chosen_candidate.l1 : 0;
             hp2_req = chosen_candidate.valid ? chosen_candidate.l2 : 0;
-            dispatch_reason_code = optimizer_reason_code;
+            request_reason_code = optimizer_reason_code;
 
             switch (optimizer_reason_code) {
               case 5: publish_optimizer_reason("keep_current"); break;
@@ -1094,18 +1094,18 @@ interval:
             if (allow_defrost_boost) {
               if (hp1_valve_def && !hp2_valve_def && hp2_req > 0) {
                 hp2_req = std::min(level_cap, hp2_req + def_comp_boost);
-                dispatch_reason_code = 12;
+                request_reason_code = 12;
                 publish_optimizer_reason("defrost_boost");
               }
               if (hp2_valve_def && !hp1_valve_def && hp1_req > 0) {
                 hp1_req = std::min(level_cap, hp1_req + def_comp_boost);
-                dispatch_reason_code = 12;
+                request_reason_code = 12;
                 publish_optimizer_reason("defrost_boost");
               }
             }
-            if (hp1_req > 0 && hp2_req == 0) dispatch_owner_hp = 1;
-            else if (hp2_req > 0 && hp1_req == 0) dispatch_owner_hp = 2;
-            else dispatch_owner_hp = 0;
+            if (hp1_req > 0 && hp2_req == 0) request_owner_hp = 1;
+            else if (hp2_req > 0 && hp1_req == 0) request_owner_hp = 2;
+            else request_owner_hp = 0;
 
             const bool single_req = ((hp1_req > 0) != (hp2_req > 0));
             const bool both_idle_prev = (id(hp1_last_applied_level) <= 0 && id(${ph_secondary_last_applied_level_id}) <= 0);
@@ -1117,13 +1117,13 @@ interval:
                 if (lead_is_hp1) {
                   hp1_req = req_single;
                   hp2_req = 0;
-                  dispatch_owner_hp = 1;
+                  request_owner_hp = 1;
                 } else {
                   hp2_req = req_single;
                   hp1_req = 0;
-                  dispatch_owner_hp = 2;
+                  request_owner_hp = 2;
                 }
-                dispatch_reason_code = 13;
+                request_reason_code = 13;
                 publish_optimizer_reason("runtime_lead");
               }
             }
@@ -1140,7 +1140,7 @@ interval:
           const bool perf_inputs_valid = !isnan(Tamb) && !isnan(Tsup) && level_cap > 0;
           if (!perf_inputs_valid) {
             hp1_req = f;
-            dispatch_reason_code = (f > 0) ? 2 : 1;
+            request_reason_code = (f > 0) ? 2 : 1;
           } else {
             float P_target = P_req_total;
             if (isnan(P_target)) P_target = 0.0f;
@@ -1176,16 +1176,16 @@ interval:
               }
             }
             hp1_req = best_l1;
-            dispatch_reason_code = (best_l1 > 0) ? 14 : 0;
+            request_reason_code = (best_l1 > 0) ? 14 : 0;
           }
-          dispatch_owner_hp = (hp1_req > 0) ? 1 : 0;
+          request_owner_hp = (hp1_req > 0) ? 1 : 0;
           hp2_req = 0;
           #endif
 
-          id(oq_ph_dispatch_hp1_req) = hp1_req;
-          id(oq_ph_dispatch_hp2_req) = hp2_req;
-          id(oq_ph_dispatch_owner_hp) = dispatch_owner_hp;
-          id(oq_ph_dispatch_reason_code) = dispatch_reason_code;
+          id(oq_ph_request_hp1_level) = hp1_req;
+          id(oq_ph_request_hp2_level) = hp2_req;
+          id(oq_ph_request_owner_hp) = request_owner_hp;
+          id(oq_ph_request_reason_code) = request_reason_code;
 
           id(oq_strategy_phase_code) = (f > 0) ? 1 : 0;
           id(oq_strategy_requested_power_w) = id(oq_phouse_req_w);
@@ -1197,5 +1197,5 @@ interval:
           snprintf(
             debug_buf, sizeof(debug_buf),
             "ph f=%d raw=%d preq=%.0f owner=%d reason=%d",
-            f, raw, id(oq_phouse_req_w), dispatch_owner_hp, dispatch_reason_code);
+            f, raw, id(oq_phouse_req_w), request_owner_hp, request_reason_code);
           id(oq_strategy_debug_state).publish_state(debug_buf);
