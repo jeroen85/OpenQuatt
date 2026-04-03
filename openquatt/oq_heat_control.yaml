@@ -789,6 +789,25 @@ interval:
                    id(${hc_secondary_set_working_mode_id}).current_option() == "Cooling";
           };
 
+          auto hold_dispatch_mode_code = [&](int hold1, int hold2)->int {
+            if (hold1 <= 0 && hold2 <= 0) return 0;
+
+            const bool hp1_cooling_hold =
+                (hold1 > 0) && (hp_mode_is_cooling(true) || hp_mode_target_is_cooling(true));
+            #if OQ_TOPOLOGY_DUO
+            const bool hp2_cooling_hold =
+                (hold2 > 0) && (hp_mode_is_cooling(false) || hp_mode_target_is_cooling(false));
+            #else
+            const bool hp2_cooling_hold = false;
+            #endif
+
+            // Preserve passive-cooling holds across CM5 -> CM1/CM0 transitions.
+            // Otherwise the generic inactive-CM fallback would reinterpret the hold
+            // as Heating and re-arm the compressor in the wrong thermal mode.
+            if (hp1_cooling_hold || hp2_cooling_hold) return 1;
+            return 2;
+          };
+
           auto valve_defrost_active = [&](bool is_hp1)->bool {
             if (is_hp1) return id(hp1_4_way_valve).state;
             #if OQ_TOPOLOGY_DUO
@@ -879,8 +898,9 @@ interval:
             #else
             publish_optimizer_reason(hp1_hold_level > 0 ? "keep_current" : "inactive");
             #endif
+            const int hold_mode_code = hold_dispatch_mode_code(hp1_hold_level, hp2_hold_level);
             publish_dispatch(
-              any_hold ? active_thermal_mode_code : 0,
+              any_hold ? hold_mode_code : 0,
               hp1_hold_level,
               hp2_hold_level,
               dispatch_strategy_inactive,

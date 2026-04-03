@@ -708,7 +708,9 @@ interval:
     then:
       - lambda: |-
           // Curve strategy loop: maintain PID target and publish curve demand.
-          const bool active = id(oq_heat_mode_code) == 1;
+          // CM5 owns the thermal strategy contract while cooling is active, so the
+          // curve path must go fully inactive there even when curve mode remains selected.
+          const bool active = (id(oq_control_mode_code) != 5) && (id(oq_heat_mode_code) == 1);
           const int demand_max = (int) ${oq_strategy_demand_max_f};
           auto clamp_demand = [&](int demand)->int {
             if (demand < 0) return 0;
