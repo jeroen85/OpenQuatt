@@ -138,8 +138,11 @@ oq_ot_slave: !include
     ot_secondary_last_applied_level_id: "hp2_last_applied_level"
     ot_secondary_working_mode_id: "hp2_working_mode"
     ot_secondary_fault_binary_sensor_id: "hp2_ot_fault_active"
-oq_debug_testing: !include oq_debug_testing.yaml
-oq_debug_testing_duo: !include oq_debug_testing_duo.yaml
+oq_debug_testing: !include
+  file: oq_debug_testing.yaml
+  vars:
+    debug_hp2_internal: "false"
+    debug_secondary_hp_id: "hp2"
 oq_webserver: !include oq_webserver.yaml
 heatpump1: !include
   file: oq_HP_io.yaml

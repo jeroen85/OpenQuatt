@@ -51,9 +51,8 @@ Package include order is intentional:
 11. `oq_local_sensors`
 12. `oq_sensor_sources`
 13. `oq_debug_testing`
-14. `oq_debug_testing_duo` (Duo only)
-15. `oq_webserver`
-16. `oq_HP_io` (HP1 always; HP2 only on Duo)
+14. `oq_webserver`
+15. `oq_HP_io` (HP1 always; HP2 only on Duo)
 
 This order mirrors data dependencies and ownership boundaries.
 
@@ -278,7 +277,7 @@ Compile-time profile selection is done by choosing the firmware entrypoint:
 - HP1, HP2
 - Tuning groups
 - Diagnostics groups
-- Debug and testing groups surfaced in the dedicated dashboard tab (`oq_debug_testing_duo.yaml` adds HP2 debug probe button only on Duo)
+- Debug and testing groups surfaced in the dedicated dashboard tab (`oq_debug_testing.yaml` exposes the HP2 debug probe only on Duo)
 
 This keeps ESPHome web UI and Home Assistant mapping coherent.
 

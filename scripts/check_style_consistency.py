@@ -88,7 +88,6 @@ STRICT_TOP_LEVEL_ORDER_RULES = {
         "oq_sensor_sources",
         "oq_ot_slave",
         "oq_debug_testing",
-        "oq_debug_testing_duo",
         "oq_webserver",
         "heatpump1",
         "heatpump2",
