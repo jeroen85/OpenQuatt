@@ -16,6 +16,17 @@
 # - Publish shared `oq_strategy_*` while active
 # - Publish local `..._request_*` outputs for thermal request control
 # - Do not write actuator entities directly
+# - Keep publication and flow visible in YAML
+# - Put only pure reusable logic in optional `.h` helpers
+#
+# Existing shared helper:
+# - `openquatt/includes/oq_thermal_request_logic.h`
+# - Intended for request/control glue that is reused across packages
+#
+# Optional strategy-specific helper:
+# - `openquatt/includes/oq_<your_strategy>_logic.h`
+# - Use only for pure calculations or small helper structs
+# - Do not hide `publish_state(...)`, strategy selection or actuator writes there
 # ==============================================================================
 
 globals:
@@ -122,7 +133,7 @@ interval:
           id(oq_strategy_supply_target_temp) = NAN;
           id(oq_strategy_heat_request_active) = (raw > 0);
 
-          // Optional shared debug text.
+          // Keep phase/debug text publication visible in YAML.
           id(oq_strategy_phase_text).publish_state((raw > 0) ? "active" : "idle");
           id(oq_strategy_debug_state).publish_state((raw > 0) ? "my_strategy_active" : "my_strategy_idle");
           id(oq_my_strategy_debug_state).publish_state((raw > 0) ? "active" : "idle");
@@ -164,3 +175,8 @@ interval:
           id(oq_my_strategy_request_hp2_level) = hp2_req;
           id(oq_my_strategy_request_owner_hp) = owner_hp;
           id(oq_my_strategy_request_reason_code) = reason_code;
+
+          // Tip:
+          // Keep request publication visible here in YAML.
+          // If you later extract helpers, move only pure calculations such as
+          // demand math, candidate scoring or split decisions.

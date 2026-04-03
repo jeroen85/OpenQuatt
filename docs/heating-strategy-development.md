@@ -46,12 +46,55 @@ Een strategy module owns:
 - de eigen phase/state/diagnostics
 - de eigen compressor-request output
 - het invullen van de gedeelde `oq_strategy_*` status zolang die strategy actief is
+- de zichtbare YAML-structuur van de strategy: globals, intervals, selectors, tekstsensoren en publicatievolgorde
 
 Voorbeelden in de huidige codebase:
 
 - `openquatt/oq_power_house_strategy.yaml`
 - `openquatt/oq_heating_curve_strategy.yaml`
 - `openquatt/oq_cooling_strategy.yaml`
+
+## YAML en `.h` helpers
+
+De huidige thermal stack gebruikt bewust beide:
+
+- YAML voor strategy-structuur en publicatie
+- `.h` helpers voor pure herbruikbare logica
+
+De vuistregel is:
+
+- YAML owns de module-opbouw
+- `.h` owns pure functies en kleine value objects
+
+Dat betekent in de praktijk:
+
+- YAML bevat de `globals`, `interval` loops, `text_sensor` wiring en de expliciete `publish_state(...)` of shared-status publicatie
+- YAML laat zichtbaar zien welke inputs een strategy leest, welke state ze bijhoudt en welke `..._request_*` outputs eruit komen
+- `.h` files bevatten alleen rekenlogica, keuzehelpers en normalisatie die door meerdere packages gedeeld kan worden
+
+Goede kandidaten voor `.h` helpers:
+
+- herhaalde level- of topology-keuze
+- pure demand- of bias-berekeningen
+- state-machine helpers zonder side effects
+- gedeelde status- of resethelpers
+
+Slechte kandidaten voor `.h` helpers:
+
+- verborgen `publish_state(...)` calls
+- actuator writes
+- strategy-selectie
+- code die de YAML-flow onleesbaar maakt doordat alle hoofdlogica uit beeld verdwijnt
+
+Belangrijk ontwerpprincipe:
+
+- een nieuwe strategy moet nog steeds te begrijpen zijn door alleen het YAML-bestand te lezen
+- de `.h` helper mag de strategy ondersteunen, maar niet verbergen
+
+Kort samengevat:
+
+- YAML owns structure and publication
+- `.h` owns pure reusable logic
 
 ### `oq_thermal_request_control`
 
@@ -158,6 +201,12 @@ Gebruik als startpunt:
 
 - `docs/templates/heating-strategy-template.yaml`
 
+Optioneel:
+
+- gebruik de bestaande helperheader `openquatt/includes/oq_thermal_request_logic.h` voor gedeelde request-logica
+- maak alleen een extra strategy-helper als de pure logica echt herhaald of te groot wordt
+- hou helpercode side-effectvrij
+
 ### 2. Kies een nieuwe strategy code
 
 Reserveer een nieuwe `oq_strategy_active_code` voor de strategy.
@@ -240,6 +289,20 @@ Bij een nieuwe strategy horen minimaal updates in:
 - eventueel een eigen detailpagina
 - dashboards als er een nieuwe user-facing selector of status bijkomt
 
+### 9. Trek pure logica pas later uit naar helpers
+
+Begin een nieuwe strategy eerst leesbaar in YAML.
+
+Pas als er echt herhaling of complexe pure logica ontstaat, trek die uit naar:
+
+- `openquatt/includes/oq_thermal_request_logic.h` als het gedeelde request/actuator-logica is
+- eventueel `openquatt/includes/oq_<your_strategy>_logic.h` als het echt strategy-specifieke pure logica is
+
+Hou daarbij vast aan deze grens:
+
+- YAML blijft eigenaar van publication en flow
+- helpercode blijft side-effectvrij
+
 ## Ontwerpregels voor nieuwe strategies
 
 Hou een nieuwe strategy aan deze regels:
@@ -249,6 +312,8 @@ Hou een nieuwe strategy aan deze regels:
 - publiceer alleen strategy-eigen state in de strategy module
 - laat guards en limits in `oq_thermal_request_control`
 - laat echte mode/level writes in `oq_thermal_actuator`
+- hou de strategy-flow zichtbaar in YAML, ook als je helpers gebruikt
+- gebruik helperheaders alleen voor pure logica, niet voor verborgen control-flow
 
 Goede vraag om steeds te stellen:
 
