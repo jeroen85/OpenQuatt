@@ -62,6 +62,7 @@ oq_heating_curve_control: !include
     curve_secondary_minutes_id: "hp2_minutes"
     curve_secondary_last_applied_level_id: "hp2_last_applied_level"
     curve_secondary_last_start_ms_id: "hp2_last_start_ms"
+    curve_secondary_working_mode_id: "hp2_working_mode"
     curve_secondary_4_way_valve_id: "hp2_4_way_valve"
     curve_secondary_excluded_level_a_id: "hp2_excluded_level_a"
     curve_secondary_excluded_level_b_id: "hp2_excluded_level_b"

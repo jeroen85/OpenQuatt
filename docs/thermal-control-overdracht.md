@@ -166,8 +166,9 @@ Nieuwe producer-files:
 Dat betekent:
 
 - cooling demand, owner-keuze en cooling request generation wonen nu in `oq_cooling_control.yaml`
-- heating-curve single-vs-dual dispatch woont nu in `oq_heating_curve_control.yaml`
+- heating-curve targetvorming, PID, demand generation en single-vs-dual dispatch wonen nu in `oq_heating_curve_control.yaml`
 - Power House demand filtering en topology-keuze wonen nu in `oq_power_house_control.yaml`
+- `oq_heating_strategy.yaml` is nu teruggebracht tot strategy manager/shared contract
 - `oq_heat_control.yaml` leest deze producer-output nu terug en publiceert daarna nog steeds het dispatch contract
 - `oq_heat_control.yaml` houdt nu vooral de generieke post-dispatch shaping en actuator-handoff over
 

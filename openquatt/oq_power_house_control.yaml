@@ -608,7 +608,6 @@ interval:
             id(oq_phouse_last_w) = P_effective;
             id(oq_phouse_last_ms) = now_ms;
             id(oq_demand_raw) = clamp_demand((int) lroundf(${oq_strategy_demand_max_f} * (P_effective / house_power_rating_w)));
-            id(oq_demand_curve) = 0;
           }
 
           int raw = id(oq_demand_raw);

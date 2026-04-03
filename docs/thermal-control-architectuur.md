@@ -18,6 +18,7 @@ De doelarchitectuur hieronder is deels al fysiek ingevoerd in de branch die deze
 - `openquatt/oq_thermal_limits.yaml` bestaat als eigen package
 - `openquatt/oq_thermal_actuator.yaml` bestaat als enige writer naar HP mode/level
 - `openquatt/oq_heat_control.yaml` bevat nu zelf het expliciete dispatch-contract
+- `openquatt/oq_heating_strategy.yaml` is nu afgeslankt tot strategy manager/shared contract
 - `openquatt/oq_cooling_control.yaml` en `openquatt/oq_heating_curve_control.yaml` dragen producer-logica
 - `openquatt/oq_power_house_control.yaml` draagt nu ook de Power House-producerlogica
 
@@ -146,6 +147,7 @@ Verantwoordelijkheden:
 - heating curve target generation
 - curve PID
 - curve-specific hysterese
+- curve-demand generatie naar `oq_demand_raw`
 - single-HP-first / dual-enable logica
 - curve-dispatch output
 
@@ -324,11 +326,11 @@ Bij voorkeur lezen ze vooral:
 
 ## Migratie van de huidige code
 
-Uit `oq_heating_strategy.yaml` verhuizen op termijn:
+In de huidige branch is dit inmiddels zo geland:
 
-- curve PID en curve targetlogica naar `oq_heating_curve_control.yaml`
-- Power House-specifieke warmtevraaglogica naar `oq_power_house_control.yaml`
-- gedeelde supply abstraction en water-temp model naar `oq_thermal_limits.yaml`
+- curve PID en curve targetlogica wonen in `oq_heating_curve_control.yaml`
+- Power House-specifieke warmtevraaglogica woont in `oq_power_house_control.yaml`
+- gedeelde supply abstraction en water-temp model wonen in `oq_thermal_limits.yaml`
 - strategy-selectie en heating-common state blijven in afgeslankte `oq_heating_strategy.yaml`
 
 Uit `oq_heat_control.yaml` verhuizen op termijn:

@@ -3,10 +3,11 @@
 # ==============================================================================
 #
 # Goal:
-#   Owns the heating-curve dispatch producer.
+#   Owns the complete heating-curve strategy and dispatch producer.
 #
 # Ownership:
-#   - Computes direct heating-curve demand handoff state
+#   - Computes curve supply target generation and PID demand
+#   - Owns curve-specific hysteresis, phase state, and diagnostics
 #   - Decides single-vs-dual curve topology
 #   - Publishes level-derived capacity/deficit telemetry for supervisory CM3 logic
 #   - Publishes curve producer outputs for oq_heat_control to turn into the
@@ -14,6 +15,62 @@
 # ==============================================================================
 
 globals:
+  # Internal source (0..20) for heating-curve mode (PID -> demand)
+  - id: oq_demand_curve
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  # Heating-curve diagnostics: demand before output guardrails.
+  - id: oq_curve_demand_pre_guardrail
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  # Heating-curve diagnostics: 0=OFF, 1=HEAT, 2=COAST.
+  - id: oq_curve_phase_code
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  # Curve-mode on/off hysteresis state near zero-demand edge.
+  - id: oq_curve_heat_request_active
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+  # Timestamp when curve stop condition was first armed (OFF confirm guardrail).
+  - id: oq_curve_stop_arm_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
+  # Timestamp when curve phase entered OFF (for restart inhibit timing).
+  - id: oq_curve_off_since_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
+  # Diagnostic flag: restart from OFF is temporarily inhibited.
+  - id: oq_curve_restart_inhibit_active
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+  # Curve outside-temperature EMA state.
+  - id: oq_curve_outside_ema_c
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+  - id: oq_curve_outside_ema_initialized
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: oq_curve_outside_ema_last_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
   - id: oq_curve_dispatch_last_loop_ms
     type: uint32_t
     restore_value: false
@@ -41,7 +98,681 @@ globals:
     restore_value: false
     initial_value: '0'
 
+select:
+  - platform: template
+    id: oq_curve_control_profile
+    name: "Heating Curve Control Profile"
+    icon: mdi:tune-variant
+    optimistic: true
+    restore_value: true
+    options:
+      - Comfort
+      - Balanced
+      - Stable
+    initial_option: Balanced
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_tuning_heat
+    on_value:
+      then:
+        - climate.pid.reset_integral_term: oq_heating_curve_pid
+        - lambda: |-
+            id(oq_curve_heat_request_active) = false;
+            id(oq_curve_stop_arm_ms) = 0;
+            id(oq_curve_outside_ema_initialized) = false;
+            id(oq_curve_outside_ema_last_ms) = 0;
+
+number:
+  - platform: template
+    id: curve_tsupply_m20
+    name: "Curve Tsupply @ -20°C"
+    icon: mdi:thermometer
+    unit_of_measurement: "°C"
+    min_value: 20
+    max_value: 70
+    step: 0.5
+    restore_value: true
+    optimistic: true
+    initial_value: 55
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+  - platform: template
+    id: curve_tsupply_m10
+    name: "Curve Tsupply @ -10°C"
+    icon: mdi:thermometer
+    unit_of_measurement: "°C"
+    min_value: 20
+    max_value: 70
+    step: 0.5
+    restore_value: true
+    optimistic: true
+    initial_value: 50
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+  - platform: template
+    id: curve_tsupply_0
+    name: "Curve Tsupply @ 0°C"
+    icon: mdi:thermometer
+    unit_of_measurement: "°C"
+    min_value: 20
+    max_value: 70
+    step: 0.5
+    restore_value: true
+    optimistic: true
+    initial_value: 45
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+  - platform: template
+    id: curve_tsupply_5
+    name: "Curve Tsupply @ 5°C"
+    icon: mdi:thermometer
+    unit_of_measurement: "°C"
+    min_value: 20
+    max_value: 70
+    step: 0.5
+    restore_value: true
+    optimistic: true
+    initial_value: 40
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+  - platform: template
+    id: curve_tsupply_10
+    name: "Curve Tsupply @ 10°C"
+    icon: mdi:thermometer
+    unit_of_measurement: "°C"
+    min_value: 20
+    max_value: 70
+    step: 0.5
+    restore_value: true
+    optimistic: true
+    initial_value: 35
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+  - platform: template
+    id: curve_tsupply_15
+    name: "Curve Tsupply @ 15°C"
+    icon: mdi:thermometer
+    unit_of_measurement: "°C"
+    min_value: 20
+    max_value: 70
+    step: 0.5
+    restore_value: true
+    optimistic: true
+    initial_value: 30
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+  - platform: template
+    id: heating_curve_pid_kp
+    name: "Heating Curve PID Kp"
+    icon: mdi:alpha-k-circle-outline
+    min_value: 0.000
+    max_value: 0.800
+    step: 0.010
+    mode: slider
+    restore_value: true
+    optimistic: true
+    initial_value: 0.350
+    web_server:
+      sorting_group_id: oq_tuning_heat
+    on_value:
+      then:
+        - climate.pid.set_control_parameters:
+            id: oq_heating_curve_pid
+            kp: !lambda "return id(heating_curve_pid_kp).state;"
+            ki: !lambda "return id(heating_curve_pid_ki).state;"
+            kd: !lambda "return id(heating_curve_pid_kd).state;"
+        - climate.pid.reset_integral_term: oq_heating_curve_pid
+
+  - platform: template
+    id: heating_curve_pid_ki
+    name: "Heating Curve PID Ki"
+    icon: mdi:alpha-i-circle-outline
+    min_value: 0.00000
+    max_value: 0.00300
+    step: 0.00010
+    mode: slider
+    restore_value: true
+    optimistic: true
+    initial_value: 0.00120
+    web_server:
+      sorting_group_id: oq_tuning_heat
+    on_value:
+      then:
+        - climate.pid.set_control_parameters:
+            id: oq_heating_curve_pid
+            kp: !lambda "return id(heating_curve_pid_kp).state;"
+            ki: !lambda "return id(heating_curve_pid_ki).state;"
+            kd: !lambda "return id(heating_curve_pid_kd).state;"
+        - climate.pid.reset_integral_term: oq_heating_curve_pid
+
+  - platform: template
+    id: heating_curve_pid_kd
+    name: "Heating Curve PID Kd"
+    icon: mdi:alpha-d-circle-outline
+    min_value: 0.000
+    max_value: 0.400
+    step: 0.010
+    mode: slider
+    restore_value: true
+    optimistic: true
+    initial_value: 0.200
+    web_server:
+      sorting_group_id: oq_tuning_heat
+    on_value:
+      then:
+        - climate.pid.set_control_parameters:
+            id: oq_heating_curve_pid
+            kp: !lambda "return id(heating_curve_pid_kp).state;"
+            ki: !lambda "return id(heating_curve_pid_ki).state;"
+            kd: !lambda "return id(heating_curve_pid_kd).state;"
+        - climate.pid.reset_integral_term: oq_heating_curve_pid
+
+  - platform: template
+    id: curve_fallback_supply_temp
+    name: "Curve Fallback Tsupply (No Outside Temp)"
+    icon: mdi:thermometer-alert
+    unit_of_measurement: "°C"
+    min_value: 25
+    max_value: 70
+    step: 0.5
+    restore_value: true
+    optimistic: true
+    initial_value: 40
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+button:
+  - platform: template
+    id: reset_heating_curve_pid_integral
+    name: "Reset Heating Curve PID integral"
+    icon: mdi:restart
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_tuning_heat
+    on_press:
+      then:
+        - climate.pid.reset_integral_term: oq_heating_curve_pid
+
+climate:
+  - platform: pid
+    id: oq_heating_curve_pid
+    name: "Heating Curve PID"
+    icon: mdi:thermostat
+    sensor: oq_system_supply_temp
+    default_target_temperature: 35 °C
+    heat_output: heating_curve_pid_out
+    control_parameters:
+      kp: 0.350
+      ki: 0.00120
+      kd: 0.200
+      max_integral: 3.0
+      min_integral: -3.0
+    deadband_parameters:
+      threshold_low: -1.00
+      threshold_high: 1.00
+      deadband_output_averaging_samples: 6
+    visual:
+      min_temperature: 20
+      max_temperature: 70
+    web_server:
+      sorting_group_id: oq_tuning_heat
+
+output:
+  - platform: template
+    id: heating_curve_pid_out
+    type: float
+    write_action:
+      - lambda: |-
+          // Guardrail: only let PID-path write curve demand in heating-curve mode.
+          // In Power House mode, this output is diagnostic-only and must remain 0.
+          if (id(oq_heat_mode_code) != 1) {
+            id(oq_demand_curve) = 0;
+            id(oq_curve_demand_pre_guardrail) = 0;
+            id(oq_curve_heat_request_active) = false;
+            id(oq_curve_stop_arm_ms) = 0;
+            id(oq_curve_off_since_ms) = 0;
+            id(oq_curve_restart_inhibit_active) = false;
+            id(oq_curve_phase_code) = 0;
+            return;
+          }
+
+          const int demand_max = (int) ${oq_strategy_demand_max_f};
+          if (isnan(state)) {
+            id(oq_demand_curve) = 0;
+            id(oq_curve_demand_pre_guardrail) = 0;
+            id(oq_curve_heat_request_active) = false;
+            id(oq_curve_stop_arm_ms) = 0;
+            id(oq_curve_off_since_ms) = 0;
+            id(oq_curve_restart_inhibit_active) = false;
+            id(oq_curve_phase_code) = 0;
+            return;
+          }
+
+          int d = (int) lroundf(state * ${oq_strategy_demand_max_f});
+          if (d < 0) d = 0;
+          if (d > demand_max) d = demand_max;
+          id(oq_curve_demand_pre_guardrail) = d;
+
+          const float spw = id(oq_supply_target_temp).state;
+          const float pv = id(oq_system_supply_temp).state;
+          if (isnan(spw) || isnan(pv)) {
+            id(oq_curve_heat_request_active) = false;
+            id(oq_curve_stop_arm_ms) = 0;
+            id(oq_curve_off_since_ms) = 0;
+            id(oq_curve_restart_inhibit_active) = false;
+            id(oq_demand_curve) = 0;
+            id(oq_curve_demand_pre_guardrail) = 0;
+            id(oq_curve_phase_code) = 0;
+            return;
+          }
+
+          float start_delta_c = 0.45f;
+          float stop_delta_c = 0.90f;
+          float coast_enter_c = 0.35f;
+          int coast_floor_f = 1;
+          int coast_cap_f = 6;
+          int off_pid_max_f = 1;
+          uint32_t off_confirm_ms = 360000UL;
+          float room_overheat_off_c = 0.30f;
+          float room_resume_heat_c = 0.05f;
+          float restart_delta_c = 0.80f;
+          float restart_bypass_extra_c = 0.45f;
+          uint32_t off_reentry_min_ms = 480000UL;
+          if (id(oq_curve_control_profile).has_state()) {
+            const auto profile = id(oq_curve_control_profile).current_option();
+            if (profile == "Comfort") {
+              start_delta_c = 0.30f;
+              stop_delta_c = 0.70f;
+              coast_enter_c = 0.25f;
+              coast_floor_f = 2;
+              coast_cap_f = 8;
+              off_pid_max_f = 1;
+              off_confirm_ms = 240000UL;
+              room_overheat_off_c = 0.20f;
+              room_resume_heat_c = 0.03f;
+              restart_delta_c = 0.60f;
+              restart_bypass_extra_c = 0.35f;
+              off_reentry_min_ms = 300000UL;
+            } else if (profile == "Stable") {
+              start_delta_c = 0.65f;
+              stop_delta_c = 1.10f;
+              coast_enter_c = 0.55f;
+              coast_floor_f = 1;
+              coast_cap_f = 4;
+              off_pid_max_f = 1;
+              off_confirm_ms = 420000UL;
+              room_overheat_off_c = 0.35f;
+              room_resume_heat_c = 0.08f;
+              restart_delta_c = 1.00f;
+              restart_bypass_extra_c = 0.55f;
+              off_reentry_min_ms = 600000UL;
+            }
+          }
+          if (stop_delta_c < start_delta_c + 0.10f) stop_delta_c = start_delta_c + 0.10f;
+          if (restart_delta_c < start_delta_c + 0.05f) restart_delta_c = start_delta_c + 0.05f;
+          if (restart_bypass_extra_c < 0.20f) restart_bypass_extra_c = 0.20f;
+          if (off_pid_max_f < 0) off_pid_max_f = 0;
+          if (off_pid_max_f > demand_max) off_pid_max_f = demand_max;
+          if (coast_floor_f < 1) coast_floor_f = 1;
+          if (coast_floor_f > demand_max) coast_floor_f = demand_max;
+          if (coast_cap_f < coast_floor_f) coast_cap_f = coast_floor_f;
+          if (coast_cap_f > demand_max) coast_cap_f = demand_max;
+
+          const float room_c = id(room_temp_selected).state;
+          const float room_sp_c = id(room_setpoint_selected).state;
+          const bool room_valid = !isnan(room_c) && !isnan(room_sp_c);
+          const bool room_warm_for_off = room_valid && (room_c >= (room_sp_c + room_overheat_off_c));
+          const bool room_requests_heat = room_valid && (room_c <= (room_sp_c - room_resume_heat_c));
+          const bool room_allows_off = (!room_valid) || room_warm_for_off;
+
+          const bool above_stop_band = pv >= (spw + stop_delta_c);
+          const bool low_pid_for_off = d <= off_pid_max_f;
+          const float restart_bypass_delta_c = restart_delta_c + restart_bypass_extra_c;
+          const uint32_t now_ms = (uint32_t) millis();
+          bool heat_request_active = id(oq_curve_heat_request_active);
+          bool restart_inhibit_active = false;
+          uint32_t off_since_ms = id(oq_curve_off_since_ms);
+          const bool was_heat_request_active = heat_request_active;
+          if (heat_request_active) {
+            if (above_stop_band && low_pid_for_off && room_allows_off) {
+              uint32_t armed_ms = id(oq_curve_stop_arm_ms);
+              if (armed_ms == 0 || now_ms <= armed_ms) {
+                id(oq_curve_stop_arm_ms) = now_ms;
+              } else if ((now_ms - armed_ms) >= off_confirm_ms) {
+                heat_request_active = false;
+                id(oq_curve_stop_arm_ms) = 0;
+              }
+            } else {
+              id(oq_curve_stop_arm_ms) = 0;
+            }
+            if (!heat_request_active && was_heat_request_active) {
+              off_since_ms = now_ms;
+            }
+          } else {
+            id(oq_curve_stop_arm_ms) = 0;
+            if (off_since_ms == 0 || now_ms <= off_since_ms) off_since_ms = now_ms;
+            const bool below_restart_band = pv <= (spw - restart_delta_c);
+            const bool deep_undershoot_restart = pv <= (spw - restart_bypass_delta_c);
+            bool off_lock_active = false;
+            if (off_reentry_min_ms > 0 && now_ms > off_since_ms) {
+              off_lock_active = (now_ms - off_since_ms) < off_reentry_min_ms;
+            }
+            restart_inhibit_active = off_lock_active && !deep_undershoot_restart && !room_requests_heat;
+            if ((below_restart_band || room_requests_heat) && !restart_inhibit_active) {
+              heat_request_active = true;
+              off_since_ms = 0;
+            }
+          }
+          if (heat_request_active) {
+            restart_inhibit_active = false;
+            off_since_ms = 0;
+          }
+
+          int curve_phase_code = 1;
+          if (!heat_request_active) {
+            d = 0;
+            curve_phase_code = 0;
+          } else {
+            if (d < 1) d = 1;
+            const bool coast_phase = pv >= (spw - coast_enter_c);
+            if (coast_phase) {
+              curve_phase_code = 2;
+              if (d < coast_floor_f) d = coast_floor_f;
+              if (d > coast_cap_f) d = coast_cap_f;
+              if (pv >= spw && d > coast_floor_f) d = coast_floor_f;
+            }
+          }
+
+          id(oq_curve_heat_request_active) = heat_request_active;
+          id(oq_curve_off_since_ms) = off_since_ms;
+          id(oq_curve_restart_inhibit_active) = restart_inhibit_active;
+          id(oq_demand_curve) = d;
+          id(oq_curve_phase_code) = curve_phase_code;
+
+sensor:
+  - platform: template
+    id: oq_curve_outside_temp_filtered
+    name: "Outside Temperature (Curve filtered)"
+    icon: mdi:thermometer-lines
+    internal: true
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 10s
+    lambda: |-
+      // Smooth the selected outside temperature with a profile-dependent EMA.
+      const float outside_c = id(outside_temp_selected).state;
+      if (isnan(outside_c)) {
+        id(oq_curve_outside_ema_initialized) = false;
+        id(oq_curve_outside_ema_last_ms) = 0;
+        return NAN;
+      }
+
+      float tau_s = 1800.0f;
+      if (id(oq_curve_control_profile).has_state()) {
+        const auto profile = id(oq_curve_control_profile).current_option();
+        if (profile == "Comfort") tau_s = 900.0f;
+        else if (profile == "Stable") tau_s = 3600.0f;
+      }
+
+      const uint32_t now_ms = (uint32_t) millis();
+      if (!id(oq_curve_outside_ema_initialized) ||
+          id(oq_curve_outside_ema_last_ms) == 0 ||
+          now_ms <= id(oq_curve_outside_ema_last_ms)) {
+        id(oq_curve_outside_ema_c) = outside_c;
+        id(oq_curve_outside_ema_initialized) = true;
+        id(oq_curve_outside_ema_last_ms) = now_ms;
+        return outside_c;
+      }
+
+      const float dt_s = (now_ms - id(oq_curve_outside_ema_last_ms)) / 1000.0f;
+      float alpha = dt_s / (tau_s + dt_s);
+      if (alpha < 0.0f) alpha = 0.0f;
+      if (alpha > 1.0f) alpha = 1.0f;
+
+      float ema_c = id(oq_curve_outside_ema_c);
+      if (isnan(ema_c)) ema_c = outside_c;
+      ema_c += alpha * (outside_c - ema_c);
+
+      id(oq_curve_outside_ema_c) = ema_c;
+      id(oq_curve_outside_ema_last_ms) = now_ms;
+      return ema_c;
+
+  - platform: template
+    id: oq_supply_target_temp
+    name: "Heating Curve Supply Target"
+    icon: mdi:target
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      // Generate the curve-mode supply target from outside temperature and room trim.
+      const float outside_c = id(oq_curve_outside_temp_filtered).state;
+      float target_c = id(curve_fallback_supply_temp).state;
+
+      struct Point { float outside_c; float target_c; };
+      const Point points[6] = {
+        {-20.0f, id(curve_tsupply_m20).state},
+        {-10.0f, id(curve_tsupply_m10).state},
+        {  0.0f, id(curve_tsupply_0).state},
+        {  5.0f, id(curve_tsupply_5).state},
+        { 10.0f, id(curve_tsupply_10).state},
+        { 15.0f, id(curve_tsupply_15).state}
+      };
+
+      if (!isnan(outside_c)) {
+        if (outside_c <= -20.0f) target_c = points[0].target_c;
+        else if (outside_c >= 15.0f) target_c = points[5].target_c;
+        else {
+          for (int i = 0; i < 5; i++) {
+            if (outside_c >= points[i].outside_c && outside_c <= points[i + 1].outside_c) {
+              const float segment = (outside_c - points[i].outside_c) / (points[i + 1].outside_c - points[i].outside_c);
+              target_c = points[i].target_c + segment * (points[i + 1].target_c - points[i].target_c);
+              break;
+            }
+          }
+        }
+      }
+
+      const float room_c = id(room_temp_selected).state;
+      const float room_sp_c = id(room_setpoint_selected).state;
+      if (!isnan(target_c) && !isnan(room_c) && !isnan(room_sp_c)) {
+        float warm_err_c = room_c - room_sp_c;
+        float trim_start_c = 0.10f;
+        float trim_gain = 1.50f;
+        float trim_max_c = 2.00f;
+        if (id(oq_curve_control_profile).has_state()) {
+          const auto profile = id(oq_curve_control_profile).current_option();
+          if (profile == "Comfort") {
+            trim_start_c = 0.05f;
+            trim_gain = 2.00f;
+            trim_max_c = 2.00f;
+          } else if (profile == "Stable") {
+            trim_start_c = 0.15f;
+            trim_gain = 1.00f;
+            trim_max_c = 2.50f;
+          }
+        }
+        if (warm_err_c > trim_start_c) {
+          float trim_c = (warm_err_c - trim_start_c) * trim_gain;
+          if (trim_c < 0.0f) trim_c = 0.0f;
+          if (trim_c > trim_max_c) trim_c = trim_max_c;
+          target_c -= trim_c;
+        }
+      }
+
+      float quant_step_c = 0.5f;
+      if (id(oq_curve_control_profile).has_state()) {
+        const auto profile = id(oq_curve_control_profile).current_option();
+        if (profile == "Comfort") quant_step_c = 0.25f;
+        else if (profile == "Stable") quant_step_c = 1.0f;
+      }
+      if (!isnan(target_c) && quant_step_c > 0.0f) {
+        target_c = roundf(target_c / quant_step_c) * quant_step_c;
+      }
+
+      const float max_water_temp_c = id(max_water_temp_limit_c).state;
+      if (!isnan(target_c) && !isnan(max_water_temp_c)) {
+        target_c = fminf(target_c, max_water_temp_c);
+      }
+      return target_c;
+
+  - platform: template
+    id: oq_demand_curve_sensor
+    name: "Demand Curve (raw)"
+    disabled_by_default: true
+    icon: mdi:counter
+    unit_of_measurement: "step"
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return (float) id(oq_demand_curve);
+
+  - platform: template
+    id: oq_curve_demand_pre_guardrail_sensor
+    name: "Demand Curve (pre-guardrail)"
+    disabled_by_default: true
+    icon: mdi:counter
+    unit_of_measurement: "step"
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return (float) id(oq_curve_demand_pre_guardrail);
+
+  - platform: template
+    id: oq_curve_demand_post_guardrail_sensor
+    name: "Demand Curve (post-guardrail)"
+    disabled_by_default: true
+    icon: mdi:counter
+    unit_of_measurement: "step"
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return (float) id(oq_demand_curve);
+
+  - platform: template
+    id: oq_curve_restart_inhibit_sensor
+    name: "Curve restart inhibit"
+    disabled_by_default: true
+    icon: mdi:timer-sand-paused
+    accuracy_decimals: 0
+    update_interval: 5s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return id(oq_curve_restart_inhibit_active) ? 1.0f : 0.0f;
+
+text_sensor:
+  - platform: template
+    id: oq_curve_phase_sensor
+    name: "Curve Phase"
+    icon: mdi:state-machine
+    update_interval: 5s
+    entity_category: diagnostic
+    disabled_by_default: true
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      switch (id(oq_curve_phase_code)) {
+        case 1: return std::string("HEAT");
+        case 2: return std::string("COAST");
+        default: return std::string("OFF");
+      }
+
 interval:
+  - interval: ${oq_strategy_loop_s}s
+    startup_delay: 800ms
+    then:
+      - lambda: |-
+          // Curve strategy loop: maintain PID target and publish curve demand.
+          const bool active = id(oq_heat_mode_code) == 1;
+          const int demand_max = (int) ${oq_strategy_demand_max_f};
+          auto clamp_demand = [&](int demand)->int {
+            if (demand < 0) return 0;
+            if (demand > demand_max) return demand_max;
+            return demand;
+          };
+
+          if (active) {
+            const float spw = id(oq_supply_target_temp).state;
+            const float pv = id(oq_system_supply_temp).state;
+            if (isnan(spw) || isnan(pv)) {
+              id(oq_demand_curve) = 0;
+              id(oq_curve_heat_request_active) = false;
+              id(oq_curve_stop_arm_ms) = 0;
+            } else {
+              const float cur2 = id(oq_heating_curve_pid).target_temperature;
+              if (id(oq_heating_curve_pid).mode != CLIMATE_MODE_HEAT ||
+                  isnan(cur2) || fabsf(cur2 - spw) >= 0.10f) {
+                auto c2 = id(oq_heating_curve_pid).make_call();
+                if (id(oq_heating_curve_pid).mode != CLIMATE_MODE_HEAT) {
+                  c2.set_mode(CLIMATE_MODE_HEAT);
+                }
+                c2.set_target_temperature(spw);
+                c2.perform();
+              }
+            }
+
+            int d_out = clamp_demand(id(oq_demand_curve));
+            if (id(oq_water_temp_hard_trip_active)) d_out = 0;
+            id(oq_demand_raw) = d_out;
+          } else {
+            if (id(oq_heating_curve_pid).mode != CLIMATE_MODE_OFF) {
+              auto c0 = id(oq_heating_curve_pid).make_call();
+              c0.set_mode(CLIMATE_MODE_OFF);
+              c0.perform();
+            }
+            id(oq_curve_heat_request_active) = false;
+            id(oq_curve_stop_arm_ms) = 0;
+            id(oq_curve_off_since_ms) = 0;
+            id(oq_curve_restart_inhibit_active) = false;
+            id(oq_demand_curve) = 0;
+          }
+      - if:
+          condition:
+            lambda: |-
+              // Reset curve integral whenever the loop is inactive or not delivering heat yet.
+              if (id(oq_heat_mode_code) != 1) return false;
+              if (id(oq_water_temp_hard_trip_active)) return true;
+              const float spw = id(oq_supply_target_temp).state;
+              const float pv  = id(oq_system_supply_temp).state;
+              if (isnan(spw) || isnan(pv)) return true;
+
+              const bool hp1_level_on = id(hp1_last_applied_level) > 0;
+              const bool hp2_level_on = id(${curve_secondary_last_applied_level_id}) > 0;
+              const float hp1_mode_raw = id(hp1_working_mode).state;
+              const float hp2_mode_raw = id(${curve_secondary_working_mode_id}).state;
+              const bool hp1_heating = !isnan(hp1_mode_raw) && ((int) roundf(hp1_mode_raw) == 2);
+              const bool hp2_heating = !isnan(hp2_mode_raw) && ((int) roundf(hp2_mode_raw) == 2);
+              const bool hp_delivering =
+                  (hp1_level_on && hp1_heating) || (hp2_level_on && hp2_heating);
+              return !hp_delivering;
+          then:
+            - climate.pid.reset_integral_term: oq_heating_curve_pid
+
   - interval: ${oq_heat_loop_tick_s}s
     startup_delay: 4000ms
     then:
