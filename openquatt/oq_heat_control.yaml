@@ -158,12 +158,6 @@ globals:
     restore_value: false
     initial_value: '0.0'
 
-  # Shared Power House demand-filter state used by the Power House producer.
-  - id: oq_demand_filter_ramp_up_budget
-    type: float
-    restore_value: false
-    initial_value: '0.0'
-
   # Last loop timestamp for elapsed-time scaling.
   - id: oq_heat_last_loop_ms
     type: uint32_t
@@ -255,21 +249,6 @@ number:
     restore_value: true
     optimistic: true
     initial_value: 300
-    web_server:
-      sorting_group_id: oq_tuning_heat
-
-  - platform: template
-    id: oq_demand_filter_ramp_up_step_min
-    name: "Demand filter ramp up"
-    icon: mdi:stairs-up
-    unit_of_measurement: "step/min"
-    min_value: 1
-    max_value: 20
-    step: 1
-    mode: slider
-    restore_value: true
-    optimistic: true
-    initial_value: 1
     web_server:
       sorting_group_id: oq_tuning_heat
 
@@ -560,24 +539,6 @@ text_sensor:
     update_interval: never
     web_server:
       sorting_group_id: oq_diagnostics
-
-  # DEBUG-RUNTIME START: Duo Power House dispatch reason
-  - platform: template
-    id: oq_duo_optimizer_reason
-    name: "Duo optimizer reason"
-    icon: mdi:swap-horizontal
-    entity_category: diagnostic
-    disabled_by_default: true
-    update_interval: never
-    web_server:
-      sorting_group_id: oq_diagnostics
-    lambda: |-
-      #if OQ_TOPOLOGY_DUO
-      return std::string("inactive");
-      #else
-      return std::string("single_topology");
-      #endif
-  # DEBUG-RUNTIME END
 
 # ----------------------------
 # MAIN LOOP
