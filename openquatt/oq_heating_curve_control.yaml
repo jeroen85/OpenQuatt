@@ -739,6 +739,26 @@ interval:
             int d_out = clamp_demand(id(oq_demand_curve));
             if (id(oq_water_temp_hard_trip_active)) d_out = 0;
             id(oq_demand_raw) = d_out;
+
+            id(oq_strategy_phase_code) = id(oq_curve_phase_code);
+            id(oq_strategy_requested_power_w) = NAN;
+            id(oq_strategy_supply_target_temp) = id(oq_supply_target_temp).state;
+            id(oq_strategy_heat_request_active) = id(oq_curve_heat_request_active);
+
+            const int phase_code = id(oq_curve_phase_code);
+            const char *phase_text = "off";
+            if (phase_code == 1) phase_text = "heat";
+            else if (phase_code == 2) phase_text = "coast";
+            id(oq_strategy_phase_text).publish_state(phase_text);
+
+            char debug_buf[160];
+            const float target_c = id(oq_supply_target_temp).state;
+            const float supply_c = id(oq_system_supply_temp).state;
+            snprintf(
+              debug_buf, sizeof(debug_buf),
+              "curve phase=%s d=%d pre=%d sp=%.2f pv=%.2f",
+              phase_text, d_out, id(oq_curve_demand_pre_guardrail), target_c, supply_c);
+            id(oq_strategy_debug_state).publish_state(debug_buf);
           } else {
             if (id(oq_heating_curve_pid).mode != CLIMATE_MODE_OFF) {
               auto c0 = id(oq_heating_curve_pid).make_call();

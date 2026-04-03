@@ -21,8 +21,10 @@ De doelarchitectuur hieronder is deels al fysiek ingevoerd in de branch die deze
 - `openquatt/oq_heating_strategy.yaml` is nu afgeslankt tot strategy manager/shared contract
 - `openquatt/oq_cooling_control.yaml` en `openquatt/oq_heating_curve_control.yaml` dragen producer-logica
 - `openquatt/oq_power_house_control.yaml` draagt nu ook de Power House-producerlogica
+- het expliciete `oq_strategy_*` statuscontract is nu fysiek ingevoerd
 
-De belangrijkste resterende stap is nu beoordelen of de resterende generieke dispatch-shaping in `openquatt/oq_heat_control.yaml` nog verder opgesplitst moet worden.
+De resterende generieke dispatch-shaping blijft voorlopig bewust compact in `openquatt/oq_heat_control.yaml`.
+Dat is op dit punt een expliciete keuze, geen open refactorstap meer.
 
 ## Kernprincipe
 
@@ -209,7 +211,7 @@ Deze laag bepaalt niet:
 
 ## Contract 1: strategy-status
 
-Voor debugging, supervisory en uitbreidbaarheid is een expliciet strategy-statuscontract wenselijk.
+Voor debugging, supervisory en uitbreidbaarheid is er nu een expliciet strategy-statuscontract.
 
 Voorgestelde velden:
 
@@ -315,9 +317,9 @@ Deze subsystemen blijven aparte owners:
 - `oq_flow_control.yaml` blijft eigenaar van pompregeling
 - `oq_boiler_control.yaml` blijft eigenaar van boiler-relay gating
 
-Wel is het wenselijk dat ze minder leunen op strategy-specifieke kennis en meer op het expliciete contract.
+Ze horen zo veel mogelijk te leunen op het expliciete contract in plaats van op strategy-specifieke signalen.
 
-Bij voorkeur lezen ze vooral:
+In de huidige branch lezen ze vooral:
 
 - `oq_strategy_heat_request_active`
 - `oq_strategy_water_trip_active`
@@ -333,7 +335,7 @@ In de huidige branch is dit inmiddels zo geland:
 - gedeelde supply abstraction en water-temp model wonen in `oq_thermal_limits.yaml`
 - strategy-selectie en heating-common state blijven in afgeslankte `oq_heating_strategy.yaml`
 
-Uit `oq_heat_control.yaml` verhuizen op termijn:
+Uit `oq_heat_control.yaml` is inmiddels al verplaatst:
 
 - curve dispatch naar `oq_heating_curve_control.yaml`
 - Power House optimizer/dispatch naar `oq_power_house_control.yaml`
@@ -408,6 +410,10 @@ Deliverable:
 - schonere extensielaag
 - betere diagnostics
 - foundation voor toekomstige custom strategies
+
+Status:
+
+- voltooid in deze branch
 
 ## Praktische ontwerpkeuze
 

@@ -21,8 +21,8 @@
 #   - Implements no temperature control (handled by climate PID)
 #
 # Key assumptions:
-#   - Heat demand is available as normalized factor `f` (0–20) from strategy (`oq_demand_filtered`)
-#   - Thermal deficit (`oq_P_deficit_w`) is computed by heat-control for CM2<->CM3 promotion/demotion
+#   - Strategy status is available via the shared `oq_strategy_*` contract
+#   - Thermal deficit (`oq_P_deficit_w`) is computed by the active producer path for CM2<->CM3 promotion/demotion
 #   - Flow signal is available and sufficiently reliable for flow override
 #
 # Interaction with Control Modes:
@@ -671,13 +671,15 @@ interval:
           // -------------------------------------------------
           const char* cur_cm_state = id(oq_control_mode).state.c_str();
           const bool in_cm2 = strcmp(cur_cm_state, "CM2") == 0;
-          const bool heating_req_raw = (id(oq_heating_demand_filtered) > 0);
+          const int strategy_active_code = id(oq_strategy_active_code);
+          const bool heating_strategy_active = (strategy_active_code == 2 || strategy_active_code == 3);
+          const bool heating_req_raw = heating_strategy_active && id(oq_strategy_heat_request_active);
           const bool cooling_req_raw =
               id(cooling_enable_selected).has_state() && id(cooling_enable_selected).state &&
               id(cooling_request_active).has_state() && id(cooling_request_active).state &&
               id(cooling_permitted_core).has_state() && id(cooling_permitted_core).state;
           const bool cooling_req = cooling_req_raw;
-          const bool power_house_active = (id(oq_heat_mode_code) == 0);
+          const bool power_house_active = (strategy_active_code == 3);
 
           const int hp1_lvl = id(hp1_last_applied_level);
           const int hp1_cmd_lvl =
@@ -810,7 +812,7 @@ interval:
             id(oq_low_load_on_dyn_w) = on_w;
             id(oq_low_load_dyn_source_state) = dyn_source_state;
 
-            p_req_w = id(oq_phouse_req_w);
+            p_req_w = id(oq_strategy_requested_power_w);
             bool latch = id(oq_lowload_heat_latch);
             if (!isnan(p_req_w)) {
               if (!latch && p_req_w >= on_w) latch = true;
@@ -1075,7 +1077,7 @@ interval:
                       // Scope this behavior to heating-curve strategy only; keep
                       // Power House behavior unchanged.
                       if (cooling_req && base_target == 5) desired_local = 5;
-                      else if (id(oq_heat_mode_code) == 1 && heating_req && base_target == 2) desired_local = 2;
+                      else if (strategy_active_code == 2 && heating_req && base_target == 2) desired_local = 2;
                       else if (base_target == 98)          desired_local = 98;
                       else                                 desired_local = 0;
                     } else if (cm1_next_after == 98) {

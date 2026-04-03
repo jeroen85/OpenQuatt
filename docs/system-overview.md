@@ -40,19 +40,25 @@ Package include order is intentional:
 
 1. `oq_common`
 2. `oq_supervisory_controlmode`
-3. `oq_heating_strategy`
-4. `oq_heat_control`
-5. `oq_flow_control`
-6. `oq_flow_autotune`
-7. `oq_boiler_control`
-8. `oq_energy`
-9. `oq_cic`
-10. `oq_ha_inputs`
-11. `oq_local_sensors`
-12. `oq_sensor_sources`
-13. `oq_debug_testing`
-14. `oq_webserver`
-15. `oq_HP_io` (HP1 always; HP2 only on Duo)
+3. `oq_thermal_limits`
+4. `oq_heating_strategy`
+5. `oq_cooling_control`
+6. `oq_heating_curve_control`
+7. `oq_power_house_control`
+8. `oq_heat_control`
+9. `oq_thermal_actuator`
+10. `oq_flow_control`
+11. `oq_flow_autotune`
+12. `oq_boiler_control`
+13. `oq_energy`
+14. `oq_cic`
+15. `oq_ha_inputs`
+16. `oq_local_sensors`
+17. `oq_sensor_sources`
+18. `oq_ot_slave`
+19. `oq_debug_testing`
+20. `oq_webserver`
+21. `oq_HP_io` (HP1 always; HP2 only on Duo)
 
 This order mirrors data dependencies and ownership boundaries.
 
@@ -61,8 +67,12 @@ This order mirrors data dependencies and ownership boundaries.
 OpenQuatt follows strict subsystem ownership:
 
 - **Control Mode state machine**: `oq_supervisory_controlmode`
-- **Raw demand (`oq_demand_raw`)**: `oq_heating_strategy`
+- **Shared heating strategy contract (`oq_heat_mode_code`, `oq_strategy_*`)**: `oq_heating_strategy`
+- **Heating-curve demand and dispatch**: `oq_heating_curve_control`
+- **Power House demand and dispatch**: `oq_power_house_control`
+- **Cooling demand and dispatch**: `oq_cooling_control`
 - **Compressor level allocation**: `oq_heat_control`
+- **Safe HP mode/level writes**: `oq_thermal_actuator`
 - **Pump iPWM regulation**: `oq_flow_control`
 - **Boiler relay control**: `oq_boiler_control`
 - **External feed ingest**: `oq_cic`
@@ -79,8 +89,11 @@ This prevents hidden control coupling and keeps debugging deterministic.
 | Subsystem | Interval | Purpose |
 |---|---:|---|
 | Supervisory | `${oq_supervisory_loop_s}` (default 5s) | Mode decisions, flow interlock, frost logic, power-cap safety net |
-| Heating Strategy | `${oq_strategy_loop_s}` (default 5s) | Demand generation plus shared water-temperature limiting (Power House / heating-curve path) |
-| Heat allocation | Tick `${oq_heat_loop_tick_s}` (default 5s), effective cadence `${oq_heat_loop_curve_s}` (Curve) / `${oq_heat_loop_powerhouse_s}` (Power House) | Demand filtering, allocation, optimizer, level apply (per-minute tuning is elapsed-time scaled) |
+| Strategy manager | `${oq_strategy_loop_s}` (default 5s) | Active strategy selection plus shared `oq_strategy_*` contract state |
+| Heating curve | `${oq_strategy_loop_s}` plus `${oq_heat_loop_tick_s}` | Curve target generation, PID demand, and curve dispatch |
+| Power House | `${oq_heat_loop_tick_s}` with effective cadence `${oq_heat_loop_powerhouse_s}` | Power model, filtered demand, and Power House dispatch |
+| Cooling | `${oq_heat_loop_tick_s}` | Cooling target, PI demand, and cooling dispatch |
+| Heat allocation | Tick `${oq_heat_loop_tick_s}` (default 5s), effective cadence `${oq_heat_loop_curve_s}` (Curve) / `${oq_heat_loop_powerhouse_s}` (Power House) | Shared post-dispatch shaping and actuator handoff |
 | Flow control | `${oq_flow_loop_s}` (default 5s) | Pump iPWM control (AUTO/MANUAL/FROST/autotune override) |
 | Boiler control | `${oq_boiler_loop_s}` (default 5s) | CM3 gating under the shared water-temperature guardrail |
 | CIC polling tick | `${cic_poll_tick_ms}` (default 5s) | Poll scheduler, stale detection, feed invalidation |
@@ -108,10 +121,11 @@ Runtime selectors decide per signal whether selected values come from local, CIC
 
 ### 4.3 Demand layer
 
-`oq_heating_strategy` computes:
+Strategy packages compute:
 
-- `oq_demand_raw` (`0..20`)
-- strategy-specific telemetry (`P_house`, `P_req`, curve target/output)
+- `oq_demand_raw` (`0..20`) for the selected heating strategy
+- `oq_cooling_demand_raw` (`0..20`) for cooling
+- explicit `oq_strategy_*` status for downstream diagnostics and supervisory logic
 
 ### 4.4 Allocation layer
 
@@ -152,7 +166,7 @@ Runtime selectors decide per signal whether selected values come from local, CIC
 
 - firmware update entities, runtime update-channel select, and manual check trigger
 - runtime logger level controls
-- one-shot Modbus register read tools (HP1; HP2 probe on Duo entrypoints)
+- one-shot Modbus register read tools (HP1 always; HP2 only surfaced on Duo)
 - runtime balancing service entities from heat control (`Runtime lead HP`, runtime counter reset)
 
 ## 5. Heating Strategy Mechanics

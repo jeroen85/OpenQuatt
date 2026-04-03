@@ -668,20 +668,22 @@ interval:
           // =========================
           auto publish_debug = [&](int req1, int req2, int app1, int app2)->void {
             static std::string last_debug = "";
-            const char *mode_s = is_cooling_mode ? "COOL" : (is_curve_mode ? "CURVE" : "PH");
-            const int phase_code = id(oq_curve_phase_code);
-            const char *phase_s = "OFF";
-            if (phase_code == 1) phase_s = "HEAT";
-            else if (phase_code == 2) phase_s = "COAST";
+            const int strategy_active_code = id(oq_strategy_active_code);
+            const char *mode_s = "INACTIVE";
+            if (strategy_active_code == 1) mode_s = "COOL";
+            else if (strategy_active_code == 2) mode_s = "CURVE";
+            else if (strategy_active_code == 3) mode_s = "PH";
+            const char *phase_s =
+                id(oq_strategy_phase_text).has_state() ? id(oq_strategy_phase_text).state.c_str() : "idle";
             const uint32_t off_since_ms = id(oq_curve_off_since_ms);
             uint32_t off_age_s = 0;
             if (off_since_ms > 0 && now_ms > off_since_ms) off_age_s = (now_ms - off_since_ms) / 1000UL;
-            const float spw = is_cooling_mode ? id(cooling_supply_target).state : id(oq_supply_target_temp).state;
+            const float spw = id(oq_strategy_supply_target_temp);
             const float pv = id(oq_system_supply_temp).state;
             const float room_c = id(room_temp_selected).state;
             const float room_sp_c = id(room_setpoint_selected).state;
             const float phouse_w = is_power_house ? id(oq_phouse_house_w).state : NAN;
-            const float preq_w = is_power_house ? id(oq_phouse_req_w) : NAN;
+            const float preq_w = id(oq_strategy_requested_power_w);
             const float room_target_c = is_power_house ? id(oq_ph_room_target_effective_c) : room_sp_c;
             const float tout_c = id(outside_temp_selected).state;
             const float wm1 = id(hp1_working_mode).state;

@@ -470,3 +470,16 @@ interval:
           if (owner == 1) id(oq_cooling_dispatch_reason_code) = 1;
           else if (owner == 2) id(oq_cooling_dispatch_reason_code) = 2;
           else id(oq_cooling_dispatch_reason_code) = 0;
+
+          id(oq_strategy_phase_code) = (f > 0) ? 1 : 0;
+          id(oq_strategy_requested_power_w) = NAN;
+          id(oq_strategy_supply_target_temp) = id(cooling_supply_target).state;
+          id(oq_strategy_heat_request_active) = (f > 0);
+          id(oq_strategy_phase_text).publish_state((f > 0) ? "cool" : "idle");
+
+          char debug_buf[160];
+          snprintf(
+            debug_buf, sizeof(debug_buf),
+            "cool f=%d raw=%d owner=%d target=%.2f",
+            f, raw, owner, id(cooling_supply_target).state);
+          id(oq_strategy_debug_state).publish_state(debug_buf);

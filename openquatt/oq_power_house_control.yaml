@@ -1186,3 +1186,16 @@ interval:
           id(oq_ph_dispatch_hp2_req) = hp2_req;
           id(oq_ph_dispatch_owner_hp) = dispatch_owner_hp;
           id(oq_ph_dispatch_reason_code) = dispatch_reason_code;
+
+          id(oq_strategy_phase_code) = (f > 0) ? 1 : 0;
+          id(oq_strategy_requested_power_w) = id(oq_phouse_req_w);
+          id(oq_strategy_supply_target_temp) = NAN;
+          id(oq_strategy_heat_request_active) = (f > 0);
+          id(oq_strategy_phase_text).publish_state((f > 0) ? "heat" : "idle");
+
+          char debug_buf[160];
+          snprintf(
+            debug_buf, sizeof(debug_buf),
+            "ph f=%d raw=%d preq=%.0f owner=%d reason=%d",
+            f, raw, id(oq_phouse_req_w), dispatch_owner_hp, dispatch_reason_code);
+          id(oq_strategy_debug_state).publish_state(debug_buf);

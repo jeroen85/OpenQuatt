@@ -2,10 +2,8 @@
 
 ## Huidige status
 
-- Branch: `codex/thermal-control-phase3-limits`
-- Basis: `codex/thermal-control-refactor`
-- Huidige branch bouwt fase 3 en fase 4 voort op fase 1 en fase 2.
-- De eerste fysieke splitsing van fase 5 is ook gestart.
+- Branch: `codex/thermal-control-refactor`
+- Huidige branch bevat inmiddels fase 1 t/m 5 van de thermal-control refactor.
 - Er is bewust nog geen PR gemaakt.
 
 ## Wat al is gedaan
@@ -181,6 +179,7 @@ Concreet:
 - `openquatt/oq_dispatch_contract.yaml` is teruggevouwen in `openquatt/oq_heat_control.yaml`
 - `openquatt/oq_cooling_dispatch.yaml` is teruggevouwen in `openquatt/oq_cooling_control.yaml`
 - `openquatt/oq_ha_cooling_inputs.yaml` is teruggevouwen in `openquatt/oq_ha_inputs.yaml`
+- `openquatt/oq_debug_testing_duo.yaml` is teruggevouwen in `openquatt/oq_debug_testing.yaml`
 - de grote architectuurgrenzen blijven staan:
   - thermal limits
   - heating strategy
@@ -189,6 +188,21 @@ Concreet:
   - Power House producer
   - heat-control shaping + contract
   - thermal actuator
+
+### 8. Strategy-statuscontract afgerond
+
+De expliciete `oq_strategy_*` laag uit de architectuurnotitie is nu ook fysiek aanwezig.
+
+Concreet:
+
+- `openquatt/oq_heating_strategy.yaml` declareert nu het gedeelde contract
+- curve, Power House en cooling publiceren elk hun eigen strategy-status in dat contract
+- `oq_supervisory_controlmode.yaml` en `oq_heat_control.yaml` lezen nu waar passend het generieke contract in plaats van losse strategy-specifieke signalen
+- water-limit/trip/hard-trip state is nu ook als gedeelde strategy-status beschikbaar
+
+Belangrijk gevolg:
+
+- de refactor is nu niet meer alleen een filesplit, maar ook een expliciete extensielaag voor toekomstige strategies
 
 ## Relevante bestanden om als eerste te lezen op de Mac
 
@@ -208,16 +222,12 @@ In deze volgorde:
 
 ## Aanbevolen vervolgstappen
 
-### Volgende stap - generieke shaping verder aanscherpen
+Er is op dit moment geen verplichte volgende refactorfase meer open uit `thermal-control-architectuur.md`.
 
-Doel:
+De resterende keuze is nu vooral pragmatisch:
 
-- bepalen of de resterende generieke request-shaping in `oq_heat_control.yaml` nog verder opgesplitst moet worden
-
-Voorgestelde files:
-
-- eventueel `openquatt/oq_dispatch_shaping.yaml`
-- eventueel `openquatt/oq_dispatch_diagnostics.yaml`
+- `oq_heat_control.yaml` laten staan als compacte gedeelde shaping-laag
+- of later alsnog verder opsplitsen als er in de praktijk concrete lees- of reviewpijn ontstaat
 
 Dan wordt:
 
@@ -235,15 +245,15 @@ Concreet wat nog in `oq_heat_control.yaml` zit en kandidaat is voor extractie:
 
 Waarschijnlijke tussenstap:
 
-- eerst dit tussenpunt stabiel houden en gedrag laten landen
-- daarna beoordelen of contract-publicatie en generieke request-shaping in `oq_heat_control.yaml` moeten blijven of nog verder losgetrokken moeten worden
+- `oq_heat_control.yaml` bewust compact houden als gedeelde shaping-laag
+- alleen verder opsplitsen als daar later concrete lees- of reviewpijn voor ontstaat
 
 ## Praktische start op macOS
 
 Aanbevolen stappen:
 
 1. Clone of fetch de repo
-2. Checkout branch `codex/thermal-control-phase3-limits`
+2. Checkout branch `codex/thermal-control-refactor`
 3. Lees eerst de twee docs
 4. Draai daarna de validatie
 
@@ -251,8 +261,8 @@ Indicatieve commands:
 
 ```bash
 git fetch origin
-git checkout codex/thermal-control-phase3-limits
-git pull --ff-only origin codex/thermal-control-phase3-limits
+git checkout codex/thermal-control-refactor
+git pull --ff-only origin codex/thermal-control-refactor
 ```
 
 Als `rg` nog niet beschikbaar is:
