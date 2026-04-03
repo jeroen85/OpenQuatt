@@ -7,7 +7,7 @@
 #
 # Notes:
 #   - Reads one holding register (U16/S16 decode) from HP1 on demand.
-#   - HP2 debug read button is provided by `oq_debug_testing_duo.yaml` (Duo only).
+#   - Exposes an HP2 probe button on Duo via package topology vars.
 #   - Intended for debugging/testing; not used by control logic.
 # ==============================================================================
 
@@ -60,6 +60,41 @@ button:
               });
           // Queue the command after the callback is fully configured.
           id(hp1)->queue_command(cmd);
+
+  - platform: template
+    id: oq_debug_modbus_read_hp2
+    name: "Debug Read HP2 register"
+    icon: mdi:database-search
+    entity_category: diagnostic
+    internal: ${debug_hp2_internal}
+    disabled_by_default: ${debug_hp2_internal}
+    web_server:
+      sorting_group_id: oq_diagnostics
+    on_press:
+      - lambda: |-
+          // One-shot Modbus read for the secondary HP path (hidden on Single).
+          using namespace esphome::modbus_controller;
+          const uint16_t reg = (uint16_t) lroundf(id(oq_debug_modbus_register).state);
+          auto cmd = ModbusCommandItem::create_read_command(
+              id(${debug_secondary_hp_id}), ModbusRegisterType::HOLDING, reg, 1,
+              [reg](ModbusRegisterType, uint16_t, const std::vector<uint8_t> &data) {
+                // Decode the response and publish the raw/u16/s16 views.
+                if (data.size() < 2) {
+                  id(oq_debug_modbus_last_target).publish_state("HP2 reg " + std::to_string(reg));
+                  id(oq_debug_modbus_last_raw).publish_state("ERR: short response");
+                  return;
+                }
+                const uint16_t u16 = (uint16_t(data[0]) << 8) | uint16_t(data[1]);
+                const int16_t s16 = (int16_t) u16;
+                char raw[20];
+                snprintf(raw, sizeof(raw), "0x%02X 0x%02X", data[0], data[1]);
+                id(oq_debug_modbus_u16).publish_state((float) u16);
+                id(oq_debug_modbus_s16).publish_state((float) s16);
+                id(oq_debug_modbus_last_target).publish_state("HP2 reg " + std::to_string(reg));
+                id(oq_debug_modbus_last_raw).publish_state(raw);
+              });
+          // Queue the command after the callback is fully configured.
+          id(${debug_secondary_hp_id})->queue_command(cmd);
 
 sensor:
   - platform: template
