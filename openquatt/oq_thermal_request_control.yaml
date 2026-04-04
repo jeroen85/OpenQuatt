@@ -1098,6 +1098,7 @@ interval:
           // =========================
           if (!is_power_house) {
             const bool demand_rundown = (raw < prev_f);
+            const int curve_regime = id(oq_curve_regime_code);
             int up_hold_s = 180;  // Balanced default
             int down_hold_s = 15; // Balanced default
             if (id(oq_curve_control_profile).has_state()) {
@@ -1108,6 +1109,28 @@ interval:
               } else if (profile == "Stable") {
                 up_hold_s = 300;
                 down_hold_s = 30;
+              }
+            }
+
+            if (curve_regime == 1) {
+              // RECOVERY should climb materially faster than steady low-load control.
+              if (id(oq_curve_control_profile).has_state()) {
+                const auto profile = id(oq_curve_control_profile).current_option();
+                if (profile == "Comfort") up_hold_s = 30;
+                else if (profile == "Stable") up_hold_s = 75;
+                else up_hold_s = 45;
+              } else {
+                up_hold_s = 45;
+              }
+            } else if (curve_regime == 3) {
+              // ASSIST is a temporary bump above the learned maintain level.
+              if (id(oq_curve_control_profile).has_state()) {
+                const auto profile = id(oq_curve_control_profile).current_option();
+                if (profile == "Comfort") up_hold_s = 45;
+                else if (profile == "Stable") up_hold_s = 120;
+                else up_hold_s = 75;
+              } else {
+                up_hold_s = 75;
               }
             }
 
