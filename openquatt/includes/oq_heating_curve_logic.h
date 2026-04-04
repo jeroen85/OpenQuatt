@@ -12,7 +12,6 @@ inline void reset_control_state(float &demand_continuous,
                                 uint32_t &stop_arm_ms,
                                 uint32_t &off_since_ms,
                                 bool &restart_inhibit_active,
-                                int &phase_code,
                                 int &regime_code) {
   demand_continuous = NAN;
   demand_curve = 0;
@@ -21,7 +20,6 @@ inline void reset_control_state(float &demand_continuous,
   stop_arm_ms = 0;
   off_since_ms = 0;
   restart_inhibit_active = false;
-  phase_code = 0;
   regime_code = 0;
 }
 
@@ -43,25 +41,12 @@ inline void reset_request_state(uint32_t &request_last_loop_ms,
   request_reason_code = 0;
 }
 
-inline const char *phase_name(int phase_code) {
-  switch (phase_code) {
-    case 1: return "heat";
-    case 2: return "coast";
-    default: return "off";
-  }
-}
-
 inline const char *regime_name(int regime_code) {
   switch (regime_code) {
     case 1: return "recovery";
     case 2: return "maintain";
     default: return "off";
   }
-}
-
-inline const char *strategy_phase_name(int phase_code, int regime_code) {
-  if (regime_code > 0) return regime_name(regime_code);
-  return phase_name(phase_code);
 }
 
 }  // namespace oq_curve

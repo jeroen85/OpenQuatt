@@ -33,12 +33,6 @@ globals:
     restore_value: false
     initial_value: '0'
 
-  # Heating-curve coarse phase: 0=OFF, 1=HEAT, 2=COAST.
-  - id: oq_curve_phase_code
-    type: int
-    restore_value: false
-    initial_value: '0'
-
   # Curve operating regime: 0=OFF, 1=RECOVERY, 2=MAINTAIN.
   - id: oq_curve_regime_code
     type: int
@@ -133,7 +127,6 @@ select:
               id(oq_curve_stop_arm_ms),
               id(oq_curve_off_since_ms),
               id(oq_curve_restart_inhibit_active),
-              id(oq_curve_phase_code),
               id(oq_curve_regime_code));
             oq_curve::reset_outside_ema_state(
               id(oq_curve_outside_ema_c),
@@ -363,7 +356,6 @@ output:
               id(oq_curve_stop_arm_ms),
               id(oq_curve_off_since_ms),
               id(oq_curve_restart_inhibit_active),
-              id(oq_curve_phase_code),
               id(oq_curve_regime_code));
             return;
           }
@@ -378,7 +370,6 @@ output:
               id(oq_curve_stop_arm_ms),
               id(oq_curve_off_since_ms),
               id(oq_curve_restart_inhibit_active),
-              id(oq_curve_phase_code),
               id(oq_curve_regime_code));
             return;
           }
@@ -404,7 +395,6 @@ output:
               id(oq_curve_stop_arm_ms),
               id(oq_curve_off_since_ms),
               id(oq_curve_restart_inhibit_active),
-              id(oq_curve_phase_code),
               id(oq_curve_regime_code));
             return;
           }
@@ -504,10 +494,8 @@ output:
             off_since_ms = 0;
           }
 
-          int curve_phase_code = 1;
           if (!heat_request_active) {
             d = 0;
-            curve_phase_code = 0;
             id(oq_curve_regime_code) = 0;
           } else {
             if (d < 1) d = 1;
@@ -536,13 +524,10 @@ output:
 
             id(oq_curve_regime_code) = regime;
             if (regime == 1) {
-              curve_phase_code = 1;
               int recovery_floor = applied_total + 1;
               if (recovery_floor < 2) recovery_floor = 2;
               if (recovery_floor > demand_max) recovery_floor = demand_max;
               if (d < recovery_floor) d = recovery_floor;
-            } else {
-              curve_phase_code = 2;
             }
           }
 
@@ -550,7 +535,6 @@ output:
           id(oq_curve_off_since_ms) = off_since_ms;
           id(oq_curve_restart_inhibit_active) = restart_inhibit_active;
           id(oq_demand_curve) = d;
-          id(oq_curve_phase_code) = curve_phase_code;
 
 sensor:
   - platform: template
@@ -783,11 +767,8 @@ text_sensor:
     web_server:
       sorting_group_id: oq_diagnostics
     lambda: |-
-      switch (id(oq_curve_phase_code)) {
-        case 1: return std::string("HEAT");
-        case 2: return std::string("COAST");
-        default: return std::string("OFF");
-      }
+      if (!id(oq_curve_heat_request_active)) return std::string("OFF");
+      return (id(oq_curve_regime_code) == 1) ? std::string("HEAT") : std::string("COAST");
 
   - platform: template
     id: oq_curve_regime_sensor
@@ -833,7 +814,6 @@ interval:
                 id(oq_curve_stop_arm_ms),
                 id(oq_curve_off_since_ms),
                 id(oq_curve_restart_inhibit_active),
-                id(oq_curve_phase_code),
                 id(oq_curve_regime_code));
             } else {
               const float cur2 = id(oq_heating_curve_pid).target_temperature;
@@ -857,12 +837,11 @@ interval:
             id(oq_strategy_supply_target_temp) = id(oq_supply_target_temp).state;
             id(oq_strategy_heat_request_active) = id(oq_curve_heat_request_active);
 
-            const int phase_code = id(oq_curve_phase_code);
             const int regime_code = id(oq_curve_regime_code);
-            const char *phase_text = oq_curve::phase_name(phase_code);
+            const char *phase_text =
+                !id(oq_curve_heat_request_active) ? "off" : (regime_code == 1 ? "heat" : "coast");
             const char *regime_text = oq_curve::regime_name(regime_code);
-            id(oq_strategy_phase_text).publish_state(
-              oq_curve::strategy_phase_name(phase_code, regime_code));
+            id(oq_strategy_phase_text).publish_state(regime_text);
 
             char debug_buf[192];
             const float target_c = id(oq_supply_target_temp).state;
@@ -888,7 +867,6 @@ interval:
               id(oq_curve_stop_arm_ms),
               id(oq_curve_off_since_ms),
               id(oq_curve_restart_inhibit_active),
-              id(oq_curve_phase_code),
               id(oq_curve_regime_code));
           }
       - if:
