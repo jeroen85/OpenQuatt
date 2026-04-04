@@ -15,6 +15,12 @@
 # ==============================================================================
 
 globals:
+  # Continuous PID-derived demand before integer quantization or request guardrails.
+  - id: oq_curve_demand_continuous
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+
   # Internal source (0..20) for heating-curve mode (PID -> demand)
   - id: oq_demand_curve
     type: int
@@ -161,6 +167,7 @@ select:
         - lambda: |-
             // Reset curve runtime state so a profile switch starts from a clean baseline.
             oq_curve::reset_control_state(
+              id(oq_curve_demand_continuous),
               id(oq_demand_curve),
               id(oq_curve_demand_pre_guardrail),
               id(oq_curve_heat_request_active),
@@ -391,6 +398,7 @@ output:
           // In Power House mode, this output is diagnostic-only and must remain 0.
           if (id(oq_heat_mode_code) != 1) {
             oq_curve::reset_control_state(
+              id(oq_curve_demand_continuous),
               id(oq_demand_curve),
               id(oq_curve_demand_pre_guardrail),
               id(oq_curve_heat_request_active),
@@ -411,6 +419,7 @@ output:
           const int demand_max = (int) ${oq_strategy_demand_max_f};
           if (isnan(state)) {
             oq_curve::reset_control_state(
+              id(oq_curve_demand_continuous),
               id(oq_demand_curve),
               id(oq_curve_demand_pre_guardrail),
               id(oq_curve_heat_request_active),
@@ -428,7 +437,12 @@ output:
             return;
           }
 
-          int d = (int) lroundf(state * ${oq_strategy_demand_max_f});
+          float d_cont = state * ${oq_strategy_demand_max_f};
+          if (d_cont < 0.0f) d_cont = 0.0f;
+          if (d_cont > (float) demand_max) d_cont = (float) demand_max;
+          id(oq_curve_demand_continuous) = d_cont;
+
+          int d = (int) lroundf(d_cont);
           if (d < 0) d = 0;
           if (d > demand_max) d = demand_max;
           id(oq_curve_demand_pre_guardrail) = d;
@@ -437,6 +451,7 @@ output:
           const float pv = id(oq_system_supply_temp).state;
           if (isnan(spw) || isnan(pv)) {
             oq_curve::reset_control_state(
+              id(oq_curve_demand_continuous),
               id(oq_demand_curve),
               id(oq_curve_demand_pre_guardrail),
               id(oq_curve_heat_request_active),
@@ -893,6 +908,21 @@ sensor:
       return (float) id(oq_demand_curve);
 
   - platform: template
+    id: oq_curve_demand_continuous_sensor
+    name: "Demand Curve (continuous)"
+    disabled_by_default: true
+    icon: mdi:sine-wave
+    unit_of_measurement: "step"
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 5s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return id(oq_curve_demand_continuous);
+
+  - platform: template
     id: oq_curve_demand_pre_guardrail_sensor
     name: "Demand Curve (pre-guardrail)"
     disabled_by_default: true
@@ -1004,9 +1034,22 @@ interval:
             const float spw = id(oq_supply_target_temp).state;
             const float pv = id(oq_system_supply_temp).state;
             if (isnan(spw) || isnan(pv)) {
-              id(oq_demand_curve) = 0;
-              id(oq_curve_heat_request_active) = false;
-              id(oq_curve_stop_arm_ms) = 0;
+              oq_curve::reset_control_state(
+                id(oq_curve_demand_continuous),
+                id(oq_demand_curve),
+                id(oq_curve_demand_pre_guardrail),
+                id(oq_curve_heat_request_active),
+                id(oq_curve_stop_arm_ms),
+                id(oq_curve_off_since_ms),
+                id(oq_curve_restart_inhibit_active),
+                id(oq_curve_phase_code),
+                id(oq_curve_regime_code),
+                id(oq_curve_regime_since_ms),
+                id(oq_curve_maintain_level),
+                id(oq_curve_maintain_raise_arm_ms),
+                id(oq_curve_maintain_lower_arm_ms),
+                id(oq_curve_assist_enter_arm_ms),
+                id(oq_curve_assist_exit_arm_ms));
             } else {
               const float cur2 = id(oq_heating_curve_pid).target_temperature;
               if (id(oq_heating_curve_pid).mode != CLIMATE_MODE_HEAT ||
@@ -1041,9 +1084,10 @@ interval:
             const float supply_c = id(oq_system_supply_temp).state;
             snprintf(
               debug_buf, sizeof(debug_buf),
-              "curve phase=%s reg=%s ml=%d d=%d pre=%d sp=%.2f pv=%.2f",
+              "curve phase=%s reg=%s ml=%d d=%.2f/%d pre=%d sp=%.2f pv=%.2f",
               phase_text, regime_text, id(oq_curve_maintain_level),
-              d_out, id(oq_curve_demand_pre_guardrail), target_c, supply_c);
+              id(oq_curve_demand_continuous), d_out,
+              id(oq_curve_demand_pre_guardrail), target_c, supply_c);
             id(oq_strategy_debug_state).publish_state(debug_buf);
           } else {
             if (id(oq_heating_curve_pid).mode != CLIMATE_MODE_OFF) {
@@ -1052,6 +1096,7 @@ interval:
               c0.perform();
             }
             oq_curve::reset_control_state(
+              id(oq_curve_demand_continuous),
               id(oq_demand_curve),
               id(oq_curve_demand_pre_guardrail),
               id(oq_curve_heat_request_active),

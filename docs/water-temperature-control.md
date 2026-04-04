@@ -132,6 +132,7 @@ Belangrijke begrippen:
 
 - `Curve Phase`
 - `Curve operating regime`
+- `Demand Curve (continuous)`
 - `Demand curve raw (PID)`
 - `Demand raw`
 - `Curve restart inhibit`
@@ -338,6 +339,7 @@ Als je deze strategie wilt begrijpen of afstellen, zijn deze waarden meestal het
 - `Heating Curve PID`
 - `Curve Phase`
 - `Curve operating regime`
+- `Demand Curve (continuous)`
 - `Demand curve raw (PID)`
 - `Demand raw`
 - `Curve restart inhibit`

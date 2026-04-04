@@ -1,10 +1,12 @@
 #pragma once
 
+#include <math.h>
 #include <stdint.h>
 
 namespace oq_curve {
 
-inline void reset_control_state(int &demand_curve,
+inline void reset_control_state(float &demand_continuous,
+                                int &demand_curve,
                                 int &demand_pre_guardrail,
                                 bool &heat_request_active,
                                 uint32_t &stop_arm_ms,
@@ -18,6 +20,7 @@ inline void reset_control_state(int &demand_curve,
                                 uint32_t &maintain_lower_arm_ms,
                                 uint32_t &assist_enter_arm_ms,
                                 uint32_t &assist_exit_arm_ms) {
+  demand_continuous = NAN;
   demand_curve = 0;
   demand_pre_guardrail = 0;
   heat_request_active = false;

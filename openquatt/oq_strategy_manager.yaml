@@ -98,6 +98,7 @@ select:
             id(oq_strategy_supply_target_temp) = NAN;
             id(oq_strategy_heat_request_active) = false;
             oq_curve::reset_control_state(
+              id(oq_curve_demand_continuous),
               id(oq_demand_curve),
               id(oq_curve_demand_pre_guardrail),
               id(oq_curve_heat_request_active),
