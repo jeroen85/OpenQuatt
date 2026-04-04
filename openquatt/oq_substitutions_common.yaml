@@ -17,6 +17,7 @@ project_version: "v0.27.0"                            # ESPHome project version 
 release_channel: "main"                               # Firmware release channel shown in diagnostics (`main` or `dev`).
 hp_perf_map_header: "openquatt/includes/hp_perf_map.h" # C++ performance-map header include path.
 thermal_request_logic_header: "openquatt/includes/oq_thermal_request_logic.h" # Shared C++ helper include for request/control glue.
+heating_curve_logic_header: "openquatt/includes/oq_heating_curve_logic.h" # Shared C++ helper include for curve runtime state and naming.
 
 # ----------------------------
 # HARDWARE
