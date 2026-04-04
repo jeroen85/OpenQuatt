@@ -169,7 +169,7 @@ number:
     step: 10
     restore_value: true
     optimistic: true
-    initial_value: 2000
+    initial_value: 3000
     entity_category: config
     web_server:
       sorting_group_id: oq_tuning_heat
