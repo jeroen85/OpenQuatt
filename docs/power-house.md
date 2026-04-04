@@ -45,7 +45,7 @@ Werk je liever direct met een stooklijn of aanvoertemperatuur, dan past `Water T
 1. bepaal de bronwaarden die echt gebruikt worden;
 2. bereken de basis warmtevraag van het huis;
 3. corrigeer die vraag met kamerafwijking en comfortlogica;
-4. begrens de warmtevraag met deadband, opbouw-/afbouwtijd en watertempbegrenzing;
+4. begrens de warmtevraag met opbouw-/afbouwtijd en watertempbegrenzing;
 5. vertaal de uitkomst naar compressorvraag;
 6. laat thermal request control daar de beste Single- of Duo-verdeling bij zoeken;
 7. laat supervisory bewaken of verwarmen in `CM2` logisch actief moet blijven.
@@ -115,43 +115,9 @@ Daarom is het goed om een langere periode te beoordelen met verschillend weer. E
 
 Daarna kijkt `Power House` naar de kamer.
 
-Belangrijke begrippen:
-
-- `Power House effective room target`
-- `Power House comfort bias`
-- `Power House room error avg`
-
-### Effective room target
-
-`Power House` werkt niet alleen met het kale setpoint. De strategie gebruikt:
-
-- `effective room target = room setpoint + comfort bias`
-
-Dat maakt het mogelijk om iets "warmer leunend" of juist neutraler gedrag te krijgen zonder meteen agressief te regelen.
-
-### Comfort bias
-
-De comfort-bias wordt opgebouwd en afgebouwd met:
-
-- `Power House comfort bias base`
-- `Power House comfort bias max`
-- `Power House comfort bias up`
-- `Power House comfort bias down`
-- `Power House room error avg tau`
-
-In gewone taal:
-
-- `base` is de minimale extra comfortmarge;
-- `max` is de bovengrens;
-- `up` bepaalt hoe snel de bias mag oplopen;
-- `down` bepaalt hoe snel die weer mag zakken;
-- `room error avg tau` maakt de kamerafwijking rustiger door te middelen.
-
-Deze bias is vooral bedoeld om het systeem niet te "nerveus exact op setpoint" te laten mikken, maar gecontroleerd iets meer comfortruimte te geven.
-
 ### Comfortband rond het setpoint
 
-Daarnaast gebruikt `Power House` twee comfortmarges:
+`Power House` gebruikt twee comfortmarges direct rond het kamer-setpoint:
 
 - `Power House comfort below setpoint`
 - `Power House comfort above setpoint`
@@ -163,19 +129,19 @@ Daarmee ontstaat een asymmetrische comfortband:
 
 Dat is bewust geen pure PID-benadering. Het systeem mag wat terughoudender zijn rond kleine afwijkingen en sterker reageren als de fout duidelijker wordt.
 
-### Kp en deadband
+Binnen deze comfortband blijft de extra kamercorrectie `0`.
+
+### Temperatuurreactie
 
 De kamerfout wordt daarna omgerekend naar extra of minder warmtevraag met:
 
-- `Power House Kp (W-K)`
-- `Power House deadband`
+- `Power House temperature reaction`
 
 Praktisch:
 
-- `Kp` bepaalt hoeveel watt correctie per graad kamerfout wordt toegevoegd of afgetrokken;
-- `deadband` voorkomt dat elke heel kleine afwijking direct tot nieuwe warmtevraag leidt.
+- `Power House temperature reaction` bepaalt hoeveel watt correctie per graad kamerfout buiten de comfortband wordt toegevoegd of afgetrokken.
 
-Een te hoge `Kp` maakt het systeem eerder fel. Een te lage `Kp` maakt het systeem eerder traag of slap. `Deadband` bepaalt hoeveel rust er rond het doel zit.
+Een hogere waarde maakt het systeem eerder fel. Een lagere waarde maakt het systeem eerder traag of slap.
 
 ## Stap 4: opbouwtijd en afbouwtijd maken het gedrag rustiger
 
@@ -331,17 +297,11 @@ Gebruik deze om het basisgedrag van het huis te laten kloppen.
 
 ### 2. Kamercorrectie en comfort
 
-- `Power House Kp (W-K)`
-- `Power House deadband`
+- `Power House temperature reaction`
 - `Power House comfort below setpoint`
 - `Power House comfort above setpoint`
-- `Power House comfort bias base`
-- `Power House comfort bias max`
-- `Power House comfort bias up`
-- `Power House comfort bias down`
-- `Power House room error avg tau`
 
-Gebruik deze om te bepalen hoe strak, comfortabel of warm-leaning de regeling zich rond setpoint gedraagt.
+Gebruik deze om te bepalen hoe strak of ruim de regeling zich rond setpoint gedraagt, en hoe sterk de kamercorrectie buiten die comfortband ingrijpt.
 
 ### 3. Reactiesnelheid
 
@@ -387,9 +347,6 @@ Als je `Power House` wilt begrijpen of tunen, zijn deze meetwaarden meestal het 
 - `Power House – P_req`
 - `Demand raw`
 - `Demand filtered`
-- `Power House effective room target`
-- `Power House comfort bias`
-- `Power House room error avg`
 - `Water Supply Temp (Selected)`
 - `Total Heat Power`
 - `Total Power Input`
@@ -412,7 +369,7 @@ Gebruik bij `Power House` bij voorkeur deze volgorde:
 1. controleer of de gekozen bronwaarden kloppen;
 2. controleer flow en algemeen systeemgedrag;
 3. laat eerst het huismodel ongeveer kloppen;
-4. stel daarna comfortmarges en `Kp` bij;
+4. stel daarna comfortmarges en `Power House temperature reaction` bij;
 5. kijk pas daarna naar response profile en rise/fall time;
 6. kijk pas als laatste naar laaglastgedrag en dieper Duo-gedrag.
 
@@ -426,7 +383,6 @@ Niet echt. Er zit wel kamerfout in, maar ook:
 
 - een huismodel;
 - comfortlogica;
-- deadband;
 - opbouw-/afbouwtijd;
 - watertempbegrenzing;
 - laaglastbewaking;

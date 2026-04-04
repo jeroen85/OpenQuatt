@@ -28,7 +28,7 @@ Belangrijke kenmerken:
 
 - werkt met buitentemperatuur, kamertemperatuur en setpoint;
 - gebruikt een huismodel als basis;
-- corrigeert daarop met comfortlogica en kamerafwijking;
+- corrigeert daarop met comfortband en kamerafwijking;
 - werkt met `P_house` en `P_req` in watt;
 - gebruikt een response profile met opbouw- en afbouwtijd;
 - kiest bij `Duo` automatisch de zuinigste geldige Single- of Duo-combinatie.
@@ -86,7 +86,7 @@ Dat verschil werkt door in bijna alles:
 - je kijkt naar kamercomfort en warmtevraag van de woning;
 - je liever niet te veel in een stooklijn denkt;
 - je wilt dat OpenQuatt bij `Duo` efficiënt tussen single en duo kiest;
-- je gedrag wilt afstellen met huismodel, comfortband en response profile.
+- je gedrag wilt afstellen met huismodel, comfortband, temperatuurreactie en response profile.
 
 ### Kies eerder `Water Temperature Control` als:
 
