@@ -9,7 +9,7 @@
 #   - Computes curve supply target generation and PID demand
 #   - Owns curve-specific hysteresis, phase/regime state, and diagnostics
 #   - Decides curve total request and topology hints
-#   - Publishes level-derived capacity/deficit telemetry for diagnostics
+#   - Clears Power House-specific capacity/deficit telemetry while curve mode is active
 #   - Publishes curve request outputs for oq_thermal_request_control to finish
 #     into the shared request interface
 # ==============================================================================
@@ -1235,8 +1235,6 @@ interval:
             #endif
           };
 
-          const float Tamb = id(outside_temp_selected).state;
-          const float Tsup = id(oq_system_supply_temp).state;
           int level_cap = (int) roundf(id(oq_day_max_level).state);
           if (id(oq_silent_active).state) level_cap = (int) roundf(id(oq_silent_max_level).state);
           if (level_cap < min_level) level_cap = min_level;
@@ -1250,72 +1248,8 @@ interval:
           const bool hp2_valve_def = false;
           const bool hp2_available = false;
           #endif
-          const bool hp1_available = true;
-
-          float def_fac_cfg = ${oq_defrost_power_factor};
-          if (isnan(def_fac_cfg)) def_fac_cfg = 0.55f;
-          const float def_fac = fmaxf(0.10f, fminf(1.00f, def_fac_cfg));
-          const float hp1_th_fac = hp1_valve_def ? def_fac : 1.0f;
-          const float hp2_th_fac = hp2_valve_def ? def_fac : 1.0f;
-
-          auto power_for_level = [&](bool is_hp1, int level)->float {
-            if (level <= 0) return 0.0f;
-            if ((is_hp1 && !hp1_available) || (!is_hp1 && !hp2_available)) return 0.0f;
-            float p = oq_perf::interp_power_th_w(level, Tamb, Tsup);
-            if (isnan(p)) return 0.0f;
-            p *= is_hp1 ? hp1_th_fac : hp2_th_fac;
-            return isnan(p) ? 0.0f : p;
-          };
-
-          auto max_cap_hp = [&](bool is_hp1)->float {
-            if ((is_hp1 && !hp1_available) || (!is_hp1 && !hp2_available)) return 0.0f;
-            float best = 0.0f;
-            for (int lvl = 1; lvl <= level_cap; lvl++) {
-              if (!level_allowed(is_hp1, lvl)) continue;
-              float p = oq_perf::interp_power_th_w(lvl, Tamb, Tsup);
-              if (!isnan(p)) p *= is_hp1 ? hp1_th_fac : hp2_th_fac;
-              if (!isnan(p) && p > best) best = p;
-            }
-            return best;
-          };
-
-          auto requested_power_from_total_levels = [&](int total_level_request)->float {
-            int total_req = total_level_request;
-            if (total_req < 0) total_req = 0;
-            if (isnan(Tamb) || isnan(Tsup) || total_req <= 0) return 0.0f;
-
-            float best = 0.0f;
-            #if OQ_TOPOLOGY_DUO
-            const int nominal_cap_total = max_level * 2;
-            if (total_req > nominal_cap_total) total_req = nominal_cap_total;
-            for (int l1 = 0; l1 <= std::min(max_level, total_req); l1++) {
-              const int l2_max = std::min(max_level, total_req - l1);
-              for (int l2 = 0; l2 <= l2_max; l2++) {
-                if ((l1 + l2) > total_req) continue;
-                const float req_power = power_for_level(true, l1) + power_for_level(false, l2);
-                if (req_power > best) best = req_power;
-              }
-            }
-            #else
-            if (total_req > max_level) total_req = max_level;
-            best = power_for_level(true, total_req);
-            #endif
-            return best;
-          };
-
-          auto publish_capacity_and_deficit = [&](int requested_level_total)->float {
-            float cap_total = 0.0f;
-            if (!isnan(Tamb) && !isnan(Tsup)) {
-              cap_total = max_cap_hp(true) + max_cap_hp(false);
-            }
-            id(oq_P_hp_cap_w) = cap_total;
-
-            float req = requested_power_from_total_levels(requested_level_total);
-            float deficit = req - cap_total;
-            if (deficit < 0.0f) deficit = 0.0f;
-            id(oq_P_deficit_w) = deficit;
-            return cap_total;
-          };
+          id(oq_P_hp_cap_w) = 0.0f;
+          id(oq_P_deficit_w) = 0.0f;
 
           auto reset_dual_runtime_state = [&](int owner)->void {
             id(oq_dual_hp_enabled) = false;
@@ -1334,7 +1268,6 @@ interval:
           int reason_code = 0;
 
           #if OQ_TOPOLOGY_DUO
-          publish_capacity_and_deficit(f);
           const bool d1_pre = hp1_valve_def;
           const bool d2_pre = hp2_valve_def;
 
@@ -1494,7 +1427,6 @@ interval:
           }
           #else
           reset_dual_runtime_state(1);
-          publish_capacity_and_deficit(f);
           total_req = f;
           owner = (f > 0) ? 1 : 0;
           reason_code = (f > 0) ? 1 : 0;

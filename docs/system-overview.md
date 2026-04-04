@@ -133,7 +133,7 @@ Strategy packages compute:
 
 - `oq_demand_filtered`
 - HP level requests and applied levels
-- `oq_P_hp_cap_w` and `oq_P_deficit_w`
+- shared `oq_P_hp_cap_w` and `oq_P_deficit_w` diagnostics for strategy paths that use them
 
 ### 4.5 Supervisory and safety layer
 
