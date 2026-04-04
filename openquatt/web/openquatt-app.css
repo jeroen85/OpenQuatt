@@ -808,7 +808,7 @@
   min-width: 0;
   padding: 0;
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
 .oq-ph-concept-caption {
@@ -845,30 +845,30 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
-  margin-top: 10px;
+  margin-top: 4px;
 }
 
 .oq-ph-concept-zone-chip {
   display: grid;
   align-content: center;
   justify-items: center;
-  gap: 2px;
-  min-height: 44px;
-  padding: 6px 12px;
-  border-radius: 999px;
+  gap: 3px;
+  min-height: 52px;
+  padding: 8px 14px;
+  border-radius: 18px;
   border: 1px solid rgba(15, 23, 42, 0.08);
   color: var(--oq-helper-soft);
   text-align: center;
 }
 
 .oq-ph-concept-zone-chip-label {
-  font-size: 0.84rem;
+  font-size: 0.88rem;
   font-weight: 700;
   line-height: 1.1;
 }
 
 .oq-ph-concept-zone-chip-meta {
-  font-size: 0.74rem;
+  font-size: 0.79rem;
   font-weight: 700;
   line-height: 1.1;
   color: var(--oq-helper-faint);
@@ -878,7 +878,7 @@
   background: rgba(59, 130, 246, 0.08);
 }
 
-.oq-ph-concept-zone-chip--deadband {
+.oq-ph-concept-zone-chip--calm {
   background: rgba(15, 23, 42, 0.06);
 }
 
@@ -894,14 +894,14 @@
 }
 
 .oq-ph-concept-band {
-  opacity: 0.95;
+  opacity: 0.9;
 }
 
 .oq-ph-concept-band--below {
   fill: rgba(59, 130, 246, 0.08);
 }
 
-.oq-ph-concept-band--deadband {
+.oq-ph-concept-band--calm {
   fill: rgba(15, 23, 42, 0.06);
 }
 
@@ -911,15 +911,11 @@
 
 .oq-ph-concept-axis {
   stroke: rgba(107, 114, 128, 0.45);
-  stroke-width: 1.4;
-}
-
-.oq-ph-concept-axis--vertical {
-  stroke-dasharray: 4 5;
+  stroke-width: 2;
 }
 
 .oq-ph-concept-marker {
-  stroke-width: 1.8;
+  stroke-width: 2;
   stroke-linecap: round;
 }
 
@@ -927,13 +923,12 @@
   stroke: rgba(59, 130, 246, 0.7);
 }
 
-.oq-ph-concept-marker--above {
-  stroke: rgba(234, 88, 12, 0.55);
+.oq-ph-concept-marker--setpoint {
+  stroke: rgba(71, 85, 105, 0.72);
 }
 
-.oq-ph-concept-marker--cap {
-  stroke: rgba(251, 146, 60, 0.65);
-  stroke-dasharray: 4 4;
+.oq-ph-concept-marker--above {
+  stroke: rgba(234, 88, 12, 0.55);
 }
 
 .oq-ph-concept-point {
@@ -962,28 +957,42 @@
 
 .oq-ph-concept-axis-wrap {
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
 .oq-ph-concept-axis-title-row {
   text-align: center;
   color: var(--oq-helper-soft);
-  font-size: 0.86rem;
+  font-size: 0.88rem;
   font-weight: 700;
 }
 
 .oq-ph-concept-axis-values {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
-  align-items: end;
-  gap: 12px;
+  align-items: start;
+  gap: 16px;
 }
 
 .oq-ph-concept-axis-value {
-  color: var(--oq-helper-ink);
-  font-size: 0.82rem;
+  display: grid;
+  gap: 2px;
+  color: var(--oq-helper-soft);
+  font-size: 0.8rem;
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.2;
+}
+
+.oq-ph-concept-axis-value strong {
+  color: var(--oq-helper-ink);
+  font-size: 1rem;
+  line-height: 1.1;
+}
+
+.oq-ph-concept-axis-value span {
+  color: var(--oq-helper-faint);
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
 .oq-ph-concept-axis-value--start {
@@ -996,34 +1005,6 @@
 
 .oq-ph-concept-axis-value--end {
   text-align: right;
-}
-
-.oq-ph-concept-axis-markers {
-  position: relative;
-  height: 10px;
-  margin: -2px 0 2px;
-}
-
-.oq-ph-concept-axis-dot {
-  position: absolute;
-  top: 50%;
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: rgba(59, 130, 246, 0.22);
-  transform: translate(-50%, -50%);
-}
-
-.oq-ph-concept-axis-dot--target {
-  background: rgba(99, 102, 241, 0.24);
-}
-
-.oq-ph-concept-axis-dot--setpoint {
-  background: rgba(71, 85, 105, 0.35);
-}
-
-.oq-ph-concept-axis-dot--cap {
-  background: rgba(251, 146, 60, 0.28);
 }
 
 .oq-ph-concept-notes {

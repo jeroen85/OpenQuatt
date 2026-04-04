@@ -129,17 +129,12 @@
     silentActive: { domain: "binary_sensor", name: "Silent active" },
     stickyActive: { domain: "binary_sensor", name: "Sticky pump active" },
     housePower: { domain: "number", name: "Rated maximum house power" },
+    houseColdTemp: { domain: "number", name: "House cold temp" },
     houseOutdoorMax: { domain: "number", name: "Maximum heating outdoor temperature" },
     phResponseProfile: { domain: "select", name: "Power House response profile" },
-    phKp: { domain: "number", name: "Power House Kp (W-K)" },
-    phDeadband: { domain: "number", name: "Power House deadband" },
+    phKp: { domain: "number", name: "Power House temperature reaction" },
     phComfortBelow: { domain: "number", name: "Power House comfort below setpoint" },
     phComfortAbove: { domain: "number", name: "Power House comfort above setpoint" },
-    phBiasBase: { domain: "number", name: "Power House comfort bias base" },
-    phBiasMax: { domain: "number", name: "Power House comfort bias max" },
-    phBiasUp: { domain: "number", name: "Power House comfort bias up" },
-    phBiasDown: { domain: "number", name: "Power House comfort bias down" },
-    phRoomAvgTau: { domain: "number", name: "Power House room error avg tau" },
     phDemandRiseTime: { domain: "number", name: "Power House demand rise time" },
     phDemandFallTime: { domain: "number", name: "Power House demand fall time" },
     curveControlProfile: { domain: "select", name: "Heating Curve Control Profile" },
@@ -281,14 +276,12 @@
 
   const POWER_HOUSE_KEYS = [
     "housePower",
+    "houseColdTemp",
     "houseOutdoorMax",
     "phResponseProfile",
     "phKp",
-    "phDeadband",
     "phComfortBelow",
     "phComfortAbove",
-    "phBiasBase",
-    "phBiasMax",
     "phDemandRiseTime",
     "phDemandFallTime",
   ];
@@ -1722,119 +1715,101 @@
       return Number.isNaN(numeric) ? fallback : Math.max(0, numeric);
     };
     const exampleSetpoint = 20;
-    const biasBase = safe("phBiasBase", 0.1);
-    const biasMax = Math.max(biasBase, safe("phBiasMax", 0.4));
-    const deadband = safe("phDeadband", 0.1);
-    const comfortBelow = safe("phComfortBelow", 0);
-    const comfortAbove = safe("phComfortAbove", 0.1);
+    const comfortBelow = safe("phComfortBelow", 0.1);
+    const comfortAbove = safe("phComfortAbove", 0.3);
+    const temperatureReaction = safe("phKp", 3000);
 
-    const effectiveTarget = exampleSetpoint + biasBase;
-    const quietMin = effectiveTarget - deadband;
-    const quietMax = effectiveTarget + deadband;
-    const heatStart = effectiveTarget - comfortBelow;
-    const warmCap = exampleSetpoint + biasMax;
-    const warmStart = Math.min(effectiveTarget + comfortAbove, warmCap);
+    const quietMin = exampleSetpoint - comfortBelow;
+    const quietMax = exampleSetpoint + comfortAbove;
 
     const width = 620;
-    const height = 86;
+    const height = 94;
     const left = 34;
     const right = 34;
-    const top = 10;
-    const axisY = 44;
-    const bandY = 26;
-    const bandHeight = 36;
+    const axisY = 40;
+    const bandY = 29;
+    const bandHeight = 22;
     const plotWidth = width - left - right;
-    const minTemp = Math.min(exampleSetpoint - 1.2, heatStart - 0.3);
-    const maxTemp = Math.max(exampleSetpoint + 1.2, warmCap + 0.3);
+    const minTemp = Math.min(exampleSetpoint - 1.2, quietMin - 0.35);
+    const maxTemp = Math.max(exampleSetpoint + 1.2, quietMax + 0.35);
     const toX = (temp) => left + ((temp - minTemp) / Math.max(0.01, maxTemp - minTemp)) * plotWidth;
 
     const leftX = toX(minTemp);
     const rightX = toX(maxTemp);
-    const heatStartX = toX(heatStart);
     const quietMinX = toX(quietMin);
-    const quietMaxX = toX(quietMax);
     const setpointX = toX(exampleSetpoint);
-    const effectiveTargetX = toX(effectiveTarget);
-    const warmStartX = toX(warmStart);
-    const warmCapX = toX(warmCap);
-    const hasVisibleCap = warmCap - warmStart > 0.04;
-    const setpointPct = ((setpointX - leftX) / Math.max(1, rightX - leftX)) * 100;
-    const heatStartPct = ((heatStartX - leftX) / Math.max(1, rightX - leftX)) * 100;
-    const warmStartPct = ((warmStartX - leftX) / Math.max(1, rightX - leftX)) * 100;
-    const effectiveTargetPct = ((effectiveTargetX - leftX) / Math.max(1, rightX - leftX)) * 100;
-    const warmCapPct = ((warmCapX - leftX) / Math.max(1, rightX - leftX)) * 100;
+    const quietMaxX = toX(quietMax);
 
     return `
       <div class="oq-ph-concept-card">
         <div class="oq-ph-concept-visual">
           <div class="oq-ph-concept-caption">
-            Conceptueel: lees Power House hier als een temperatuurliniaal. Dit voorbeeld gebruikt een setpoint van 20,0 °C en laat zien wanneer extra opwarming begint, waar de regeling rustig blijft en waar warme tegensturing start.
+            Conceptueel: lees Power House hier als een temperatuurliniaal rond het kamersetpoint. Dit voorbeeld met 20,0 °C laat zien onder welke temperatuur extra opwarming begint, in welke zone de regeling bewust rustig blijft en vanaf waar warme tegensturing start.
           </div>
           <div class="oq-ph-concept-meta">
             <span class="oq-ph-concept-meta-pill">Setpoint <strong>${escapeHtml(formatNumericState(exampleSetpoint, 1, "°C"))}</strong></span>
-            <span class="oq-ph-concept-meta-pill">Effective target <strong>${escapeHtml(formatNumericState(effectiveTarget, 1, "°C"))}</strong></span>
-            ${hasVisibleCap ? `<span class="oq-ph-concept-meta-pill">Bovencap <strong>${escapeHtml(formatNumericState(warmCap, 1, "°C"))}</strong></span>` : ""}
+            <span class="oq-ph-concept-meta-pill">Rustige zone <strong>${escapeHtml(formatNumericState(quietMin, 1, "°C"))} – ${escapeHtml(formatNumericState(quietMax, 1, "°C"))}</strong></span>
+            <span class="oq-ph-concept-meta-pill">Temperatuurreactie <strong>${escapeHtml(formatNumericState(temperatureReaction, 0, " W/K"))}</strong></span>
           </div>
           <svg class="oq-ph-concept-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Temperatuurliniaal voor Power House tuning">
-            <rect x="${heatStartX.toFixed(1)}" y="${bandY}" width="${Math.max(18, quietMinX - heatStartX).toFixed(1)}" height="${bandHeight}" rx="999" class="oq-ph-concept-band oq-ph-concept-band--below"></rect>
-            <rect x="${quietMinX.toFixed(1)}" y="${bandY}" width="${Math.max(18, quietMaxX - quietMinX).toFixed(1)}" height="${bandHeight}" rx="999" class="oq-ph-concept-band oq-ph-concept-band--deadband"></rect>
-            <rect x="${quietMaxX.toFixed(1)}" y="${bandY}" width="${Math.max(18, warmStartX - quietMaxX).toFixed(1)}" height="${bandHeight}" rx="999" class="oq-ph-concept-band oq-ph-concept-band--above"></rect>
-
+            <rect x="${leftX.toFixed(1)}" y="${bandY}" width="${Math.max(20, quietMinX - leftX).toFixed(1)}" height="${bandHeight}" rx="999" class="oq-ph-concept-band oq-ph-concept-band--below"></rect>
+            <rect x="${quietMinX.toFixed(1)}" y="${bandY}" width="${Math.max(20, quietMaxX - quietMinX).toFixed(1)}" height="${bandHeight}" rx="999" class="oq-ph-concept-band oq-ph-concept-band--calm"></rect>
+            <rect x="${quietMaxX.toFixed(1)}" y="${bandY}" width="${Math.max(20, rightX - quietMaxX).toFixed(1)}" height="${bandHeight}" rx="999" class="oq-ph-concept-band oq-ph-concept-band--above"></rect>
             <line x1="${leftX}" y1="${axisY}" x2="${rightX}" y2="${axisY}" class="oq-ph-concept-axis"></line>
-            <line x1="${setpointX}" y1="${top}" x2="${setpointX}" y2="${height - 6}" class="oq-ph-concept-axis oq-ph-concept-axis--vertical"></line>
-            <line x1="${heatStartX}" y1="${axisY - 8}" x2="${heatStartX}" y2="${axisY + 8}" class="oq-ph-concept-marker oq-ph-concept-marker--below"></line>
-            <line x1="${warmStartX}" y1="${axisY - 8}" x2="${warmStartX}" y2="${axisY + 8}" class="oq-ph-concept-marker oq-ph-concept-marker--above"></line>
-            ${hasVisibleCap ? `<line x1="${warmCapX}" y1="${axisY - 12}" x2="${warmCapX}" y2="${axisY + 12}" class="oq-ph-concept-marker oq-ph-concept-marker--cap"></line>` : ""}
-
-            <circle cx="${effectiveTargetX}" cy="${axisY}" r="6" class="oq-ph-concept-point"></circle>
-            <circle cx="${heatStartX}" cy="${axisY}" r="4" class="oq-ph-concept-point oq-ph-concept-point--below"></circle>
-            <circle cx="${warmStartX}" cy="${axisY}" r="4" class="oq-ph-concept-point oq-ph-concept-point--above"></circle>
+            <line x1="${quietMinX}" y1="${axisY - 10}" x2="${quietMinX}" y2="${axisY + 10}" class="oq-ph-concept-marker oq-ph-concept-marker--below"></line>
+            <line x1="${setpointX}" y1="${axisY - 12}" x2="${setpointX}" y2="${axisY + 12}" class="oq-ph-concept-marker oq-ph-concept-marker--setpoint"></line>
+            <line x1="${quietMaxX}" y1="${axisY - 10}" x2="${quietMaxX}" y2="${axisY + 10}" class="oq-ph-concept-marker oq-ph-concept-marker--above"></line>
+            <circle cx="${quietMinX}" cy="${axisY}" r="4.5" class="oq-ph-concept-point oq-ph-concept-point--below"></circle>
+            <circle cx="${setpointX}" cy="${axisY}" r="6" class="oq-ph-concept-point oq-ph-concept-point--setpoint"></circle>
+            <circle cx="${quietMaxX}" cy="${axisY}" r="4.5" class="oq-ph-concept-point oq-ph-concept-point--above"></circle>
 
             <text x="${leftX}" y="${axisY + 24}" text-anchor="start" class="oq-ph-concept-label">kouder</text>
             <text x="${rightX}" y="${axisY + 24}" text-anchor="end" class="oq-ph-concept-label">warmer</text>
           </svg>
           <div class="oq-ph-concept-axis-wrap">
-            <div class="oq-ph-concept-axis-title-row">temperatuur rond setpoint</div>
+            <div class="oq-ph-concept-axis-title-row">kamertemperatuur ten opzichte van setpoint</div>
             <div class="oq-ph-concept-axis-values">
-              <span class="oq-ph-concept-axis-value oq-ph-concept-axis-value--start">${escapeHtml(formatNumericState(heatStart, 1, "°C"))}</span>
-              <span class="oq-ph-concept-axis-value oq-ph-concept-axis-value--marker">${escapeHtml(formatNumericState(exampleSetpoint, 1, "°C"))}</span>
-              <span class="oq-ph-concept-axis-value oq-ph-concept-axis-value--end">${escapeHtml(formatNumericState(warmStart, 1, "°C"))}</span>
-            </div>
-            <div class="oq-ph-concept-axis-markers">
-              <span class="oq-ph-concept-axis-dot" style="left: ${heatStartPct.toFixed(2)}%;"></span>
-              <span class="oq-ph-concept-axis-dot oq-ph-concept-axis-dot--target" style="left: ${effectiveTargetPct.toFixed(2)}%;"></span>
-              <span class="oq-ph-concept-axis-dot oq-ph-concept-axis-dot--setpoint" style="left: ${setpointPct.toFixed(2)}%;"></span>
-              <span class="oq-ph-concept-axis-dot" style="left: ${warmStartPct.toFixed(2)}%;"></span>
-              ${hasVisibleCap ? `<span class="oq-ph-concept-axis-dot oq-ph-concept-axis-dot--cap" style="left: ${warmCapPct.toFixed(2)}%;"></span>` : ""}
+              <span class="oq-ph-concept-axis-value oq-ph-concept-axis-value--start">
+                <strong>${escapeHtml(formatNumericState(quietMin, 1, "°C"))}</strong>
+                <span>start extra opwarming</span>
+              </span>
+              <span class="oq-ph-concept-axis-value oq-ph-concept-axis-value--marker">
+                <strong>${escapeHtml(formatNumericState(exampleSetpoint, 1, "°C"))}</strong>
+                <span>setpoint</span>
+              </span>
+              <span class="oq-ph-concept-axis-value oq-ph-concept-axis-value--end">
+                <strong>${escapeHtml(formatNumericState(quietMax, 1, "°C"))}</strong>
+                <span>start warme tegensturing</span>
+              </span>
             </div>
           </div>
         </div>
         <div class="oq-ph-concept-zones">
           <span class="oq-ph-concept-zone-chip oq-ph-concept-zone-chip--below">
-            <span class="oq-ph-concept-zone-chip-label">comfort onder</span>
-            <span class="oq-ph-concept-zone-chip-meta">${escapeHtml(formatNumericState(heatStart, 1, "°C"))} – ${escapeHtml(formatNumericState(quietMin, 1, "°C"))}</span>
+            <span class="oq-ph-concept-zone-chip-label">extra opwarming</span>
+            <span class="oq-ph-concept-zone-chip-meta">onder ${escapeHtml(formatNumericState(quietMin, 1, "°C"))}</span>
           </span>
-          <span class="oq-ph-concept-zone-chip oq-ph-concept-zone-chip--deadband">
-            <span class="oq-ph-concept-zone-chip-label">deadband</span>
+          <span class="oq-ph-concept-zone-chip oq-ph-concept-zone-chip--calm">
+            <span class="oq-ph-concept-zone-chip-label">rustige zone</span>
             <span class="oq-ph-concept-zone-chip-meta">${escapeHtml(formatNumericState(quietMin, 1, "°C"))} – ${escapeHtml(formatNumericState(quietMax, 1, "°C"))}</span>
           </span>
           <span class="oq-ph-concept-zone-chip oq-ph-concept-zone-chip--above">
-            <span class="oq-ph-concept-zone-chip-label">comfort boven</span>
-            <span class="oq-ph-concept-zone-chip-meta">${escapeHtml(formatNumericState(quietMax, 1, "°C"))} – ${escapeHtml(formatNumericState(warmStart, 1, "°C"))}</span>
+            <span class="oq-ph-concept-zone-chip-label">warme tegensturing</span>
+            <span class="oq-ph-concept-zone-chip-meta">boven ${escapeHtml(formatNumericState(quietMax, 1, "°C"))}</span>
           </span>
         </div>
         <div class="oq-ph-concept-notes">
           <article class="oq-ph-concept-note">
-            <span class="oq-ph-concept-note-title">Deadband</span>
-            <p>Kleine afwijkingen rond het effective target geven nog geen directe correctie. Zo blijft de regeling rustiger.</p>
+            <span class="oq-ph-concept-note-title">Comfort onder</span>
+            <p>Bepaalt hoeveel ruimte er onder het setpoint mag ontstaan voordat Power House eerder extra warmte gaat vragen.</p>
           </article>
           <article class="oq-ph-concept-note">
-            <span class="oq-ph-concept-note-title">Comfort onder</span>
-            <p>Onder deze grens mag Power House eerder extra warmte vragen als de ruimte kouder voelt dan gewenst.</p>
+            <span class="oq-ph-concept-note-title">Temperatuurreactie</span>
+            <p>Bepaalt hoe sterk de regeling buiten deze comfortzone vertaalt naar extra of minder warmtevraag in W/K.</p>
           </article>
           <article class="oq-ph-concept-note">
             <span class="oq-ph-concept-note-title">Comfort boven</span>
-            <p>Boven deze grens begint warme tegensturing. Die marge wordt begrensd door bias max.</p>
+            <p>Bepaalt hoeveel ruimte er boven het setpoint mag ontstaan voordat warme tegensturing begint.</p>
           </article>
         </div>
       </div>
@@ -1843,10 +1818,10 @@
 
   function renderPowerHouseAdvancedField() {
     const fields = [
-      renderSettingsNumberField("phKp", "PH Kp", "Versterking van het Power House-huisverliesmodel in W/K. Hogere waarden maken de warmtevraag gevoeliger voor afwijking ten opzichte van het setpoint. Dit is een expertparameter.", "", { unitOverride: "W/K" }),
-      renderSettingsNumberField("phDeadband", "PH deadband", "Dode zone rond de afwijking ten opzichte van het setpoint. Kleine temperatuurverschillen binnen deze band leiden niet direct tot nieuw regelgedrag, zodat de regeling rustiger blijft.", "", { unitOverride: "°C" }),
+      renderSettingsNumberField("houseColdTemp", "House cold temp", "Koude buitentemperatuur waarop de ingestelde piekwarmtevraag van de woning geldt. Samen met de maximale verwarmings-buitentemperatuur bepaalt dit de helling van het Power House-huisverliesmodel."),
+      renderSettingsNumberField("phKp", "Power House temperature reaction", "Bepaalt hoe sterk Power House kamertemperatuurafwijking vertaalt naar extra of minder warmtevraag in W/K. Hogere waarden reageren steviger, lagere waarden rustiger.", "", { unitOverride: "W/K" }),
       renderSettingsNumberField("phComfortBelow", "PH comfort onder setpoint", "Extra comfortmarge onder het setpoint. Hiermee kan Power House iets sneller warmte vragen als de kamertemperatuur merkbaar onder het doel zakt."),
-      renderSettingsNumberField("phComfortAbove", "PH comfort boven setpoint", "Bovenmarge rond het setpoint. Hiermee bepaal je hoeveel ruimte er boven het setpoint mag ontstaan voordat de comfortbias wordt afgebouwd."),
+      renderSettingsNumberField("phComfortAbove", "PH comfort boven setpoint", "Bovenmarge rond het setpoint. Hiermee bepaal je hoeveel ruimte er boven het setpoint mag ontstaan voordat warme tegensturing begint."),
     ].filter(Boolean);
 
     if (!fields.length) {
@@ -1858,7 +1833,7 @@
         <div class="oq-settings-subpanel-head">
           <p class="oq-helper-label">Power House tuning</p>
           <h4>Geavanceerde Power House tuning</h4>
-          <p>Deze parameters verfijnen hoe Power House rond het setpoint reageert en hoe snel het extra warmtevraag opbouwt. Pas ze alleen aan als je bewust verder wilt tunen dan de standaardprofielen.</p>
+          <p>Deze parameters verfijnen hoe Power House het huisverliesmodel vertaalt naar warmtevraag rond het kamersetpoint. Pas ze alleen aan als je bewust verder wilt tunen dan de standaardprofielen.</p>
         </div>
         ${renderPowerHouseConceptGraphic()}
         <div class="oq-settings-grid">
@@ -1934,9 +1909,10 @@
           <div class="oq-settings-subpanel-head">
             <p class="oq-helper-label">Power House</p>
             <h4>Power House</h4>
-            <p>Deze waarden voeden het huisverliesmodel. De bovenste twee waarden kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn, en de CiC werkt in grote lijnen op een vergelijkbaar modelmatig principe.</p>
+            <p>Deze waarden voeden het huisverliesmodel. Rated maximum house power en Maximum heating outdoor temperature kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn; House cold temp is het koude referentiepunt waarop die piekvraag geldt. De Quatt CiC werkt in grote lijnen op een vergelijkbaar modelmatig principe.</p>
           </div>
           <div class="oq-settings-grid">
+            ${renderSettingsNumberField("houseColdTemp", "House cold temp", "Koude buitentemperatuur waarop de ingestelde piekwarmtevraag van de woning geldt.")}
             ${renderSettingsNumberField("houseOutdoorMax", "Maximum heating outdoor temperature", "Buitentemperatuur waarbij de woning praktisch geen verwarmingsvraag meer heeft. Deze waarde kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn.")}
             ${renderSettingsNumberField("housePower", "Rated maximum house power", "Geschatte piekwarmtevraag van de woning op het koude referentiepunt. Ook deze waarde kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn.")}
             ${renderPowerHouseResponseProfilesField()}
@@ -2015,9 +1991,10 @@
       <section class="oq-helper-mode-panel">
         <div class="oq-helper-mode-head">
           <p class="oq-helper-label">Verplicht Voor Power House</p>
-          <p class="oq-helper-section-copy">Deze twee waarden bepalen het huisverliesmodel. Ze horen als expliciete Quick Start-inputs zichtbaar te zijn, niet verstopt in advanced tuning.</p>
+          <p class="oq-helper-section-copy">Deze drie waarden bepalen het huisverliesmodel. Rated maximum house power en Maximum heating outdoor temperature kun je vaak bij Quatt opvragen; House cold temp legt het koude referentiepunt vast.</p>
         </div>
         <div class="oq-helper-control-grid">
+          ${renderNumberInputField("houseColdTemp", "House cold temp", "Koude buitentemperatuur waarop de ingestelde piekwarmtevraag van de woning geldt.")}
           ${renderNumberInputField("housePower", "Rated maximum house power", "Verwachte piekwarmtevraag van de woning op het koude referentiepunt.")}
           ${renderNumberInputField("houseOutdoorMax", "Maximum heating outdoor temperature", "Buitentemperatuur waarbij de warmtevraag praktisch naar nul gaat.")}
         </div>
