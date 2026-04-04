@@ -47,14 +47,10 @@ inline void reset_outside_ema_state(float &outside_ema_c,
 
 inline void reset_request_state(uint32_t &request_last_loop_ms,
                                 int &request_total_level,
-                                int &request_hp1_level,
-                                int &request_hp2_level,
                                 int &request_owner_hp,
                                 int &request_reason_code) {
   request_last_loop_ms = 0;
   request_total_level = 0;
-  request_hp1_level = 0;
-  request_hp2_level = 0;
   request_owner_hp = 0;
   request_reason_code = 0;
 }

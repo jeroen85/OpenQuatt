@@ -129,16 +129,6 @@ globals:
     restore_value: false
     initial_value: '0'
 
-  - id: oq_curve_request_hp1_level
-    type: int
-    restore_value: false
-    initial_value: '0'
-
-  - id: oq_curve_request_hp2_level
-    type: int
-    restore_value: false
-    initial_value: '0'
-
   - id: oq_curve_request_owner_hp
     type: int
     restore_value: false
@@ -194,8 +184,6 @@ select:
             oq_curve::reset_request_state(
               id(oq_curve_request_last_loop_ms),
               id(oq_curve_request_total_level),
-              id(oq_curve_request_hp1_level),
-              id(oq_curve_request_hp2_level),
               id(oq_curve_request_owner_hp),
               id(oq_curve_request_reason_code));
 
@@ -1172,8 +1160,6 @@ interval:
             oq_curve::reset_request_state(
               id(oq_curve_request_last_loop_ms),
               id(oq_curve_request_total_level),
-              id(oq_curve_request_hp1_level),
-              id(oq_curve_request_hp2_level),
               id(oq_curve_request_owner_hp),
               id(oq_curve_request_reason_code));
             return;
@@ -1343,8 +1329,6 @@ interval:
             id(oq_duo_request_hold_until_ms) = 0;
           };
 
-          int hp1_req = 0;
-          int hp2_req = 0;
           int total_req = 0;
           int owner = 0;
           int reason_code = 0;
@@ -1516,14 +1500,6 @@ interval:
           reason_code = (f > 0) ? 1 : 0;
           #endif
 
-          const auto per_hp_request =
-              oq_request::split_curve_total_request(total_req, id(oq_dual_hp_enabled), lead_is_hp1, owner);
-          hp1_req = per_hp_request.hp1_level;
-          hp2_req = per_hp_request.hp2_level;
-          owner = per_hp_request.owner_hp;
-
           id(oq_curve_request_total_level) = total_req;
-          id(oq_curve_request_hp1_level) = hp1_req;
-          id(oq_curve_request_hp2_level) = hp2_req;
           id(oq_curve_request_owner_hp) = owner;
           id(oq_curve_request_reason_code) = reason_code;
