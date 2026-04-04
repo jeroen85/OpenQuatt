@@ -86,7 +86,7 @@ Controleer in deze volgorde:
 
 Pas als deze basis klopt, heeft het zin om verwarmingsinstellingen te wijzigen.
 
-Bij `Power House` kun je daarna eventueel kijken naar `Power House response profile` of een kortere `Power House demand rise time`, maar doe dat pas als bronwaarden en comfortinstellingen al logisch zijn.
+Bij `Power House` kun je daarna eventueel kijken naar `Power House temperature reaction`, `Power House response profile` of een kortere `Power House demand rise time`, maar doe dat pas als bronwaarden en comfortinstellingen al logisch zijn.
 
 Bij `Duo` geldt daarbij: kijk niet alleen of er 1 of 2 warmtepompen actief zijn, maar vooral of de warmtevraag netjes gevolgd wordt zonder onrustig wisselen.
 

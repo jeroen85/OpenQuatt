@@ -2141,37 +2141,17 @@ views:
               - **Maximum heating outdoor temperature** is het punt waar
               modelmatig de warmtevraag naar ~0 gaat.
 
-              - **PH Kp** bepaalt hoe sterk kamertemperatuurfout naar
-              warmtevraag (W) wordt vertaald.
+              - **PH temperatuurreactie** bepaalt hoe sterk
+              kamertemperatuurfout buiten de comfortband naar warmtevraag (W)
+              wordt vertaald.
 
-              - **Deadband** voorkomt onrust bij kleine afwijkingen.
+              - **Comfort above setpoint** bepaalt hoeveel ruimte boven
+              setpoint nog acceptabel is voordat warme tegensturing begint.
 
-              - `Effective room target = setpoint + comfort bias`.
+              - **Comfort below setpoint** bepaalt hoeveel ruimte onder
+              setpoint nog acceptabel is voordat extra opwarming begint.
 
-              - **Comfort bias base** is de minimale verschuiving omhoog en is
-              dus altijd actief. Bij `0.1` stuurt de regelaar minimaal op
-              `setpoint + 0.1`.
-
-              - **Comfort bias max** is de maximale verschuiving omhoog en ook
-              de bovencap voor de warme correctierand: `setpoint + bias max`.
-
-              - **Comfort above setpoint** is extra marge boven `effective
-              target` voordat warme tegensturing begint, maar alleen tot de
-              bovencap hierboven.
-
-              - **Comfort below setpoint** bepaalt de marge onder `effective
-              target` voordat extra opwarming begint.
-
-              - Warme randformule: `Tr_high = min(effective_target +
-              comfort_above, setpoint + bias_max)`.
-
-              - Voorbeeld: setpoint `20.0`, base `0.1`, max `0.4`, above `0.5`
-              geeft een maximale warme rand van `20.4`. Vind je het te warm:
-              verlaag eerst `comfort above`, daarna `bias base` (eventueel naar
-              `0.0`) en/of `bias max`.
-
-              - **Comfort bias up/down** en **room error avg tau** bepalen hoe
-              snel de bias zich over de tijd aanpast.
+              - Binnen deze comfortband blijft de extra kamercorrectie `0`.
 
               - **Response profile** is een snelle voorkeuze voor rustige,
               gebalanceerde of vlottere Power House-reactie. Zodra opbouwtijd
@@ -2207,24 +2187,12 @@ views:
                 name: Maximum heating outdoor temperature (P=0 temp)
               - entity: number.openquatt_rated_maximum_house_power
                 name: Rated maximum house power (Pr)
-              - entity: number.openquatt_power_house_kp_w_k
-                name: PH Kp (W/K)
-              - entity: number.openquatt_power_house_deadband
-                name: PH deadband
+              - entity: number.openquatt_power_house_temperature_reaction
+                name: PH temperatuurreactie (W/K)
               - entity: number.openquatt_power_house_comfort_below_setpoint
                 name: PH comfort onder SP
               - entity: number.openquatt_power_house_comfort_above_setpoint
                 name: PH comfort boven SP
-              - entity: number.openquatt_power_house_comfort_bias_base
-                name: PH bias basis
-              - entity: number.openquatt_power_house_comfort_bias_max
-                name: PH bias max
-              - entity: number.openquatt_power_house_comfort_bias_up
-                name: PH bias omhoog
-              - entity: number.openquatt_power_house_comfort_bias_down
-                name: PH bias omlaag
-              - entity: number.openquatt_power_house_room_error_avg_tau
-                name: PH room avg tau
               - entity: select.openquatt_power_house_response_profile
                 name: PH reactieprofiel
               - entity: number.openquatt_power_house_demand_rise_time
@@ -2732,15 +2700,11 @@ views:
 
               - `P_house` is de modelschatting op basis van buitentemperatuur.
 
-              - `P_req` is de begrensde warmtevraag na deadband/ramp-limiter.
-
-              - `Effective room target = room setpoint + comfort bias`.
-
-              - `Comfort bias` toont de status van de adaptieve warm-bias
-              regelaar.
+              - `P_req` is de begrensde warmtevraag na comfortband,
+              temperatuurreactie en ramp-limiter.
 
               Als `P_req` onverwacht hoog/laag is: controleer buitenbron, kamer
-              setpoint/temp en de ramp/deadband instellingen.
+              setpoint/temp, comfortband en responsinstellingen.
 
 
               </details>
@@ -2754,10 +2718,6 @@ views:
                 name: Kamersetpoint (gekozen)
               - entity: sensor.openquatt_room_temperature_selected
                 name: Kamertemp (gekozen)
-              - entity: sensor.openquatt_power_house_effective_room_target
-                name: Effective room target
-              - entity: sensor.openquatt_power_house_comfort_bias
-                name: Comfort bias
               - entity: sensor.openquatt_power_house_p_house
                 name: P_house
               - entity: sensor.openquatt_power_house_p_req

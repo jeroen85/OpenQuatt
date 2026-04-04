@@ -2318,36 +2318,17 @@ views:
               - **Maximum heating outdoor temperature** is the point where model
               heat demand approaches ~0.
 
-              - **PH Kp** defines how strongly room temperature error
-              is translated into heat demand (W).
+              - **PH temperature reaction** defines how strongly room
+              temperature error outside the comfort band is translated into heat
+              demand (W).
 
-              - **Deadband** suppresses tiny corrections and reduces hunting.
-
-              - `Effective room target = setpoint + comfort bias`.
-
-              - **Comfort bias base** is the minimum upward shift and is always
-              active. With `0.1`, control never targets below `setpoint + 0.1`.
-
-              - **Comfort bias max** is the maximum upward shift and also the
-              warm-side correction cap anchor: `setpoint + bias max`.
-
-              - **Comfort above setpoint** is extra warm margin above
-              `effective target` before negative correction starts, but only up
-              to the cap above.
+              - **Comfort above setpoint** defines how much room above setpoint
+              is still acceptable before warm-side correction starts.
 
               - **Comfort below setpoint** is the cold-side margin below
-              `effective target` before extra heating correction starts.
+              setpoint before extra heating correction starts.
 
-              - Warm-side edge:
-              `Tr_high = min(effective_target + comfort_above, setpoint + bias_max)`.
-
-              - Example: setpoint `20.0`, base `0.1`, max `0.4`, above `0.5`
-              yields a maximum warm edge of `20.4`. If this is too warm:
-              lower `comfort above`, then `bias base` (possibly `0.0`), and if
-              needed lower `bias max`.
-
-              - **Comfort bias up/down** and **room error avg tau** control
-              how quickly bias adapts over time.
+              - Inside this comfort band, extra room correction stays `0`.
 
               - **Response profile** is a quick preset for calmer, balanced, or
               more responsive Power House behavior. As soon as rise and fall
@@ -2381,24 +2362,12 @@ views:
                 name: Maximum heating outdoor temperature (P=0 temp)
               - entity: number.openquatt_rated_maximum_house_power
                 name: Rated maximum house power (Pr)
-              - entity: number.openquatt_power_house_kp_w_k
-                name: PH Kp (W/K)
-              - entity: number.openquatt_power_house_deadband
-                name: PH deadband
+              - entity: number.openquatt_power_house_temperature_reaction
+                name: PH temperature reaction (W/K)
               - entity: number.openquatt_power_house_comfort_below_setpoint
                 name: PH comfort below SP
               - entity: number.openquatt_power_house_comfort_above_setpoint
                 name: PH comfort above SP
-              - entity: number.openquatt_power_house_comfort_bias_base
-                name: PH bias base
-              - entity: number.openquatt_power_house_comfort_bias_max
-                name: PH bias max
-              - entity: number.openquatt_power_house_comfort_bias_up
-                name: PH bias up
-              - entity: number.openquatt_power_house_comfort_bias_down
-                name: PH bias down
-              - entity: number.openquatt_power_house_room_error_avg_tau
-                name: PH room avg tau
               - entity: select.openquatt_power_house_response_profile
                 name: PH response profile
               - entity: number.openquatt_power_house_demand_rise_time
@@ -2941,14 +2910,11 @@ views:
 
               - `P_house` is the model estimate based on outdoor temperature.
 
-              - `P_req` is the limited heat request after deadband/ramp limiter.
-
-              - `Effective room target = room setpoint + comfort bias`.
-
-              - `Comfort bias` shows the adaptive warm-bias governor state.
+              - `P_req` is the limited heat request after comfort band,
+              temperature reaction and ramp limiting.
 
               If `P_req` looks unexpectedly high/low: check outside source, room
-              setpoint/temp, and ramp/deadband tuning.
+              setpoint/temp, comfort band and response settings.
 
 
               </details>
@@ -2962,10 +2928,6 @@ views:
                 name: Room setpoint (selected)
               - entity: sensor.openquatt_room_temperature_selected
                 name: Room temp (selected)
-              - entity: sensor.openquatt_power_house_effective_room_target
-                name: Effective room target
-              - entity: sensor.openquatt_power_house_comfort_bias
-                name: Comfort bias
               - entity: sensor.openquatt_power_house_p_house
                 name: P_house
               - entity: sensor.openquatt_power_house_p_req

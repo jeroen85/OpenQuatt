@@ -140,15 +140,9 @@ Belangrijke runtime-instellingen in deze groep zijn:
 - `House cold temp`
 - `Rated maximum house power`
 - `Maximum heating outdoor temperature`
-- `Power House Kp (W-K)`
-- `Power House deadband`
+- `Power House temperature reaction`
 - `Power House comfort below setpoint`
 - `Power House comfort above setpoint`
-- `Power House comfort bias base`
-- `Power House comfort bias max`
-- `Power House comfort bias up`
-- `Power House comfort bias down`
-- `Power House room error avg tau`
 - `Power House response profile`
 - `Power House demand rise time`
 - `Power House demand fall time`
@@ -285,9 +279,6 @@ Gebruik deze groep vooral voor onderhoud en diagnose, niet voor dagelijks gebrui
 - `Demand filtered`
 - `Heating Curve Supply Target`
 - `Water Supply Temp (Selected)`
-- `Power House effective room target`
-- `Power House comfort bias`
-- `Power House room error avg`
 
 ### Voor flow en veiligheid
 
