@@ -2115,14 +2115,6 @@ views:
                 name: PH rise time
               - entity: number.openquatt_power_house_demand_fall_time
                 name: PH fall time
-              - entity: number.openquatt_low_load_dynamic_off_factor
-                name: Low-load dynamic OFF factor
-              - entity: number.openquatt_low_load_dynamic_on_factor
-                name: Low-load dynamic ON factor
-              - entity: number.openquatt_low_load_minimum_hysteresis
-                name: Low-load minimum hysteresis
-              - entity: number.openquatt_low_load_cm2_re_entry_block
-                name: Low-load CM2 re-entry block
       - type: grid
         cards:
           - type: heading

@@ -292,6 +292,7 @@ number:
     id: oq_low_load_dyn_off_factor
     name: "Low-load dynamic OFF factor"
     icon: mdi:percent-outline
+    disabled_by_default: true
     min_value: 0.60
     max_value: 0.90
     step: 0.05
@@ -306,6 +307,7 @@ number:
     id: oq_low_load_dyn_on_factor
     name: "Low-load dynamic ON factor"
     icon: mdi:percent-outline
+    disabled_by_default: true
     min_value: 0.85
     max_value: 1.10
     step: 0.05
@@ -320,6 +322,7 @@ number:
     id: oq_low_load_min_hysteresis_w
     name: "Low-load minimum hysteresis"
     icon: mdi:arrow-expand-vertical
+    disabled_by_default: true
     unit_of_measurement: "W"
     min_value: 100
     max_value: 400
@@ -335,6 +338,7 @@ number:
     id: oq_low_load_reentry_block_s
     name: "Low-load CM2 re-entry block"
     icon: mdi:timer-lock-outline
+    disabled_by_default: true
     unit_of_measurement: "s"
     min_value: 0
     max_value: 900
