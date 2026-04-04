@@ -200,7 +200,7 @@ Uses:
 - heating-curve interpolation to derive supply target
 - PID climate loop to track supply temperature
 - PID output mapped to demand `0..20`
-- coarse curve phase (`HEAT`/`COAST`/`OFF`) plus detailed operating regime (`RECOVERY`/`MAINTAIN`/`ASSIST`)
+- coarse curve phase (`HEAT`/`COAST`/`OFF`) plus detailed operating regime (`RECOVERY`/`MAINTAIN`)
 
 When PID SP/PV is invalid, demand falls back to 0 and integral is reset.
 

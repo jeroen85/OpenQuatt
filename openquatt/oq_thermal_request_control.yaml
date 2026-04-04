@@ -1131,16 +1131,6 @@ interval:
               } else {
                 up_hold_s = 45;
               }
-            } else if (curve_regime == 3) {
-              // ASSIST is a temporary bump above the learned maintain level.
-              if (id(oq_curve_control_profile).has_state()) {
-                const auto profile = id(oq_curve_control_profile).current_option();
-                if (profile == "Comfort") up_hold_s = 45;
-                else if (profile == "Stable") up_hold_s = 120;
-                else up_hold_s = 75;
-              } else {
-                up_hold_s = 75;
-              }
             }
 
             auto limit_slew = [&](bool is_hp1, int req_level)->int {

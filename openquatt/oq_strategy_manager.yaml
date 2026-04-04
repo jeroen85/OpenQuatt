@@ -106,13 +106,7 @@ select:
               id(oq_curve_off_since_ms),
               id(oq_curve_restart_inhibit_active),
               id(oq_curve_phase_code),
-              id(oq_curve_regime_code),
-              id(oq_curve_regime_since_ms),
-              id(oq_curve_maintain_level),
-              id(oq_curve_maintain_raise_arm_ms),
-              id(oq_curve_maintain_lower_arm_ms),
-              id(oq_curve_assist_enter_arm_ms),
-              id(oq_curve_assist_exit_arm_ms));
+              id(oq_curve_regime_code));
             oq_curve::reset_outside_ema_state(
               id(oq_curve_outside_ema_c),
               id(oq_curve_outside_ema_initialized),

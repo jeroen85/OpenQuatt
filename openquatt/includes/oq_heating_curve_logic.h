@@ -13,13 +13,7 @@ inline void reset_control_state(float &demand_continuous,
                                 uint32_t &off_since_ms,
                                 bool &restart_inhibit_active,
                                 int &phase_code,
-                                int &regime_code,
-                                uint32_t &regime_since_ms,
-                                int &maintain_level,
-                                uint32_t &maintain_raise_arm_ms,
-                                uint32_t &maintain_lower_arm_ms,
-                                uint32_t &assist_enter_arm_ms,
-                                uint32_t &assist_exit_arm_ms) {
+                                int &regime_code) {
   demand_continuous = NAN;
   demand_curve = 0;
   demand_pre_guardrail = 0;
@@ -29,12 +23,6 @@ inline void reset_control_state(float &demand_continuous,
   restart_inhibit_active = false;
   phase_code = 0;
   regime_code = 0;
-  regime_since_ms = 0;
-  maintain_level = 0;
-  maintain_raise_arm_ms = 0;
-  maintain_lower_arm_ms = 0;
-  assist_enter_arm_ms = 0;
-  assist_exit_arm_ms = 0;
 }
 
 inline void reset_outside_ema_state(float &outside_ema_c,
@@ -67,7 +55,6 @@ inline const char *regime_name(int regime_code) {
   switch (regime_code) {
     case 1: return "recovery";
     case 2: return "maintain";
-    case 3: return "assist";
     default: return "off";
   }
 }

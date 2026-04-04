@@ -147,7 +147,6 @@ De regeling kent twee lagen van status:
   - `OFF`
   - `RECOVERY`
   - `MAINTAIN`
-  - `ASSIST`
 
 ### HEAT
 
@@ -386,7 +385,6 @@ Als je preciezer wilt zien wat de regeling doet, kijk dan ook naar `Curve operat
 
 - `RECOVERY` betekent dat de regeling nog duidelijk naar target toe werkt;
 - `MAINTAIN` betekent dat de regeling rond het huidige werkpunt probeert vast te houden;
-- `ASSIST` betekent een tijdelijke ophoging boven dat werkpunt.
 
 ## Samenvatting
 
