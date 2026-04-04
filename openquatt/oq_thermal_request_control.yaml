@@ -1108,30 +1108,12 @@ interval:
           if (!is_power_house) {
             const bool demand_rundown = (raw < prev_f);
             const int curve_regime = id(oq_curve_regime_code);
-            int up_hold_s = 180;  // Balanced default
-            int down_hold_s = 15; // Balanced default
-            if (id(oq_curve_control_profile).has_state()) {
-              const auto profile = id(oq_curve_control_profile).current_option();
-              if (profile == "Comfort") {
-                up_hold_s = 90;
-                down_hold_s = 10;
-              } else if (profile == "Stable") {
-                up_hold_s = 300;
-                down_hold_s = 30;
-              }
-            }
-
-            if (curve_regime == 1) {
-              // RECOVERY should climb materially faster than steady low-load control.
-              if (id(oq_curve_control_profile).has_state()) {
-                const auto profile = id(oq_curve_control_profile).current_option();
-                if (profile == "Comfort") up_hold_s = 30;
-                else if (profile == "Stable") up_hold_s = 75;
-                else up_hold_s = 45;
-              } else {
-                up_hold_s = 45;
-              }
-            }
+            const bool has_curve_profile = id(oq_curve_control_profile).has_state();
+            const auto curve_profile = has_curve_profile ? id(oq_curve_control_profile).current_option() : std::string();
+            const auto tuning = oq_curve::control_profile(has_curve_profile, curve_profile);
+            int up_hold_s = tuning.steady_up_hold_s;
+            const int down_hold_s = tuning.steady_down_hold_s;
+            if (curve_regime == 1) up_hold_s = tuning.recovery_up_hold_s;
 
             auto limit_slew = [&](bool is_hp1, int req_level)->int {
               const int prev = is_hp1 ? id(hp1_last_applied_level) : id(${hc_secondary_last_applied_level_id});

@@ -399,45 +399,20 @@ output:
             return;
           }
 
-          float start_delta_c = 0.45f;
-          float stop_delta_c = 0.90f;
-          int off_pid_max_f = 1;
-          uint32_t off_confirm_ms = 360000UL;
-          float room_overheat_off_c = 0.30f;
-          float room_resume_heat_c = 0.05f;
-          float restart_delta_c = 0.80f;
-          float restart_bypass_extra_c = 0.45f;
-          uint32_t off_reentry_min_ms = 480000UL;
-          float recovery_enter_c = 0.75f;
-          float recovery_exit_c = 0.25f;
-          if (id(oq_curve_control_profile).has_state()) {
-            const auto profile = id(oq_curve_control_profile).current_option();
-            if (profile == "Comfort") {
-              start_delta_c = 0.30f;
-              stop_delta_c = 0.70f;
-              off_pid_max_f = 1;
-              off_confirm_ms = 240000UL;
-              room_overheat_off_c = 0.20f;
-              room_resume_heat_c = 0.03f;
-              restart_delta_c = 0.60f;
-              restart_bypass_extra_c = 0.35f;
-              off_reentry_min_ms = 300000UL;
-              recovery_enter_c = 0.55f;
-              recovery_exit_c = 0.15f;
-            } else if (profile == "Stable") {
-              start_delta_c = 0.65f;
-              stop_delta_c = 1.10f;
-              off_pid_max_f = 1;
-              off_confirm_ms = 420000UL;
-              room_overheat_off_c = 0.35f;
-              room_resume_heat_c = 0.08f;
-              restart_delta_c = 1.00f;
-              restart_bypass_extra_c = 0.55f;
-              off_reentry_min_ms = 600000UL;
-              recovery_enter_c = 1.00f;
-              recovery_exit_c = 0.35f;
-            }
-          }
+          const bool has_curve_profile = id(oq_curve_control_profile).has_state();
+          const auto curve_profile = has_curve_profile ? id(oq_curve_control_profile).current_option() : std::string();
+          auto tuning = oq_curve::control_profile(has_curve_profile, curve_profile);
+          float start_delta_c = tuning.start_delta_c;
+          float stop_delta_c = tuning.stop_delta_c;
+          int off_pid_max_f = tuning.off_pid_max_f;
+          uint32_t off_confirm_ms = tuning.off_confirm_ms;
+          float room_overheat_off_c = tuning.room_overheat_off_c;
+          float room_resume_heat_c = tuning.room_resume_heat_c;
+          float restart_delta_c = tuning.restart_delta_c;
+          float restart_bypass_extra_c = tuning.restart_bypass_extra_c;
+          uint32_t off_reentry_min_ms = tuning.off_reentry_min_ms;
+          float recovery_enter_c = tuning.recovery_enter_c;
+          float recovery_exit_c = tuning.recovery_exit_c;
           if (stop_delta_c < start_delta_c + 0.10f) stop_delta_c = start_delta_c + 0.10f;
           if (restart_delta_c < start_delta_c + 0.05f) restart_delta_c = start_delta_c + 0.05f;
           if (restart_bypass_extra_c < 0.20f) restart_bypass_extra_c = 0.20f;
@@ -556,12 +531,10 @@ sensor:
         return NAN;
       }
 
-      float tau_s = 1800.0f;
-      if (id(oq_curve_control_profile).has_state()) {
-        const auto profile = id(oq_curve_control_profile).current_option();
-        if (profile == "Comfort") tau_s = 900.0f;
-        else if (profile == "Stable") tau_s = 3600.0f;
-      }
+      const bool has_curve_profile = id(oq_curve_control_profile).has_state();
+      const auto curve_profile = has_curve_profile ? id(oq_curve_control_profile).current_option() : std::string();
+      const auto tuning = oq_curve::control_profile(has_curve_profile, curve_profile);
+      const float tau_s = tuning.outside_tau_s;
 
       const uint32_t now_ms = (uint32_t) millis();
       if (!id(oq_curve_outside_ema_initialized) ||
@@ -601,6 +574,9 @@ sensor:
       // Generate the curve-mode supply target from outside temperature and room trim.
       const float outside_c = id(oq_curve_outside_temp_filtered).state;
       float target_c = id(curve_fallback_supply_temp).state;
+      const bool has_curve_profile = id(oq_curve_control_profile).has_state();
+      const auto curve_profile = has_curve_profile ? id(oq_curve_control_profile).current_option() : std::string();
+      const auto tuning = oq_curve::control_profile(has_curve_profile, curve_profile);
 
       struct Point { float outside_c; float target_c; };
       const Point points[6] = {
@@ -630,21 +606,9 @@ sensor:
       const float room_sp_c = id(room_setpoint_selected).state;
       if (!isnan(target_c) && !isnan(room_c) && !isnan(room_sp_c)) {
         float warm_err_c = room_c - room_sp_c;
-        float trim_start_c = 0.10f;
-        float trim_gain = 1.50f;
-        float trim_max_c = 2.00f;
-        if (id(oq_curve_control_profile).has_state()) {
-          const auto profile = id(oq_curve_control_profile).current_option();
-          if (profile == "Comfort") {
-            trim_start_c = 0.05f;
-            trim_gain = 2.00f;
-            trim_max_c = 2.00f;
-          } else if (profile == "Stable") {
-            trim_start_c = 0.15f;
-            trim_gain = 1.00f;
-            trim_max_c = 2.50f;
-          }
-        }
+        const float trim_start_c = tuning.trim_start_c;
+        const float trim_gain = tuning.trim_gain;
+        const float trim_max_c = tuning.trim_max_c;
         if (warm_err_c > trim_start_c) {
           float trim_c = (warm_err_c - trim_start_c) * trim_gain;
           if (trim_c < 0.0f) trim_c = 0.0f;
@@ -653,12 +617,7 @@ sensor:
         }
       }
 
-      float quant_step_c = 0.5f;
-      if (id(oq_curve_control_profile).has_state()) {
-        const auto profile = id(oq_curve_control_profile).current_option();
-        if (profile == "Comfort") quant_step_c = 0.25f;
-        else if (profile == "Stable") quant_step_c = 1.0f;
-      }
+      const float quant_step_c = tuning.quant_step_c;
       if (!isnan(target_c) && quant_step_c > 0.0f) {
         target_c = roundf(target_c / quant_step_c) * quant_step_c;
       }
@@ -1024,24 +983,13 @@ interval:
           if (dual_on_hold_min < 1) dual_on_hold_min = 1;
           if (dual_off_hold_min < 1) dual_off_hold_min = 1;
 
-          int startup_grace_s = 480;
-          int emergency_hold_min = 6;
-          float emergency_temp_err_c = 1.50f;
-          float dual_disable_temp_err_max_c = 0.50f;
-          if (id(oq_curve_control_profile).has_state()) {
-            const auto profile = id(oq_curve_control_profile).current_option();
-            if (profile == "Comfort") {
-              startup_grace_s = 300;
-              emergency_hold_min = 4;
-              emergency_temp_err_c = 1.20f;
-              dual_disable_temp_err_max_c = 0.70f;
-            } else if (profile == "Stable") {
-              startup_grace_s = 600;
-              emergency_hold_min = 8;
-              emergency_temp_err_c = 1.80f;
-              dual_disable_temp_err_max_c = 0.40f;
-            }
-          }
+          const bool has_curve_profile = id(oq_curve_control_profile).has_state();
+          const auto curve_profile = has_curve_profile ? id(oq_curve_control_profile).current_option() : std::string();
+          const auto tuning = oq_curve::control_profile(has_curve_profile, curve_profile);
+          int startup_grace_s = tuning.dual_startup_grace_s;
+          int emergency_hold_min = tuning.dual_emergency_hold_min;
+          float emergency_temp_err_c = tuning.dual_emergency_temp_err_c;
+          float dual_disable_temp_err_max_c = tuning.dual_disable_temp_err_max_c;
           if (startup_grace_s < 0) startup_grace_s = 0;
           if (emergency_hold_min < 1) emergency_hold_min = 1;
 
