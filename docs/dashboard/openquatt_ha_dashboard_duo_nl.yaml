@@ -2462,15 +2462,6 @@ views:
               mag hebben om van `Pr` naar `0` te zakken. Lager = sneller
               terugregelen bij overshoot.
 
-              - **Low-load dynamic OFF/ON factor** bepalen wanneer Power House
-              de warmtevraag rond lage last weer vrijgeeft of opnieuw oppakt.
-
-              - **Low-load minimum hysteresis** houdt OFF en ON voldoende uit
-              elkaar om pendelen te verminderen.
-
-              - **Low-load CM2 re-entry block** vertraagt CM2-herintrede na een
-              idle-exit trip tenzij de vraag duidelijk herstelt.
-
               </details>
             text_only: true
           - type: entities

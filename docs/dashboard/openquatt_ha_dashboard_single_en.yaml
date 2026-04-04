@@ -2083,15 +2083,6 @@ views:
               to move from `Pr` back to `0`. Lower = faster pullback on
               overshoot.
 
-              - **Low-load dynamic OFF/ON factor** tune when Power House
-              may release or re-arm heat request around low load.
-
-              - **Low-load minimum hysteresis** keeps OFF and ON thresholds
-              sufficiently apart to reduce chattering.
-
-              - **Low-load CM2 re-entry block** delays CM2 re-entry after an
-              idle-exit trip unless demand clearly recovers.
-
               </details>
             text_only: true
           - type: entities
