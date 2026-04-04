@@ -992,9 +992,15 @@ interval:
                 default: request_reason = "cooling_idle"; break;
               }
             } else {
-              hp1_req = id(oq_curve_request_hp1_level);
-              hp2_req = id(oq_curve_request_hp2_level);
-              request_owner_hp = id(oq_curve_request_owner_hp);
+              // Curve mode now publishes a total request plus routing hints.
+              const auto curve_request = oq_request::split_curve_total_request(
+                  id(oq_curve_request_total_level),
+                  id(oq_dual_hp_enabled),
+                  lead_is_hp1,
+                  id(oq_curve_request_owner_hp));
+              hp1_req = curve_request.hp1_level;
+              hp2_req = curve_request.hp2_level;
+              request_owner_hp = curve_request.owner_hp;
               switch (id(oq_curve_request_reason_code)) {
                 case 1: request_reason = "curve_single_owner_hp1"; break;
                 case 2: request_reason = "curve_single_owner_hp2"; break;
@@ -1036,8 +1042,11 @@ interval:
               request_owner_hp = id(oq_cooling_request_owner_hp);
               request_reason = (request_owner_hp > 0) ? "cooling_owner_hp1" : "cooling_idle";
             } else {
-              hp1_req = id(oq_curve_request_hp1_level);
-              request_owner_hp = id(oq_curve_request_owner_hp);
+              // Single-topology curve mode still flows through the same total-request contract.
+              const auto curve_request = oq_request::split_curve_total_request(
+                  id(oq_curve_request_total_level), false, true, id(oq_curve_request_owner_hp));
+              hp1_req = curve_request.hp1_level;
+              request_owner_hp = curve_request.owner_hp;
               request_reason = (request_owner_hp > 0) ? "curve_single_owner_hp1" : "curve_idle";
             }
           } else {

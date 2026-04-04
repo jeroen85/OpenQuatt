@@ -119,6 +119,7 @@ select:
               id(oq_curve_outside_ema_last_ms));
             oq_curve::reset_request_state(
               id(oq_curve_request_last_loop_ms),
+              id(oq_curve_request_total_level),
               id(oq_curve_request_hp1_level),
               id(oq_curve_request_hp2_level),
               id(oq_curve_request_owner_hp),

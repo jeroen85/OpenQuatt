@@ -21,6 +21,12 @@ struct PublishedRequest {
   int strategy_code;
 };
 
+struct PerHpRequestLevels {
+  int hp1_level;
+  int hp2_level;
+  int owner_hp;
+};
+
 inline int clamp_level(int level, int min_level, int max_level) {
   return std::max(min_level, std::min(max_level, level));
 }
@@ -62,6 +68,32 @@ inline PublishedRequest make_published_request(int mode_code,
       topology_code,
       sanitize_request_strategy_code(strategy_code),
   };
+}
+
+inline PerHpRequestLevels split_curve_total_request(int total_level_request,
+                                                    bool dual_enabled,
+                                                    bool lead_is_hp1,
+                                                    int owner_hp) {
+  total_level_request = clamp_level(total_level_request, 0, 20);
+  if (total_level_request <= 0) {
+    return PerHpRequestLevels{0, 0, 0};
+  }
+
+  if (!dual_enabled) {
+    const int effective_owner =
+        (owner_hp == 1 || owner_hp == 2) ? owner_hp : (lead_is_hp1 ? 1 : 2);
+    return (effective_owner == 1)
+               ? PerHpRequestLevels{total_level_request, 0, 1}
+               : PerHpRequestLevels{0, total_level_request, 2};
+  }
+
+  int hp1_level = total_level_request / 2;
+  int hp2_level = total_level_request / 2;
+  if ((total_level_request % 2) == 1) {
+    if (lead_is_hp1) hp1_level += 1;
+    else hp2_level += 1;
+  }
+  return PerHpRequestLevels{hp1_level, hp2_level, 0};
 }
 
 inline bool excluded_option_matches_level(const std::string &opt, int level) {

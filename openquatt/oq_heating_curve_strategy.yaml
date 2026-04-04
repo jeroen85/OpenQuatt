@@ -8,10 +8,10 @@
 # Ownership:
 #   - Computes curve supply target generation and PID demand
 #   - Owns curve-specific hysteresis, phase/regime state, and diagnostics
-#   - Decides single-vs-dual curve topology
+#   - Decides curve total request and topology hints
 #   - Publishes level-derived capacity/deficit telemetry for diagnostics
-#   - Publishes curve request outputs for oq_thermal_request_control to use as
-#     the shared request interface
+#   - Publishes curve request outputs for oq_thermal_request_control to finish
+#     into the shared request interface
 # ==============================================================================
 
 globals:
@@ -124,6 +124,11 @@ globals:
     restore_value: false
     initial_value: '0'
 
+  - id: oq_curve_request_total_level
+    type: int
+    restore_value: false
+    initial_value: '0'
+
   - id: oq_curve_request_hp1_level
     type: int
     restore_value: false
@@ -186,6 +191,13 @@ select:
               id(oq_curve_outside_ema_c),
               id(oq_curve_outside_ema_initialized),
               id(oq_curve_outside_ema_last_ms));
+            oq_curve::reset_request_state(
+              id(oq_curve_request_last_loop_ms),
+              id(oq_curve_request_total_level),
+              id(oq_curve_request_hp1_level),
+              id(oq_curve_request_hp2_level),
+              id(oq_curve_request_owner_hp),
+              id(oq_curve_request_reason_code));
 
 number:
   - platform: template
@@ -953,6 +965,21 @@ sensor:
       return (float) id(oq_demand_curve);
 
   - platform: template
+    id: oq_curve_request_total_level_sensor
+    name: "Curve request total level"
+    disabled_by_default: true
+    icon: mdi:counter
+    unit_of_measurement: "step"
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return (float) id(oq_curve_request_total_level);
+
+  - platform: template
     id: oq_curve_restart_inhibit_sensor
     name: "Curve restart inhibit"
     disabled_by_default: true
@@ -1138,12 +1165,13 @@ interval:
     startup_delay: 4000ms
     then:
       - lambda: |-
-          // Heating-curve strategy: owns direct demand and single-vs-dual request split.
+          // Heating-curve strategy: owns direct demand, total request, and topology hints.
           const int cm_code = id(oq_control_mode_code);
           const bool active = (cm_code != 5) && (id(oq_heat_mode_code) == 1);
           if (!active) {
             oq_curve::reset_request_state(
               id(oq_curve_request_last_loop_ms),
+              id(oq_curve_request_total_level),
               id(oq_curve_request_hp1_level),
               id(oq_curve_request_hp2_level),
               id(oq_curve_request_owner_hp),
@@ -1317,6 +1345,7 @@ interval:
 
           int hp1_req = 0;
           int hp2_req = 0;
+          int total_req = 0;
           int owner = 0;
           int reason_code = 0;
 
@@ -1465,10 +1494,7 @@ interval:
             }
 
             id(oq_curve_single_owner_hp) = single_owner;
-            if (single_owner == 1) hp1_req = f;
-            else if (single_owner == 2) hp2_req = f;
-            else if (lead_is_hp1) hp1_req = f;
-            else hp2_req = f;
+            total_req = f;
             owner = single_owner;
             if (single_owner == 1) reason_code = 1;
             else if (single_owner == 2) reason_code = 2;
@@ -1476,12 +1502,7 @@ interval:
             else reason_code = 4;
           } else {
             id(oq_curve_single_owner_hp) = 0;
-            hp1_req = f / 2;
-            hp2_req = f / 2;
-            if ((f % 2) == 1) {
-              if (lead_is_hp1) hp1_req += 1;
-              else hp2_req += 1;
-            }
+            total_req = f;
             owner = 0;
             if (force_dual_capacity) reason_code = 5;
             else if (force_dual_defrost) reason_code = 6;
@@ -1490,12 +1511,18 @@ interval:
           #else
           reset_dual_runtime_state(1);
           publish_capacity_and_deficit(f);
-          hp1_req = f;
-          hp2_req = 0;
+          total_req = f;
           owner = (f > 0) ? 1 : 0;
           reason_code = (f > 0) ? 1 : 0;
           #endif
 
+          const auto per_hp_request =
+              oq_request::split_curve_total_request(total_req, id(oq_dual_hp_enabled), lead_is_hp1, owner);
+          hp1_req = per_hp_request.hp1_level;
+          hp2_req = per_hp_request.hp2_level;
+          owner = per_hp_request.owner_hp;
+
+          id(oq_curve_request_total_level) = total_req;
           id(oq_curve_request_hp1_level) = hp1_req;
           id(oq_curve_request_hp2_level) = hp2_req;
           id(oq_curve_request_owner_hp) = owner;
