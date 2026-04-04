@@ -143,6 +143,17 @@ Praktisch:
 
 Een hogere waarde maakt het systeem eerder fel. Een lagere waarde maakt het systeem eerder traag of slap.
 
+Als de kamer langdurig duidelijk onder de koude comfortgrens blijft, voegt
+Power House daarnaast automatisch een kleine tijdelijke comfortboost toe.
+Die boost bouwt langzaam op, helpt vooral bij hardnekkige ondershoot, en loopt
+weer rustig leeg zodra de kamer terug in de comfortband komt.
+
+Belangrijk:
+
+- dit is interne logica en geen extra gebruikersinstelling;
+- de comfortband blijft dus het hoofdmodel;
+- `Power House temperature reaction` blijft bepalen hoe sterk de directe reactie is.
+
 ## Stap 4: opbouwtijd en afbouwtijd maken het gedrag rustiger
 
 Als `Power House` een ruwe warmtevraag heeft berekend, wordt die niet direct één-op-één doorgezet. Eerst gaat er nog een reactieprofiel overheen:

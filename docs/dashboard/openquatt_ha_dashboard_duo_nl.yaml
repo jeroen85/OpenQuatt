@@ -2449,6 +2449,11 @@ views:
 
               - Binnen deze comfortband blijft de extra kamercorrectie `0`.
 
+              - Als de kamer langere tijd duidelijk onder de koude
+              comfortgrens blijft, voegt Power House automatisch een tijdelijke
+              comfortboost toe die daarna binnen de comfortband weer rustig
+              afbouwt.
+
               - **Response profile** is een snelle voorkeuze voor rustige,
               gebalanceerde of vlottere Power House-reactie. Zodra opbouwtijd en
               afbouwtijd niet meer bij een preset horen, toont het profiel
