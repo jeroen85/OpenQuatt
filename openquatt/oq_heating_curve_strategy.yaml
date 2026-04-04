@@ -955,18 +955,6 @@ interval:
           id(oq_P_hp_cap_w) = 0.0f;
           id(oq_P_deficit_w) = 0.0f;
 
-          auto reset_dual_runtime_state = [&](int owner)->void {
-            id(oq_dual_hp_enabled) = false;
-            id(oq_dual_hp_enable_hold_elapsed_min) = 0;
-            id(oq_dual_hp_disable_hold_elapsed_min) = 0;
-            id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
-            id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
-            id(oq_dual_hp_emergency_hold_elapsed_min) = 0;
-            id(oq_dual_hp_emergency_hold_elapsed_accum_min) = 0.0f;
-            id(oq_curve_single_owner_hp) = owner;
-            id(oq_duo_request_hold_until_ms) = 0;
-          };
-
           int total_req = 0;
           int owner = 0;
           int reason_code = 0;
@@ -1042,8 +1030,6 @@ interval:
           } else {
             id(oq_dual_hp_emergency_hold_elapsed_accum_min) = 0.0f;
           }
-          id(oq_dual_hp_emergency_hold_elapsed_min) =
-              (int) floorf(id(oq_dual_hp_emergency_hold_elapsed_accum_min) + 1e-3f);
           if (id(oq_dual_hp_emergency_hold_elapsed_accum_min) >= (float) emergency_hold_min) {
             force_dual_capacity = true;
           }
@@ -1056,13 +1042,11 @@ interval:
 
           const float dt_min = ((float) loop_target_ms / 1000.0f) / 60.0f;
           if (!demand_active) {
-            id(oq_dual_hp_enabled) = false;
-            id(oq_dual_hp_enable_hold_elapsed_min) = 0;
-            id(oq_dual_hp_disable_hold_elapsed_min) = 0;
-            id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
-            id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
-            id(oq_dual_hp_emergency_hold_elapsed_min) = 0;
-            id(oq_dual_hp_emergency_hold_elapsed_accum_min) = 0.0f;
+            oq_request::reset_dual_hold_state(
+                id(oq_dual_hp_enabled),
+                id(oq_dual_hp_enable_hold_elapsed_accum_min),
+                id(oq_dual_hp_disable_hold_elapsed_accum_min),
+                id(oq_dual_hp_emergency_hold_elapsed_accum_min));
           } else {
             if (dual_on_condition) id(oq_dual_hp_enable_hold_elapsed_accum_min) += dt_min;
             else id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
@@ -1079,11 +1063,6 @@ interval:
               id(oq_dual_hp_enabled) = false;
               id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
             }
-
-            id(oq_dual_hp_enable_hold_elapsed_min) =
-                (int) floorf(id(oq_dual_hp_enable_hold_elapsed_accum_min) + 1e-3f);
-            id(oq_dual_hp_disable_hold_elapsed_min) =
-                (int) floorf(id(oq_dual_hp_disable_hold_elapsed_accum_min) + 1e-3f);
           }
 
           const bool dual_enabled =
@@ -1120,7 +1099,14 @@ interval:
             else reason_code = 7;
           }
           #else
-          reset_dual_runtime_state(1);
+          oq_request::reset_dual_runtime_state(
+              id(oq_dual_hp_enabled),
+              id(oq_dual_hp_enable_hold_elapsed_accum_min),
+              id(oq_dual_hp_disable_hold_elapsed_accum_min),
+              id(oq_dual_hp_emergency_hold_elapsed_accum_min),
+              id(oq_curve_single_owner_hp),
+              id(oq_duo_request_hold_until_ms),
+              1);
           total_req = f;
           owner = (f > 0) ? 1 : 0;
           reason_code = (f > 0) ? 1 : 0;

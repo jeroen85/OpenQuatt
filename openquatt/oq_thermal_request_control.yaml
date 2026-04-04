@@ -129,16 +129,6 @@ globals:
     restore_value: false
     initial_value: 'false'
 
-  # Dual-enable hold counters (elapsed minutes, derived from wall-clock time).
-  - id: oq_dual_hp_enable_hold_elapsed_min
-    type: int
-    restore_value: false
-    initial_value: '0'
-  - id: oq_dual_hp_disable_hold_elapsed_min
-    type: int
-    restore_value: false
-    initial_value: '0'
-
   # Fractional elapsed minutes for dual-enable hold timing.
   - id: oq_dual_hp_enable_hold_elapsed_accum_min
     type: float
@@ -150,10 +140,6 @@ globals:
     initial_value: '0.0'
 
   # Emergency dual-enable hold timing (curve mode capacity/deficit override).
-  - id: oq_dual_hp_emergency_hold_elapsed_min
-    type: int
-    restore_value: false
-    initial_value: '0'
   - id: oq_dual_hp_emergency_hold_elapsed_accum_min
     type: float
     restore_value: false
@@ -705,9 +691,9 @@ interval:
               mode_s, cm_code, phase_s, raw, f_post_cap, f_cap,
               id(oq_curve_demand_pre_guardrail), id(oq_demand_curve),
               (int) id(oq_dual_hp_enabled),
-              id(oq_dual_hp_enable_hold_elapsed_min),
-              id(oq_dual_hp_disable_hold_elapsed_min),
-              id(oq_dual_hp_emergency_hold_elapsed_min),
+              oq_request::whole_minutes_floor(id(oq_dual_hp_enable_hold_elapsed_accum_min)),
+              oq_request::whole_minutes_floor(id(oq_dual_hp_disable_hold_elapsed_accum_min)),
+              oq_request::whole_minutes_floor(id(oq_dual_hp_emergency_hold_elapsed_accum_min)),
               id(oq_last_lead_hp), id(oq_curve_single_owner_hp),
               req1, req2, app1, app2,
               cur1, cur2, wm1, wm2, spw, pv, room_c, room_sp_c, room_target_c, phouse_w, preq_w, tout_c,
@@ -823,18 +809,6 @@ interval:
                 defrost_active, cooling_mode_active, selected_level, prev_applied);
           };
 
-          auto reset_dual_runtime_state = [&](int owner)->void {
-            id(oq_dual_hp_enabled) = false;
-            id(oq_dual_hp_enable_hold_elapsed_min) = 0;
-            id(oq_dual_hp_disable_hold_elapsed_min) = 0;
-            id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
-            id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
-            id(oq_dual_hp_emergency_hold_elapsed_min) = 0;
-            id(oq_dual_hp_emergency_hold_elapsed_accum_min) = 0.0f;
-            id(oq_curve_single_owner_hp) = owner;
-            id(oq_duo_request_hold_until_ms) = 0;
-          };
-
           int min_rt_s = (int) roundf(id(oq_min_runtime_min).state);
           // Keep the runtime floor hard in code as well. Older installs may still
           // restore a pre-migration numeric value such as 60, even though the UI
@@ -876,7 +850,14 @@ interval:
             const int hp2_hold_level = 0;
             const bool any_hold = (hp1_hold_level > 0);
             #endif
-            reset_dual_runtime_state(0);
+            oq_request::reset_dual_runtime_state(
+                id(oq_dual_hp_enabled),
+                id(oq_dual_hp_enable_hold_elapsed_accum_min),
+                id(oq_dual_hp_disable_hold_elapsed_accum_min),
+                id(oq_dual_hp_emergency_hold_elapsed_accum_min),
+                id(oq_curve_single_owner_hp),
+                id(oq_duo_request_hold_until_ms),
+                0);
             #if OQ_TOPOLOGY_DUO
             publish_optimizer_reason(any_hold ? "keep_current" : "inactive");
             #else
@@ -1035,7 +1016,14 @@ interval:
             }
           }
           #else
-          reset_dual_runtime_state(1);
+          oq_request::reset_dual_runtime_state(
+              id(oq_dual_hp_enabled),
+              id(oq_dual_hp_enable_hold_elapsed_accum_min),
+              id(oq_dual_hp_disable_hold_elapsed_accum_min),
+              id(oq_dual_hp_emergency_hold_elapsed_accum_min),
+              id(oq_curve_single_owner_hp),
+              id(oq_duo_request_hold_until_ms),
+              1);
           if (!is_power_house) {
             if (is_cooling_mode) {
               hp1_req = id(oq_cooling_request_hp1_level);

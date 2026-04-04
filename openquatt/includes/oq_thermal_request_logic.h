@@ -27,6 +27,35 @@ struct PerHpRequestLevels {
   int owner_hp;
 };
 
+inline int whole_minutes_floor(float elapsed_min) {
+  return (int) floorf(elapsed_min + 1e-3f);
+}
+
+inline void reset_dual_hold_state(bool &dual_enabled,
+                                     float &dual_enable_hold_elapsed_accum_min,
+                                     float &dual_disable_hold_elapsed_accum_min,
+                                     float &dual_emergency_hold_elapsed_accum_min) {
+  dual_enabled = false;
+  dual_enable_hold_elapsed_accum_min = 0.0f;
+  dual_disable_hold_elapsed_accum_min = 0.0f;
+  dual_emergency_hold_elapsed_accum_min = 0.0f;
+}
+
+inline void reset_dual_runtime_state(bool &dual_enabled,
+                                     float &dual_enable_hold_elapsed_accum_min,
+                                     float &dual_disable_hold_elapsed_accum_min,
+                                     float &dual_emergency_hold_elapsed_accum_min,
+                                     int &single_owner_hp,
+                                     uint32_t &duo_request_hold_until_ms,
+                                     int owner_hp) {
+  reset_dual_hold_state(dual_enabled,
+                        dual_enable_hold_elapsed_accum_min,
+                        dual_disable_hold_elapsed_accum_min,
+                        dual_emergency_hold_elapsed_accum_min);
+  single_owner_hp = owner_hp;
+  duo_request_hold_until_ms = 0;
+}
+
 inline int clamp_level(int level, int min_level, int max_level) {
   return std::max(min_level, std::min(max_level, level));
 }
