@@ -982,16 +982,10 @@ interval:
               hp1_req = curve_request.hp1_level;
               hp2_req = curve_request.hp2_level;
               request_owner_hp = curve_request.owner_hp;
-              switch (id(oq_curve_request_reason_code)) {
-                case 1: request_reason = "curve_single_owner_hp1"; break;
-                case 2: request_reason = "curve_single_owner_hp2"; break;
-                case 3: request_reason = "curve_single_lead_hp1"; break;
-                case 4: request_reason = "curve_single_lead_hp2"; break;
-                case 5: request_reason = "curve_dual_emergency"; break;
-                case 6: request_reason = "curve_dual_defrost"; break;
-                case 7: request_reason = "curve_dual_enabled"; break;
-                default: request_reason = "curve_idle"; break;
-              }
+              if (id(oq_curve_request_total_level) <= 0) request_reason = "curve_idle";
+              else if (request_owner_hp == 1) request_reason = "curve_single_hp1";
+              else if (request_owner_hp == 2) request_reason = "curve_single_hp2";
+              else request_reason = "curve_dual";
             }
 
           } else {

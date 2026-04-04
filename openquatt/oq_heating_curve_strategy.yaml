@@ -92,13 +92,6 @@ globals:
     restore_value: false
     initial_value: '0'
 
-  # 0=idle, 1=single_hp1, 2=single_hp2, 3=single_lead_hp1, 4=single_lead_hp2,
-  # 5=dual_emergency, 6=dual_defrost, 7=dual_enabled
-  - id: oq_curve_request_reason_code
-    type: int
-    restore_value: false
-    initial_value: '0'
-
 select:
   - platform: template
     id: oq_curve_control_profile
@@ -135,8 +128,7 @@ select:
             oq_curve::reset_request_state(
               id(oq_curve_request_last_loop_ms),
               id(oq_curve_request_total_level),
-              id(oq_curve_request_owner_hp),
-              id(oq_curve_request_reason_code));
+              id(oq_curve_request_owner_hp));
 
 number:
   - platform: template
@@ -864,8 +856,7 @@ interval:
             oq_curve::reset_request_state(
               id(oq_curve_request_last_loop_ms),
               id(oq_curve_request_total_level),
-              id(oq_curve_request_owner_hp),
-              id(oq_curve_request_reason_code));
+              id(oq_curve_request_owner_hp));
             return;
           }
 
@@ -957,8 +948,6 @@ interval:
 
           int total_req = 0;
           int owner = 0;
-          int reason_code = 0;
-
           #if OQ_TOPOLOGY_DUO
           const bool d1_pre = hp1_valve_def;
           const bool d2_pre = hp2_valve_def;
@@ -1086,17 +1075,10 @@ interval:
             id(oq_curve_single_owner_hp) = single_owner;
             total_req = f;
             owner = single_owner;
-            if (single_owner == 1) reason_code = 1;
-            else if (single_owner == 2) reason_code = 2;
-            else if (lead_is_hp1) reason_code = 3;
-            else reason_code = 4;
           } else {
             id(oq_curve_single_owner_hp) = 0;
             total_req = f;
             owner = 0;
-            if (force_dual_capacity) reason_code = 5;
-            else if (force_dual_defrost) reason_code = 6;
-            else reason_code = 7;
           }
           #else
           oq_request::reset_dual_runtime_state(
@@ -1109,9 +1091,7 @@ interval:
               1);
           total_req = f;
           owner = (f > 0) ? 1 : 0;
-          reason_code = (f > 0) ? 1 : 0;
           #endif
 
           id(oq_curve_request_total_level) = total_req;
           id(oq_curve_request_owner_hp) = owner;
-          id(oq_curve_request_reason_code) = reason_code;
