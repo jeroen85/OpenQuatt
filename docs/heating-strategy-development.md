@@ -183,10 +183,12 @@ Belangrijke regel:
 
 - een strategy publiceert compressor-level intent
 - niet direct actuator writes
+- een strategy mag daarnaast ook een abstracter totaalrequest of topology-hints publiceren, zolang `oq_thermal_request_control` de gedeelde request-interface blijft ownen
 
 Dus:
 
 - goed: `hp1_level = 4`, `hp2_level = 0`
+- ook goed: `total_level = 4` plus voldoende hints zodat `oq_thermal_request_control` de per-HP requestsplit kan afmaken
 - niet goed: zelf `hp1_set_working_mode` of `hp1_compressor_level` schrijven
 
 ## Checklist: nieuwe heating strategy toevoegen

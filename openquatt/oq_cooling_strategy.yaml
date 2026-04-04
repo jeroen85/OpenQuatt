@@ -387,18 +387,6 @@ interval:
             return std::max(last_start_ms, last_stop_ms);
           };
 
-          auto reset_dual_runtime_state = [&](int owner)->void {
-            id(oq_dual_hp_enabled) = false;
-            id(oq_dual_hp_enable_hold_elapsed_min) = 0;
-            id(oq_dual_hp_disable_hold_elapsed_min) = 0;
-            id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
-            id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
-            id(oq_dual_hp_emergency_hold_elapsed_min) = 0;
-            id(oq_dual_hp_emergency_hold_elapsed_accum_min) = 0.0f;
-            id(oq_curve_single_owner_hp) = owner;
-            id(oq_duo_request_hold_until_ms) = 0;
-          };
-
           int hp1_req = 0;
           int hp2_req = 0;
           int owner = 0;
@@ -438,11 +426,25 @@ interval:
             }
           }
 
-          reset_dual_runtime_state(owner);
+          oq_request::reset_dual_runtime_state(
+              id(oq_dual_hp_enabled),
+              id(oq_dual_hp_enable_hold_elapsed_accum_min),
+              id(oq_dual_hp_disable_hold_elapsed_accum_min),
+              id(oq_dual_hp_emergency_hold_elapsed_accum_min),
+              id(oq_curve_single_owner_hp),
+              id(oq_duo_request_hold_until_ms),
+              owner);
           if (owner == 1) hp1_req = f;
           else if (owner == 2) hp2_req = f;
           #else
-          reset_dual_runtime_state(1);
+          oq_request::reset_dual_runtime_state(
+              id(oq_dual_hp_enabled),
+              id(oq_dual_hp_enable_hold_elapsed_accum_min),
+              id(oq_dual_hp_disable_hold_elapsed_accum_min),
+              id(oq_dual_hp_emergency_hold_elapsed_accum_min),
+              id(oq_curve_single_owner_hp),
+              id(oq_duo_request_hold_until_ms),
+              1);
           owner = (f > 0) ? 1 : 0;
           hp1_req = f;
           hp2_req = 0;

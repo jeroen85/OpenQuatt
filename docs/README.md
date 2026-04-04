@@ -32,7 +32,7 @@ Passive cooling wordt nu in hoofdlijnen beschreven in:
 - [Heating Strategy](heating-strategy.md): bovenliggende uitleg van beide verwarmingsstrategieën.
 - [Heating Strategy Development](heating-strategy-development.md): developer-uitleg van de strategy-interface, uitbreidregels, YAML-template en de grens tussen YAML-structuur en pure `.h` helpers.
 - [Power House](power-house.md): aparte uitleg van huismodel, comfortlogica, rise/fall time, laaglastgedrag en Duo-keuze.
-- [Water Temperature Control](water-temperature-control.md): aparte uitleg van stooklijn, PID, COAST/OFF-gedrag en Duo-hysterese.
+- [Water Temperature Control](water-temperature-control.md): aparte uitleg van stooklijn, PID, curve phase/operating regime en Duo-hysterese.
 - [Regelgedrag van OpenQuatt](regelgedrag-van-openquatt.md): systeemstanden, overgangen en flowregeling.
 - [Instellingen en meetwaarden](instellingen-en-meetwaarden.md): compile-time en runtime instellingen, plus de belangrijkste meetwaarden.
 - [Ontwikkelen op Mac en WSL](ontwikkelen-op-mac-en-wsl.md): aanbevolen lokale ontwikkelworkflow voor onderhoud en builds.

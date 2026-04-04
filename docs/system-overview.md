@@ -133,7 +133,7 @@ Strategy packages compute:
 
 - `oq_demand_filtered`
 - HP level requests and applied levels
-- `oq_P_hp_cap_w` and `oq_P_deficit_w`
+- shared `oq_P_hp_cap_w` and `oq_P_deficit_w` diagnostics for strategy paths that use them
 
 ### 4.5 Supervisory and safety layer
 
@@ -199,7 +199,8 @@ Uses:
 
 - heating-curve interpolation to derive supply target
 - PID climate loop to track supply temperature
-- PID output mapped to demand `0..20` with phased output behavior (`HEAT`/`COAST`/`OFF`)
+- PID output mapped to demand `0..20`
+- coarse curve phase (`HEAT`/`COAST`/`OFF`) plus detailed operating regime (`RECOVERY`/`MAINTAIN`)
 
 When PID SP/PV is invalid, demand falls back to 0 and integral is reset.
 
@@ -207,7 +208,7 @@ Heating-curve stability guards around zero-demand edge:
 
 - profile-based outside-temperature smoothing and target quantization
 - start/stop gating with OFF-confirmation and low-PID requirement
-- near-target `COAST` phase (low modulation instead of immediate drop to `0`)
+- near-target `COAST` phase and low-load operating regime (instead of immediate drop to `0`)
 - room-temperature coupling trims supply target when room drifts warm
 - target clamp at `Maximum water temperature`
 - explicit per-HP slew-rate limiting with slower up and faster down behavior

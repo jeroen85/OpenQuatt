@@ -782,11 +782,11 @@ interval:
 
             const bool prefer_single = (f > 0 && f <= dual_on_f && !(hp1_def && hp2_def));
             if (!prefer_single) {
-              id(oq_dual_hp_enabled) = false;
-              id(oq_dual_hp_enable_hold_elapsed_min) = 0;
-              id(oq_dual_hp_disable_hold_elapsed_min) = 0;
-              id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
-              id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
+              oq_request::reset_dual_hold_state(
+                  id(oq_dual_hp_enabled),
+                  id(oq_dual_hp_enable_hold_elapsed_accum_min),
+                  id(oq_dual_hp_disable_hold_elapsed_accum_min),
+                  id(oq_dual_hp_emergency_hold_elapsed_accum_min));
             } else {
               int on_hold = (int) roundf(id(oq_dual_hp_enable_hold_min).state);
               int off_hold = (int) roundf(id(oq_dual_hp_disable_hold_min).state);
@@ -806,11 +806,6 @@ interval:
                 id(oq_dual_hp_enabled) = false;
                 id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
               }
-
-              id(oq_dual_hp_enable_hold_elapsed_min) =
-                  (int) floorf(id(oq_dual_hp_enable_hold_elapsed_accum_min) + 1e-3f);
-              id(oq_dual_hp_disable_hold_elapsed_min) =
-                  (int) floorf(id(oq_dual_hp_disable_hold_elapsed_accum_min) + 1e-3f);
             }
             const bool needs_dual = (f > dual_on_f) || (prefer_single && id(oq_dual_hp_enabled));
 

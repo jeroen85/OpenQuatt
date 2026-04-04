@@ -129,16 +129,6 @@ globals:
     restore_value: false
     initial_value: 'false'
 
-  # Dual-enable hold counters (elapsed minutes, derived from wall-clock time).
-  - id: oq_dual_hp_enable_hold_elapsed_min
-    type: int
-    restore_value: false
-    initial_value: '0'
-  - id: oq_dual_hp_disable_hold_elapsed_min
-    type: int
-    restore_value: false
-    initial_value: '0'
-
   # Fractional elapsed minutes for dual-enable hold timing.
   - id: oq_dual_hp_enable_hold_elapsed_accum_min
     type: float
@@ -150,10 +140,6 @@ globals:
     initial_value: '0.0'
 
   # Emergency dual-enable hold timing (curve mode capacity/deficit override).
-  - id: oq_dual_hp_emergency_hold_elapsed_min
-    type: int
-    restore_value: false
-    initial_value: '0'
   - id: oq_dual_hp_emergency_hold_elapsed_accum_min
     type: float
     restore_value: false
@@ -705,9 +691,9 @@ interval:
               mode_s, cm_code, phase_s, raw, f_post_cap, f_cap,
               id(oq_curve_demand_pre_guardrail), id(oq_demand_curve),
               (int) id(oq_dual_hp_enabled),
-              id(oq_dual_hp_enable_hold_elapsed_min),
-              id(oq_dual_hp_disable_hold_elapsed_min),
-              id(oq_dual_hp_emergency_hold_elapsed_min),
+              oq_request::whole_minutes_floor(id(oq_dual_hp_enable_hold_elapsed_accum_min)),
+              oq_request::whole_minutes_floor(id(oq_dual_hp_disable_hold_elapsed_accum_min)),
+              oq_request::whole_minutes_floor(id(oq_dual_hp_emergency_hold_elapsed_accum_min)),
               id(oq_last_lead_hp), id(oq_curve_single_owner_hp),
               req1, req2, app1, app2,
               cur1, cur2, wm1, wm2, spw, pv, room_c, room_sp_c, room_target_c, phouse_w, preq_w, tout_c,
@@ -823,18 +809,6 @@ interval:
                 defrost_active, cooling_mode_active, selected_level, prev_applied);
           };
 
-          auto reset_dual_runtime_state = [&](int owner)->void {
-            id(oq_dual_hp_enabled) = false;
-            id(oq_dual_hp_enable_hold_elapsed_min) = 0;
-            id(oq_dual_hp_disable_hold_elapsed_min) = 0;
-            id(oq_dual_hp_enable_hold_elapsed_accum_min) = 0.0f;
-            id(oq_dual_hp_disable_hold_elapsed_accum_min) = 0.0f;
-            id(oq_dual_hp_emergency_hold_elapsed_min) = 0;
-            id(oq_dual_hp_emergency_hold_elapsed_accum_min) = 0.0f;
-            id(oq_curve_single_owner_hp) = owner;
-            id(oq_duo_request_hold_until_ms) = 0;
-          };
-
           int min_rt_s = (int) roundf(id(oq_min_runtime_min).state);
           // Keep the runtime floor hard in code as well. Older installs may still
           // restore a pre-migration numeric value such as 60, even though the UI
@@ -876,7 +850,14 @@ interval:
             const int hp2_hold_level = 0;
             const bool any_hold = (hp1_hold_level > 0);
             #endif
-            reset_dual_runtime_state(0);
+            oq_request::reset_dual_runtime_state(
+                id(oq_dual_hp_enabled),
+                id(oq_dual_hp_enable_hold_elapsed_accum_min),
+                id(oq_dual_hp_disable_hold_elapsed_accum_min),
+                id(oq_dual_hp_emergency_hold_elapsed_accum_min),
+                id(oq_curve_single_owner_hp),
+                id(oq_duo_request_hold_until_ms),
+                0);
             #if OQ_TOPOLOGY_DUO
             publish_optimizer_reason(any_hold ? "keep_current" : "inactive");
             #else
@@ -992,19 +973,19 @@ interval:
                 default: request_reason = "cooling_idle"; break;
               }
             } else {
-              hp1_req = id(oq_curve_request_hp1_level);
-              hp2_req = id(oq_curve_request_hp2_level);
-              request_owner_hp = id(oq_curve_request_owner_hp);
-              switch (id(oq_curve_request_reason_code)) {
-                case 1: request_reason = "curve_single_owner_hp1"; break;
-                case 2: request_reason = "curve_single_owner_hp2"; break;
-                case 3: request_reason = "curve_single_lead_hp1"; break;
-                case 4: request_reason = "curve_single_lead_hp2"; break;
-                case 5: request_reason = "curve_dual_emergency"; break;
-                case 6: request_reason = "curve_dual_defrost"; break;
-                case 7: request_reason = "curve_dual_enabled"; break;
-                default: request_reason = "curve_idle"; break;
-              }
+              // Curve mode now publishes a total request plus routing hints.
+              const auto curve_request = oq_request::split_curve_total_request(
+                  id(oq_curve_request_total_level),
+                  id(oq_dual_hp_enabled),
+                  lead_is_hp1,
+                  id(oq_curve_request_owner_hp));
+              hp1_req = curve_request.hp1_level;
+              hp2_req = curve_request.hp2_level;
+              request_owner_hp = curve_request.owner_hp;
+              if (id(oq_curve_request_total_level) <= 0) request_reason = "curve_idle";
+              else if (request_owner_hp == 1) request_reason = "curve_single_hp1";
+              else if (request_owner_hp == 2) request_reason = "curve_single_hp2";
+              else request_reason = "curve_dual";
             }
 
           } else {
@@ -1029,15 +1010,25 @@ interval:
             }
           }
           #else
-          reset_dual_runtime_state(1);
+          oq_request::reset_dual_runtime_state(
+              id(oq_dual_hp_enabled),
+              id(oq_dual_hp_enable_hold_elapsed_accum_min),
+              id(oq_dual_hp_disable_hold_elapsed_accum_min),
+              id(oq_dual_hp_emergency_hold_elapsed_accum_min),
+              id(oq_curve_single_owner_hp),
+              id(oq_duo_request_hold_until_ms),
+              1);
           if (!is_power_house) {
             if (is_cooling_mode) {
               hp1_req = id(oq_cooling_request_hp1_level);
               request_owner_hp = id(oq_cooling_request_owner_hp);
               request_reason = (request_owner_hp > 0) ? "cooling_owner_hp1" : "cooling_idle";
             } else {
-              hp1_req = id(oq_curve_request_hp1_level);
-              request_owner_hp = id(oq_curve_request_owner_hp);
+              // Single-topology curve mode still flows through the same total-request contract.
+              const auto curve_request = oq_request::split_curve_total_request(
+                  id(oq_curve_request_total_level), false, true, id(oq_curve_request_owner_hp));
+              hp1_req = curve_request.hp1_level;
+              request_owner_hp = curve_request.owner_hp;
               request_reason = (request_owner_hp > 0) ? "curve_single_owner_hp1" : "curve_idle";
             }
           } else {
@@ -1099,40 +1090,13 @@ interval:
           if (!is_power_house) {
             const bool demand_rundown = (raw < prev_f);
             const int curve_regime = id(oq_curve_regime_code);
-            int up_hold_s = 180;  // Balanced default
-            int down_hold_s = 15; // Balanced default
-            if (id(oq_curve_control_profile).has_state()) {
-              const auto profile = id(oq_curve_control_profile).current_option();
-              if (profile == "Comfort") {
-                up_hold_s = 90;
-                down_hold_s = 10;
-              } else if (profile == "Stable") {
-                up_hold_s = 300;
-                down_hold_s = 30;
-              }
-            }
-
-            if (curve_regime == 1) {
-              // RECOVERY should climb materially faster than steady low-load control.
-              if (id(oq_curve_control_profile).has_state()) {
-                const auto profile = id(oq_curve_control_profile).current_option();
-                if (profile == "Comfort") up_hold_s = 30;
-                else if (profile == "Stable") up_hold_s = 75;
-                else up_hold_s = 45;
-              } else {
-                up_hold_s = 45;
-              }
-            } else if (curve_regime == 3) {
-              // ASSIST is a temporary bump above the learned maintain level.
-              if (id(oq_curve_control_profile).has_state()) {
-                const auto profile = id(oq_curve_control_profile).current_option();
-                if (profile == "Comfort") up_hold_s = 45;
-                else if (profile == "Stable") up_hold_s = 120;
-                else up_hold_s = 75;
-              } else {
-                up_hold_s = 75;
-              }
-            }
+            const auto tuning = oq_curve::control_profile(
+                id(oq_curve_control_profile).has_state()
+                    ? id(oq_curve_control_profile).current_option()
+                    : std::string());
+            int up_hold_s = tuning.steady_up_hold_s;
+            const int down_hold_s = tuning.steady_down_hold_s;
+            if (curve_regime == 1) up_hold_s = tuning.recovery_up_hold_s;
 
             auto limit_slew = [&](bool is_hp1, int req_level)->int {
               const int prev = is_hp1 ? id(hp1_last_applied_level) : id(${hc_secondary_last_applied_level_id});

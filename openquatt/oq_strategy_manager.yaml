@@ -97,13 +97,23 @@ select:
             id(oq_strategy_requested_power_w) = NAN;
             id(oq_strategy_supply_target_temp) = NAN;
             id(oq_strategy_heat_request_active) = false;
-            id(oq_demand_curve) = 0;
-            id(oq_curve_heat_request_active) = false;
-            id(oq_curve_stop_arm_ms) = 0;
-            id(oq_curve_off_since_ms) = 0;
-            id(oq_curve_restart_inhibit_active) = false;
-            id(oq_curve_outside_ema_initialized) = false;
-            id(oq_curve_outside_ema_last_ms) = 0;
+            oq_curve::reset_control_state(
+              id(oq_curve_demand_continuous),
+              id(oq_demand_curve),
+              id(oq_curve_demand_pre_guardrail),
+              id(oq_curve_heat_request_active),
+              id(oq_curve_stop_arm_ms),
+              id(oq_curve_off_since_ms),
+              id(oq_curve_restart_inhibit_active),
+              id(oq_curve_regime_code));
+            oq_curve::reset_outside_ema_state(
+              id(oq_curve_outside_ema_c),
+              id(oq_curve_outside_ema_initialized),
+              id(oq_curve_outside_ema_last_ms));
+            oq_curve::reset_request_state(
+              id(oq_curve_request_last_loop_ms),
+              id(oq_curve_request_total_level),
+              id(oq_curve_request_owner_hp));
             id(oq_strategy_phase_text).publish_state("idle");
             id(oq_strategy_debug_state).publish_state("strategy_switch");
 

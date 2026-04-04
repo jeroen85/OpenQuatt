@@ -131,15 +131,22 @@ De huidige curve-regeling heeft extra guardrails rond lage vraag. Dat is belangr
 Belangrijke begrippen:
 
 - `Curve Phase`
+- `Curve operating regime`
+- `Demand Curve (continuous)`
 - `Demand curve raw (PID)`
 - `Demand raw`
 - `Curve restart inhibit`
 
-De regeling kent grofweg drie fasen:
+De regeling kent twee lagen van status:
 
-- `HEAT`
-- `COAST`
-- `OFF`
+- `Curve Phase` is de grove fase:
+  - `OFF`
+  - `HEAT`
+  - `COAST`
+- `Curve operating regime` is de fijnere low-load toestand:
+  - `OFF`
+  - `RECOVERY`
+  - `MAINTAIN`
 
 ### HEAT
 
@@ -330,6 +337,8 @@ Als je deze strategie wilt begrijpen of afstellen, zijn deze waarden meestal het
 - `Water Supply Temp (Selected)`
 - `Heating Curve PID`
 - `Curve Phase`
+- `Curve operating regime`
+- `Demand Curve (continuous)`
 - `Demand curve raw (PID)`
 - `Demand raw`
 - `Curve restart inhibit`
@@ -371,6 +380,11 @@ Nee. Dat hoort bij de huidige `Power House`-aanpak. In `Water Temperature Contro
 ### "COAST betekent dat er iets mis is"
 
 Niet per se. `COAST` is juist een bewuste tussenfase om niet te abrupt van verwarmen naar helemaal uit te gaan.
+
+Als je preciezer wilt zien wat de regeling doet, kijk dan ook naar `Curve operating regime`:
+
+- `RECOVERY` betekent dat de regeling nog duidelijk naar target toe werkt;
+- `MAINTAIN` betekent dat de regeling rond het huidige werkpunt probeert vast te houden;
 
 ## Samenvatting
 

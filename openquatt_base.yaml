@@ -31,6 +31,7 @@ esphome:
   includes:
     - ${hp_perf_map_header}
     - ${thermal_request_logic_header}
+    - ${heating_curve_logic_header}
   platformio_options:
     build_flags:
       # Hard-pinned for Duo entrypoints to prevent accidental topology drift.
