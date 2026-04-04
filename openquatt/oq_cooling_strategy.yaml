@@ -324,47 +324,34 @@ interval:
           const int lead_code = lead_is_hp1 ? 1 : 2;
           if (id(oq_last_lead_hp) != lead_code) id(oq_last_lead_hp) = lead_code;
 
-          auto excluded_option_matches_level = [&](const std::string &opt, int level)->bool {
-            switch (level) {
-              case 1: return opt == "L1 (H30/C30)";
-              case 2: return opt == "L2 (H39/C36)";
-              case 3: return opt == "L3 (H49/C42)";
-              case 4: return opt == "L4 (H55/C47)";
-              case 5: return opt == "L5 (H61/C52)";
-              case 6: return opt == "L6 (H67/C56)";
-              case 7: return opt == "L7 (H72/C61)";
-              case 8: return opt == "L8 (H79/C66)";
-              case 9: return opt == "L9 (H85/C71)";
-              case 10: return opt == "L10 (H90/C74)";
-              default: return false;
+          auto excluded_levels = [&](bool is_hp1)->oq_request::ExcludedLevels {
+            if (is_hp1) {
+              return oq_request::ExcludedLevels{
+                  id(hp1_excluded_level_a).has_state()
+                      ? id(hp1_excluded_level_a).current_option()
+                      : std::string("None"),
+                  id(hp1_excluded_level_b).has_state()
+                      ? id(hp1_excluded_level_b).current_option()
+                      : std::string("None"),
+              };
             }
+            #if OQ_TOPOLOGY_DUO
+            return oq_request::ExcludedLevels{
+                id(${cc_secondary_excluded_level_a_id}).has_state()
+                    ? id(${cc_secondary_excluded_level_a_id}).current_option()
+                    : std::string("None"),
+                id(${cc_secondary_excluded_level_b_id}).has_state()
+                    ? id(${cc_secondary_excluded_level_b_id}).current_option()
+                    : std::string("None"),
+            };
+            #else
+            (void) is_hp1;
+            return oq_request::ExcludedLevels{"None", "None"};
+            #endif
           };
 
           auto level_allowed = [&](bool is_hp1, int level)->bool {
-            if (level <= 0 || level > max_level) return true;
-
-            if (is_hp1) {
-              const std::string excl_a = id(hp1_excluded_level_a).has_state()
-                                             ? id(hp1_excluded_level_a).current_option()
-                                             : std::string("None");
-              const std::string excl_b = id(hp1_excluded_level_b).has_state()
-                                             ? id(hp1_excluded_level_b).current_option()
-                                             : std::string("None");
-              return !excluded_option_matches_level(excl_a, level) &&
-                     !excluded_option_matches_level(excl_b, level);
-            }
-            #if OQ_TOPOLOGY_DUO
-            const std::string excl_a = id(${cc_secondary_excluded_level_a_id}).has_state()
-                                           ? id(${cc_secondary_excluded_level_a_id}).current_option()
-                                           : std::string("None");
-            const std::string excl_b = id(${cc_secondary_excluded_level_b_id}).has_state()
-                                           ? id(${cc_secondary_excluded_level_b_id}).current_option()
-                                           : std::string("None");
-            return !excluded_option_matches_level(excl_a, level) &&
-                   !excluded_option_matches_level(excl_b, level);
-            #else
-            return false;
-            #endif
+            return oq_request::level_allowed_for_excluded_levels(excluded_levels(is_hp1), level);
           };
 
           auto hp_has_any_allowed_level = [&](bool is_hp1)->bool {

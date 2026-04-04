@@ -36,11 +36,10 @@ interval:
           const int max_level = 10;
 
           uint32_t dt_ms = (uint32_t) ${oq_heat_loop_tick_s} * 1000UL;
-          if (id(oq_thermal_actuator_last_loop_ms) > 0 && now_ms > id(oq_thermal_actuator_last_loop_ms)) {
-            dt_ms = now_ms - id(oq_thermal_actuator_last_loop_ms);
-            const uint32_t dt_cap_ms = ((uint32_t) ${oq_heat_loop_tick_s} * 1000UL) * 2UL;
-            if (dt_cap_ms > 0 && dt_ms > dt_cap_ms) dt_ms = dt_cap_ms;
-          }
+          dt_ms = oq_request::capped_loop_dt_ms(
+              now_ms,
+              id(oq_thermal_actuator_last_loop_ms),
+              (uint32_t) ${oq_heat_loop_tick_s} * 1000UL);
           id(oq_thermal_actuator_last_loop_ms) = now_ms;
 
           auto publish_optimizer_reason = [&](const char* reason)->void {
@@ -56,61 +55,35 @@ interval:
             #endif
           };
 
-          auto excluded_option_matches_level = [&](const std::string &opt, int level)->bool {
-            switch (level) {
-              case 1: return opt == "L1 (H30/C30)";
-              case 2: return opt == "L2 (H39/C36)";
-              case 3: return opt == "L3 (H49/C42)";
-              case 4: return opt == "L4 (H55/C47)";
-              case 5: return opt == "L5 (H61/C52)";
-              case 6: return opt == "L6 (H67/C56)";
-              case 7: return opt == "L7 (H72/C61)";
-              case 8: return opt == "L8 (H79/C66)";
-              case 9: return opt == "L9 (H85/C71)";
-              case 10: return opt == "L10 (H90/C74)";
-              default: return false;
-            }
-          };
-
-          auto level_allowed = [&](bool is_hp1, int level)->bool {
-            if (level <= 0 || level > max_level) return true;
-
+          auto excluded_levels = [&](bool is_hp1)->oq_request::ExcludedLevels {
             if (is_hp1) {
-              const std::string excl_a = id(hp1_excluded_level_a).has_state()
-                                             ? id(hp1_excluded_level_a).current_option()
-                                             : std::string("None");
-              const std::string excl_b = id(hp1_excluded_level_b).has_state()
-                                             ? id(hp1_excluded_level_b).current_option()
-                                             : std::string("None");
-              return !excluded_option_matches_level(excl_a, level) &&
-                     !excluded_option_matches_level(excl_b, level);
+              return oq_request::ExcludedLevels{
+                  id(hp1_excluded_level_a).has_state()
+                      ? id(hp1_excluded_level_a).current_option()
+                      : std::string("None"),
+                  id(hp1_excluded_level_b).has_state()
+                      ? id(hp1_excluded_level_b).current_option()
+                      : std::string("None"),
+              };
             }
             #if OQ_TOPOLOGY_DUO
-            const std::string excl_a = id(${ta_secondary_excluded_level_a_id}).has_state()
-                                           ? id(${ta_secondary_excluded_level_a_id}).current_option()
-                                           : std::string("None");
-            const std::string excl_b = id(${ta_secondary_excluded_level_b_id}).has_state()
-                                           ? id(${ta_secondary_excluded_level_b_id}).current_option()
-                                           : std::string("None");
-            return !excluded_option_matches_level(excl_a, level) &&
-                   !excluded_option_matches_level(excl_b, level);
+            return oq_request::ExcludedLevels{
+                id(${ta_secondary_excluded_level_a_id}).has_state()
+                    ? id(${ta_secondary_excluded_level_a_id}).current_option()
+                    : std::string("None"),
+                id(${ta_secondary_excluded_level_b_id}).has_state()
+                    ? id(${ta_secondary_excluded_level_b_id}).current_option()
+                    : std::string("None"),
+            };
             #else
-            return false;
+            (void) is_hp1;
+            return oq_request::ExcludedLevels{"None", "None"};
             #endif
           };
 
           auto pick_allowed_capped = [&](int req, bool is_hp1, int cap_level)->int {
-            if (req <= 0) return 0;
-            cap_level = std::max(min_level, std::min(max_level, cap_level));
-            if (cap_level <= 0) return 0;
-            req = std::max(1, std::min(cap_level, req));
-
-            if (level_allowed(is_hp1, req)) return req;
-
-            for (int l = req - 1; l >= 1; l--) if (level_allowed(is_hp1, l)) return l;
-            for (int l = req + 1; l <= cap_level; l++) if (level_allowed(is_hp1, l)) return l;
-
-            return 0;
+            return oq_request::pick_allowed_capped_level(
+                req, min_level, max_level, cap_level, excluded_levels(is_hp1));
           };
 
           auto hp_selected_level = [&](bool is_hp1)->int {
@@ -126,38 +99,49 @@ interval:
 
           auto hp_mode_is_cooling = [&](bool is_hp1)->bool {
             const float mode_raw = is_hp1 ? id(hp1_working_mode).state : id(${ta_secondary_working_mode_id}).state;
-            return !isnan(mode_raw) && ((int) roundf(mode_raw) == 1);
+            return oq_request::thermal_mode_matches(mode_raw, 1);
           };
 
           auto hp_mode_is_heating = [&](bool is_hp1)->bool {
             const float mode_raw = is_hp1 ? id(hp1_working_mode).state : id(${ta_secondary_working_mode_id}).state;
-            return !isnan(mode_raw) && ((int) roundf(mode_raw) == 2);
+            return oq_request::thermal_mode_matches(mode_raw, 2);
           };
 
           auto hp_mode_target_is_cooling = [&](bool is_hp1)->bool {
             if (is_hp1) {
-              return id(hp1_set_working_mode).has_state() && id(hp1_set_working_mode).current_option() == "Cooling";
+              return oq_request::target_option_matches_mode(
+                  id(hp1_set_working_mode).has_state(),
+                  id(hp1_set_working_mode).current_option(),
+                  1);
             }
-            return id(${ta_secondary_set_working_mode_id}).has_state() &&
-                   id(${ta_secondary_set_working_mode_id}).current_option() == "Cooling";
+            return oq_request::target_option_matches_mode(
+                id(${ta_secondary_set_working_mode_id}).has_state(),
+                id(${ta_secondary_set_working_mode_id}).current_option(),
+                1);
           };
 
           auto hp_mode_target_is_heating = [&](bool is_hp1)->bool {
             if (is_hp1) {
-              return id(hp1_set_working_mode).has_state() && id(hp1_set_working_mode).current_option() == "Heating";
+              return oq_request::target_option_matches_mode(
+                  id(hp1_set_working_mode).has_state(),
+                  id(hp1_set_working_mode).current_option(),
+                  2);
             }
-            return id(${ta_secondary_set_working_mode_id}).has_state() &&
-                   id(${ta_secondary_set_working_mode_id}).current_option() == "Heating";
+            return oq_request::target_option_matches_mode(
+                id(${ta_secondary_set_working_mode_id}).has_state(),
+                id(${ta_secondary_set_working_mode_id}).current_option(),
+                2);
           };
 
           const int request_mode_code = id(oq_request_mode_code);
           const bool request_thermal_active = (request_mode_code == 1 || request_mode_code == 2);
-          const char* request_thermal_mode_opt = (request_mode_code == 1) ? "Cooling" : "Heating";
+          const char* request_thermal_mode_opt = oq_request::request_mode_option(request_mode_code);
 
           auto hp_hold_mode_opt = [&](bool is_hp1)->const char* {
-            if (hp_mode_is_cooling(is_hp1) || hp_mode_target_is_cooling(is_hp1)) return "Cooling";
-            if (hp_mode_is_heating(is_hp1) || hp_mode_target_is_heating(is_hp1)) return "Heating";
-            return request_thermal_mode_opt;
+            return oq_request::retained_mode_name(
+                hp_mode_is_cooling(is_hp1) || hp_mode_target_is_cooling(is_hp1),
+                hp_mode_is_heating(is_hp1) || hp_mode_target_is_heating(is_hp1),
+                request_thermal_mode_opt);
           };
 
           auto valve_defrost_active = [&](bool is_hp1)->bool {
@@ -174,20 +158,12 @@ interval:
             // 4-way valve is active. The broader defrost bit can assert earlier and
             // caused the duo optimizer to pre-load far too aggressively.
             const bool defrost_active = valve_defrost_active(is_hp1);
-            if (!defrost_active) return 0;
-
-            // During passive cooling the reverse valve is expected to be active; do not
-            // mistake that for a heating defrost hold or CM1/CM0 transitions may re-arm
-            // the unit in the wrong thermal mode while leaving CM5.
-            if (hp_mode_is_cooling(is_hp1) || hp_mode_target_is_cooling(is_hp1)) return 0;
-
             const int selected_level = hp_selected_level(is_hp1);
-            if (selected_level > 0) return selected_level;
-
             const int prev_applied = is_hp1 ? id(hp1_last_applied_level) : id(${ta_secondary_last_applied_level_id});
-            if (prev_applied > 0) return prev_applied;
-
-            return 0;
+            const bool cooling_mode_active =
+                hp_mode_is_cooling(is_hp1) || hp_mode_target_is_cooling(is_hp1);
+            return oq_request::defrost_hold_level(
+                defrost_active, cooling_mode_active, selected_level, prev_applied);
           };
 
           auto apply_active_mode_hold = [&](bool is_hp1, int retained_level)->bool {
@@ -224,7 +200,7 @@ interval:
           };
 
           auto set_mode = [&](bool is_hp1, bool active) {
-            const char* opt = (active && request_thermal_active) ? request_thermal_mode_opt : "Standby";
+            const char* opt = (active && request_thermal_active) ? request_thermal_mode_opt : oq_request::request_mode_option(0);
             if (is_hp1) {
               if (id(hp1_set_working_mode).current_option() != opt) {
                 auto c = id(hp1_set_working_mode).make_call();
@@ -243,17 +219,21 @@ interval:
           auto mode_is_active_thermal = [&](bool is_hp1)->bool {
             const float mode_raw = is_hp1 ? id(hp1_working_mode).state : id(${ta_secondary_working_mode_id}).state;
             if (isnan(mode_raw)) return false;
-            return request_thermal_active && (((int) roundf(mode_raw)) == request_mode_code);
+            return request_thermal_active && oq_request::thermal_mode_matches(mode_raw, request_mode_code);
           };
 
           auto mode_target_is_active_thermal = [&](bool is_hp1)->bool {
             if (!request_thermal_active) return false;
             if (is_hp1) {
-              return id(hp1_set_working_mode).has_state() &&
-                     id(hp1_set_working_mode).current_option() == request_thermal_mode_opt;
+              return oq_request::target_option_matches_mode(
+                  id(hp1_set_working_mode).has_state(),
+                  id(hp1_set_working_mode).current_option(),
+                  request_mode_code);
             }
-            return id(${ta_secondary_set_working_mode_id}).has_state() &&
-                   id(${ta_secondary_set_working_mode_id}).current_option() == request_thermal_mode_opt;
+            return oq_request::target_option_matches_mode(
+                id(${ta_secondary_set_working_mode_id}).has_state(),
+                id(${ta_secondary_set_working_mode_id}).current_option(),
+                request_mode_code);
           };
 
           // Note: options must exactly match the options map in oq_HP_io.yaml (levels 0..10)
