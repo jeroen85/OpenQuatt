@@ -399,9 +399,10 @@ output:
             return;
           }
 
-          const bool has_curve_profile = id(oq_curve_control_profile).has_state();
-          const auto curve_profile = has_curve_profile ? id(oq_curve_control_profile).current_option() : std::string();
-          auto tuning = oq_curve::control_profile(has_curve_profile, curve_profile);
+          auto tuning = oq_curve::control_profile(
+              id(oq_curve_control_profile).has_state()
+                  ? id(oq_curve_control_profile).current_option()
+                  : std::string());
           float start_delta_c = tuning.start_delta_c;
           float stop_delta_c = tuning.stop_delta_c;
           int off_pid_max_f = tuning.off_pid_max_f;
@@ -531,9 +532,10 @@ sensor:
         return NAN;
       }
 
-      const bool has_curve_profile = id(oq_curve_control_profile).has_state();
-      const auto curve_profile = has_curve_profile ? id(oq_curve_control_profile).current_option() : std::string();
-      const auto tuning = oq_curve::control_profile(has_curve_profile, curve_profile);
+      const auto tuning = oq_curve::control_profile(
+          id(oq_curve_control_profile).has_state()
+              ? id(oq_curve_control_profile).current_option()
+              : std::string());
       const float tau_s = tuning.outside_tau_s;
 
       const uint32_t now_ms = (uint32_t) millis();
@@ -574,9 +576,10 @@ sensor:
       // Generate the curve-mode supply target from outside temperature and room trim.
       const float outside_c = id(oq_curve_outside_temp_filtered).state;
       float target_c = id(curve_fallback_supply_temp).state;
-      const bool has_curve_profile = id(oq_curve_control_profile).has_state();
-      const auto curve_profile = has_curve_profile ? id(oq_curve_control_profile).current_option() : std::string();
-      const auto tuning = oq_curve::control_profile(has_curve_profile, curve_profile);
+      const auto tuning = oq_curve::control_profile(
+          id(oq_curve_control_profile).has_state()
+              ? id(oq_curve_control_profile).current_option()
+              : std::string());
 
       struct Point { float outside_c; float target_c; };
       const Point points[6] = {
@@ -983,9 +986,10 @@ interval:
           if (dual_on_hold_min < 1) dual_on_hold_min = 1;
           if (dual_off_hold_min < 1) dual_off_hold_min = 1;
 
-          const bool has_curve_profile = id(oq_curve_control_profile).has_state();
-          const auto curve_profile = has_curve_profile ? id(oq_curve_control_profile).current_option() : std::string();
-          const auto tuning = oq_curve::control_profile(has_curve_profile, curve_profile);
+          const auto tuning = oq_curve::control_profile(
+              id(oq_curve_control_profile).has_state()
+                  ? id(oq_curve_control_profile).current_option()
+                  : std::string());
           int startup_grace_s = tuning.dual_startup_grace_s;
           int emergency_hold_min = tuning.dual_emergency_hold_min;
           float emergency_temp_err_c = tuning.dual_emergency_temp_err_c;

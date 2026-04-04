@@ -32,10 +32,8 @@ struct ControlProfileTuning {
   float dual_disable_temp_err_max_c = 0.50f;
 };
 
-inline ControlProfileTuning control_profile(bool has_state, const std::string &profile_option) {
+inline ControlProfileTuning control_profile(const std::string &profile_option) {
   ControlProfileTuning tuning;
-  if (!has_state) return tuning;
-
   if (profile_option == "Comfort") {
     tuning.start_delta_c = 0.30f;
     tuning.stop_delta_c = 0.70f;

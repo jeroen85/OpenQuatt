@@ -1108,9 +1108,10 @@ interval:
           if (!is_power_house) {
             const bool demand_rundown = (raw < prev_f);
             const int curve_regime = id(oq_curve_regime_code);
-            const bool has_curve_profile = id(oq_curve_control_profile).has_state();
-            const auto curve_profile = has_curve_profile ? id(oq_curve_control_profile).current_option() : std::string();
-            const auto tuning = oq_curve::control_profile(has_curve_profile, curve_profile);
+            const auto tuning = oq_curve::control_profile(
+                id(oq_curve_control_profile).has_state()
+                    ? id(oq_curve_control_profile).current_option()
+                    : std::string());
             int up_hold_s = tuning.steady_up_hold_s;
             const int down_hold_s = tuning.steady_down_hold_s;
             if (curve_regime == 1) up_hold_s = tuning.recovery_up_hold_s;
