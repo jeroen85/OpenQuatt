@@ -946,27 +946,20 @@ interval:
 
           int owner = 0;
           #if OQ_TOPOLOGY_DUO
-          int dual_on_lvl = (int) roundf(id(oq_dual_hp_enable_level).state);
-          if (dual_on_lvl < 1) dual_on_lvl = 1;
-          if (dual_on_lvl > max_level) dual_on_lvl = max_level;
-          int dual_off_lvl = dual_on_lvl - 1;
-          if (dual_off_lvl < 1) dual_off_lvl = 1;
-
-          int dual_on_hold_min = (int) roundf(id(oq_dual_hp_enable_hold_min).state);
-          int dual_off_hold_min = (int) roundf(id(oq_dual_hp_disable_hold_min).state);
-          if (dual_on_hold_min < 1) dual_on_hold_min = 1;
-          if (dual_off_hold_min < 1) dual_off_hold_min = 1;
+          const int dual_on_lvl =
+              std::max(1, std::min(max_level, (int) roundf(id(oq_dual_hp_enable_level).state)));
+          const int dual_off_lvl = std::max(1, dual_on_lvl - 1);
+          const int dual_on_hold_min = std::max(1, (int) roundf(id(oq_dual_hp_enable_hold_min).state));
+          const int dual_off_hold_min = std::max(1, (int) roundf(id(oq_dual_hp_disable_hold_min).state));
 
           const auto tuning = oq_curve::control_profile(
               id(oq_curve_control_profile).has_state()
                   ? id(oq_curve_control_profile).current_option()
                   : std::string());
-          int startup_grace_s = tuning.dual_startup_grace_s;
-          int emergency_hold_min = tuning.dual_emergency_hold_min;
-          float emergency_temp_err_c = tuning.dual_emergency_temp_err_c;
-          float dual_disable_temp_err_max_c = tuning.dual_disable_temp_err_max_c;
-          if (startup_grace_s < 0) startup_grace_s = 0;
-          if (emergency_hold_min < 1) emergency_hold_min = 1;
+          const int startup_grace_s = std::max(0, tuning.dual_startup_grace_s);
+          const int emergency_hold_min = std::max(1, tuning.dual_emergency_hold_min);
+          const float emergency_temp_err_c = tuning.dual_emergency_temp_err_c;
+          const float dual_disable_temp_err_max_c = tuning.dual_disable_temp_err_max_c;
 
           float temp_err_c = NAN;
           if (!isnan(id(oq_supply_target_temp).state) && !isnan(id(oq_system_supply_temp).state)) {
@@ -1002,7 +995,6 @@ interval:
               (now_ms > lead_last_start_ms) &&
               ((now_ms - lead_last_start_ms) < ((uint32_t) startup_grace_s * 1000UL));
 
-          bool force_dual_capacity = false;
           const bool emergency_dual_condition =
               demand_active && beyond_single_capacity && severe_level_pressure &&
               (severe_temp_deficit || single_req_lvl >= (max_level - 1)) && !startup_grace_active;
@@ -1011,9 +1003,8 @@ interval:
           } else {
             id(oq_dual_hp_emergency_hold_elapsed_accum_min) = 0.0f;
           }
-          if (id(oq_dual_hp_emergency_hold_elapsed_accum_min) >= (float) emergency_hold_min) {
-            force_dual_capacity = true;
-          }
+          const bool force_dual_capacity =
+              id(oq_dual_hp_emergency_hold_elapsed_accum_min) >= (float) emergency_hold_min;
           const bool force_dual_defrost = demand_active && hp1_valve_def && hp2_valve_def;
           const bool dual_on_condition =
               demand_active && (force_dual_capacity || force_dual_defrost || (single_req_lvl >= dual_on_lvl));
@@ -1050,19 +1041,11 @@ interval:
               demand_active && (force_dual_capacity || force_dual_defrost || id(oq_dual_hp_enabled));
 
           if (!dual_enabled) {
-            int single_owner = id(oq_curve_single_owner_hp);
             const bool prev_hp1_on = (id(hp1_last_applied_level) > 0);
             const bool prev_hp2_on = (id(${curve_secondary_last_applied_level_id}) > 0);
-
-            if (!demand_active) {
-              single_owner = 0;
-            } else if (prev_hp1_on && !prev_hp2_on) {
-              single_owner = 1;
-            } else if (prev_hp2_on && !prev_hp1_on) {
-              single_owner = 2;
-            } else if (single_owner != 1 && single_owner != 2) {
-              single_owner = lead_is_hp1 ? 1 : 2;
-            }
+            int single_owner = demand_active ? id(oq_curve_single_owner_hp) : 0;
+            if (prev_hp1_on != prev_hp2_on) single_owner = prev_hp1_on ? 1 : 2;
+            else if (single_owner != 1 && single_owner != 2) single_owner = lead_is_hp1 ? 1 : 2;
 
             id(oq_curve_single_owner_hp) = single_owner;
             owner = single_owner;
