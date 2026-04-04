@@ -938,20 +938,14 @@ interval:
           const bool hp1_valve_def = valve_defrost_active(true);
           #if OQ_TOPOLOGY_DUO
           const bool hp2_valve_def = valve_defrost_active(false);
-          const bool hp2_available = true;
           #else
           const bool hp2_valve_def = false;
-          const bool hp2_available = false;
           #endif
           id(oq_P_hp_cap_w) = 0.0f;
           id(oq_P_deficit_w) = 0.0f;
 
-          int total_req = 0;
           int owner = 0;
           #if OQ_TOPOLOGY_DUO
-          const bool d1_pre = hp1_valve_def;
-          const bool d2_pre = hp2_valve_def;
-
           int dual_on_lvl = (int) roundf(id(oq_dual_hp_enable_level).state);
           if (dual_on_lvl < 1) dual_on_lvl = 1;
           if (dual_on_lvl > max_level) dual_on_lvl = max_level;
@@ -993,9 +987,7 @@ interval:
           const int lead_max_single = max_allowed_level_for_hp(lead_is_hp1);
           const int lag_max_single = max_allowed_level_for_hp(!lead_is_hp1);
           const int single_limit_lvl = std::max(lead_max_single, lag_max_single);
-          int single_req_lvl = f;
-          if (single_req_lvl < 0) single_req_lvl = 0;
-          if (single_limit_lvl > 0 && single_req_lvl > single_limit_lvl) single_req_lvl = single_limit_lvl;
+          const int single_req_lvl = (single_limit_lvl > 0) ? std::min(f, single_limit_lvl) : f;
 
           const bool demand_active = (f > 0);
           const bool beyond_single_capacity = demand_active && (single_limit_lvl > 0) && (f > single_limit_lvl);
@@ -1022,7 +1014,7 @@ interval:
           if (id(oq_dual_hp_emergency_hold_elapsed_accum_min) >= (float) emergency_hold_min) {
             force_dual_capacity = true;
           }
-          const bool force_dual_defrost = demand_active && (d1_pre && d2_pre);
+          const bool force_dual_defrost = demand_active && hp1_valve_def && hp2_valve_def;
           const bool dual_on_condition =
               demand_active && (force_dual_capacity || force_dual_defrost || (single_req_lvl >= dual_on_lvl));
           const bool dual_off_condition =
@@ -1073,11 +1065,9 @@ interval:
             }
 
             id(oq_curve_single_owner_hp) = single_owner;
-            total_req = f;
             owner = single_owner;
           } else {
             id(oq_curve_single_owner_hp) = 0;
-            total_req = f;
             owner = 0;
           }
           #else
@@ -1089,9 +1079,8 @@ interval:
               id(oq_curve_single_owner_hp),
               id(oq_duo_request_hold_until_ms),
               1);
-          total_req = f;
           owner = (f > 0) ? 1 : 0;
           #endif
 
-          id(oq_curve_request_total_level) = total_req;
+          id(oq_curve_request_total_level) = f;
           id(oq_curve_request_owner_hp) = owner;
