@@ -110,8 +110,8 @@ namespace esphome {
 					float ot_version = NAN;
 					float t_set = 0.0f;
 					float max_rel_mod_level_setting = NAN;
-					float t_room_set = 0.0f;
-					float t_room = 0.0f;
+					float t_room_set = NAN;
+					float t_room = NAN;
 				};
 
 				struct SlaveState {
