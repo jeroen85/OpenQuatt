@@ -225,7 +225,7 @@ number:
     mode: slider
     restore_value: true
     optimistic: true
-    initial_value: 0.350
+    initial_value: 0.280
     web_server:
       sorting_group_id: oq_tuning_heat
     on_value:
@@ -247,7 +247,7 @@ number:
     mode: slider
     restore_value: true
     optimistic: true
-    initial_value: 0.00120
+    initial_value: 0.00060
     web_server:
       sorting_group_id: oq_tuning_heat
     on_value:
@@ -316,11 +316,11 @@ climate:
     default_target_temperature: 35 °C
     heat_output: heating_curve_pid_out
     control_parameters:
-      kp: 0.350
-      ki: 0.00120
+      kp: 0.280
+      ki: 0.00060
       kd: 0.200
-      max_integral: 3.0
-      min_integral: -3.0
+      max_integral: 1.5
+      min_integral: -1.5
     deadband_parameters:
       threshold_low: -1.00
       threshold_high: 1.00
