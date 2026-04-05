@@ -1106,6 +1106,11 @@ interval:
                 curve_target_valid ? (id(oq_supply_target_temp).state - id(oq_system_supply_temp).state) : NAN;
             const bool braking_overshoot =
                 curve_target_valid && (curve_regime != 1) && (curve_supply_error_c <= 0.10f);
+            const bool recovery_stop_up =
+                curve_target_valid &&
+                (curve_regime == 1) &&
+                (curve_supply_error_c <= 0.60f) &&
+                (raw <= prev_f);
             if (braking_overshoot) down_hold_s = 0;
 
             auto limit_slew = [&](bool is_hp1, int req_level)->int {
@@ -1122,7 +1127,7 @@ interval:
 
               const bool moving_up = limited > prev;
               // Guardrail: when demand is already running down, never keep stepping levels up.
-              if (demand_rundown && moving_up) return prev;
+              if ((demand_rundown || recovery_stop_up) && moving_up) return prev;
               const uint32_t hold_ms = (uint32_t) ((moving_up ? up_hold_s : down_hold_s) * 1000UL);
               if (last_change_ms > 0 && now_ms > last_change_ms) {
                 const uint32_t dt_change_ms = now_ms - last_change_ms;
