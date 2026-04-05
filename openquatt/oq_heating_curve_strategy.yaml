@@ -496,6 +496,19 @@ output:
               if (recovery_floor < 2) recovery_floor = 2;
               if (recovery_floor > demand_max) recovery_floor = demand_max;
               if (d < recovery_floor) d = recovery_floor;
+            } else {
+              // Close to target, the plant still contains a lot of thermal momentum.
+              // Cap demand explicitly here so PID saturation cannot keep pushing
+              // high discrete requests deep into the maintain band.
+              int maintain_cap = demand_max;
+              if (supply_error_c <= 0.00f) maintain_cap = 1;
+              else if (supply_error_c <= 0.10f) maintain_cap = 2;
+              else if (supply_error_c <= 0.20f) maintain_cap = 3;
+              else if (supply_error_c <= 0.35f) maintain_cap = 4;
+              else if (supply_error_c <= 0.50f) maintain_cap = 5;
+              else if (supply_error_c <= 0.70f) maintain_cap = 6;
+              else if (supply_error_c <= 0.90f) maintain_cap = 8;
+              if (d > maintain_cap) d = maintain_cap;
             }
           }
 

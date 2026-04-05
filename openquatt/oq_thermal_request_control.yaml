@@ -1095,8 +1095,18 @@ interval:
                     ? id(oq_curve_control_profile).current_option()
                     : std::string());
             int up_hold_s = tuning.steady_up_hold_s;
-            const int down_hold_s = tuning.steady_down_hold_s;
+            int down_hold_s = tuning.steady_down_hold_s;
             if (curve_regime == 1) up_hold_s = tuning.recovery_up_hold_s;
+            const bool curve_target_valid =
+                id(oq_supply_target_temp).has_state() &&
+                id(oq_system_supply_temp).has_state() &&
+                !isnan(id(oq_supply_target_temp).state) &&
+                !isnan(id(oq_system_supply_temp).state);
+            const float curve_supply_error_c =
+                curve_target_valid ? (id(oq_supply_target_temp).state - id(oq_system_supply_temp).state) : NAN;
+            const bool braking_overshoot =
+                curve_target_valid && (curve_regime != 1) && (curve_supply_error_c <= 0.10f);
+            if (braking_overshoot) down_hold_s = 0;
 
             auto limit_slew = [&](bool is_hp1, int req_level)->int {
               const int prev = is_hp1 ? id(hp1_last_applied_level) : id(${hc_secondary_last_applied_level_id});
@@ -1106,7 +1116,8 @@ interval:
 
               int limited = req_level;
               if (limited > prev + 1) limited = prev + 1;
-              if (limited < prev - 1) limited = prev - 1;
+              const int max_down_step = braking_overshoot ? 2 : 1;
+              if (limited < prev - max_down_step) limited = prev - max_down_step;
               if (limited == prev) return limited;
 
               const bool moving_up = limited > prev;
