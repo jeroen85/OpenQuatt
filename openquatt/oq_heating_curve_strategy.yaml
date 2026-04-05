@@ -826,9 +826,11 @@ interval:
       - if:
           condition:
             lambda: |-
-              // Reset curve integral whenever the loop is inactive or not delivering heat yet.
+              // Reset curve integral whenever curve mode is not in an active, heat-delivering state.
               if (id(oq_heat_mode_code) != 1) return false;
               if (id(oq_water_temp_hard_trip_active)) return true;
+              if (id(oq_control_mode_code) != 2) return true;
+              if (!id(oq_curve_heat_request_active)) return true;
               const float spw = id(oq_supply_target_temp).state;
               const float pv  = id(oq_system_supply_temp).state;
               if (isnan(spw) || isnan(pv)) return true;
