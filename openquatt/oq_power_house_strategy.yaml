@@ -34,7 +34,9 @@ globals:
     initial_value: '0'
 
   # Internal comfort boost that slowly builds when the room stays clearly
-  # below the cold comfort boundary for a longer time.
+  # below the cold comfort boundary for a longer time. Once the room returns
+  # into the comfort band, the boost is kept through the colder half of the
+  # band and only starts fading in the warmer half.
   - id: oq_phouse_comfort_boost_w
     type: float
     restore_value: false
@@ -412,6 +414,7 @@ interval:
             const float dt_power_s = (now_ms >= last) ? ((now_ms - last) / 1000.0f) : 0.0f;
             const float comfort_boost_max_w = clampf(house_power_rating_w * 0.10f, 300.0f, 800.0f);
             const float comfort_boost_entry_c = 0.05f;
+            const float comfort_mid_c = Tr_low + 0.5f * (Tr_high - Tr_low);
             float comfort_boost_w = id(oq_phouse_comfort_boost_w);
             if (isnan(comfort_boost_w) || comfort_boost_w < 0.0f) comfort_boost_w = 0.0f;
 
@@ -423,6 +426,9 @@ interval:
                   (build_min_w_per_min + (build_max_w_per_min - build_min_w_per_min) * undershoot_norm) /
                   seconds_per_minute;
               comfort_boost_w += build_w_per_s * dt_power_s;
+            } else if (Tr <= comfort_mid_c) {
+              // Keep the accumulated comfort boost through the colder half of
+              // the comfort band so the room does not settle persistently low.
             } else if (Tr <= Tr_high) {
               const float decay_w_per_s = (comfort_boost_max_w / 12.0f) / seconds_per_minute;
               comfort_boost_w -= decay_w_per_s * dt_power_s;

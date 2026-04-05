@@ -2331,8 +2331,9 @@ views:
               - Inside this comfort band, extra room correction stays `0`.
 
               - If the room stays clearly below the cold comfort boundary for
-              longer, Power House quietly adds a temporary comfort boost and
-              lets it fade again once the room returns to comfort.
+              longer, Power House quietly adds a temporary comfort boost,
+              keeps that boost through the colder half of the comfort band,
+              and lets it fade again in the warmer half.
 
               - **Response profile** is a quick preset for calmer, balanced, or
               more responsive Power House behavior. As soon as rise and fall
