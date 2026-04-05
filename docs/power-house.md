@@ -129,7 +129,7 @@ Daarmee ontstaat een asymmetrische comfortband:
 
 Dat is bewust geen pure PID-benadering. Het systeem mag wat terughoudender zijn rond kleine afwijkingen en sterker reageren als de fout duidelijker wordt.
 
-Binnen deze comfortband blijft de extra kamercorrectie `0`.
+Binnen deze comfortband blijft de directe extra kamercorrectie `0`.
 
 ### Temperatuurreactie
 
@@ -145,8 +145,9 @@ Een hogere waarde maakt het systeem eerder fel. Een lagere waarde maakt het syst
 
 Als de kamer langdurig duidelijk onder de koude comfortgrens blijft, voegt
 Power House daarnaast automatisch een kleine tijdelijke comfortboost toe.
-Die boost bouwt langzaam op, helpt vooral bij hardnekkige ondershoot, en loopt
-weer rustig leeg zodra de kamer terug in de comfortband komt.
+Die boost bouwt langzaam op, helpt vooral bij hardnekkige ondershoot, en wordt
+bewust vastgehouden in de koudere helft van de comfortband. Pas richting de
+warmere helft van de band loopt hij weer rustig leeg.
 
 Belangrijk:
 

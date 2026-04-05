@@ -2155,8 +2155,8 @@ views:
 
               - Als de kamer langere tijd duidelijk onder de koude
               comfortgrens blijft, voegt Power House automatisch een tijdelijke
-              comfortboost toe die daarna binnen de comfortband weer rustig
-              afbouwt.
+              comfortboost toe, houdt die vast in de koudere helft van de
+              comfortband, en bouwt hem pas in de warmere helft weer rustig af.
 
               - **Response profile** is een snelle voorkeuze voor rustige,
               gebalanceerde of vlottere Power House-reactie. Zodra opbouwtijd
