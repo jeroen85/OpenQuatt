@@ -2071,11 +2071,9 @@ views:
 
               - Inside this comfort band, extra room correction stays `0`.
 
-              - If the room stays clearly on the cold side for longer, Power
-              House quietly builds a small internal comfort memory. That
-              memory lifts the effective cold-side target a little, stays
-              through the colder half of the comfort band, and fades again in
-              the warmer half.
+              - If the room stays too cold for longer, Power House keeps some
+              extra heat demand active for longer. This helps the room stay
+              within the configured comfort band.
 
               - **Response profile** is a quick preset for calmer, balanced, or
               more responsive Power House behavior. As soon as rise and fall

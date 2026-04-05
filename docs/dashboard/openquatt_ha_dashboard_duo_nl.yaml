@@ -2449,11 +2449,9 @@ views:
 
               - Binnen deze comfortband blijft de extra kamercorrectie `0`.
 
-              - Als de kamer langere tijd duidelijk aan de koude kant blijft,
-              bouwt Power House automatisch een kleine interne comfort memory
-              op. Die tilt het effectieve koude doel iets op, blijft staan in
-              de koudere helft van de comfortband, en loopt pas in de warmere
-              helft weer rustig af.
+              - Als de kamer langere tijd te koud blijft, houdt Power House
+              wat langer extra warmtevraag vast. Daardoor blijft de kamer
+              beter binnen de ingestelde comfortband.
 
               - **Response profile** is een snelle voorkeuze voor rustige,
               gebalanceerde of vlottere Power House-reactie. Zodra opbouwtijd en

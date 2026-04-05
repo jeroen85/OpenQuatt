@@ -143,12 +143,9 @@ Praktisch:
 
 Een hogere waarde maakt het systeem eerder fel. Een lagere waarde maakt het systeem eerder traag of slap.
 
-Als de kamer langdurig duidelijk aan de koude kant blijft, bouwt Power House
-daarnaast automatisch een kleine verborgen comfort memory op. Die memory tilt
-het effectieve koude doel intern iets op, zodat de regeling niet structureel
-onderin de comfortband blijft hangen. De memory blijft bewust staan in de
-koudere helft van de comfortband en loopt pas richting de warmere helft weer
-rustig af.
+Als de kamer langere tijd te koud blijft, houdt Power House automatisch wat
+langer extra warmtevraag vast. Daardoor blijft de kamertemperatuur beter
+binnen de ingestelde comfortband.
 
 Belangrijk:
 
