@@ -143,11 +143,12 @@ Praktisch:
 
 Een hogere waarde maakt het systeem eerder fel. Een lagere waarde maakt het systeem eerder traag of slap.
 
-Als de kamer langdurig duidelijk onder de koude comfortgrens blijft, voegt
-Power House daarnaast automatisch een kleine tijdelijke comfortboost toe.
-Die boost bouwt langzaam op, helpt vooral bij hardnekkige ondershoot, en wordt
-bewust vastgehouden in de koudere helft van de comfortband. Pas richting de
-warmere helft van de band loopt hij weer rustig leeg.
+Als de kamer langdurig duidelijk aan de koude kant blijft, bouwt Power House
+daarnaast automatisch een kleine verborgen comfort memory op. Die memory tilt
+het effectieve koude doel intern iets op, zodat de regeling niet structureel
+onderin de comfortband blijft hangen. De memory blijft bewust staan in de
+koudere helft van de comfortband en loopt pas richting de warmere helft weer
+rustig af.
 
 Belangrijk:
 
