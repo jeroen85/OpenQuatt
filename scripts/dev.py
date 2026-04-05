@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -217,6 +218,17 @@ def tail_lines(path: Path, limit: int = 80) -> str:
     return "".join(lines[-limit:])
 
 
+def format_duration(total_seconds: float) -> str:
+    seconds = int(total_seconds)
+    minutes, seconds = divmod(seconds, 60)
+    hours, minutes = divmod(minutes, 60)
+    if hours > 0:
+        return f"{hours}h{minutes:02d}m{seconds:02d}s"
+    if minutes > 0:
+        return f"{minutes}m{seconds:02d}s"
+    return f"{seconds}s"
+
+
 def framework_espidf_package_dirs(pio_core_dir: Path) -> list[Path]:
     candidates = [
         pio_core_dir / "packages" / "framework-espidf",
@@ -293,6 +305,8 @@ def run_command(
     env: dict[str, str] | None = None,
     log_path: Path | None = None,
     check: bool = True,
+    heartbeat_label: str | None = None,
+    heartbeat_interval_s: float = 20.0,
 ) -> int:
     if log_path is None:
         completed = subprocess.run(command, cwd=cwd, env=env, check=False)
@@ -302,20 +316,31 @@ def run_command(
 
     log_path.parent.mkdir(parents=True, exist_ok=True)
     with log_path.open("w", encoding="utf-8", errors="replace") as handle:
-        completed = subprocess.run(
+        started_at = time.monotonic()
+        next_heartbeat_at = started_at + heartbeat_interval_s
+        process = subprocess.Popen(
             command,
             cwd=cwd,
             env=env,
-            check=False,
             stdout=handle,
             stderr=subprocess.STDOUT,
             text=True,
         )
+        while True:
+            exit_code = process.poll()
+            if exit_code is not None:
+                break
+            if heartbeat_label is not None:
+                now = time.monotonic()
+                if now >= next_heartbeat_at:
+                    print(f"[wait] {heartbeat_label} ({format_duration(now - started_at)})", flush=True)
+                    next_heartbeat_at = now + heartbeat_interval_s
+            time.sleep(1.0)
 
-    if check and completed.returncode != 0:
-        raise subprocess.CalledProcessError(completed.returncode, command)
+    if check and exit_code != 0:
+        raise subprocess.CalledProcessError(exit_code, command)
 
-    return completed.returncode
+    return exit_code
 
 
 def run_logged(
@@ -326,7 +351,15 @@ def run_logged(
     log_path: Path,
     label: str,
 ) -> None:
-    exit_code = run_command(command, cwd=cwd, env=env, log_path=log_path, check=False)
+    print(f"[run] {label}", flush=True)
+    exit_code = run_command(
+        command,
+        cwd=cwd,
+        env=env,
+        log_path=log_path,
+        check=False,
+        heartbeat_label=label,
+    )
     if exit_code != 0:
         print(f"[FAIL] {label}", file=sys.stderr)
         tail = tail_lines(log_path)
@@ -568,12 +601,15 @@ def validate_command(args: argparse.Namespace) -> int:
 
         def compile_one(config: str) -> tuple[str, int, Path]:
             log_path = log_dir / f"{Path(config).stem}.compile.log"
+            label = f"compile {config}"
+            print(f"[run] {label}", flush=True)
             exit_code = run_command(
                 [*esphome_command, "compile", config],
                 cwd=command_root,
                 env=env,
                 log_path=log_path,
                 check=False,
+                heartbeat_label=label,
             )
             if exit_code != 0:
                 tail = tail_lines(log_path, limit=160)
@@ -599,6 +635,7 @@ def validate_command(args: argparse.Namespace) -> int:
                             env=env,
                             log_path=log_path,
                             check=False,
+                            heartbeat_label=label,
                         )
                         if exit_code == 0:
                             return config, exit_code, log_path
@@ -615,6 +652,7 @@ def validate_command(args: argparse.Namespace) -> int:
                         env=env,
                         log_path=log_path,
                         check=False,
+                        heartbeat_label=label,
                     )
             return config, exit_code, log_path
 
