@@ -1723,12 +1723,12 @@
     const quietMax = exampleSetpoint + comfortAbove;
 
     const width = 620;
-    const height = 94;
-    const left = 34;
-    const right = 34;
-    const axisY = 40;
-    const bandY = 29;
-    const bandHeight = 22;
+    const height = 184;
+    const left = 46;
+    const right = 24;
+    const top = 18;
+    const bottom = 40;
+    const axisY = 96;
     const plotWidth = width - left - right;
     const minTemp = Math.min(exampleSetpoint - 1.2, quietMin - 0.35);
     const maxTemp = Math.max(exampleSetpoint + 1.2, quietMax + 0.35);
@@ -1739,50 +1739,54 @@
     const quietMinX = toX(quietMin);
     const setpointX = toX(exampleSetpoint);
     const quietMaxX = toX(quietMax);
+    const showQuietMinTick = Math.abs(quietMin - exampleSetpoint) > 0.001;
+    const showQuietMaxTick = Math.abs(quietMax - exampleSetpoint) > 0.001;
+    const curveTopY = top + 24;
+    const curveBottomY = height - bottom;
+    const linePath = [
+      `M ${leftX.toFixed(1)} ${curveTopY.toFixed(1)}`,
+      `L ${quietMinX.toFixed(1)} ${axisY.toFixed(1)}`,
+      `L ${quietMaxX.toFixed(1)} ${axisY.toFixed(1)}`,
+      `L ${rightX.toFixed(1)} ${curveBottomY.toFixed(1)}`,
+    ].join(" ");
 
     return `
       <div class="oq-ph-concept-card">
         <div class="oq-ph-concept-visual">
           <div class="oq-ph-concept-caption">
-            Conceptueel: lees Power House hier als een temperatuurliniaal rond het kamersetpoint. Dit voorbeeld met 20,0 °C laat zien onder welke temperatuur extra opwarming begint, in welke zone de regeling bewust rustig blijft en vanaf waar warme tegensturing start.
+            Conceptueel: deze grafiek laat zien hoe Power House op kamertemperatuur reageert rond het setpoint. Onder de comfortzone stijgt de warmtevraag, binnen de rustige zone blijft de regeling vlak en boven de bovengrens start warme tegensturing.
           </div>
           <div class="oq-ph-concept-meta">
             <span class="oq-ph-concept-meta-pill">Setpoint <strong>${escapeHtml(formatNumericState(exampleSetpoint, 1, "°C"))}</strong></span>
-            <span class="oq-ph-concept-meta-pill">Rustige zone <strong>${escapeHtml(formatNumericState(quietMin, 1, "°C"))} – ${escapeHtml(formatNumericState(quietMax, 1, "°C"))}</strong></span>
             <span class="oq-ph-concept-meta-pill">Temperatuurreactie <strong>${escapeHtml(formatNumericState(temperatureReaction, 0, " W/K"))}</strong></span>
           </div>
-          <svg class="oq-ph-concept-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Temperatuurliniaal voor Power House tuning">
-            <rect x="${leftX.toFixed(1)}" y="${bandY}" width="${Math.max(20, quietMinX - leftX).toFixed(1)}" height="${bandHeight}" rx="999" class="oq-ph-concept-band oq-ph-concept-band--below"></rect>
-            <rect x="${quietMinX.toFixed(1)}" y="${bandY}" width="${Math.max(20, quietMaxX - quietMinX).toFixed(1)}" height="${bandHeight}" rx="999" class="oq-ph-concept-band oq-ph-concept-band--calm"></rect>
-            <rect x="${quietMaxX.toFixed(1)}" y="${bandY}" width="${Math.max(20, rightX - quietMaxX).toFixed(1)}" height="${bandHeight}" rx="999" class="oq-ph-concept-band oq-ph-concept-band--above"></rect>
-            <line x1="${leftX}" y1="${axisY}" x2="${rightX}" y2="${axisY}" class="oq-ph-concept-axis"></line>
-            <line x1="${quietMinX}" y1="${axisY - 10}" x2="${quietMinX}" y2="${axisY + 10}" class="oq-ph-concept-marker oq-ph-concept-marker--below"></line>
-            <line x1="${setpointX}" y1="${axisY - 12}" x2="${setpointX}" y2="${axisY + 12}" class="oq-ph-concept-marker oq-ph-concept-marker--setpoint"></line>
-            <line x1="${quietMaxX}" y1="${axisY - 10}" x2="${quietMaxX}" y2="${axisY + 10}" class="oq-ph-concept-marker oq-ph-concept-marker--above"></line>
-            <circle cx="${quietMinX}" cy="${axisY}" r="4.5" class="oq-ph-concept-point oq-ph-concept-point--below"></circle>
-            <circle cx="${setpointX}" cy="${axisY}" r="6" class="oq-ph-concept-point oq-ph-concept-point--setpoint"></circle>
-            <circle cx="${quietMaxX}" cy="${axisY}" r="4.5" class="oq-ph-concept-point oq-ph-concept-point--above"></circle>
+          <svg class="oq-ph-concept-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Grafiek voor Power House tuning">
+            <rect x="${leftX.toFixed(1)}" y="${top}" width="${Math.max(20, quietMinX - leftX).toFixed(1)}" height="${(height - top - bottom).toFixed(1)}" rx="18" class="oq-ph-concept-band oq-ph-concept-band--below"></rect>
+            <rect x="${quietMinX.toFixed(1)}" y="${top}" width="${Math.max(20, quietMaxX - quietMinX).toFixed(1)}" height="${(height - top - bottom).toFixed(1)}" rx="18" class="oq-ph-concept-band oq-ph-concept-band--calm"></rect>
+            <rect x="${quietMaxX.toFixed(1)}" y="${top}" width="${Math.max(20, rightX - quietMaxX).toFixed(1)}" height="${(height - top - bottom).toFixed(1)}" rx="18" class="oq-ph-concept-band oq-ph-concept-band--above"></rect>
 
-            <text x="${leftX}" y="${axisY + 24}" text-anchor="start" class="oq-ph-concept-label">kouder</text>
-            <text x="${rightX}" y="${axisY + 24}" text-anchor="end" class="oq-ph-concept-label">warmer</text>
+            <line x1="${leftX}" y1="${top}" x2="${leftX}" y2="${height - bottom}" class="oq-ph-concept-axis"></line>
+            <line x1="${leftX}" y1="${axisY}" x2="${rightX}" y2="${axisY}" class="oq-ph-concept-axis"></line>
+            <line x1="${setpointX}" y1="${top}" x2="${setpointX}" y2="${height - bottom}" class="oq-ph-concept-axis oq-ph-concept-axis--vertical"></line>
+
+            <path d="${linePath}" class="oq-ph-concept-curve"></path>
+
+            ${showQuietMinTick ? `<line x1="${quietMinX}" y1="${axisY - 12}" x2="${quietMinX}" y2="${axisY + 12}" class="oq-ph-concept-marker oq-ph-concept-marker--below"></line>` : ""}
+            <line x1="${setpointX}" y1="${axisY - 14}" x2="${setpointX}" y2="${axisY + 14}" class="oq-ph-concept-marker oq-ph-concept-marker--setpoint"></line>
+            ${showQuietMaxTick ? `<line x1="${quietMaxX}" y1="${axisY - 12}" x2="${quietMaxX}" y2="${axisY + 12}" class="oq-ph-concept-marker oq-ph-concept-marker--above"></line>` : ""}
+            ${showQuietMinTick ? `<circle cx="${quietMinX}" cy="${axisY}" r="5" class="oq-ph-concept-point oq-ph-concept-point--below"></circle>` : ""}
+            <circle cx="${setpointX}" cy="${axisY}" r="6" class="oq-ph-concept-point oq-ph-concept-point--setpoint"></circle>
+            ${showQuietMaxTick ? `<circle cx="${quietMaxX}" cy="${axisY}" r="5" class="oq-ph-concept-point oq-ph-concept-point--above"></circle>` : ""}
+
+            <text x="${leftX + 8}" y="${top + 18}" text-anchor="start" class="oq-ph-concept-label oq-ph-concept-label--heat">meer warmte</text>
+            <text x="${leftX + 8}" y="${height - bottom - 8}" text-anchor="start" class="oq-ph-concept-label">minder warmte</text>
+            <text x="${leftX}" y="${height - 26}" text-anchor="start" class="oq-ph-concept-label">kouder</text>
+            <text x="${rightX}" y="${height - 26}" text-anchor="end" class="oq-ph-concept-label">warmer</text>
+
+            ${showQuietMinTick ? `<text x="${quietMinX - 5}" y="${height - 14}" text-anchor="end" class="oq-ph-concept-tick-value">${escapeHtml(formatNumericState(quietMin, 1, "°C"))}</text>` : ""}
+            <text x="${setpointX}" y="${height - 14}" text-anchor="middle" class="oq-ph-concept-tick-value oq-ph-concept-tick-value--setpoint">${escapeHtml(formatNumericState(exampleSetpoint, 1, "°C"))}</text>
+            ${showQuietMaxTick ? `<text x="${quietMaxX + 5}" y="${height - 14}" text-anchor="start" class="oq-ph-concept-tick-value">${escapeHtml(formatNumericState(quietMax, 1, "°C"))}</text>` : ""}
           </svg>
-          <div class="oq-ph-concept-axis-wrap">
-            <div class="oq-ph-concept-axis-title-row">kamertemperatuur ten opzichte van setpoint</div>
-            <div class="oq-ph-concept-axis-values">
-              <span class="oq-ph-concept-axis-value oq-ph-concept-axis-value--start">
-                <strong>${escapeHtml(formatNumericState(quietMin, 1, "°C"))}</strong>
-                <span>start extra opwarming</span>
-              </span>
-              <span class="oq-ph-concept-axis-value oq-ph-concept-axis-value--marker">
-                <strong>${escapeHtml(formatNumericState(exampleSetpoint, 1, "°C"))}</strong>
-                <span>setpoint</span>
-              </span>
-              <span class="oq-ph-concept-axis-value oq-ph-concept-axis-value--end">
-                <strong>${escapeHtml(formatNumericState(quietMax, 1, "°C"))}</strong>
-                <span>start warme tegensturing</span>
-              </span>
-            </div>
-          </div>
         </div>
         <div class="oq-ph-concept-zones">
           <span class="oq-ph-concept-zone-chip oq-ph-concept-zone-chip--below">
@@ -1801,15 +1805,15 @@
         <div class="oq-ph-concept-notes">
           <article class="oq-ph-concept-note">
             <span class="oq-ph-concept-note-title">Comfort onder</span>
-            <p>Bepaalt hoeveel ruimte er onder het setpoint mag ontstaan voordat Power House eerder extra warmte gaat vragen.</p>
+            <p>Bepaalt wanneer extra opwarming begint onder het setpoint.</p>
           </article>
           <article class="oq-ph-concept-note">
             <span class="oq-ph-concept-note-title">Temperatuurreactie</span>
-            <p>Bepaalt hoe sterk de regeling buiten deze comfortzone vertaalt naar extra of minder warmtevraag in W/K.</p>
+            <p>Bepaalt hoe steil de regeling buiten de rustige zone reageert.</p>
           </article>
           <article class="oq-ph-concept-note">
             <span class="oq-ph-concept-note-title">Comfort boven</span>
-            <p>Bepaalt hoeveel ruimte er boven het setpoint mag ontstaan voordat warme tegensturing begint.</p>
+            <p>Bepaalt vanaf wanneer warme tegensturing boven het setpoint start.</p>
           </article>
         </div>
       </div>
