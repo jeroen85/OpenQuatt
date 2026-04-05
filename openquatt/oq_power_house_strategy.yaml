@@ -33,11 +33,11 @@ globals:
     restore_value: false
     initial_value: '0'
 
-  # Internal comfort boost that slowly builds when the room stays clearly
-  # below the cold comfort boundary for a longer time. Once the room returns
-  # into the comfort band, the boost is kept through the colder half of the
-  # band and only starts fading in the warmer half.
-  - id: oq_phouse_comfort_boost_w
+  # Internal comfort memory that slowly builds when the room stays on the cold
+  # side for longer. This nudges the effective cold-side target upward so Power
+  # House behaves more like the older warm-leaning model, without exposing the
+  # old bias/tau controls in the UI.
+  - id: oq_phouse_comfort_memory_c
     type: float
     restore_value: false
     initial_value: '0.0'
@@ -318,20 +318,36 @@ sensor:
       return id(oq_phouse_req_w);
 
   - platform: template
-    id: oq_phouse_comfort_boost_w_sensor
-    name: "Power House – comfort boost"
+    id: oq_phouse_comfort_memory_c_sensor
+    name: "Power House – comfort memory"
     icon: mdi:thermometer-plus
-    unit_of_measurement: "W"
-    device_class: power
+    unit_of_measurement: "°C"
+    device_class: temperature
     state_class: measurement
-    accuracy_decimals: 0
+    accuracy_decimals: 3
     update_interval: 5s
     entity_category: diagnostic
     disabled_by_default: true
     web_server:
       sorting_group_id: oq_diagnostics
     lambda: |-
-      return id(oq_phouse_comfort_boost_w);
+      return id(oq_phouse_comfort_memory_c);
+
+  - platform: template
+    id: oq_phouse_effective_room_target_c_sensor
+    name: "Power House – effective room target"
+    icon: mdi:target
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 5s
+    entity_category: diagnostic
+    disabled_by_default: true
+    web_server:
+      sorting_group_id: oq_diagnostics
+    lambda: |-
+      return id(room_setpoint_selected).state + id(oq_phouse_comfort_memory_c);
 
 interval:
   - interval: ${oq_heat_loop_tick_s}s
@@ -349,7 +365,7 @@ interval:
             id(oq_ph_request_reason_code) = 0;
             id(oq_phouse_last_ms) = 0;
             id(oq_phouse_last_w) = 0.0f;
-            id(oq_phouse_comfort_boost_w) = 0.0f;
+            id(oq_phouse_comfort_memory_c) = 0.0f;
             return;
           }
 
@@ -386,7 +402,7 @@ interval:
           if (isnan(Tout) || isnan(Tc) || isnan(T0) || isnan(house_power_rating_w) || (house_power_rating_w <= 0.0f) ||
               isnan(Tr) || isnan(Trsp) || (T0 <= Tc + ${oq_temp_guard_delta_c}f)) {
             id(oq_phouse_req_w) = 0.0f;
-            id(oq_phouse_comfort_boost_w) = 0.0f;
+            id(oq_phouse_comfort_memory_c) = 0.0f;
             id(oq_demand_raw) = 0;
           } else {
             float x = (T0 - Tout) / (T0 - Tc);
@@ -395,14 +411,9 @@ interval:
 
             const float comfort_below = clampf(id(ph_comfort_band_below_c).state, 0.0f, 2.0f);
             const float comfort_above = clampf(id(ph_comfort_band_above_c).state, 0.0f, 2.0f);
-            const float Tr_low = Trsp - comfort_below;
-            const float Tr_high = Trsp + comfort_above;
-
-            float e = 0.0f;
-            if (Tr < Tr_low) e = Tr_low - Tr;
-            else if (Tr > Tr_high) e = Tr_high - Tr;
-
-            const float temperature_reaction_w_per_k = id(ph_kp_w_per_k).state;
+            const float Tr_low_base = Trsp - comfort_below;
+            const float Tr_high_base = Trsp + comfort_above;
+            const float Tr_mid_base = Tr_low_base + 0.5f * (Tr_high_base - Tr_low_base);
 
             uint32_t last = id(oq_phouse_last_ms);
             float lastw = id(oq_phouse_last_w);
@@ -412,32 +423,41 @@ interval:
             }
 
             const float dt_power_s = (now_ms >= last) ? ((now_ms - last) / 1000.0f) : 0.0f;
-            const float comfort_boost_max_w = clampf(house_power_rating_w * 0.10f, 300.0f, 800.0f);
-            const float comfort_mid_c = Tr_low + 0.5f * (Tr_high - Tr_low);
-            float comfort_boost_w = id(oq_phouse_comfort_boost_w);
-            if (isnan(comfort_boost_w) || comfort_boost_w < 0.0f) comfort_boost_w = 0.0f;
+            const float comfort_memory_max_c = clampf(0.05f + (0.50f * comfort_above), 0.08f, 0.20f);
+            float comfort_memory_c = id(oq_phouse_comfort_memory_c);
+            if (isnan(comfort_memory_c) || comfort_memory_c < 0.0f) comfort_memory_c = 0.0f;
 
-            if (Tr < Tr_low) {
-              const float undershoot_norm = clampf((Tr_low - Tr) / 0.45f, 0.0f, 1.0f);
-              const float build_min_w_per_min = comfort_boost_max_w / 90.0f;
-              const float build_max_w_per_min = comfort_boost_max_w / 24.0f;
-              const float build_w_per_s =
-                  (build_min_w_per_min + (build_max_w_per_min - build_min_w_per_min) * undershoot_norm) /
+            if (Tr < Tr_low_base) {
+              const float undershoot_norm = clampf((Tr_low_base - Tr) / 0.45f, 0.0f, 1.0f);
+              const float build_min_c_per_min = comfort_memory_max_c / 90.0f;
+              const float build_max_c_per_min = comfort_memory_max_c / 24.0f;
+              const float build_c_per_s =
+                  (build_min_c_per_min + (build_max_c_per_min - build_min_c_per_min) * undershoot_norm) /
                   seconds_per_minute;
-              comfort_boost_w += build_w_per_s * dt_power_s;
-            } else if (Tr <= comfort_mid_c) {
-              // Keep the accumulated comfort boost through the colder half of
-              // the comfort band so the room does not settle persistently low.
-            } else if (Tr <= Tr_high) {
-              const float decay_w_per_s = (comfort_boost_max_w / 12.0f) / seconds_per_minute;
-              comfort_boost_w -= decay_w_per_s * dt_power_s;
+              comfort_memory_c += build_c_per_s * dt_power_s;
+            } else if (Tr <= Tr_mid_base) {
+              // Keep the accumulated comfort memory through the colder half of
+              // the band so the room does not drift persistently low.
+            } else if (Tr <= Tr_high_base) {
+              const float decay_c_per_s = (comfort_memory_max_c / 40.0f) / seconds_per_minute;
+              comfort_memory_c -= decay_c_per_s * dt_power_s;
             } else {
-              comfort_boost_w = 0.0f;
+              const float fast_decay_c_per_s = (comfort_memory_max_c / 12.0f) / seconds_per_minute;
+              comfort_memory_c -= fast_decay_c_per_s * dt_power_s;
             }
-            comfort_boost_w = clampf(comfort_boost_w, 0.0f, comfort_boost_max_w);
-            id(oq_phouse_comfort_boost_w) = comfort_boost_w;
+            comfort_memory_c = clampf(comfort_memory_c, 0.0f, comfort_memory_max_c);
+            id(oq_phouse_comfort_memory_c) = comfort_memory_c;
 
-            float P_raw = P_house + temperature_reaction_w_per_k * e + comfort_boost_w;
+            const float Trsp_effective = Trsp + comfort_memory_c;
+            const float Tr_low = Trsp_effective - comfort_below;
+            const float Tr_high = Tr_high_base;
+
+            float e = 0.0f;
+            if (Tr < Tr_low) e = Tr_low - Tr;
+            else if (Tr > Tr_high) e = Tr_high - Tr;
+
+            const float temperature_reaction_w_per_k = id(ph_kp_w_per_k).state;
+            float P_raw = P_house + temperature_reaction_w_per_k * e;
             P_raw = clampf(P_raw, 0.0f, house_power_rating_w);
 
             const float rise_time_min = clampf(id(ph_demand_rise_time_min).state, 2.0f, 20.0f);
