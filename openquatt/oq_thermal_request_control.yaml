@@ -1088,7 +1088,8 @@ interval:
           //    - asymmetrical hold: slower up, faster down
           // =========================
           if (!is_power_house) {
-            const bool demand_rundown = (raw < prev_f);
+            const int prev_post_guardrail = prev_f;
+            const bool demand_rundown = (raw < prev_post_guardrail);
             const int curve_regime = id(oq_curve_regime_code);
             const auto tuning = oq_curve::control_profile(
                 id(oq_curve_control_profile).has_state()
@@ -1109,8 +1110,8 @@ interval:
             const bool recovery_stop_up =
                 curve_target_valid &&
                 (curve_regime == 1) &&
-                (curve_supply_error_c <= 0.60f) &&
-                (raw <= prev_f);
+                (curve_supply_error_c <= 0.90f) &&
+                (raw <= prev_post_guardrail);
             if (braking_overshoot) down_hold_s = 0;
 
             auto limit_slew = [&](bool is_hp1, int req_level)->int {
