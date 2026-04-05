@@ -413,13 +413,12 @@ interval:
 
             const float dt_power_s = (now_ms >= last) ? ((now_ms - last) / 1000.0f) : 0.0f;
             const float comfort_boost_max_w = clampf(house_power_rating_w * 0.10f, 300.0f, 800.0f);
-            const float comfort_boost_entry_c = 0.05f;
             const float comfort_mid_c = Tr_low + 0.5f * (Tr_high - Tr_low);
             float comfort_boost_w = id(oq_phouse_comfort_boost_w);
             if (isnan(comfort_boost_w) || comfort_boost_w < 0.0f) comfort_boost_w = 0.0f;
 
-            if (Tr < (Tr_low - comfort_boost_entry_c)) {
-              const float undershoot_norm = clampf((Tr_low - Tr - comfort_boost_entry_c) / 0.45f, 0.0f, 1.0f);
+            if (Tr < Tr_low) {
+              const float undershoot_norm = clampf((Tr_low - Tr) / 0.45f, 0.0f, 1.0f);
               const float build_min_w_per_min = comfort_boost_max_w / 90.0f;
               const float build_max_w_per_min = comfort_boost_max_w / 24.0f;
               const float build_w_per_s =
