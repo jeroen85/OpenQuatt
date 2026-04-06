@@ -112,16 +112,30 @@ inline void reset_outside_ema_state(float &outside_ema_c,
 
 inline void reset_request_state(uint32_t &request_last_loop_ms,
                                 int &request_total_level,
-                                int &request_owner_hp) {
+                                int &request_owner_hp,
+                                int &dispatch_hp1_level,
+                                int &dispatch_hp2_level,
+                                int &capacity_mode_code) {
   request_last_loop_ms = 0;
   request_total_level = 0;
   request_owner_hp = 0;
+  dispatch_hp1_level = 0;
+  dispatch_hp2_level = 0;
+  capacity_mode_code = 0;
 }
 
 inline const char *regime_name(int regime_code) {
   switch (regime_code) {
     case 1: return "recovery";
     case 2: return "maintain";
+    default: return "off";
+  }
+}
+
+inline const char *capacity_mode_name(int capacity_mode_code) {
+  switch (capacity_mode_code) {
+    case 1: return "single";
+    case 2: return "duo";
     default: return "off";
   }
 }

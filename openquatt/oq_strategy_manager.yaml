@@ -113,7 +113,18 @@ select:
             oq_curve::reset_request_state(
               id(oq_curve_request_last_loop_ms),
               id(oq_curve_request_total_level),
-              id(oq_curve_request_owner_hp));
+              id(oq_curve_request_owner_hp),
+              id(oq_curve_dispatch_hp1_level),
+              id(oq_curve_dispatch_hp2_level),
+              id(oq_curve_capacity_mode_code));
+            oq_request::reset_dual_runtime_state(
+              id(oq_dual_hp_enabled),
+              id(oq_dual_hp_enable_hold_elapsed_accum_min),
+              id(oq_dual_hp_disable_hold_elapsed_accum_min),
+              id(oq_dual_hp_emergency_hold_elapsed_accum_min),
+              id(oq_curve_single_owner_hp),
+              id(oq_duo_request_hold_until_ms),
+              0);
             id(oq_strategy_phase_text).publish_state("idle");
             id(oq_strategy_debug_state).publish_state("strategy_switch");
 

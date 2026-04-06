@@ -973,19 +973,14 @@ interval:
                 default: request_reason = "cooling_idle"; break;
               }
             } else {
-              // Curve mode now publishes a total request plus routing hints.
-              const auto curve_request = oq_request::split_curve_total_request(
-                  id(oq_curve_request_total_level),
-                  id(oq_dual_hp_enabled),
-                  lead_is_hp1,
-                  id(oq_curve_request_owner_hp));
-              hp1_req = curve_request.hp1_level;
-              hp2_req = curve_request.hp2_level;
-              request_owner_hp = curve_request.owner_hp;
-              if (id(oq_curve_request_total_level) <= 0) request_reason = "curve_idle";
+              hp1_req = id(oq_curve_dispatch_hp1_level);
+              hp2_req = id(oq_curve_dispatch_hp2_level);
+              request_owner_hp = id(oq_curve_request_owner_hp);
+              if ((hp1_req + hp2_req) <= 0) request_reason = "curve_idle";
+              else if (id(oq_curve_capacity_mode_code) == 2) request_reason = "curve_dual";
               else if (request_owner_hp == 1) request_reason = "curve_single_hp1";
               else if (request_owner_hp == 2) request_reason = "curve_single_hp2";
-              else request_reason = "curve_dual";
+              else request_reason = "curve_single";
             }
 
           } else {
@@ -1024,12 +1019,9 @@ interval:
               request_owner_hp = id(oq_cooling_request_owner_hp);
               request_reason = (request_owner_hp > 0) ? "cooling_owner_hp1" : "cooling_idle";
             } else {
-              // Single-topology curve mode still flows through the same total-request contract.
-              const auto curve_request = oq_request::split_curve_total_request(
-                  id(oq_curve_request_total_level), false, true, id(oq_curve_request_owner_hp));
-              hp1_req = curve_request.hp1_level;
-              request_owner_hp = curve_request.owner_hp;
-              request_reason = (request_owner_hp > 0) ? "curve_single_owner_hp1" : "curve_idle";
+              hp1_req = id(oq_curve_dispatch_hp1_level);
+              request_owner_hp = id(oq_curve_request_owner_hp);
+              request_reason = (hp1_req > 0) ? "curve_single_hp1" : "curve_idle";
             }
           } else {
             hp1_req = id(oq_ph_request_hp1_level);
@@ -1083,13 +1075,13 @@ interval:
           #endif
 
           // =========================
-          // 4b) Explicit per-HP slew-rate limiting (heating-curve mode)
+          // 4b) Explicit per-HP slew-rate limiting for non-Power-House modes.
           //    - max 1 level step per change
           //    - asymmetrical hold: slower up, faster down
+          //    - the strategy owns curve dispatch semantics; this block only
+          //      shapes physical actuator movement
           // =========================
           if (!is_power_house) {
-            const int prev_post_guardrail = prev_f;
-            const bool demand_rundown = (raw < prev_post_guardrail);
             const int curve_regime = id(oq_curve_regime_code);
             const auto tuning = oq_curve::control_profile(
                 id(oq_curve_control_profile).has_state()
@@ -1098,21 +1090,6 @@ interval:
             int up_hold_s = tuning.steady_up_hold_s;
             int down_hold_s = tuning.steady_down_hold_s;
             if (curve_regime == 1) up_hold_s = tuning.recovery_up_hold_s;
-            const bool curve_target_valid =
-                id(oq_supply_target_temp).has_state() &&
-                id(oq_system_supply_temp).has_state() &&
-                !isnan(id(oq_supply_target_temp).state) &&
-                !isnan(id(oq_system_supply_temp).state);
-            const float curve_supply_error_c =
-                curve_target_valid ? (id(oq_supply_target_temp).state - id(oq_system_supply_temp).state) : NAN;
-            const bool braking_overshoot =
-                curve_target_valid && (curve_regime != 1) && (curve_supply_error_c <= 0.10f);
-            const bool recovery_stop_up =
-                curve_target_valid &&
-                (curve_regime == 1) &&
-                (curve_supply_error_c <= 0.90f) &&
-                (raw <= prev_post_guardrail);
-            if (braking_overshoot) down_hold_s = 0;
 
             auto limit_slew = [&](bool is_hp1, int req_level)->int {
               const int prev = is_hp1 ? id(hp1_last_applied_level) : id(${hc_secondary_last_applied_level_id});
@@ -1122,13 +1099,10 @@ interval:
 
               int limited = req_level;
               if (limited > prev + 1) limited = prev + 1;
-              const int max_down_step = braking_overshoot ? 2 : 1;
-              if (limited < prev - max_down_step) limited = prev - max_down_step;
+              if (limited < prev - 1) limited = prev - 1;
               if (limited == prev) return limited;
 
               const bool moving_up = limited > prev;
-              // Guardrail: when demand is already running down, never keep stepping levels up.
-              if ((demand_rundown || recovery_stop_up) && moving_up) return prev;
               const uint32_t hold_ms = (uint32_t) ((moving_up ? up_hold_s : down_hold_s) * 1000UL);
               if (last_change_ms > 0 && now_ms > last_change_ms) {
                 const uint32_t dt_change_ms = now_ms - last_change_ms;
