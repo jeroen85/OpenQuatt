@@ -39,7 +39,7 @@ SENSORS: Schema[SensorSchema] = Schema(
         "t_set": SensorSchema(
             {
                 "description": "Temperature setpoint for the boiler's supply water",
-                "unit_of_measurement": "C",
+                "unit_of_measurement": "°C",
                 "accuracy_decimals": 2,
                 "device_class": DEVICE_CLASS_TEMPERATURE,
                 "state_class": STATE_CLASS_MEASUREMENT,
@@ -52,7 +52,7 @@ SENSORS: Schema[SensorSchema] = Schema(
         "t_roomset": SensorSchema(
             {
                 "description": "Current room temperature setpoint",
-                "unit_of_measurement": "C",
+                "unit_of_measurement": "°C",
                 "accuracy_decimals": 2,
                 "device_class": DEVICE_CLASS_TEMPERATURE,
                 "state_class": STATE_CLASS_MEASUREMENT,
@@ -65,7 +65,7 @@ SENSORS: Schema[SensorSchema] = Schema(
         "t_room": SensorSchema(
             {
                 "description": "Room temperature",
-                "unit_of_measurement": "C",
+                "unit_of_measurement": "°C",
                 "accuracy_decimals": 2,
                 "device_class": DEVICE_CLASS_TEMPERATURE,
                 "state_class": STATE_CLASS_MEASUREMENT,
