@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <math.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -137,6 +138,23 @@ inline void reset_request_state(uint32_t &request_last_loop_ms,
 
 inline DispatchCandidate invalid_dispatch_candidate() {
   return DispatchCandidate{};
+}
+
+inline float normalized_demand_u(float demand_continuous, int demand_max_f) {
+  if (demand_max_f <= 0) return 0.0f;
+  if (isnan(demand_continuous)) return 0.0f;
+  const float clamped = std::max(0.0f, std::min((float) demand_max_f, demand_continuous));
+  return clamped / (float) demand_max_f;
+}
+
+inline float phase_target_power_w(bool heat_phase,
+                                  float demand_u,
+                                  float single_cap_w,
+                                  float duo_cap_w) {
+  if (demand_u <= 0.0f) return 0.0f;
+  const float single_target_w = isnan(single_cap_w) ? 0.0f : (single_cap_w * demand_u);
+  const float duo_target_w = isnan(duo_cap_w) ? single_target_w : (duo_cap_w * demand_u);
+  return heat_phase ? single_target_w : duo_target_w;
 }
 
 inline int pick_single_owner(bool demand_active,

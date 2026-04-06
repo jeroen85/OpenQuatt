@@ -1042,6 +1042,9 @@ interval:
           int owner = 0;
           int dispatch_hp1 = 0;
           int dispatch_hp2 = 0;
+          float demand_continuous = id(oq_curve_demand_continuous);
+          if (isnan(demand_continuous)) demand_continuous = (float) f;
+          const float demand_u = oq_curve::normalized_demand_u(demand_continuous, demand_max_f);
           #if OQ_TOPOLOGY_DUO
           const auto tuning = oq_curve::control_profile(
               id(oq_curve_control_profile).has_state()
@@ -1055,7 +1058,6 @@ interval:
           const bool demand_active = (f > 0);
           const bool heat_phase = demand_active && (id(oq_curve_regime_code) == 1);
           const int prev_curve_post = id(oq_demand_filtered_prev);
-          const bool demand_rundown = (f <= prev_curve_post);
 
           auto max_allowed_level_for_hp = [&](bool is_hp1)->int {
             int lvl_max = 0;
@@ -1119,18 +1121,9 @@ interval:
             }
           }
 
-          float demand_continuous = id(oq_curve_demand_continuous);
-          if (isnan(demand_continuous)) demand_continuous = (float) f;
-          if (demand_continuous < 0.0f) demand_continuous = 0.0f;
-          if (demand_continuous > (float) demand_max_f) demand_continuous = (float) demand_max_f;
-          const float demand_u = demand_continuous / (float) demand_max_f;
-
-          float target_power_w = 0.0f;
-          if (demand_active) {
-            const float single_target_w = isnan(owner_cap_w) ? 0.0f : (owner_cap_w * demand_u);
-            const float duo_target_w = duo_cap_w * demand_u;
-            target_power_w = heat_phase ? single_target_w : duo_target_w;
-          }
+          const bool demand_rundown = (demand_continuous <= (float) prev_curve_post);
+          const float target_power_w =
+              demand_active ? oq_curve::phase_target_power_w(heat_phase, demand_u, owner_cap_w, duo_cap_w) : 0.0f;
 
           oq_curve::DispatchCandidate best_single = oq_curve::invalid_dispatch_candidate();
           if (demand_active && single_owner == 1) {
@@ -1168,8 +1161,8 @@ interval:
               ((now_ms - lead_last_start_ms) < ((uint32_t) tuning.dual_startup_grace_s * 1000UL));
           const float duo_enable_margin_w = heat_phase ? 700.0f : 450.0f;
           const float duo_disable_margin_w = 250.0f;
-          const int duo_enable_min_f = heat_phase ? 18 : 16;
-          const int duo_disable_max_f = heat_phase ? 14 : 11;
+          const float duo_enable_min_u = heat_phase ? 0.90f : 0.80f;
+          const float duo_disable_max_u = heat_phase ? 0.70f : 0.55f;
           const bool single_saturated =
               best_single.valid &&
               ((best_single.hp1_level >= std::max(6, hp1_max_single - 1)) ||
@@ -1186,7 +1179,7 @@ interval:
               !startup_grace_active &&
               !isnan(temp_err_c) &&
               (temp_err_c >= tuning.dual_emergency_temp_err_c) &&
-              (f >= (demand_max_f - 1));
+              (demand_u >= 0.95f);
 
           if (emergency_dual_condition) {
             id(oq_dual_hp_emergency_hold_elapsed_accum_min) += dt_min;
@@ -1203,7 +1196,7 @@ interval:
               !demand_rundown &&
               (force_dual_capacity || force_dual_defrost ||
                (duo_clearly_better &&
-                (f >= duo_enable_min_f) &&
+                (demand_u >= duo_enable_min_u) &&
                 (heat_phase ? single_saturated : !single_good_enough) &&
                 (isnan(temp_err_c) || temp_err_c >= -0.05f)));
           const bool dual_off_condition =
@@ -1211,7 +1204,7 @@ interval:
               (!best_duo.valid) ||
               (!id(oq_dual_hp_enabled) && !dual_on_condition) ||
               (single_good_enough &&
-               (f <= duo_disable_max_f) &&
+               (demand_u <= duo_disable_max_u) &&
                (isnan(temp_err_c) || temp_err_c <= tuning.dual_disable_temp_err_max_c));
 
           if (!demand_active) {
@@ -1269,10 +1262,10 @@ interval:
               id(oq_curve_single_owner_hp),
               id(oq_duo_request_hold_until_ms),
               1);
-          owner = (f > 0) ? 1 : 0;
-          dispatch_hp1 = f;
+          owner = (demand_u > 0.0f) ? 1 : 0;
+          dispatch_hp1 = std::max(0, std::min(max_level, (int) lroundf(demand_u * (float) max_level)));
           dispatch_hp2 = 0;
-          id(oq_curve_capacity_mode_code) = (f > 0) ? 1 : 0;
+          id(oq_curve_capacity_mode_code) = (dispatch_hp1 > 0) ? 1 : 0;
           #endif
 
           id(oq_curve_request_total_level) = dispatch_hp1 + dispatch_hp2;
