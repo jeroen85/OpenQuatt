@@ -395,7 +395,6 @@ output:
           float d_cont = state * ${oq_strategy_demand_max_f};
           if (d_cont < 0.0f) d_cont = 0.0f;
           if (d_cont > (float) demand_max) d_cont = (float) demand_max;
-          id(oq_curve_demand_continuous) = d_cont;
 
           int d = (int) lroundf(d_cont);
           if (d < 0) d = 0;
@@ -510,9 +509,14 @@ output:
             if (regime != 1 && regime != 2) {
               regime = (supply_error_c >= recovery_enter_c) ? 1 : 2;
             }
+            const bool room_allows_recovery =
+                (!room_valid) || (room_c <= (room_sp_c + tuning.trim_start_c));
+            constexpr int recovery_reenter_min_f = 8;
             if (regime == 1) {
               if (supply_error_c <= recovery_exit_c) regime = 2;
-            } else if (supply_error_c >= recovery_enter_c) {
+            } else if (supply_error_c >= recovery_enter_c &&
+                       d >= recovery_reenter_min_f &&
+                       room_allows_recovery) {
               regime = 1;
             }
 
@@ -538,6 +542,16 @@ output:
             }
           }
 
+          float d_cont_effective = d_cont;
+          if (!heat_request_active) {
+            d_cont_effective = 0.0f;
+          } else if (id(oq_curve_regime_code) == 1) {
+            if (d_cont_effective < (float) d) d_cont_effective = (float) d;
+          } else if (d_cont_effective > (float) d) {
+            d_cont_effective = (float) d;
+          }
+
+          id(oq_curve_demand_continuous) = d_cont_effective;
           id(oq_curve_heat_request_active) = heat_request_active;
           id(oq_curve_off_since_ms) = off_since_ms;
           id(oq_curve_restart_inhibit_active) = restart_inhibit_active;
