@@ -56,6 +56,11 @@ globals:
     restore_value: false
     initial_value: '0'
 
+  - id: oq_cooling_owner_hp
+    type: int
+    restore_value: false
+    initial_value: '0'
+
   # 0=idle, 1=owner_hp1, 2=owner_hp2
   - id: oq_cooling_request_reason_code
     type: int
@@ -289,6 +294,7 @@ interval:
             id(oq_cooling_request_hp1_level) = 0;
             id(oq_cooling_request_hp2_level) = 0;
             id(oq_cooling_request_owner_hp) = 0;
+            id(oq_cooling_owner_hp) = 0;
             id(oq_cooling_request_reason_code) = 0;
             return;
           }
@@ -403,7 +409,7 @@ interval:
               (hp1_last_active_ms > hp2_last_active_ms) ? 1 :
               (hp2_last_active_ms > hp1_last_active_ms) ? 2 : 0;
 
-          owner = id(oq_curve_single_owner_hp);
+          owner = id(oq_cooling_owner_hp);
           if (!demand_active) {
             owner = 0;
           } else if (prev_hp1_on && !prev_hp2_on) {
@@ -431,7 +437,7 @@ interval:
               id(oq_dual_hp_enable_hold_elapsed_accum_min),
               id(oq_dual_hp_disable_hold_elapsed_accum_min),
               id(oq_dual_hp_emergency_hold_elapsed_accum_min),
-              id(oq_curve_single_owner_hp),
+              id(oq_cooling_owner_hp),
               id(oq_duo_request_hold_until_ms),
               owner);
           if (owner == 1) hp1_req = f;
@@ -442,7 +448,7 @@ interval:
               id(oq_dual_hp_enable_hold_elapsed_accum_min),
               id(oq_dual_hp_disable_hold_elapsed_accum_min),
               id(oq_dual_hp_emergency_hold_elapsed_accum_min),
-              id(oq_curve_single_owner_hp),
+              id(oq_cooling_owner_hp),
               id(oq_duo_request_hold_until_ms),
               1);
           owner = (f > 0) ? 1 : 0;
