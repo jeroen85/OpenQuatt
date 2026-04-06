@@ -808,7 +808,16 @@
   min-width: 0;
   padding: 0;
   display: grid;
-  gap: 12px;
+  gap: 10px;
+}
+
+.oq-ph-concept-kicker {
+  margin: 0;
+  color: #ea580c;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .oq-ph-concept-caption {
@@ -960,6 +969,60 @@
   stroke: rgba(234, 88, 12, 0.35);
 }
 
+.oq-ph-concept-hotspot {
+  cursor: default;
+  outline: none;
+}
+
+.oq-ph-concept-hit {
+  fill: transparent;
+  pointer-events: all;
+}
+
+.oq-ph-concept-tooltip {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease;
+}
+
+.oq-ph-concept-hotspot:hover .oq-ph-concept-tooltip,
+.oq-ph-concept-hotspot:focus .oq-ph-concept-tooltip,
+.oq-ph-concept-hotspot:focus-visible .oq-ph-concept-tooltip {
+  opacity: 1;
+}
+
+.oq-ph-concept-tooltip-panel {
+  fill: rgba(255, 255, 255, 0.96);
+  stroke: rgba(15, 23, 42, 0.1);
+  stroke-width: 1;
+}
+
+.oq-ph-concept-tooltip--below .oq-ph-concept-tooltip-panel {
+  stroke: rgba(59, 130, 246, 0.2);
+}
+
+.oq-ph-concept-tooltip--setpoint .oq-ph-concept-tooltip-panel {
+  stroke: rgba(99, 102, 241, 0.18);
+}
+
+.oq-ph-concept-tooltip--above .oq-ph-concept-tooltip-panel {
+  stroke: rgba(234, 88, 12, 0.2);
+}
+
+.oq-ph-concept-tooltip-kicker {
+  fill: var(--oq-helper-faint);
+  font-family: inherit;
+  font-size: 7px;
+  font-weight: 700;
+}
+
+.oq-ph-concept-tooltip-detail {
+  fill: var(--oq-helper-ink);
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 700;
+}
+
 .oq-ph-concept-label {
   fill: var(--oq-helper-faint);
   font-family: inherit;
@@ -990,8 +1053,11 @@
 
 .oq-ph-concept-note {
   display: grid;
-  gap: 6px;
-  padding: 10px 12px;
+  grid-template-rows: auto 1fr;
+  align-content: start;
+  gap: 8px;
+  min-height: 96px;
+  padding: 12px 14px;
   border-radius: var(--oq-helper-radius-md);
   border: 1px solid rgba(15, 23, 42, 0.08);
   background: rgba(255, 255, 255, 0.78);
@@ -1000,6 +1066,7 @@
 .oq-ph-concept-note-title {
   font-size: 0.88rem;
   font-weight: 700;
+  line-height: 1.2;
   color: var(--oq-helper-ink);
 }
 

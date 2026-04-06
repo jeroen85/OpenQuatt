@@ -380,6 +380,8 @@
     loadingEntities: true,
     entities: {},
     settingsInfoOpen: "",
+    settingsInteractionLock: false,
+    settingsRenderSignature: "",
     drafts: {},
     inputDrafts: {},
     focusedField: "",
@@ -549,6 +551,8 @@
     root.addEventListener("input", handleInput);
     root.addEventListener("focusin", handleFocusChange);
     root.addEventListener("focusout", handleFocusChange);
+    root.addEventListener("mouseover", handleSettingsInteractionStart);
+    root.addEventListener("mouseout", handleSettingsInteractionEnd);
     root.addEventListener("pointerdown", handlePointerDown);
     state.root = root;
     clearLegacyMotionVariables();
@@ -818,7 +822,7 @@
   }
 
   async function syncEntities() {
-    if (state.loadingEntities || state.focusedField || state.draggingCurveKey || state.busyAction) {
+    if (state.loadingEntities || state.focusedField || state.draggingCurveKey || state.busyAction || state.settingsInteractionLock) {
       return;
     }
 
@@ -838,6 +842,13 @@
 
     try {
       await refreshEntities(keys, "state");
+      if (state.appView === "settings") {
+        const nextSettingsSignature = getSettingsRenderSignature();
+        if (nextSettingsSignature !== state.settingsRenderSignature) {
+          render();
+        }
+        return;
+      }
       if (!patchOverviewDom()) {
         render();
       }
@@ -851,7 +862,54 @@
     window.setTimeout(() => {
       const active = document.activeElement;
       state.focusedField = active && active.dataset ? active.dataset.oqField || "" : "";
+      state.settingsInteractionLock = Boolean(active && active.closest && active.closest(".oq-ph-concept-hotspot"));
     }, 0);
+  }
+
+  function handleSettingsInteractionStart(event) {
+    if (event.target.closest(".oq-ph-concept-hotspot")) {
+      state.settingsInteractionLock = true;
+    }
+  }
+
+  function handleSettingsInteractionEnd(event) {
+    const hotspot = event.target.closest(".oq-ph-concept-hotspot");
+    if (!hotspot) {
+      return;
+    }
+
+    if (event.relatedTarget && hotspot.contains(event.relatedTarget)) {
+      return;
+    }
+
+    const hoveredHotspot = state.root && state.root.querySelector(".oq-ph-concept-hotspot:hover");
+    const focusedHotspot = document.activeElement && document.activeElement.closest
+      ? document.activeElement.closest(".oq-ph-concept-hotspot")
+      : null;
+
+    state.settingsInteractionLock = Boolean(hoveredHotspot || focusedHotspot);
+  }
+
+  function getEntitySignatureFragment(key) {
+    const entity = state.entities[key];
+    if (!entity) {
+      return `${key}:__missing__`;
+    }
+
+    const value = entity.state ?? entity.value ?? "";
+    const options = Array.isArray(entity.options) ? entity.options.join(",") : "";
+    return `${key}:${value}::${options}`;
+  }
+
+  function getSettingsRenderSignature() {
+    return [
+      state.appView,
+      state.loadingEntities ? "loading" : "ready",
+      state.controlNotice,
+      state.controlError,
+      state.settingsInfoOpen,
+      ...SETTINGS_KEYS.map(getEntitySignatureFragment),
+    ].join("|");
   }
 
   function handleInput(event) {
@@ -1743,6 +1801,27 @@
     const showQuietMaxTick = Math.abs(quietMax - exampleSetpoint) > 0.001;
     const curveTopY = top + 24;
     const curveBottomY = height - bottom;
+    const tooltipY = axisY - 44;
+    const renderConceptTooltip = (x, kicker, detail, modifier = "") => {
+      const width = 110;
+      const height = 36;
+      const tooltipX = Math.max(leftX + 4, Math.min(rightX - width - 4, x - width / 2));
+      const hitX = x - 14;
+      const hitY = tooltipY;
+      const hitWidth = 28;
+      const hitHeight = axisY - tooltipY + 16;
+      return `
+        <g class="oq-ph-concept-hotspot" tabindex="0" role="img" aria-label="${escapeHtml(`${kicker} ${detail}`)}">
+          <rect class="oq-ph-concept-hit" x="${hitX}" y="${hitY}" width="${hitWidth}" height="${hitHeight}" rx="10"></rect>
+          <circle class="oq-ph-concept-hit" cx="${x}" cy="${axisY}" r="14"></circle>
+          <g class="oq-ph-concept-tooltip${modifier ? ` oq-ph-concept-tooltip--${modifier}` : ""}" transform="translate(${tooltipX} ${tooltipY})">
+            <rect class="oq-ph-concept-tooltip-panel" width="${width}" height="${height}" rx="10"></rect>
+            <text x="${width / 2}" y="14" text-anchor="middle" class="oq-ph-concept-tooltip-kicker">${escapeHtml(kicker)}</text>
+            <text x="${width / 2}" y="27" text-anchor="middle" class="oq-ph-concept-tooltip-detail">${escapeHtml(detail)}</text>
+          </g>
+        </g>
+      `;
+    };
     const linePath = [
       `M ${leftX.toFixed(1)} ${curveTopY.toFixed(1)}`,
       `L ${quietMinX.toFixed(1)} ${axisY.toFixed(1)}`,
@@ -1753,11 +1832,13 @@
     return `
       <div class="oq-ph-concept-card">
         <div class="oq-ph-concept-visual">
+          <p class="oq-ph-concept-kicker">Kamercorrectie op Power House-huisvraag</p>
           <div class="oq-ph-concept-caption">
-            Conceptueel: deze grafiek laat zien hoe Power House op kamertemperatuur reageert rond het setpoint. Onder de comfortzone stijgt de warmtevraag, binnen de rustige zone blijft de regeling vlak en boven de bovengrens start warme tegensturing.
+            Conceptueel: deze grafiek toont de kamercorrectie boven op de berekende Power House-huisvraag. Onder de comfortgrens loopt die correctie op, binnen de comfortband blijft de directe reactie vlak terwijl opgebouwde comfort memory nog kan doorwerken, en boven de bovengrens start warme tegensturing.
           </div>
           <div class="oq-ph-concept-meta">
             <span class="oq-ph-concept-meta-pill">Setpoint <strong>${escapeHtml(formatNumericState(exampleSetpoint, 1, "°C"))}</strong></span>
+            <span class="oq-ph-concept-meta-pill">Comfortband <strong>${escapeHtml(formatNumericState(quietMin, 1, "°C"))} – ${escapeHtml(formatNumericState(quietMax, 1, "°C"))}</strong></span>
             <span class="oq-ph-concept-meta-pill">Temperatuurreactie <strong>${escapeHtml(formatNumericState(temperatureReaction, 0, " W/K"))}</strong></span>
           </div>
           <svg class="oq-ph-concept-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Grafiek voor Power House tuning">
@@ -1777,6 +1858,9 @@
             ${showQuietMinTick ? `<circle cx="${quietMinX}" cy="${axisY}" r="5" class="oq-ph-concept-point oq-ph-concept-point--below"></circle>` : ""}
             <circle cx="${setpointX}" cy="${axisY}" r="6" class="oq-ph-concept-point oq-ph-concept-point--setpoint"></circle>
             ${showQuietMaxTick ? `<circle cx="${quietMaxX}" cy="${axisY}" r="5" class="oq-ph-concept-point oq-ph-concept-point--above"></circle>` : ""}
+            ${showQuietMinTick ? renderConceptTooltip(quietMinX, "Comfort onder setpoint", formatNumericState(quietMin, 1, "°C"), "below") : ""}
+            ${renderConceptTooltip(setpointX, "Setpoint", formatNumericState(exampleSetpoint, 1, "°C"), "setpoint")}
+            ${showQuietMaxTick ? renderConceptTooltip(quietMaxX, "Comfort boven setpoint", formatNumericState(quietMax, 1, "°C"), "above") : ""}
 
             <text x="${leftX + 8}" y="${top + 18}" text-anchor="start" class="oq-ph-concept-label oq-ph-concept-label--heat">meer warmte</text>
             <text x="${leftX + 8}" y="${height - bottom - 8}" text-anchor="start" class="oq-ph-concept-label">minder warmte</text>
@@ -1794,7 +1878,7 @@
             <span class="oq-ph-concept-zone-chip-meta">onder ${escapeHtml(formatNumericState(quietMin, 1, "°C"))}</span>
           </span>
           <span class="oq-ph-concept-zone-chip oq-ph-concept-zone-chip--calm">
-            <span class="oq-ph-concept-zone-chip-label">rustige zone</span>
+            <span class="oq-ph-concept-zone-chip-label">comfortband</span>
             <span class="oq-ph-concept-zone-chip-meta">${escapeHtml(formatNumericState(quietMin, 1, "°C"))} – ${escapeHtml(formatNumericState(quietMax, 1, "°C"))}</span>
           </span>
           <span class="oq-ph-concept-zone-chip oq-ph-concept-zone-chip--above">
@@ -1808,12 +1892,12 @@
             <p>Bepaalt wanneer extra opwarming begint onder het setpoint.</p>
           </article>
           <article class="oq-ph-concept-note">
-            <span class="oq-ph-concept-note-title">Temperatuurreactie</span>
-            <p>Bepaalt hoe steil de regeling buiten de rustige zone reageert.</p>
+            <span class="oq-ph-concept-note-title">Comfortband</span>
+            <p>Binnen deze band blijft de directe temperatuurreactie vlak. Een opgebouwde comfort memory kan hier nog wel even doorwerken en loopt daarna rustig af.</p>
           </article>
           <article class="oq-ph-concept-note">
-            <span class="oq-ph-concept-note-title">Comfort boven</span>
-            <p>Bepaalt vanaf wanneer warme tegensturing boven het setpoint start.</p>
+            <span class="oq-ph-concept-note-title">Temperatuurreactie</span>
+            <p>Bepaalt hoe sterk Power House buiten de comfortband extra of minder warmtevraag als kamercorrectie toevoegt boven op de berekende huisvraag.</p>
           </article>
         </div>
       </div>
@@ -1822,10 +1906,9 @@
 
   function renderPowerHouseAdvancedField() {
     const fields = [
-      renderSettingsNumberField("houseColdTemp", "House cold temp", "Koude buitentemperatuur waarop de ingestelde piekwarmtevraag van de woning geldt. Samen met de maximale verwarmings-buitentemperatuur bepaalt dit de helling van het Power House-huisverliesmodel."),
-      renderSettingsNumberField("phKp", "Power House temperature reaction", "Bepaalt hoe sterk Power House kamertemperatuurafwijking vertaalt naar extra of minder warmtevraag in W/K. Hogere waarden reageren steviger, lagere waarden rustiger.", "", { unitOverride: "W/K" }),
-      renderSettingsNumberField("phComfortBelow", "PH comfort onder setpoint", "Extra comfortmarge onder het setpoint. Hiermee kan Power House iets sneller warmte vragen als de kamertemperatuur merkbaar onder het doel zakt."),
-      renderSettingsNumberField("phComfortAbove", "PH comfort boven setpoint", "Bovenmarge rond het setpoint. Hiermee bepaal je hoeveel ruimte er boven het setpoint mag ontstaan voordat warme tegensturing begint."),
+      renderSettingsNumberField("phKp", "Temperatuurreactie", "Bepaalt hoe sterk Power House kamertemperatuurafwijking vertaalt naar extra of minder warmtevraag in W/K. Hogere waarden reageren steviger, lagere waarden rustiger.", "", { unitOverride: "W/K" }),
+      renderSettingsNumberField("phComfortBelow", "Comfort onder setpoint", "Extra comfortmarge onder het setpoint. Hiermee kan Power House iets sneller warmte vragen als de kamertemperatuur merkbaar onder het doel zakt."),
+      renderSettingsNumberField("phComfortAbove", "Comfort boven setpoint", "Bovenmarge rond het setpoint. Hiermee bepaal je hoeveel ruimte er boven het setpoint mag ontstaan voordat warme tegensturing begint."),
     ].filter(Boolean);
 
     if (!fields.length) {
@@ -1837,7 +1920,7 @@
         <div class="oq-settings-subpanel-head">
           <p class="oq-helper-label">Power House tuning</p>
           <h4>Geavanceerde Power House tuning</h4>
-          <p>Deze parameters verfijnen hoe Power House het huisverliesmodel vertaalt naar warmtevraag rond het kamersetpoint. Pas ze alleen aan als je bewust verder wilt tunen dan de standaardprofielen.</p>
+          <p>Deze parameters verfijnen hoe Power House het huisverliesmodel vertaalt naar warmtevraag rond het kamersetpoint. De grafiek hierboven volgt direct uit Comfort onder setpoint, Comfort boven setpoint en Temperatuurreactie.</p>
         </div>
         ${renderPowerHouseConceptGraphic()}
         <div class="oq-settings-grid">
@@ -1913,12 +1996,12 @@
           <div class="oq-settings-subpanel-head">
             <p class="oq-helper-label">Power House</p>
             <h4>Power House</h4>
-            <p>Deze waarden voeden het huisverliesmodel. Rated maximum house power en Maximum heating outdoor temperature kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn; House cold temp is het koude referentiepunt waarop die piekvraag geldt. De Quatt CiC werkt in grote lijnen op een vergelijkbaar modelmatig principe.</p>
+            <p>Deze waarden voeden het huisverliesmodel. Nominale maximale huisvraag en Maximale verwarmings-buitentemperatuur kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn; Koude ondergrens is het koude referentiepunt waarop die piekvraag geldt. De Quatt CiC werkt in grote lijnen op een vergelijkbaar modelmatig principe.</p>
           </div>
           <div class="oq-settings-grid">
-            ${renderSettingsNumberField("houseColdTemp", "House cold temp", "Koude buitentemperatuur waarop de ingestelde piekwarmtevraag van de woning geldt.")}
-            ${renderSettingsNumberField("houseOutdoorMax", "Maximum heating outdoor temperature", "Buitentemperatuur waarbij de woning praktisch geen verwarmingsvraag meer heeft. Deze waarde kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn.")}
-            ${renderSettingsNumberField("housePower", "Rated maximum house power", "Geschatte piekwarmtevraag van de woning op het koude referentiepunt. Ook deze waarde kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn.")}
+            ${renderSettingsNumberField("houseColdTemp", "Koude ondergrens", "Koude buitentemperatuur waarop de ingestelde piekwarmtevraag van de woning geldt.")}
+            ${renderSettingsNumberField("houseOutdoorMax", "Maximale verwarmings-buitentemperatuur", "Buitentemperatuur waarbij de woning praktisch geen verwarmingsvraag meer heeft. Deze waarde kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn.")}
+            ${renderSettingsNumberField("housePower", "Nominale maximale huisvraag", "Geschatte piekwarmtevraag van de woning op het koude referentiepunt. Ook deze waarde kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn.")}
             ${renderPowerHouseResponseProfilesField()}
           </div>
           ${renderPowerHouseAdvancedField()}
@@ -1995,12 +2078,12 @@
       <section class="oq-helper-mode-panel">
         <div class="oq-helper-mode-head">
           <p class="oq-helper-label">Verplicht Voor Power House</p>
-          <p class="oq-helper-section-copy">Deze drie waarden bepalen het huisverliesmodel. Rated maximum house power en Maximum heating outdoor temperature kun je vaak bij Quatt opvragen; House cold temp legt het koude referentiepunt vast.</p>
+          <p class="oq-helper-section-copy">Deze drie waarden bepalen het huisverliesmodel. Nominale maximale huisvraag en Maximale verwarmings-buitentemperatuur kun je vaak bij Quatt opvragen; Koude ondergrens legt het koude referentiepunt vast.</p>
         </div>
         <div class="oq-helper-control-grid">
-          ${renderNumberInputField("houseColdTemp", "House cold temp", "Koude buitentemperatuur waarop de ingestelde piekwarmtevraag van de woning geldt.")}
-          ${renderNumberInputField("housePower", "Rated maximum house power", "Verwachte piekwarmtevraag van de woning op het koude referentiepunt.")}
-          ${renderNumberInputField("houseOutdoorMax", "Maximum heating outdoor temperature", "Buitentemperatuur waarbij de warmtevraag praktisch naar nul gaat.")}
+          ${renderNumberInputField("houseColdTemp", "Koude ondergrens", "Koude buitentemperatuur waarop de ingestelde piekwarmtevraag van de woning geldt.")}
+          ${renderNumberInputField("housePower", "Nominale maximale huisvraag", "Verwachte piekwarmtevraag van de woning op het koude referentiepunt.")}
+          ${renderNumberInputField("houseOutdoorMax", "Maximale verwarmings-buitentemperatuur", "Buitentemperatuur waarbij de warmtevraag praktisch naar nul gaat.")}
         </div>
       </section>
     `;
@@ -3916,6 +3999,7 @@
         </div>
       </div>
     `;
+    state.settingsRenderSignature = state.appView === "settings" ? getSettingsRenderSignature() : "";
     clearLegacyMotionVariables();
     syncTechTooltipLayers();
     refreshMotionTargets();
