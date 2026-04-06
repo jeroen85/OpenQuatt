@@ -7,6 +7,9 @@
 #   - Publish thermostat intent (room temp / setpoint / CH / cooling)
 #   - Feed selected OpenQuatt runtime values back to the thermostat
 #   - No temporary OT protocol diagnostics in the product package
+# Runtime requirements:
+#   - ESP32 target with `esp32.framework.type: esp-idf`
+#   - RMT-capable hardware; non-RMT targets are not supported by this OT runtime
 #
 # ==============================================================================
 

@@ -15,13 +15,20 @@ P MGS-TYPE SPARE DATA-ID  DATA-VALUE
 
 #include <stdint.h>
 #include "driver/gpio.h"
+#if __has_include("driver/gpio_filter.h")
 #include "driver/gpio_filter.h"
-// The production OT path targets the newer ESP-IDF RMT driver API used on the
-// ESP32-S3 OT hardware. Some classic ESP32 build targets in CI still compile
-// this component even though OT is not wired there, and their packaged SDKs may
-// not expose the same RMT headers consistently. Keep a small compile-time
-// fallback so those legacy targets continue to build; if OpenQuatt eventually
-// standardizes fully on ESP32-S3, this branch can likely be removed again.
+#define OQ_OT_HAS_GPIO_FILTER_HEADER 1
+#else
+#define OQ_OT_HAS_GPIO_FILTER_HEADER 0
+typedef void *gpio_glitch_filter_handle_t;
+#endif
+
+#if OQ_OT_HAS_GPIO_FILTER_HEADER && defined(SOC_GPIO_SUPPORT_PIN_GLITCH_FILTER) && SOC_GPIO_SUPPORT_PIN_GLITCH_FILTER
+#define OQ_OT_GPIO_GLITCH_FILTER_SUPPORTED 1
+#else
+#define OQ_OT_GPIO_GLITCH_FILTER_SUPPORTED 0
+#endif
+
 #if __has_include("driver/rmt_common.h") && __has_include("driver/rmt_encoder.h") && __has_include("driver/rmt_rx.h") && __has_include("driver/rmt_tx.h")
 #define OQ_OT_RMT_SUPPORTED 1
 #include "driver/rmt_common.h"
@@ -29,7 +36,7 @@ P MGS-TYPE SPARE DATA-ID  DATA-VALUE
 #include "driver/rmt_rx.h"
 #include "driver/rmt_tx.h"
 #else
-#define OQ_OT_RMT_SUPPORTED 0
+#error "openquatt_ot_slave requires the ESP-IDF RMT driver headers. Use an ESP32 target with esp32.framework.type: esp-idf."
 #endif
 #include "esp_cpu.h"
 #include "freertos/FreeRTOS.h"
@@ -175,8 +182,8 @@ class OpenTherm
 public:
 	OpenTherm(int inPin = 4, int outPin = 5, bool isSlave = false);
 	volatile OpenThermStatus status;
-	void begin(void(*handleInterruptCallback)(void));
-	void begin(void(*handleInterruptCallback)(void), void(*processResponseCallback)(unsigned long, OpenThermResponseStatus, void *), void *pCallbackUser);
+	bool begin(void(*handleInterruptCallback)(void));
+	bool begin(void(*handleInterruptCallback)(void), void(*processResponseCallback)(unsigned long, OpenThermResponseStatus, void *), void *pCallbackUser);
 	bool isReady();
 	bool sendResponse(unsigned long request);
 	

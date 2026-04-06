@@ -113,7 +113,12 @@ namespace esphome {
 			if (m_ot_thermostat_ == NULL || m_otStarted || m_otaActive || !m_enabled) {
 				return;
 			}
-			m_ot_thermostat_->begin(nullptr, processRequestThermostat, this);
+			if (!m_ot_thermostat_->begin(nullptr, processRequestThermostat, this)) {
+				ESP_LOGE(TAG, "OpenTherm startup failed: a valid ESP-IDF RMT setup is required");
+				m_otStartPending = false;
+				this->mark_failed();
+				return;
+			}
 			m_otStarted = true;
 			m_otStartPending = false;
 			m_otBusIdleSinceMs = 0;
