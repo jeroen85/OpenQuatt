@@ -22,6 +22,7 @@ from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 CURVE_MODE_LABEL = "Water Temperature Control (heating curve)"
 TRACKED_ENTITIES = {
     "select.openquatt_heating_control_mode": "heating_mode",
+    "select.openquatt_heating_curve_control_profile": "curve_profile",
     "sensor.openquatt_control_mode_label": "control_mode",
     "sensor.openquatt_curve_phase": "curve_phase",
     "sensor.openquatt_demand_curve_continuous": "curve_continuous",
@@ -82,6 +83,7 @@ class PerfMap:
 class Snapshot:
     timestamp: datetime
     heating_mode: str
+    curve_profile: str
     control_mode: str
     curve_phase: str
     curve_continuous: float
@@ -135,6 +137,14 @@ class SimSettings:
     dual_emergency_temp_err_c: float = 1.5
     dual_disable_temp_err_max_c: float = 0.5
     lead_is_hp1_default: bool = False
+
+
+@dataclass(frozen=True)
+class CurveProfileTuning:
+    dual_startup_grace_s: int = 480
+    dual_emergency_hold_min: int = 6
+    dual_emergency_temp_err_c: float = 1.5
+    dual_disable_temp_err_max_c: float = 0.5
 
 
 @dataclass(frozen=True)
@@ -236,6 +246,7 @@ def parse_history_csv(path: Path) -> List[Snapshot]:
         snapshot = Snapshot(
             timestamp=timestamp,
             heating_mode=str(current["heating_mode"]),
+            curve_profile=str(current.get("curve_profile", "Balanced")),
             control_mode=str(current["control_mode"]),
             curve_phase=str(current["curve_phase"]),
             curve_continuous=_curve_continuous_value(current),
@@ -249,6 +260,7 @@ def parse_history_csv(path: Path) -> List[Snapshot]:
         )
         dedupe_key = (
             snapshot.heating_mode,
+            snapshot.curve_profile,
             snapshot.control_mode,
             snapshot.curve_phase,
             round(snapshot.curve_continuous, 3),
@@ -302,6 +314,25 @@ def _curve_continuous_value(current: Dict[str, object]) -> float:
     if isinstance(value, (float, int)):
         return float(value)
     return float(current["curve_post"])
+
+
+def curve_profile_tuning(profile: str) -> CurveProfileTuning:
+    tuning = CurveProfileTuning()
+    if profile == "Comfort":
+        return CurveProfileTuning(
+            dual_startup_grace_s=300,
+            dual_emergency_hold_min=4,
+            dual_emergency_temp_err_c=1.2,
+            dual_disable_temp_err_max_c=0.7,
+        )
+    if profile == "Stable":
+        return CurveProfileTuning(
+            dual_startup_grace_s=600,
+            dual_emergency_hold_min=8,
+            dual_emergency_temp_err_c=1.8,
+            dual_disable_temp_err_max_c=0.4,
+        )
+    return tuning
 
 
 def build_candidates(snapshot: Snapshot, perf_map: PerfMap, settings: SimSettings) -> List[Candidate]:
@@ -476,6 +507,7 @@ def choose_branch_strategy_levelcombination(
     state: BranchState,
     settings: SimSettings,
 ) -> Tuple[Candidate, BranchState, float]:
+    profile_tuning = curve_profile_tuning(snapshot.curve_profile)
     demand_active = snapshot.curve_post > 0
     heat_phase = snapshot.curve_phase == "HEAT" and demand_active
     demand_rundown = snapshot.curve_post < state.previous_curve_post
@@ -575,7 +607,7 @@ def choose_branch_strategy_levelcombination(
     lead_last_start = state.hp1_last_start_ts if state.lead_is_hp1 else state.hp2_last_start_ts
     startup_grace_active = (
         lead_last_start is not None
-        and (snapshot.timestamp - lead_last_start).total_seconds() < settings.dual_startup_grace_s
+        and (snapshot.timestamp - lead_last_start).total_seconds() < profile_tuning.dual_startup_grace_s
     )
     duo_enable_margin_w = 700.0 if heat_phase else 450.0
     duo_disable_margin_w = 250.0
@@ -605,13 +637,13 @@ def choose_branch_strategy_levelcombination(
         and not demand_rundown
         and single_saturated
         and duo_clearly_better
-        and temp_err_c >= settings.dual_emergency_temp_err_c
+        and temp_err_c >= profile_tuning.dual_emergency_temp_err_c
         and dispatch_u >= 0.95
     )
 
     dt_min = max(0.0, (snapshot.timestamp - state.previous_timestamp).total_seconds()) / 60.0
     dual_emergency_accum = state.dual_emergency_hold_min_accum + dt_min if emergency_dual_condition else 0.0
-    force_dual_capacity = dual_emergency_accum >= settings.dual_emergency_hold_min
+    force_dual_capacity = dual_emergency_accum >= profile_tuning.dual_emergency_hold_min
     dual_on_condition = (
         demand_active
         and best_duo_opt is not None
@@ -634,7 +666,7 @@ def choose_branch_strategy_levelcombination(
         or (
             single_good_enough
             and snapshot.curve_post <= duo_disable_max_post
-            and temp_err_c <= settings.dual_disable_temp_err_max_c
+            and temp_err_c <= profile_tuning.dual_disable_temp_err_max_c
         )
     )
 
