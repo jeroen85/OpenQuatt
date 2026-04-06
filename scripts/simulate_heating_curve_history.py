@@ -24,6 +24,7 @@ TRACKED_ENTITIES = {
     "select.openquatt_heating_control_mode": "heating_mode",
     "sensor.openquatt_control_mode_label": "control_mode",
     "sensor.openquatt_curve_phase": "curve_phase",
+    "sensor.openquatt_demand_curve_continuous": "curve_continuous",
     "sensor.openquatt_demand_curve_post_guardrail": "curve_post",
     "sensor.openquatt_heating_curve_supply_target": "supply_target",
     "sensor.openquatt_water_supply_temp_selected": "supply_actual",
@@ -83,6 +84,7 @@ class Snapshot:
     heating_mode: str
     control_mode: str
     curve_phase: str
+    curve_continuous: float
     curve_post: int
     supply_target: float
     supply_actual: float
@@ -236,6 +238,7 @@ def parse_history_csv(path: Path) -> List[Snapshot]:
             heating_mode=str(current["heating_mode"]),
             control_mode=str(current["control_mode"]),
             curve_phase=str(current["curve_phase"]),
+            curve_continuous=_curve_continuous_value(current),
             curve_post=int(current["curve_post"]),
             supply_target=float(current["supply_target"]),
             supply_actual=float(current["supply_actual"]),
@@ -248,6 +251,7 @@ def parse_history_csv(path: Path) -> List[Snapshot]:
             snapshot.heating_mode,
             snapshot.control_mode,
             snapshot.curve_phase,
+            round(snapshot.curve_continuous, 3),
             snapshot.curve_post,
             round(snapshot.supply_target, 3),
             round(snapshot.supply_actual, 3),
@@ -267,7 +271,7 @@ def _normalize_state(key: str, value: str) -> object:
         return value
     if key in {"curve_post", "hp1_level", "hp2_level"}:
         return int(round(float(value)))
-    if key in {"supply_target", "supply_actual", "outside_temp", "flow_lph"}:
+    if key in {"curve_continuous", "supply_target", "supply_actual", "outside_temp", "flow_lph"}:
         return float(value)
     return value
 
@@ -291,6 +295,13 @@ def _snapshot_ready(current: Dict[str, object]) -> bool:
         if current[key] in {"unknown", "unavailable", ""}:
             return False
     return True
+
+
+def _curve_continuous_value(current: Dict[str, object]) -> float:
+    value = current.get("curve_continuous")
+    if isinstance(value, (float, int)):
+        return float(value)
+    return float(current["curve_post"])
 
 
 def build_candidates(snapshot: Snapshot, perf_map: PerfMap, settings: SimSettings) -> List[Candidate]:
@@ -467,7 +478,7 @@ def choose_branch_strategy_levelcombination(
 ) -> Tuple[Candidate, BranchState, float]:
     demand_active = snapshot.curve_post > 0
     heat_phase = snapshot.curve_phase == "HEAT" and demand_active
-    demand_rundown = snapshot.curve_post <= state.previous_curve_post
+    demand_rundown = snapshot.curve_post < state.previous_curve_post
     temp_err_c = snapshot.supply_target - snapshot.supply_actual
 
     prev_hp1_on = previous.hp1_level > 0
@@ -499,8 +510,10 @@ def choose_branch_strategy_levelcombination(
             duo_candidates.append(candidate)
             duo_cap_w = max(duo_cap_w, p_th_w)
 
-    demand_u = max(0.0, min(1.0, snapshot.curve_post / 20.0))
-    target_power_w = (owner_cap_w if heat_phase else duo_cap_w) * demand_u if demand_active else 0.0
+    demand_u = max(0.0, min(1.0, snapshot.curve_continuous / 20.0))
+    dispatch_u = max(0.0, min(1.0, snapshot.curve_post / 20.0))
+    effective_u = demand_u if heat_phase else min(demand_u, dispatch_u)
+    target_power_w = (owner_cap_w if heat_phase else duo_cap_w) * effective_u if demand_active else 0.0
 
     def better_branch_candidate(candidate: Candidate, best: Optional[Candidate]) -> bool:
         if best is None:
@@ -589,8 +602,11 @@ def choose_branch_strategy_levelcombination(
         and best_duo_opt is not None
         and heat_phase
         and not startup_grace_active
+        and not demand_rundown
+        and single_saturated
+        and duo_clearly_better
         and temp_err_c >= settings.dual_emergency_temp_err_c
-        and snapshot.curve_post >= 19
+        and dispatch_u >= 0.95
     )
 
     dt_min = max(0.0, (snapshot.timestamp - state.previous_timestamp).total_seconds()) / 60.0

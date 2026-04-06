@@ -149,11 +149,13 @@ inline float normalized_demand_u(float demand_continuous, int demand_max_f) {
 
 inline float phase_target_power_w(bool heat_phase,
                                   float demand_u,
+                                  float dispatch_u,
                                   float single_cap_w,
                                   float duo_cap_w) {
-  if (demand_u <= 0.0f) return 0.0f;
-  const float single_target_w = isnan(single_cap_w) ? 0.0f : (single_cap_w * demand_u);
-  const float duo_target_w = isnan(duo_cap_w) ? single_target_w : (duo_cap_w * demand_u);
+  const float effective_u = heat_phase ? demand_u : std::min(demand_u, dispatch_u);
+  if (effective_u <= 0.0f) return 0.0f;
+  const float single_target_w = isnan(single_cap_w) ? 0.0f : (single_cap_w * effective_u);
+  const float duo_target_w = isnan(duo_cap_w) ? single_target_w : (duo_cap_w * effective_u);
   return heat_phase ? single_target_w : duo_target_w;
 }
 
