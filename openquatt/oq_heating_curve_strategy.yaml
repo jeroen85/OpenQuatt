@@ -1054,7 +1054,6 @@ interval:
           }
           const bool demand_active = (f > 0);
           const bool heat_phase = demand_active && (id(oq_curve_regime_code) == 1);
-          const bool coast_phase = demand_active && (id(oq_curve_regime_code) == 2);
           const int prev_curve_post = id(oq_demand_filtered_prev);
           const bool demand_rundown = (f <= prev_curve_post);
 
@@ -1077,59 +1076,15 @@ interval:
             return oq_perf::interp_power_th_w(level, id(outside_temp_selected).state, id(oq_supply_target_temp).state);
           };
 
-          struct DispatchCandidate {
-            bool valid;
-            int hp1_level;
-            int hp2_level;
-            float power_w;
-            float error_w;
-            int active_hp_count;
-            int balance_gap;
-          };
-
-          auto invalid_candidate = [&]()->DispatchCandidate {
-            return DispatchCandidate{false, 0, 0, 0.0f, 1.0e9f, 0, 0};
-          };
-
           const int prev1 = id(hp1_last_applied_level);
           const int prev2 = id(${curve_secondary_last_applied_level_id});
-          auto better_candidate = [&](const DispatchCandidate &candidate,
-                                      const DispatchCandidate &best)->bool {
-            if (!candidate.valid) return false;
-            if (!best.valid) return true;
-            if (fabsf(candidate.error_w - best.error_w) > 50.0f) return candidate.error_w < best.error_w;
 
-            const int candidate_starts =
-                ((prev1 == 0) && (candidate.hp1_level > 0) ? 1 : 0) +
-                ((prev2 == 0) && (candidate.hp2_level > 0) ? 1 : 0);
-            const int best_starts =
-                ((prev1 == 0) && (best.hp1_level > 0) ? 1 : 0) +
-                ((prev2 == 0) && (best.hp2_level > 0) ? 1 : 0);
-            if (candidate_starts != best_starts) return candidate_starts < best_starts;
-
-            const int candidate_moves =
-                abs(candidate.hp1_level - prev1) + abs(candidate.hp2_level - prev2);
-            const int best_moves =
-                abs(best.hp1_level - prev1) + abs(best.hp2_level - prev2);
-            if (candidate_moves != best_moves) return candidate_moves < best_moves;
-
-            if (candidate.active_hp_count != best.active_hp_count) {
-              return candidate.active_hp_count < best.active_hp_count;
-            }
-            if (candidate.balance_gap != best.balance_gap) return candidate.balance_gap < best.balance_gap;
-            return candidate.power_w < best.power_w;
-          };
-
-          auto build_candidate = [&](int hp1_level, int hp2_level, float target_power_w)->DispatchCandidate {
+          auto build_candidate = [&](int hp1_level, int hp2_level, float target_power_w)->oq_curve::DispatchCandidate {
             float p1 = level_power_w(true, hp1_level);
-            #if OQ_TOPOLOGY_DUO
             float p2 = level_power_w(false, hp2_level);
-            #else
-            float p2 = (hp2_level <= 0) ? 0.0f : NAN;
-            #endif
-            if (isnan(p1) || isnan(p2)) return invalid_candidate();
+            if (isnan(p1) || isnan(p2)) return oq_curve::invalid_dispatch_candidate();
             const float power_w = p1 + p2;
-            return DispatchCandidate{
+            return oq_curve::DispatchCandidate{
               true,
               hp1_level,
               hp2_level,
@@ -1142,33 +1097,19 @@ interval:
 
           const bool prev_hp1_on = (prev1 > 0);
           const bool prev_hp2_on = (prev2 > 0);
-          int single_owner = demand_active ? id(oq_curve_single_owner_hp) : 0;
-          if (!demand_active) {
-            single_owner = 0;
-          } else if (prev_hp1_on != prev_hp2_on) {
-            single_owner = prev_hp1_on ? 1 : 2;
-          } else if (single_owner != 1 && single_owner != 2) {
-            single_owner = lead_is_hp1 ? 1 : 2;
-          }
-
-          #if OQ_TOPOLOGY_DUO
+          const int single_owner = oq_curve::pick_single_owner(
+              demand_active, id(oq_curve_single_owner_hp), prev_hp1_on, prev_hp2_on, lead_is_hp1);
           const int owner_max_single = (single_owner == 2)
               ? max_allowed_level_for_hp(false)
               : max_allowed_level_for_hp(true);
           const int hp1_max_single = max_allowed_level_for_hp(true);
           const int hp2_max_single = max_allowed_level_for_hp(false);
-          #else
-          const int owner_max_single = max_allowed_level_for_hp(true);
-          const int hp1_max_single = owner_max_single;
-          const int hp2_max_single = 0;
-          #endif
 
           const float owner_cap_w = (single_owner == 2)
               ? level_power_w(false, owner_max_single)
               : level_power_w(true, owner_max_single);
 
           float duo_cap_w = 0.0f;
-          #if OQ_TOPOLOGY_DUO
           for (int hp1_level = 1; hp1_level <= hp1_max_single; hp1_level++) {
             for (int hp2_level = 1; hp2_level <= hp2_max_single; hp2_level++) {
               if (abs(hp1_level - hp2_level) > 1) continue;
@@ -1177,7 +1118,6 @@ interval:
               if (candidate.power_w > duo_cap_w) duo_cap_w = candidate.power_w;
             }
           }
-          #endif
 
           float demand_continuous = id(oq_curve_demand_continuous);
           if (isnan(demand_continuous)) demand_continuous = (float) f;
@@ -1192,33 +1132,29 @@ interval:
             target_power_w = heat_phase ? single_target_w : duo_target_w;
           }
 
-          DispatchCandidate best_single = invalid_candidate();
+          oq_curve::DispatchCandidate best_single = oq_curve::invalid_dispatch_candidate();
           if (demand_active && single_owner == 1) {
             for (int hp1_level = 1; hp1_level <= hp1_max_single; hp1_level++) {
               const auto candidate = build_candidate(hp1_level, 0, target_power_w);
-              if (better_candidate(candidate, best_single)) best_single = candidate;
+              if (oq_curve::better_dispatch_candidate(candidate, best_single, prev1, prev2)) best_single = candidate;
             }
           } else if (demand_active && single_owner == 2) {
-            #if OQ_TOPOLOGY_DUO
             for (int hp2_level = 1; hp2_level <= hp2_max_single; hp2_level++) {
               const auto candidate = build_candidate(0, hp2_level, target_power_w);
-              if (better_candidate(candidate, best_single)) best_single = candidate;
+              if (oq_curve::better_dispatch_candidate(candidate, best_single, prev1, prev2)) best_single = candidate;
             }
-            #endif
           }
 
-          DispatchCandidate best_duo = invalid_candidate();
-          #if OQ_TOPOLOGY_DUO
+          oq_curve::DispatchCandidate best_duo = oq_curve::invalid_dispatch_candidate();
           if (demand_active) {
             for (int hp1_level = 1; hp1_level <= hp1_max_single; hp1_level++) {
               for (int hp2_level = 1; hp2_level <= hp2_max_single; hp2_level++) {
                 if (abs(hp1_level - hp2_level) > 1) continue;
                 const auto candidate = build_candidate(hp1_level, hp2_level, target_power_w);
-                if (better_candidate(candidate, best_duo)) best_duo = candidate;
+                if (oq_curve::better_dispatch_candidate(candidate, best_duo, prev1, prev2)) best_duo = candidate;
               }
             }
           }
-          #endif
 
           const int dual_on_hold_min = std::max(1, (int) roundf(id(oq_dual_hp_enable_hold_min).state));
           const int dual_off_hold_min = std::max(1, (int) roundf(id(oq_dual_hp_disable_hold_min).state));
@@ -1307,7 +1243,6 @@ interval:
               (force_dual_capacity || force_dual_defrost || id(oq_dual_hp_enabled));
 
           if (!demand_active) {
-            single_owner = 0;
             owner = 0;
             dispatch_hp1 = 0;
             dispatch_hp2 = 0;
@@ -1315,8 +1250,8 @@ interval:
           } else if (dual_enabled) {
             id(oq_curve_single_owner_hp) = 0;
             owner = 0;
-            dispatch_hp1 = best_duo.valid ? best_duo.hp1_level : 0;
-            dispatch_hp2 = best_duo.valid ? best_duo.hp2_level : 0;
+            dispatch_hp1 = best_duo.hp1_level;
+            dispatch_hp2 = best_duo.hp2_level;
             id(oq_curve_capacity_mode_code) = 2;
           } else {
             id(oq_curve_single_owner_hp) = single_owner;

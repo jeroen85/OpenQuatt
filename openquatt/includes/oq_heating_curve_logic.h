@@ -1,6 +1,7 @@
 #pragma once
 
 #include <math.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <string>
 
@@ -30,6 +31,16 @@ struct ControlProfileTuning {
   int dual_emergency_hold_min = 6;
   float dual_emergency_temp_err_c = 1.50f;
   float dual_disable_temp_err_max_c = 0.50f;
+};
+
+struct DispatchCandidate {
+  bool valid = false;
+  int hp1_level = 0;
+  int hp2_level = 0;
+  float power_w = 0.0f;
+  float error_w = 1.0e9f;
+  int active_hp_count = 0;
+  int balance_gap = 0;
 };
 
 inline ControlProfileTuning control_profile(const std::string &profile_option) {
@@ -122,6 +133,50 @@ inline void reset_request_state(uint32_t &request_last_loop_ms,
   dispatch_hp1_level = 0;
   dispatch_hp2_level = 0;
   capacity_mode_code = 0;
+}
+
+inline DispatchCandidate invalid_dispatch_candidate() {
+  return DispatchCandidate{};
+}
+
+inline int pick_single_owner(bool demand_active,
+                             int stored_owner_hp,
+                             bool prev_hp1_on,
+                             bool prev_hp2_on,
+                             bool lead_is_hp1) {
+  if (!demand_active) return 0;
+  if (prev_hp1_on != prev_hp2_on) return prev_hp1_on ? 1 : 2;
+  if (stored_owner_hp == 1 || stored_owner_hp == 2) return stored_owner_hp;
+  return lead_is_hp1 ? 1 : 2;
+}
+
+inline bool better_dispatch_candidate(const DispatchCandidate &candidate,
+                                      const DispatchCandidate &best,
+                                      int prev_hp1_level,
+                                      int prev_hp2_level) {
+  if (!candidate.valid) return false;
+  if (!best.valid) return true;
+  if (fabsf(candidate.error_w - best.error_w) > 50.0f) return candidate.error_w < best.error_w;
+
+  const int candidate_starts =
+      ((prev_hp1_level == 0) && (candidate.hp1_level > 0) ? 1 : 0) +
+      ((prev_hp2_level == 0) && (candidate.hp2_level > 0) ? 1 : 0);
+  const int best_starts =
+      ((prev_hp1_level == 0) && (best.hp1_level > 0) ? 1 : 0) +
+      ((prev_hp2_level == 0) && (best.hp2_level > 0) ? 1 : 0);
+  if (candidate_starts != best_starts) return candidate_starts < best_starts;
+
+  const int candidate_moves =
+      abs(candidate.hp1_level - prev_hp1_level) + abs(candidate.hp2_level - prev_hp2_level);
+  const int best_moves =
+      abs(best.hp1_level - prev_hp1_level) + abs(best.hp2_level - prev_hp2_level);
+  if (candidate_moves != best_moves) return candidate_moves < best_moves;
+
+  if (candidate.active_hp_count != best.active_hp_count) {
+    return candidate.active_hp_count < best.active_hp_count;
+  }
+  if (candidate.balance_gap != best.balance_gap) return candidate.balance_gap < best.balance_gap;
+  return candidate.power_w < best.power_w;
 }
 
 inline const char *regime_name(int regime_code) {
