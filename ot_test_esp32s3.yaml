@@ -7,6 +7,9 @@ substitutions:
   ot_in_pin: GPIO12
   ot_out_pin: GPIO13
 
+# Minimal standalone OT validation config.
+# Intended to verify the OT external component on ESP32-S3 with ESP-IDF/RMT,
+# without pulling in the full OpenQuatt package stack.
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}

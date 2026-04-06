@@ -61,6 +61,7 @@ Package include order is intentional:
 21. `oq_HP_io` (HP1 always; HP2 only on Duo)
 
 This order mirrors data dependencies and ownership boundaries.
+`oq_ot_slave` uses the ESP-IDF RMT-based OpenTherm runtime and is only intended for RMT-capable ESP32 targets.
 
 ## 2. Ownership Model
 
