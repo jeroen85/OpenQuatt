@@ -1045,6 +1045,7 @@ interval:
           float demand_continuous = id(oq_curve_demand_continuous);
           if (isnan(demand_continuous)) demand_continuous = (float) f;
           const float demand_u = oq_curve::normalized_demand_u(demand_continuous, demand_max_f);
+          const float dispatch_u = oq_curve::normalized_demand_u((float) f, demand_max_f);
           #if OQ_TOPOLOGY_DUO
           const auto tuning = oq_curve::control_profile(
               id(oq_curve_control_profile).has_state()
@@ -1121,9 +1122,9 @@ interval:
             }
           }
 
-          const bool demand_rundown = (demand_continuous <= (float) prev_curve_post);
+          const bool demand_rundown = (f < prev_curve_post);
           const float target_power_w =
-              demand_active ? oq_curve::phase_target_power_w(heat_phase, demand_u, owner_cap_w, duo_cap_w) : 0.0f;
+              demand_active ? oq_curve::phase_target_power_w(heat_phase, demand_u, dispatch_u, owner_cap_w, duo_cap_w) : 0.0f;
 
           oq_curve::DispatchCandidate best_single = oq_curve::invalid_dispatch_candidate();
           if (demand_active && single_owner == 1) {
@@ -1177,9 +1178,12 @@ interval:
           const bool emergency_dual_condition =
               demand_active && best_duo.valid && heat_phase &&
               !startup_grace_active &&
+              !demand_rundown &&
+              single_saturated &&
+              duo_clearly_better &&
               !isnan(temp_err_c) &&
               (temp_err_c >= tuning.dual_emergency_temp_err_c) &&
-              (demand_u >= 0.95f);
+              (dispatch_u >= 0.95f);
 
           if (emergency_dual_condition) {
             id(oq_dual_hp_emergency_hold_elapsed_accum_min) += dt_min;
@@ -1196,7 +1200,7 @@ interval:
               !demand_rundown &&
               (force_dual_capacity || force_dual_defrost ||
                (duo_clearly_better &&
-                (demand_u >= duo_enable_min_u) &&
+                (dispatch_u >= duo_enable_min_u) &&
                 (heat_phase ? single_saturated : !single_good_enough) &&
                 (isnan(temp_err_c) || temp_err_c >= -0.05f)));
           const bool dual_off_condition =
@@ -1204,7 +1208,7 @@ interval:
               (!best_duo.valid) ||
               (!id(oq_dual_hp_enabled) && !dual_on_condition) ||
               (single_good_enough &&
-               (demand_u <= duo_disable_max_u) &&
+               (dispatch_u <= duo_disable_max_u) &&
                (isnan(temp_err_c) || temp_err_c <= tuning.dual_disable_temp_err_max_c));
 
           if (!demand_active) {
