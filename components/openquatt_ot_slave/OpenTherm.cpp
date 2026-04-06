@@ -47,7 +47,7 @@ OpenTherm::OpenTherm(int inPin, int outPin, bool isSlave):
 {
 }
 
-void OpenTherm::begin(void(*handleInterruptCallback)(void), void(*processResponseCallback)(unsigned long, OpenThermResponseStatus, void *), void *pCallbackUser)
+bool OpenTherm::begin(void(*handleInterruptCallback)(void), void(*processResponseCallback)(unsigned long, OpenThermResponseStatus, void *), void *pCallbackUser)
 {
 	gpio_config_t input_config{};
 	input_config.pin_bit_mask = 1ULL << inPin;
@@ -68,7 +68,7 @@ void OpenTherm::begin(void(*handleInterruptCallback)(void), void(*processRespons
 	const bool wants_rx = (handleInterruptCallback != NULL) || (processResponseCallback != NULL);
 	this->pCallbackUser = pCallbackUser;
 	activateBoiler();
-	status = OpenThermStatus::READY;
+	status = OpenThermStatus::NOT_INITIALIZED;
 	cycles_per_us_ = static_cast<uint32_t>(esp_clk_cpu_freq() / 1000000ULL);
 	if (cycles_per_us_ == 0) {
 		cycles_per_us_ = 240;
@@ -79,15 +79,23 @@ void OpenTherm::begin(void(*handleInterruptCallback)(void), void(*processRespons
 	init_rx_glitch_filter_();
 	if (wants_rx && !init_rx_channel_()) {
 		ESP_LOGE(TAG, "Failed to start RMT RX on GPIO%d", inPin);
+		deinit_rx_glitch_filter_();
+		return false;
 	}
 	if (!init_tx_channel_()) {
-		ESP_LOGW(TAG, "Falling back to blocking TX on GPIO%d", outPin);
+		ESP_LOGE(TAG, "Failed to start RMT TX on GPIO%d", outPin);
+		deinit_rx_channel_();
+		deinit_rx_glitch_filter_();
+		return false;
 	}
+
+	status = OpenThermStatus::READY;
+	return true;
 }
 
-void OpenTherm::begin(void(*handleInterruptCallback)(void))
+bool OpenTherm::begin(void(*handleInterruptCallback)(void))
 {
-	begin(handleInterruptCallback, NULL, NULL);
+	return begin(handleInterruptCallback, NULL, NULL);
 }
 
 bool IRAM_ATTR OpenTherm::isReady()
@@ -191,7 +199,7 @@ bool OpenTherm::init_tx_channel_() {
 }
 
 bool OpenTherm::init_rx_glitch_filter_() {
-#if !OQ_OT_RMT_SUPPORTED
+#if !OQ_OT_RMT_SUPPORTED || !OQ_OT_GPIO_GLITCH_FILTER_SUPPORTED
 	rx_glitch_filter_ = nullptr;
 	return false;
 #else
@@ -226,7 +234,7 @@ bool OpenTherm::init_rx_glitch_filter_() {
 }
 
 void OpenTherm::deinit_rx_glitch_filter_() {
-#if !OQ_OT_RMT_SUPPORTED
+#if !OQ_OT_RMT_SUPPORTED || !OQ_OT_GPIO_GLITCH_FILTER_SUPPORTED
 	rx_glitch_filter_ = nullptr;
 	return;
 #else
