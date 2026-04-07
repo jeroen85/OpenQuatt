@@ -452,6 +452,15 @@ output:
 
           const bool above_stop_band = pv >= (spw + stop_delta_c);
           const bool low_pid_for_off = d <= off_pid_max_f;
+          const bool low_load_release_condition =
+              !oil_return_mask_active &&
+              heat_request_active &&
+              (id(oq_curve_regime_code) == 2) &&
+              (id(oq_curve_demand_pre_guardrail) <= 0) &&
+              ((!room_valid) || (room_c >= (room_sp_c - room_resume_heat_c))) &&
+              (pv >= (spw + 0.25f));
+          const bool normal_stop_condition =
+              !oil_return_mask_active && above_stop_band && low_pid_for_off && room_allows_off;
           const float restart_bypass_delta_c = restart_delta_c + restart_bypass_extra_c;
           const uint32_t now_ms = (uint32_t) millis();
           constexpr uint32_t oil_return_hold_ms = 180000UL;
@@ -471,11 +480,14 @@ output:
           uint32_t off_since_ms = id(oq_curve_off_since_ms);
           const bool was_heat_request_active = heat_request_active;
           if (heat_request_active) {
-            if (!oil_return_mask_active && above_stop_band && low_pid_for_off && room_allows_off) {
+            if (normal_stop_condition || low_load_release_condition) {
               uint32_t armed_ms = id(oq_curve_stop_arm_ms);
+              const uint32_t confirm_ms =
+                  low_load_release_condition ? std::min<uint32_t>(off_confirm_ms, 90000UL)
+                                             : off_confirm_ms;
               if (armed_ms == 0 || now_ms <= armed_ms) {
                 id(oq_curve_stop_arm_ms) = now_ms;
-              } else if ((now_ms - armed_ms) >= off_confirm_ms) {
+              } else if ((now_ms - armed_ms) >= confirm_ms) {
                 heat_request_active = false;
                 id(oq_curve_stop_arm_ms) = 0;
               }
