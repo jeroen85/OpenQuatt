@@ -1486,8 +1486,9 @@ views:
 
               Voor `Buitentemperatuur bron` is `Auto` de aanbevolen stand.
               OpenQuatt kiest dan de meest betrouwbare bron: eerst de actieve
-              buitenunitmeting, daarna HA als de unit idle is, en alleen als
-              fallback de idle lokale meting.
+              buitenunitmeting, daarna HA als de unit idle is mits die bron is
+              geconfigureerd en geldig is, en alleen als fallback de idle lokale
+              meting.
 
               </details>
             text_only: true

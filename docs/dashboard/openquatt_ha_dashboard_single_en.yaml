@@ -1422,8 +1422,8 @@ views:
 
               For `Outside temperature source`, `Auto` is the recommended mode.
               OpenQuatt then prefers the most trustworthy source: an active
-              outdoor-unit reading first, HA input while the unit is idle, and
-              the idle local reading only as fallback.
+              outdoor-unit reading first, HA input while the unit is idle if it
+              is configured and valid, and the idle local reading only as fallback.
 
               </details>
             text_only: true

@@ -249,7 +249,7 @@ In de lokale Duo-aggregatie kijkt OpenQuatt sinds `dev` explicieter naar de kwal
 
 - een buitenmeting van een HP die actief in `Heating` of `Cooling` draait krijgt voorrang boven een idle HP-meting
 - als beide HP's actief zijn, gebruikt OpenQuatt de laagste van de twee actieve metingen
-- als alle HP's idle zijn, gebruikt OpenQuatt bij voorkeur de HA-buitentemperatuur
+- als alle HP's idle zijn, gebruikt OpenQuatt bij voorkeur de HA-buitentemperatuur als die is geconfigureerd en een geldige waarde levert
 - alleen als HA niet beschikbaar is, gebruikt OpenQuatt het gemiddelde van de geldige lokale metingen als fallback
 - een lokale HP-buitenwaarde telt tijdelijk niet mee als die te lang exact stil blijft staan terwijl diezelfde warmtepomp verder nog wel verse activiteit laat zien
 
