@@ -1420,6 +1420,11 @@ views:
               - quick comparison between CIC, local, and HA Input
               - validation of the effective control input
 
+              For `Outside temperature source`, `Auto` is the recommended mode.
+              OpenQuatt then prefers the most trustworthy source: an active
+              outdoor-unit reading first, HA input while the unit is idle, and
+              the idle local reading only as fallback.
+
               </details>
             text_only: true
           - type: vertical-stack

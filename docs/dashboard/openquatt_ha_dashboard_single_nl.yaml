@@ -1484,6 +1484,11 @@ views:
               - snelle vergelijking tussen CIC, lokaal en HA input
               - validatie van de effectieve regelinput
 
+              Voor `Buitentemperatuur bron` is `Auto` de aanbevolen stand.
+              OpenQuatt kiest dan de meest betrouwbare bron: eerst de actieve
+              buitenunitmeting, daarna HA als de unit idle is, en alleen als
+              fallback de idle lokale meting.
+
               </details>
             text_only: true
             grid_options:
