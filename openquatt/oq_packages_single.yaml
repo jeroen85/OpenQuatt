@@ -55,6 +55,7 @@ oq_power_house_strategy: !include
   vars:
     ph_secondary_minutes_id: "hp1_minutes"
     ph_secondary_defrost_id: "hp1_defrost"
+    ph_secondary_oil_return_id: "hp1_prot_oil_return"
     ph_secondary_last_applied_level_id: "hp1_last_applied_level"
     ph_secondary_4_way_valve_id: "hp1_4_way_valve"
     ph_secondary_excluded_level_a_id: "hp1_excluded_level_a"
