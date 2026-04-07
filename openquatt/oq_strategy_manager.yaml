@@ -177,14 +177,23 @@ sensor:
     web_server:
       sorting_group_id: oq_temperatures
     lambda: |-
-      // Ignore a local HP reading if that specific outside-temperature register stays
-      // frozen while the rest of the same HP still shows fresh activity.
+      // Prefer local sensors from HPs that are actively moving air. Idle local
+      // sensors remain useful as fallback, but they are more vulnerable to sun,
+      // frost and thermal lag than a running unit.
       const uint32_t now_ms = millis();
       uint32_t stale_s = (uint32_t) ${oq_outside_temp_stale_s};
       const uint32_t stale_ms = stale_s * 1000UL;
       const bool dual_local_sources = (${secondary_outside_is_distinct} != 0);
       const float hp1_outside_c = id(hp1_outside_temp).state;
       const float hp2_outside_c = id(${secondary_outside_temp_id}).state;
+      const float hp1_mode_raw = id(hp1_working_mode).state;
+      const float hp2_mode_raw = id(${secondary_working_mode_id}).state;
+
+      auto is_active_working_mode = [](float mode_raw)->bool {
+        if (isnan(mode_raw)) return false;
+        const int mode = (int) roundf(mode_raw);
+        return mode == 1 || mode == 2;
+      };
 
       auto trusted_local_outside = [&](float outside_c, uint32_t last_change_ms, uint32_t activity_ms)->bool {
         if (isnan(outside_c)) return false;
@@ -202,8 +211,13 @@ sensor:
           trusted_local_outside(hp1_outside_c, id(hp1_outside_temp_last_change_ms), id(hp1_outside_temp_activity_ms));
       const bool hp2_valid =
           trusted_local_outside(hp2_outside_c, id(${secondary_outside_last_change_ms_id}), id(${secondary_outside_activity_ms_id}));
+      const bool hp1_active = hp1_valid && is_active_working_mode(hp1_mode_raw);
+      const bool hp2_active = hp2_valid && is_active_working_mode(hp2_mode_raw);
 
-      if (hp1_valid && hp2_valid) return std::min(hp1_outside_c, hp2_outside_c);
+      if (hp1_active && hp2_active) return std::min(hp1_outside_c, hp2_outside_c);
+      if (hp1_active) return hp1_outside_c;
+      if (hp2_active) return hp2_outside_c;
+      if (hp1_valid && hp2_valid) return 0.5f * (hp1_outside_c + hp2_outside_c);
       if (hp1_valid) return hp1_outside_c;
       if (hp2_valid) return hp2_outside_c;
       return NAN;
