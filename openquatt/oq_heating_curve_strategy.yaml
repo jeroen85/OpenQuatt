@@ -107,6 +107,11 @@ globals:
     restore_value: false
     initial_value: '0'
 
+  - id: oq_curve_oil_return_hold_until_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
 select:
   - platform: template
     id: oq_curve_control_profile
@@ -136,6 +141,7 @@ select:
               id(oq_curve_off_since_ms),
               id(oq_curve_restart_inhibit_active),
               id(oq_curve_regime_code));
+            id(oq_curve_oil_return_hold_until_ms) = 0;
             oq_curve::reset_outside_ema_state(
               id(oq_curve_outside_ema_c),
               id(oq_curve_outside_ema_initialized),
@@ -448,12 +454,24 @@ output:
           const bool low_pid_for_off = d <= off_pid_max_f;
           const float restart_bypass_delta_c = restart_delta_c + restart_bypass_extra_c;
           const uint32_t now_ms = (uint32_t) millis();
+          constexpr uint32_t oil_return_hold_ms = 180000UL;
+          bool oil_return_active = id(hp1_prot_oil_return).state;
+          #if OQ_TOPOLOGY_DUO
+          oil_return_active = oil_return_active || id(${curve_secondary_oil_return_id}).state;
+          #endif
+          if (oil_return_active) {
+            id(oq_curve_oil_return_hold_until_ms) = now_ms + oil_return_hold_ms;
+          }
+          const bool oil_return_mask_active =
+              oil_return_active ||
+              (id(oq_curve_oil_return_hold_until_ms) > 0 &&
+               now_ms < id(oq_curve_oil_return_hold_until_ms));
           bool heat_request_active = id(oq_curve_heat_request_active);
           bool restart_inhibit_active = false;
           uint32_t off_since_ms = id(oq_curve_off_since_ms);
           const bool was_heat_request_active = heat_request_active;
           if (heat_request_active) {
-            if (above_stop_band && low_pid_for_off && room_allows_off) {
+            if (!oil_return_mask_active && above_stop_band && low_pid_for_off && room_allows_off) {
               uint32_t armed_ms = id(oq_curve_stop_arm_ms);
               if (armed_ms == 0 || now_ms <= armed_ms) {
                 id(oq_curve_stop_arm_ms) = now_ms;
@@ -514,7 +532,8 @@ output:
             constexpr int recovery_reenter_min_f = 8;
             if (regime == 1) {
               if (supply_error_c <= recovery_exit_c) regime = 2;
-            } else if (supply_error_c >= recovery_enter_c &&
+            } else if (!oil_return_mask_active &&
+                       supply_error_c >= recovery_enter_c &&
                        d >= recovery_reenter_min_f &&
                        room_allows_recovery) {
               regime = 1;
