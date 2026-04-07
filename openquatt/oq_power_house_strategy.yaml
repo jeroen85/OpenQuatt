@@ -355,6 +355,10 @@ interval:
     then:
       - lambda: |-
           // Power House strategy: owns filtered demand and PH topology selection.
+          static bool hp1_prev_valve_def = false;
+          static bool hp2_prev_valve_def = false;
+          static uint32_t hp1_defrost_owner_hold_until_ms = 0;
+          static uint32_t hp2_defrost_owner_hold_until_ms = 0;
           const int cm_code = id(oq_control_mode_code);
           const bool active = (cm_code != 5) && (id(oq_heat_mode_code) != 1);
           if (!active) {
@@ -366,6 +370,10 @@ interval:
             id(oq_phouse_last_ms) = 0;
             id(oq_phouse_last_w) = 0.0f;
             id(oq_phouse_comfort_memory_c) = 0.0f;
+            hp1_prev_valve_def = false;
+            hp2_prev_valve_def = false;
+            hp1_defrost_owner_hold_until_ms = 0;
+            hp2_defrost_owner_hold_until_ms = 0;
             return;
           }
 
@@ -450,11 +458,10 @@ interval:
 
             const float Trsp_effective = Trsp + comfort_memory_c;
             const float Tr_low = Trsp_effective - comfort_below;
-            const float Tr_high = Tr_high_base;
 
             float e = 0.0f;
             if (Tr < Tr_low) e = Tr_low - Tr;
-            else if (Tr > Tr_high) e = Tr_high - Tr;
+            else if (Tr > Trsp) e = Trsp - Tr;
 
             const float temperature_reaction_w_per_k = id(ph_kp_w_per_k).state;
             float P_raw = P_house + temperature_reaction_w_per_k * e;
@@ -594,6 +601,12 @@ interval:
           const bool hp2_available = false;
           #endif
           const bool hp1_available = true;
+
+          constexpr uint32_t defrost_owner_hold_ms = 180000UL;
+          if (hp1_valve_def || hp1_prev_valve_def) hp1_defrost_owner_hold_until_ms = now_ms + defrost_owner_hold_ms;
+          if (hp2_valve_def || hp2_prev_valve_def) hp2_defrost_owner_hold_until_ms = now_ms + defrost_owner_hold_ms;
+          hp1_prev_valve_def = hp1_valve_def;
+          hp2_prev_valve_def = hp2_valve_def;
 
           float def_fac_cfg = ${oq_defrost_power_factor};
           if (isnan(def_fac_cfg)) def_fac_cfg = 0.55f;
@@ -871,9 +884,18 @@ interval:
                   (current_candidate.active_hp_count > 0) &&
                   (best_candidate.active_hp_count > 0) &&
                   (current_candidate.active_hp_count != best_candidate.active_hp_count);
+              const bool single_owner_swap =
+                  (current_candidate.active_hp_count == 1) &&
+                  (best_candidate.active_hp_count == 1) &&
+                  ((current_candidate.l1 > 0) != (best_candidate.l1 > 0));
               const bool hold_window_active =
                   (id(oq_duo_request_hold_until_ms) > 0) &&
                   (now_ms < id(oq_duo_request_hold_until_ms));
+              const bool defrost_owner_hold_active =
+                  single_owner_swap &&
+                  ((hp1_valve_def || hp2_valve_def) ||
+                   (hp1_defrost_owner_hold_until_ms > now_ms) ||
+                   (hp2_defrost_owner_hold_until_ms > now_ms));
               const bool topology_change_allowed =
                   !topology_change ||
                   (best_candidate.err_w + topology_heat_advantage_w < current_candidate.err_w) ||
@@ -890,7 +912,10 @@ interval:
               const bool better_efficiency =
                   current_candidate.p_el_w > (best_candidate.p_el_w + efficiency_switch_margin_w);
 
-              if (hold_active && current_heat_ok) {
+              if (defrost_owner_hold_active) {
+                keep_current = true;
+                optimizer_reason_code = 7;
+              } else if (hold_active && current_heat_ok) {
                 keep_current = true;
                 optimizer_reason_code = (hp1_valve_def || hp2_valve_def) ? 7 : 6;
               } else if (topology_change && !topology_change_allowed && current_heat_ok) {

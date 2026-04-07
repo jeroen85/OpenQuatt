@@ -2437,17 +2437,15 @@ views:
               - **Maximum heating outdoor temperature** is het punt waar
               modelmatig de warmtevraag naar ~0 gaat.
 
-              - **PH temperatuurreactie** bepaalt hoe sterk
-              kamertemperatuurfout buiten de comfortband naar warmtevraag (W)
-              wordt vertaald.
+              - **PH temperatuurreactie** bepaalt hoe sterk Power House extra
+              warmtevraag toevoegt onder de koude comfortgrens en hoe sterk het
+              boven het kamer-setpoint weer gas terugneemt.
 
-              - **Comfort above setpoint** bepaalt hoeveel ruimte boven
-              setpoint nog acceptabel is voordat warme tegensturing begint.
+              - **Comfort above setpoint** bepaalt de acceptabele bovenkant van
+              de comfortband.
 
               - **Comfort below setpoint** bepaalt hoeveel ruimte onder
               setpoint nog acceptabel is voordat extra opwarming begint.
-
-              - Binnen deze comfortband blijft de extra kamercorrectie `0`.
 
               - Als de kamer langere tijd te koud blijft, houdt Power House
               wat langer extra warmtevraag vast. Daardoor blijft de kamer

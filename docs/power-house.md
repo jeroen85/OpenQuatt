@@ -129,8 +129,6 @@ Daarmee ontstaat een asymmetrische comfortband:
 
 Dat is bewust geen pure PID-benadering. Het systeem mag wat terughoudender zijn rond kleine afwijkingen en sterker reageren als de fout duidelijker wordt.
 
-Binnen deze comfortband blijft de directe extra kamercorrectie `0`.
-
 ### Temperatuurreactie
 
 De kamerfout wordt daarna omgerekend naar extra of minder warmtevraag met:
@@ -139,7 +137,9 @@ De kamerfout wordt daarna omgerekend naar extra of minder warmtevraag met:
 
 Praktisch:
 
-- `Power House temperature reaction` bepaalt hoeveel watt correctie per graad kamerfout buiten de comfortband wordt toegevoegd of afgetrokken.
+- Onder de koude comfortgrens telt `Power House temperature reaction` extra warmtevraag op.
+- Boven het kamer-setpoint neemt `Power House temperature reaction` warmtevraag weer terug.
+- `Comfort above setpoint` blijft de bovenkant van de gewenste comfortband aangeven.
 
 Een hogere waarde maakt het systeem eerder fel. Een lagere waarde maakt het systeem eerder traag of slap.
 
