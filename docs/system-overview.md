@@ -177,7 +177,7 @@ Strategy packages compute:
 Computes requested power from:
 
 - outdoor temperature model (`Tc`, `T0`, `Pr`)
-- room error outside the configured comfort band around room setpoint
+- room error below the cold comfort edge and warm-side pullback above room setpoint
 - response profile plus rise/fall times scaled to rated house power (`Pr`)
 
 Then maps requested power to demand scale `0..20`.

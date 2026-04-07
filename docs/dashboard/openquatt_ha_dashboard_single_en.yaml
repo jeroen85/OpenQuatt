@@ -2059,17 +2059,15 @@ views:
               - **Maximum heating outdoor temperature** is the point where model
               heat demand approaches ~0.
 
-              - **PH temperature reaction** defines how strongly room
-              temperature error outside the comfort band is translated into heat
-              demand (W).
+              - **PH temperature reaction** defines how strongly Power House
+              adds heat below the cold comfort edge and how strongly it starts
+              pulling heat back again above room setpoint.
 
-              - **Comfort above setpoint** defines how much room above setpoint
-              is still acceptable before warm-side correction starts.
+              - **Comfort above setpoint** defines the acceptable upper side of
+              the comfort band.
 
               - **Comfort below setpoint** is the cold-side margin below
               setpoint before extra heating correction starts.
-
-              - Inside this comfort band, extra room correction stays `0`.
 
               - If the room stays too cold for longer, Power House keeps some
               extra heat demand active for longer. This helps the room stay
