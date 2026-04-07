@@ -8,9 +8,6 @@ on:
 permissions:
   contents: write
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 concurrency:
   group: dev-release
   cancel-in-progress: true
@@ -51,7 +48,7 @@ jobs:
           cache-dependency-path: .github/requirements-esphome.txt
 
       - name: Cache PlatformIO
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.platformio
           key: ${{ runner.os }}-platformio-${{ hashFiles('.github/requirements-esphome.txt') }}
@@ -118,25 +115,25 @@ jobs:
           echo "version=${DEV_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Download Duo Waveshare artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: openquatt-duo-waveshare-dev-release
           path: dist/openquatt-duo-waveshare
 
       - name: Download Duo Heatpump Listener artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: openquatt-duo-heatpump-listener-dev-release
           path: dist/openquatt-duo-heatpump-listener
 
       - name: Download Single Waveshare artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: openquatt-single-waveshare-dev-release
           path: dist/openquatt-single-waveshare
 
       - name: Download Single Heatpump Listener artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: openquatt-single-heatpump-listener-dev-release
           path: dist/openquatt-single-heatpump-listener
@@ -156,27 +153,43 @@ jobs:
           git tag -fa dev-latest -m "Development channel" "${GITHUB_SHA}"
           git push origin refs/tags/dev-latest --force
 
-      - name: Publish dev release assets
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: dev-latest
-          name: Development Channel
-          prerelease: true
-          generate_release_notes: false
-          overwrite_files: true
-          body: |
-            Mutable development-channel release for the `dev` branch.
+      - name: Create or update dev release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NOTES=$(cat <<EOF
+          Mutable development-channel release for the \`dev\` branch.
 
-            Commit: `${{ github.sha }}`
-            Version: `${{ steps.dev_meta.outputs.version }}`
-          files: |
-            openquatt-duo-ota.manifest.json
-            openquatt-single-ota.manifest.json
-            dist/openquatt-duo-waveshare.firmware.ota.bin
-            dist/openquatt-duo-waveshare.firmware.factory.bin
-            dist/openquatt-duo-heatpump-listener.firmware.ota.bin
-            dist/openquatt-duo-heatpump-listener.firmware.factory.bin
-            dist/openquatt-single-waveshare.firmware.ota.bin
-            dist/openquatt-single-waveshare.firmware.factory.bin
-            dist/openquatt-single-heatpump-listener.firmware.ota.bin
-            dist/openquatt-single-heatpump-listener.firmware.factory.bin
+          Commit: \`${GITHUB_SHA}\`
+          Version: \`${{ steps.dev_meta.outputs.version }}\`
+          EOF
+          )
+
+          if gh release view dev-latest >/dev/null 2>&1; then
+            gh release edit dev-latest \
+              --title "Development Channel" \
+              --notes "$NOTES" \
+              --prerelease
+          else
+            gh release create dev-latest \
+              --title "Development Channel" \
+              --notes "$NOTES" \
+              --prerelease
+          fi
+
+      - name: Upload dev release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload dev-latest \
+            openquatt-duo-ota.manifest.json \
+            openquatt-single-ota.manifest.json \
+            dist/openquatt-duo-waveshare.firmware.ota.bin \
+            dist/openquatt-duo-waveshare.firmware.factory.bin \
+            dist/openquatt-duo-heatpump-listener.firmware.ota.bin \
+            dist/openquatt-duo-heatpump-listener.firmware.factory.bin \
+            dist/openquatt-single-waveshare.firmware.ota.bin \
+            dist/openquatt-single-waveshare.firmware.factory.bin \
+            dist/openquatt-single-heatpump-listener.firmware.ota.bin \
+            dist/openquatt-single-heatpump-listener.firmware.factory.bin \
+            --clobber
