@@ -708,22 +708,8 @@ sensor:
       return target_c;
 
   - platform: template
-    id: oq_demand_curve_sensor
-    name: "Demand Curve (raw)"
-    disabled_by_default: true
-    icon: mdi:counter
-    unit_of_measurement: "step"
-    state_class: measurement
-    accuracy_decimals: 0
-    update_interval: 5s
-    web_server:
-      sorting_group_id: oq_diagnostics
-    lambda: |-
-      return (float) id(oq_demand_curve);
-
-  - platform: template
     id: oq_curve_demand_continuous_sensor
-    name: "Demand Curve (continuous)"
+    name: "Curve demand (effective)"
     disabled_by_default: true
     icon: mdi:sine-wave
     unit_of_measurement: "step"
@@ -737,23 +723,8 @@ sensor:
       return id(oq_curve_demand_continuous);
 
   - platform: template
-    id: oq_curve_demand_pre_guardrail_sensor
-    name: "Demand Curve (pre-guardrail)"
-    disabled_by_default: true
-    icon: mdi:counter
-    unit_of_measurement: "step"
-    state_class: measurement
-    accuracy_decimals: 0
-    update_interval: 5s
-    entity_category: diagnostic
-    web_server:
-      sorting_group_id: oq_diagnostics
-    lambda: |-
-      return (float) id(oq_curve_demand_pre_guardrail);
-
-  - platform: template
     id: oq_curve_demand_post_guardrail_sensor
-    name: "Demand Curve (post-guardrail)"
+    name: "Curve demand (discrete)"
     disabled_by_default: true
     icon: mdi:counter
     unit_of_measurement: "step"
@@ -768,7 +739,7 @@ sensor:
 
   - platform: template
     id: oq_curve_request_total_level_sensor
-    name: "Curve request total level"
+    name: "Curve dispatch total level"
     disabled_by_default: true
     icon: mdi:counter
     unit_of_measurement: "step"
@@ -783,7 +754,7 @@ sensor:
 
   - platform: template
     id: oq_curve_dispatch_hp1_level_sensor
-    name: "Curve dispatch HP1 level"
+    name: "Curve target HP1 level"
     disabled_by_default: true
     icon: mdi:counter
     unit_of_measurement: "step"
@@ -798,7 +769,7 @@ sensor:
 
   - platform: template
     id: oq_curve_dispatch_hp2_level_sensor
-    name: "Curve dispatch HP2 level"
+    name: "Curve target HP2 level"
     disabled_by_default: true
     icon: mdi:counter
     unit_of_measurement: "step"
