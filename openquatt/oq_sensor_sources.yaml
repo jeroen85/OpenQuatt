@@ -121,10 +121,10 @@ select:
     optimistic: true
     restore_value: true
     options:
+      - Auto
       - Outdoor unit
       - HA input
-      - Lowest valid
-    initial_option: Outdoor unit
+    initial_option: Auto
     web_server:
       sorting_group_id: oq_cic
 
@@ -372,20 +372,29 @@ sensor:
     accuracy_decimals: 1
     update_interval: 10s
     lambda: |-
-      // Hold the selected HA outdoor temperature briefly through HA reload gaps.
+      // Auto prefers the most trustworthy outside temperature source.
       if (!id(outside_temp_source).has_state()) return NAN;
       const auto source = id(outside_temp_source).current_option();
       const bool hp_valid = id(outside_temp_hp_avg).has_state() && !isnan(id(outside_temp_hp_avg).state);
       const bool ha_valid = id(outside_temp_ha).has_state() && !isnan(id(outside_temp_ha).state);
+      const bool hp1_active =
+          id(hp1_working_mode).has_state() &&
+          !isnan(id(hp1_working_mode).state) &&
+          ((((int) roundf(id(hp1_working_mode).state)) == 1) || (((int) roundf(id(hp1_working_mode).state)) == 2));
+      const bool hp2_active =
+          id(${secondary_working_mode_id}).has_state() &&
+          !isnan(id(${secondary_working_mode_id}).state) &&
+          ((((int) roundf(id(${secondary_working_mode_id}).state)) == 1) || (((int) roundf(id(${secondary_working_mode_id}).state)) == 2));
+      const bool local_active = hp1_active || hp2_active;
       const bool hold_enabled = source == "HA input";
       const uint32_t hold_ms = (uint32_t)(${oq_selected_input_stale_hold_s}UL * 1000UL);
       const uint32_t now_ms = (uint32_t) millis();
 
       float selected_c = NAN;
-      if (source == "Lowest valid") {
-        if (hp_valid && ha_valid) selected_c = fminf(id(outside_temp_hp_avg).state, id(outside_temp_ha).state);
-        else if (hp_valid) selected_c = id(outside_temp_hp_avg).state;
+      if (source == "Auto" || source == "Lowest valid") {
+        if (local_active && hp_valid) selected_c = id(outside_temp_hp_avg).state;
         else if (ha_valid) selected_c = id(outside_temp_ha).state;
+        else if (hp_valid) selected_c = id(outside_temp_hp_avg).state;
       }
       if (source == "HA input") {
         if (ha_valid) selected_c = id(outside_temp_ha).state;

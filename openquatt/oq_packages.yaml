@@ -133,6 +133,7 @@ oq_sensor_sources: !include
   vars:
     sensor_sources_duo_flow_internal: "false"
     flow_secondary_flow_sensor_id: "hp2_flow"
+    secondary_working_mode_id: "hp2_working_mode"
 oq_ot_slave: !include
   file: oq_ot_slave.yaml
   vars:
