@@ -2636,85 +2636,6 @@
     );
   }
 
-  function renderSettingsSystemSection() {
-    const channelEntity = state.entities.firmwareUpdateChannel || null;
-    const channelOptions = channelEntity
-      ? (Array.isArray(channelEntity.option) ? channelEntity.option : Array.isArray(channelEntity.options) ? channelEntity.options : [])
-      : [];
-    const { current, latest } = getFirmwareUpdateVersions();
-    const checking = isFirmwareUpdateChecking();
-    const installing = isFirmwareUpdateInstalling();
-    const available = isFirmwareUpdateAvailable();
-    const releaseUrl = getFirmwareReleaseUrl();
-    const updateSummary = getFirmwareSummary()
-      || (available
-        ? "Er staat een OTA-build klaar voor dit OpenQuatt-device."
-        : "Je device draait al op de nieuwste firmware.");
-
-    const updateMeta = `
-      <div class="oq-settings-meta-list">
-        <div class="oq-settings-meta-item">
-          <span class="oq-settings-meta-label">Status</span>
-          <strong class="oq-settings-meta-value">${escapeHtml(getUpdateStatus())}</strong>
-        </div>
-        <div class="oq-settings-meta-item">
-          <span class="oq-settings-meta-label">Huidige versie</span>
-          <strong class="oq-settings-meta-value">${escapeHtml(current)}</strong>
-        </div>
-        <div class="oq-settings-meta-item">
-          <span class="oq-settings-meta-label">Beschikbare versie</span>
-          <strong class="oq-settings-meta-value">${escapeHtml(latest)}</strong>
-        </div>
-      </div>
-    `;
-
-    const channelMarkup = channelOptions.length ? `
-      <label class="oq-settings-update-channel">
-        <span class="oq-settings-meta-label">Releasekanaal</span>
-        <span class="oq-settings-control oq-settings-control--select">
-          <select class="oq-helper-select" data-oq-field="firmwareUpdateChannel" ${checking || installing || state.loadingEntities ? "disabled" : ""}>
-            ${channelOptions.map((option) => `
-              <option value="${escapeHtml(option)}" ${String(getEntityValue("firmwareUpdateChannel") || "") === option ? "selected" : ""}>${escapeHtml(option)}</option>
-            `).join("")}
-          </select>
-          <span class="oq-settings-select-caret" aria-hidden="true"></span>
-        </span>
-      </label>
-    ` : "";
-
-    const footerMarkup = `
-      <div class="oq-settings-update-note">${escapeHtml(updateSummary)}</div>
-      ${channelMarkup}
-      <div class="oq-settings-update-actions">
-        <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="open-update-modal">
-          OTA-paneel openen
-        </button>
-        <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="run-firmware-check" ${checking || installing ? "disabled" : ""}>
-          ${checking ? "Controleren..." : "Controleer opnieuw"}
-        </button>
-        <button class="oq-helper-button" type="button" data-oq-action="install-firmware-update" ${!available || checking || installing ? "disabled" : ""}>
-          ${installing ? "Bijwerken..." : "Nu bijwerken"}
-        </button>
-        ${releaseUrl ? `<a class="oq-helper-button oq-helper-button--ghost oq-settings-update-link" href="${escapeHtml(releaseUrl)}" target="_blank" rel="noreferrer">Release notes</a>` : ""}
-      </div>
-    `;
-
-    return renderSettingsSection(
-      "Systeem",
-      "Systeem en updates",
-      "Device-status, OTA-updates en releasekanaal komen hier samen zodat beheer niet verstopt zit achter alleen de statusknop.",
-      `
-        <div class="oq-settings-grid">
-          ${renderSettingsStaticField("system-installation", "Installatie", "Gedetecteerde OpenQuatt-opstelling voor deze websessie.", getInstallationLabel())}
-          ${renderSettingsStaticField("system-setup", "Setupstatus", "Laat zien of de Quick Start-flow al als afgerond gemarkeerd staat.", state.complete ? "Afgerond" : "Open")}
-          ${renderSettingsStaticField("system-uptime", "Uptime", "Hoe lang dit device sinds de laatste boot draait.", formatDeviceUptime())}
-          ${renderSettingsStaticField("system-ip", "IP-adres", "Actueel adres waarop deze interface het device bereikt.", getDeviceIpAddress())}
-          ${renderSettingsFieldCard("system-firmware", "Firmware-update", "OTA-status, huidige versie en beschikbare release voor dit device.", updateMeta, "oq-settings-field--span-2", footerMarkup)}
-        </div>
-      `,
-    );
-  }
-
   function renderPowerHouseWorkspace() {
     return `
       <section class="oq-helper-mode-panel">
@@ -4758,7 +4679,6 @@
         <h2 class="oq-helper-section-title">Regeling, limieten en stille modus</h2>
         <p class="oq-helper-section-copy">De waarden hieronder zijn direct gekoppeld aan de echte OpenQuatt-instellingen. Wijzigingen hebben direct invloed op de werking van OpenQuatt.</p>
         <div class="oq-helper-settings-stack">
-          ${renderSettingsSystemSection()}
           ${renderSettingsFlowSection()}
           ${renderSettingsHeatingSection()}
           ${renderSettingsWaterSection()}

@@ -2042,77 +2042,6 @@
   min-width: 0;
 }
 
-.oq-settings-meta-list {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.oq-settings-meta-item {
-  display: grid;
-  gap: 4px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(229, 231, 235, 0.9);
-  background: rgba(248, 250, 252, 0.82);
-}
-
-.oq-helper-shell--dark .oq-settings-meta-item {
-  border-color: rgba(71, 85, 105, 0.44);
-  background: rgba(28, 41, 58, 0.8);
-}
-
-.oq-settings-meta-label {
-  color: var(--oq-helper-faint);
-  font-size: 0.76rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.oq-helper-shell--dark .oq-settings-meta-label {
-  color: #91a3be;
-}
-
-.oq-settings-meta-value {
-  color: var(--oq-helper-ink);
-  font-size: 0.96rem;
-  font-weight: 700;
-  line-height: 1.3;
-}
-
-.oq-helper-shell--dark .oq-settings-meta-value {
-  color: #f8fafc;
-}
-
-.oq-settings-update-note {
-  margin-top: 14px;
-  color: var(--oq-helper-soft);
-  font-size: 0.92rem;
-  line-height: 1.6;
-}
-
-.oq-helper-shell--dark .oq-settings-update-note {
-  color: #cbd5e1;
-}
-
-.oq-settings-update-channel {
-  display: grid;
-  gap: 8px;
-  margin-top: 14px;
-}
-
-.oq-settings-update-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 16px;
-}
-
-.oq-settings-update-link {
-  text-decoration: none;
-}
-
 .oq-settings-control--select {
   position: relative;
   display: block;
@@ -4061,8 +3990,7 @@ esp-app.oq-native-app.oq-native-app--collapsed {
     padding: 18px;
   }
 
-  .oq-helper-modal-grid,
-  .oq-settings-meta-list {
+  .oq-helper-modal-grid {
     grid-template-columns: 1fr;
   }
 
