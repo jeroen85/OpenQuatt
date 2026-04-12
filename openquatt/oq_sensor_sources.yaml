@@ -40,6 +40,14 @@ globals:
     type: bool
     restore_value: false
     initial_value: 'false'
+  - id: oq_outside_temp_hp1_active_since_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_outside_temp_hp2_active_since_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
 
   - id: oq_room_temp_selected_last_valid_c
     type: float
@@ -372,9 +380,13 @@ sensor:
     accuracy_decimals: 1
     update_interval: 10s
     lambda: |-
-      // Auto prefers the most trustworthy outside temperature source.
+      // Auto prefers the most trustworthy outside temperature source, but a
+      // newly active outdoor-unit sensor first gets time to settle.
       if (!id(outside_temp_source).has_state()) return NAN;
       const auto source = id(outside_temp_source).current_option();
+      const uint32_t now_ms = (uint32_t) millis();
+      const uint32_t hold_ms = (uint32_t)(${oq_selected_input_stale_hold_s}UL * 1000UL);
+      const uint32_t active_warmup_ms = (uint32_t)(${oq_outside_temp_active_warmup_s}UL * 1000UL);
       const bool hp_valid = id(outside_temp_hp_avg).has_state() && !isnan(id(outside_temp_hp_avg).state);
       const bool ha_valid = id(outside_temp_ha).has_state() && !isnan(id(outside_temp_ha).state);
       const bool hp1_active =
@@ -385,16 +397,44 @@ sensor:
           id(${secondary_working_mode_id}).has_state() &&
           !isnan(id(${secondary_working_mode_id}).state) &&
           ((((int) roundf(id(${secondary_working_mode_id}).state)) == 1) || (((int) roundf(id(${secondary_working_mode_id}).state)) == 2));
+      if (hp1_active) {
+        if (id(oq_outside_temp_hp1_active_since_ms) == 0) id(oq_outside_temp_hp1_active_since_ms) = now_ms;
+      } else {
+        id(oq_outside_temp_hp1_active_since_ms) = 0;
+      }
+      if (hp2_active) {
+        if (id(oq_outside_temp_hp2_active_since_ms) == 0) id(oq_outside_temp_hp2_active_since_ms) = now_ms;
+      } else {
+        id(oq_outside_temp_hp2_active_since_ms) = 0;
+      }
+      const bool hp1_warmed =
+          hp1_active &&
+          (active_warmup_ms == 0 ||
+           (id(oq_outside_temp_hp1_active_since_ms) > 0 &&
+            (uint32_t)(now_ms - id(oq_outside_temp_hp1_active_since_ms)) >= active_warmup_ms));
+      const bool hp2_warmed =
+          hp2_active &&
+          (active_warmup_ms == 0 ||
+           (id(oq_outside_temp_hp2_active_since_ms) > 0 &&
+            (uint32_t)(now_ms - id(oq_outside_temp_hp2_active_since_ms)) >= active_warmup_ms));
       const bool local_active = hp1_active || hp2_active;
-      const bool hold_enabled = source == "HA input";
-      const uint32_t hold_ms = (uint32_t)(${oq_selected_input_stale_hold_s}UL * 1000UL);
-      const uint32_t now_ms = (uint32_t) millis();
+      const bool local_active_warmed = hp1_warmed || hp2_warmed;
+      const bool auto_active_warmup_hold = source == "Auto" && local_active && !local_active_warmed;
+      const bool hold_enabled = source == "HA input" || auto_active_warmup_hold;
 
       float selected_c = NAN;
+      bool warmup_blocked_local = false;
       if (source == "Auto" || source == "Lowest valid") {
-        if (local_active && hp_valid) selected_c = id(outside_temp_hp_avg).state;
-        else if (ha_valid) selected_c = id(outside_temp_ha).state;
-        else if (hp_valid) selected_c = id(outside_temp_hp_avg).state;
+        if (local_active && !local_active_warmed) {
+          warmup_blocked_local = hp_valid;
+          if (ha_valid) selected_c = id(outside_temp_ha).state;
+        } else if (local_active_warmed && hp_valid) {
+          selected_c = id(outside_temp_hp_avg).state;
+        } else if (ha_valid) {
+          selected_c = id(outside_temp_ha).state;
+        } else if (hp_valid) {
+          selected_c = id(outside_temp_hp_avg).state;
+        }
       }
       if (source == "HA input") {
         if (ha_valid) selected_c = id(outside_temp_ha).state;
@@ -420,6 +460,8 @@ sensor:
         id(oq_outside_temp_selected_hold_active) = true;
         return id(oq_outside_temp_selected_last_valid_c);
       }
+
+      if (warmup_blocked_local) return id(outside_temp_hp_avg).state;
 
       return NAN;
     web_server:

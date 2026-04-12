@@ -1675,6 +1675,8 @@ views:
               OpenQuatt then prefers the most trustworthy source: active
               outdoor-unit readings first, HA input while both units are idle
               if it is configured and valid, and idle local readings only as fallback.
+              When an outdoor unit has just become active, `Auto` also waits
+              briefly before switching to that local reading.
 
               </details>
             text_only: true
