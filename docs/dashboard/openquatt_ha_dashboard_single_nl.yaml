@@ -1489,6 +1489,8 @@ views:
               buitenunitmeting, daarna HA als de unit idle is mits die bron is
               geconfigureerd en geldig is, en alleen als fallback de idle lokale
               meting.
+              Als een buitenunit net actief wordt, wacht `Auto` bovendien kort
+              voordat die lokale meting wordt overgenomen.
 
               </details>
             text_only: true
