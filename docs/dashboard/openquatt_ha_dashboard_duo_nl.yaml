@@ -1779,6 +1779,8 @@ views:
               lokale metingen.
               Als een buitenunit net actief wordt, wacht `Auto` bovendien kort
               voordat die lokale meting wordt overgenomen.
+              Bij een geldige HA-buitentemperatuur begrenst `Auto` daarna ook
+              abrupte warme sprongen van de actieve lokale bron.
 
 
               </details>

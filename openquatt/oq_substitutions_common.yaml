@@ -68,6 +68,8 @@ oq_selected_input_stale_hold_s: "300"                 # Hold selected HA-backed 
 oq_temp_guard_delta_c: "0.5"                          # Minimum valid margin between T0 and Tc in the house model [°C].
 oq_outside_temp_stale_s: "1200"                       # Ignore a local outdoor reading when it stays frozen while the same HP still shows fresh activity [s].
 oq_outside_temp_active_warmup_s: "180"                # Let a newly active outdoor-unit sensor settle before Auto switches to it [s].
+oq_outside_temp_auto_warm_cap_c: "1.0"                # In Auto, limit how far an active local outside reading may run above valid HA input [°C].
+oq_outside_temp_auto_rise_limit_c_per_min: "0.25"     # In Auto, limit how fast selected outside temperature may rise toward a newly trusted active local reading [°C/min].
 
 # ----------------------------
 # HEAT CONTROL
