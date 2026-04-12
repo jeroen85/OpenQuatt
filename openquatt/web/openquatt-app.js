@@ -10,11 +10,11 @@
       id: "strategy",
       kicker: "Stap 1",
       title: "Kies de verwarmingsstrategie",
-      copy: "Begin met de hoofdstrategie. Vanaf hier volgt Quick Start gewoon dezelfde instellingenstructuur als de Instellingen-pagina.",
+      copy: "Kies hier hoe OpenQuatt je verwarming regelt. Daarna lopen we samen de belangrijkste instellingen langs.",
       fields: [
         {
           title: "Verwarmingsstrategie",
-          copy: "Kies eerst of OpenQuatt met Power House of met Heating Curve moet regelen.",
+          copy: "Kies of OpenQuatt automatisch op je woning reageert, of werkt met een vaste stooklijn.",
         },
       ],
     },
@@ -22,11 +22,11 @@
       id: "heating",
       kicker: "Stap 2",
       title: "Werk de regeling uit",
-      copy: "Loop nu alle instellingen langs die horen bij de gekozen verwarmingsstrategie. Power House en Heating Curve krijgen hier elk hun eigen inhoud.",
+      copy: "Stel nu de gekozen regeling verder in. De inhoud hieronder past zich aan aan je keuze.",
       fields: [
         {
-          title: "Strategiespecifieke instellingen",
-          copy: "Quick Start gebruikt hier dezelfde velden als Instellingen, behalve de technische compressoropties.",
+          title: "Instellingen voor jouw regeling",
+          copy: "Je ziet hier alleen de instellingen die echt nodig zijn voor de gekozen regeling.",
         },
       ],
     },
@@ -38,7 +38,7 @@
       fields: [
         {
           title: "Flowregeling",
-          copy: "Quick Start toont hier direct de canonieke flowinstellingen uit OpenQuatt.",
+          copy: "Kies of OpenQuatt de pomp automatisch regelt, of dat je zelf een vaste pompstand instelt.",
         },
       ],
     },
@@ -50,7 +50,7 @@
       fields: [
         {
           title: "Watertemperatuur",
-          copy: "Deze grenzen gelden altijd en horen dus ook in Quick Start thuis.",
+          copy: "Met deze grenzen voorkom je dat de watertemperatuur te hoog oploopt.",
         },
       ],
     },
@@ -61,8 +61,8 @@
       copy: "Stel daarna het stille venster en de compressorlimieten voor dag en nacht in.",
       fields: [
         {
-          title: "Silent mode",
-          copy: "Zo loop je ook de laatste dagelijkse gebruiksinstellingen systematisch langs.",
+          title: "Stille uren",
+          copy: "Hier bepaal je wanneer het systeem rustiger moet werken.",
         },
       ],
     },
@@ -70,11 +70,11 @@
       id: "confirm",
       kicker: "Stap 6",
       title: "Bevestigen en afronden",
-      copy: "Als laatste controleer je kort de gekozen instellingen en markeer je alleen de setup-status als afgerond.",
+      copy: "Controleer nog één keer je keuzes. Met afronden markeer je Quick Start als voltooid.",
       fields: [
         {
           title: "Afronden",
-          copy: "De waarden zelf zijn al opgeslagen; deze stap zet alleen de setup-status op gereed.",
+          copy: "Je instellingen zijn al opgeslagen. Deze stap markeert alleen dat Quick Start klaar is.",
         },
       ],
     },
@@ -105,7 +105,13 @@
     roomTemp: { domain: "sensor", name: "Room Temperature (Selected)" },
     roomSetpoint: { domain: "sensor", name: "Room Setpoint (Selected)" },
     supplyTemp: { domain: "sensor", name: "Water Supply Temp (Selected)" },
+    outsideTempSelected: { domain: "sensor", name: "Outside Temperature (Selected)", optional: true },
     curveSupplyTarget: { domain: "sensor", name: "Heating Curve Supply Target" },
+    strategyRequestedPower: { domain: "sensor", name: "Strategy requested power", optional: true },
+    hpCapacity: { domain: "sensor", name: "HP capacity (W)", optional: true },
+    hpDeficit: { domain: "sensor", name: "HP deficit (W)", optional: true },
+    phouseHouse: { domain: "sensor", name: "Power House – P_house", optional: true },
+    phouseReq: { domain: "sensor", name: "Power House – P_req", optional: true },
     silentActive: { domain: "binary_sensor", name: "Silent active" },
     stickyActive: { domain: "binary_sensor", name: "Sticky pump active" },
     housePower: { domain: "number", name: "Rated maximum house power" },
@@ -1943,7 +1949,7 @@
       Responsive: "Direct",
       Calm: "Rustig",
       Custom: "Aangepast",
-      [STRATEGY_OPTION_CURVE]: "Heating Curve",
+      [STRATEGY_OPTION_CURVE]: "Stooklijn",
       [STRATEGY_OPTION_POWER_HOUSE]: "Power House",
     };
 
@@ -2187,13 +2193,12 @@
           ${state.loadingEntities || state.busyAction === "save-strategy" ? "disabled" : ""}
         >
           <p class="oq-helper-label">Power House</p>
-          <h4>Modelgestuurde regeling (aanbevolen heating strategy)</h4>
-          <p>Power House schat de warmtevraag van de woning op basis van buitentemperatuur en het ingestelde huisverliesmodel. De Quatt CiC werkt conceptueel ook in deze richting.</p>
+          <h4>Automatisch op basis van je woning</h4>
+          <p>Power House schat hoeveel warmte je woning nodig heeft. Dit is meestal de beste keuze als je zonder veel finetuning wilt starten.</p>
           <ul class="oq-settings-strategy-points">
-            <li>Gebruikt vooral <strong>Rated maximum house power</strong> en <strong>Maximum heating outdoor temperature</strong>.</li>
-            <li>Deze twee waarden kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn.</li>
-            <li>Stuurt de warmtevraag meer als systeemmodel dan als vaste temperatuurcurve.</li>
-            <li>Past goed als je het gedrag van de woning zelf centraal wilt zetten.</li>
+            <li>Gebruikt vooral het geschatte warmteverlies van je woning en de buitentemperatuur waarbij verwarmen meestal niet meer nodig is.</li>
+            <li>Reageert meer op het gedrag van je woning dan op een vaste temperatuurcurve.</li>
+            <li>Handig als je vooral comfort wilt en zo min mogelijk handmatig wilt instellen.</li>
           </ul>
         </button>
         <button
@@ -2205,13 +2210,13 @@
           aria-pressed="${curveActive ? "true" : "false"}"
           ${state.loadingEntities || state.busyAction === "save-strategy" ? "disabled" : ""}
         >
-          <p class="oq-helper-label">Heating Curve</p>
-          <h4>Curvegestuurde regeling</h4>
-          <p>Heating Curve koppelt iedere buitentemperatuur aan een gewenste aanvoertemperatuur en regelt daar direct naartoe.</p>
+          <p class="oq-helper-label">Stooklijn</p>
+          <h4>Regelen met een stooklijn</h4>
+          <p>Met een stooklijn kies je per buitentemperatuur welke aanvoertemperatuur nodig is. Handig als je dit bewust zelf wilt instellen.</p>
           <ul class="oq-settings-strategy-points">
-            <li>Gebruikt de curvepunten van <strong>-20°C t/m 15°C</strong> als hoofdlogica.</li>
-            <li>Maakt het gedrag voorspelbaar en herkenbaar voor wie gewend is aan een klassieke stooklijn.</li>
-            <li>Past goed als je de aanvoertemperatuur bewust per buitentemperatuur wilt finetunen.</li>
+            <li>Gebruikt de curvepunten van <strong>-20°C t/m 15°C</strong> als basis.</li>
+            <li>Voelt herkenbaar voor wie gewend is aan een klassieke stooklijn.</li>
+            <li>Handig als je de aanvoertemperatuur per buitentemperatuur zelf wilt finetunen.</li>
           </ul>
         </button>
       </div>
@@ -2232,7 +2237,7 @@
         rise: "12 min",
         fall: "5 min",
         meta: "Opbouw 12 min · Afbouw 5 min",
-        copy: "Bouwt de warmtevraag bewust trager op en ook rustiger weer af. Dit profiel corrigeert minder snel op korte schommelingen in buitentemperatuur of kamervraag en geeft daardoor een stabieler systeembeeld. Past goed bij traag reagerende woningen, vloerverwarming en situaties waarin je liever minder pendelgedrag en minder nerveuze correcties ziet, ook als de regeling daardoor iets minder direct voelt.",
+        copy: "Reageert minder snel op schommelingen. Fijn voor vloerverwarming of een woning die traag opwarmt en afkoelt.",
       },
       {
         value: "Balanced",
@@ -2240,7 +2245,7 @@
         rise: "8 min",
         fall: "3 min",
         meta: "Opbouw 8 min · Afbouw 3 min",
-        copy: "De middenweg tussen rust en reactiesnelheid. De warmtevraag loopt vlot genoeg mee met veranderende omstandigheden, maar blijft terughoudend genoeg om niet op ieder klein verschil meteen hard te corrigeren. Dit is meestal het beste startpunt voor normaal dagelijks gebruik, omdat het comfort en systeemrust in balans houdt zonder dat je eerst veel hoeft te finetunen.",
+        copy: "Goede middenweg tussen comfort en rust. Meestal het beste startpunt voor dagelijks gebruik.",
       },
       {
         value: "Responsive",
@@ -2248,7 +2253,7 @@
         rise: "5 min",
         fall: "2 min",
         meta: "Opbouw 5 min · Afbouw 2 min",
-        copy: "Laat de warmtevraag sneller oplopen en ook sneller terugvallen wanneer de situatie verandert. Hierdoor reageert de regeling merkbaar directer op vraag uit de woning, maar het systeembeeld kan ook wat levendiger en minder kalm worden. Handig als je een sneller reagerende regeling wilt, bijvoorbeeld bij een woning die relatief vlot afkoelt of wanneer je sneller effect wilt zien van veranderende warmtevraag.",
+        copy: "Reageert sneller op veranderende warmtevraag. Handig als je woning snel afkoelt of je sneller effect wilt zien.",
       },
       {
         value: "Custom",
@@ -2256,7 +2261,7 @@
         rise: "Vrij",
         fall: "Instelbaar",
         meta: "Opbouw en afbouw instelbaar",
-        copy: "Geeft de opbouw- en afbouwtijden volledig vrij, zodat je zelf bepaalt hoe snel de warmtevraag omhoog en omlaag mag bewegen. Dit is bedoeld voor finetuning wanneer de standaardprofielen net niet goed passen bij jouw woning of installatie. Gebruik dit vooral als je bewust wilt sturen op rust versus reactiesnelheid en al enig gevoel hebt bij hoe OpenQuatt zich in jouw situatie gedraagt.",
+        copy: "Stel zelf in hoe snel de regeling op- en afbouwt. Handig als de standaardprofielen net niet goed passen.",
       },
     ];
     const controlMarkup = `
@@ -2302,7 +2307,7 @@
     return renderSettingsFieldCard(
       "phResponseProfile",
       "Power House responsprofiel",
-      "Hier bepaal je hoe snel Power House de berekende warmtevraag laat oplopen en terugvallen. De profielkeuze beïnvloedt dus vooral hoe rustig of direct de regeling reageert op veranderende omstandigheden in de woning.",
+      "Kies hoe rustig of direct Power House mag reageren op veranderingen in je woning.",
       controlMarkup,
       "oq-settings-field--span-2",
     );
@@ -2320,19 +2325,19 @@
         value: "Comfort",
         label: "Comfort",
         meta: "Eerder starten · Fijner trimmen",
-        copy: "Stuurt de stooklijn wat actiever bij en trimt sneller rond de gevraagde situatie. Daardoor voelt de regeling comfortabel en alert, vooral als je graag ziet dat de aanvoertemperatuur wat eerder oploopt wanneer de warmtevraag toeneemt.",
+        copy: "Reageert wat actiever en laat de aanvoertemperatuur eerder oplopen. Fijn als je vooral comfort wilt.",
       },
       {
         value: "Balanced",
         label: "Gebalanceerd",
         meta: "Middenweg · Voorspelbaar gedrag",
-        copy: "De standaard middenweg voor dagelijks gebruik. Houdt de Heating Curve voorspelbaar en stabiel, maar reageert nog steeds vlot genoeg als buitentemperatuur of warmtevraag verandert.",
+        copy: "De standaard middenweg voor dagelijks gebruik. Voorspelbaar en tegelijk vlot genoeg.",
       },
       {
         value: "Stable",
         label: "Stabiel",
         meta: "Meer filtering · Rustigere stappen",
-        copy: "Filtert sterker en houdt instellingen langer vast voordat er opnieuw wordt bijgestuurd. Dit geeft een rustiger systeembeeld en past goed als je minder snelle correcties wilt zien, bijvoorbeeld bij een trage woning of vloerverwarming.",
+        copy: "Reageert rustiger en stuurt minder snel bij. Fijn als je zo min mogelijk schommelingen wilt.",
       },
     ];
 
@@ -2360,8 +2365,8 @@
 
     return renderSettingsFieldCard(
       "curveControlProfile",
-      "Heating Curve-regelprofiel",
-      "Kies hoe rustig of direct Heating Curve mag reageren. De uitleg zit direct in de profielkeuze.",
+      "Regelprofiel",
+      "Kies of de stooklijn vooral comfortabel, gebalanceerd of rustig moet reageren.",
       controlMarkup,
       "oq-settings-field--span-2",
     );
@@ -2520,7 +2525,7 @@
         <div class="oq-settings-subpanel-head">
           <p class="oq-helper-label">Power House tuning</p>
           <h4>Geavanceerde Power House tuning</h4>
-          <p>Deze parameters verfijnen hoe Power House het huisverliesmodel vertaalt naar warmtevraag rond het kamersetpoint. De grafiek hierboven volgt direct uit Comfort onder setpoint, Comfort boven setpoint en Temperatuurreactie.</p>
+          <p>Met deze instellingen verfijn je hoe Power House reageert rond het kamersetpoint. De grafiek hierboven laat meteen zien wat dat betekent.</p>
         </div>
         ${renderPowerHouseConceptGraphic()}
         <div class="oq-settings-grid">
@@ -2532,8 +2537,8 @@
 
   function renderSettingsHeatPumpLimiterCard(title, keyA, keyB) {
     const fields = [
-      renderSettingsSelectField(keyA, "1e compressorlevel uitsluiten", "Blokkeer desgewenst één compressortrap die je wilt vermijden."),
-      renderSettingsSelectField(keyB, "2e compressorlevel uitsluiten", "Tweede optionele blokkade voor een compressortrap die je niet wilt gebruiken."),
+      renderSettingsSelectField(keyA, "1e compressorstand uitsluiten", "Sla deze compressorstand over als je die liever niet gebruikt."),
+      renderSettingsSelectField(keyB, "2e compressorstand uitsluiten", "Nog een compressorstand die je eventueel wilt overslaan."),
     ]
       .filter(Boolean)
       .join("");
@@ -2558,13 +2563,13 @@
     return renderSettingsSection(
       "Flow",
       "Flowregeling",
-      "Bepaalt of OpenQuatt de pomp op flow regelt of met een vaste iPWM laat draaien.",
+      "Kies of OpenQuatt de pomp automatisch op flow regelt, of dat je zelf een vaste pompstand instelt.",
       `
         <div class="oq-settings-grid">
-          ${renderSettingsSelectField("flowControlMode", "Flow control mode", "Kies tussen regelen op flow of een vaste pompaansturing.")}
+          ${renderSettingsSelectField("flowControlMode", "Regelmodus", "Kies tussen automatische flowregeling en een vaste pompstand.")}
           ${isManualFlowMode()
-            ? renderSettingsNumberField("manualIpwm", "Manual iPWM", "Vaste pompaansturing die direct wordt gebruikt wanneer de flowregeling op manual staat.")
-            : renderSettingsNumberField("flowSetpoint", "Flow setpoint", "Doelflow die de regeling probeert vast te houden zolang de flowregeling op flow setpoint staat.")}
+            ? renderSettingsNumberField("manualIpwm", "Vaste pompstand", "Deze pompstand wordt gebruikt zolang de regeling op handmatig staat.")
+            : renderSettingsNumberField("flowSetpoint", "Gewenste flow", "De flow die OpenQuatt zoveel mogelijk probeert vast te houden.")}
         </div>
       `,
     );
@@ -2575,9 +2580,9 @@
       ? `
         <div class="oq-settings-subpanel">
           <div class="oq-settings-subpanel-head">
-            <p class="oq-helper-label">Heating Curve</p>
-            <h4>Heating Curve</h4>
-            <p>Gebruik Heating Curve als primaire regeling en leg vast wat er moet gebeuren als er geen buitentemperatuur beschikbaar is.</p>
+            <p class="oq-helper-label">Stooklijn</p>
+            <h4>Stooklijn</h4>
+            <p>Stel hier je stooklijn in en kies wat OpenQuatt moet doen als er geen buitentemperatuur beschikbaar is.</p>
           </div>
           <div class="oq-settings-grid">
             ${renderHeatingCurveProfileField()}
@@ -2593,11 +2598,11 @@
           <div class="oq-settings-subpanel-head">
             <p class="oq-helper-label">Power House</p>
             <h4>Power House</h4>
-            <p>Deze waarden voeden het huisverliesmodel. Rated maximum house power en Maximum heating outdoor temperature kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn. De Quatt CiC werkt in grote lijnen op een vergelijkbaar modelmatig principe.</p>
+            <p>Met deze waarden schat OpenQuatt hoeveel warmte je woning nodig heeft. Heb je deze gegevens van Quatt, dan kun je ze hier als startpunt gebruiken.</p>
           </div>
           <div class="oq-settings-grid">
-            ${renderSettingsNumberField("houseOutdoorMax", "Maximum heating outdoor temperature", "Buitentemperatuur waarbij de woning praktisch geen verwarmingsvraag meer heeft. Deze waarde kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn.")}
-            ${renderSettingsNumberField("housePower", "Rated maximum house power", "Geschatte piekwarmtevraag van de woning op het koude referentiepunt. Ook deze waarde kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn.")}
+            ${renderSettingsNumberField("houseOutdoorMax", "Buitentemperatuur zonder warmtevraag", "Bij deze buitentemperatuur is verwarmen meestal niet meer nodig.")}
+            ${renderSettingsNumberField("housePower", "Geschat maximaal warmteverlies", "Hoeveel warmte je woning ongeveer nodig heeft op een koude dag.")}
             ${renderPowerHouseResponseProfilesField()}
           </div>
           ${renderPowerHouseAdvancedField()}
@@ -2605,12 +2610,12 @@
       `;
 
     return renderSettingsSection(
-      "Heating strategy",
+      "Regeling",
       "Verwarmingsstrategie",
-      "Hier kies je de hoofdstrategie van de regeling. De relevante instellingen eronder wisselen automatisch mee.",
+      "Kies hier hoe OpenQuatt je verwarming regelt. De instellingen hieronder passen zich automatisch aan.",
       `
         <div class="oq-settings-grid">
-          ${renderSettingsSelectField("strategy", "Heating Control Mode", "Bepaalt of OpenQuatt op Power House of op Heating Curve werkt.")}
+          ${renderSettingsSelectField("strategy", "Verwarmingsstrategie", "Kies tussen automatisch regelen met Power House of regelen met een stooklijn.")}
         </div>
         ${renderHeatingStrategyExplainCards()}
         ${strategyContent}
@@ -2641,10 +2646,10 @@
     return renderSettingsSection(
       "Compressor",
       "Compressor",
-      "Instellingen voor minimale draaitijd en eventuele compressortrappen die je bewust wilt uitsluiten.",
+      "Extra instellingen voor minimale draaitijd en compressorstanden die je liever niet gebruikt.",
       `
         <div class="oq-settings-grid">
-          ${renderSettingsNumberField("minRuntime", "Minimum runtime", "Minimale draaitijd per verwarmingsrun om pendelen te voorkomen.")}
+          ${renderSettingsNumberField("minRuntime", "Minimale draaitijd", "Zo voorkom je dat de warmtepomp te kort achter elkaar start en stopt.")}
         </div>
         <div class="oq-settings-hp-columns${hasEntity("hp2ExcludedA") ? "" : " oq-settings-hp-columns--single"}">
           ${hpGroups}
@@ -2655,15 +2660,15 @@
 
   function renderSettingsSilentSection() {
     return renderSettingsSection(
-      "Silent mode",
-      "Silent mode",
-      "Bepaalt wanneer het stillere venster actief is en welke compressorlimieten overdag en in stilte gelden.",
+      "Stille uren",
+      "Stille uren",
+      "Kies wanneer het systeem stiller moet werken, en hoe ver het dan nog mag opschalen.",
       `
         <div class="oq-settings-grid">
-          ${renderSettingsTimeField("silentStartTime", "Silent start time", "Starttijd van het stille venster.")}
-          ${renderSettingsTimeField("silentEndTime", "Silent end time", "Eindtijd van het stille venster.")}
-          ${renderSettingsSliderField("silentMax", "Silent max level", "Maximum compressorlevel tijdens het stille venster.")}
-          ${renderSettingsSliderField("dayMax", "Day max level", "Maximum compressorlevel tijdens normaal dagbedrijf.")}
+          ${renderSettingsTimeField("silentStartTime", "Start stille uren", "Vanaf dit tijdstip werkt het systeem in stille modus.")}
+          ${renderSettingsTimeField("silentEndTime", "Einde stille uren", "Vanaf dit tijdstip stopt de stille modus weer.")}
+          ${renderSettingsSliderField("silentMax", "Maximaal niveau tijdens stille uren", "Zo ver mag het systeem nog opschalen tijdens stille uren.")}
+          ${renderSettingsSliderField("dayMax", "Maximaal niveau overdag", "Zo ver mag het systeem overdag opschalen.")}
         </div>
       `,
     );
@@ -2674,11 +2679,11 @@
       <section class="oq-helper-mode-panel">
         <div class="oq-helper-mode-head">
           <p class="oq-helper-label">Verplicht Voor Power House</p>
-          <p class="oq-helper-section-copy">Deze waarden bepalen het huisverliesmodel. Rated maximum house power en Maximum heating outdoor temperature kun je vaak bij Quatt opvragen.</p>
+          <p class="oq-helper-section-copy">Met deze waarden schat OpenQuatt hoeveel warmte je woning nodig heeft. Heb je deze gegevens van Quatt, dan kun je ze hier gebruiken.</p>
         </div>
         <div class="oq-helper-control-grid">
-          ${renderNumberInputField("housePower", "Rated maximum house power", "Verwachte piekwarmtevraag van de woning op het koude referentiepunt.")}
-          ${renderNumberInputField("houseOutdoorMax", "Maximum heating outdoor temperature", "Buitentemperatuur waarbij de warmtevraag praktisch naar nul gaat.")}
+          ${renderNumberInputField("housePower", "Geschat maximaal warmteverlies", "Hoeveel warmte je woning ongeveer nodig heeft op een koude dag.")}
+          ${renderNumberInputField("houseOutdoorMax", "Buitentemperatuur zonder warmtevraag", "Bij deze buitentemperatuur is verwarmen meestal niet meer nodig.")}
         </div>
       </section>
     `;
@@ -2780,8 +2785,8 @@
     return `
       <section class="oq-helper-mode-panel">
         <div class="oq-helper-mode-head">
-          <p class="oq-helper-label">Verplicht Voor Heating Curve</p>
-          <p class="oq-helper-section-copy">Deze zes curvepunten en de fallback-aanvoertemperatuur vormen samen de basis voor Heating Curve. De interactieve grafiek is de juiste plek om dit begrijpelijk te maken.</p>
+          <p class="oq-helper-label">Verplicht voor Stooklijn</p>
+          <p class="oq-helper-section-copy">Deze zes punten vormen samen je stooklijn. Zo bepaal je welke aanvoertemperatuur hoort bij welke buitentemperatuur.</p>
         </div>
         ${renderCurveGraph()}
         ${renderCurveInputs()}
@@ -2794,10 +2799,10 @@
       <section class="oq-helper-panel">
         <p class="oq-helper-label">Stap 1</p>
         <h2 class="oq-helper-section-title">Kies de verwarmingsstrategie</h2>
-        <p class="oq-helper-section-copy">Dit is het belangrijkste keuzepunt. Vanaf hier loopt Quick Start daarna systematisch dezelfde relevante instellingen langs als de Instellingen-pagina.</p>
+        <p class="oq-helper-section-copy">Kies hier hoe OpenQuatt je verwarming regelt. Daarna lopen we samen de belangrijkste instellingen langs.</p>
         ${renderHeatingStrategyExplainCards()}
         <div class="oq-settings-grid oq-settings-grid--quickstart">
-          ${renderSettingsSelectField("strategy", "Verwarmingsstrategie", "Bepaalt of OpenQuatt op Power House of op Heating Curve werkt.")}
+          ${renderSettingsSelectField("strategy", "Verwarmingsstrategie", "Kies tussen automatisch regelen met Power House of regelen met een stooklijn.")}
         </div>
         ${renderQuickStartStepNav()}
       </section>
@@ -2806,16 +2811,16 @@
 
   function renderFlowWorkspace() {
     const flowSecondaryField = String(getEntityValue("flowControlMode") || "") === "Manual PWM"
-      ? renderSettingsNumberField("manualIpwm", "Handmatige iPWM", "Vaste pompaansturing die direct gebruikt wordt zolang de flowregeling op handmatig staat.")
-      : renderSettingsNumberField("flowSetpoint", "Flow setpoint", "Doelflow die OpenQuatt probeert vast te houden zolang flowregeling op flow setpoint staat.");
+      ? renderSettingsNumberField("manualIpwm", "Vaste pompstand", "Deze pompstand wordt gebruikt zolang de regeling op handmatig staat.")
+      : renderSettingsNumberField("flowSetpoint", "Gewenste flow", "De flow die OpenQuatt zoveel mogelijk probeert vast te houden.");
 
     return `
       <section class="oq-helper-panel">
         <p class="oq-helper-label">Stap 3</p>
         <h2 class="oq-helper-section-title">Flow en pompregeling</h2>
-        <p class="oq-helper-section-copy">Flowregeling hoort vroeg in Quick Start thuis, omdat die direct bepaalt welk tweede veld relevant is.</p>
+        <p class="oq-helper-section-copy">Kies hier of OpenQuatt de pomp automatisch regelt, of dat je zelf een vaste pompstand instelt.</p>
         <div class="oq-settings-grid oq-settings-grid--quickstart">
-          ${renderSettingsSelectField("flowControlMode", "Flowregeling", "Kies tussen regelen op flow of een vaste pompaansturing.")}
+          ${renderSettingsSelectField("flowControlMode", "Regelmodus", "Kies tussen automatische flowregeling en een vaste pompstand.")}
           ${flowSecondaryField}
         </div>
         ${renderQuickStartStepNav()}
@@ -2827,12 +2832,12 @@
     return `
       <section class="oq-helper-panel">
         <p class="oq-helper-label">Stap 2</p>
-        <h2 class="oq-helper-section-title">${escapeHtml(isCurveMode() ? "Heating Curve instellen" : "Power House instellen")}</h2>
+        <h2 class="oq-helper-section-title">${escapeHtml(isCurveMode() ? "Stooklijn instellen" : "Power House instellen")}</h2>
         <p class="oq-helper-section-copy">
           ${escapeHtml(
             isCurveMode()
-              ? "Loop alle Heating Curve-instellingen langs: profiel, fallback-aanvoertemperatuur en de volledige stooklijn."
-              : "Loop alle Power House-instellingen langs: huisverliesmodel, responsprofiel en de kamercorrectie rond het setpoint.",
+              ? "Stel hier je stooklijn en fallback-aanvoertemperatuur in."
+              : "Stel hier in hoe Power House het warmteverlies van je woning inschat en hoe snel het reageert.",
           )}
         </p>
         ${isCurveMode()
@@ -2847,8 +2852,8 @@
           `
           : `
             <div class="oq-settings-grid oq-settings-grid--quickstart">
-              ${renderSettingsNumberField("houseOutdoorMax", "Maximum heating outdoor temperature", "Buitentemperatuur waarbij de woning praktisch geen verwarmingsvraag meer heeft. Deze waarde kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn.")}
-              ${renderSettingsNumberField("housePower", "Rated maximum house power", "Geschatte piekwarmtevraag van de woning op het koude referentiepunt. Ook deze waarde kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn.")}
+              ${renderSettingsNumberField("houseOutdoorMax", "Buitentemperatuur zonder warmtevraag", "Bij deze buitentemperatuur is verwarmen meestal niet meer nodig.")}
+              ${renderSettingsNumberField("housePower", "Geschat maximaal warmteverlies", "Hoeveel warmte je woning ongeveer nodig heeft op een koude dag.")}
               ${renderPowerHouseResponseProfilesField()}
             </div>
             ${renderPowerHouseAdvancedField()}
@@ -2863,7 +2868,7 @@
       <section class="oq-helper-panel">
         <p class="oq-helper-label">Stap 4</p>
         <h2 class="oq-helper-section-title">Watertemperatuur beveiligen</h2>
-        <p class="oq-helper-section-copy">Deze twee grenzen horen altijd bij de basisinrichting en zijn daarom ook onderdeel van Quick Start.</p>
+        <p class="oq-helper-section-copy">Hier stel je de veilige bovengrens voor de watertemperatuur in.</p>
         <div class="oq-settings-grid oq-settings-grid--quickstart">
           ${renderSettingsNumberField("maxWater", "Maximale watertemperatuur", "Normale bovengrens voor de watertemperatuur tijdens bedrijf.")}
           ${renderSettingsNumberField("maxWaterTrip", "Tripgrens watertemperatuur", "Veiligheidsgrens waarbij de regeling hard ingrijpt als de watertemperatuur te ver oploopt.")}
@@ -2878,12 +2883,12 @@
       <section class="oq-helper-panel">
         <p class="oq-helper-label">Stap 5</p>
         <h2 class="oq-helper-section-title">Stille uren en niveaus</h2>
-        <p class="oq-helper-section-copy">Als laatste dagelijkse gebruikslaag stel je hier het stille venster en de compressorlimieten voor dag en nacht in.</p>
+        <p class="oq-helper-section-copy">Kies hier wanneer het systeem stiller moet werken, en hoe ver het dan nog mag opschalen.</p>
         <div class="oq-settings-grid oq-settings-grid--quickstart">
-          ${renderSettingsTimeField("silentStartTime", "Silent starttijd", "Starttijd van het stille venster.")}
-          ${renderSettingsTimeField("silentEndTime", "Silent eindtijd", "Eindtijd van het stille venster.")}
-          ${renderSettingsSliderField("silentMax", "Silent max level", "Maximum compressorlevel tijdens het stille venster.")}
-          ${renderSettingsSliderField("dayMax", "Day max level", "Maximum compressorlevel tijdens normaal dagbedrijf.")}
+          ${renderSettingsTimeField("silentStartTime", "Start stille uren", "Vanaf dit tijdstip werkt het systeem in stille modus.")}
+          ${renderSettingsTimeField("silentEndTime", "Einde stille uren", "Vanaf dit tijdstip stopt de stille modus weer.")}
+          ${renderSettingsSliderField("silentMax", "Maximaal niveau tijdens stille uren", "Zo ver mag het systeem nog opschalen tijdens stille uren.")}
+          ${renderSettingsSliderField("dayMax", "Maximaal niveau overdag", "Zo ver mag het systeem overdag opschalen.")}
         </div>
         ${renderQuickStartStepNav()}
       </section>
@@ -2895,7 +2900,7 @@
       <section class="oq-helper-panel">
         <p class="oq-helper-label">Stap 6</p>
         <h2 class="oq-helper-section-title">Bevestigen en afronden</h2>
-        <p class="oq-helper-section-copy">Controleer hier nog één keer de gekozen hoofdlijnen. De instellingen zelf zijn al de bron van waarheid; afronden zet alleen de setup-status op gereed.</p>
+        <p class="oq-helper-section-copy">Controleer nog één keer je keuzes. Met afronden markeer je Quick Start als voltooid.</p>
         ${renderConfirmReviewCards()}
         ${state.controlNotice ? `<p class="oq-helper-notice">${escapeHtml(state.controlNotice)}</p>` : ""}
         ${state.controlError ? `<p class="oq-helper-error">${escapeHtml(state.controlError)}</p>` : ""}
@@ -2989,7 +2994,7 @@
       <div class="oq-helper-step-nav">
         <div class="oq-helper-step-nav-meta">
           <strong>Stap ${index + 1} van ${QUICK_STEPS.length}</strong>
-          <span>${escapeHtml(nextStep ? `Hierna: ${nextStep.title}` : "Laatste stap van Quick Start")}</span>
+          <span>${escapeHtml(nextStep ? `Hierna: ${nextStep.title}` : "Je bent bij de laatste stap")}</span>
         </div>
         <div class="oq-helper-actions oq-helper-actions--step">
           <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="previous-step" ${previousStep ? "" : "disabled"}>
@@ -3009,7 +3014,7 @@
       <section class="oq-helper-panel oq-helper-panel--aside">
         <p class="oq-helper-label">Quick Start</p>
         <h2 class="oq-helper-section-title">Rustige route naar een werkende regeling</h2>
-        <p class="oq-helper-panel-note">Quick Start loopt alleen de relevante keuzes langs. Compressor exclusions en minimum runtime blijven bewust buiten deze flow en verhuizen naar instellingen.</p>
+        <p class="oq-helper-panel-note">Quick Start helpt je snel op weg met de belangrijkste keuzes. Extra instellingen vind je later terug onder Instellingen.</p>
         <h3 class="oq-helper-aside-title">Stap ${stepIndex + 1} van ${QUICK_STEPS.length}</h3>
         <div class="oq-helper-fields oq-helper-fields--compact">
           ${renderStepOverview(true)}
@@ -3021,11 +3026,11 @@
   }
 
   function renderConfirmReviewCards() {
-    const strategyTitle = isCurveMode() ? "Heating Curve" : "Power House";
+    const strategyTitle = isCurveMode() ? "Stooklijn" : "Power House";
     const formatReviewOption = (key) => formatSettingsOptionLabel(getEntityStateText(key));
     const strategyLines = isCurveMode()
       ? [
-          ["Control profile", formatReviewOption("curveControlProfile")],
+          ["Regelprofiel", formatReviewOption("curveControlProfile")],
           ["Aanvoer bij -20°C", formatValue("curveM20")],
           ["Aanvoer bij -10°C", formatValue("curveM10")],
           ["Aanvoer bij 0°C", formatValue("curve0")],
@@ -3035,32 +3040,32 @@
           ["Fallback-aanvoer", formatValue("curveFallbackSupply")],
         ]
       : [
-          ["Response profile", formatReviewOption("phResponseProfile")],
-          ["Rated maximum house power", formatValue("housePower")],
-          ["Maximum heating outdoor temperature", formatValue("houseOutdoorMax")],
-          ["Temperature reaction", formatValue("phKp")],
-          ["Comfort below setpoint", formatValue("phComfortBelow")],
-          ["Comfort above setpoint", formatValue("phComfortAbove")],
+          ["Profiel", formatReviewOption("phResponseProfile")],
+          ["Geschat maximaal warmteverlies", formatValue("housePower")],
+          ["Buitentemperatuur zonder warmtevraag", formatValue("houseOutdoorMax")],
+          ["Temperatuurreactie", formatValue("phKp")],
+          ["Comfort onder setpoint", formatValue("phComfortBelow")],
+          ["Comfort boven setpoint", formatValue("phComfortAbove")],
         ];
 
     const flowMode = String(getEntityValue("flowControlMode") || "");
     const flowLines = [
-      ["Flowregeling", flowMode === "Manual PWM" ? "Handmatige iPWM" : "Flow setpoint"],
+      ["Flowregeling", flowMode === "Manual PWM" ? "Vaste pompstand" : "Gewenste flow"],
       flowMode === "Manual PWM"
-        ? ["Manual iPWM", formatValue("manualIpwm")]
-        : ["Flow setpoint", formatValue("flowSetpoint")],
+        ? ["Vaste pompstand", formatValue("manualIpwm")]
+        : ["Gewenste flow", formatValue("flowSetpoint")],
     ];
 
     const waterLines = [
-      ["Maximum water temperature", formatValue("maxWater")],
-      ["Trip threshold", formatValue("maxWaterTrip")],
+      ["Maximale watertemperatuur", formatValue("maxWater")],
+      ["Tripgrens", formatValue("maxWaterTrip")],
     ];
 
     const silentLines = [
-      ["Window start", toTimeInputValue(getEntityValue("silentStartTime")) || "—"],
-      ["Window end", toTimeInputValue(getEntityValue("silentEndTime")) || "—"],
-      ["Silent max level", formatValue("silentMax")],
-      ["Day max level", formatValue("dayMax")],
+      ["Start stille uren", toTimeInputValue(getEntityValue("silentStartTime")) || "—"],
+      ["Einde stille uren", toTimeInputValue(getEntityValue("silentEndTime")) || "—"],
+      ["Maximaal niveau tijdens stille uren", formatValue("silentMax")],
+      ["Maximaal niveau overdag", formatValue("dayMax")],
     ];
 
     const renderReviewList = (lines) => `
@@ -3098,7 +3103,7 @@
             ${renderReviewList(flowLines)}
           </article>
           <article class="oq-helper-field oq-helper-field--review">
-            <h3>Silent mode</h3>
+            <h3>Stille uren</h3>
             ${renderReviewList(silentLines)}
           </article>
         </div>
@@ -3108,7 +3113,7 @@
 
   function renderAppSummary() {
     const parts = [];
-    parts.push(isCurveMode() ? "Heating Curve" : "Power House");
+    parts.push(isCurveMode() ? "Stooklijn" : "Power House");
     const profile = String(getEntityValue(isCurveMode() ? "curveControlProfile" : "phResponseProfile") || "").trim();
     if (profile) {
       parts.push(`profiel ${profile}`);
@@ -3261,6 +3266,26 @@
     `;
   }
 
+  function renderOverviewLane(label, value, tone = "blue", note = "") {
+    return `
+      <article class="oq-overview-lane oq-overview-lane--${escapeHtml(tone)}">
+        <span>${escapeHtml(label)}</span>
+        <strong>${escapeHtml(value)}</strong>
+        ${note ? `<p>${escapeHtml(note)}</p>` : ""}
+      </article>
+    `;
+  }
+
+  function renderOverviewMetricCard(label, value, tone = "blue", note = "") {
+    return `
+      <article class="oq-overview-metric oq-overview-metric--${escapeHtml(tone)}">
+        <span>${escapeHtml(label)}</span>
+        <strong>${escapeHtml(value)}</strong>
+        ${note ? `<p>${escapeHtml(note)}</p>` : ""}
+      </article>
+    `;
+  }
+
   function formatSignedTemperature(value) {
     if (Number.isNaN(value)) {
       return "—";
@@ -3274,6 +3299,182 @@
       return "—";
     }
     return `${numeric.toFixed(decimals)}${unit ? ` ${unit}` : ""}`;
+  }
+
+  function formatSignedPower(value) {
+    const numeric = Number(value);
+    if (Number.isNaN(numeric)) {
+      return "—";
+    }
+    const prefix = numeric > 0 ? "+" : numeric < 0 ? "-" : "";
+    return `${prefix}${Math.abs(numeric).toFixed(0)} W`;
+  }
+
+  function getOverviewOutsideTempKey() {
+    if (hasEntity("outsideTempSelected")) {
+      return "outsideTempSelected";
+    }
+    if (hasEntity("hp1OutsideTemp")) {
+      return "hp1OutsideTemp";
+    }
+    if (hasEntity("hp2OutsideTemp")) {
+      return "hp2OutsideTemp";
+    }
+    return "";
+  }
+
+  function getOverviewReturnTempKey() {
+    if (hasEntity("hp1WaterIn")) {
+      return "hp1WaterIn";
+    }
+    if (hasEntity("hp2WaterIn")) {
+      return "hp2WaterIn";
+    }
+    return "";
+  }
+
+  function getPowerHouseRequestedPower() {
+    const keys = ["phouseReq", "strategyRequestedPower"];
+    for (const key of keys) {
+      const numeric = getEntityNumericValue(key);
+      if (!Number.isNaN(numeric)) {
+        return numeric;
+      }
+    }
+    return Number.NaN;
+  }
+
+  function getPowerHouseOverviewModel() {
+    const requested = getPowerHouseRequestedPower();
+    const house = getEntityNumericValue("phouseHouse");
+    const delivered = getEntityNumericValue("totalHeat");
+    const capacity = getEntityNumericValue("hpCapacity");
+    const roomCorrection = Number.isNaN(requested) || Number.isNaN(house) ? Number.NaN : requested - house;
+
+    let statusTitle = "Nog aan het opbouwen";
+    let statusCopy = "Zodra alle vermogens beschikbaar zijn, zie je hier hoe de warmtevraag is opgebouwd.";
+
+    if (!Number.isNaN(requested) && !Number.isNaN(capacity) && requested > capacity + 150) {
+      statusTitle = "Capaciteit begrenst";
+      statusCopy = "De gevraagde warmtevraag ligt boven wat de warmtepomp nu ongeveer kan leveren.";
+    } else if (!Number.isNaN(requested) && !Number.isNaN(delivered) && delivered < requested - 250) {
+      statusTitle = "Levert minder dan gevraagd";
+      statusCopy = "De actuele warmteafgifte blijft nog onder de gevraagde warmtevraag.";
+    } else if (!Number.isNaN(requested) && !Number.isNaN(delivered) && delivered > requested + 250) {
+      statusTitle = "Levert meer dan gevraagd";
+      statusCopy = "De actuele warmteafgifte ligt nu boven de gevraagde warmtevraag.";
+    } else if (!Number.isNaN(requested) && !Number.isNaN(delivered)) {
+      statusTitle = "In balans";
+      statusCopy = "Gevraagde warmtevraag en actuele levering liggen nu dicht bij elkaar.";
+    }
+
+    return {
+      requestedText: formatNumericState(requested, 0, "W"),
+      houseText: formatNumericState(house, 0, "W"),
+      correctionText: formatSignedPower(roomCorrection),
+      deliveredText: formatNumericState(delivered, 0, "W"),
+      capacityText: formatOverviewStatValue("hpCapacity"),
+      statusTitle,
+      statusCopy,
+    };
+  }
+
+  function getCurveOverviewModel() {
+    const target = getEntityNumericValue("curveSupplyTarget");
+    const supply = getEntityNumericValue("supplyTemp");
+    const outsideKey = getOverviewOutsideTempKey();
+    const outside = outsideKey ? getEntityNumericValue(outsideKey) : Number.NaN;
+    const targetDelta = Number.isNaN(target) || Number.isNaN(supply) ? Number.NaN : supply - target;
+    const fallbackActive = Boolean(outsideKey) && Number.isNaN(outside);
+
+    let statusTitle = "Stuurt op buitentemperatuur";
+    let statusCopy = "De doelaanvoer volgt de huidige buitentemperatuur en vergelijkt die met de actuele aanvoer.";
+
+    if (fallbackActive) {
+      statusTitle = "Fallback actief";
+      statusCopy = "De buitentemperatuur ontbreekt, dus de regeling valt terug op de ingestelde fallback-aanvoer.";
+    } else if (!Number.isNaN(targetDelta) && targetDelta < -1.0) {
+      statusTitle = "Nog onder doel";
+      statusCopy = "De actuele aanvoertemperatuur ligt nog onder de doelaanvoer.";
+    } else if (!Number.isNaN(targetDelta) && targetDelta > 1.0) {
+      statusTitle = "Boven doel";
+      statusCopy = "De actuele aanvoertemperatuur ligt nu boven de doelaanvoer.";
+    } else if (!Number.isNaN(targetDelta)) {
+      statusTitle = "Dicht bij doel";
+      statusCopy = "De actuele aanvoertemperatuur sluit nu goed aan op de doelaanvoer.";
+    }
+
+    return {
+      targetText: formatOverviewStatValue("curveSupplyTarget"),
+      supplyText: formatOverviewStatValue("supplyTemp"),
+      deltaText: formatSignedTemperature(targetDelta),
+      capacityText: formatOverviewStatValue("hpCapacity"),
+      statusTitle,
+      statusCopy,
+    };
+  }
+
+  function renderPowerHouseOverviewCard() {
+    const model = getPowerHouseOverviewModel();
+
+    return `
+      <section class="oq-overview-system">
+        <div class="oq-overview-system-copy">
+          <h3>Vermogensbalans</h3>
+          <p>Power House bouwt de warmtevraag op uit de berekende huisvraag en de correctie rond het kamersetpoint.</p>
+        </div>
+        <div class="oq-overview-hero">
+          <div class="oq-overview-hero-main">
+            <span class="oq-overview-focus-label">Gevraagd vermogen</span>
+            <strong>${escapeHtml(model.requestedText)}</strong>
+            <p>De warmtevraag waar Power House nu naartoe stuurt.</p>
+          </div>
+          <div class="oq-overview-hero-side">
+            <span class="oq-overview-hero-status">${escapeHtml(model.statusTitle)}</span>
+            <p>${escapeHtml(model.statusCopy)}</p>
+          </div>
+        </div>
+        <div class="oq-overview-metrics oq-overview-metrics--two-column">
+          ${renderOverviewMetricCard("Berekende huisvraag", model.houseText, "blue", "Basis op woning en buitenlucht.")}
+          ${renderOverviewMetricCard("Kamercorrectie", model.correctionText, "orange", "Extra bijsturing rond setpoint.")}
+          ${renderOverviewMetricCard("Geleverd vermogen", model.deliveredText, "orange", "Wat het systeem nu levert.")}
+          ${renderOverviewMetricCard("HP capacity", model.capacityText, "sky", "Beschikbare warmtepompcapaciteit.")}
+        </div>
+      </section>
+    `;
+  }
+
+  function renderCurveOverviewCard() {
+    const model = getCurveOverviewModel();
+
+    return `
+      <section class="oq-overview-system">
+        <div class="oq-overview-system-copy">
+          <h3>Stooklijnregeling</h3>
+          <p>De stooklijn bepaalt welke aanvoertemperatuur nu nodig is op basis van de buitentemperatuur.</p>
+        </div>
+        <div class="oq-overview-hero">
+          <div class="oq-overview-hero-main">
+            <span class="oq-overview-focus-label">Doelaanvoer</span>
+            <strong>${escapeHtml(model.targetText)}</strong>
+            <p>De aanvoertemperatuur waar de regeling nu naartoe werkt.</p>
+          </div>
+          <div class="oq-overview-hero-side">
+            <span class="oq-overview-hero-status">${escapeHtml(model.statusTitle)}</span>
+            <p>${escapeHtml(model.statusCopy)}</p>
+          </div>
+        </div>
+        <div class="oq-overview-metrics oq-overview-metrics--three-column">
+          ${renderOverviewMetricCard("Actuele aanvoertemperatuur", model.supplyText, "orange", "Wat nu wordt geleverd.")}
+          ${renderOverviewMetricCard("Afwijking doelaanvoer", model.deltaText, "blue", "Verschil met het doel.")}
+          ${renderOverviewMetricCard("HP capacity", model.capacityText, "sky", "Beschikbare warmtepompcapaciteit.")}
+        </div>
+      </section>
+    `;
+  }
+
+  function renderOverviewStrategyPanel() {
+    return isCurveMode() ? renderCurveOverviewCard() : renderPowerHouseOverviewCard();
   }
 
   function formatComponentPositionLabel(key) {
@@ -3734,8 +3935,8 @@
               y: 308,
               width: 72,
               value: model.flowText,
-              label: "Flowrate",
-              ariaLabel: `Flowrate ${model.flowText}`,
+              label: "Flow",
+              ariaLabel: `Flow ${model.flowText}`,
               align: "center",
             })}
             ${renderTechTooltip({
@@ -3745,7 +3946,7 @@
               x: 110,
               y: 276,
               width: 126,
-              kicker: "Flowrate",
+              kicker: "Flow",
               detail: "CV-circuit",
               direction: "left",
             })}
@@ -3908,8 +4109,8 @@
               y: 258,
               width: 60,
               value: model.fanRpmText,
-              label: "Fan speed",
-              ariaLabel: `Fan speed ${model.fanRpmText}`,
+              label: "Ventilatorsnelheid",
+              ariaLabel: `Ventilatorsnelheid ${model.fanRpmText}`,
               align: "center",
             })}
             ${renderTechTooltip({
@@ -3919,8 +4120,8 @@
               x: 410,
               y: 236,
               width: 118,
-              kicker: "Fan",
-              detail: "Speed",
+              kicker: "Ventilator",
+              detail: "Toerental",
               direction: "right",
             })}
 
@@ -4105,7 +4306,7 @@
               data-oq-bind="eev-trigger"
               data-oq-tooltip-target="eev"
               tabindex="0"
-              aria-label="${escapeHtml(`Electronic expansion valve, ${model.eevPositionText}`)}"
+              aria-label="${escapeHtml(`Expansieventiel, ${model.eevPositionText}`)}"
             >
               <rect class="oq-hp-tech-hotspot-hit" x="301" y="275" width="50" height="38" rx="12" />
             </g>
@@ -4116,7 +4317,7 @@
               x: 340,
               y: 252,
               width: 202,
-              kicker: "Electronic expansion valve",
+              kicker: "Expansieventiel",
               detail: model.eevPositionText,
               detailBind: "eev-detail",
               direction: "left",
@@ -4130,11 +4331,11 @@
               <strong data-oq-bind="footer-mode">${escapeHtml(model.mode)}</strong>
             </div>
             <div class="oq-hp-tech-footer-item">
-              <span>Power in</span>
+              <span>Stroomverbruik</span>
               <strong data-oq-bind="footer-power">${escapeHtml(model.powerText)}</strong>
             </div>
             <div class="oq-hp-tech-footer-item">
-              <span>Heat out</span>
+              <span>Warmteafgifte</span>
               <strong data-oq-bind="footer-heat">${escapeHtml(model.heatText)}</strong>
             </div>
             <div class="oq-hp-tech-footer-item">
@@ -4260,8 +4461,8 @@
           </div>
         </div>
         <div class="oq-overview-hp-stats">
-          ${renderOverviewStatCard(keys.power, "Power in", "blue", "elektrisch ingangsvermogen")}
-          ${renderOverviewStatCard(keys.heat, "Heat out", "orange", "thermisch vermogen")}
+          ${renderOverviewStatCard(keys.power, "Stroomverbruik", "blue", "elektrisch verbruik")}
+          ${renderOverviewStatCard(keys.heat, "Warmteafgifte", "orange", "afgegeven warmte")}
           ${renderOverviewStatCard(keys.cop, "COP", "green", "actueel")}
         </div>
         <div class="oq-overview-hp-meta">
@@ -4292,9 +4493,10 @@
   }
 
   function renderOverviewView() {
-    const strategyLabel = isCurveMode() ? "Heating Curve" : "Power House";
-    const targetKey = isCurveMode() ? "curveSupplyTarget" : "maxWater";
+    const strategyLabel = isCurveMode() ? "Stooklijn" : "Power House";
     const heatPumpPanels = getHeatPumpPanels();
+    const outsideTempKey = getOverviewOutsideTempKey();
+    const returnTempKey = getOverviewReturnTempKey();
 
     return `
       <section class="oq-helper-panel oq-helper-panel--flush">
@@ -4302,44 +4504,38 @@
           <div class="oq-overview-head">
             <div>
               <p class="oq-helper-label">Overzicht</p>
-              <h2 class="oq-helper-section-title">OpenQuatt live overzicht</h2>
-              <p class="oq-helper-section-copy">Dit is de richting voor de pagina na Quick Start: compacte status bovenaan, het thermische beeld in het midden en de warmtepompen duidelijk als eersteklas onderdeel van het systeem.</p>
+              <h2 class="oq-helper-section-title">Live overzicht</h2>
+              <p class="oq-helper-section-copy">Hier zie je in één oogopslag hoe OpenQuatt nu werkt.</p>
             </div>
             <div class="oq-overview-head-actions">
               <div class="oq-overview-status">
                 ${renderOverviewStatusChip("Strategie", strategyLabel, "blue")}
-                ${renderOverviewStatusChip("Control mode", getEntityStateText("controlModeLabel"), "neutral")}
-                ${renderOverviewStatusChip("Flow mode", getEntityStateText("flowMode"), "neutral")}
-                ${renderOverviewStatusChip("Silent", isEntityActive("silentActive") ? "Actief" : "Uit", isEntityActive("silentActive") ? "active" : "neutral")}
-                ${renderOverviewStatusChip("Sticky pump", isEntityActive("stickyActive") ? "Actief" : "Uit", isEntityActive("stickyActive") ? "active" : "neutral")}
+                ${renderOverviewStatusChip("Regelmodus", getEntityStateText("controlModeLabel"), "neutral")}
+                ${renderOverviewStatusChip("Pompmodus", getEntityStateText("flowMode"), "neutral")}
+                ${renderOverviewStatusChip("Stille uren", isEntityActive("silentActive") ? "Actief" : "Uit", isEntityActive("silentActive") ? "active" : "neutral")}
+                ${renderOverviewStatusChip("Pompbescherming", isEntityActive("stickyActive") ? "Actief" : "Uit", isEntityActive("stickyActive") ? "active" : "neutral")}
               </div>
             </div>
           </div>
           <div class="oq-overview-top">
-            ${renderOverviewStatCard("totalPower", "Power in", "blue", "systeem totaal")}
-            ${renderOverviewStatCard("totalHeat", "Heat out", "orange", "thermisch vermogen")}
-            ${renderOverviewStatCard("totalCop", "COP", "green", "systeemefficiency")}
-            ${renderOverviewStatCard("flowSelected", "Flow", "sky", "pomp + distributie")}
+            ${renderOverviewStatCard("totalPower", "Stroomverbruik", "blue", "hele systeem")}
+            ${renderOverviewStatCard("totalHeat", "Warmteafgifte", "orange", "thermisch vermogen")}
+            ${renderOverviewStatCard("totalCop", "COP", "green", "rendement")}
+            ${renderOverviewStatCard("flowSelected", "Flow", "sky", "watercircuit")}
           </div>
           <div class="oq-overview-main">
-            <section class="oq-overview-system">
-              <div class="oq-overview-system-copy">
-                <h3>Warmtevraag</h3>
-                <p>Afgeleide indicatie van hoeveel warmte de woning nu vraagt.</p>
-              </div>
-              ${renderHomeDemandCard()}
-            </section>
+            ${renderOverviewStrategyPanel()}
             <section class="oq-overview-temps">
               <div class="oq-overview-system-copy">
                 <h3>Temperaturen</h3>
-                <p>Belangrijkste temperatuurwaarden voor comfort en regeling.</p>
+                <p>De belangrijkste temperaturen voor comfort en regeling.</p>
               </div>
               <div class="oq-overview-temps-list">
                 ${renderTempRow("Kamertemperatuur", "roomTemp")}
                 ${renderTempRow("Kamer setpoint", "roomSetpoint")}
                 ${renderTempRow("Aanvoertemperatuur", "supplyTemp")}
-                ${renderTempRow("Retourtemperatuur", "hp1WaterIn")}
-                ${renderTempRow(isCurveMode() ? "Curve target" : "Max watertemperatuur", targetKey)}
+                ${returnTempKey ? renderTempRow("Retourtemperatuur", returnTempKey) : ""}
+                ${outsideTempKey ? renderTempRow("Buitentemperatuur", outsideTempKey) : renderTempRow("Buitentemperatuur", "", "—")}
               </div>
             </section>
           </div>
@@ -4551,7 +4747,7 @@
     }
     const flowReading = board.querySelector('[data-oq-bind="flow-reading"]');
     if (flowReading) {
-      flowReading.setAttribute("aria-label", `Flowrate ${model.flowText}`);
+      flowReading.setAttribute("aria-label", `Flow ${model.flowText}`);
     }
     const innerCoilTempReading = board.querySelector('[data-oq-bind="inner-coil-temp-reading"]');
     if (innerCoilTempReading) {
@@ -4571,7 +4767,7 @@
     }
     const fanSpeedReading = board.querySelector('[data-oq-bind="fan-speed-reading"]');
     if (fanSpeedReading) {
-      fanSpeedReading.setAttribute("aria-label", `Fan speed ${model.fanRpmText}`);
+      fanSpeedReading.setAttribute("aria-label", `Ventilatorsnelheid ${model.fanRpmText}`);
     }
     const dischargePressureReading = board.querySelector('[data-oq-bind="discharge-pressure-reading"]');
     if (dischargePressureReading) {
@@ -4599,7 +4795,7 @@
     }
     const eevTrigger = board.querySelector('[data-oq-bind="eev-trigger"]');
     if (eevTrigger) {
-      eevTrigger.setAttribute("aria-label", `Electronic expansion valve, ${model.eevPositionText}`);
+      eevTrigger.setAttribute("aria-label", `Expansieventiel, ${model.eevPositionText}`);
     }
     setVariantClass(board.querySelector(".oq-hp-tech-pump"), "oq-hp-tech-pump--", model.returnLineTone, ["supply", "return"]);
     const condWater = board.querySelector('[data-oq-bind="cond-water"]');
@@ -4629,56 +4825,51 @@
       return false;
     }
 
-    const strategyLabel = isCurveMode() ? "Heating Curve" : "Power House";
-    const targetKey = isCurveMode() ? "curveSupplyTarget" : "maxWater";
+    const strategyLabel = isCurveMode() ? "Stooklijn" : "Power House";
     const status = board.querySelector(".oq-overview-status");
     const top = board.querySelector(".oq-overview-top");
     const system = board.querySelector(".oq-overview-system");
     const temps = board.querySelector(".oq-overview-temps");
     const hpGrid = board.querySelector(".oq-overview-hp-grid");
     const heatPumpPanels = getHeatPumpPanels();
+    const outsideTempKey = getOverviewOutsideTempKey();
+    const returnTempKey = getOverviewReturnTempKey();
 
     if (status) {
       status.innerHTML = `
         ${renderOverviewStatusChip("Strategie", strategyLabel, "blue")}
-        ${renderOverviewStatusChip("Control mode", getEntityStateText("controlModeLabel"), "neutral")}
-        ${renderOverviewStatusChip("Flow mode", getEntityStateText("flowMode"), "neutral")}
-        ${renderOverviewStatusChip("Silent", isEntityActive("silentActive") ? "Actief" : "Uit", isEntityActive("silentActive") ? "active" : "neutral")}
-        ${renderOverviewStatusChip("Sticky pump", isEntityActive("stickyActive") ? "Actief" : "Uit", isEntityActive("stickyActive") ? "active" : "neutral")}
+        ${renderOverviewStatusChip("Regelmodus", getEntityStateText("controlModeLabel"), "neutral")}
+        ${renderOverviewStatusChip("Pompmodus", getEntityStateText("flowMode"), "neutral")}
+        ${renderOverviewStatusChip("Stille uren", isEntityActive("silentActive") ? "Actief" : "Uit", isEntityActive("silentActive") ? "active" : "neutral")}
+        ${renderOverviewStatusChip("Pompbescherming", isEntityActive("stickyActive") ? "Actief" : "Uit", isEntityActive("stickyActive") ? "active" : "neutral")}
       `;
     }
 
     if (top) {
       top.innerHTML = `
-        ${renderOverviewStatCard("totalPower", "Power in", "blue", "systeem totaal")}
-        ${renderOverviewStatCard("totalHeat", "Heat out", "orange", "thermisch vermogen")}
-        ${renderOverviewStatCard("totalCop", "COP", "green", "systeemefficiency")}
-        ${renderOverviewStatCard("flowSelected", "Flow", "sky", "pomp + distributie")}
+        ${renderOverviewStatCard("totalPower", "Stroomverbruik", "blue", "hele systeem")}
+        ${renderOverviewStatCard("totalHeat", "Warmteafgifte", "orange", "thermisch vermogen")}
+        ${renderOverviewStatCard("totalCop", "COP", "green", "rendement")}
+        ${renderOverviewStatCard("flowSelected", "Flow", "sky", "watercircuit")}
       `;
     }
 
     if (system) {
-      system.innerHTML = `
-        <div class="oq-overview-system-copy">
-          <h3>Warmtevraag</h3>
-          <p>Afgeleide indicatie van hoeveel warmte de woning nu vraagt.</p>
-        </div>
-        ${renderHomeDemandCard()}
-      `;
+      system.outerHTML = renderOverviewStrategyPanel();
     }
 
     if (temps) {
       temps.innerHTML = `
         <div class="oq-overview-system-copy">
           <h3>Temperaturen</h3>
-          <p>Belangrijkste temperatuurwaarden voor comfort en regeling.</p>
+          <p>De belangrijkste temperaturen voor comfort en regeling.</p>
         </div>
         <div class="oq-overview-temps-list">
           ${renderTempRow("Kamertemperatuur", "roomTemp")}
           ${renderTempRow("Kamer setpoint", "roomSetpoint")}
           ${renderTempRow("Aanvoertemperatuur", "supplyTemp")}
-          ${renderTempRow("Retourtemperatuur", "hp1WaterIn")}
-          ${renderTempRow(isCurveMode() ? "Curve target" : "Max watertemperatuur", targetKey)}
+          ${returnTempKey ? renderTempRow("Retourtemperatuur", returnTempKey) : ""}
+          ${outsideTempKey ? renderTempRow("Buitentemperatuur", outsideTempKey) : renderTempRow("Buitentemperatuur", "", "—")}
         </div>
       `;
     }
@@ -4709,8 +4900,8 @@
     return `
       <section class="oq-helper-panel">
         <p class="oq-helper-label">Instellingen</p>
-        <h2 class="oq-helper-section-title">Regeling, limieten en stille modus</h2>
-        <p class="oq-helper-section-copy">De waarden hieronder zijn direct gekoppeld aan de echte OpenQuatt-instellingen. Wijzigingen hebben direct invloed op de werking van OpenQuatt.</p>
+        <h2 class="oq-helper-section-title">Instellingen</h2>
+        <p class="oq-helper-section-copy">Hier pas je aan hoe OpenQuatt werkt. Wijzigingen worden direct toegepast.</p>
         <div class="oq-helper-settings-stack">
           ${renderSettingsFlowSection()}
           ${renderSettingsHeatingSection()}
@@ -4745,11 +4936,11 @@
             <div class="oq-helper-brand">
               <div class="oq-helper-logo-lockup">
                 ${LOGO_MARKUP}
-                <div class="oq-helper-brand-copy">
+              <div class="oq-helper-brand-copy">
                   <h1>Regeling, inzicht en tuning</h1>
                 </div>
               </div>
-              <p class="oq-helper-lead">Quick Start, live overzicht en instellingen komen hier samen in één rustige interface voor je OpenQuatt-device.</p>
+              <p class="oq-helper-lead">Alles voor je OpenQuatt op één plek: snel instellen, live meekijken en later verder finetunen.</p>
             </div>
             ${renderHeaderStatus()}
           </div>

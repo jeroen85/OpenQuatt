@@ -106,6 +106,57 @@
     entity.state = "";
   }
 
+  function syncOverviewTelemetry(single) {
+    const hp1Outside = Number(getEntity("sensor", "HP1 - Outside temperature")?.value);
+    const hp2Outside = Number(getEntity("sensor", "HP2 - Outside temperature")?.value);
+    const totalHeat = Number(getEntity("sensor", "Total Heat Power")?.value);
+    const strategy = String(getEntity("select", "Heating Control Mode")?.value || "");
+    const roomTemp = Number(getEntity("sensor", "Room Temperature (Selected)")?.value);
+    const roomSetpoint = Number(getEntity("sensor", "Room Setpoint (Selected)")?.value);
+    const housePower = Number(getEntity("number", "Rated maximum house power")?.value);
+    const houseCold = Number(getEntity("number", "House cold temp")?.value);
+    const outdoorMax = Number(getEntity("number", "Maximum heating outdoor temperature")?.value);
+    const kp = Number(getEntity("number", "Power House temperature reaction")?.value);
+    const selectedOutside = single || Number.isNaN(hp2Outside)
+      ? hp1Outside
+      : Number(((hp1Outside + hp2Outside) / 2).toFixed(1));
+
+    let houseModel = 0;
+    if (
+      !Number.isNaN(selectedOutside)
+      && !Number.isNaN(houseCold)
+      && !Number.isNaN(outdoorMax)
+      && !Number.isNaN(housePower)
+      && outdoorMax > houseCold
+    ) {
+      const ratio = Math.max(0, Math.min(1, (outdoorMax - selectedOutside) / (outdoorMax - houseCold)));
+      houseModel = Math.round(housePower * ratio);
+    }
+
+    const roomDelta = Number.isNaN(roomSetpoint) || Number.isNaN(roomTemp) ? 0 : roomSetpoint - roomTemp;
+    const roomCorrection = Number.isNaN(kp) ? 0 : Math.round(Math.max(-1500, Math.min(1500, roomDelta * kp)));
+    const powerHouseRequested = Math.max(0, Math.round(houseModel + roomCorrection));
+    const strategyRequested = Math.max(0, Math.round(strategy === "Power House" ? powerHouseRequested : totalHeat || 0));
+
+    let capacity = 0;
+    if (state.scenario === "idle") {
+      capacity = single ? 2800 : 5200;
+    } else if (state.scenario === "heating") {
+      capacity = single ? 3200 : 5200;
+    } else if (state.scenario === "dual") {
+      capacity = 5200;
+    } else if (state.scenario === "defrost") {
+      capacity = single ? 1800 : 3200;
+    }
+
+    setNumber("Outside Temperature (Selected)", selectedOutside, "°C");
+    setNumber("Power House – P_house", houseModel, "W");
+    setNumber("Power House – P_req", powerHouseRequested, "W");
+    setNumber("Strategy requested power", strategyRequested, "W");
+    setNumber("HP capacity (W)", capacity, "W");
+    setNumber("HP deficit (W)", Math.max(0, strategyRequested - capacity), "W");
+  }
+
   function seedEntities() {
     syncDevMeta();
     setEntity("text_sensor", "Summary", { state: "" });
@@ -215,11 +266,17 @@
       ["Total Power Input", 0, "W"],
       ["Total COP", 0, ""],
       ["Total Heat Power", 0, "W"],
+      ["Strategy requested power", 0, "W"],
+      ["HP capacity (W)", 0, "W"],
+      ["HP deficit (W)", 0, "W"],
       ["Flow average (Selected)", 0, "L/h"],
       ["Room Temperature (Selected)", 20.6, "°C"],
       ["Room Setpoint (Selected)", 21.0, "°C"],
       ["Water Supply Temp (Selected)", 29.5, "°C"],
+      ["Outside Temperature (Selected)", 8.2, "°C"],
       ["Heating Curve Supply Target", 33.0, "°C"],
+      ["Power House – P_house", 2500, "W"],
+      ["Power House – P_req", 2800, "W"],
       ["HP1 - Power Input", 0, "W"],
       ["HP1 - Heat Power", 0, "W"],
       ["HP1 - COP", 0, ""],
@@ -441,6 +498,7 @@
         setBinary("HP2 - Bottom plate heater", true);
         setBinary("HP2 - Crankcase heater", true);
       }
+      syncOverviewTelemetry(single);
       return;
     }
 
@@ -495,6 +553,7 @@
         setBinary("HP2 - Bottom plate heater", false);
         setBinary("HP2 - Crankcase heater", true);
       }
+      syncOverviewTelemetry(single);
       return;
     }
 
@@ -547,6 +606,7 @@
       setBinary("HP2 - 4-Way valve", true);
       setBinary("HP2 - Bottom plate heater", true);
       setBinary("HP2 - Crankcase heater", true);
+      syncOverviewTelemetry(single);
       return;
     }
 
@@ -606,6 +666,7 @@
         setBinary("HP2 - Bottom plate heater", false);
         setBinary("HP2 - Crankcase heater", true);
       }
+      syncOverviewTelemetry(single);
       return;
     }
   }
@@ -652,12 +713,14 @@
         setNumber("Power House demand fall time", 2);
       }
     }
+    syncOverviewTelemetry(state.installation === "single");
     updateSummary();
     notifyMockUpdated();
   }
 
   function handleNumberSet(name, value) {
     setNumber(name, Number(value));
+    syncOverviewTelemetry(state.installation === "single");
     updateSummary();
     notifyMockUpdated();
   }
