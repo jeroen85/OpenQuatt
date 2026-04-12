@@ -2986,9 +2986,9 @@
     const isSelected = index === currentIndex;
     const isDone = state.complete || index < currentIndex;
     return {
-      tone: isDone ? "done" : isSelected ? "current" : "upcoming",
-      label: isDone ? "Gereed" : isSelected ? "Nu bezig" : "Volgend",
-      current: isSelected && !isDone,
+      tone: isSelected ? "current" : isDone ? "done" : "upcoming",
+      label: isSelected ? "Actief" : isDone ? "Gereed" : "Volgend",
+      current: isSelected,
     };
   }
 
@@ -3050,7 +3050,6 @@
   }
 
   function renderQuickStartSidebar() {
-    const step = getCurrentQuickStep();
     const stepIndex = getCurrentQuickStepIndex();
     return `
       <section class="oq-helper-panel oq-helper-panel--aside">
@@ -3058,20 +3057,6 @@
         <h2 class="oq-helper-section-title">Rustige route naar een werkende regeling</h2>
         <p class="oq-helper-panel-note">Quick Start loopt alleen de relevante keuzes langs. Compressor exclusions en minimum runtime blijven bewust buiten deze flow en verhuizen naar instellingen.</p>
         <h3 class="oq-helper-aside-title">Stap ${stepIndex + 1} van ${QUICK_STEPS.length}</h3>
-        <dl class="oq-helper-meta">
-          <div class="oq-helper-meta-row">
-            <dt>Actieve stap</dt>
-            <dd>${escapeHtml(step ? step.title : state.stage)}</dd>
-          </div>
-          <div class="oq-helper-meta-row">
-            <dt>Status</dt>
-            <dd>${state.complete ? "Gereed" : "Bezig"}</dd>
-          </div>
-          <div class="oq-helper-meta-row">
-            <dt>Strategie</dt>
-            <dd>${escapeHtml(isCurveMode() ? "Heating Curve" : "Power House")}</dd>
-          </div>
-        </dl>
         <div class="oq-helper-fields oq-helper-fields--compact">
           ${renderStepOverview(true)}
         </div>
