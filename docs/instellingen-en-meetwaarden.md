@@ -245,7 +245,7 @@ Dit is vaak de belangrijkste groep bij onverklaarbaar gedrag. Als de geselecteer
 
 Voor `Outside Temperature Source` is `Auto` de aanbevolen optie. OpenQuatt kiest dan niet simpelweg de koudste geldige bron, maar de meest betrouwbare.
 
-Als een buitenunit net actief wordt, neemt `Auto` die lokale meting niet meteen over. De sensor krijgt eerst kort de tijd om te stabiliseren, zodat een door zon of stilstand vertekende opstartwaarde niet direct de regeling omgooit.
+Als een buitenunit net actief wordt, neemt `Auto` die lokale meting niet meteen over. De sensor krijgt eerst kort de tijd om te stabiliseren, zodat een door zon of stilstand vertekende opstartwaarde niet direct de regeling omgooit. Daarna mag de actieve buitenunitmeting wel leidend worden, maar OpenQuatt begrenst nog steeds abrupte warme sprongen ten opzichte van een geldige HA-buitentemperatuur.
 
 In de lokale Duo-aggregatie kijkt OpenQuatt sinds `dev` explicieter naar de kwaliteit van de twee HP-metingen:
 

@@ -1677,6 +1677,8 @@ views:
               if it is configured and valid, and idle local readings only as fallback.
               When an outdoor unit has just become active, `Auto` also waits
               briefly before switching to that local reading.
+              When HA outside temperature is valid, `Auto` also limits abrupt
+              warm jumps from the active local reading.
 
               </details>
             text_only: true
