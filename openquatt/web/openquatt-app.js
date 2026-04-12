@@ -3434,11 +3434,10 @@
             <p>${escapeHtml(model.statusCopy)}</p>
           </div>
         </div>
-        <div class="oq-overview-metrics oq-overview-metrics--two-column">
-          ${renderOverviewMetricCard("Berekende huisvraag", model.houseText, "blue", "Basis op woning en buitenlucht.")}
+        <div class="oq-overview-metrics oq-overview-metrics--three-column">
+          ${renderOverviewMetricCard("Berekende huisvraag", model.houseText, "blue", "Op basis van woning en buitentemperatuur.")}
           ${renderOverviewMetricCard("Kamercorrectie", model.correctionText, "orange", "Extra bijsturing rond setpoint.")}
-          ${renderOverviewMetricCard("Geleverd vermogen", model.deliveredText, "orange", "Wat het systeem nu levert.")}
-          ${renderOverviewMetricCard("HP capacity", model.capacityText, "sky", "Beschikbare warmtepompcapaciteit.")}
+          ${renderOverviewMetricCard("Beschikbare warmtecapaciteit", model.capacityText, "sky", "Bij huidige buitentemperatuur.")}
         </div>
       </section>
     `;
@@ -3467,7 +3466,7 @@
         <div class="oq-overview-metrics oq-overview-metrics--three-column">
           ${renderOverviewMetricCard("Actuele aanvoertemperatuur", model.supplyText, "orange", "Wat nu wordt geleverd.")}
           ${renderOverviewMetricCard("Afwijking doelaanvoer", model.deltaText, "blue", "Verschil met het doel.")}
-          ${renderOverviewMetricCard("HP capacity", model.capacityText, "sky", "Beschikbare warmtepompcapaciteit.")}
+          ${renderOverviewMetricCard("Beschikbare warmtecapaciteit", model.capacityText, "sky", "Bij huidige buitentemperatuur.")}
         </div>
       </section>
     `;
