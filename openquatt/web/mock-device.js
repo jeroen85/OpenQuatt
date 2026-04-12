@@ -1,5 +1,5 @@
 (function () {
-  const DOMAINS = new Set(["select", "number", "sensor", "text_sensor", "binary_sensor", "button", "time"]);
+  const DOMAINS = new Set(["select", "number", "sensor", "text_sensor", "binary_sensor", "button", "time", "update"]);
   const entities = new Map();
   const state = {
     scenario: "dual",
@@ -7,6 +7,7 @@
     complete: true,
     tick: 0,
     autoAnimate: true,
+    bootedAt: Date.now() - ((2 * 3600) + (13 * 60)) * 1000,
   };
 
   const HP2_ENTITIES = [
@@ -106,7 +107,18 @@
   }
 
   function seedEntities() {
+    syncDevMeta();
     setEntity("text_sensor", "Summary", { state: "" });
+    setEntity("button", "Check Firmware Updates", { state: "" });
+    setEntity("update", "Firmware Update", {
+      state: "available",
+      value: "available",
+      current_version: "v0.26.0",
+      latest_version: "v0.26.1-dev3",
+      title: "OpenQuatt firmware",
+      summary: "Nieuwe firmware met verdere UI- en regelingverbeteringen staat klaar voor deze preview.",
+      release_url: "https://github.com/jeroen85/OpenQuatt/releases",
+    });
     setEntity("binary_sensor", "Setup Complete", { value: state.complete });
     setEntity("select", "Heating Control Mode", {
       value: "Power House",
@@ -134,6 +146,11 @@
       value: "Balanced",
       state: "Balanced",
       option: ["Comfort", "Balanced", "Stable"],
+    });
+    setEntity("select", "Firmware Update Channel", {
+      value: "dev",
+      state: "dev",
+      option: ["main", "dev"],
     });
     setEntity("select", "Preset", {
       value: "Balanced",
@@ -243,8 +260,8 @@
 
     seedHp2Entities();
 
-    setEntity("button", "Apply & Finish", {});
-    setEntity("button", "Start Over", {});
+    setEntity("button", "Complete setup", {});
+    setEntity("button", "Reset setup state", {});
   }
 
   function seedHp2Entities() {
@@ -271,8 +288,30 @@
     }
   }
 
+  function syncDevMeta() {
+    const updateEntity = getEntity("update", "Firmware Update");
+    const updateAvailable = Boolean(
+      updateEntity
+      && String(updateEntity.latest_version || "").trim()
+      && String(updateEntity.current_version || "").trim()
+      && String(updateEntity.latest_version).trim() !== String(updateEntity.current_version).trim()
+    );
+    window.__OQ_DEV_META = {
+      installation: state.installation,
+      ipAddress: "192.168.2.123",
+      bootedAt: state.bootedAt,
+      updateAvailable,
+      updateLabel: updateAvailable ? "Beschikbaar" : "Actueel",
+    };
+  }
+
   function notifyMockUpdated() {
+    syncDevMeta();
     window.dispatchEvent(new Event("oq-mock-updated"));
+  }
+
+  function notifyDevControlsChanged() {
+    window.dispatchEvent(new Event("oq-dev-controls-changed"));
   }
 
   function computePreset() {
@@ -571,9 +610,9 @@
     }
   }
 
-  function stepSimulation() {
+  function stepSimulation(force = false) {
     state.tick += 1;
-    if (state.autoAnimate) {
+    if (state.autoAnimate || force) {
       applyScenario(state.scenario);
       updateSummary();
       notifyMockUpdated();
@@ -584,6 +623,23 @@
     setText("select", name, value);
     if (name === "Preset") {
       applyPreset(value);
+    } else if (name === "Firmware Update Channel") {
+      const updateEntity = getEntity("update", "Firmware Update");
+      if (updateEntity) {
+        if (value === "main") {
+          updateEntity.current_version = "v0.26.0";
+          updateEntity.latest_version = "v0.26.0";
+          updateEntity.state = "up_to_date";
+          updateEntity.value = "up_to_date";
+          updateEntity.summary = "Je preview gebruikt nu het stabiele kanaal. Er staat op dit moment geen nieuwere stable release klaar.";
+        } else {
+          updateEntity.current_version = "v0.26.0";
+          updateEntity.latest_version = "v0.26.1-dev3";
+          updateEntity.state = "available";
+          updateEntity.value = "available";
+          updateEntity.summary = "Het dev-kanaal heeft een nieuwere OTA-build beschikbaar voor deze preview.";
+        }
+      }
     } else if (name === "Power House response profile") {
       if (value === "Calm") {
         setNumber("Power House demand rise time", 12);
@@ -614,13 +670,37 @@
   }
 
   function handleButtonPress(name) {
-    if (name === "Apply & Finish") {
+    if (name === "Complete setup") {
       state.complete = true;
-    } else if (name === "Start Over") {
+    } else if (name === "Reset setup state") {
       state.complete = false;
+    } else if (name === "Check Firmware Updates") {
+      const channel = String(getEntity("select", "Firmware Update Channel")?.value || "dev");
+      const updateEntity = getEntity("update", "Firmware Update");
+      if (updateEntity) {
+        updateEntity.current_version = "v0.26.0";
+        updateEntity.latest_version = channel === "main" ? "v0.26.0" : "v0.26.1-dev3";
+        updateEntity.state = channel === "main" ? "up_to_date" : "available";
+        updateEntity.value = updateEntity.state;
+      }
     }
     updateSummary();
-    renderToolbar();
+    notifyMockUpdated();
+    notifyDevControlsChanged();
+  }
+
+  function handleUpdateInstall(name) {
+    if (name !== "Firmware Update") {
+      return;
+    }
+    const updateEntity = getEntity("update", name);
+    if (!updateEntity) {
+      return;
+    }
+    updateEntity.state = "installed";
+    updateEntity.value = "installed";
+    updateEntity.current_version = String(updateEntity.latest_version || updateEntity.current_version || "v0.26.0");
+    updateEntity.summary = "De OTA-update is in deze preview als afgerond gemarkeerd.";
     notifyMockUpdated();
   }
 
@@ -628,7 +708,7 @@
     const url = new URL(String(typeof input === "string" ? input : input.url), window.location.href);
     const parts = url.pathname.split("/").filter(Boolean);
     const maybeAction = parts.at(-1);
-    const action = maybeAction === "set" || maybeAction === "press" ? parts.pop() : "";
+    const action = maybeAction === "set" || maybeAction === "press" || maybeAction === "install" ? parts.pop() : "";
     const name = decodeURIComponent(parts.pop() || "");
     const domain = parts.pop() || "";
     if (!DOMAINS.has(domain)) {
@@ -680,92 +760,106 @@
         return mockResponse(200, { ok: true });
       }
 
+      if (request.action === "install" && request.domain === "update") {
+        handleUpdateInstall(request.name);
+        return mockResponse(200, { ok: true });
+      }
+
       return mockResponse(200, entity);
     };
   }
 
-  function renderToolbar() {
-    const root = document.getElementById("oq-dev-toolbar");
-    if (!root) {
+  function renderDevControls() {
+    return `
+      <section class="oq-helper-hub-block oq-helper-hub-dev" data-oq-dev-controls>
+        <p class="oq-helper-hub-kicker">Preview en test</p>
+        <div class="oq-helper-hub-dev-grid">
+          <label class="oq-helper-hub-dev-row">
+            <span class="oq-helper-hub-dev-label">Installatie</span>
+            <select class="oq-helper-hub-dev-select" data-oq-dev-control="installation">
+              <option value="single">Quatt Single</option>
+              <option value="duo">Quatt Duo</option>
+            </select>
+          </label>
+          <label class="oq-helper-hub-dev-row">
+            <span class="oq-helper-hub-dev-label">Scenario</span>
+            <select class="oq-helper-hub-dev-select" data-oq-dev-control="scenario">
+              <option value="idle">Idle</option>
+              <option value="heating">HP1 heating</option>
+              ${state.installation === "duo" ? '<option value="dual">HP1 heat + HP2 cool</option>' : ""}
+              <option value="defrost">Defrost</option>
+            </select>
+          </label>
+        </div>
+        <div class="oq-helper-hub-dev-actions">
+          <button class="oq-helper-hub-dev-button" type="button" data-oq-dev-control="toggle-animate">${state.autoAnimate ? "Pauzeer mockdata" : "Start mockdata"}</button>
+          <button class="oq-helper-hub-dev-button" type="button" data-oq-dev-control="step">1 tick</button>
+        </div>
+        <div class="oq-helper-hub-dev-meta">
+          <span class="oq-helper-hub-dev-badge">Quick Start ${state.complete ? "afgerond" : "actief"}</span>
+          <span class="oq-helper-hub-dev-badge">Datastroom ${state.autoAnimate ? "live mock" : "gepauzeerd"}</span>
+        </div>
+      </section>
+    `;
+  }
+
+  function bindDevControls(root) {
+    const controlsRoot = root.querySelector("[data-oq-dev-controls]");
+    if (!controlsRoot) {
       return;
     }
 
-    root.innerHTML = `
-      <div class="oq-dev-toolbar-head">
-        <div>
-          <h1>OpenQuatt lokale UI-preview</h1>
-          <p>Deze pagina laadt dezelfde <code>openquatt-app.js</code> en <code>openquatt-app.css</code> als het device, maar voedt ze met mockdata. Zo kunnen we layout, wording en states lokaal uitwerken zonder compile + OTA op elke iteratie.</p>
-        </div>
-        <div class="oq-dev-toolbar-actions">
-          <select id="oq-dev-installation">
-            <option value="single">Installatie: Single Quatt</option>
-            <option value="duo">Installatie: Duo Quatt</option>
-          </select>
-          <select id="oq-dev-scenario">
-            <option value="idle">Scenario: Idle</option>
-            <option value="heating">Scenario: HP1 heating</option>
-            ${state.installation === "duo" ? '<option value="dual">Scenario: HP1 heat + HP2 cool</option>' : ""}
-            <option value="defrost">Scenario: Defrost</option>
-          </select>
-          <button type="button" id="oq-dev-toggle-animate">${state.autoAnimate ? "Pauzeer mockdata" : "Start mockdata"}</button>
-          <button type="button" id="oq-dev-step">1 tick</button>
-        </div>
-      </div>
-      <div class="oq-dev-toolbar-status">
-        <span class="oq-dev-pill"><strong>Installatie</strong> ${state.installation === "single" ? "Single Quatt" : "Duo Quatt"}</span>
-        <span class="oq-dev-pill"><strong>Scenario</strong> ${state.scenario}</span>
-        <span class="oq-dev-pill"><strong>Quick Start</strong> ${state.complete ? "afgerond" : "actief"}</span>
-        <span class="oq-dev-pill"><strong>Datastroom</strong> ${state.autoAnimate ? "live mock" : "gepauzeerd"}</span>
-      </div>
-    `;
-
-    const installation = root.querySelector("#oq-dev-installation");
+    const installation = controlsRoot.querySelector('[data-oq-dev-control="installation"]');
     if (installation) {
       installation.value = state.installation;
       installation.onchange = () => {
         setInstallationMode(installation.value);
         applyScenario(state.scenario);
         updateSummary();
-        renderToolbar();
         notifyMockUpdated();
+        notifyDevControlsChanged();
       };
     }
 
-    const scenario = root.querySelector("#oq-dev-scenario");
+    const scenario = controlsRoot.querySelector('[data-oq-dev-control="scenario"]');
     if (scenario) {
       scenario.value = state.scenario;
       scenario.onchange = () => {
         state.scenario = scenario.value;
         applyScenario(state.scenario);
         updateSummary();
-        renderToolbar();
         notifyMockUpdated();
+        notifyDevControlsChanged();
       };
     }
 
-    const toggle = root.querySelector("#oq-dev-toggle-animate");
+    const toggle = controlsRoot.querySelector('[data-oq-dev-control="toggle-animate"]');
     if (toggle) {
       toggle.onclick = () => {
         state.autoAnimate = !state.autoAnimate;
-        renderToolbar();
+        notifyDevControlsChanged();
       };
     }
 
-    const step = root.querySelector("#oq-dev-step");
+    const step = controlsRoot.querySelector('[data-oq-dev-control="step"]');
     if (step) {
       step.onclick = () => {
-        stepSimulation();
-        renderToolbar();
+        stepSimulation(true);
+        notifyDevControlsChanged();
       };
     }
   }
+
+  window.__OQ_DEV_CONTROLS__ = {
+    render: renderDevControls,
+    bind: bindDevControls,
+  };
 
   seedEntities();
   setInstallationMode(state.installation);
   applyScenario(state.scenario);
   updateSummary();
   installFetchMock();
-  document.addEventListener("DOMContentLoaded", renderToolbar, { once: true });
   window.setInterval(() => {
     stepSimulation();
   }, 1600);

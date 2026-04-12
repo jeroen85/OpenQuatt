@@ -2,115 +2,95 @@
   const LOGO_MARKUP = `
     <img class="oq-helper-logo-mark" src="data:image/svg+xml;utf8,%3Csvg%20width=%22100%%22%20height=%22100%%22%20viewBox=%220%200%202680%20900%22%20version=%221.1%22%20xmlns=%22http://www.w3.org/2000/svg%22%20xmlns:xlink=%22http://www.w3.org/1999/xlink%22%20xml:space=%22preserve%22%20xmlns:serif=%22http://www.serif.com/%22%20style=%22fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;%22%3E%3Cg%3E%3Cpath%20d=%22M342.5,34.5C344.898,44.776%20347.898,54.776%20351.5,64.5C354.159,71.474%20356.826,78.474%20359.5,85.5C359.824,90.461%20361.491,94.794%20364.5,98.5C379.589,136.242%20397.089,172.909%20417,208.5C436.208,241.032%20456.208,273.032%20477,304.5C500.391,338.227%20523.391,372.227%20546,406.5C559.012,426.857%20570.179,448.19%20579.5,470.5C579.552,473.346%20580.552,475.68%20582.5,477.5C595.926,506.54%20603.426,537.207%20605,569.5C605.662,585.845%20605.495,602.178%20604.5,618.5C603.275,623.29%20602.608,628.29%20602.5,633.5C600.882,636.171%20600.215,639.171%20600.5,642.5C599.833,646.167%20599.167,649.833%20598.5,653.5C596.926,655.102%20596.259,657.102%20596.5,659.5L596.5,661.5C593.88,665.343%20592.213,669.676%20591.5,674.5C584.483,692.2%20576.15,709.2%20566.5,725.5C563.395,728.275%20561.062,731.608%20559.5,735.5C513.747,794.207%20454.081,828.873%20380.5,839.5C368.667,840.272%20357,841.272%20345.5,842.5C334.495,842.667%20323.495,842.5%20312.5,842C310.618,841.802%20308.952,841.302%20307.5,840.5C301.395,839.004%20295.062,838.337%20288.5,838.5L286.5,838.5C281.471,836.585%20276.137,835.585%20270.5,835.5C194.819,821.23%20137.319,780.897%2098,714.5C69.088,658.348%2060.088,599.014%2071,536.5C76.214,507.193%2085.214,479.193%2098,452.5C107.992,433.175%20118.992,414.508%20131,396.5C175.835,332.164%20219.168,266.83%20261,200.5C275.501,173.5%20289.501,146.167%20303,118.5C309.515,102.108%20316.182,85.775%20323,69.5C327.419,58.182%20331.086,46.516%20334,34.5C335.413,31.339%20337.08,28.339%20339,25.5C340.664,28.327%20341.83,31.327%20342.5,34.5Z%22%20style=%22fill:rgb(32,75,150);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M342.5,34.5C346.685,44.061%20349.685,54.061%20351.5,64.5C347.898,54.776%20344.898,44.776%20342.5,34.5Z%22%20style=%22fill:rgb(99,134,185);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M359.5,85.5C361.734,89.522%20363.401,93.856%20364.5,98.5C361.491,94.794%20359.824,90.461%20359.5,85.5Z%22%20style=%22fill:rgb(100,134,185);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M342.5,119.5C347.662,132.661%20352.329,145.995%20356.5,159.5C357.009,164.703%20358.676,169.37%20361.5,173.5L361.5,174.5C361.41,177.152%20362.076,179.485%20363.5,181.5C364.363,183.421%20365.029,185.421%20365.5,187.5C365.41,190.152%20366.076,192.485%20367.5,194.5C367.41,197.152%20368.076,199.485%20369.5,201.5C369.41,204.152%20370.076,206.485%20371.5,208.5C371.41,211.152%20372.076,213.485%20373.5,215.5C379.477,236.72%20383.811,258.387%20386.5,280.5C387.735,296.849%20389.235,313.182%20391,329.5C391.5,341.829%20391.667,354.162%20391.5,366.5L391.5,369.5C390.732,370.263%20390.232,371.263%20390,372.5C388.668,382.49%20387.501,392.49%20386.5,402.5C385.663,406.834%20385.163,411.168%20385,415.5C402.511,389.134%20412.345,360.134%20414.5,328.5C415.166,323.177%20415.499,317.677%20415.5,312C415.693,303.94%20415.027,296.107%20413.5,288.5C413.34,286.801%20413.506,285.134%20414,283.5C418.525,288.553%20422.025,294.219%20424.5,300.5C424.427,302.027%20425.094,303.027%20426.5,303.5C432.367,315.778%20438.033,328.112%20443.5,340.5C443.166,343.491%20444.166,345.824%20446.5,347.5C449.602,353.802%20451.936,360.469%20453.5,367.5C453.41,370.152%20454.076,372.485%20455.5,374.5C455.41,377.152%20456.076,379.485%20457.5,381.5C459.678,387.876%20461.011,394.543%20461.5,401.5C461.255,407.084%20461.922,412.417%20463.5,417.5C465.104,484.211%20437.437,534.878%20380.5,569.5C379.571,568.311%20379.238,566.978%20379.5,565.5C381.04,560.935%20381.707,556.102%20381.5,551C381.508,542.57%20380.508,534.403%20378.5,526.5C378.706,523.505%20378.04,520.838%20376.5,518.5C371.327,497.821%20362.16,479.154%20349,462.5C325.105,504.625%20306.438,548.958%20293,595.5C292,597.167%20291,598.833%20290,600.5C269.264,608.391%20247.764,613.558%20225.5,616C215.198,617.285%20204.865,618.118%20194.5,618.5C182.23,579.401%20181.397,540.068%20192,500.5C196.291,486.916%20201.958,473.916%20209,461.5C239.193,415.133%20266.86,367.133%20292,317.5C311.021,276.267%20324.521,233.267%20332.5,188.5C336.747,171.892%20339.08,154.892%20339.5,137.5C340.829,131.548%20341.829,125.548%20342.5,119.5Z%22%20style=%22fill:rgb(235,136,50);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M342.5,119.5C341.829,125.548%20340.829,131.548%20339.5,137.5C339.441,131.089%20340.108,124.756%20341.5,118.5C342.107,118.624%20342.44,118.957%20342.5,119.5Z%22%20style=%22fill:rgb(87,92,106);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M356.5,159.5C358.538,163.94%20360.204,168.607%20361.5,173.5C358.676,169.37%20357.009,164.703%20356.5,159.5Z%22%20style=%22fill:rgb(165,115,65);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M361.5,174.5C362.924,176.515%20363.59,178.848%20363.5,181.5C362.076,179.485%20361.41,177.152%20361.5,174.5Z%22%20style=%22fill:rgb(159,113,68);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M339.5,137.5C339.08,154.892%20336.747,171.892%20332.5,188.5C335.259,171.415%20337.592,154.415%20339.5,137.5Z%22%20style=%22fill:rgb(68,88,119);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M365.5,187.5C366.924,189.515%20367.59,191.848%20367.5,194.5C366.076,192.485%20365.41,190.152%20365.5,187.5Z%22%20style=%22fill:rgb(160,114,65);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M367.5,194.5C368.924,196.515%20369.59,198.848%20369.5,201.5C368.076,199.485%20367.41,197.152%20367.5,194.5Z%22%20style=%22fill:rgb(160,114,65);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M369.5,201.5C370.924,203.515%20371.59,205.848%20371.5,208.5C370.076,206.485%20369.41,204.152%20369.5,201.5Z%22%20style=%22fill:rgb(160,114,65);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M371.5,208.5C372.924,210.515%20373.59,212.848%20373.5,215.5C372.076,213.485%20371.41,211.152%20371.5,208.5Z%22%20style=%22fill:rgb(159,114,65);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M386.5,280.5C388.455,294.676%20390.288,309.009%20392,323.5C392.827,338.006%20392.661,352.339%20391.5,366.5C391.667,354.162%20391.5,341.829%20391,329.5C389.235,313.182%20387.735,296.849%20386.5,280.5Z%22%20style=%22fill:rgb(152,112,72);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M424.5,300.5C425.906,300.973%20426.573,301.973%20426.5,303.5C425.094,303.027%20424.427,302.027%20424.5,300.5Z%22%20style=%22fill:rgb(116,102,87);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M413.5,288.5C415.027,296.107%20415.693,303.94%20415.5,312C415.499,317.677%20415.166,323.177%20414.5,328.5C414.611,315.152%20414.277,301.819%20413.5,288.5Z%22%20style=%22fill:rgb(72,90,115);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M443.5,340.5C445.065,342.509%20446.065,344.843%20446.5,347.5C444.166,345.824%20443.166,343.491%20443.5,340.5Z%22%20style=%22fill:rgb(163,113,68);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M453.5,367.5C454.924,369.515%20455.59,371.848%20455.5,374.5C454.076,372.485%20453.41,370.152%20453.5,367.5Z%22%20style=%22fill:rgb(154,111,70);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M455.5,374.5C456.924,376.515%20457.59,378.848%20457.5,381.5C456.076,379.485%20455.41,377.152%20455.5,374.5Z%22%20style=%22fill:rgb(146,110,71);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M391.5,369.5C390.393,380.717%20388.726,391.717%20386.5,402.5C387.501,392.49%20388.668,382.49%20390,372.5C390.232,371.263%20390.732,370.263%20391.5,369.5Z%22%20style=%22fill:rgb(172,117,60);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M461.5,401.5C462.957,406.598%20463.624,411.931%20463.5,417.5C461.922,412.417%20461.255,407.084%20461.5,401.5Z%22%20style=%22fill:rgb(162,115,62);%22/%3E%3C/g%3E%3Cpath%20d=%22M770.5,570.5C770.624,558.467%20771.291,546.467%20772.5,534.5C784.157,497.354%20809.157,474.521%20847.5,466C880.205,459.456%20912.205,461.789%20943.5,473C982.389,491.928%201000.22,523.095%20997,566.5C993.473,609.041%20971.306,636.875%20930.5,650C898.056,657.651%20865.723,657.318%20833.5,649C795.64,636.312%20774.64,610.145%20770.5,570.5ZM871.5,499.5C850.829,501.845%20834.829,511.845%20823.5,529.5C817.349,545.355%20815.849,561.688%20819,578.5C827.176,602.001%20843.676,615.168%20868.5,618C880.872,618.843%20893.205,618.51%20905.5,617C916.036,614.068%20925.369,609.068%20933.5,602C947.743,586.159%20952.91,567.659%20949,546.5C945.933,530.572%20937.766,518.072%20924.5,509C907.738,501.231%20890.071,498.065%20871.5,499.5Z%22%20style=%22fill:rgb(58,137,243);%22/%3E%3Cg%3E%3Cpath%20d=%22M1730.5,462.5C1767.07,457.724%201800.07,466.224%201829.5,488C1854.6,510.952%201864.43,539.452%201859,573.5C1855.37,592.26%201846.87,608.426%201833.5,622C1843.36,630.945%201854.02,638.945%201865.5,646C1865.96,646.414%201866.29,646.914%201866.5,647.5C1855.27,655.867%201843.1,662.534%201830,667.5L1826.5,667C1817.17,658.83%201807.17,651.663%201796.5,645.5C1764.49,656.072%201732.16,657.239%201699.5,649C1657.04,634.356%201635.04,604.522%201633.5,559.5C1634.57,513.946%201656.57,483.78%201699.5,469C1709.73,465.721%201720.07,463.554%201730.5,462.5ZM1736.5,500.5C1734.03,501.317%201731.36,501.817%201728.5,502C1708.29,506.676%201694.12,518.51%201686,537.5C1677.76,564.709%201683.92,587.875%201704.5,607C1724.13,618.699%201744.8,620.699%201766.5,613C1766.96,612.586%201767.29,612.086%201767.5,611.5C1760.83,603.167%201754.17,594.833%201747.5,586.5C1757.11,584.807%201766.77,584.307%201776.5,585C1783.19,586.517%201788.86,589.85%201793.5,595C1794.83,595.667%201796.17,595.667%201797.5,595C1803.01,589.155%201806.84,582.321%201809,574.5C1816.34,548.188%201809.18,527.022%201787.5,511C1771.64,502.386%201754.64,498.886%201736.5,500.5Z%22%20style=%22fill:rgb(237,137,51);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M1567.5,469.5L1567.5,468.5L1613.5,468.5C1613.82,475.354%201613.49,482.021%201612.5,488.5L1612.5,469.5L1567.5,469.5Z%22%20style=%22fill:rgb(150,197,244);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M2250.5,648.5C2246.6,635.923%202241.93,623.589%202236.5,611.5L2148.5,611.5C2143.4,624.387%202138.06,637.221%202132.5,650C2115.84,650.5%202099.17,650.667%202082.5,650.5C2084.36,644.426%202086.52,638.426%202089,632.5C2113.11,579.272%202137.11,525.605%202161,471.5C2161.83,470.667%202162.67,469.833%202163.5,469C2181.5,468.333%202199.5,468.333%202217.5,469C2219.43,469.251%202221.27,469.751%202223,470.5C2249.4,530.543%202275.9,590.543%202302.5,650.5C2284.93,651.131%202267.6,650.464%202250.5,648.5ZM2191.5,506.5C2184.26,525.657%202176.43,544.657%202168,563.5C2166.19,568.435%202164.69,573.435%202163.5,578.5C2183.18,578.833%202202.84,578.5%202222.5,577.5C2212.84,555.691%202203.68,533.691%202195,511.5C2194.1,509.569%202192.93,507.903%202191.5,506.5Z%22%20style=%22fill:rgb(237,138,51);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M2485.5,469.5L2485.5,468.5L2665.5,468.5L2665.5,505.5L2597.5,505.5C2619.66,504.503%202641.99,504.169%202664.5,504.5L2664.5,469.5L2485.5,469.5Z%22%20style=%22fill:rgb(238,166,89);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M1140.5,469.5C1189.37,473.874%201212.21,500.541%201209,549.5C1203.39,574.448%201188.55,591.281%201164.5,600C1154.02,602.877%201143.36,604.544%201132.5,605C1111.84,605.5%201091.17,605.667%201070.5,605.5C1069.5,620.324%201069.17,635.324%201069.5,650.5L1026.5,650.5L1026.5,469.5L1140.5,469.5ZM1070.5,568.5C1088,569.662%201105.66,569.829%201123.5,569C1126.04,568.814%201128.37,568.314%201130.5,567.5C1143.25,567.715%201152.75,562.381%201159,551.5C1167.31,525.808%201158.15,510.641%201131.5,506C1111.17,505.5%201090.84,505.333%201070.5,505.5L1070.5,568.5Z%22%20style=%22fill:rgb(57,137,243);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M1280.5,592.5C1279.51,599.648%201279.18,606.981%201279.5,614.5L1391.5,614.5L1391.5,650.5C1339.62,651.155%201287.95,650.489%201236.5,648.5C1235.4,593.506%201235.24,538.506%201236,483.5C1236.17,478.798%201236.67,474.132%201237.5,469.5C1288.46,468.505%201339.46,468.171%201390.5,468.5L1390.5,505.5L1279.5,505.5L1279.5,543.5L1381.5,543.5L1381.5,577.5L1280.5,577.5L1280.5,592.5Z%22%20style=%22fill:rgb(59,138,243);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M1565.5,588.5C1565.78,589.289%201566.28,589.956%201567,590.5C1567.5,550.168%201567.67,509.835%201567.5,469.5L1612.5,469.5L1612.5,511.5C1611.5,557.664%201611.17,603.997%201611.5,650.5L1562.5,650.5C1557.11,644.758%201551.95,638.758%201547,632.5C1520.72,597.881%201494.05,563.547%201467,529.5C1466.5,569.832%201466.33,610.165%201466.5,650.5L1423.5,650.5C1423.74,649.209%201423.4,648.209%201422.5,647.5L1422.5,468.5C1438.86,468.217%201455.19,468.717%201471.5,470C1503.05,509.375%201534.38,548.875%201565.5,588.5Z%22%20style=%22fill:rgb(56,137,243);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M1567.5,468.5L1567.5,469.5C1567.67,509.835%201567.5,550.168%201567,590.5C1566.28,589.956%201565.78,589.289%201565.5,588.5C1566.17,548.5%201566.83,508.5%201567.5,468.5Z%22%20style=%22fill:rgb(207,231,249);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M1930.5,469.5C1931.33,507.331%201931.83,545.331%201932,583.5C1935.1,602.599%201946.27,613.766%201965.5,617C1976.97,618.124%201988.3,617.457%201999.5,615C2016.51,607.805%202025.18,594.972%202025.5,576.5C2026.5,541.004%202026.83,505.337%202026.5,469.5L2072.5,469.5L2072.5,585.5C2065.58,626.254%202041.58,649.087%202000.5,654C1983.83,654.667%201967.17,654.667%201950.5,654C1911.32,647.657%201889.32,624.823%201884.5,585.5L1884.5,469.5L1930.5,469.5Z%22%20style=%22fill:rgb(237,137,51);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M2072.5,585.5L2072.5,469.5L2026.5,469.5C2026.83,505.337%202026.5,541.004%202025.5,576.5L2025.5,468.5L2073.5,468.5C2073.83,507.67%202073.5,546.67%202072.5,585.5Z%22%20style=%22fill:rgb(241,189,131);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M2461.5,468.5C2462.92,469.451%202464.59,469.784%202466.5,469.5L2466.5,504.5C2442.33,504.169%202418.33,504.502%202394.5,505.5L2394.5,650.5L2348.5,650.5L2348.5,642.5C2349.5,596.67%202349.83,550.67%202349.5,504.5L2282.5,504.5L2282.5,469.5C2342.14,468.515%202401.81,468.182%202461.5,468.5Z%22%20style=%22fill:rgb(237,137,50);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M2485.5,469.5L2664.5,469.5L2664.5,504.5C2641.99,504.169%202619.66,504.503%202597.5,505.5L2597.5,650.5L2549.5,650.5L2549.5,505.5C2528.34,504.503%202507.01,504.169%202485.5,504.5L2485.5,469.5Z%22%20style=%22fill:rgb(237,137,50);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M579.5,470.5C581.065,472.509%20582.065,474.843%20582.5,477.5C580.552,475.68%20579.552,473.346%20579.5,470.5Z%22%20style=%22fill:rgb(115,147,192);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M2282.5,469.5L2282.5,504.5L2349.5,504.5C2349.83,550.67%202349.5,596.67%202348.5,642.5L2348.5,505.5L2281.5,505.5C2281.17,493.322%202281.5,481.322%202282.5,469.5Z%22%20style=%22fill:rgb(242,189,128);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M2461.5,468.5L2467.5,468.5L2467.5,505.5L2394.5,505.5C2418.33,504.502%202442.33,504.169%202466.5,504.5L2466.5,469.5C2464.59,469.784%202462.92,469.451%202461.5,468.5Z%22%20style=%22fill:rgb(242,189,130);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M2485.5,468.5L2485.5,504.5C2507.01,504.169%202528.34,504.503%202549.5,505.5L2484.5,505.5C2484.17,492.989%202484.5,480.655%202485.5,468.5Z%22%20style=%22fill:rgb(242,190,132);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M1930.5,469.5L1884.5,469.5L1884.5,585.5C1883.5,546.67%201883.17,507.67%201883.5,468.5C1899.34,468.17%201915.01,468.504%201930.5,469.5Z%22%20style=%22fill:rgb(237,158,73);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M376.5,518.5C378.04,520.838%20378.706,523.505%20378.5,526.5C377.232,524.095%20376.565,521.428%20376.5,518.5Z%22%20style=%22fill:rgb(87,94,104);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M378.5,526.5C380.508,534.403%20381.508,542.57%20381.5,551C381.707,556.102%20381.04,560.935%20379.5,565.5C379.633,552.484%20379.299,539.484%20378.5,526.5Z%22%20style=%22fill:rgb(85,90,113);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M772.5,534.5C771.291,546.467%20770.624,558.467%20770.5,570.5C769.343,562.344%20769.177,554.01%20770,545.5C770.419,541.608%20771.252,537.942%20772.5,534.5Z%22%20style=%22fill:rgb(133,185,245);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M557.5,586.5C558.058,587.79%20559.058,588.623%20560.5,589C522.875,585.446%20485.541,587.446%20448.5,595C434.071,598.718%20419.738,602.718%20405.5,607C370.079,620.14%20334.413,632.473%20298.5,644C273.593,650.707%20248.26,655.04%20222.5,657C190.507,659.068%20160.174,653.068%20131.5,639C123.345,633.67%20115.345,628.17%20107.5,622.5C105.421,616.1%20104.588,609.434%20105,602.5C116.716,610.408%20128.883,617.575%20141.5,624C155.181,628.731%20169.181,631.897%20183.5,633.5C212.901,636.3%20241.901,633.967%20270.5,626.5C281.24,624.319%20291.907,621.819%20302.5,619C334.064,607.256%20366.064,596.923%20398.5,588C425.538,580.804%20453.038,576.971%20481,576.5C507.102,575.435%20532.602,578.768%20557.5,586.5Z%22%20style=%22fill:rgb(129,203,242);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M557.5,586.5C562.457,587.989%20567.457,589.323%20572.5,590.5C564.464,682.071%20518.464,746.571%20434.5,784C365.129,810.657%20296.129,809.991%20227.5,782C160.3,749.489%20120.3,696.322%20107.5,622.5C115.345,628.17%20123.345,633.67%20131.5,639C160.174,653.068%20190.507,659.068%20222.5,657C248.26,655.04%20273.593,650.707%20298.5,644C334.413,632.473%20370.079,620.14%20405.5,607C419.738,602.718%20434.071,598.718%20448.5,595C485.541,587.446%20522.875,585.446%20560.5,589C559.058,588.623%20558.058,587.79%20557.5,586.5Z%22%20style=%22fill:rgb(56,136,242);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M1280.5,592.5L1280.5,613.5L1369.5,613.5L1369.5,614.5L1279.5,614.5C1279.18,606.981%201279.51,599.648%201280.5,592.5Z%22%20style=%22fill:rgb(201,224,248);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M604.5,618.5C604.698,623.75%20604.031,628.75%20602.5,633.5C602.608,628.29%20603.275,623.29%20604.5,618.5Z%22%20style=%22fill:rgb(166,187,215);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M270.5,626.5C241.901,633.967%20212.901,636.3%20183.5,633.5C201.187,633.711%20218.854,633.211%20236.5,632C247.833,630.055%20259.167,628.222%20270.5,626.5Z%22%20style=%22fill:rgb(58,111,176);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M602.5,633.5C602.785,636.829%20602.118,639.829%20600.5,642.5C600.215,639.171%20600.882,636.171%20602.5,633.5Z%22%20style=%22fill:rgb(131,159,199);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M1369.5,614.5L1369.5,613.5L1392.5,613.5L1392.5,651.5L1236.5,651.5L1236.5,648.5C1287.95,650.489%201339.62,651.155%201391.5,650.5L1391.5,614.5L1369.5,614.5Z%22%20style=%22fill:rgb(118,177,243);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M1422.5,647.5C1423.4,648.209%201423.74,649.209%201423.5,650.5L1466.5,650.5C1452.01,651.496%201437.34,651.829%201422.5,651.5L1422.5,647.5Z%22%20style=%22fill:rgb(152,199,248);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M1612.5,511.5L1612.5,651.5C1595.66,651.83%201578.99,651.497%201562.5,650.5L1611.5,650.5C1611.17,603.997%201611.5,557.664%201612.5,511.5Z%22%20style=%22fill:rgb(123,180,244);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M2394.5,505.5L2395.5,505.5L2395.5,651.5C2379.66,651.83%202363.99,651.496%202348.5,650.5L2394.5,650.5L2394.5,505.5Z%22%20style=%22fill:rgb(246,212,172);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M598.5,653.5C598.741,655.898%20598.074,657.898%20596.5,659.5C596.259,657.102%20596.926,655.102%20598.5,653.5Z%22%20style=%22fill:rgb(143,169,203);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M596.5,661.5C595.401,666.144%20593.734,670.478%20591.5,674.5C592.213,669.676%20593.88,665.343%20596.5,661.5Z%22%20style=%22fill:rgb(114,148,193);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M566.5,725.5C564.938,729.392%20562.605,732.725%20559.5,735.5C561.062,731.608%20563.395,728.275%20566.5,725.5Z%22%20style=%22fill:rgb(163,185,212);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M270.5,835.5C276.137,835.585%20281.471,836.585%20286.5,838.5C280.939,838.044%20275.606,837.044%20270.5,835.5Z%22%20style=%22fill:rgb(85,124,178);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M288.5,838.5C295.062,838.337%20301.395,839.004%20307.5,840.5C300.95,840.546%20294.617,839.879%20288.5,838.5Z%22%20style=%22fill:rgb(89,126,180);%22/%3E%3C/g%3E%3Cg%3E%3Cpath%20d=%22M380.5,839.5C369.102,841.86%20357.435,842.86%20345.5,842.5C357,841.272%20368.667,840.272%20380.5,839.5Z%22%20style=%22fill:rgb(125,154,196);%22/%3E%3C/g%3E%3C/svg%3E" alt="OpenQuatt logo">
   `;
+  const STRATEGY_OPTION_POWER_HOUSE = "Power House";
+  const STRATEGY_OPTION_CURVE = "Water Temperature Control (heating curve)";
 
   const QUICK_STEPS = [
     {
       id: "strategy",
       kicker: "Stap 1",
       title: "Kies de verwarmingsstrategie",
-      copy: "Begin met de hoofdstrategie. In de route-1 app schrijft dit direct naar de echte control-mode entity, zonder extra Quick Start-proxy.",
+      copy: "Begin met de hoofdstrategie. Vanaf hier volgt Quick Start gewoon dezelfde instellingenstructuur als de Instellingen-pagina.",
       fields: [
         {
           title: "Verwarmingsstrategie",
-          copy: "Power House stuurt meer op vermogensbewust gedrag. Water Temperature Control sluit meer aan op een heating-curve aanpak.",
+          copy: "Kies eerst of OpenQuatt met Power House of met Heating Curve moet regelen.",
         },
       ],
     },
     {
-      id: "behavior",
+      id: "heating",
       kicker: "Stap 2",
-      title: "Stem het responsprofiel af",
-      copy: "Dit is de vriendelijkere laag boven de technische responsprofielen. De app kan hier wording verbeteren zonder de onderliggende entities te veranderen.",
+      title: "Werk de regeling uit",
+      copy: "Loop nu alle instellingen langs die horen bij de gekozen verwarmingsstrategie. Power House en Heating Curve krijgen hier elk hun eigen inhoud.",
       fields: [
         {
-          title: "Gedrag",
-          copy: "Koppelt het technische responsprofiel aan een eenvoudiger label.",
-        },
-        {
-          title: "Preset",
-          copy: "Zet een gegroepeerd startpunt voor de meest gebruikte limieten.",
+          title: "Strategiespecifieke instellingen",
+          copy: "Quick Start gebruikt hier dezelfde velden als Instellingen, behalve de technische compressoropties.",
         },
       ],
     },
     {
-      id: "limits",
+      id: "flow",
       kicker: "Stap 3",
-      title: "Stel de bedrijfsgrenzen in",
-      copy: "Dit zijn de belangrijkste praktische grenzen voor dagelijks gebruik. In de uiteindelijke app schrijven deze direct naar de canonieke OpenQuatt-limieten.",
+      title: "Flow en pompregeling",
+      copy: "Leg daarna vast hoe de pomp geregeld moet worden. Dit bepaalt of je een flowdoel of een vaste pompwaarde instelt.",
       fields: [
         {
-          title: "Dag max",
-          copy: "Maximaal compressorniveau tijdens normaal dagbedrijf.",
+          title: "Flowregeling",
+          copy: "Quick Start toont hier direct de canonieke flowinstellingen uit OpenQuatt.",
         },
+      ],
+    },
+    {
+      id: "water",
+      kicker: "Stap 4",
+      title: "Watertemperatuur beveiligen",
+      copy: "Controleer de normale bovengrens en de tripgrens voor het watercircuit.",
+      fields: [
         {
-          title: "Silent max",
-          copy: "Maximaal compressorniveau tijdens het silent-venster.",
+          title: "Watertemperatuur",
+          copy: "Deze grenzen gelden altijd en horen dus ook in Quick Start thuis.",
         },
+      ],
+    },
+    {
+      id: "silent",
+      kicker: "Stap 5",
+      title: "Stille uren en niveaus",
+      copy: "Stel daarna het stille venster en de compressorlimieten voor dag en nacht in.",
+      fields: [
         {
-          title: "Max watertemp",
-          copy: "Bovengrens voor de aanvoertemperatuur in het standaard verwarmingscircuit.",
+          title: "Silent mode",
+          copy: "Zo loop je ook de laatste dagelijkse gebruiksinstellingen systematisch langs.",
         },
       ],
     },
     {
       id: "confirm",
-      kicker: "Stap 4",
+      kicker: "Stap 6",
       title: "Bevestigen en afronden",
-      copy: "De samenvatting wordt de bevestigingsstap. Zo blijft de Quick Start-laag licht, terwijl de echte device-instellingen de bron van waarheid blijven.",
+      copy: "Als laatste controleer je kort de gekozen instellingen en markeer je alleen de setup-status als afgerond.",
       fields: [
         {
-          title: "Toepassen en afronden",
-          copy: "Markeert de setup als afgerond zonder een tweede laag met dubbele instellingen te maken.",
+          title: "Afronden",
+          copy: "De waarden zelf zijn al opgeslagen; deze stap zet alleen de setup-status op gereed.",
         },
-        {
-          title: "Opnieuw beginnen",
-          copy: "Zet Quick Start terug naar het begin. Voorlopig worden tuningwaarden nog niet automatisch naar defaults teruggezet.",
-        },
-      ],
-    },
-  ];
-
-  const ADVANCED_GROUPS = [
-    {
-      title: "Capaciteitscoordinatie",
-      copy: "Deze instellingen bepalen wanneer een tweede warmtepomp bijschakelt of weer afvalt. Dit zijn logische advanced-kandidaten, omdat ze vooral de topologie sturen en minder het dagelijkse comfort.",
-      fields: [
-        "Dual HP Enable Level",
-        "Dual HP Enable Hold",
-        "Dual HP Disable Hold",
-      ],
-    },
-    {
-      title: "Temperatuurgrenzen",
-      copy: "Dit zijn de meer technische grenzen rond water temperature control en protectiebanden.",
-      fields: [
-        "Water temperature soft band",
-        "Maximum water temperature trip",
-      ],
-    },
-    {
-      title: "Compressor exclusions",
-      copy: "Nuttig voor technische diagnose en hardware-specifieke tuning, maar waarschijnlijk te diep voor Quick Start.",
-      fields: [
-        "HP1 - Excluded compressor level A",
-        "HP1 - Excluded compressor level B",
-        "HP2 - Excluded compressor level A",
-        "HP2 - Excluded compressor level B",
       ],
     },
   ];
 
   const ENTITY_DEFS = {
-    summary: { domain: "text_sensor", name: "Summary" },
     setupComplete: { domain: "binary_sensor", name: "Setup Complete", optional: true },
+    firmwareUpdate: { domain: "update", name: "Firmware Update", optional: true },
+    firmwareUpdateChannel: { domain: "select", name: "Firmware Update Channel", optional: true },
+    checkFirmwareUpdates: { domain: "button", name: "Check Firmware Updates", optional: true },
     strategy: { domain: "select", name: "Heating Control Mode" },
     flowControlMode: { domain: "select", name: "Flow Control Mode" },
     flowSetpoint: { domain: "number", name: "Flow Setpoint" },
     manualIpwm: { domain: "number", name: "Manual iPWM" },
     controlModeLabel: { domain: "text_sensor", name: "Control Mode (Label)" },
     flowMode: { domain: "text_sensor", name: "Flow Mode" },
-    behavior: { domain: "select", name: "Behavior" },
-    preset: { domain: "select", name: "Preset" },
     dayMax: { domain: "number", name: "Day max level" },
     silentMax: { domain: "number", name: "Silent max level" },
     silentStartTime: { domain: "time", name: "Silent start time" },
@@ -195,8 +175,8 @@
     hp2Crankcase: { domain: "binary_sensor", name: "HP2 - Crankcase heater", optional: true },
     hp2Eev: { domain: "sensor", name: "HP2 - EEV steps", optional: true },
     hp2FourWay: { domain: "binary_sensor", name: "HP2 - 4-Way valve", optional: true },
-    apply: { domain: "button", name: "Apply & Finish" },
-    reset: { domain: "button", name: "Start Over" },
+    apply: { domain: "button", name: "Complete setup" },
+    reset: { domain: "button", name: "Reset setup state" },
   };
 
   const QUICK_START_VIEW = "quickstart";
@@ -291,7 +271,6 @@
   const COMPRESSOR_SETTING_KEYS = ["minRuntime", "hp1ExcludedA", "hp1ExcludedB", "hp2ExcludedA", "hp2ExcludedB"];
   const SILENT_SETTING_KEYS = ["silentStartTime", "silentEndTime", "silentMax", "dayMax"];
   const OVERVIEW_KEYS = [
-    "summary",
     "strategy",
     "controlModeLabel",
     "flowMode",
@@ -364,10 +343,9 @@
     root: null,
     nativeApp: null,
     pollTimer: null,
-    summary: "Huidige setup laden...",
+    summary: "",
     stage: "Laden...",
-    helperOpen: true,
-    advancedOpen: false,
+    interfacePanelOpen: getStoredInterfacePanelOpen(),
     nativeOpen: false,
     currentStep: "strategy",
     appView: "",
@@ -382,9 +360,13 @@
     settingsInfoOpen: "",
     settingsInteractionLock: false,
     settingsRenderSignature: "",
+    headerRenderSignature: "",
     drafts: {},
     inputDrafts: {},
     focusedField: "",
+    updateModalOpen: false,
+    updateCheckBusy: false,
+    updateInstallBusy: false,
     draggingCurveKey: "",
     motionFrame: 0,
     motionStartedAt: 0,
@@ -406,6 +388,23 @@
     state.overviewTheme = theme === "dark" ? "dark" : "light";
     try {
       window.localStorage.setItem("oq-overview-theme", state.overviewTheme);
+    } catch (_error) {
+      // Ignore storage failures in embedded browsers.
+    }
+  }
+
+  function getStoredInterfacePanelOpen() {
+    try {
+      return window.localStorage.getItem("oq-interface-panel-open") !== "false";
+    } catch (_error) {
+      return true;
+    }
+  }
+
+  function setInterfacePanelOpen(open) {
+    state.interfacePanelOpen = open !== false;
+    try {
+      window.localStorage.setItem("oq-interface-panel-open", state.interfacePanelOpen ? "true" : "false");
     } catch (_error) {
       // Ignore storage failures in embedded browsers.
     }
@@ -509,6 +508,7 @@
     window.addEventListener("pointerup", handlePointerUp);
     window.addEventListener("popstate", handlePopState);
     window.addEventListener("oq-mock-updated", handleMockUpdated);
+    window.addEventListener("oq-dev-controls-changed", handleDevControlsChanged);
   }
 
   function handleMockUpdated() {
@@ -516,6 +516,13 @@
       return;
     }
     void syncEntities();
+  }
+
+  function handleDevControlsChanged() {
+    if (!state.mounted) {
+      return;
+    }
+    render();
   }
 
   function mountWhenReady() {
@@ -558,6 +565,17 @@
     clearLegacyMotionVariables();
     startMotionLoop();
     render();
+  }
+
+  function bindHeaderDevControls() {
+    if (!state.root) {
+      return;
+    }
+    const controls = typeof window !== "undefined" ? window.__OQ_DEV_CONTROLS__ : null;
+    if (!controls || typeof controls.bind !== "function") {
+      return;
+    }
+    controls.bind(state.root);
   }
 
   function clearLegacyMotionVariables() {
@@ -659,6 +677,351 @@
     return String(value || "").toLowerCase().includes("custom");
   }
 
+  function getDeviceMeta() {
+    const meta = typeof window !== "undefined" && window.__OQ_DEV_META && typeof window.__OQ_DEV_META === "object"
+      ? window.__OQ_DEV_META
+      : {};
+    return meta;
+  }
+
+  function getInstallationLabel() {
+    const installation = String(getDeviceMeta().installation || "").toLowerCase();
+    if (installation === "single") {
+      return "Quatt Single";
+    }
+    if (installation === "duo") {
+      return "Quatt Duo";
+    }
+    return hasEntity("hp2Power") ? "Quatt Duo" : "Quatt Single";
+  }
+
+  function formatDeviceClock() {
+    try {
+      return new Intl.DateTimeFormat("nl-NL", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date());
+    } catch (_error) {
+      return new Date().toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" });
+    }
+  }
+
+  function formatUptimeFromMeta() {
+    const bootedAt = Number(getDeviceMeta().bootedAt);
+    if (!Number.isFinite(bootedAt) || bootedAt <= 0) {
+      return "—";
+    }
+    const totalMinutes = Math.max(0, Math.floor((Date.now() - bootedAt) / 60000));
+    const days = Math.floor(totalMinutes / 1440);
+    const hours = Math.floor((totalMinutes % 1440) / 60);
+    const minutes = totalMinutes % 60;
+    if (days > 0) {
+      return `${days}d ${hours}u`;
+    }
+    if (hours > 0) {
+      return `${hours}u ${minutes}m`;
+    }
+    return `${minutes}m`;
+  }
+
+  function formatDeviceUptime() {
+    return formatUptimeFromMeta();
+  }
+
+  function getDeviceIpAddress() {
+    const explicit = String(getDeviceMeta().ipAddress || "").trim();
+    if (explicit) {
+      return explicit;
+    }
+    const host = typeof window !== "undefined" ? String(window.location.hostname || "").trim() : "";
+    return host || "—";
+  }
+
+  function getUpdateStatus() {
+    if (isFirmwareUpdateChecking()) {
+      return "Controleren";
+    }
+    if (isFirmwareUpdateInstalling()) {
+      return "Bezig";
+    }
+    if (isFirmwareUpdateAvailable()) {
+      return "Beschikbaar";
+    }
+    const meta = getDeviceMeta();
+    if (typeof meta.updateLabel === "string" && meta.updateLabel.trim()) {
+      return meta.updateLabel.trim();
+    }
+    if (meta.updateAvailable === true) {
+      return "Beschikbaar";
+    }
+    if (meta.updateAvailable === false) {
+      return "Actueel";
+    }
+    return "—";
+  }
+
+  function getFirmwareUpdateEntity() {
+    return state.entities.firmwareUpdate || null;
+  }
+
+  function getFirmwareUpdateState() {
+    const entity = getFirmwareUpdateEntity();
+    if (!entity) {
+      return "";
+    }
+    return String(entity.state ?? entity.value ?? "").trim().toLowerCase();
+  }
+
+  function isFirmwareUpdateInstalling() {
+    const raw = getFirmwareUpdateState();
+    return state.updateInstallBusy
+      || raw === "installing"
+      || raw === "in_progress"
+      || raw === "updating";
+  }
+
+  function isFirmwareUpdateChecking() {
+    const raw = getFirmwareUpdateState();
+    return state.updateCheckBusy
+      || raw === "checking"
+      || raw === "check"
+      || raw === "checking_for_update";
+  }
+
+  function isFirmwareUpdateAvailable() {
+    const raw = getFirmwareUpdateState();
+    if (raw === "available" || raw === "pending") {
+      return true;
+    }
+    if (raw === "installed" || raw === "current" || raw === "up_to_date" || raw === "none") {
+      return false;
+    }
+    const entity = getFirmwareUpdateEntity();
+    if (entity) {
+      const latest = String(entity.latest_version || "").trim();
+      const current = String(entity.current_version || "").trim();
+      if (latest && current) {
+        return latest !== current;
+      }
+    }
+    return getDeviceMeta().updateAvailable === true;
+  }
+
+  function getFirmwareUpdateVersions() {
+    const entity = getFirmwareUpdateEntity() || {};
+    return {
+      current: String(entity.current_version || "").trim() || "—",
+      latest: String(entity.latest_version || "").trim() || "—",
+    };
+  }
+
+  function getFirmwareReleaseUrl() {
+    return String((getFirmwareUpdateEntity() || {}).release_url || "").trim();
+  }
+
+  function getFirmwareSummary() {
+    return String((getFirmwareUpdateEntity() || {}).summary || "").trim();
+  }
+
+  function getFirmwareTitle() {
+    return String((getFirmwareUpdateEntity() || {}).title || "").trim() || "Firmware Update";
+  }
+
+  function getHeaderRenderSignature() {
+    return [
+      state.interfacePanelOpen ? "open" : "closed",
+      state.nativeOpen ? "native" : "app",
+      state.appView,
+      state.complete ? "complete" : "incomplete",
+      state.overviewTheme,
+      state.hpVisualMode,
+      getInstallationLabel(),
+      formatUptimeFromMeta(),
+      formatDeviceClock(),
+      getDeviceIpAddress(),
+      getUpdateStatus(),
+      getEntitySignatureFragment("firmwareUpdate"),
+      getEntitySignatureFragment("firmwareUpdateChannel"),
+    ].join("|");
+  }
+
+  function renderHeaderStatusGrid() {
+    const statusItems = [
+      ["Installatie", getInstallationLabel()],
+      ["Setup", state.complete ? "Afgerond" : "Open"],
+      ["Uptime", formatUptimeFromMeta()],
+      ["Tijd", formatDeviceClock()],
+      ["IP-adres", getDeviceIpAddress()],
+      ["Update", getUpdateStatus(), Boolean(getFirmwareUpdateEntity())],
+    ];
+
+    return `
+      <div class="oq-helper-status-grid">
+        ${statusItems.map(([label, value, interactive]) => `
+          <${interactive ? "button" : "div"}
+            class="oq-helper-status-item${interactive ? " oq-helper-status-item--button" : ""}"
+            ${interactive ? 'type="button" data-oq-action="open-update-modal"' : ""}
+          >
+            <span class="oq-helper-status-label">${escapeHtml(label)}</span>
+            <strong class="oq-helper-status-value">${escapeHtml(value)}</strong>
+          </${interactive ? "button" : "div"}>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  function renderHeaderDevControls() {
+    const controls = typeof window !== "undefined" ? window.__OQ_DEV_CONTROLS__ : null;
+    if (!controls || typeof controls.render !== "function") {
+      return "";
+    }
+    return controls.render();
+  }
+
+  function renderHeaderStatus() {
+    const surface = state.nativeOpen ? "native" : "app";
+    if (!state.interfacePanelOpen) {
+      return `
+        <aside class="oq-helper-hub oq-helper-hub--collapsed" aria-label="Weergave en systeem">
+          <div class="oq-helper-hub-head-actions">
+            <button
+              class="oq-helper-hub-toggle"
+              type="button"
+              data-oq-action="toggle-interface-panel"
+              aria-expanded="false"
+              aria-label="Open interfacepaneel"
+              title="Open interfacepaneel"
+            >⚙</button>
+          </div>
+        </aside>
+      `;
+    }
+
+    return `
+      <aside class="oq-helper-hub" aria-label="Weergave en systeem">
+        <div class="oq-helper-hub-head">
+          <h2 class="oq-helper-hub-title">Weergave en systeem</h2>
+          <div class="oq-helper-hub-head-actions">
+            <button
+              class="oq-helper-hub-toggle oq-helper-hub-toggle--close"
+              type="button"
+              data-oq-action="toggle-interface-panel"
+              aria-expanded="true"
+              aria-label="Sluit interfacepaneel"
+              title="Sluit interfacepaneel"
+            >×</button>
+          </div>
+        </div>
+        <div class="oq-helper-hub-block">
+          <p class="oq-helper-hub-kicker">Weergave</p>
+          <div class="oq-helper-hub-switches">
+            <button class="oq-helper-hub-chip${surface === "app" ? " is-active" : ""}" type="button" data-oq-action="select-surface" data-surface="app">OpenQuatt-app</button>
+            <button class="oq-helper-hub-chip${surface === "native" ? " is-active" : ""}" type="button" data-oq-action="select-surface" data-surface="native">ESPHome fallback</button>
+          </div>
+        </div>
+        <div class="oq-helper-hub-block">
+          <p class="oq-helper-hub-kicker">Uiterlijk en overzicht</p>
+          <div class="oq-helper-hub-actions">
+            <button class="oq-helper-button oq-helper-button--ghost oq-helper-hub-action" type="button" data-oq-action="toggle-overview-theme">
+              ${state.overviewTheme === "light" ? "Donkere modus" : "Lichte modus"}
+            </button>
+            <button class="oq-helper-button oq-helper-button--ghost oq-helper-hub-action" type="button" data-oq-action="toggle-hp-visual">
+              ${state.hpVisualMode === "schematic" ? "Compacte HP-kaarten" : "Schematische HP-kaarten"}
+            </button>
+          </div>
+        </div>
+        <div class="oq-helper-hub-block">
+          <p class="oq-helper-hub-kicker">Systeem</p>
+          ${renderHeaderStatusGrid()}
+        </div>
+        ${renderHeaderDevControls()}
+      </aside>
+    `;
+  }
+
+  function renderUpdateModal() {
+    if (!state.updateModalOpen) {
+      return "";
+    }
+
+    const entity = getFirmwareUpdateEntity();
+    const channelEntity = state.entities.firmwareUpdateChannel || null;
+    const { current, latest } = getFirmwareUpdateVersions();
+    const checking = isFirmwareUpdateChecking();
+    const installing = isFirmwareUpdateInstalling();
+    const available = isFirmwareUpdateAvailable();
+    const summary = getFirmwareSummary()
+      || (checking
+        ? "We controleren of er een nieuwe firmwareversie beschikbaar is voor dit OpenQuatt-device."
+        : installing
+          ? "De OTA-update wordt nu voorbereid. Het device kan na installatie kort herstarten."
+          : available
+            ? "Er staat een firmware-update klaar voor dit OpenQuatt-device."
+            : "Je device draait al op de nieuwste firmware.");
+    const releaseUrl = getFirmwareReleaseUrl();
+    const title = installing
+      ? "Firmware-update bezig"
+      : checking
+        ? "Controleren op firmware-update"
+        : getFirmwareTitle();
+    const channelOptions = channelEntity
+      ? (Array.isArray(channelEntity.option) ? channelEntity.option : Array.isArray(channelEntity.options) ? channelEntity.options : [])
+      : [];
+
+    return `
+      <div class="oq-helper-modal-backdrop${checking || installing ? " is-busy" : ""}" data-oq-modal="firmware-update">
+        <section class="oq-helper-modal" role="dialog" aria-modal="true" aria-labelledby="oq-update-modal-title">
+          <div class="oq-helper-modal-head">
+            <div>
+              <p class="oq-helper-modal-kicker">OTA-update</p>
+              <h2 class="oq-helper-modal-title" id="oq-update-modal-title">${escapeHtml(title)}</h2>
+            </div>
+            <button class="oq-helper-modal-close" type="button" data-oq-action="close-update-modal" aria-label="Sluit update-popup">×</button>
+          </div>
+          <p class="oq-helper-modal-copy">${escapeHtml(summary)}</p>
+          <div class="oq-helper-modal-grid">
+            <div class="oq-helper-modal-row">
+              <span class="oq-helper-modal-label">Status</span>
+              <strong class="oq-helper-modal-value">${escapeHtml(getUpdateStatus())}</strong>
+            </div>
+            <div class="oq-helper-modal-row">
+              <span class="oq-helper-modal-label">Huidige versie</span>
+              <strong class="oq-helper-modal-value">${escapeHtml(current)}</strong>
+            </div>
+            <div class="oq-helper-modal-row">
+              <span class="oq-helper-modal-label">Beschikbare versie</span>
+              <strong class="oq-helper-modal-value">${escapeHtml(latest)}</strong>
+            </div>
+            <div class="oq-helper-modal-row">
+              <span class="oq-helper-modal-label">Kanaal</span>
+              <strong class="oq-helper-modal-value">${escapeHtml(String(getEntityValue("firmwareUpdateChannel") || "—"))}</strong>
+            </div>
+          </div>
+          ${channelOptions.length ? `
+            <label class="oq-helper-modal-channel">
+              <span class="oq-helper-modal-label">Releasekanaal</span>
+              <select data-oq-field="firmwareUpdateChannel">
+                ${channelOptions.map((option) => `
+                  <option value="${escapeHtml(option)}" ${String(getEntityValue("firmwareUpdateChannel") || "") === option ? "selected" : ""}>${escapeHtml(option)}</option>
+                `).join("")}
+              </select>
+            </label>
+          ` : ""}
+          <p class="oq-helper-modal-note">Laat deze pagina open tijdens de OTA-update. Het device kan na installatie kort herstarten en daarna vanzelf weer terugkomen.</p>
+          <div class="oq-helper-modal-actions">
+            <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="run-firmware-check" ${checking || installing ? "disabled" : ""}>
+              ${checking ? "Controleren..." : "Controleer opnieuw"}
+            </button>
+            <button class="oq-helper-button" type="button" data-oq-action="install-firmware-update" ${!available || installing || checking || !entity ? "disabled" : ""}>
+              ${installing ? "Bijwerken..." : "Nu bijwerken"}
+            </button>
+            ${releaseUrl ? `<a class="oq-helper-button oq-helper-button--ghost oq-helper-modal-link" href="${escapeHtml(releaseUrl)}" target="_blank" rel="noreferrer">Release notes</a>` : ""}
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
   function getEntityValue(key) {
     if (Object.prototype.hasOwnProperty.call(state.drafts, key)) {
       return state.drafts[key];
@@ -733,7 +1096,7 @@
   }
 
   function getSettingsRefreshKeys() {
-    return [...new Set(["summary", "setupComplete", ...SETTINGS_KEYS])];
+    return [...new Set(["setupComplete", ...SETTINGS_KEYS])];
   }
 
   function formatValue(key, value = getEntityValue(key)) {
@@ -756,6 +1119,45 @@
     const steps = Math.round((clamped - meta.min) / meta.step);
     const snapped = meta.min + steps * meta.step;
     return Number(snapped.toFixed(meta.step < 1 ? 1 : 0));
+  }
+
+  function getCurveFallbackSuggestion() {
+    const midLeft = CURVE_POINTS[Math.floor(CURVE_POINTS.length / 2) - 1];
+    const midRight = CURVE_POINTS[Math.floor(CURVE_POINTS.length / 2)];
+    if (!midLeft || !midRight || !hasEntity("curveFallbackSupply")) {
+      return null;
+    }
+
+    const leftValue = normalizeNumber(midLeft.key, getEntityValue(midLeft.key));
+    const rightValue = normalizeNumber(midRight.key, getEntityValue(midRight.key));
+    const suggestionValue = normalizeNumber("curveFallbackSupply", (leftValue + rightValue) / 2);
+
+    return {
+      value: suggestionValue,
+      label: formatValue("curveFallbackSupply", suggestionValue),
+      basis: `Afgeleid uit het midden van je stooklijn (${midLeft.label} en ${midRight.label}).`,
+      isCurrent: normalizeNumber("curveFallbackSupply", getEntityValue("curveFallbackSupply")) === suggestionValue,
+    };
+  }
+
+  function getCurveFallbackSuggestion() {
+    const middleLeft = CURVE_POINTS[Math.floor((CURVE_POINTS.length / 2) - 1)];
+    const middleRight = CURVE_POINTS[Math.floor(CURVE_POINTS.length / 2)];
+    if (!middleLeft || !middleRight || !hasEntity("curveFallbackSupply")) {
+      return null;
+    }
+
+    const leftValue = normalizeNumber(middleLeft.key, getEntityValue(middleLeft.key));
+    const rightValue = normalizeNumber(middleRight.key, getEntityValue(middleRight.key));
+    const midpointValue = (leftValue + rightValue) / 2;
+    const suggested = normalizeNumber("curveFallbackSupply", midpointValue);
+
+    return {
+      value: suggested,
+      label: formatValue("curveFallbackSupply", suggested),
+      basis: `Afgeleid uit het midden van je stooklijn (${middleLeft.label} en ${middleRight.label}).`,
+      isCurrent: normalizeNumber("curveFallbackSupply", getEntityValue("curveFallbackSupply")) === suggested,
+    };
   }
 
   async function fetchEntityPayload(key, detail = "state") {
@@ -798,12 +1200,11 @@
   }
 
   function applyDerivedState() {
-    const summaryValue = state.entities.summary?.state || state.entities.summary?.value;
-    state.summary = typeof summaryValue === "string" ? summaryValue : "Samenvatting niet beschikbaar";
     state.complete = hasEntity("setupComplete")
       ? isEntityActive("setupComplete")
-      : state.summary.includes("setup complete");
+      : false;
     state.stage = state.complete ? "Gereed" : "Quick Start";
+    state.summary = renderAppSummary();
     if (!state.appView) {
       setAppView(getUrlAppView() || getDefaultAppView(), { syncMode: "replace", forceSync: true });
     }
@@ -827,21 +1228,26 @@
     }
 
     const keys = state.appView === "overview"
-      ? [...OVERVIEW_KEYS, "summary", "setupComplete"]
+      ? [...OVERVIEW_KEYS, "setupComplete", "firmwareUpdate", "firmwareUpdateChannel"]
       : state.appView === "settings"
-        ? ["summary", "setupComplete", ...SETTINGS_KEYS]
+        ? ["setupComplete", "firmwareUpdate", "firmwareUpdateChannel", ...SETTINGS_KEYS]
         : [
-            "summary",
             "setupComplete",
+            "firmwareUpdate",
+            "firmwareUpdateChannel",
             "strategy",
-            "behavior",
-            "preset",
             ...LIMIT_KEYS,
+            ...FLOW_SETTING_KEYS,
             ...(isCurveMode() ? CURVE_POINTS.map((point) => point.key) : POWER_HOUSE_KEYS),
           ];
 
     try {
       await refreshEntities(keys, "state");
+      const nextHeaderSignature = getHeaderRenderSignature();
+      if (nextHeaderSignature !== state.headerRenderSignature) {
+        render();
+        return;
+      }
       if (state.appView === "settings") {
         const nextSettingsSignature = getSettingsRenderSignature();
         if (nextSettingsSignature !== state.settingsRenderSignature) {
@@ -978,6 +1384,8 @@
 
     const infoButton = event.target.closest('[data-oq-action="toggle-settings-info"]');
     const infoWrap = event.target.closest("[data-oq-settings-info]");
+    const helperHub = event.target.closest(".oq-helper-hub");
+    const modalBackdrop = event.target.closest("[data-oq-modal]");
     if (infoButton) {
       const infoId = infoButton.dataset.infoId || "";
       state.settingsInfoOpen = state.settingsInfoOpen === infoId ? "" : infoId;
@@ -986,18 +1394,33 @@
     }
 
     const button = event.target.closest("[data-oq-action]");
-    if (!button && state.settingsInfoOpen && !infoWrap) {
-      state.settingsInfoOpen = "";
-      render();
+    const clickedOutsideInterfacePanel = state.interfacePanelOpen && !helperHub;
+    if (!button) {
+      let shouldRender = false;
+      if (state.settingsInfoOpen && !infoWrap) {
+        state.settingsInfoOpen = "";
+        shouldRender = true;
+      }
+      if (clickedOutsideInterfacePanel) {
+        setInterfacePanelOpen(false);
+        shouldRender = true;
+      }
+      if (modalBackdrop && event.target === modalBackdrop && state.updateModalOpen) {
+        state.updateModalOpen = false;
+        shouldRender = true;
+      }
+      if (shouldRender) {
+        render();
+      }
       return;
     }
-    if (!button) {
-      return;
+    if (clickedOutsideInterfacePanel && button.dataset.oqAction !== "toggle-interface-panel") {
+      setInterfacePanelOpen(false);
     }
 
     const action = button.dataset.oqAction;
-    if (action === "toggle-helper") {
-      state.helperOpen = !state.helperOpen;
+    if (action === "toggle-interface-panel") {
+      setInterfacePanelOpen(!state.interfacePanelOpen);
       render();
       return;
     }
@@ -1009,15 +1432,30 @@
       return;
     }
 
-    if (action === "toggle-advanced") {
-      state.advancedOpen = !state.advancedOpen;
+    if (action === "open-update-modal") {
+      state.updateModalOpen = true;
       render();
       return;
     }
 
-    if (action === "toggle-native") {
-      state.nativeOpen = !state.nativeOpen;
+    if (action === "close-update-modal") {
+      state.updateModalOpen = false;
       render();
+      return;
+    }
+
+    if (action === "select-surface") {
+      state.nativeOpen = button.dataset.surface === "native";
+      render();
+      window.requestAnimationFrame(() => {
+        if (state.nativeOpen) {
+          if (state.nativeApp) {
+            state.nativeApp.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        } else {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      });
       return;
     }
 
@@ -1039,6 +1477,18 @@
       return;
     }
 
+    if (action === "previous-step") {
+      selectQuickStepByOffset(-1);
+      render();
+      return;
+    }
+
+    if (action === "next-step") {
+      selectQuickStepByOffset(1);
+      render();
+      return;
+    }
+
     if (action === "select-settings-option") {
       const key = button.dataset.selectKey || "";
       const option = button.dataset.selectOption || "";
@@ -1048,20 +1498,29 @@
       return;
     }
 
+    if (action === "suggest-curve-fallback") {
+      const suggestion = getCurveFallbackSuggestion();
+      if (suggestion) {
+        commitNumber("curveFallbackSupply", suggestion.value, "Fallback-aanvoertemperatuur uit de stooklijn overgenomen.");
+      }
+      return;
+    }
+
     if (action === "apply" || action === "reset") {
       triggerButton(action);
       return;
     }
 
-    if (action === "jump-native") {
-      state.nativeOpen = true;
-      render();
-      window.requestAnimationFrame(() => {
-        if (state.nativeApp) {
-          state.nativeApp.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-      });
+    if (action === "run-firmware-check") {
+      triggerFirmwareUpdateCheck();
+      return;
     }
+
+    if (action === "install-firmware-update") {
+      installFirmwareUpdate();
+      return;
+    }
+
   }
 
   function handlePointerDown(event) {
@@ -1110,10 +1569,12 @@
       delete state.drafts[key];
       delete state.inputDrafts[key];
       state.controlNotice = `${entity.name} bijgewerkt.`;
-      if (state.appView === "settings") {
+      if (key === "firmwareUpdateChannel") {
+        await refreshEntities(["firmwareUpdate", "firmwareUpdateChannel"], "all");
+      } else if (state.appView === "settings") {
         await refreshEntities(getSettingsRefreshKeys(), "state");
       } else {
-        await refreshEntities(["summary", "strategy", "behavior", "preset"], "state");
+        await refreshEntities(["setupComplete", "strategy", ...FLOW_SETTING_KEYS, ...LIMIT_KEYS], "state");
       }
       if (key === "strategy" && state.appView !== "settings") {
         await refreshEntities(isCurveMode(option) ? CURVE_POINTS.map((point) => point.key) : POWER_HOUSE_KEYS, "state");
@@ -1122,6 +1583,61 @@
       state.controlError = `${entity.name} kon niet worden bijgewerkt. ${error.message}`;
     } finally {
       state.busyAction = "";
+      render();
+    }
+  }
+
+  async function triggerFirmwareUpdateCheck() {
+    const entity = ENTITY_DEFS.checkFirmwareUpdates;
+    if (!entity) {
+      return;
+    }
+
+    state.updateCheckBusy = true;
+    state.controlError = "";
+    state.controlNotice = "";
+    render();
+
+    try {
+      const response = await fetch(buildEntityPath(entity.domain, entity.name, "press"), {
+        method: "POST",
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      await refreshEntities(["firmwareUpdate", "firmwareUpdateChannel"], "all");
+      state.controlNotice = "Firmwarecontrole gestart.";
+    } catch (error) {
+      state.controlError = `Firmwarecontrole mislukte. ${error.message}`;
+    } finally {
+      state.updateCheckBusy = false;
+      render();
+    }
+  }
+
+  async function installFirmwareUpdate() {
+    if (!getFirmwareUpdateEntity()) {
+      return;
+    }
+
+    state.updateInstallBusy = true;
+    state.controlError = "";
+    state.controlNotice = "";
+    render();
+
+    try {
+      const response = await fetch(buildEntityPath("update", "Firmware Update", "install"), {
+        method: "POST",
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      await refreshEntities(["firmwareUpdate", "firmwareUpdateChannel"], "all");
+      state.controlNotice = "OTA-update gestart.";
+    } catch (error) {
+      state.controlError = `OTA-update kon niet worden gestart. ${error.message}`;
+    } finally {
+      state.updateInstallBusy = false;
       render();
     }
   }
@@ -1147,7 +1663,13 @@
       delete state.drafts[key];
       delete state.inputDrafts[key];
       state.controlNotice = successNotice || `${entity.name} bijgewerkt.`;
-      await refreshEntities(state.appView === "settings" ? getSettingsRefreshKeys() : [key, "summary", "preset", "behavior"], "state");
+      await refreshEntities(
+        state.appView === "settings"
+          ? getSettingsRefreshKeys()
+          : [...new Set([key, "setupComplete", "strategy", ...FLOW_SETTING_KEYS, ...LIMIT_KEYS])]
+        ,
+        "state"
+      );
     } catch (error) {
       state.inputDrafts[key] = String(normalized).replace(".", ",");
       state.controlError = `${entity.name} kon niet worden bijgewerkt. ${error.message}`;
@@ -1174,7 +1696,12 @@
         throw new Error(`HTTP ${response.status}`);
       }
       state.controlNotice = `${entity.name} bijgewerkt.`;
-      await refreshEntities(state.appView === "settings" ? getSettingsRefreshKeys() : [key, "summary"], "state");
+      await refreshEntities(
+        state.appView === "settings"
+          ? getSettingsRefreshKeys()
+          : [key, "setupComplete"],
+        "state"
+      );
     } catch (error) {
       state.controlError = `${entity.name} kon niet worden bijgewerkt. ${error.message}`;
     } finally {
@@ -1200,7 +1727,10 @@
       state.controlNotice = action === "apply"
         ? "Setup gemarkeerd als afgerond."
         : "Quick Start teruggezet naar het begin. Huidige tuningwaarden blijven voorlopig staan.";
-      await refreshEntities(["summary", "setupComplete"], "state");
+      await refreshEntities(["setupComplete"], "state");
+      if (action === "reset") {
+        state.currentStep = QUICK_STEPS[0].id;
+      }
       setAppView(action === "apply" ? "overview" : QUICK_START_VIEW, { syncMode: "replace" });
     } catch (error) {
       state.controlError = `Actie mislukt voor "${entity.name}". ${error.message}`;
@@ -1239,20 +1769,6 @@
     `).join("");
   }
 
-  function renderStepTabs() {
-    return QUICK_STEPS.map((step, index) => `
-      <button
-        class="oq-helper-step-tab ${state.currentStep === step.id ? "is-active" : ""}"
-        type="button"
-        data-oq-action="select-step"
-        data-step-id="${escapeHtml(step.id)}"
-      >
-        <span class="oq-helper-step-index">0${index + 1}</span>
-        <span>${escapeHtml(step.title)}</span>
-      </button>
-    `).join("");
-  }
-
   function renderSelectField(key, title, copy) {
     const entity = state.entities[key] || {};
     const value = String(getEntityValue(key) || "");
@@ -1273,7 +1789,7 @@
     `;
   }
 
-  function renderNumberInputField(key, title, copy) {
+  function renderNumberInputField(key, title, copy, options = {}) {
     const meta = getNumberMeta(key);
     const value = getInputDraftValue(key);
     return `
@@ -1295,6 +1811,7 @@
           >
           <span class="oq-helper-unit">${escapeHtml(meta.uom || "")}</span>
         </label>
+        ${options.footerMarkup || ""}
       </article>
     `;
   }
@@ -1351,7 +1868,7 @@
     `;
   }
 
-  function renderSettingsFieldCard(fieldKey, title, copy, controlMarkup, className = "") {
+  function renderSettingsFieldCard(fieldKey, title, copy, controlMarkup, className = "", footerMarkup = "") {
     return `
       <article class="oq-settings-field${className ? ` ${className}` : ""}">
         <div class="oq-settings-field-head">
@@ -1361,8 +1878,19 @@
         <div class="oq-settings-field-control">
           ${controlMarkup}
         </div>
+        ${footerMarkup}
       </article>
     `;
+  }
+
+  function renderSettingsStaticField(fieldKey, title, copy, value, className = "") {
+    return renderSettingsFieldCard(
+      fieldKey,
+      title,
+      copy,
+      `<div class="oq-settings-static-value">${escapeHtml(value)}</div>`,
+      className,
+    );
   }
 
   function formatSettingsOptionLabel(option) {
@@ -1379,6 +1907,8 @@
       Responsive: "Direct",
       Calm: "Rustig",
       Custom: "Aangepast",
+      [STRATEGY_OPTION_CURVE]: "Heating Curve",
+      [STRATEGY_OPTION_POWER_HOUSE]: "Power House",
     };
 
     return labels[value] || value;
@@ -1468,7 +1998,7 @@
       </label>
     `;
 
-    return renderSettingsFieldCard(key, title, copy, controlMarkup, className);
+    return renderSettingsFieldCard(key, title, copy, controlMarkup, className, options.footerMarkup || "");
   }
 
   function renderSettingsSliderField(key, title, copy, className = "") {
@@ -1582,9 +2112,27 @@
   }
 
   function renderSettingsCurveInputs() {
+    const suggestion = getCurveFallbackSuggestion();
+    const suggestionMarkup = suggestion ? `
+      <div class="oq-curve-fallback-suggest oq-curve-fallback-suggest--inside">
+        <div class="oq-curve-fallback-suggest-copy">
+          <strong>Suggestie: ${escapeHtml(suggestion.label)}</strong>
+          <span>${escapeHtml(suggestion.basis)}</span>
+        </div>
+        <button
+          class="oq-helper-button oq-helper-button--ghost"
+          type="button"
+          data-oq-action="suggest-curve-fallback"
+          ${state.loadingEntities || state.busyAction === "save-curveFallbackSupply" || suggestion.isCurrent ? "disabled" : ""}
+        >
+          ${suggestion.isCurrent ? "Actief" : "Gebruik suggestie"}
+        </button>
+      </div>
+    ` : "";
     return `
       <div class="oq-settings-curve-grid">
         ${CURVE_POINTS.map((point) => renderSettingsNumberField(point.key, `Curve Tsupply @ ${point.label}`, `Aanvoertemperatuurdoel bij ${point.label} buitentemperatuur.`)).join("")}
+        ${renderSettingsNumberField("curveFallbackSupply", "Fallback aanvoertemperatuur zonder buitentemp", "Aanvoertemperatuur die gebruikt wordt als de buitentemperatuursensor niet beschikbaar is.", "oq-settings-field--curve-fallback-card", { footerMarkup: suggestionMarkup })}
       </div>
     `;
   }
@@ -1593,7 +2141,15 @@
     const curveActive = isCurveMode();
     return `
       <div class="oq-settings-strategy-grid">
-        <article class="oq-settings-strategy-card${curveActive ? "" : " is-active"}">
+        <button
+          class="oq-settings-strategy-card${curveActive ? "" : " is-active"}"
+          type="button"
+          data-oq-action="select-settings-option"
+          data-select-key="strategy"
+          data-select-option="${escapeHtml(STRATEGY_OPTION_POWER_HOUSE)}"
+          aria-pressed="${curveActive ? "false" : "true"}"
+          ${state.loadingEntities || state.busyAction === "save-strategy" ? "disabled" : ""}
+        >
           <p class="oq-helper-label">Power House</p>
           <h4>Modelgestuurde regeling (aanbevolen heating strategy)</h4>
           <p>Power House schat de warmtevraag van de woning op basis van buitentemperatuur en het ingestelde huisverliesmodel. De Quatt CiC werkt conceptueel ook in deze richting.</p>
@@ -1603,8 +2159,16 @@
             <li>Stuurt de warmtevraag meer als systeemmodel dan als vaste temperatuurcurve.</li>
             <li>Past goed als je het gedrag van de woning zelf centraal wilt zetten.</li>
           </ul>
-        </article>
-        <article class="oq-settings-strategy-card${curveActive ? " is-active" : ""}">
+        </button>
+        <button
+          class="oq-settings-strategy-card${curveActive ? " is-active" : ""}"
+          type="button"
+          data-oq-action="select-settings-option"
+          data-select-key="strategy"
+          data-select-option="${escapeHtml(STRATEGY_OPTION_CURVE)}"
+          aria-pressed="${curveActive ? "true" : "false"}"
+          ${state.loadingEntities || state.busyAction === "save-strategy" ? "disabled" : ""}
+        >
           <p class="oq-helper-label">Heating Curve</p>
           <h4>Curvegestuurde regeling</h4>
           <p>Heating Curve koppelt iedere buitentemperatuur aan een gewenste aanvoertemperatuur en regelt daar direct naartoe.</p>
@@ -1613,7 +2177,7 @@
             <li>Maakt het gedrag voorspelbaar en herkenbaar voor wie gewend is aan een klassieke stooklijn.</li>
             <li>Past goed als je de aanvoertemperatuur bewust per buitentemperatuur wilt finetunen.</li>
           </ul>
-        </article>
+        </button>
       </div>
     `;
   }
@@ -1996,12 +2560,11 @@
           <div class="oq-settings-subpanel-head">
             <p class="oq-helper-label">Power House</p>
             <h4>Power House</h4>
-            <p>Deze waarden voeden het huisverliesmodel. Nominale maximale huisvraag en Maximale verwarmings-buitentemperatuur kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn; Koude ondergrens is het koude referentiepunt waarop die piekvraag geldt. De Quatt CiC werkt in grote lijnen op een vergelijkbaar modelmatig principe.</p>
+            <p>Deze waarden voeden het huisverliesmodel. Rated maximum house power en Maximum heating outdoor temperature kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn. De Quatt CiC werkt in grote lijnen op een vergelijkbaar modelmatig principe.</p>
           </div>
           <div class="oq-settings-grid">
-            ${renderSettingsNumberField("houseColdTemp", "Koude ondergrens", "Koude buitentemperatuur waarop de ingestelde piekwarmtevraag van de woning geldt.")}
-            ${renderSettingsNumberField("houseOutdoorMax", "Maximale verwarmings-buitentemperatuur", "Buitentemperatuur waarbij de woning praktisch geen verwarmingsvraag meer heeft. Deze waarde kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn.")}
-            ${renderSettingsNumberField("housePower", "Nominale maximale huisvraag", "Geschatte piekwarmtevraag van de woning op het koude referentiepunt. Ook deze waarde kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn.")}
+            ${renderSettingsNumberField("houseOutdoorMax", "Maximum heating outdoor temperature", "Buitentemperatuur waarbij de woning praktisch geen verwarmingsvraag meer heeft. Deze waarde kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn.")}
+            ${renderSettingsNumberField("housePower", "Rated maximum house power", "Geschatte piekwarmtevraag van de woning op het koude referentiepunt. Ook deze waarde kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn.")}
             ${renderPowerHouseResponseProfilesField()}
           </div>
           ${renderPowerHouseAdvancedField()}
@@ -2073,17 +2636,95 @@
     );
   }
 
+  function renderSettingsSystemSection() {
+    const channelEntity = state.entities.firmwareUpdateChannel || null;
+    const channelOptions = channelEntity
+      ? (Array.isArray(channelEntity.option) ? channelEntity.option : Array.isArray(channelEntity.options) ? channelEntity.options : [])
+      : [];
+    const { current, latest } = getFirmwareUpdateVersions();
+    const checking = isFirmwareUpdateChecking();
+    const installing = isFirmwareUpdateInstalling();
+    const available = isFirmwareUpdateAvailable();
+    const releaseUrl = getFirmwareReleaseUrl();
+    const updateSummary = getFirmwareSummary()
+      || (available
+        ? "Er staat een OTA-build klaar voor dit OpenQuatt-device."
+        : "Je device draait al op de nieuwste firmware.");
+
+    const updateMeta = `
+      <div class="oq-settings-meta-list">
+        <div class="oq-settings-meta-item">
+          <span class="oq-settings-meta-label">Status</span>
+          <strong class="oq-settings-meta-value">${escapeHtml(getUpdateStatus())}</strong>
+        </div>
+        <div class="oq-settings-meta-item">
+          <span class="oq-settings-meta-label">Huidige versie</span>
+          <strong class="oq-settings-meta-value">${escapeHtml(current)}</strong>
+        </div>
+        <div class="oq-settings-meta-item">
+          <span class="oq-settings-meta-label">Beschikbare versie</span>
+          <strong class="oq-settings-meta-value">${escapeHtml(latest)}</strong>
+        </div>
+      </div>
+    `;
+
+    const channelMarkup = channelOptions.length ? `
+      <label class="oq-settings-update-channel">
+        <span class="oq-settings-meta-label">Releasekanaal</span>
+        <span class="oq-settings-control oq-settings-control--select">
+          <select class="oq-helper-select" data-oq-field="firmwareUpdateChannel" ${checking || installing || state.loadingEntities ? "disabled" : ""}>
+            ${channelOptions.map((option) => `
+              <option value="${escapeHtml(option)}" ${String(getEntityValue("firmwareUpdateChannel") || "") === option ? "selected" : ""}>${escapeHtml(option)}</option>
+            `).join("")}
+          </select>
+          <span class="oq-settings-select-caret" aria-hidden="true"></span>
+        </span>
+      </label>
+    ` : "";
+
+    const footerMarkup = `
+      <div class="oq-settings-update-note">${escapeHtml(updateSummary)}</div>
+      ${channelMarkup}
+      <div class="oq-settings-update-actions">
+        <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="open-update-modal">
+          OTA-paneel openen
+        </button>
+        <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="run-firmware-check" ${checking || installing ? "disabled" : ""}>
+          ${checking ? "Controleren..." : "Controleer opnieuw"}
+        </button>
+        <button class="oq-helper-button" type="button" data-oq-action="install-firmware-update" ${!available || checking || installing ? "disabled" : ""}>
+          ${installing ? "Bijwerken..." : "Nu bijwerken"}
+        </button>
+        ${releaseUrl ? `<a class="oq-helper-button oq-helper-button--ghost oq-settings-update-link" href="${escapeHtml(releaseUrl)}" target="_blank" rel="noreferrer">Release notes</a>` : ""}
+      </div>
+    `;
+
+    return renderSettingsSection(
+      "Systeem",
+      "Systeem en updates",
+      "Device-status, OTA-updates en releasekanaal komen hier samen zodat beheer niet verstopt zit achter alleen de statusknop.",
+      `
+        <div class="oq-settings-grid">
+          ${renderSettingsStaticField("system-installation", "Installatie", "Gedetecteerde OpenQuatt-opstelling voor deze websessie.", getInstallationLabel())}
+          ${renderSettingsStaticField("system-setup", "Setupstatus", "Laat zien of de Quick Start-flow al als afgerond gemarkeerd staat.", state.complete ? "Afgerond" : "Open")}
+          ${renderSettingsStaticField("system-uptime", "Uptime", "Hoe lang dit device sinds de laatste boot draait.", formatDeviceUptime())}
+          ${renderSettingsStaticField("system-ip", "IP-adres", "Actueel adres waarop deze interface het device bereikt.", getDeviceIpAddress())}
+          ${renderSettingsFieldCard("system-firmware", "Firmware-update", "OTA-status, huidige versie en beschikbare release voor dit device.", updateMeta, "oq-settings-field--span-2", footerMarkup)}
+        </div>
+      `,
+    );
+  }
+
   function renderPowerHouseWorkspace() {
     return `
       <section class="oq-helper-mode-panel">
         <div class="oq-helper-mode-head">
           <p class="oq-helper-label">Verplicht Voor Power House</p>
-          <p class="oq-helper-section-copy">Deze drie waarden bepalen het huisverliesmodel. Nominale maximale huisvraag en Maximale verwarmings-buitentemperatuur kun je vaak bij Quatt opvragen; Koude ondergrens legt het koude referentiepunt vast.</p>
+          <p class="oq-helper-section-copy">Deze waarden bepalen het huisverliesmodel. Rated maximum house power en Maximum heating outdoor temperature kun je vaak bij Quatt opvragen.</p>
         </div>
         <div class="oq-helper-control-grid">
-          ${renderNumberInputField("houseColdTemp", "Koude ondergrens", "Koude buitentemperatuur waarop de ingestelde piekwarmtevraag van de woning geldt.")}
-          ${renderNumberInputField("housePower", "Nominale maximale huisvraag", "Verwachte piekwarmtevraag van de woning op het koude referentiepunt.")}
-          ${renderNumberInputField("houseOutdoorMax", "Maximale verwarmings-buitentemperatuur", "Buitentemperatuur waarbij de warmtevraag praktisch naar nul gaat.")}
+          ${renderNumberInputField("housePower", "Rated maximum house power", "Verwachte piekwarmtevraag van de woning op het koude referentiepunt.")}
+          ${renderNumberInputField("houseOutdoorMax", "Maximum heating outdoor temperature", "Buitentemperatuur waarbij de warmtevraag praktisch naar nul gaat.")}
         </div>
       </section>
     `;
@@ -2143,7 +2784,7 @@
       <div class="oq-helper-curve-shell">
         <div class="oq-helper-curve-copy">
           <h3>Heating curve editor</h3>
-          <p>Versleep de punten om de zes vereiste Tsupply-doelen in te stellen. De app moet hier begeleiden, in plaats van zes losse technische velden zonder context te tonen.</p>
+          <p>Stel de verwarmingscurve in door de punten te verslepen en zo de zes vereiste aanvoertemperaturen te bepalen.</p>
         </div>
         <svg class="oq-helper-curve-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Heating curve editor">
           ${gridLines}
@@ -2156,9 +2797,27 @@
   }
 
   function renderCurveInputs() {
+    const suggestion = getCurveFallbackSuggestion();
+    const suggestionMarkup = suggestion ? `
+      <div class="oq-curve-fallback-suggest oq-curve-fallback-suggest--inside oq-curve-fallback-suggest--helper">
+        <div class="oq-curve-fallback-suggest-copy">
+          <strong>Suggestie: ${escapeHtml(suggestion.label)}</strong>
+          <span>${escapeHtml(suggestion.basis)}</span>
+        </div>
+        <button
+          class="oq-helper-button oq-helper-button--ghost"
+          type="button"
+          data-oq-action="suggest-curve-fallback"
+          ${state.loadingEntities || state.busyAction === "save-curveFallbackSupply" || suggestion.isCurrent ? "disabled" : ""}
+        >
+          ${suggestion.isCurrent ? "Actief" : "Gebruik suggestie"}
+        </button>
+      </div>
+    ` : "";
     return `
       <div class="oq-helper-curve-grid">
         ${CURVE_POINTS.map((point) => renderNumberInputField(point.key, `Curve Tsupply @ ${point.label}`, `Supply target bij ${point.label} buitentemperatuur.`)).join("")}
+        ${renderNumberInputField("curveFallbackSupply", "Fallback aanvoertemperatuur zonder buitentemp", "Aanvoertemperatuur die gebruikt wordt als de buitentemperatuursensor niet beschikbaar is.", { footerMarkup: suggestionMarkup })}
       </div>
     `;
   }
@@ -2168,7 +2827,7 @@
       <section class="oq-helper-mode-panel">
         <div class="oq-helper-mode-head">
           <p class="oq-helper-label">Verplicht Voor Heating Curve</p>
-          <p class="oq-helper-section-copy">Deze zes curvepunten zijn kerninput voor heating-curve mode. De interactieve grafiek is de juiste plek om dit begrijpelijk te maken.</p>
+          <p class="oq-helper-section-copy">Deze zes curvepunten en de fallback-aanvoertemperatuur vormen samen de basis voor Heating Curve. De interactieve grafiek is de juiste plek om dit begrijpelijk te maken.</p>
         </div>
         ${renderCurveGraph()}
         ${renderCurveInputs()}
@@ -2181,40 +2840,98 @@
       <section class="oq-helper-panel">
         <p class="oq-helper-label">Stap 1</p>
         <h2 class="oq-helper-section-title">Kies de verwarmingsstrategie</h2>
-        <p class="oq-helper-section-copy">Dit is het belangrijkste keuzepunt. Zodra de gebruiker een strategie kiest, moet Quick Start alleen de relevante verplichte inputs tonen.</p>
-        <div class="oq-helper-fields oq-helper-fields--spaced">
-          ${renderSelectField("strategy", "Verwarmingsstrategie", "Power House vraagt om huis-modelinputs. Heating Curve vraagt om de zes Tsupply-curvepunten.")}
+        <p class="oq-helper-section-copy">Dit is het belangrijkste keuzepunt. Vanaf hier loopt Quick Start daarna systematisch dezelfde relevante instellingen langs als de Instellingen-pagina.</p>
+        ${renderHeatingStrategyExplainCards()}
+        <div class="oq-settings-grid oq-settings-grid--quickstart">
+          ${renderSettingsSelectField("strategy", "Verwarmingsstrategie", "Bepaalt of OpenQuatt op Power House of op Heating Curve werkt.")}
         </div>
-        ${isCurveMode() ? renderCurveWorkspace() : renderPowerHouseWorkspace()}
+        ${renderQuickStartStepNav()}
       </section>
     `;
   }
 
-  function renderBehaviorWorkspace() {
-    return `
-      <section class="oq-helper-panel">
-        <p class="oq-helper-label">Stap 2</p>
-        <h2 class="oq-helper-section-title">Stem het responsprofiel af</h2>
-        <p class="oq-helper-section-copy">Dit blijft een begrijpelijke app-laag boven de technische strategie-instellingen.</p>
-        <div class="oq-helper-control-grid">
-          ${renderSelectField("behavior", "Gedrag", "Gebruiksvriendelijk label dat mapped naar het actieve strategieprofiel.")}
-          ${renderSelectField("preset", "Preset", "Snel gegroepeerd startpunt voor de gebruikelijke compressorlimieten.")}
-        </div>
-      </section>
-    `;
-  }
+  function renderFlowWorkspace() {
+    const flowSecondaryField = String(getEntityValue("flowControlMode") || "") === "Manual PWM"
+      ? renderSettingsNumberField("manualIpwm", "Handmatige iPWM", "Vaste pompaansturing die direct gebruikt wordt zolang de flowregeling op handmatig staat.")
+      : renderSettingsNumberField("flowSetpoint", "Flow setpoint", "Doelflow die OpenQuatt probeert vast te houden zolang flowregeling op flow setpoint staat.");
 
-  function renderLimitsWorkspace() {
     return `
       <section class="oq-helper-panel">
         <p class="oq-helper-label">Stap 3</p>
-        <h2 class="oq-helper-section-title">Stel de bedrijfsgrenzen in</h2>
-        <p class="oq-helper-section-copy">Deze instellingen zijn nog goed uitlegbaar voor gewone gebruikers en horen in de guided setup-flow.</p>
-        <div class="oq-helper-control-grid">
-          ${renderSliderField("dayMax", "Dag max", "Maximaal compressorniveau tijdens normaal dagbedrijf.")}
-          ${renderSliderField("silentMax", "Silent max", "Maximaal compressorniveau tijdens het silent-venster.")}
-          ${renderSliderField("maxWater", "Max watertemperatuur", "Bovengrens voor de aanvoertemperatuur.")}
+        <h2 class="oq-helper-section-title">Flow en pompregeling</h2>
+        <p class="oq-helper-section-copy">Flowregeling hoort vroeg in Quick Start thuis, omdat die direct bepaalt welk tweede veld relevant is.</p>
+        <div class="oq-settings-grid oq-settings-grid--quickstart">
+          ${renderSettingsSelectField("flowControlMode", "Flowregeling", "Kies tussen regelen op flow of een vaste pompaansturing.")}
+          ${flowSecondaryField}
         </div>
+        ${renderQuickStartStepNav()}
+      </section>
+    `;
+  }
+
+  function renderHeatingWorkspace() {
+    return `
+      <section class="oq-helper-panel">
+        <p class="oq-helper-label">Stap 2</p>
+        <h2 class="oq-helper-section-title">${escapeHtml(isCurveMode() ? "Heating Curve instellen" : "Power House instellen")}</h2>
+        <p class="oq-helper-section-copy">
+          ${escapeHtml(
+            isCurveMode()
+              ? "Loop alle Heating Curve-instellingen langs: profiel, fallback-aanvoertemperatuur en de volledige stooklijn."
+              : "Loop alle Power House-instellingen langs: huisverliesmodel, responsprofiel en de kamercorrectie rond het setpoint.",
+          )}
+        </p>
+        ${isCurveMode()
+          ? `
+            <div class="oq-settings-grid oq-settings-grid--quickstart">
+              ${renderHeatingCurveProfileField()}
+            </div>
+            <div class="oq-settings-curve-shell">
+              ${renderCurveGraph()}
+            </div>
+            ${renderSettingsCurveInputs()}
+          `
+          : `
+            <div class="oq-settings-grid oq-settings-grid--quickstart">
+              ${renderSettingsNumberField("houseOutdoorMax", "Maximum heating outdoor temperature", "Buitentemperatuur waarbij de woning praktisch geen verwarmingsvraag meer heeft. Deze waarde kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn.")}
+              ${renderSettingsNumberField("housePower", "Rated maximum house power", "Geschatte piekwarmtevraag van de woning op het koude referentiepunt. Ook deze waarde kun je bij Quatt opvragen als referentie voor de Quatt-stooklijn.")}
+              ${renderPowerHouseResponseProfilesField()}
+            </div>
+            ${renderPowerHouseAdvancedField()}
+          `}
+        ${renderQuickStartStepNav()}
+      </section>
+    `;
+  }
+
+  function renderWaterWorkspace() {
+    return `
+      <section class="oq-helper-panel">
+        <p class="oq-helper-label">Stap 4</p>
+        <h2 class="oq-helper-section-title">Watertemperatuur beveiligen</h2>
+        <p class="oq-helper-section-copy">Deze twee grenzen horen altijd bij de basisinrichting en zijn daarom ook onderdeel van Quick Start.</p>
+        <div class="oq-settings-grid oq-settings-grid--quickstart">
+          ${renderSettingsNumberField("maxWater", "Maximale watertemperatuur", "Normale bovengrens voor de watertemperatuur tijdens bedrijf.")}
+          ${renderSettingsNumberField("maxWaterTrip", "Tripgrens watertemperatuur", "Veiligheidsgrens waarbij de regeling hard ingrijpt als de watertemperatuur te ver oploopt.")}
+        </div>
+        ${renderQuickStartStepNav()}
+      </section>
+    `;
+  }
+
+  function renderSilentWorkspace() {
+    return `
+      <section class="oq-helper-panel">
+        <p class="oq-helper-label">Stap 5</p>
+        <h2 class="oq-helper-section-title">Stille uren en niveaus</h2>
+        <p class="oq-helper-section-copy">Als laatste dagelijkse gebruikslaag stel je hier het stille venster en de compressorlimieten voor dag en nacht in.</p>
+        <div class="oq-settings-grid oq-settings-grid--quickstart">
+          ${renderSettingsTimeField("silentStartTime", "Silent starttijd", "Starttijd van het stille venster.")}
+          ${renderSettingsTimeField("silentEndTime", "Silent eindtijd", "Eindtijd van het stille venster.")}
+          ${renderSettingsSliderField("silentMax", "Silent max level", "Maximum compressorlevel tijdens het stille venster.")}
+          ${renderSettingsSliderField("dayMax", "Day max level", "Maximum compressorlevel tijdens normaal dagbedrijf.")}
+        </div>
+        ${renderQuickStartStepNav()}
       </section>
     `;
   }
@@ -2222,22 +2939,41 @@
   function renderConfirmWorkspace() {
     return `
       <section class="oq-helper-panel">
-        <p class="oq-helper-label">Stap 4</p>
+        <p class="oq-helper-label">Stap 6</p>
         <h2 class="oq-helper-section-title">Bevestigen en afronden</h2>
-        <p class="oq-helper-section-copy">De app gebruikt dit als laatste bevestigingsstap, terwijl de firmware alleen de echte instellingen en een kleine Quick Start-flag bewaart.</p>
-        <div class="oq-helper-fields oq-helper-fields--spaced">
-          ${renderFieldList((QUICK_STEPS.find((step) => step.id === "confirm") || QUICK_STEPS[3]).fields)}
+        <p class="oq-helper-section-copy">Controleer hier nog één keer de gekozen hoofdlijnen. De instellingen zelf zijn al de bron van waarheid; afronden zet alleen de setup-status op gereed.</p>
+        ${renderConfirmReviewCards()}
+        ${state.controlNotice ? `<p class="oq-helper-notice">${escapeHtml(state.controlNotice)}</p>` : ""}
+        ${state.controlError ? `<p class="oq-helper-error">${escapeHtml(state.controlError)}</p>` : ""}
+        <div class="oq-helper-actions oq-helper-actions--step">
+          <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="previous-step" ${state.busyAction ? "disabled" : ""}>
+            Vorige
+          </button>
+        </div>
+        <div class="oq-helper-actions">
+          <button class="oq-helper-button oq-helper-button--primary" type="button" data-oq-action="apply" ${state.busyAction ? "disabled" : ""}>
+            ${state.busyAction === "apply" ? "Afronden..." : "Quick Start afronden"}
+          </button>
+          <button class="oq-helper-button" type="button" data-oq-action="reset" ${state.busyAction ? "disabled" : ""}>
+            ${state.busyAction === "reset" ? "Resetten..." : "Setup-status resetten"}
+          </button>
         </div>
       </section>
     `;
   }
 
   function renderActiveStep() {
-    if (state.currentStep === "behavior") {
-      return renderBehaviorWorkspace();
+    if (state.currentStep === "flow") {
+      return renderFlowWorkspace();
     }
-    if (state.currentStep === "limits") {
-      return renderLimitsWorkspace();
+    if (state.currentStep === "heating") {
+      return renderHeatingWorkspace();
+    }
+    if (state.currentStep === "water") {
+      return renderWaterWorkspace();
+    }
+    if (state.currentStep === "silent") {
+      return renderSilentWorkspace();
     }
     if (state.currentStep === "confirm") {
       return renderConfirmWorkspace();
@@ -2245,27 +2981,207 @@
     return renderStrategyWorkspace();
   }
 
-  function renderStepOverview() {
-    return QUICK_STEPS.map((step, index) => `
-      <article class="oq-helper-field">
-        <h3>0${index + 1}. ${escapeHtml(step.title)}</h3>
-        <p>${escapeHtml(step.copy)}</p>
-      </article>
-    `).join("");
+  function getQuickStepStatus(index) {
+    const currentIndex = getCurrentQuickStepIndex();
+    const isSelected = index === currentIndex;
+    const isDone = state.complete || index < currentIndex;
+    return {
+      tone: isDone ? "done" : isSelected ? "current" : "upcoming",
+      label: isDone ? "Gereed" : isSelected ? "Nu bezig" : "Volgend",
+      current: isSelected && !isDone,
+    };
+  }
+
+  function renderStepOverview(compact = false) {
+    return QUICK_STEPS.map((step, index) => {
+      const stepStatus = getQuickStepStatus(index);
+      return `
+        <button
+          class="oq-helper-field oq-helper-field--step${compact ? " oq-helper-field--compact" : ""} is-${stepStatus.tone}"
+          type="button"
+          data-oq-action="select-step"
+          data-step-id="${escapeHtml(step.id)}"
+          aria-current="${stepStatus.current ? "step" : "false"}"
+        >
+          <div class="oq-helper-field-step-head">
+            <h3>0${index + 1}. ${escapeHtml(step.title)}</h3>
+            <span class="oq-helper-field-step-state">${stepStatus.label}</span>
+          </div>
+          <p>${escapeHtml(step.copy)}</p>
+        </button>
+      `;
+    }).join("");
+  }
+
+  function getCurrentQuickStep() {
+    return QUICK_STEPS.find((step) => step.id === state.currentStep) || QUICK_STEPS[0];
+  }
+
+  function getCurrentQuickStepIndex() {
+    return Math.max(0, QUICK_STEPS.findIndex((step) => step.id === state.currentStep));
+  }
+
+  function selectQuickStepByOffset(offset) {
+    const nextIndex = Math.min(QUICK_STEPS.length - 1, Math.max(0, getCurrentQuickStepIndex() + offset));
+    state.currentStep = QUICK_STEPS[nextIndex]?.id || QUICK_STEPS[0].id;
+  }
+
+  function renderQuickStartStepNav() {
+    const index = getCurrentQuickStepIndex();
+    const previousStep = index > 0 ? QUICK_STEPS[index - 1] : null;
+    const nextStep = index < QUICK_STEPS.length - 1 ? QUICK_STEPS[index + 1] : null;
+
+    return `
+      <div class="oq-helper-step-nav">
+        <div class="oq-helper-step-nav-meta">
+          <strong>Stap ${index + 1} van ${QUICK_STEPS.length}</strong>
+          <span>${escapeHtml(nextStep ? `Hierna: ${nextStep.title}` : "Laatste stap van Quick Start")}</span>
+        </div>
+        <div class="oq-helper-actions oq-helper-actions--step">
+          <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="previous-step" ${previousStep ? "" : "disabled"}>
+            Vorige
+          </button>
+          <button class="oq-helper-button oq-helper-button--primary" type="button" data-oq-action="next-step" ${nextStep ? "" : "disabled"}>
+            ${nextStep ? "Volgende" : "Laatste stap"}
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderQuickStartSidebar() {
+    const step = getCurrentQuickStep();
+    const stepIndex = getCurrentQuickStepIndex();
+    return `
+      <section class="oq-helper-panel oq-helper-panel--aside">
+        <p class="oq-helper-label">Quick Start</p>
+        <h2 class="oq-helper-section-title">Rustige route naar een werkende regeling</h2>
+        <p class="oq-helper-panel-note">Quick Start loopt alleen de relevante keuzes langs. Compressor exclusions en minimum runtime blijven bewust buiten deze flow en verhuizen naar instellingen.</p>
+        <h3 class="oq-helper-aside-title">Stap ${stepIndex + 1} van ${QUICK_STEPS.length}</h3>
+        <dl class="oq-helper-meta">
+          <div class="oq-helper-meta-row">
+            <dt>Actieve stap</dt>
+            <dd>${escapeHtml(step ? step.title : state.stage)}</dd>
+          </div>
+          <div class="oq-helper-meta-row">
+            <dt>Status</dt>
+            <dd>${state.complete ? "Gereed" : "Bezig"}</dd>
+          </div>
+          <div class="oq-helper-meta-row">
+            <dt>Strategie</dt>
+            <dd>${escapeHtml(isCurveMode() ? "Heating Curve" : "Power House")}</dd>
+          </div>
+        </dl>
+        <div class="oq-helper-fields oq-helper-fields--compact">
+          ${renderStepOverview(true)}
+        </div>
+        ${state.controlNotice ? `<p class="oq-helper-notice">${escapeHtml(state.controlNotice)}</p>` : ""}
+        ${state.controlError ? `<p class="oq-helper-error">${escapeHtml(state.controlError)}</p>` : ""}
+      </section>
+    `;
+  }
+
+  function renderConfirmReviewCards() {
+    const strategyTitle = isCurveMode() ? "Heating Curve" : "Power House";
+    const formatReviewOption = (key) => formatSettingsOptionLabel(getEntityStateText(key));
+    const strategyLines = isCurveMode()
+      ? [
+          ["Control profile", formatReviewOption("curveControlProfile")],
+          ["Tsupply @ -20°C", formatValue("curveM20")],
+          ["Tsupply @ -10°C", formatValue("curveM10")],
+          ["Tsupply @ 0°C", formatValue("curve0")],
+          ["Tsupply @ 5°C", formatValue("curve5")],
+          ["Tsupply @ 10°C", formatValue("curve10")],
+          ["Tsupply @ 15°C", formatValue("curve15")],
+          ["Fallback Tsupply", formatValue("curveFallbackSupply")],
+        ]
+      : [
+          ["Response profile", formatReviewOption("phResponseProfile")],
+          ["Rated maximum house power", formatValue("housePower")],
+          ["Maximum heating outdoor temperature", formatValue("houseOutdoorMax")],
+          ["Temperature reaction", formatValue("phKp")],
+          ["Comfort below setpoint", formatValue("phComfortBelow")],
+          ["Comfort above setpoint", formatValue("phComfortAbove")],
+        ];
+
+    const flowMode = String(getEntityValue("flowControlMode") || "");
+    const flowLines = [
+      ["Flowregeling", flowMode === "Manual PWM" ? "Handmatige iPWM" : "Flow setpoint"],
+      flowMode === "Manual PWM"
+        ? ["Manual iPWM", formatValue("manualIpwm")]
+        : ["Flow setpoint", formatValue("flowSetpoint")],
+    ];
+
+    const waterLines = [
+      ["Maximum water temperature", formatValue("maxWater")],
+      ["Trip threshold", formatValue("maxWaterTrip")],
+    ];
+
+    const silentLines = [
+      ["Window start", toTimeInputValue(getEntityValue("silentStartTime")) || "—"],
+      ["Window end", toTimeInputValue(getEntityValue("silentEndTime")) || "—"],
+      ["Silent max level", formatValue("silentMax")],
+      ["Day max level", formatValue("dayMax")],
+    ];
+
+    const renderReviewList = (lines) => `
+      <div class="oq-helper-review-list">
+        ${lines
+          .filter((line) => line && line[1])
+          .map(
+            ([label, value]) => `
+              <div class="oq-helper-review-row">
+                <span class="oq-helper-review-label">${escapeHtml(label)}</span>
+                <strong class="oq-helper-review-value">${escapeHtml(value)}</strong>
+              </div>
+            `,
+          )
+          .join("")}
+      </div>
+    `;
+
+    return `
+      <div class="oq-helper-fields oq-helper-fields--review">
+        <div class="oq-helper-review-column">
+          <article class="oq-helper-field oq-helper-field--review">
+            <h3>Verwarmingsstrategie</h3>
+            <p class="oq-helper-review-summary"><strong>${escapeHtml(strategyTitle)}</strong></p>
+            ${renderReviewList(strategyLines)}
+          </article>
+          <article class="oq-helper-field oq-helper-field--review">
+            <h3>Watertemperatuur</h3>
+            ${renderReviewList(waterLines)}
+          </article>
+        </div>
+        <div class="oq-helper-review-column">
+          <article class="oq-helper-field oq-helper-field--review">
+            <h3>Flowregeling</h3>
+            ${renderReviewList(flowLines)}
+          </article>
+          <article class="oq-helper-field oq-helper-field--review">
+            <h3>Silent mode</h3>
+            ${renderReviewList(silentLines)}
+          </article>
+        </div>
+      </div>
+    `;
   }
 
   function renderAppSummary() {
     const parts = [];
     parts.push(isCurveMode() ? "Heating Curve" : "Power House");
-
-    const behavior = String(getEntityValue("behavior") || "").trim();
-    if (behavior) {
-      parts.push(`gedrag ${behavior}`);
+    const profile = String(getEntityValue(isCurveMode() ? "curveControlProfile" : "phResponseProfile") || "").trim();
+    if (profile) {
+      parts.push(`profiel ${profile}`);
     }
-
-    const preset = String(getEntityValue("preset") || "").trim();
-    if (preset) {
-      parts.push(`preset ${preset}`);
+    const flowMode = String(getEntityValue("flowControlMode") || "").trim();
+    if (flowMode) {
+      parts.push(`flow ${flowMode === "Manual PWM" ? "handmatig" : "setpoint"}`);
+    }
+    if (flowMode === "Manual PWM" && hasEntity("manualIpwm")) {
+      parts.push(`iPWM ${formatValue("manualIpwm")}`);
+    } else if (hasEntity("flowSetpoint")) {
+      parts.push(`flow ${formatValue("flowSetpoint")}`);
     }
 
     if (hasEntity("dayMax")) {
@@ -2278,7 +3194,7 @@
       parts.push(`max water ${formatValue("maxWater")}`);
     }
 
-    return parts.filter(Boolean).join(", ") || state.summary;
+    return parts.filter(Boolean).join(", ") || "Quick Start-instellingen beschikbaar";
   }
 
   function hasEntity(key) {
@@ -3451,12 +4367,6 @@
               <p class="oq-helper-section-copy">Dit is de richting voor de pagina na Quick Start: compacte status bovenaan, het thermische beeld in het midden en de warmtepompen duidelijk als eersteklas onderdeel van het systeem.</p>
             </div>
             <div class="oq-overview-head-actions">
-              <button class="oq-helper-button oq-helper-button--ghost oq-overview-theme-toggle" type="button" data-oq-action="toggle-overview-theme">
-                ${state.overviewTheme === "light" ? "Gebruik donker overzicht" : "Gebruik licht overzicht"}
-              </button>
-              <button class="oq-helper-button oq-helper-button--ghost oq-overview-theme-toggle" type="button" data-oq-action="toggle-hp-visual">
-                ${state.hpVisualMode === "schematic" ? "Gebruik compacte HP-kaarten" : "Gebruik schematische HP-weergave"}
-              </button>
               <div class="oq-overview-status">
                 ${renderOverviewStatusChip("Strategie", strategyLabel, "blue")}
                 ${renderOverviewStatusChip("Control mode", getEntityStateText("controlModeLabel"), "neutral")}
@@ -3489,6 +4399,7 @@
                 ${renderTempRow("Kamertemperatuur", "roomTemp")}
                 ${renderTempRow("Kamer setpoint", "roomSetpoint")}
                 ${renderTempRow("Aanvoertemperatuur", "supplyTemp")}
+                ${renderTempRow("Retourtemperatuur", "hp1WaterIn")}
                 ${renderTempRow(isCurveMode() ? "Curve target" : "Max watertemperatuur", targetKey)}
               </div>
             </section>
@@ -3770,7 +4681,7 @@
   }
 
   function patchOverviewDom() {
-    if (!state.root || !state.helperOpen || state.appView !== "overview" || state.hpVisualMode !== "schematic") {
+    if (!state.root || state.appView !== "overview" || state.hpVisualMode !== "schematic") {
       return false;
     }
 
@@ -3827,6 +4738,7 @@
           ${renderTempRow("Kamertemperatuur", "roomTemp")}
           ${renderTempRow("Kamer setpoint", "roomSetpoint")}
           ${renderTempRow("Aanvoertemperatuur", "supplyTemp")}
+          ${renderTempRow("Retourtemperatuur", "hp1WaterIn")}
           ${renderTempRow(isCurveMode() ? "Curve target" : "Max watertemperatuur", targetKey)}
         </div>
       `;
@@ -3859,63 +4771,15 @@
       <section class="oq-helper-panel">
         <p class="oq-helper-label">Instellingen</p>
         <h2 class="oq-helper-section-title">Regeling, limieten en stille modus</h2>
-        <p class="oq-helper-section-copy">Alle velden hieronder schrijven direct naar de echte OpenQuatt-entities. De app ordent ze in logische secties en laat uitleg pas zien wanneer je die nodig hebt.</p>
+        <p class="oq-helper-section-copy">De waarden hieronder zijn direct gekoppeld aan de echte OpenQuatt-instellingen. Wijzigingen hebben direct invloed op de werking van OpenQuatt.</p>
         <div class="oq-helper-settings-stack">
+          ${renderSettingsSystemSection()}
           ${renderSettingsFlowSection()}
           ${renderSettingsHeatingSection()}
           ${renderSettingsWaterSection()}
           ${renderSettingsCompressorSection()}
           ${renderSettingsSilentSection()}
         </div>
-      </section>
-    `;
-  }
-
-  function renderAdvancedList() {
-    if (!state.advancedOpen) {
-      return "";
-    }
-
-    const groups = ADVANCED_GROUPS
-      .map((group) => `
-        <article class="oq-helper-advanced-group">
-          <h3>${escapeHtml(group.title)}</h3>
-          <p>${escapeHtml(group.copy)}</p>
-          <ul>${group.fields.map((name) => `<li>${escapeHtml(name)}</li>`).join("")}</ul>
-        </article>
-      `)
-      .join("");
-
-    return `
-      <div class="oq-helper-advanced">
-        <p>Dit zijn de huidige technische kandidaten voor de latere advanced-weergave. Voor nu blijven ze in de native entitylijst hieronder, zodat het testpad stabiel blijft terwijl we structuur en wording aanscherpen.</p>
-        <div class="oq-helper-advanced-grid">${groups}</div>
-      </div>
-    `;
-  }
-
-  function renderNativeFallbackPanel() {
-    return `
-      <section class="oq-helper-panel oq-helper-native-panel">
-        <div class="oq-helper-native-head">
-          <div>
-            <p class="oq-helper-label">ESPHome Fallback</p>
-            <h2 class="oq-helper-section-title">Technische fallback blijft beschikbaar, maar uit beeld</h2>
-            <p class="oq-helper-section-copy">De custom OpenQuatt-app hoort de primaire ervaring te zijn. De ruwe ESPHome-UI blijft hier beschikbaar als debug- en uitwijklaag, standaard verborgen zodat hij niet meer concurreert met de hoofdinterface.</p>
-          </div>
-          <div class="oq-helper-actions oq-helper-actions--compact">
-            <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="toggle-native">
-              ${state.nativeOpen ? "Verberg ESPHome fallback" : "Toon ESPHome fallback"}
-            </button>
-            <button class="oq-helper-button" type="button" data-oq-action="jump-native">
-              ${state.nativeOpen ? "Ga naar fallback" : "Open en ga naar fallback"}
-            </button>
-          </div>
-        </div>
-        <p class="oq-helper-native-state">
-          <strong>${state.nativeOpen ? "Nu zichtbaar." : "Standaard verborgen."}</strong>
-          ${state.nativeOpen ? " Gebruik dit voor ruwe entities, diagnose en tijdelijke gaten terwijl het OpenQuatt-appoppervlak verder groeit." : " Zo blijven Quick Start, overzicht en instellingen visueel primair, terwijl de native fallback eronder behouden blijft."}
-        </p>
       </section>
     `;
   }
@@ -3930,80 +4794,40 @@
       : state.appView === "settings"
         ? renderSettingsView()
         : `
-          <div class="oq-helper-step-tabs">
-            ${renderStepTabs()}
-          </div>
-          <div class="oq-helper-grid">
+          <div class="oq-helper-grid oq-helper-grid--quickstart">
             ${renderActiveStep()}
-            <section class="oq-helper-panel">
-              <p class="oq-helper-label">Live samenvatting</p>
-              <div class="oq-helper-status">
-                <span class="oq-helper-chip">
-                  <strong>Fase:</strong> ${escapeHtml(state.stage)}
-                </span>
-                <span class="oq-helper-chip">
-                  <strong>Status:</strong> ${state.complete ? "Gereed" : "Bezig"}
-                </span>
-                <span class="oq-helper-chip">
-                  <strong>Mode:</strong> ${escapeHtml(isCurveMode() ? "Heating Curve" : "Power House")}
-                </span>
-              </div>
-              <div class="oq-helper-summary">${escapeHtml(renderAppSummary())}</div>
-              ${state.controlNotice ? `<p class="oq-helper-notice">${escapeHtml(state.controlNotice)}</p>` : ""}
-              ${state.controlError ? `<p class="oq-helper-error">${escapeHtml(state.controlError)}</p>` : ""}
-              <div class="oq-helper-actions">
-                <button class="oq-helper-button oq-helper-button--primary" type="button" data-oq-action="apply" ${state.busyAction ? "disabled" : ""}>
-                  ${state.busyAction === "apply" ? "Toepassen..." : "Toepassen en afronden"}
-                </button>
-                <button class="oq-helper-button" type="button" data-oq-action="reset" ${state.busyAction ? "disabled" : ""}>
-                  ${state.busyAction === "reset" ? "Resetten..." : "Opnieuw beginnen"}
-                </button>
-                <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="jump-native">
-                  Naar technische fallback
-                </button>
-              </div>
-            </section>
-            <section class="oq-helper-panel">
-              <p class="oq-helper-label">Stapoverzicht</p>
-              <div class="oq-helper-fields">
-                ${renderStepOverview()}
-              </div>
-            </section>
+            ${renderQuickStartSidebar()}
           </div>
         `;
 
-    const contentWithFallback = `${mainContent}${renderNativeFallbackPanel()}`;
-
     state.root.innerHTML = `
-      <div class="oq-helper-shell">
+      <div class="oq-helper-shell${state.overviewTheme === "dark" ? " oq-helper-shell--dark" : ""}">
         <div class="oq-helper-card">
           <div class="oq-helper-head">
             <div class="oq-helper-brand">
               <div class="oq-helper-logo-lockup">
                 ${LOGO_MARKUP}
                 <div class="oq-helper-brand-copy">
-                  <p class="oq-helper-kicker">OpenQuatt app preview</p>
-                  <h1>OpenQuatt app-voorbeeld</h1>
+                  <h1>Regeling, inzicht en tuning</h1>
                 </div>
               </div>
-              <p class="oq-helper-lead">Nieuwe gebruikers starten met Quick Start. Daarna hoort het device te landen op een strak OpenQuatt-overzicht met control mode, flow, temperaturen en de warmtepompen duidelijk in beeld. Instellingen moeten gestructureerd, uitlegbaar en aanpasbaar blijven.</p>
+              <p class="oq-helper-lead">Quick Start, live overzicht en instellingen komen hier samen in één rustige interface voor je OpenQuatt-device.</p>
             </div>
-            <button class="oq-helper-toggle" type="button" data-oq-action="toggle-helper">
-              ${state.helperOpen ? "Helper inklappen" : "Helper uitklappen"}
-            </button>
+            ${renderHeaderStatus()}
           </div>
-          ${state.helperOpen ? `
-            ${renderAppNav()}
-            ${contentWithFallback}
-          ` : ""}
+          ${renderAppNav()}
+          ${mainContent}
         </div>
       </div>
+      ${renderUpdateModal()}
     `;
     state.settingsRenderSignature = state.appView === "settings" ? getSettingsRenderSignature() : "";
+    state.headerRenderSignature = getHeaderRenderSignature();
     clearLegacyMotionVariables();
     syncTechTooltipLayers();
     refreshMotionTargets();
     syncNativeVisibility();
+    bindHeaderDevControls();
   }
 
   function escapeHtml(value) {
