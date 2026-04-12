@@ -359,6 +359,7 @@
     entities: {},
     settingsInfoOpen: "",
     settingsInteractionLock: false,
+    quickStartRenderSignature: "",
     settingsRenderSignature: "",
     headerRenderSignature: "",
     drafts: {},
@@ -836,10 +837,6 @@
       state.overviewTheme,
       state.hpVisualMode,
       getInstallationLabel(),
-      formatUptimeFromMeta(),
-      formatDeviceClock(),
-      getDeviceIpAddress(),
-      getUpdateStatus(),
       getEntitySignatureFragment("firmwareUpdate"),
       getEntitySignatureFragment("firmwareUpdateChannel"),
     ].join("|");
@@ -868,6 +865,20 @@
         `).join("")}
       </div>
     `;
+  }
+
+  function patchHeaderDom() {
+    if (!state.root) {
+      return false;
+    }
+
+    const statusGrid = state.root.querySelector(".oq-helper-status-grid");
+    if (!statusGrid) {
+      return Boolean(state.root.querySelector(".oq-helper-hub"));
+    }
+
+    statusGrid.outerHTML = renderHeaderStatusGrid();
+    return true;
   }
 
   function renderHeaderDevControls() {
@@ -1248,9 +1259,17 @@
         render();
         return;
       }
+      patchHeaderDom();
       if (state.appView === "settings") {
         const nextSettingsSignature = getSettingsRenderSignature();
         if (nextSettingsSignature !== state.settingsRenderSignature) {
+          render();
+        }
+        return;
+      }
+      if (state.appView === QUICK_START_VIEW) {
+        const nextQuickStartSignature = getQuickStartRenderSignature();
+        if (nextQuickStartSignature !== state.quickStartRenderSignature) {
           render();
         }
         return;
@@ -1315,6 +1334,23 @@
       state.controlError,
       state.settingsInfoOpen,
       ...SETTINGS_KEYS.map(getEntitySignatureFragment),
+    ].join("|");
+  }
+
+  function getQuickStartRenderSignature() {
+    return [
+      state.appView,
+      state.loadingEntities ? "loading" : "ready",
+      state.currentStep,
+      state.complete ? "complete" : "incomplete",
+      state.controlNotice,
+      state.controlError,
+      state.busyAction,
+      getEntitySignatureFragment("setupComplete"),
+      getEntitySignatureFragment("strategy"),
+      ...FLOW_SETTING_KEYS.map(getEntitySignatureFragment),
+      ...LIMIT_KEYS.map(getEntitySignatureFragment),
+      ...(isCurveMode() ? CURVE_POINTS.map((point) => point.key) : POWER_HOUSE_KEYS).map(getEntitySignatureFragment),
     ].join("|");
   }
 
@@ -2131,8 +2167,8 @@
     ` : "";
     return `
       <div class="oq-settings-curve-grid">
-        ${CURVE_POINTS.map((point) => renderSettingsNumberField(point.key, `Curve Tsupply @ ${point.label}`, `Aanvoertemperatuurdoel bij ${point.label} buitentemperatuur.`)).join("")}
-        ${renderSettingsNumberField("curveFallbackSupply", "Fallback aanvoertemperatuur zonder buitentemp", "Aanvoertemperatuur die gebruikt wordt als de buitentemperatuursensor niet beschikbaar is.", "oq-settings-field--curve-fallback-card", { footerMarkup: suggestionMarkup })}
+        ${CURVE_POINTS.map((point) => renderSettingsNumberField(point.key, `Aanvoertemp. bij ${point.label}`, `Doelaanvoertemperatuur bij ${point.label} buitentemperatuur.`)).join("")}
+        ${renderSettingsNumberField("curveFallbackSupply", "Fallback-aanvoertemperatuur zonder buitentemperatuur", "Aanvoertemperatuur die gebruikt wordt als de buitentemperatuursensor niet beschikbaar is.", "oq-settings-field--curve-fallback-card", { footerMarkup: suggestionMarkup })}
       </div>
     `;
   }
@@ -2549,9 +2585,6 @@
           <div class="oq-settings-curve-shell">
             ${renderCurveGraph()}
           </div>
-          <div class="oq-settings-grid oq-settings-grid--curve-fallback">
-            ${renderSettingsNumberField("curveFallbackSupply", "Fallback aanvoertemperatuur zonder buitentemp", "Aanvoertemperatuur die gebruikt wordt als de buitentemperatuursensor niet beschikbaar is.", "oq-settings-field--compact")}
-          </div>
           ${renderSettingsCurveInputs()}
         </div>
       `
@@ -2704,10 +2737,10 @@
     return `
       <div class="oq-helper-curve-shell">
         <div class="oq-helper-curve-copy">
-          <h3>Heating curve editor</h3>
+          <h3>Stooklijn-editor</h3>
           <p>Stel de verwarmingscurve in door de punten te verslepen en zo de zes vereiste aanvoertemperaturen te bepalen.</p>
         </div>
-        <svg class="oq-helper-curve-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Heating curve editor">
+        <svg class="oq-helper-curve-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Stooklijn-editor">
           ${gridLines}
           <polyline points="${linePoints}" class="oq-helper-curve-line" />
           ${circles}
@@ -2737,8 +2770,8 @@
     ` : "";
     return `
       <div class="oq-helper-curve-grid">
-        ${CURVE_POINTS.map((point) => renderNumberInputField(point.key, `Curve Tsupply @ ${point.label}`, `Supply target bij ${point.label} buitentemperatuur.`)).join("")}
-        ${renderNumberInputField("curveFallbackSupply", "Fallback aanvoertemperatuur zonder buitentemp", "Aanvoertemperatuur die gebruikt wordt als de buitentemperatuursensor niet beschikbaar is.", { footerMarkup: suggestionMarkup })}
+        ${CURVE_POINTS.map((point) => renderNumberInputField(point.key, `Aanvoertemp. bij ${point.label}`, `Doelaanvoertemperatuur bij ${point.label} buitentemperatuur.`)).join("")}
+        ${renderNumberInputField("curveFallbackSupply", "Fallback-aanvoertemperatuur zonder buitentemperatuur", "Aanvoertemperatuur die gebruikt wordt als de buitentemperatuursensor niet beschikbaar is.", { footerMarkup: suggestionMarkup })}
       </div>
     `;
   }
@@ -2993,13 +3026,13 @@
     const strategyLines = isCurveMode()
       ? [
           ["Control profile", formatReviewOption("curveControlProfile")],
-          ["Tsupply @ -20°C", formatValue("curveM20")],
-          ["Tsupply @ -10°C", formatValue("curveM10")],
-          ["Tsupply @ 0°C", formatValue("curve0")],
-          ["Tsupply @ 5°C", formatValue("curve5")],
-          ["Tsupply @ 10°C", formatValue("curve10")],
-          ["Tsupply @ 15°C", formatValue("curve15")],
-          ["Fallback Tsupply", formatValue("curveFallbackSupply")],
+          ["Aanvoer bij -20°C", formatValue("curveM20")],
+          ["Aanvoer bij -10°C", formatValue("curveM10")],
+          ["Aanvoer bij 0°C", formatValue("curve0")],
+          ["Aanvoer bij 5°C", formatValue("curve5")],
+          ["Aanvoer bij 10°C", formatValue("curve10")],
+          ["Aanvoer bij 15°C", formatValue("curve15")],
+          ["Fallback-aanvoer", formatValue("curveFallbackSupply")],
         ]
       : [
           ["Response profile", formatReviewOption("phResponseProfile")],
@@ -4726,6 +4759,7 @@
       </div>
       ${renderUpdateModal()}
     `;
+    state.quickStartRenderSignature = state.appView === QUICK_START_VIEW ? getQuickStartRenderSignature() : "";
     state.settingsRenderSignature = state.appView === "settings" ? getSettingsRenderSignature() : "";
     state.headerRenderSignature = getHeaderRenderSignature();
     clearLegacyMotionVariables();
