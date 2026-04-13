@@ -789,6 +789,10 @@
     if (isFirmwareUpdateAvailable()) {
       return "Beschikbaar";
     }
+    const relation = getFirmwareVersionRelation();
+    if (relation !== null && relation <= 0) {
+      return "Actueel";
+    }
     const meta = getDeviceMeta();
     if (typeof meta.updateLabel === "string" && meta.updateLabel.trim()) {
       return meta.updateLabel.trim();
@@ -946,7 +950,11 @@
   function getFirmwareUpdateVersions() {
     const entity = getFirmwareUpdateEntity() || {};
     const fallbackCurrent = String(state.entities.projectVersionText?.state || state.entities.projectVersionText?.value || "").trim();
-    const latest = isFirmwareEntityAlignedWithChannel(entity) ? getFirmwareLatestVersion(entity) : "";
+    let latest = isFirmwareEntityAlignedWithChannel(entity) ? getFirmwareLatestVersion(entity) : "";
+    const relation = latest ? compareFirmwareVersions(latest, String(entity.current_version || "").trim() || fallbackCurrent || "—") : null;
+    if (!isFirmwareUpdateChecking() && relation !== null && relation <= 0) {
+      latest = "";
+    }
     return {
       current: String(entity.current_version || "").trim() || fallbackCurrent || "—",
       latest: latest || "—",
