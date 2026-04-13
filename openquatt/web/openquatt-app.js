@@ -6,6 +6,8 @@
     main: "https://github.com/jeroen85/OpenQuatt/releases/latest",
     dev: "https://github.com/jeroen85/OpenQuatt/releases/tag/dev-latest",
   };
+  const OFFICIAL_ESPHOME_UI_URL = "https://oi.esphome.io/v3/www.js";
+  const ENTITY_REFRESH_CONCURRENCY = 4;
   const STRATEGY_OPTION_POWER_HOUSE = "Power House";
   const STRATEGY_OPTION_CURVE = "Water Temperature Control (heating curve)";
 
@@ -357,6 +359,8 @@
     mounted: false,
     root: null,
     nativeApp: null,
+    nativeFrontendLoaded: false,
+    nativeFrontendLoading: false,
     pollTimer: null,
     summary: "",
     stage: "Laden...",
@@ -560,13 +564,14 @@
   }
 
   function mountWhenReady() {
-    const app = document.querySelector("esp-app");
+    let app = document.querySelector("esp-app");
     if (!app) {
-      window.setTimeout(mountWhenReady, 250);
-      return;
+      app = document.createElement("esp-app");
+      document.body.appendChild(app);
     }
 
     state.nativeApp = app;
+    state.nativeFrontendLoaded = Array.from(document.scripts).some((script) => script.src === OFFICIAL_ESPHOME_UI_URL);
 
     if (!state.mounted) {
       mountPanel(app);
@@ -599,6 +604,55 @@
     clearLegacyMotionVariables();
     startMotionLoop();
     render();
+  }
+
+  function loadScriptOnce(src) {
+    return new Promise((resolve, reject) => {
+      if (!src) {
+        resolve();
+        return;
+      }
+
+      const existing = Array.from(document.scripts).find((script) => script.src === src);
+      if (existing) {
+        if (existing.dataset.loaded === "true") {
+          resolve();
+          return;
+        }
+
+        existing.addEventListener("load", () => resolve(), { once: true });
+        existing.addEventListener("error", (event) => reject(event), { once: true });
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = src;
+      script.async = false;
+      script.addEventListener("load", () => {
+        script.dataset.loaded = "true";
+        resolve();
+      }, { once: true });
+      script.addEventListener("error", (event) => reject(event), { once: true });
+      document.head.appendChild(script);
+    });
+  }
+
+  async function ensureNativeFrontendLoaded() {
+    if (state.nativeFrontendLoaded || state.nativeFrontendLoading) {
+      return;
+    }
+
+    state.nativeFrontendLoading = true;
+    try {
+      await loadScriptOnce(OFFICIAL_ESPHOME_UI_URL);
+      state.nativeFrontendLoaded = true;
+    } catch (error) {
+      state.controlError = `ESPHome fallback kon niet worden geladen. ${error.message || error}`;
+      state.nativeOpen = false;
+      render();
+    } finally {
+      state.nativeFrontendLoading = false;
+    }
   }
 
   function bindHeaderDevControls() {
@@ -1490,9 +1544,14 @@
   }
 
   async function refreshEntities(keys, detail = "state") {
-    const results = await Promise.allSettled(
-      keys.map(async (key) => ({ key, payload: await fetchEntityPayload(key, detail) }))
-    );
+    const results = [];
+    for (let index = 0; index < keys.length; index += ENTITY_REFRESH_CONCURRENCY) {
+      const batch = keys.slice(index, index + ENTITY_REFRESH_CONCURRENCY);
+      const batchResults = await Promise.allSettled(
+        batch.map(async (key) => ({ key, payload: await fetchEntityPayload(key, detail) }))
+      );
+      results.push(...batchResults);
+    }
 
     let firstError = "";
     results.forEach((result, index) => {
@@ -1800,6 +1859,9 @@
 
     if (action === "select-surface") {
       state.nativeOpen = button.dataset.surface === "native";
+      if (state.nativeOpen) {
+        void ensureNativeFrontendLoaded();
+      }
       render();
       window.requestAnimationFrame(() => {
         if (state.nativeOpen) {

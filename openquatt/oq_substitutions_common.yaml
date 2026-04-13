@@ -19,7 +19,7 @@ hp_perf_map_header: "openquatt/includes/hp_perf_map.h" # C++ performance-map hea
 thermal_request_logic_header: "openquatt/includes/oq_thermal_request_logic.h" # Shared C++ helper include for request/control glue.
 heating_curve_logic_header: "openquatt/includes/oq_heating_curve_logic.h" # Shared C++ helper include for curve runtime state and naming.
 oq_webserver_css_url: ""                            # Optional external CSS for the ESPHome web UI.
-oq_webserver_js_url: "https://oi.esphome.io/v3/www.js" # Default ESPHome v3 frontend script.
+oq_webserver_js_url: ""                               # Custom OpenQuatt app is primary; load ESPHome fallback lazily on demand.
 
 # ----------------------------
 # HARDWARE
