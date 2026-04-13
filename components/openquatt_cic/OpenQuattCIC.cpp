@@ -224,9 +224,7 @@ bool OpenQuattCIC::fetch_and_parse_(const std::string &url, FetchResult *result)
     }
     client_open = true;
 
-    App.feed_wdt();
     const int content_length = esp_http_client_fetch_headers(client);
-    App.feed_wdt();
 
     result->status_code = esp_http_client_get_status_code(client);
     if (result->status_code != 200) {
@@ -244,10 +242,8 @@ bool OpenQuattCIC::fetch_and_parse_(const std::string &url, FetchResult *result)
 
     size_t total = 0;
     while (total < response_buffer.size()) {
-      App.feed_wdt();
       const int read_len =
           esp_http_client_read(client, reinterpret_cast<char *>(response_buffer.data() + total), response_buffer.size() - total);
-      App.feed_wdt();
 
       if (read_len < 0) {
         ESP_LOGW(TAG, "CIC HTTP read failed");
