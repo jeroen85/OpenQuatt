@@ -147,7 +147,6 @@ oq_debug_testing: !include
     debug_hp2_internal: "false"
     debug_secondary_hp_id: "hp2"
 oq_setup_status: !include oq_setup_status.yaml
-oq_debug_testing_duo: !include oq_debug_testing_duo.yaml
 oq_webserver: !include oq_webserver.yaml
 heatpump1: !include
   file: oq_HP_io.yaml

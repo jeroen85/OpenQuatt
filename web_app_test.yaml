@@ -1,0 +1,20 @@
+substitutions:
+  <<: !include openquatt/oq_substitutions_common.yaml
+  device_name: web-app-test
+  friendly_name: Web App Test Duo
+  esp_board: esp32-s3-devkitc-1
+  esp_flash_size: 4MB
+  esp_variant: esp32s3
+  uart_tx_pin: GPIO17
+  uart_rx_pin: GPIO18
+  uart_rts_pin: GPIO21
+  oq_ot_thermostat_in_pin: GPIO12
+  oq_ot_thermostat_out_pin: GPIO13
+  ds18b20_pin: GPIO2
+  oq_boiler_relay_pin: GPIO47
+
+esphome:
+  build_path: build/web_app_test
+
+packages:
+  openquatt_base: !include openquatt_base.yaml
