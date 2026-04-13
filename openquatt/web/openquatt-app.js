@@ -371,6 +371,7 @@
     appView: "",
     overviewTheme: getStoredOverviewTheme(),
     hpVisualMode: getStoredHpVisualMode(),
+    hpLayoutMode: getStoredHpLayoutMode(),
     busyAction: "",
     controlError: "",
     controlNotice: "",
@@ -460,6 +461,24 @@
     state.hpVisualMode = mode === "compact" ? "compact" : "schematic";
     try {
       window.localStorage.setItem("oq-hp-visual-mode", state.hpVisualMode);
+    } catch (_error) {
+      // Ignore storage failures in embedded browsers.
+    }
+  }
+
+  function getStoredHpLayoutMode() {
+    try {
+      const stored = window.localStorage.getItem("oq-hp-layout-mode");
+      return stored === "focus-hp1" || stored === "focus-hp2" ? stored : "equal";
+    } catch (_error) {
+      return "equal";
+    }
+  }
+
+  function setHpLayoutMode(mode) {
+    state.hpLayoutMode = mode === "focus-hp1" || mode === "focus-hp2" ? mode : "equal";
+    try {
+      window.localStorage.setItem("oq-hp-layout-mode", state.hpLayoutMode);
     } catch (_error) {
       // Ignore storage failures in embedded browsers.
     }
@@ -1306,9 +1325,6 @@
             <button class="oq-helper-button oq-helper-button--ghost oq-helper-hub-action" type="button" data-oq-action="toggle-overview-theme">
               ${state.overviewTheme === "light" ? "Donkere modus" : "Lichte modus"}
             </button>
-            <button class="oq-helper-button oq-helper-button--ghost oq-helper-hub-action" type="button" data-oq-action="toggle-hp-visual">
-              ${state.hpVisualMode === "schematic" ? "Compacte HP-kaarten" : "Schematische HP-kaarten"}
-            </button>
           </div>
         </div>
         <div class="oq-helper-hub-block">
@@ -1881,8 +1897,14 @@
       return;
     }
 
-    if (action === "toggle-hp-visual") {
-      setHpVisualMode(state.hpVisualMode === "schematic" ? "compact" : "schematic");
+    if (action === "select-hp-visual") {
+      setHpVisualMode(button.dataset.hpVisual === "compact" ? "compact" : "schematic");
+      render();
+      return;
+    }
+
+    if (action === "select-hp-layout") {
+      setHpLayoutMode(button.dataset.hpLayout || "equal");
       render();
       return;
     }
@@ -4804,7 +4826,7 @@
     `;
   }
 
-  function renderHeatPumpPanel(title, keys, accent) {
+  function renderHeatPumpPanel(title, keys, accent, emphasis = "normal") {
     if (!hasEntity(keys.power)) {
       return "";
     }
@@ -4816,7 +4838,7 @@
 
     if (state.hpVisualMode === "schematic") {
       return `
-        <section class="oq-overview-hp oq-overview-hp--${escapeHtml(accent)}" data-oq-hp-panel="${escapeHtml(title)}">
+        <section class="oq-overview-hp oq-overview-hp--${escapeHtml(accent)} oq-overview-hp--${escapeHtml(emphasis)}" data-oq-hp-panel="${escapeHtml(title)}">
           <div class="oq-overview-hp-head">
             <div>
               <h3>${escapeHtml(title)}</h3>
@@ -4831,7 +4853,7 @@
     }
 
     return `
-      <section class="oq-overview-hp oq-overview-hp--${escapeHtml(accent)}" data-oq-hp-panel="${escapeHtml(title)}">
+      <section class="oq-overview-hp oq-overview-hp--${escapeHtml(accent)} oq-overview-hp--${escapeHtml(emphasis)}" data-oq-hp-panel="${escapeHtml(title)}">
         <div class="oq-overview-hp-head">
           <div>
             <p class="oq-helper-label">${escapeHtml(title)}</p>
@@ -4873,9 +4895,65 @@
     return HP_PANEL_CONFIGS.filter((panel) => hasEntity(panel.keys.power));
   }
 
+  function getEffectiveHpLayoutMode(heatPumpPanels) {
+    if (!Array.isArray(heatPumpPanels) || heatPumpPanels.length < 2) {
+      return "equal";
+    }
+    return state.hpLayoutMode === "focus-hp1" || state.hpLayoutMode === "focus-hp2" ? state.hpLayoutMode : "equal";
+  }
+
+  function getHeatPumpPanelEmphasis(index, heatPumpPanels, layoutMode) {
+    if (!Array.isArray(heatPumpPanels) || heatPumpPanels.length < 2) {
+      return "normal";
+    }
+    if (layoutMode === "focus-hp1") {
+      return index === 0 ? "focus" : "muted";
+    }
+    if (layoutMode === "focus-hp2") {
+      return index === 1 ? "focus" : "muted";
+    }
+    return "normal";
+  }
+
+  function renderHeatPumpControls(heatPumpPanels) {
+    if (!Array.isArray(heatPumpPanels) || heatPumpPanels.length === 0) {
+      return "";
+    }
+
+    const layoutMode = getEffectiveHpLayoutMode(heatPumpPanels);
+    return `
+      <div class="oq-overview-hp-tools">
+        <div class="oq-overview-hp-tools-copy">
+          <h3>Warmtepompen</h3>
+          <p>Kies hier hoe je de warmtepompkaarten wilt bekijken.</p>
+        </div>
+        <div class="oq-overview-hp-tool-groups">
+          <div class="oq-overview-hp-tool-group">
+            <span class="oq-overview-hp-tool-label">Weergave</span>
+            <div class="oq-overview-hp-tool-switches">
+              <button class="oq-overview-hp-tool-chip${state.hpVisualMode === "schematic" ? " is-active" : ""}" type="button" data-oq-action="select-hp-visual" data-hp-visual="schematic">Schematisch</button>
+              <button class="oq-overview-hp-tool-chip${state.hpVisualMode === "compact" ? " is-active" : ""}" type="button" data-oq-action="select-hp-visual" data-hp-visual="compact">Compact</button>
+            </div>
+          </div>
+          ${heatPumpPanels.length > 1 ? `
+            <div class="oq-overview-hp-tool-group">
+              <span class="oq-overview-hp-tool-label">Focus</span>
+              <div class="oq-overview-hp-tool-switches">
+                <button class="oq-overview-hp-tool-chip${layoutMode === "equal" ? " is-active" : ""}" type="button" data-oq-action="select-hp-layout" data-hp-layout="equal">Gelijk</button>
+                <button class="oq-overview-hp-tool-chip${layoutMode === "focus-hp1" ? " is-active" : ""}" type="button" data-oq-action="select-hp-layout" data-hp-layout="focus-hp1">Focus HP1</button>
+                <button class="oq-overview-hp-tool-chip${layoutMode === "focus-hp2" ? " is-active" : ""}" type="button" data-oq-action="select-hp-layout" data-hp-layout="focus-hp2">Focus HP2</button>
+              </div>
+            </div>
+          ` : ""}
+        </div>
+      </div>
+    `;
+  }
+
   function renderOverviewView() {
     const strategyLabel = isCurveMode() ? "Stooklijn" : "Power House";
     const heatPumpPanels = getHeatPumpPanels();
+    const hpLayoutMode = getEffectiveHpLayoutMode(heatPumpPanels);
     const outsideTempKey = getOverviewOutsideTempKey();
     const returnTempKey = getOverviewReturnTempKey();
 
@@ -4919,8 +4997,9 @@
               </div>
             </section>
           </div>
-          <div class="oq-overview-hp-grid ${heatPumpPanels.length === 1 ? "oq-overview-hp-grid--single" : ""}">
-            ${heatPumpPanels.map((panel) => renderHeatPumpPanel(panel.title, panel.keys, panel.accent)).join("")}
+          ${renderHeatPumpControls(heatPumpPanels)}
+          <div class="oq-overview-hp-grid ${heatPumpPanels.length === 1 ? "oq-overview-hp-grid--single" : ""} ${heatPumpPanels.length > 1 ? `oq-overview-hp-grid--${hpLayoutMode}` : ""}">
+            ${heatPumpPanels.map((panel, index) => renderHeatPumpPanel(panel.title, panel.keys, panel.accent, getHeatPumpPanelEmphasis(index, heatPumpPanels, hpLayoutMode))).join("")}
           </div>
         </div>
       </section>
@@ -5262,10 +5341,19 @@
       return false;
     }
 
+    const hpLayoutMode = getEffectiveHpLayoutMode(heatPumpPanels);
     hpGrid.classList.toggle("oq-overview-hp-grid--single", heatPumpPanels.length === 1);
-    heatPumpPanels.forEach((panel) => {
+    hpGrid.classList.toggle("oq-overview-hp-grid--equal", heatPumpPanels.length > 1 && hpLayoutMode === "equal");
+    hpGrid.classList.toggle("oq-overview-hp-grid--focus-hp1", heatPumpPanels.length > 1 && hpLayoutMode === "focus-hp1");
+    hpGrid.classList.toggle("oq-overview-hp-grid--focus-hp2", heatPumpPanels.length > 1 && hpLayoutMode === "focus-hp2");
+    heatPumpPanels.forEach((panel, index) => {
+      const panelNode = board.querySelector(`[data-oq-hp-panel="${panel.title}"]`);
+      if (panelNode) {
+        panelNode.classList.remove("oq-overview-hp--normal", "oq-overview-hp--focus", "oq-overview-hp--muted");
+        panelNode.classList.add(`oq-overview-hp--${getHeatPumpPanelEmphasis(index, heatPumpPanels, hpLayoutMode)}`);
+      }
       patchHeatPumpPanel(
-        board.querySelector(`[data-oq-hp-panel="${panel.title}"]`),
+        panelNode,
         panel.title,
         panel.keys,
         panel.accent,
