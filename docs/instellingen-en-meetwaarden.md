@@ -243,19 +243,16 @@ Belangrijke instellingen en signalen:
 
 Dit is vaak de belangrijkste groep bij onverklaarbaar gedrag. Als de geselecteerde bron niet klopt, helpt fijnregelen vrijwel nooit.
 
-Voor `Outside Temperature Source` is `Auto` de aanbevolen optie. OpenQuatt kiest dan niet simpelweg de koudste geldige bron, maar de meest betrouwbare.
-
-Als een buitenunit net actief wordt, neemt `Auto` die lokale meting niet meteen over. De sensor krijgt eerst kort de tijd om te stabiliseren, zodat een door zon of stilstand vertekende opstartwaarde niet direct de regeling omgooit. Daarna mag de actieve buitenunitmeting wel leidend worden, maar OpenQuatt begrenst nog steeds abrupte warme sprongen ten opzichte van een geldige HA-buitentemperatuur.
+Voor `Outside Temperature Source` is `Auto` de aanbevolen optie. OpenQuatt kiest dan de laagste geldige bron uit de beschikbare buitenmetingen. Daarmee blijft de regeling robuust tegen een bron die tijdelijk te warm uitvalt door zon, stilstand of lokale opwarming.
 
 In de lokale Duo-aggregatie kijkt OpenQuatt sinds `dev` explicieter naar de kwaliteit van de twee HP-metingen:
 
-- een buitenmeting van een HP die actief in `Heating` of `Cooling` draait krijgt voorrang boven een idle HP-meting
-- als beide HP's actief zijn, gebruikt OpenQuatt de laagste van de twee actieve metingen
-- als alle HP's idle zijn, gebruikt OpenQuatt bij voorkeur de HA-buitentemperatuur als die is geconfigureerd en een geldige waarde levert
-- alleen als HA niet beschikbaar is, gebruikt OpenQuatt het gemiddelde van de geldige lokale metingen als fallback
+- een buitenmeting van een HP die actief in `Heating` of `Cooling` draait krijgt in de lokale Duo-aggregatie voorrang boven een idle HP-meting
+- als beide HP's actief zijn, gebruikt OpenQuatt lokaal de laagste van de twee actieve metingen
+- als alle HP's idle zijn, gebruikt de lokale Duo-aggregatie het gemiddelde van de geldige lokale metingen
 - een lokale HP-buitenwaarde telt tijdelijk niet mee als die te lang exact stil blijft staan terwijl diezelfde warmtepomp verder nog wel verse activiteit laat zien
 
-Daardoor telt bij een Duo-installatie niet langer automatisch de koudste lokale sensor mee als één unit actief is en de andere nog een vertekende stilstandmeting geeft.
+Daarna kiest `Auto` de laagste geldige bron tussen die lokale aggregatie en de HA-buitentemperatuur, als HA beschikbaar is.
 
 Bij een Duo-installatie en `Flow Source = Outdoor unit` is er ook een extra keuze voor de lokale flowbepaling:
 

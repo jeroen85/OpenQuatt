@@ -1773,14 +1773,10 @@ views:
               flowmeters.
 
               Voor `Buitentemperatuur bron` is `Auto` de aanbevolen stand.
-              OpenQuatt kiest dan de meest betrouwbare bron: eerst actieve
-              buitenunitmetingen, daarna HA als beide units idle zijn mits die
-              bron is geconfigureerd en geldig is, en alleen als fallback idle
-              lokale metingen.
-              Als een buitenunit net actief wordt, wacht `Auto` bovendien kort
-              voordat die lokale meting wordt overgenomen.
-              Bij een geldige HA-buitentemperatuur begrenst `Auto` daarna ook
-              abrupte warme sprongen van de actieve lokale bron.
+              OpenQuatt kiest dan de laagste geldige bron tussen de lokale
+              Duo-aggregatie en de HA-buitentemperatuur, als die bron is
+              geconfigureerd en geldig is. Dat houdt de regeling robuust als
+              een bron tijdelijk te warm uitvalt door zon of lokale opwarming.
 
 
               </details>

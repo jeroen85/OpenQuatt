@@ -1672,13 +1672,10 @@ views:
               The local `HP1/HP2` aggregate is, in principle, the average of both flowmeters.
 
               For `Outside temperature source`, `Auto` is the recommended mode.
-              OpenQuatt then prefers the most trustworthy source: active
-              outdoor-unit readings first, HA input while both units are idle
-              if it is configured and valid, and idle local readings only as fallback.
-              When an outdoor unit has just become active, `Auto` also waits
-              briefly before switching to that local reading.
-              When HA outside temperature is valid, `Auto` also limits abrupt
-              warm jumps from the active local reading.
+              OpenQuatt then picks the lowest valid source between the local
+              Duo aggregate and HA outside temperature, when HA is configured
+              and valid. This keeps control robust when one source is
+              temporarily biased warm by sun or local heat.
 
               </details>
             text_only: true
