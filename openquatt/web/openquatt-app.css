@@ -4398,6 +4398,22 @@
   }
 }
 
+@media (max-width: 1200px) {
+  .oq-overview-hp-grid--focus-hp1,
+  .oq-overview-hp-grid--focus-hp2 {
+    grid-template-columns: 1fr;
+  }
+
+  .oq-hp-tech-footer {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .oq-hp-tech-footer-item span {
+    font-size: 0.76rem;
+    letter-spacing: 0.08em;
+  }
+}
+
 .oq-overview-meter {
   margin-top: 14px;
 }
@@ -4451,13 +4467,30 @@ esp-app.oq-native-app.oq-native-app--collapsed {
 
   .oq-helper-head {
     min-height: 0;
-    padding-right: 0;
+    padding-right: 76px;
   }
 
-  .oq-helper-hub {
+  .oq-helper-head h1 {
+    font-size: clamp(1.95rem, 7.5vw, 2.5rem);
+  }
+
+  .oq-helper-lead {
+    font-size: 0.96rem;
+    line-height: 1.5;
+  }
+
+  .oq-helper-hub:not(.oq-helper-hub--collapsed) {
     position: static;
     width: auto;
     margin-top: 18px;
+  }
+
+  .oq-helper-hub--collapsed {
+    position: absolute;
+    top: 0;
+    right: 0;
+    margin-top: 0;
+    z-index: 6;
   }
 
   .oq-helper-devdock,
@@ -4524,6 +4557,11 @@ esp-app.oq-native-app.oq-native-app--collapsed {
   .oq-overview-hp-stats,
   .oq-overview-hp-meta {
     grid-template-columns: 1fr;
+  }
+
+  .oq-overview-hp {
+    padding: 16px;
+    border-radius: 20px;
   }
 
   .oq-overview-hp-tools-head {
@@ -4607,6 +4645,10 @@ esp-app.oq-native-app.oq-native-app--collapsed {
     justify-content: flex-start;
   }
 
+  .oq-overview-hp-grid:not(.oq-overview-hp-grid--focus-hp1):not(.oq-overview-hp-grid--focus-hp2) .oq-overview-hp-card-action {
+    display: none;
+  }
+
   .oq-helper-curve-grid {
     grid-template-columns: 1fr;
   }
@@ -4643,5 +4685,93 @@ esp-app.oq-native-app.oq-native-app--collapsed {
 
   esp-app.oq-native-app {
     width: calc(100vw - 16px);
+  }
+}
+
+@media (max-width: 640px) {
+  #oq-helper-root {
+    width: calc(100vw - 12px);
+    margin-top: 8px;
+  }
+
+  .oq-helper-card,
+  .oq-helper-panel {
+    padding: 14px;
+  }
+
+  .oq-helper-head {
+    padding-bottom: 8px;
+    padding-right: 68px;
+  }
+
+  .oq-helper-logo-lockup {
+    gap: 10px;
+  }
+
+  .oq-helper-logo-mark {
+    width: clamp(96px, 28vw, 118px);
+  }
+
+  .oq-helper-head h1 {
+    font-size: clamp(1.72rem, 9vw, 2.1rem);
+    line-height: 1.03;
+  }
+
+  .oq-helper-lead,
+  .oq-helper-section-copy,
+  .oq-helper-field p {
+    font-size: 0.92rem;
+    line-height: 1.45;
+  }
+
+  .oq-helper-app-nav {
+    gap: 8px;
+    margin-top: 18px;
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+  }
+
+  .oq-helper-app-tab {
+    min-height: 38px;
+    padding: 0 12px;
+    font-size: 0.95rem;
+  }
+
+  .oq-helper-status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .oq-overview-chip {
+    font-size: 0.84rem;
+    padding: 8px 10px;
+  }
+
+  .oq-overview-top {
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .oq-overview-hp-head,
+  .oq-overview-hp-head-title {
+    gap: 10px;
+  }
+
+  .oq-overview-hp-card-action {
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 0.92rem;
+  }
+
+  .oq-hp-tech-footer {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .oq-hp-tech-footer-item {
+    padding: 11px 12px;
+  }
+
+  esp-app.oq-native-app {
+    width: calc(100vw - 12px);
   }
 }
