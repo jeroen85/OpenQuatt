@@ -620,6 +620,10 @@
     root.addEventListener("mouseout", handleSettingsInteractionEnd);
     root.addEventListener("pointerdown", handlePointerDown);
     state.root = root;
+    const initialUrlView = getUrlAppView();
+    if (initialUrlView) {
+      setAppView(initialUrlView, { syncMode: "replace", forceSync: true });
+    }
     clearLegacyMotionVariables();
     startMotionLoop();
     render();
