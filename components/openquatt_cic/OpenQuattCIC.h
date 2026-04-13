@@ -12,6 +12,9 @@
 #include "esphome/components/switch/switch.h"
 #include "esphome/components/text/text.h"
 #include "esp_http_client.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
+#include <freertos/task.h>
 
 namespace esphome {
 namespace openquatt_cic {
@@ -50,11 +53,47 @@ class OpenQuattCIC : public PollingComponent {
 
   void setup() override;
   void update() override;
+  void loop() override;
   void dump_config() override;
 
  protected:
-  bool fetch_and_parse_(const std::string &url, uint32_t now_ms);
-  bool parse_payload_(const uint8_t *data, size_t len);
+  struct MaybeFloat {
+    bool present{false};
+    float value{NAN};
+  };
+
+  struct MaybeBool {
+    bool present{false};
+    bool value{false};
+  };
+
+  struct ParsedPayload {
+    MaybeFloat water_supply_temp;
+    MaybeFloat flow_rate;
+    MaybeFloat cic_control_setpoint;
+    MaybeFloat cic_room_setpoint;
+    MaybeFloat cic_room_temp;
+    MaybeBool cic_ch_enabled;
+    MaybeBool cic_cooling_enabled;
+  };
+
+  struct FetchResult {
+    bool ready{false};
+    bool ok{false};
+    uint32_t completed_at_ms{0};
+    uint32_t duration_ms{0};
+    int status_code{0};
+    const char *error_status{nullptr};
+    ParsedPayload payload;
+  };
+
+  bool start_fetch_(const std::string &url);
+  static void fetch_task_trampoline_(void *arg);
+  void fetch_task_();
+  void finalize_fetch_();
+  bool fetch_and_parse_(const std::string &url, FetchResult *result);
+  bool parse_payload_(const uint8_t *data, size_t len, ParsedPayload *payload);
+  void apply_payload_(const ParsedPayload &payload);
   void mark_success_(uint32_t now_ms);
   void mark_failure_(uint32_t now_ms);
   void update_runtime_state_(uint32_t now_ms);
@@ -108,6 +147,11 @@ class OpenQuattCIC : public PollingComponent {
   uint32_t last_diag_publish_ms_{0};
 
   std::vector<uint8_t> response_buffer_{};
+  SemaphoreHandle_t fetch_mutex_{nullptr};
+  TaskHandle_t fetch_task_handle_{nullptr};
+  bool fetch_in_progress_{false};
+  std::string fetch_url_{};
+  FetchResult fetch_result_{};
 };
 
 }  // namespace openquatt_cic

@@ -19,6 +19,9 @@ void OpenQuattCIC::setup() {
   this->backoff_ms_ = this->backoff_start_ms_;
   this->next_ms_ = millis() + this->backoff_start_ms_;
   this->response_buffer_.assign(this->response_buffer_size_, 0U);
+  if (this->fetch_mutex_ == nullptr) {
+    this->fetch_mutex_ = xSemaphoreCreateMutex();
+  }
   this->publish_float_if_changed_(this->backoff_sensor_, this->backoff_start_ms_ / 1000.0f);
   this->publish_float_if_changed_(this->last_success_age_sensor_, NAN);
   this->publish_binary_if_changed_(this->feed_ok_, false);
@@ -48,9 +51,19 @@ void OpenQuattCIC::update() {
     return;
   }
 
-  (void) this->fetch_and_parse_(this->url_text_->state, now_ms);
-  this->update_runtime_state_(millis());
-  this->publish_diagnostics_if_due_(millis(), false);
+  if (this->fetch_in_progress_) {
+    this->publish_diagnostics_if_due_(now_ms, false);
+    return;
+  }
+
+  (void) this->start_fetch_(this->url_text_->state);
+  this->publish_diagnostics_if_due_(now_ms, false);
+}
+
+void OpenQuattCIC::loop() {
+  if (this->fetch_result_.ready) {
+    this->finalize_fetch_();
+  }
 }
 
 void OpenQuattCIC::dump_config() {
@@ -63,14 +76,121 @@ void OpenQuattCIC::dump_config() {
   ESP_LOGCONFIG(TAG, "  Feed error trip: %u", this->feed_error_trip_n_);
 }
 
-bool OpenQuattCIC::fetch_and_parse_(const std::string &url, uint32_t now_ms) {
+bool OpenQuattCIC::start_fetch_(const std::string &url) {
+  if (this->fetch_in_progress_ || this->fetch_mutex_ == nullptr) {
+    return false;
+  }
+
+  if (xSemaphoreTake(this->fetch_mutex_, 0) != pdTRUE) {
+    return false;
+  }
+
+  this->fetch_in_progress_ = true;
+  this->fetch_result_ = FetchResult{};
+  this->fetch_url_ = url;
+  xSemaphoreGive(this->fetch_mutex_);
+
+  const BaseType_t created = xTaskCreate(
+      &OpenQuattCIC::fetch_task_trampoline_, "openquatt_cic", 6144, this, tskIDLE_PRIORITY + 1, &this->fetch_task_handle_);
+  if (created != pdPASS) {
+    if (xSemaphoreTake(this->fetch_mutex_, portMAX_DELAY) == pdTRUE) {
+      this->fetch_in_progress_ = false;
+      this->fetch_result_ = FetchResult{
+          .ready = true,
+          .ok = false,
+          .completed_at_ms = millis(),
+          .duration_ms = 0,
+          .status_code = -1,
+          .error_status = "task_create",
+      };
+      xSemaphoreGive(this->fetch_mutex_);
+    }
+    return false;
+  }
+
+  return true;
+}
+
+void OpenQuattCIC::fetch_task_trampoline_(void *arg) {
+  auto *self = static_cast<OpenQuattCIC *>(arg);
+  self->fetch_task_();
+  vTaskDelete(nullptr);
+}
+
+void OpenQuattCIC::fetch_task_() {
+  FetchResult result;
+  std::string url;
+
+  if (this->fetch_mutex_ != nullptr && xSemaphoreTake(this->fetch_mutex_, portMAX_DELAY) == pdTRUE) {
+    url = this->fetch_url_;
+    xSemaphoreGive(this->fetch_mutex_);
+  }
+
+  (void) this->fetch_and_parse_(url, &result);
+  result.ready = true;
+  result.completed_at_ms = millis();
+
+  if (this->fetch_mutex_ != nullptr && xSemaphoreTake(this->fetch_mutex_, portMAX_DELAY) == pdTRUE) {
+    this->fetch_result_ = result;
+    this->fetch_in_progress_ = false;
+    this->fetch_task_handle_ = nullptr;
+    xSemaphoreGive(this->fetch_mutex_);
+  }
+}
+
+void OpenQuattCIC::finalize_fetch_() {
+  if (this->fetch_mutex_ == nullptr) {
+    return;
+  }
+
+  FetchResult result;
+  if (xSemaphoreTake(this->fetch_mutex_, 0) != pdTRUE) {
+    return;
+  }
+
+  if (!this->fetch_result_.ready) {
+    xSemaphoreGive(this->fetch_mutex_);
+    return;
+  }
+
+  result = this->fetch_result_;
+  this->fetch_result_ = FetchResult{};
+  xSemaphoreGive(this->fetch_mutex_);
+
+  if (this->enabled_switch_ == nullptr || !this->enabled_switch_->state) {
+    return;
+  }
+
   this->request_count_++;
+  this->last_duration_ms_ = result.duration_ms;
+  this->last_status_code_ = result.status_code;
+  if (this->last_duration_ms_ > this->max_duration_ms_) {
+    this->max_duration_ms_ = this->last_duration_ms_;
+  }
+
+  if (result.ok) {
+    this->apply_payload_(result.payload);
+    this->mark_success_(result.completed_at_ms);
+  } else {
+    if (result.error_status != nullptr) {
+      this->status_momentary_error(result.error_status, 1000);
+    }
+    this->mark_failure_(result.completed_at_ms);
+  }
+
+  this->update_runtime_state_(millis());
+  this->publish_diagnostics_if_due_(millis(), true);
+}
+
+bool OpenQuattCIC::fetch_and_parse_(const std::string &url, FetchResult *result) {
+  if (result == nullptr) {
+    return false;
+  }
 
   if (!network::is_connected()) {
-    this->last_duration_ms_ = 0;
-    this->last_status_code_ = -1;
-    this->status_momentary_error("network", 1000);
-    this->mark_failure_(now_ms);
+    result->duration_ms = 0;
+    result->status_code = -1;
+    result->error_status = "network";
     return false;
   }
 
@@ -85,21 +205,21 @@ bool OpenQuattCIC::fetch_and_parse_(const std::string &url, uint32_t now_ms) {
   const uint32_t start_ms = millis();
   esp_http_client_handle_t client = esp_http_client_init(&config);
   if (client == nullptr) {
-    this->last_duration_ms_ = millis() - start_ms;
-    this->last_status_code_ = -1;
-    this->status_momentary_error("http_init", 1000);
-    this->mark_failure_(now_ms);
+    result->duration_ms = millis() - start_ms;
+    result->status_code = -1;
+    result->error_status = "http_init";
     return false;
   }
 
   bool ok = false;
   bool client_open = false;
+  std::vector<uint8_t> response_buffer(this->response_buffer_size_, 0U);
 
   do {
     esp_err_t err = esp_http_client_open(client, 0);
     if (err != ESP_OK) {
       ESP_LOGW(TAG, "HTTP open failed: %s", esp_err_to_name(err));
-      this->status_momentary_error("http_open", 1000);
+      result->error_status = "http_open";
       break;
     }
     client_open = true;
@@ -108,31 +228,31 @@ bool OpenQuattCIC::fetch_and_parse_(const std::string &url, uint32_t now_ms) {
     const int content_length = esp_http_client_fetch_headers(client);
     App.feed_wdt();
 
-    this->last_status_code_ = esp_http_client_get_status_code(client);
-    if (this->last_status_code_ != 200) {
-      ESP_LOGW(TAG, "CIC HTTP status %d", this->last_status_code_);
-      this->status_momentary_error("http_status", 1000);
+    result->status_code = esp_http_client_get_status_code(client);
+    if (result->status_code != 200) {
+      ESP_LOGW(TAG, "CIC HTTP status %d", result->status_code);
+      result->error_status = "http_status";
       break;
     }
 
-    if (content_length > 0 && static_cast<size_t>(content_length) >= this->response_buffer_.size()) {
-      ESP_LOGW(TAG, "CIC payload %d exceeds buffer %u", content_length, static_cast<unsigned>(this->response_buffer_.size()));
-      this->last_status_code_ = -2;
-      this->status_momentary_error("http_size", 1000);
+    if (content_length > 0 && static_cast<size_t>(content_length) >= response_buffer.size()) {
+      ESP_LOGW(TAG, "CIC payload %d exceeds buffer %u", content_length, static_cast<unsigned>(response_buffer.size()));
+      result->status_code = -2;
+      result->error_status = "http_size";
       break;
     }
 
     size_t total = 0;
-    while (total < this->response_buffer_.size()) {
+    while (total < response_buffer.size()) {
       App.feed_wdt();
-      const int read_len = esp_http_client_read(
-          client, reinterpret_cast<char *>(this->response_buffer_.data() + total), this->response_buffer_.size() - total);
+      const int read_len =
+          esp_http_client_read(client, reinterpret_cast<char *>(response_buffer.data() + total), response_buffer.size() - total);
       App.feed_wdt();
 
       if (read_len < 0) {
         ESP_LOGW(TAG, "CIC HTTP read failed");
-        this->last_status_code_ = -3;
-        this->status_momentary_error("http_read", 1000);
+        result->status_code = -3;
+        result->error_status = "http_read";
         total = 0;
         break;
       }
@@ -146,38 +266,35 @@ bool OpenQuattCIC::fetch_and_parse_(const std::string &url, uint32_t now_ms) {
     if (total == 0) {
       break;
     }
-    if (total == this->response_buffer_.size()) {
+    if (total == response_buffer.size()) {
       ESP_LOGW(TAG, "CIC payload filled the entire buffer");
-      this->last_status_code_ = -4;
-      this->status_momentary_error("http_trunc", 1000);
+      result->status_code = -4;
+      result->error_status = "http_trunc";
       break;
     }
 
-    ok = this->parse_payload_(this->response_buffer_.data(), total);
+    ok = this->parse_payload_(response_buffer.data(), total, &result->payload);
     if (!ok) {
-      this->status_momentary_error("json_parse", 1000);
+      result->error_status = "json_parse";
     }
   } while (false);
 
-  this->last_duration_ms_ = millis() - start_ms;
-  if (this->last_duration_ms_ > this->max_duration_ms_) {
-    this->max_duration_ms_ = this->last_duration_ms_;
-  }
+  result->duration_ms = millis() - start_ms;
 
   if (client_open) {
     esp_http_client_close(client);
   }
   esp_http_client_cleanup(client);
 
-  if (ok) {
-    this->mark_success_(now_ms);
-  } else {
-    this->mark_failure_(now_ms);
-  }
+  result->ok = ok;
   return ok;
 }
 
-bool OpenQuattCIC::parse_payload_(const uint8_t *data, size_t len) {
+bool OpenQuattCIC::parse_payload_(const uint8_t *data, size_t len, ParsedPayload *payload) {
+  if (payload == nullptr) {
+    return false;
+  }
+
   JsonDocument doc = json::parse_json(data, len);
   if (doc.overflowed() || doc.isNull()) {
     return false;
@@ -185,7 +302,7 @@ bool OpenQuattCIC::parse_payload_(const uint8_t *data, size_t len) {
 
   JsonObject root = doc.as<JsonObject>();
 
-  auto maybe_publish_float = [&](JsonVariantConst value, float lo, float hi, sensor::Sensor *sensor) {
+  auto maybe_store_float = [&](JsonVariantConst value, float lo, float hi, MaybeFloat *target) {
     if (value.isNull()) {
       return;
     }
@@ -196,35 +313,61 @@ bool OpenQuattCIC::parse_payload_(const uint8_t *data, size_t len) {
     if (std::isnan(x) || x < lo || x > hi) {
       return;
     }
-    this->publish_float_if_changed_(sensor, x);
+    target->present = true;
+    target->value = x;
   };
-  auto maybe_publish_bool = [&](JsonVariantConst value, binary_sensor::BinarySensor *binary_sensor) {
+  auto maybe_store_bool = [&](JsonVariantConst value, MaybeBool *target) {
     if (value.isNull() || !value.is<bool>()) {
       return;
     }
-    this->publish_binary_if_changed_(binary_sensor, value.as<bool>());
+    target->present = true;
+    target->value = value.as<bool>();
   };
 
   if (root["flowMeter"]) {
     JsonObject flow_meter = root["flowMeter"];
-    maybe_publish_float(flow_meter["waterSupplyTemperature"], -20.0f, 90.0f, this->water_supply_temp_);
+    maybe_store_float(flow_meter["waterSupplyTemperature"], -20.0f, 90.0f, &payload->water_supply_temp);
   }
 
   if (root["qc"]) {
     JsonObject qc = root["qc"];
-    maybe_publish_float(qc["flowRateFiltered"], 0.0f, 5000.0f, this->flow_rate_);
+    maybe_store_float(qc["flowRateFiltered"], 0.0f, 5000.0f, &payload->flow_rate);
   }
 
   if (root["thermostat"]) {
     JsonObject thermostat = root["thermostat"];
-    maybe_publish_bool(thermostat["otFtChEnabled"], this->cic_ch_enabled_);
-    maybe_publish_bool(thermostat["otFtCoolingEnabled"], this->cic_cooling_enabled_);
-    maybe_publish_float(thermostat["otFtControlSetpoint"], 5.0f, 80.0f, this->cic_control_setpoint_);
-    maybe_publish_float(thermostat["otFtRoomSetpoint"], 5.0f, 35.0f, this->cic_room_setpoint_);
-    maybe_publish_float(thermostat["otFtRoomTemperature"], -20.0f, 50.0f, this->cic_room_temp_);
+    maybe_store_bool(thermostat["otFtChEnabled"], &payload->cic_ch_enabled);
+    maybe_store_bool(thermostat["otFtCoolingEnabled"], &payload->cic_cooling_enabled);
+    maybe_store_float(thermostat["otFtControlSetpoint"], 5.0f, 80.0f, &payload->cic_control_setpoint);
+    maybe_store_float(thermostat["otFtRoomSetpoint"], 5.0f, 35.0f, &payload->cic_room_setpoint);
+    maybe_store_float(thermostat["otFtRoomTemperature"], -20.0f, 50.0f, &payload->cic_room_temp);
   }
 
   return true;
+}
+
+void OpenQuattCIC::apply_payload_(const ParsedPayload &payload) {
+  if (payload.water_supply_temp.present) {
+    this->publish_float_if_changed_(this->water_supply_temp_, payload.water_supply_temp.value);
+  }
+  if (payload.flow_rate.present) {
+    this->publish_float_if_changed_(this->flow_rate_, payload.flow_rate.value);
+  }
+  if (payload.cic_control_setpoint.present) {
+    this->publish_float_if_changed_(this->cic_control_setpoint_, payload.cic_control_setpoint.value);
+  }
+  if (payload.cic_room_setpoint.present) {
+    this->publish_float_if_changed_(this->cic_room_setpoint_, payload.cic_room_setpoint.value);
+  }
+  if (payload.cic_room_temp.present) {
+    this->publish_float_if_changed_(this->cic_room_temp_, payload.cic_room_temp.value);
+  }
+  if (payload.cic_ch_enabled.present) {
+    this->publish_binary_if_changed_(this->cic_ch_enabled_, payload.cic_ch_enabled.value);
+  }
+  if (payload.cic_cooling_enabled.present) {
+    this->publish_binary_if_changed_(this->cic_cooling_enabled_, payload.cic_cooling_enabled.value);
+  }
 }
 
 void OpenQuattCIC::mark_success_(uint32_t now_ms) {
