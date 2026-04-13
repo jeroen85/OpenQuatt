@@ -5289,6 +5289,7 @@
     const top = board.querySelector(".oq-overview-top");
     const system = board.querySelector(".oq-overview-system");
     const temps = board.querySelector(".oq-overview-temps");
+    const hpTools = board.querySelector(".oq-overview-hp-tools");
     const hpGrid = board.querySelector(".oq-overview-hp-grid");
     const heatPumpPanels = getHeatPumpPanels();
     const outsideTempKey = getOverviewOutsideTempKey();
@@ -5332,9 +5333,17 @@
       `;
     }
 
-    if (!hpGrid) {
+    if (!hpTools || !hpGrid) {
       return false;
     }
+
+    const renderedHpToolGroups = hpTools.querySelectorAll(".oq-overview-hp-tool-group");
+    const expectedHpToolGroups = heatPumpPanels.length > 1 ? 2 : 1;
+    if (renderedHpToolGroups.length !== expectedHpToolGroups) {
+      return false;
+    }
+
+    hpTools.outerHTML = renderHeatPumpControls(heatPumpPanels);
 
     const renderedPanels = hpGrid.querySelectorAll("[data-oq-hp-panel]");
     if (renderedPanels.length !== heatPumpPanels.length) {
