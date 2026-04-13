@@ -1485,14 +1485,10 @@ views:
               - validatie van de effectieve regelinput
 
               Voor `Buitentemperatuur bron` is `Auto` de aanbevolen stand.
-              OpenQuatt kiest dan de meest betrouwbare bron: eerst de actieve
-              buitenunitmeting, daarna HA als de unit idle is mits die bron is
-              geconfigureerd en geldig is, en alleen als fallback de idle lokale
-              meting.
-              Als een buitenunit net actief wordt, wacht `Auto` bovendien kort
-              voordat die lokale meting wordt overgenomen.
-              Bij een geldige HA-buitentemperatuur begrenst `Auto` daarna ook
-              abrupte warme sprongen van de actieve lokale bron.
+              OpenQuatt kiest dan de laagste geldige bron tussen de lokale
+              buitenunitmeting en de HA-buitentemperatuur, als die bron is
+              geconfigureerd en geldig is. Dat houdt de regeling robuust als
+              een bron tijdelijk te warm uitvalt door zon of lokale opwarming.
 
               </details>
             text_only: true
