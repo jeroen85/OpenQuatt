@@ -4734,11 +4734,11 @@
               <strong data-oq-bind="footer-mode">${escapeHtml(model.mode)}</strong>
             </div>
             <div class="oq-hp-tech-footer-item">
-              <span>Stroomverbruik</span>
+              <span aria-label="Stroomverbruik">Stroom<br>verbruik</span>
               <strong data-oq-bind="footer-power">${escapeHtml(model.powerText)}</strong>
             </div>
             <div class="oq-hp-tech-footer-item">
-              <span>Warmteafgifte</span>
+              <span aria-label="Warmteafgifte">Warmte<br>afgifte</span>
               <strong data-oq-bind="footer-heat">${escapeHtml(model.heatText)}</strong>
             </div>
             <div class="oq-hp-tech-footer-item">
@@ -4826,7 +4826,7 @@
     `;
   }
 
-  function renderHeatPumpPanel(title, keys, accent, emphasis = "normal") {
+  function renderHeatPumpPanel(title, keys, accent, emphasis = "normal", layoutAction = null) {
     if (!hasEntity(keys.power)) {
       return "";
     }
@@ -4840,11 +4840,14 @@
       return `
         <section class="oq-overview-hp oq-overview-hp--${escapeHtml(accent)} oq-overview-hp--${escapeHtml(emphasis)}" data-oq-hp-panel="${escapeHtml(title)}">
           <div class="oq-overview-hp-head">
-            <div>
+            <div class="oq-overview-hp-head-title">
               <h3>${escapeHtml(title)}</h3>
+              ${layoutAction ? `<button class="oq-overview-hp-card-action" type="button" data-oq-action="select-hp-layout" data-hp-layout="${escapeHtml(layoutAction.layout)}">${renderMagnifyActionIcon(layoutAction.layout === "equal" ? "minus" : "plus")}<span>${escapeHtml(layoutAction.label)}</span></button>` : ""}
             </div>
-            <div class="oq-overview-hp-status">
-              ${renderHpPanelStatusRow(running, schematicModel.warningActive, schematicModel.failureText)}
+            <div class="oq-overview-hp-head-side">
+              <div class="oq-overview-hp-status">
+                ${renderHpPanelStatusRow(running, schematicModel.warningActive, schematicModel.failureText)}
+              </div>
             </div>
           </div>
           ${renderHeatPumpSchematic(schematicModel)}
@@ -4856,7 +4859,6 @@
       <section class="oq-overview-hp oq-overview-hp--${escapeHtml(accent)} oq-overview-hp--${escapeHtml(emphasis)}" data-oq-hp-panel="${escapeHtml(title)}">
         <div class="oq-overview-hp-head">
           <div>
-            <p class="oq-helper-label">${escapeHtml(title)}</p>
             <h3>${escapeHtml(title)}</h3>
           </div>
           <div class="oq-overview-hp-status">
@@ -4885,7 +4887,6 @@
         <div class="oq-overview-temps-list">
           ${renderTempRow("Water in", keys.waterIn)}
           ${renderTempRow("Water out", keys.waterOut)}
-          ${renderTempRow("Actieve storingen", keys.failures, failures)}
         </div>
       </section>
     `;
@@ -4896,7 +4897,7 @@
   }
 
   function getEffectiveHpLayoutMode(heatPumpPanels) {
-    if (!Array.isArray(heatPumpPanels) || heatPumpPanels.length < 2) {
+    if (!Array.isArray(heatPumpPanels) || heatPumpPanels.length < 2 || state.hpVisualMode !== "schematic") {
       return "equal";
     }
     return state.hpLayoutMode === "focus-hp1" || state.hpLayoutMode === "focus-hp2" ? state.hpLayoutMode : "equal";
@@ -4915,36 +4916,46 @@
     return "normal";
   }
 
+  function getHeatPumpPanelLayoutAction(index, heatPumpPanels, layoutMode) {
+    if (!Array.isArray(heatPumpPanels) || heatPumpPanels.length < 2 || state.hpVisualMode !== "schematic") {
+      return null;
+    }
+
+    const emphasis = getHeatPumpPanelEmphasis(index, heatPumpPanels, layoutMode);
+    if (emphasis === "focus") {
+      return { layout: "equal", label: "Toon beide" };
+    }
+
+    return {
+      layout: index === 0 ? "focus-hp1" : "focus-hp2",
+      label: "Vergroot",
+    };
+  }
+
+  function renderMagnifyActionIcon(kind = "plus") {
+    const path = kind === "minus"
+      ? 'M15.5,14H14.71L14.43,13.73C15.41,12.59 16,11.11 16,9.5A6.5,6.5 0 0,0 9.5,3A6.5,6.5 0 0,0 3,9.5A6.5,6.5 0 0,0 9.5,16C11.11,16 12.59,15.41 13.73,14.43L14,14.71V15.5L19,20.5L20.5,19L15.5,14M9.5,14C7,14 5,12 5,9.5C5,7 7,5 9.5,5C12,5 14,7 14,9.5C14,12 12,14 9.5,14M7,9H12V10H7V9Z'
+      : 'M15.5,14L20.5,19L19,20.5L14,15.5V14.71L13.73,14.43C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.43,13.73L14.71,14H15.5M9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14M12,10H10V12H9V10H7V9H9V7H10V9H12V10Z';
+    return `
+      <svg class="oq-overview-hp-card-action-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="${path}" fill="currentColor"></path>
+      </svg>
+    `;
+  }
+
   function renderHeatPumpControls(heatPumpPanels) {
     if (!Array.isArray(heatPumpPanels) || heatPumpPanels.length === 0) {
       return "";
     }
 
-    const layoutMode = getEffectiveHpLayoutMode(heatPumpPanels);
     return `
       <div class="oq-overview-hp-tools">
-        <div class="oq-overview-hp-tools-copy">
+        <div class="oq-overview-hp-tools-head">
           <h3>Warmtepompen</h3>
-          <p>Kies hier hoe je de warmtepompkaarten wilt bekijken.</p>
-        </div>
-        <div class="oq-overview-hp-tool-groups">
-          <div class="oq-overview-hp-tool-group">
-            <span class="oq-overview-hp-tool-label">Weergave</span>
-            <div class="oq-overview-hp-tool-switches">
-              <button class="oq-overview-hp-tool-chip${state.hpVisualMode === "schematic" ? " is-active" : ""}" type="button" data-oq-action="select-hp-visual" data-hp-visual="schematic">Schematisch</button>
-              <button class="oq-overview-hp-tool-chip${state.hpVisualMode === "compact" ? " is-active" : ""}" type="button" data-oq-action="select-hp-visual" data-hp-visual="compact">Compact</button>
-            </div>
+          <div class="oq-overview-hp-tool-switches">
+            <button class="oq-overview-hp-tool-chip${state.hpVisualMode === "schematic" ? " is-active" : ""}" type="button" data-oq-action="select-hp-visual" data-hp-visual="schematic">Schematisch</button>
+            <button class="oq-overview-hp-tool-chip${state.hpVisualMode === "compact" ? " is-active" : ""}" type="button" data-oq-action="select-hp-visual" data-hp-visual="compact">Compact</button>
           </div>
-          ${heatPumpPanels.length > 1 ? `
-            <div class="oq-overview-hp-tool-group">
-              <span class="oq-overview-hp-tool-label">Focus</span>
-              <div class="oq-overview-hp-tool-switches">
-                <button class="oq-overview-hp-tool-chip${layoutMode === "equal" ? " is-active" : ""}" type="button" data-oq-action="select-hp-layout" data-hp-layout="equal">Gelijk</button>
-                <button class="oq-overview-hp-tool-chip${layoutMode === "focus-hp1" ? " is-active" : ""}" type="button" data-oq-action="select-hp-layout" data-hp-layout="focus-hp1">Focus HP1</button>
-                <button class="oq-overview-hp-tool-chip${layoutMode === "focus-hp2" ? " is-active" : ""}" type="button" data-oq-action="select-hp-layout" data-hp-layout="focus-hp2">Focus HP2</button>
-              </div>
-            </div>
-          ` : ""}
         </div>
       </div>
     `;
@@ -4999,7 +5010,7 @@
           </div>
           ${renderHeatPumpControls(heatPumpPanels)}
           <div class="oq-overview-hp-grid ${heatPumpPanels.length === 1 ? "oq-overview-hp-grid--single" : ""} ${heatPumpPanels.length > 1 ? `oq-overview-hp-grid--${hpLayoutMode}` : ""}">
-            ${heatPumpPanels.map((panel, index) => renderHeatPumpPanel(panel.title, panel.keys, panel.accent, getHeatPumpPanelEmphasis(index, heatPumpPanels, hpLayoutMode))).join("")}
+            ${heatPumpPanels.map((panel, index) => renderHeatPumpPanel(panel.title, panel.keys, panel.accent, getHeatPumpPanelEmphasis(index, heatPumpPanels, hpLayoutMode), getHeatPumpPanelLayoutAction(index, heatPumpPanels, hpLayoutMode))).join("")}
           </div>
         </div>
       </section>
@@ -5013,6 +5024,15 @@
     const node = root.querySelector(selector);
     if (node && node.textContent !== value) {
       node.textContent = value;
+    }
+  }
+
+  function setInnerHtmlIfChanged(node, markup) {
+    if (!node) {
+      return;
+    }
+    if (node.innerHTML !== markup) {
+      node.innerHTML = markup;
     }
   }
 
@@ -5337,13 +5357,10 @@
       return false;
     }
 
-    const renderedHpToolGroups = hpTools.querySelectorAll(".oq-overview-hp-tool-group");
-    const expectedHpToolGroups = heatPumpPanels.length > 1 ? 2 : 1;
-    if (renderedHpToolGroups.length !== expectedHpToolGroups) {
-      return false;
+    const nextHpTools = renderHeatPumpControls(heatPumpPanels);
+    if (hpTools.outerHTML !== nextHpTools) {
+      hpTools.outerHTML = nextHpTools;
     }
-
-    hpTools.outerHTML = renderHeatPumpControls(heatPumpPanels);
 
     const renderedPanels = hpGrid.querySelectorAll("[data-oq-hp-panel]");
     if (renderedPanels.length !== heatPumpPanels.length) {
@@ -5360,6 +5377,26 @@
       if (panelNode) {
         panelNode.classList.remove("oq-overview-hp--normal", "oq-overview-hp--focus", "oq-overview-hp--muted");
         panelNode.classList.add(`oq-overview-hp--${getHeatPumpPanelEmphasis(index, heatPumpPanels, hpLayoutMode)}`);
+        const headSide = panelNode.querySelector(".oq-overview-hp-head-side");
+        const headTitle = panelNode.querySelector(".oq-overview-hp-head-title");
+        if (headSide) {
+          const mode = formatWorkingMode(getEntityStateText(panel.keys.mode, "Unknown"));
+          const defrostActive = isEntityActive(panel.keys.defrost);
+          const failures = formatFailures(getEntityStateText(panel.keys.failures, "None"));
+          const running = mode === "Verwarmen" || mode === "Koelen" || defrostActive;
+          const layoutAction = getHeatPumpPanelLayoutAction(index, heatPumpPanels, hpLayoutMode);
+          if (headTitle) {
+            setInnerHtmlIfChanged(headTitle, `
+              <h3>${escapeHtml(panel.title)}</h3>
+              ${layoutAction ? `<button class="oq-overview-hp-card-action" type="button" data-oq-action="select-hp-layout" data-hp-layout="${escapeHtml(layoutAction.layout)}">${renderMagnifyActionIcon(layoutAction.layout === "equal" ? "minus" : "plus")}<span>${escapeHtml(layoutAction.label)}</span></button>` : ""}
+            `);
+          }
+          setInnerHtmlIfChanged(headSide, `
+            <div class="oq-overview-hp-status">
+              ${renderHpPanelStatusRow(running, failures !== "Geen actieve storingen", failures)}
+            </div>
+          `);
+        }
       }
       patchHeatPumpPanel(
         panelNode,
