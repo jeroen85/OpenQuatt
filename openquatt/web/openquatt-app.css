@@ -321,16 +321,16 @@
 
 .oq-helper-hub-toggle-dot {
   position: absolute;
-  top: -1px;
-  right: -1px;
-  width: 12px;
-  height: 12px;
-  border: 3px solid rgba(255, 255, 255, 0.98);
+  top: 2px;
+  right: 2px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid rgba(255, 255, 255, 0.98);
   border-radius: 999px;
   background: linear-gradient(180deg, #fb923c, #ea580c);
   box-shadow:
-    0 0 0 3px rgba(249, 115, 22, 0.14),
-    0 6px 14px rgba(249, 115, 22, 0.22);
+    0 0 0 2px rgba(249, 115, 22, 0.1),
+    0 4px 8px rgba(249, 115, 22, 0.14);
 }
 
 .oq-helper-shell--dark .oq-helper-hub-toggle {
@@ -348,8 +348,8 @@
 .oq-helper-shell--dark .oq-helper-hub-toggle-dot {
   border-color: rgba(22, 32, 46, 0.98);
   box-shadow:
-    0 0 0 3px rgba(249, 115, 22, 0.16),
-    0 6px 14px rgba(2, 6, 23, 0.3);
+    0 0 0 2px rgba(249, 115, 22, 0.12),
+    0 4px 8px rgba(2, 6, 23, 0.24);
 }
 
 .oq-helper-hub-toggle--close {
