@@ -3655,6 +3655,19 @@
     document.title = `${viewLabel} • OpenQuatt`;
   }
 
+  function syncDocumentTheme() {
+    if (typeof document === "undefined") {
+      return;
+    }
+    const isDark = state.overviewTheme === "dark";
+    document.documentElement.classList.toggle("oq-page-dark", isDark);
+    document.documentElement.classList.toggle("oq-page-light", !isDark);
+    if (document.body) {
+      document.body.classList.toggle("oq-page-dark", isDark);
+      document.body.classList.toggle("oq-page-light", !isDark);
+    }
+  }
+
   function renderOverviewStatCard(key, label, tone, note) {
     return `
       <article class="oq-overview-stat oq-overview-stat--${escapeHtml(tone)}">
@@ -5520,6 +5533,7 @@
     refreshMotionTargets();
     syncNativeVisibility();
     bindHeaderDevControls();
+    syncDocumentTheme();
     syncDocumentTitle();
   }
 

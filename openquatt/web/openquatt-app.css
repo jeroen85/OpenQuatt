@@ -27,6 +27,26 @@
   font-family: "Inter", "Segoe UI", sans-serif;
 }
 
+html.oq-page-dark {
+  color-scheme: dark;
+  background: #101925;
+}
+
+body.oq-page-dark {
+  background:
+    radial-gradient(circle at top center, rgba(249, 115, 22, 0.08), transparent 28%),
+    linear-gradient(180deg, #0f1724 0%, #111b28 100%);
+}
+
+html.oq-page-light {
+  color-scheme: light;
+  background: #f6f2ea;
+}
+
+body.oq-page-light {
+  background: linear-gradient(180deg, #f6f2ea 0%, #f8fafc 100%);
+}
+
 .oq-helper-shell {
   margin-bottom: 18px;
   color: var(--oq-helper-ink);
@@ -1113,8 +1133,8 @@
 }
 
 .oq-helper-shell--dark .oq-helper-field--step.is-done {
-  border-color: rgba(96, 165, 250, 0.18);
-  background: rgba(31, 44, 66, 0.96);
+  border-color: rgba(148, 163, 184, 0.18);
+  background: rgba(30, 43, 61, 0.96);
 }
 
 .oq-helper-field-step-head {
@@ -1142,6 +1162,10 @@
 
 .oq-helper-field--step.is-done .oq-helper-field-step-state {
   color: var(--oq-helper-sky);
+}
+
+.oq-helper-shell--dark .oq-helper-field--step.is-done .oq-helper-field-step-state {
+  color: #d7e0ec;
 }
 
 .oq-helper-shell--dark .oq-helper-field--step.is-current h3 {
