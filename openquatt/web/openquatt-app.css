@@ -893,6 +893,9 @@
 
 .oq-helper-app-tab {
   appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   border: 1px solid var(--oq-helper-line);
   border-radius: var(--oq-helper-radius-sm);
   background: var(--oq-helper-card);
@@ -903,6 +906,13 @@
   min-height: 40px;
   padding: 0 14px;
   transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.oq-helper-app-tab-icon {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex: 0 0 auto;
+  fill: currentColor;
 }
 
 .oq-helper-app-tab:hover {
