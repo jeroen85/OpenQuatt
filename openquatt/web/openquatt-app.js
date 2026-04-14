@@ -583,6 +583,7 @@
   }
 
   function mountWhenReady() {
+    ensureViewportMeta();
     let app = document.querySelector("esp-app");
     if (!app) {
       app = document.createElement("esp-app");
@@ -601,6 +602,20 @@
 
     syncNativeVisibility();
     syncEntities();
+  }
+
+  function ensureViewportMeta() {
+    if (!document.head) {
+      return;
+    }
+
+    let viewport = document.head.querySelector('meta[name="viewport"]');
+    if (!viewport) {
+      viewport = document.createElement("meta");
+      viewport.name = "viewport";
+      document.head.appendChild(viewport);
+    }
+    viewport.setAttribute("content", "width=device-width, initial-scale=1");
   }
 
   function mountPanel(app) {
@@ -3422,8 +3437,8 @@
     return `
       <section class="oq-helper-panel oq-helper-panel--aside">
         <p class="oq-helper-label">Quick Start</p>
-        <h2 class="oq-helper-section-title">Rustige route naar een werkende regeling</h2>
-        <p class="oq-helper-panel-note">Quick Start helpt je snel op weg met de belangrijkste keuzes. Extra instellingen vind je later terug onder Instellingen.</p>
+        <h2 class="oq-helper-section-title">Snel van start, stap voor stap</h2>
+        <p class="oq-helper-panel-note">Quick Start helpt je op weg met de belangrijkste keuzes. Later kun je alles verder verfijnen onder Instellingen.</p>
         <h3 class="oq-helper-aside-title">Stap ${stepIndex + 1} van ${QUICK_STEPS.length}</h3>
         <div class="oq-helper-fields oq-helper-fields--compact">
           ${renderStepOverview(true)}
