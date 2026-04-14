@@ -5445,12 +5445,24 @@
     `;
   }
 
+  function renderInitialLoadingView() {
+    return `
+      <section class="oq-helper-panel">
+        <p class="oq-helper-label">OpenQuatt</p>
+        <h2 class="oq-helper-section-title">Interface laden</h2>
+        <p class="oq-helper-section-copy">We bepalen eerst even of Quick Start al is afgerond, zodat je direct op de juiste plek binnenkomt.</p>
+      </section>
+    `;
+  }
+
   function render() {
     if (!state.root) {
       return;
     }
 
-    const mainContent = state.appView === "overview"
+    const mainContent = !state.appView && state.loadingEntities
+      ? renderInitialLoadingView()
+      : state.appView === "overview"
       ? renderOverviewView()
       : state.appView === "settings"
         ? renderSettingsView()
