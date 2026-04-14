@@ -3276,8 +3276,8 @@
           `
           : `
             <div class="oq-settings-grid oq-settings-grid--quickstart">
-              ${renderSettingsNumberField("houseOutdoorMax", "Buitentemperatuur zonder warmtevraag", "Bij deze buitentemperatuur is verwarmen meestal niet meer nodig.")}
-              ${renderSettingsNumberField("housePower", "Geschat maximaal warmteverlies", "Hoeveel warmte je woning ongeveer nodig heeft op een koude dag.")}
+              ${renderSettingsNumberField("houseOutdoorMax", "Maximum heating outdoor temperature", "Bij deze buitentemperatuur is verwarmen meestal niet meer nodig.")}
+              ${renderSettingsNumberField("housePower", "Rated maximum house power", "Hoeveel warmte je woning ongeveer nodig heeft op een koude dag.")}
               ${renderPowerHouseResponseProfilesField()}
             </div>
             ${renderPowerHouseAdvancedField()}
