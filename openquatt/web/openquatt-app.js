@@ -855,6 +855,10 @@
     return hasEntity("hp2Power") ? "Quatt Duo" : "Quatt Single";
   }
 
+  function getFirmwareDeviceLabel() {
+    return "OpenQuatt";
+  }
+
   function formatDeviceClock() {
     try {
       return new Intl.DateTimeFormat("nl-NL", {
@@ -1081,14 +1085,14 @@
       return {
         phaseLabel: "Uploaden",
         percent: basePercent,
-        copy: `Firmware wordt nu naar ${getInstallationLabel()} verzonden.`,
+        copy: `Firmware wordt nu naar ${getFirmwareDeviceLabel()} verzonden.`,
       };
     }
 
     return {
       phaseLabel: "Installeren",
       percent: basePercent,
-      copy: `OTA-update is gestart voor ${getInstallationLabel()}.`,
+      copy: `OTA-update is gestart voor ${getFirmwareDeviceLabel()}.`,
     };
   }
 
@@ -1312,7 +1316,7 @@
   }
 
   function getFirmwareTitle() {
-    return getInstallationLabel();
+    return getFirmwareDeviceLabel();
   }
 
   function getFirmwareChannelLabel() {
@@ -1398,10 +1402,10 @@
     }
     if (isFirmwareUpdateJustCompleted()) {
       const version = state.updateInstallCompletedVersion || getFirmwareCurrentVersion() || getFirmwareChannelLabel();
-      return `${getInstallationLabel()} draait nu op ${version}.`;
+      return `${getFirmwareDeviceLabel()} draait nu op ${version}.`;
     }
     if (isFirmwareUpdateInstalling()) {
-      return `OTA-update wordt voorbereid voor ${getInstallationLabel()}. Het device kan kort herstarten.`;
+      return `OTA-update wordt voorbereid voor ${getFirmwareDeviceLabel()}. Het device kan kort herstarten.`;
     }
     if (isFirmwareUpdateChecking()) {
       return `We controleren of er op kanaal ${channel} een nieuwe firmware beschikbaar is.`;
