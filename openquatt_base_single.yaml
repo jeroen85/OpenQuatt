@@ -26,7 +26,7 @@ esphome:
   project:
     name: ${project_name}
     version: ${project_version}
-  min_version: 2026.3.0
+  min_version: 2026.4.0
   name_add_mac_suffix: false
   includes:
     - ${hp_perf_map_header}
