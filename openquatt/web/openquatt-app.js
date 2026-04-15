@@ -920,6 +920,9 @@
     if (meta.updateAvailable === false) {
       return "Actueel";
     }
+    if (isFirmwareEffectivelyCurrent()) {
+      return "Actueel";
+    }
     if (getFirmwareUpdateEntity()) {
       return "Nog niet gecontroleerd";
     }
@@ -949,6 +952,27 @@
       return value;
     }
     return "";
+  }
+
+  function getFirmwareCurrentVersion(entity = getFirmwareUpdateEntity() || {}) {
+    const runningVersion = String(
+      state.entities.projectVersionText?.state
+      || state.entities.projectVersionText?.value
+      || ""
+    ).trim();
+    if (runningVersion) {
+      return runningVersion;
+    }
+    return String(entity.current_version || "").trim();
+  }
+
+  function hasFirmwareBootedIntoNewerVersion(entity = getFirmwareUpdateEntity() || {}) {
+    const runningVersion = getFirmwareCurrentVersion(entity);
+    const recordedVersion = String(entity.current_version || "").trim();
+    if (!runningVersion || !recordedVersion || runningVersion === recordedVersion) {
+      return false;
+    }
+    return compareFirmwareVersions(runningVersion, recordedVersion) > 0;
   }
 
   function isFirmwareEntityAlignedWithChannel(entity = getFirmwareUpdateEntity() || {}, channel = getFirmwareChannelLabel()) {
@@ -1064,16 +1088,27 @@
     return getDeviceMeta().updateAvailable === true;
   }
 
+  function isFirmwareEffectivelyCurrent() {
+    const raw = getFirmwareUpdateState();
+    return raw === "installed"
+      || raw === "current"
+      || raw === "up_to_date"
+      || raw === "none"
+      || raw.includes("up to date")
+      || raw.includes("no update")
+      || hasFirmwareBootedIntoNewerVersion();
+  }
+
   function getFirmwareUpdateVersions() {
     const entity = getFirmwareUpdateEntity() || {};
-    const fallbackCurrent = String(state.entities.projectVersionText?.state || state.entities.projectVersionText?.value || "").trim();
+    const current = getFirmwareCurrentVersion(entity) || "—";
     let latest = isFirmwareEntityAlignedWithChannel(entity) ? getFirmwareLatestVersion(entity) : "";
-    const relation = latest ? compareFirmwareVersions(latest, String(entity.current_version || "").trim() || fallbackCurrent || "—") : null;
+    const relation = latest ? compareFirmwareVersions(latest, current) : null;
     if (!isFirmwareUpdateChecking() && relation !== null && relation <= 0) {
       latest = "";
     }
     return {
-      current: String(entity.current_version || "").trim() || fallbackCurrent || "—",
+      current,
       latest: latest || "—",
     };
   }
@@ -1135,12 +1170,7 @@
 
   function primeFirmwareUpdateState(channel = getFirmwareChannelLabel()) {
     const entity = getFirmwareUpdateEntity() || {};
-    const current = String(
-      entity.current_version
-      || state.entities.projectVersionText?.state
-      || state.entities.projectVersionText?.value
-      || ""
-    ).trim();
+    const current = getFirmwareCurrentVersion(entity);
     state.entities.firmwareUpdate = {
       ...entity,
       state: "CHECKING",
@@ -1178,6 +1208,9 @@
     }
     if (isFirmwareUpdateAvailable()) {
       return "Er staat een nieuwere firmware klaar.";
+    }
+    if (isFirmwareEffectivelyCurrent()) {
+      return `Je draait al de nieuwste firmware op kanaal ${channel}.`;
     }
     return "Kies een kanaal en controleer of er een nieuwere firmware klaarstaat.";
   }
