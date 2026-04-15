@@ -9,13 +9,16 @@
 # PACKAGES
 # ==============================================================================
 substitutions:
+  <<: !include openquatt/topology/oq_topology_duo.yaml
   main_release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-duo-ota.manifest.json"
   dev_release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/download/dev-latest/openquatt-duo-ota.manifest.json"
   # Stable OTA channel by default. Dev builds should override both substitutions
   # via `esphome -s release_channel dev -s release_manifest_url ... compile ...`.
   release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-duo-ota.manifest.json"
 
-packages: !include openquatt/oq_packages.yaml
+packages:
+  <<: !include openquatt/oq_packages_common.yaml
+  <<: !include openquatt/topology/oq_topology_packages_duo.yaml
 
 # ==============================================================================
 # ESPHOME CORE
