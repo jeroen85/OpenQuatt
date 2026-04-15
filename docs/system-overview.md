@@ -56,9 +56,8 @@ Package include order is intentional:
 16. `oq_local_sensors`
 17. `oq_sensor_sources`
 18. `oq_ot_slave`
-19. `oq_debug_testing`
-20. `oq_webserver`
-21. `oq_HP_io` (HP1 always; HP2 only on Duo)
+19. `oq_webserver`
+20. `oq_HP_io` (HP1 always; HP2 only on Duo)
 
 This order mirrors data dependencies and ownership boundaries.
 `oq_ot_slave` uses the ESP-IDF RMT-based OpenTherm runtime and is only intended for RMT-capable ESP32 targets.
@@ -81,7 +80,6 @@ OpenQuatt follows strict subsystem ownership:
 - **Local DS18B20 ingest**: `oq_local_sensors`
 - **Source selection and selected-source synthesis**: `oq_sensor_sources`
 - **Shared runtime services and service entities**: `oq_common`
-- **Manual debug/testing probes**: `oq_debug_testing`
 
 This prevents hidden control coupling and keeps debugging deterministic.
 
@@ -163,11 +161,10 @@ Strategy packages compute:
 
 ### 4.8 Service and diagnostics layer
 
-`oq_common`, `oq_debug_testing`, and `oq_thermal_request_control` provide:
+`oq_common` and `oq_thermal_request_control` provide:
 
 - firmware update entities, runtime update-channel select, and manual check trigger
 - runtime logger level controls
-- one-shot Modbus register read tools (HP1 always; HP2 only surfaced on Duo)
 - runtime balancing service entities from thermal request control (`Runtime lead HP`, runtime counter reset)
 
 ## 5. Heating Strategy Mechanics
@@ -293,7 +290,7 @@ Compile-time profile selection is done by choosing the firmware entrypoint:
 - HP1, HP2
 - Tuning groups
 - Diagnostics groups
-- Debug and testing groups surfaced in the dedicated dashboard tab (`oq_debug_testing.yaml` exposes the HP2 debug probe only on Duo)
+- Diagnostics groups surfaced in the dedicated dashboard tab
 
 This keeps ESPHome web UI and Home Assistant mapping coherent.
 

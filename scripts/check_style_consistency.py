@@ -87,7 +87,6 @@ STRICT_TOP_LEVEL_ORDER_RULES = {
         "oq_local_sensors",
         "oq_sensor_sources",
         "oq_ot_slave",
-        "oq_debug_testing",
         "oq_setup_status",
         "oq_webserver",
         "heatpump1",
@@ -104,8 +103,6 @@ STRICT_TOP_LEVEL_ORDER_RULES = {
         "cic_hp2_sensor_internal",
         "sensor_sources_duo_flow_internal",
         "ot_secondary_present",
-        "debug_hp2_internal",
-        "debug_secondary_hp_id",
     ),
     "openquatt/topology/oq_topology_packages_duo.yaml": (
         "heatpump2",
@@ -122,8 +119,6 @@ STRICT_TOP_LEVEL_ORDER_RULES = {
         "cic_hp2_sensor_internal",
         "sensor_sources_duo_flow_internal",
         "ot_secondary_present",
-        "debug_hp2_internal",
-        "debug_secondary_hp_id",
     ),
 }
 

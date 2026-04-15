@@ -2441,45 +2441,13 @@ views:
                 name: Autotune Ki suggested
               - entity: sensor.openquatt_flow_autotune_status
                 name: Autotune status
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:flask-outline
-            heading: Manual Modbus test reader
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-              <summary><strong>Explanation</strong></summary>
-
-              One-shot manual register read for debugging/testing:
-
-              - First set the register number.
-              - Then press **Debug Read HP1 register**.
-              - Result is shown as `U16` and `S16`.
-
-              </details>
-            text_only: true
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: number.openquatt_debug_modbus_register
-                name: Modbus register
-              - entity: button.openquatt_debug_read_hp1_register
-                name: Debug Read HP1 register
-              - entity: sensor.openquatt_debug_modbus_value_u16
-                name: Result U16
-              - entity: sensor.openquatt_debug_modbus_value_s16
-                name: Result S16
-              - entity: sensor.openquatt_debug_modbus_last_target
-                name: Last target
     header:
       card:
         type: markdown
         content: >-
           # <ha-icon icon="mdi:toolbox-outline"></ha-icon> Service & Test
 
-          Manual service actions and temporary test tooling.
+          Manual service actions.
     cards: []
   - title: Diagnostics
     path: diagnostics

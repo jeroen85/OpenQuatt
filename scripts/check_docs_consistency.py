@@ -258,7 +258,7 @@ def main() -> int:
                 1,
                 "Dashboard YAML changed; consider updating docs/dashboardoverzicht.md.",
             )
-        if any_changed(changed, {"openquatt/oq_debug_testing.yaml", "openquatt/oq_common.yaml"}) and not any_changed(changed, {"docs/dashboardoverzicht.md", "docs/instellingen-en-meetwaarden.md", "docs/hoe-openquatt-werkt.md"}):
+        if any_changed(changed, {"openquatt/oq_common.yaml"}) and not any_changed(changed, {"docs/dashboardoverzicht.md", "docs/instellingen-en-meetwaarden.md", "docs/hoe-openquatt-werkt.md"}):
             add(
                 findings,
                 "docs/dashboardoverzicht.md",

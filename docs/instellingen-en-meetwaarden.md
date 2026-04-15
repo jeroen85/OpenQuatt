@@ -272,9 +272,6 @@ Belangrijke hulpmiddelen:
 - `Debug Level Modbus`
 - `Runtime lead HP`
 - `Reset Runtime Counters (HP1+HP2)`
-- `Debug Modbus register`
-- `Debug Read HP1 register`
-- `Debug Read HP2 register`
 
 Gebruik deze groep vooral voor onderhoud en diagnose, niet voor dagelijks gebruik.
 
