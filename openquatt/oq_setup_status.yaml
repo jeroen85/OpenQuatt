@@ -18,18 +18,6 @@ globals:
     restore_value: true
     initial_value: 'false'
 
-binary_sensor:
-  - platform: template
-    id: oq_setup_complete_sensor
-    name: "Setup Complete"
-    icon: mdi:check-circle-outline
-    device_class: running
-    entity_category: diagnostic
-    lambda: |-
-      return id(oq_setup_complete);
-    web_server:
-      sorting_group_id: oq_setup
-
 button:
   - platform: template
     id: oq_setup_complete_button
@@ -52,3 +40,15 @@ button:
     on_press:
       - lambda: |-
           id(oq_setup_complete) = false;
+
+binary_sensor:
+  - platform: template
+    id: oq_setup_complete_sensor
+    name: "Setup Complete"
+    icon: mdi:check-circle-outline
+    device_class: running
+    entity_category: diagnostic
+    lambda: |-
+      return id(oq_setup_complete);
+    web_server:
+      sorting_group_id: oq_setup

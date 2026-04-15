@@ -815,6 +815,36 @@ sensor:
 
       return p_th_w / p_el_w;
 
+  # Internal raw diagnostic words. We keep these hidden and derive the compact
+  # diagnostics we actually use from them instead of exposing dozens of
+  # individual Modbus bit entities per heat pump.
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    id: ${hp_id}_status_2119_raw
+    register_type: holding
+    address: 2119
+    value_type: U_WORD
+    skip_updates: ${oq_skip_30s}
+    internal: true
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    id: ${hp_id}_status_2120_raw
+    register_type: holding
+    address: 2120
+    value_type: U_WORD
+    skip_updates: ${oq_skip_30s}
+    internal: true
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    id: ${hp_id}_status_2121_raw
+    register_type: holding
+    address: 2121
+    value_type: U_WORD
+    skip_updates: ${oq_skip_30s}
+    internal: true
+
   # ----------------------------
   # BINARY SENSOR
   # ----------------------------
@@ -976,636 +1006,21 @@ binary_sensor:
     web_server:
       sorting_group_id: oq_${hp_id}
 
-  # Register 2119 - Protection/Failure status 1 (bitmask flags)
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_prot_main_line_current
-    name: "${prefix}Protection - Main line current"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2119
-    bitmask: 0x1
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_prot_compressor_phase_current
-    name: "${prefix}Protection - Compressor phase current"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2119
-    bitmask: 0x2
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_prot_ipm_module
-    name: "${prefix}Protection - IPM module"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2119
-    bitmask: 0x4
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
+  # Derived from the raw 2119 status word; this one remains a standalone binary
+  # sensor because it is used by the heating strategies.
+  - platform: template
     id: ${hp_id}_prot_oil_return
     name: "${prefix}Protection - Compressor oil return"
     icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2119
-    bitmask: 0x8
     device_class: problem
     disabled_by_default: true
     entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_prot_high_pressure_switch
-    name: "${prefix}Protection - High pressure switch"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2119
-    bitmask: 0x10
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_prot_high_pressure_sensor
-    name: "${prefix}Protection - High pressure detected"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2119
-    bitmask: 0x20
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_prot_first_start_preheat
-    name: "${prefix}Protection - First start preheat"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2119
-    bitmask: 0x40
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_prot_gas_discharge_temp
-    name: "${prefix}Protection - Gas discharge temp sensor"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2119
-    bitmask: 0x80
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_prot_evaporator_temp
-    name: "${prefix}Protection - Evaporator temp sensor"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2119
-    bitmask: 0x100
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_prot_ac_voltage
-    name: "${prefix}Protection - AC voltage high-low"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2119
-    bitmask: 0x200
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_prot_ambient_temp
-    name: "${prefix}Protection - Ambient temperature"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2119
-    bitmask: 0x400
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_prot_frequency_limit
-    name: "${prefix}Protection - Frequency limit ambient"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2119
-    bitmask: 0x800
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_prot_low_pressure_switch
-    name: "${prefix}Protection - Low pressure switch"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2119
-    bitmask: 0x1000
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_prot_low_pressure_sensor
-    name: "${prefix}Protection - Low pressure detected"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2119
-    bitmask: 0x2000
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  # Register 2120 - Failure status 2 (bitmask flags)
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_outdoor_ambient_temp
-    name: "${prefix}Failure - Outdoor ambient temp sensor"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2120
-    bitmask: 0x1
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_outdoor_evap_temp
-    name: "${prefix}Failure - Outdoor evaporator temp sensor"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2120
-    bitmask: 0x2
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_gas_discharge_temp
-    name: "${prefix}Failure - Gas discharge temp sensor"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2120
-    bitmask: 0x4
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_gas_return_temp
-    name: "${prefix}Failure - Gas return temp sensor"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2120
-    bitmask: 0x8
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_evap_pressure
-    name: "${prefix}Failure - Evaporator pressure sensor"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2120
-    bitmask: 0x10
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_condenser_pressure
-    name: "${prefix}Failure - Condenser pressure sensor"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2120
-    bitmask: 0x20
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_high_pressure_lock
-    name: "${prefix}Failure - High pressure lock"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2120
-    bitmask: 0x40
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_low_pressure_lock
-    name: "${prefix}Failure - Low pressure lock"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2120
-    bitmask: 0x80
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_dc_fan_a
-    name: "${prefix}Failure - DC fan A"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2120
-    bitmask: 0x100
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_evap_pressure_lock
-    name: "${prefix}Failure - Evap pressure lock"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2120
-    bitmask: 0x400
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_condenser_pressure_lock
-    name: "${prefix}Failure - Condenser pressure lock"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2120
-    bitmask: 0x800
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_evi_pressure
-    name: "${prefix}Failure - EVI pressure sensor"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2120
-    bitmask: 0x2000
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_evi_inlet_temp
-    name: "${prefix}Failure - EVI inlet temp sensor"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2120
-    bitmask: 0x4000
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_evi_outlet_temp
-    name: "${prefix}Failure - EVI outlet temp sensor"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2120
-    bitmask: 0x8000
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  # Register 2121 - Failure status 3 (bitmask flags)
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_master_slave_comm
-    name: "${prefix}Failure - Master-slave communication"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2121
-    bitmask: 0x1
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_pcb_module_comm
-    name: "${prefix}Failure - PCB-module communication"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2121
-    bitmask: 0x2
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_phase_open_short
-    name: "${prefix}Failure - Compressor phase open-short"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2121
-    bitmask: 0x4
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_phase_overload
-    name: "${prefix}Failure - Compressor phase overload"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2121
-    bitmask: 0x8
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_compressor_driver
-    name: "${prefix}Failure - Compressor driver"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2121
-    bitmask: 0x10
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_module_vdc
-    name: "${prefix}Failure - Module VDC voltage"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2121
-    bitmask: 0x20
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_ac_current
-    name: "${prefix}Failure - AC current"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2121
-    bitmask: 0x40
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_eeprom
-    name: "${prefix}Failure - EEPROM"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2121
-    bitmask: 0x80
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_fan_pcb
-    name: "${prefix}Failure - Fan drive PCB"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2121
-    bitmask: 0x100
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_inlet_water_temp
-    name: "${prefix}Failure - Inlet water temp sensor"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2121
-    bitmask: 0x200
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_outlet_water_temp
-    name: "${prefix}Failure - Outlet water temp sensor"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2121
-    bitmask: 0x400
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_inner_coil_temp
-    name: "${prefix}Failure - Inner coil temp sensor"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2121
-    bitmask: 0x800
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_reserved_temp
-    name: "${prefix}Failure - Reserved temp sensor"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2121
-    bitmask: 0x1000
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_diagnostics_hp
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_fail_dc_water_pump
-    name: "${prefix}Failure - DC water pump"
-    icon: mdi:alert-circle-outline
-    register_type: holding
-    address: 2121
-    bitmask: 0x2000
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
+    lambda: |-
+      const float raw = id(${hp_id}_status_2119_raw).state;
+      if (isnan(raw)) {
+        return false;
+      }
+      return (static_cast<uint16_t>(lroundf(raw)) & 0x0008u) != 0;
     web_server:
       sorting_group_id: oq_diagnostics_hp
 
@@ -1616,35 +1031,42 @@ binary_sensor:
     device_class: problem
     lambda: |-
       // OT fault should only reflect explicit failure bits, not protection or cycle states.
+      auto has_bit = [](float raw, uint16_t bitmask) -> bool {
+        return !isnan(raw) && ((static_cast<uint16_t>(lroundf(raw)) & bitmask) != 0);
+      };
+
+      const float status_2120 = id(${hp_id}_status_2120_raw).state;
+      const float status_2121 = id(${hp_id}_status_2121_raw).state;
+
       return
-          id(${hp_id}_fail_outdoor_ambient_temp).state ||
-          id(${hp_id}_fail_outdoor_evap_temp).state ||
-          id(${hp_id}_fail_gas_discharge_temp).state ||
-          id(${hp_id}_fail_gas_return_temp).state ||
-          id(${hp_id}_fail_evap_pressure).state ||
-          id(${hp_id}_fail_condenser_pressure).state ||
-          id(${hp_id}_fail_high_pressure_lock).state ||
-          id(${hp_id}_fail_low_pressure_lock).state ||
-          id(${hp_id}_fail_dc_fan_a).state ||
-          id(${hp_id}_fail_evap_pressure_lock).state ||
-          id(${hp_id}_fail_condenser_pressure_lock).state ||
-          id(${hp_id}_fail_evi_pressure).state ||
-          id(${hp_id}_fail_evi_inlet_temp).state ||
-          id(${hp_id}_fail_evi_outlet_temp).state ||
-          id(${hp_id}_fail_master_slave_comm).state ||
-          id(${hp_id}_fail_pcb_module_comm).state ||
-          id(${hp_id}_fail_phase_open_short).state ||
-          id(${hp_id}_fail_phase_overload).state ||
-          id(${hp_id}_fail_compressor_driver).state ||
-          id(${hp_id}_fail_module_vdc).state ||
-          id(${hp_id}_fail_ac_current).state ||
-          id(${hp_id}_fail_eeprom).state ||
-          id(${hp_id}_fail_fan_pcb).state ||
-          id(${hp_id}_fail_inlet_water_temp).state ||
-          id(${hp_id}_fail_outlet_water_temp).state ||
-          id(${hp_id}_fail_inner_coil_temp).state ||
-          id(${hp_id}_fail_reserved_temp).state ||
-          id(${hp_id}_fail_dc_water_pump).state;
+          has_bit(status_2120, 0x0001u) ||
+          has_bit(status_2120, 0x0002u) ||
+          has_bit(status_2120, 0x0004u) ||
+          has_bit(status_2120, 0x0008u) ||
+          has_bit(status_2120, 0x0010u) ||
+          has_bit(status_2120, 0x0020u) ||
+          has_bit(status_2120, 0x0040u) ||
+          has_bit(status_2120, 0x0080u) ||
+          has_bit(status_2120, 0x0100u) ||
+          has_bit(status_2120, 0x0400u) ||
+          has_bit(status_2120, 0x0800u) ||
+          has_bit(status_2120, 0x2000u) ||
+          has_bit(status_2120, 0x4000u) ||
+          has_bit(status_2120, 0x8000u) ||
+          has_bit(status_2121, 0x0001u) ||
+          has_bit(status_2121, 0x0002u) ||
+          has_bit(status_2121, 0x0004u) ||
+          has_bit(status_2121, 0x0008u) ||
+          has_bit(status_2121, 0x0010u) ||
+          has_bit(status_2121, 0x0020u) ||
+          has_bit(status_2121, 0x0040u) ||
+          has_bit(status_2121, 0x0080u) ||
+          has_bit(status_2121, 0x0100u) ||
+          has_bit(status_2121, 0x0200u) ||
+          has_bit(status_2121, 0x0400u) ||
+          has_bit(status_2121, 0x0800u) ||
+          has_bit(status_2121, 0x1000u) ||
+          has_bit(status_2121, 0x2000u);
 
   # ----------------------------
   # TEXT SENSOR
@@ -1711,6 +1133,7 @@ text_sensor:
     id: ${hp_id}_active_failures_list
     name: "${prefix}Active Failures List"
     entity_category: diagnostic
+    update_interval: 5s
     web_server:
       sorting_group_id: oq_diagnostics
     icon: mdi:alert-circle-outline
@@ -1723,53 +1146,61 @@ text_sensor:
         s += name;
       };
 
+      auto has_bit = [](float raw, uint16_t bitmask) -> bool {
+        return !isnan(raw) && ((static_cast<uint16_t>(lroundf(raw)) & bitmask) != 0);
+      };
+
+      const float status_2119 = id(${hp_id}_status_2119_raw).state;
+      const float status_2120 = id(${hp_id}_status_2120_raw).state;
+      const float status_2121 = id(${hp_id}_status_2121_raw).state;
+
       // 2119
-      if (id(${hp_id}_prot_main_line_current).state) add("Main line current");
-      if (id(${hp_id}_prot_compressor_phase_current).state) add("Compressor phase current");
-      if (id(${hp_id}_prot_ipm_module).state) add("IPM module");
-      if (id(${hp_id}_prot_oil_return).state) add("Compressor oil return");
-      if (id(${hp_id}_prot_high_pressure_switch).state) add("High pressure switch");
-      if (id(${hp_id}_prot_high_pressure_sensor).state) add("High pressure detected");
-      if (id(${hp_id}_prot_first_start_preheat).state) add("1st start pre-heat");
-      if (id(${hp_id}_prot_gas_discharge_temp).state) add("Gas discharge temp sensor");
-      if (id(${hp_id}_prot_evaporator_temp).state) add("Evaporator temp sensor");
-      if (id(${hp_id}_prot_ac_voltage).state) add("AC high-low voltage");
-      if (id(${hp_id}_prot_ambient_temp).state) add("Ambient temperature");
-      if (id(${hp_id}_prot_frequency_limit).state) add("Frequency limit ambient");
-      if (id(${hp_id}_prot_low_pressure_switch).state) add("Low pressure switch");
-      if (id(${hp_id}_prot_low_pressure_sensor).state) add("Low pressure detected");
+      if (has_bit(status_2119, 0x0001u)) add("Main line current");
+      if (has_bit(status_2119, 0x0002u)) add("Compressor phase current");
+      if (has_bit(status_2119, 0x0004u)) add("IPM module");
+      if (has_bit(status_2119, 0x0008u)) add("Compressor oil return");
+      if (has_bit(status_2119, 0x0010u)) add("High pressure switch");
+      if (has_bit(status_2119, 0x0020u)) add("High pressure detected");
+      if (has_bit(status_2119, 0x0040u)) add("1st start pre-heat");
+      if (has_bit(status_2119, 0x0080u)) add("Gas discharge temp sensor");
+      if (has_bit(status_2119, 0x0100u)) add("Evaporator temp sensor");
+      if (has_bit(status_2119, 0x0200u)) add("AC high-low voltage");
+      if (has_bit(status_2119, 0x0400u)) add("Ambient temperature");
+      if (has_bit(status_2119, 0x0800u)) add("Frequency limit ambient");
+      if (has_bit(status_2119, 0x1000u)) add("Low pressure switch");
+      if (has_bit(status_2119, 0x2000u)) add("Low pressure detected");
 
       // 2120
-      if (id(${hp_id}_fail_outdoor_ambient_temp).state) add("Outdoor ambient temp sensor failure");
-      if (id(${hp_id}_fail_outdoor_evap_temp).state) add("Outdoor evaporator temp sensor failure");
-      if (id(${hp_id}_fail_gas_discharge_temp).state) add("Gas discharge temp sensor failure");
-      if (id(${hp_id}_fail_gas_return_temp).state) add("Gas return temp sensor failure");
-      if (id(${hp_id}_fail_evap_pressure).state) add("Evaporator pressure sensor failure");
-      if (id(${hp_id}_fail_condenser_pressure).state) add("Condenser pressure sensor failure");
-      if (id(${hp_id}_fail_high_pressure_lock).state) add("High pressure lock");
-      if (id(${hp_id}_fail_low_pressure_lock).state) add("Low pressure lock");
-      if (id(${hp_id}_fail_dc_fan_a).state) add("DC fan A failure");
-      if (id(${hp_id}_fail_evap_pressure_lock).state) add("Evaporating pressure lock");
-      if (id(${hp_id}_fail_condenser_pressure_lock).state) add("Condenser pressure lock");
-      if (id(${hp_id}_fail_evi_pressure).state) add("EVI pressure sensor failure");
-      if (id(${hp_id}_fail_evi_inlet_temp).state) add("EVI inlet temp sensor failure");
-      if (id(${hp_id}_fail_evi_outlet_temp).state) add("EVI outlet temp sensor failure");
+      if (has_bit(status_2120, 0x0001u)) add("Outdoor ambient temp sensor failure");
+      if (has_bit(status_2120, 0x0002u)) add("Outdoor evaporator temp sensor failure");
+      if (has_bit(status_2120, 0x0004u)) add("Gas discharge temp sensor failure");
+      if (has_bit(status_2120, 0x0008u)) add("Gas return temp sensor failure");
+      if (has_bit(status_2120, 0x0010u)) add("Evaporator pressure sensor failure");
+      if (has_bit(status_2120, 0x0020u)) add("Condenser pressure sensor failure");
+      if (has_bit(status_2120, 0x0040u)) add("High pressure lock");
+      if (has_bit(status_2120, 0x0080u)) add("Low pressure lock");
+      if (has_bit(status_2120, 0x0100u)) add("DC fan A failure");
+      if (has_bit(status_2120, 0x0400u)) add("Evaporating pressure lock");
+      if (has_bit(status_2120, 0x0800u)) add("Condenser pressure lock");
+      if (has_bit(status_2120, 0x2000u)) add("EVI pressure sensor failure");
+      if (has_bit(status_2120, 0x4000u)) add("EVI inlet temp sensor failure");
+      if (has_bit(status_2120, 0x8000u)) add("EVI outlet temp sensor failure");
 
       // 2121
-      if (id(${hp_id}_fail_master_slave_comm).state) add("Master/slave comm failure");
-      if (id(${hp_id}_fail_pcb_module_comm).state) add("PCB/module comm failure");
-      if (id(${hp_id}_fail_phase_open_short).state) add("Compressor phase open/short");
-      if (id(${hp_id}_fail_phase_overload).state) add("Compressor phase overload");
-      if (id(${hp_id}_fail_compressor_driver).state) add("Compressor driver failure");
-      if (id(${hp_id}_fail_module_vdc).state) add("Module VDC over/under voltage");
-      if (id(${hp_id}_fail_ac_current).state) add("AC current failure");
-      if (id(${hp_id}_fail_eeprom).state) add("EEPROM failure");
-      if (id(${hp_id}_fail_fan_pcb).state) add("Fan drive PCB failure");
-      if (id(${hp_id}_fail_inlet_water_temp).state) add("Inlet water temp sensor failure");
-      if (id(${hp_id}_fail_outlet_water_temp).state) add("Outlet water temp sensor failure");
-      if (id(${hp_id}_fail_inner_coil_temp).state) add("Inner coil temp sensor failure");
-      if (id(${hp_id}_fail_reserved_temp).state) add("Reserved temp sensor failure");
-      if (id(${hp_id}_fail_dc_water_pump).state) add("DC water pump failure");
+      if (has_bit(status_2121, 0x0001u)) add("Master/slave comm failure");
+      if (has_bit(status_2121, 0x0002u)) add("PCB/module comm failure");
+      if (has_bit(status_2121, 0x0004u)) add("Compressor phase open/short");
+      if (has_bit(status_2121, 0x0008u)) add("Compressor phase overload");
+      if (has_bit(status_2121, 0x0010u)) add("Compressor driver failure");
+      if (has_bit(status_2121, 0x0020u)) add("Module VDC over/under voltage");
+      if (has_bit(status_2121, 0x0040u)) add("AC current failure");
+      if (has_bit(status_2121, 0x0080u)) add("EEPROM failure");
+      if (has_bit(status_2121, 0x0100u)) add("Fan drive PCB failure");
+      if (has_bit(status_2121, 0x0200u)) add("Inlet water temp sensor failure");
+      if (has_bit(status_2121, 0x0400u)) add("Outlet water temp sensor failure");
+      if (has_bit(status_2121, 0x0800u)) add("Inner coil temp sensor failure");
+      if (has_bit(status_2121, 0x1000u)) add("Reserved temp sensor failure");
+      if (has_bit(status_2121, 0x2000u)) add("DC water pump failure");
 
       return s.empty() ? std::string("None") : s;
 
