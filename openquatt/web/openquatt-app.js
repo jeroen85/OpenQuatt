@@ -3050,8 +3050,8 @@
             <p>Met deze waarden schat OpenQuatt hoeveel warmte je woning nodig heeft. Heb je deze gegevens van Quatt, dan kun je ze hier als startpunt gebruiken.</p>
           </div>
           <div class="oq-settings-grid">
-            ${renderSettingsNumberField("houseOutdoorMax", "Buitentemperatuur zonder warmtevraag", "Bij deze buitentemperatuur is verwarmen meestal niet meer nodig.")}
-            ${renderSettingsNumberField("housePower", "Geschat maximaal warmteverlies", "Hoeveel warmte je woning ongeveer nodig heeft op een koude dag.")}
+            ${renderSettingsNumberField("houseOutdoorMax", "Maximum heating outdoor temperature", "Bij deze buitentemperatuur is verwarmen meestal niet meer nodig.")}
+            ${renderSettingsNumberField("housePower", "Rated maximum house power", "Hoeveel warmte je woning ongeveer nodig heeft op een koude dag.")}
             ${renderPowerHouseResponseProfilesField()}
           </div>
           ${renderPowerHouseAdvancedField()}
@@ -3131,8 +3131,8 @@
           <p class="oq-helper-section-copy">Met deze waarden schat OpenQuatt hoeveel warmte je woning nodig heeft. Heb je deze gegevens van Quatt, dan kun je ze hier gebruiken.</p>
         </div>
         <div class="oq-helper-control-grid">
-          ${renderNumberInputField("housePower", "Geschat maximaal warmteverlies", "Hoeveel warmte je woning ongeveer nodig heeft op een koude dag.")}
-          ${renderNumberInputField("houseOutdoorMax", "Buitentemperatuur zonder warmtevraag", "Bij deze buitentemperatuur is verwarmen meestal niet meer nodig.")}
+          ${renderNumberInputField("housePower", "Rated maximum house power", "Hoeveel warmte je woning ongeveer nodig heeft op een koude dag.")}
+          ${renderNumberInputField("houseOutdoorMax", "Maximum heating outdoor temperature", "Bij deze buitentemperatuur is verwarmen meestal niet meer nodig.")}
         </div>
       </section>
     `;
@@ -3490,8 +3490,8 @@
         ]
       : [
           ["Profiel", formatReviewOption("phResponseProfile")],
-          ["Geschat maximaal warmteverlies", formatValue("housePower")],
-          ["Buitentemperatuur zonder warmtevraag", formatValue("houseOutdoorMax")],
+          ["Rated maximum house power", formatValue("housePower")],
+          ["Maximum heating outdoor temperature", formatValue("houseOutdoorMax")],
           ["Temperatuurreactie", formatValue("phKp")],
           ["Comfort onder setpoint", formatValue("phComfortBelow")],
           ["Comfort boven setpoint", formatValue("phComfortAbove")],
@@ -3707,9 +3707,22 @@
     return `<span class="oq-overview-chip oq-overview-chip--${escapeHtml(tone)}"><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</span>`;
   }
 
-  function renderHpPanelStatusChip(running) {
+  function getHeatPumpPanelStatusLabel(mode, running) {
+    if (running) {
+      return "Actief";
+    }
+    if (mode === "Stand-by") {
+      return "Stand-by";
+    }
+    if (mode === "Onbekend") {
+      return "Onbekend";
+    }
+    return "Niet actief";
+  }
+
+  function renderHpPanelStatusChip(mode, running) {
     const tone = running ? "active" : "neutral";
-    const label = running ? "Actief" : "Idle";
+    const label = getHeatPumpPanelStatusLabel(mode, running);
     return `<span class="oq-overview-chip oq-overview-chip--${escapeHtml(tone)}" data-oq-bind="panel-status">${escapeHtml(label)}</span>`;
   }
 
@@ -3732,11 +3745,11 @@
     `;
   }
 
-  function renderHpPanelStatusRow(running, warningActive, failureText) {
-    return `${warningActive ? renderHpPanelWarningChip(failureText) : ""}${renderHpPanelStatusChip(running)}`;
+  function renderHpPanelStatusRow(mode, running, warningActive, failureText) {
+    return `${warningActive ? renderHpPanelWarningChip(failureText) : ""}${renderHpPanelStatusChip(mode, running)}`;
   }
 
-  function patchHpPanelStatusRow(headStatus, running, warningActive, failureText) {
+  function patchHpPanelStatusRow(headStatus, mode, running, warningActive, failureText) {
     if (!headStatus) {
       return;
     }
@@ -3759,10 +3772,10 @@
     }
 
     const statusTone = running ? "active" : "neutral";
-    const statusLabel = running ? "Actief" : "Idle";
+    const statusLabel = getHeatPumpPanelStatusLabel(mode, running);
     let statusNode = headStatus.querySelector('[data-oq-bind="panel-status"]');
     if (!statusNode) {
-      headStatus.insertAdjacentHTML("beforeend", renderHpPanelStatusChip(running));
+      headStatus.insertAdjacentHTML("beforeend", renderHpPanelStatusChip(mode, running));
       statusNode = headStatus.querySelector('[data-oq-bind="panel-status"]');
     }
     if (statusNode) {
@@ -3985,6 +3998,13 @@
   }
 
   function getOverviewPrimarySignal() {
+    if (isSystemInStandby()) {
+      return {
+        label: "Regeling nu",
+        value: "Stand-by",
+        tone: "neutral",
+      };
+    }
     const model = isCurveMode() ? getCurveOverviewModel() : getPowerHouseOverviewModel();
     const title = model.statusTitle;
     const tone = title === "In balans" || title === "Dicht bij doel"
@@ -4000,6 +4020,13 @@
   }
 
   function getOverviewDemandSignal() {
+    if (isSystemInStandby()) {
+      return {
+        label: "Warmtevraag",
+        value: "Geen warmtevraag",
+        tone: "neutral",
+      };
+    }
     const demand = getHomeDemandState();
     const tone = demand.tone === "high" || demand.tone === "active"
       ? "orange"
@@ -4019,6 +4046,13 @@
         label: "Systeem",
         value: "Update beschikbaar",
         tone: "orange",
+      };
+    }
+    if (isSystemInStandby()) {
+      return {
+        label: "Systeem",
+        value: "Stand-by, gereed om te starten",
+        tone: "neutral",
       };
     }
     if (isEntityActive("silentActive")) {
@@ -4058,6 +4092,10 @@
         `).join("")}
       </section>
     `;
+  }
+
+  function isSystemInStandby() {
+    return getEntityStateText("controlModeLabel", "").toLowerCase().includes("standby");
   }
 
   function formatHeatPumpSummaryMode(mode, defrostActive) {
@@ -4502,7 +4540,7 @@
     const powerValue = getEntityNumericValue(keys.power);
     const heatValue = getEntityNumericValue(keys.heat);
     const animated = running || (!Number.isNaN(freqValue) && freqValue > 0) || (!Number.isNaN(powerValue) && powerValue > 80) || (!Number.isNaN(heatValue) && heatValue > 150);
-    const statusText = animated ? "Actief" : "Idle";
+    const statusText = getHeatPumpPanelStatusLabel(mode, animated);
     const failureText = failures === "Geen actieve storingen" ? "Geen storingen" : failures;
     const warningActive = failureText !== "Geen storingen";
     const defrostText = defrostActive ? "Actief" : "Uit";
@@ -5226,7 +5264,7 @@
             </div>
             <div class="oq-overview-hp-head-side">
               <div class="oq-overview-hp-status">
-                ${renderHpPanelStatusRow(running, schematicModel.warningActive, schematicModel.failureText)}
+                ${renderHpPanelStatusRow(mode, running, schematicModel.warningActive, schematicModel.failureText)}
               </div>
             </div>
           </div>
@@ -5242,7 +5280,7 @@
             <h3>${escapeHtml(title)}</h3>
           </div>
           <div class="oq-overview-hp-status">
-            ${renderHpPanelStatusRow(running, schematicModel.warningActive, schematicModel.failureText)}
+            ${renderHpPanelStatusRow(mode, running, schematicModel.warningActive, schematicModel.failureText)}
           </div>
         </div>
         <div class="oq-overview-hp-stats">
@@ -5573,7 +5611,7 @@
     const model = buildHeatPumpSchematicModel(title, keys, accent, mode, defrostActive, failures, running);
     const headStatus = panel.querySelector(".oq-overview-hp-status");
     if (headStatus) {
-      patchHpPanelStatusRow(headStatus, running, model.warningActive, model.failureText);
+      patchHpPanelStatusRow(headStatus, mode, running, model.warningActive, model.failureText);
     }
 
     const board = panel.querySelector("[data-oq-hp-board]");
@@ -5810,12 +5848,12 @@
           if (!hpStatus) {
             setInnerHtmlIfChanged(headSide, `
               <div class="oq-overview-hp-status">
-                ${renderHpPanelStatusRow(running, failures !== "Geen actieve storingen", failures)}
+                ${renderHpPanelStatusRow(mode, running, failures !== "Geen actieve storingen", failures)}
               </div>
             `);
             hpStatus = headSide.querySelector(".oq-overview-hp-status");
           }
-          patchHpPanelStatusRow(hpStatus, running, failures !== "Geen actieve storingen", failures);
+          patchHpPanelStatusRow(hpStatus, mode, running, failures !== "Geen actieve storingen", failures);
         }
       }
       patchHeatPumpPanel(
