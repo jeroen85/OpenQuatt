@@ -131,6 +131,7 @@ oq_debug_testing: !include
   vars:
     debug_hp2_internal: "true"
     debug_secondary_hp_id: "hp1"
+oq_setup_status: !include oq_setup_status.yaml
 oq_webserver: !include oq_webserver.yaml
 heatpump1: !include
   file: oq_HP_io.yaml

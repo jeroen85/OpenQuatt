@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>OpenQuatt UI Preview</title>
+    <link rel="stylesheet" href="./openquatt-app.css?v=quick-start-single-toggle-1">
+    <style>
+      :root {
+        color-scheme: light;
+      }
+
+      body {
+        margin: 0;
+        background: linear-gradient(180deg, #f6f2ea 0%, #f8fafc 100%);
+        font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+        color: #111827;
+      }
+
+      .oq-dev-page {
+        min-height: 100vh;
+        padding: 18px 0 36px;
+      }
+
+      esp-app {
+        display: block;
+        min-height: 1px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="oq-dev-page">
+      <esp-app></esp-app>
+    </div>
+    <script src="./mock-device.js?v=quick-start-single-toggle-1"></script>
+    <script src="./openquatt-app.js?v=quick-start-single-toggle-1"></script>
+  </body>
+</html>

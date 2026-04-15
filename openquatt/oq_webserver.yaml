@@ -5,10 +5,22 @@
 #   Central layout of web_server groups so all packages use the same UI structure
 #   (consistent in HA/diagnostics workflow).
 # ==============================================================================
+external_components:
+  - source:
+      type: local
+      path: components
+    components: [web_server_idf]
+
 web_server:
   port: 80
   version: 3
+  css_include: openquatt/web/openquatt-app.css
+  js_include: openquatt/web/openquatt-app.js
+  js_url: "${oq_webserver_js_url}"
   sorting_groups:
+    - id: oq_setup
+      name: "Quick Start"
+      sorting_weight: 2
     - id: oq_overview
       name: "Overview"
       sorting_weight: 5

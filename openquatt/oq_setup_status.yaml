@@ -1,0 +1,54 @@
+# ==============================================================================
+# OpenQuatt - Quick Start Status
+# ==============================================================================
+#
+# Purpose:
+#   Stores only the lightweight Quick Start completion state used by the custom
+#   web app. This replaces the older broad onboarding package.
+#
+# Exposes:
+#   - "Setup Complete" binary sensor
+#   - "Complete setup" button
+#   - "Reset setup state" button
+# ==============================================================================
+
+globals:
+  - id: oq_setup_complete
+    type: bool
+    restore_value: true
+    initial_value: 'false'
+
+binary_sensor:
+  - platform: template
+    id: oq_setup_complete_sensor
+    name: "Setup Complete"
+    icon: mdi:check-circle-outline
+    device_class: running
+    entity_category: diagnostic
+    lambda: |-
+      return id(oq_setup_complete);
+    web_server:
+      sorting_group_id: oq_setup
+
+button:
+  - platform: template
+    id: oq_setup_complete_button
+    name: "Complete setup"
+    icon: mdi:check-bold
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_setup
+    on_press:
+      - lambda: |-
+          id(oq_setup_complete) = true;
+
+  - platform: template
+    id: oq_setup_reset_button
+    name: "Reset setup state"
+    icon: mdi:restart
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_setup
+    on_press:
+      - lambda: |-
+          id(oq_setup_complete) = false;
