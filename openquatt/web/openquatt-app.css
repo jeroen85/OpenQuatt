@@ -704,7 +704,8 @@ body.oq-page-light {
   padding: 22px;
 }
 
-.oq-helper-shell--dark .oq-helper-modal {
+.oq-helper-shell--dark .oq-helper-modal,
+.oq-helper-modal-backdrop--dark .oq-helper-modal {
   border-color: rgba(71, 85, 105, 0.5);
   background:
     radial-gradient(circle at top left, rgba(249, 115, 22, 0.14), transparent 32%),
@@ -735,7 +736,8 @@ body.oq-page-light {
   line-height: 1.05;
 }
 
-.oq-helper-shell--dark .oq-helper-modal-title {
+.oq-helper-shell--dark .oq-helper-modal-title,
+.oq-helper-modal-backdrop--dark .oq-helper-modal-title {
   color: #f8fafc;
 }
 
@@ -751,7 +753,8 @@ body.oq-page-light {
   cursor: pointer;
 }
 
-.oq-helper-shell--dark .oq-helper-modal-close {
+.oq-helper-shell--dark .oq-helper-modal-close,
+.oq-helper-modal-backdrop--dark .oq-helper-modal-close {
   border-color: rgba(71, 85, 105, 0.52);
   background: rgba(25, 35, 49, 0.92);
   color: #f8fafc;
@@ -764,7 +767,8 @@ body.oq-page-light {
   line-height: 1.6;
 }
 
-.oq-helper-shell--dark .oq-helper-modal-copy {
+.oq-helper-shell--dark .oq-helper-modal-copy,
+.oq-helper-modal-backdrop--dark .oq-helper-modal-copy {
   color: #cbd5e1;
 }
 
@@ -776,7 +780,8 @@ body.oq-page-light {
   background: rgba(255, 255, 255, 0.84);
 }
 
-.oq-helper-shell--dark .oq-helper-modal-progress {
+.oq-helper-shell--dark .oq-helper-modal-progress,
+.oq-helper-modal-backdrop--dark .oq-helper-modal-progress {
   border-color: rgba(71, 85, 105, 0.48);
   background: rgba(24, 35, 49, 0.78);
 }
@@ -792,7 +797,8 @@ body.oq-page-light {
   font-weight: 700;
 }
 
-.oq-helper-shell--dark .oq-helper-modal-progress-head {
+.oq-helper-shell--dark .oq-helper-modal-progress-head,
+.oq-helper-modal-backdrop--dark .oq-helper-modal-progress-head {
   color: #f8fafc;
 }
 
@@ -804,7 +810,8 @@ body.oq-page-light {
   background: rgba(148, 163, 184, 0.18);
 }
 
-.oq-helper-shell--dark .oq-helper-modal-progress-track {
+.oq-helper-shell--dark .oq-helper-modal-progress-track,
+.oq-helper-modal-backdrop--dark .oq-helper-modal-progress-track {
   background: rgba(71, 85, 105, 0.42);
 }
 
@@ -824,7 +831,8 @@ body.oq-page-light {
   line-height: 1.55;
 }
 
-.oq-helper-shell--dark .oq-helper-modal-note {
+.oq-helper-shell--dark .oq-helper-modal-note,
+.oq-helper-modal-backdrop--dark .oq-helper-modal-note {
   color: #94a3b8;
 }
 
@@ -841,7 +849,8 @@ body.oq-page-light {
   background: rgba(255, 255, 255, 0.84);
 }
 
-.oq-helper-shell--dark .oq-helper-modal-row {
+.oq-helper-shell--dark .oq-helper-modal-row,
+.oq-helper-modal-backdrop--dark .oq-helper-modal-row {
   border-color: rgba(71, 85, 105, 0.48);
   background: rgba(24, 35, 49, 0.78);
 }
@@ -854,7 +863,8 @@ body.oq-page-light {
   font-weight: 600;
 }
 
-.oq-helper-shell--dark .oq-helper-modal-label {
+.oq-helper-shell--dark .oq-helper-modal-label,
+.oq-helper-modal-backdrop--dark .oq-helper-modal-label {
   color: #94a3b8;
 }
 
@@ -864,7 +874,8 @@ body.oq-page-light {
   font-weight: 700;
 }
 
-.oq-helper-shell--dark .oq-helper-modal-value {
+.oq-helper-shell--dark .oq-helper-modal-value,
+.oq-helper-modal-backdrop--dark .oq-helper-modal-value {
   color: #f8fafc;
 }
 
@@ -885,7 +896,8 @@ body.oq-page-light {
   padding: 0 12px;
 }
 
-.oq-helper-shell--dark .oq-helper-modal-channel select {
+.oq-helper-shell--dark .oq-helper-modal-channel select,
+.oq-helper-modal-backdrop--dark .oq-helper-modal-channel select {
   border-color: rgba(71, 85, 105, 0.48);
   background: rgba(25, 35, 49, 0.84);
   color: #f8fafc;

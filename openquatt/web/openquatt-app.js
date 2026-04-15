@@ -418,6 +418,9 @@
     updateModalOpen: false,
     updateCheckBusy: false,
     updateInstallBusy: false,
+    updateInstallTargetVersion: "",
+    updateInstallPhaseHint: "",
+    updateInstallProgressHint: Number.NaN,
     draggingCurveKey: "",
     motionFrame: 0,
     motionStartedAt: 0,
@@ -973,15 +976,59 @@
     return Math.max(0, Math.min(100, numeric));
   }
 
+  function hasInstalledFirmwareTargetVersion() {
+    const target = String(state.updateInstallTargetVersion || "").trim();
+    const current = getFirmwareCurrentVersion();
+    if (!target || !current) {
+      return false;
+    }
+    return compareFirmwareVersions(current, target) >= 0;
+  }
+
+  function syncFirmwareInstallHints() {
+    const phase = getFirmwareProgressPhase();
+    const percent = getFirmwareProgressPercent();
+
+    if (phase === "starting" || phase === "uploading" || phase === "rebooting") {
+      state.updateInstallPhaseHint = phase;
+      if (!Number.isNaN(percent)) {
+        state.updateInstallProgressHint = phase === "rebooting"
+          ? Math.max(percent, 100)
+          : percent;
+      }
+      return;
+    }
+
+    if (!state.updateInstallBusy) {
+      return;
+    }
+
+    if (hasInstalledFirmwareTargetVersion()) {
+      state.updateInstallPhaseHint = "rebooting";
+      state.updateInstallProgressHint = 100;
+      return;
+    }
+
+    if (state.controlNotice.includes("opnieuw is opgestart")) {
+      state.updateInstallPhaseHint = "rebooting";
+      state.updateInstallProgressHint = 100;
+    }
+  }
+
   function isFirmwareProgressActive() {
     const phase = getFirmwareProgressPhase();
     return phase === "starting" || phase === "uploading" || phase === "rebooting";
   }
 
   function getFirmwareProgressModel() {
-    const phase = getFirmwareProgressPhase();
+    syncFirmwareInstallHints();
+
+    const livePhase = getFirmwareProgressPhase();
+    const hasLivePhase = livePhase === "starting" || livePhase === "uploading" || livePhase === "rebooting";
+    const phase = hasLivePhase ? livePhase : state.updateInstallPhaseHint;
     const rawPercent = getFirmwareProgressPercent();
-    const basePercent = Number.isNaN(rawPercent) ? 0 : Math.round(rawPercent);
+    const hintedPercent = Number.isNaN(state.updateInstallProgressHint) ? 0 : Math.round(state.updateInstallProgressHint);
+    const basePercent = hasLivePhase && !Number.isNaN(rawPercent) ? Math.round(rawPercent) : hintedPercent;
 
     if (!isFirmwareProgressActive() && !state.updateInstallBusy) {
       return null;
@@ -1004,9 +1051,9 @@
     }
 
     return {
-      phaseLabel: "Voorbereiden",
+      phaseLabel: "Installeren",
       percent: basePercent,
-      copy: `OTA-update wordt voorbereid voor ${getInstallationLabel()}.`,
+      copy: `OTA-update is gestart voor ${getInstallationLabel()}.`,
     };
   }
 
@@ -1285,7 +1332,10 @@
         await refreshEntities(FIRMWARE_MODAL_KEYS, "all");
         render();
 
-        if (isFirmwareEffectivelyCurrent() && !isFirmwareProgressActive() && !isFirmwareUpdateInstalling()) {
+        if (
+          hasInstalledFirmwareTargetVersion()
+          || (isFirmwareEffectivelyCurrent() && !isFirmwareProgressActive() && !isFirmwareUpdateInstalling())
+        ) {
           return true;
         }
       } catch (error) {
@@ -1547,7 +1597,7 @@
       : [];
 
     return `
-      <div class="oq-helper-modal-backdrop${checking || installing || progress ? " is-busy" : ""}" data-oq-modal="firmware-update">
+      <div class="oq-helper-modal-backdrop${checking || installing || progress ? " is-busy" : ""}${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="firmware-update">
         <section class="oq-helper-modal" role="dialog" aria-modal="true" aria-labelledby="oq-update-modal-title">
           <div class="oq-helper-modal-head">
             <div>
@@ -2262,11 +2312,15 @@
   }
 
   async function installFirmwareUpdate() {
-    if (!getFirmwareUpdateEntity()) {
+    const entity = getFirmwareUpdateEntity();
+    if (!entity) {
       return;
     }
 
     state.updateInstallBusy = true;
+    state.updateInstallTargetVersion = getFirmwareLatestVersion(entity);
+    state.updateInstallPhaseHint = "starting";
+    state.updateInstallProgressHint = 0;
     state.controlError = "";
     state.controlNotice = "";
     render();
@@ -2286,6 +2340,9 @@
       state.controlError = `OTA-update kon niet worden gestart. ${error.message}`;
     } finally {
       state.updateInstallBusy = false;
+      state.updateInstallTargetVersion = "";
+      state.updateInstallPhaseHint = "";
+      state.updateInstallProgressHint = Number.NaN;
       render();
     }
   }
