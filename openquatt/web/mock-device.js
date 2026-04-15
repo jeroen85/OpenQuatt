@@ -155,6 +155,32 @@
     setNumber("Strategy requested power", strategyRequested, "W");
     setNumber("HP capacity (W)", capacity, "W");
     setNumber("HP deficit (W)", Math.max(0, strategyRequested - capacity), "W");
+
+    const boilerHeat = state.scenario === "dual" ? 180 : 0;
+    const systemHeat = Math.max(0, Number((Number(totalHeat || 0) + boilerHeat).toFixed(0)));
+    const electricalDaily = state.scenario === "idle" ? 3.1 : state.scenario === "defrost" ? 6.4 : single ? 7.2 : 8.6;
+    const heatpumpDaily = state.scenario === "idle" ? 9.4 : state.scenario === "defrost" ? 18.2 : single ? 28.4 : 36.9;
+    const boilerDaily = state.scenario === "dual" ? 2.7 : 0.0;
+    const systemDaily = Number((heatpumpDaily + boilerDaily).toFixed(1));
+    const heatpumpCopDaily = electricalDaily > 0 ? Number((heatpumpDaily / electricalDaily).toFixed(2)) : 0;
+    const electricalCumulative = single ? 286.4 : 469.5;
+    const heatpumpCumulative = single ? 1208.7 : 2048.6;
+    const boilerCumulative = state.scenario === "dual" ? 114.8 : 0.0;
+    const systemCumulative = Number((heatpumpCumulative + boilerCumulative).toFixed(1));
+    const heatpumpCopCumulative = electricalCumulative > 0 ? Number((heatpumpCumulative / electricalCumulative).toFixed(2)) : 0;
+
+    setNumber("Boiler Heat Power", boilerHeat, "W");
+    setNumber("System Heat Power", systemHeat, "W");
+    setNumber("Electrical Energy Daily", electricalDaily, "kWh");
+    setNumber("Electrical Energy Cumulative", electricalCumulative, "kWh");
+    setNumber("HeatPump Thermal Energy Daily", heatpumpDaily, "kWh");
+    setNumber("HeatPump Thermal Energy Cumulative", heatpumpCumulative, "kWh");
+    setNumber("HeatPump COP Daily", heatpumpCopDaily, "");
+    setNumber("HeatPump COP Cumulative", heatpumpCopCumulative, "");
+    setNumber("Boiler Thermal Energy Daily", boilerDaily, "kWh");
+    setNumber("Boiler Thermal Energy Cumulative", boilerCumulative, "kWh");
+    setNumber("System Thermal Energy Daily", systemDaily, "kWh");
+    setNumber("System Thermal Energy Cumulative", systemCumulative, "kWh");
   }
 
   function seedEntities() {
@@ -266,9 +292,21 @@
       ["Total Power Input", 0, "W"],
       ["Total COP", 0, ""],
       ["Total Heat Power", 0, "W"],
+      ["Boiler Heat Power", 0, "W"],
+      ["System Heat Power", 0, "W"],
       ["Strategy requested power", 0, "W"],
       ["HP capacity (W)", 0, "W"],
       ["HP deficit (W)", 0, "W"],
+      ["Electrical Energy Daily", 0, "kWh"],
+      ["Electrical Energy Cumulative", 0, "kWh"],
+      ["HeatPump Thermal Energy Daily", 0, "kWh"],
+      ["HeatPump Thermal Energy Cumulative", 0, "kWh"],
+      ["HeatPump COP Daily", 0, ""],
+      ["HeatPump COP Cumulative", 0, ""],
+      ["Boiler Thermal Energy Daily", 0, "kWh"],
+      ["Boiler Thermal Energy Cumulative", 0, "kWh"],
+      ["System Thermal Energy Daily", 0, "kWh"],
+      ["System Thermal Energy Cumulative", 0, "kWh"],
       ["Flow average (Selected)", 0, "L/h"],
       ["Room Temperature (Selected)", 20.6, "°C"],
       ["Room Setpoint (Selected)", 21.0, "°C"],

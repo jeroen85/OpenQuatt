@@ -111,7 +111,19 @@
     totalPower: { domain: "sensor", name: "Total Power Input" },
     totalCop: { domain: "sensor", name: "Total COP" },
     totalHeat: { domain: "sensor", name: "Total Heat Power" },
+    boilerHeatPower: { domain: "sensor", name: "Boiler Heat Power", optional: true },
+    systemHeatPower: { domain: "sensor", name: "System Heat Power", optional: true },
     flowSelected: { domain: "sensor", name: "Flow average (Selected)" },
+    electricalEnergyDaily: { domain: "sensor", name: "Electrical Energy Daily", optional: true },
+    electricalEnergyCumulative: { domain: "sensor", name: "Electrical Energy Cumulative", optional: true },
+    heatpumpThermalEnergyDaily: { domain: "sensor", name: "HeatPump Thermal Energy Daily", optional: true },
+    heatpumpThermalEnergyCumulative: { domain: "sensor", name: "HeatPump Thermal Energy Cumulative", optional: true },
+    heatpumpCopDaily: { domain: "sensor", name: "HeatPump COP Daily", optional: true },
+    heatpumpCopCumulative: { domain: "sensor", name: "HeatPump COP Cumulative", optional: true },
+    boilerThermalEnergyDaily: { domain: "sensor", name: "Boiler Thermal Energy Daily", optional: true },
+    boilerThermalEnergyCumulative: { domain: "sensor", name: "Boiler Thermal Energy Cumulative", optional: true },
+    systemThermalEnergyDaily: { domain: "sensor", name: "System Thermal Energy Daily", optional: true },
+    systemThermalEnergyCumulative: { domain: "sensor", name: "System Thermal Energy Cumulative", optional: true },
     roomTemp: { domain: "sensor", name: "Room Temperature (Selected)" },
     roomSetpoint: { domain: "sensor", name: "Room Setpoint (Selected)" },
     supplyTemp: { domain: "sensor", name: "Water Supply Temp (Selected)" },
@@ -199,6 +211,7 @@
   const APP_VIEWS = [
     { id: QUICK_START_VIEW, label: "Quick Start" },
     { id: "overview", label: "Overzicht" },
+    { id: "energy", label: "Energie" },
     { id: "settings", label: "Instellingen" },
   ];
   const APP_VIEW_IDS = new Set(APP_VIEWS.map((view) => view.id));
@@ -294,6 +307,18 @@
     "totalPower",
     "totalCop",
     "totalHeat",
+    "boilerHeatPower",
+    "systemHeatPower",
+    "electricalEnergyDaily",
+    "electricalEnergyCumulative",
+    "heatpumpThermalEnergyDaily",
+    "heatpumpThermalEnergyCumulative",
+    "heatpumpCopDaily",
+    "heatpumpCopCumulative",
+    "boilerThermalEnergyDaily",
+    "boilerThermalEnergyCumulative",
+    "systemThermalEnergyDaily",
+    "systemThermalEnergyCumulative",
     "flowSelected",
     "roomTemp",
     "roomSetpoint",
@@ -3711,6 +3736,44 @@
     return `${warningActive ? renderHpPanelWarningChip(failureText) : ""}${renderHpPanelStatusChip(running)}`;
   }
 
+  function patchHpPanelStatusRow(headStatus, running, warningActive, failureText) {
+    if (!headStatus) {
+      return;
+    }
+
+    let warningNode = headStatus.querySelector('[data-oq-bind="panel-warning"]');
+    if (warningActive) {
+      if (!warningNode) {
+        headStatus.insertAdjacentHTML("afterbegin", renderHpPanelWarningChip(failureText));
+        warningNode = headStatus.querySelector('[data-oq-bind="panel-warning"]');
+      }
+      if (warningNode) {
+        warningNode.setAttribute("aria-label", `Waarschuwing: ${failureText}`);
+        const warningTooltip = warningNode.querySelector(".oq-overview-chip-warning-tooltip");
+        if (warningTooltip && warningTooltip.textContent !== failureText) {
+          warningTooltip.textContent = failureText;
+        }
+      }
+    } else if (warningNode) {
+      warningNode.remove();
+    }
+
+    const statusTone = running ? "active" : "neutral";
+    const statusLabel = running ? "Actief" : "Idle";
+    let statusNode = headStatus.querySelector('[data-oq-bind="panel-status"]');
+    if (!statusNode) {
+      headStatus.insertAdjacentHTML("beforeend", renderHpPanelStatusChip(running));
+      statusNode = headStatus.querySelector('[data-oq-bind="panel-status"]');
+    }
+    if (statusNode) {
+      statusNode.classList.remove("oq-overview-chip--active", "oq-overview-chip--neutral");
+      statusNode.classList.add(`oq-overview-chip--${statusTone}`);
+      if (statusNode.textContent !== statusLabel) {
+        statusNode.textContent = statusLabel;
+      }
+    }
+  }
+
   function renderTempRow(label, key, explicitValue = "") {
     return `
       <div class="oq-overview-row">
@@ -3874,17 +3937,13 @@
       <section class="oq-overview-system">
         <div class="oq-overview-system-copy">
           <h3>Vermogensbalans</h3>
-          <p>Power House bouwt de warmtevraag op uit de berekende huisvraag en de correctie rond het kamersetpoint.</p>
+          <p>Power House laat zien waar de warmtevraag nu vandaan komt en of de warmtepomp dat kan volgen.</p>
         </div>
         <div class="oq-overview-hero">
           <div class="oq-overview-hero-main">
             <span class="oq-overview-focus-label">Gevraagd vermogen</span>
             <strong>${escapeHtml(model.requestedText)}</strong>
             <p>De warmtevraag waar Power House nu naartoe stuurt.</p>
-          </div>
-          <div class="oq-overview-hero-side">
-            <span class="oq-overview-hero-status">${escapeHtml(model.statusTitle)}</span>
-            <p>${escapeHtml(model.statusCopy)}</p>
           </div>
         </div>
         <div class="oq-overview-metrics oq-overview-metrics--three-column">
@@ -3903,17 +3962,13 @@
       <section class="oq-overview-system">
         <div class="oq-overview-system-copy">
           <h3>Stooklijnregeling</h3>
-          <p>De stooklijn bepaalt welke aanvoertemperatuur nu nodig is op basis van de buitentemperatuur.</p>
+          <p>De stooklijn laat zien op welke aanvoertemperatuur de regeling nu mikt en hoe dicht die al benaderd wordt.</p>
         </div>
         <div class="oq-overview-hero">
           <div class="oq-overview-hero-main">
             <span class="oq-overview-focus-label">Doelaanvoer</span>
             <strong>${escapeHtml(model.targetText)}</strong>
             <p>De aanvoertemperatuur waar de regeling nu naartoe werkt.</p>
-          </div>
-          <div class="oq-overview-hero-side">
-            <span class="oq-overview-hero-status">${escapeHtml(model.statusTitle)}</span>
-            <p>${escapeHtml(model.statusCopy)}</p>
           </div>
         </div>
         <div class="oq-overview-metrics oq-overview-metrics--three-column">
@@ -3927,6 +3982,282 @@
 
   function renderOverviewStrategyPanel() {
     return isCurveMode() ? renderCurveOverviewCard() : renderPowerHouseOverviewCard();
+  }
+
+  function getOverviewPrimarySignal() {
+    const model = isCurveMode() ? getCurveOverviewModel() : getPowerHouseOverviewModel();
+    const title = model.statusTitle;
+    const tone = title === "In balans" || title === "Dicht bij doel"
+      ? "green"
+      : title === "Nog aan het opbouwen" || title === "Stuurt op buitentemperatuur"
+        ? "neutral"
+        : "orange";
+    return {
+      label: "Regeling nu",
+      value: title,
+      tone,
+    };
+  }
+
+  function getOverviewDemandSignal() {
+    const demand = getHomeDemandState();
+    const tone = demand.tone === "high" || demand.tone === "active"
+      ? "orange"
+      : demand.tone === "steady"
+        ? "green"
+        : "neutral";
+    return {
+      label: "Warmtevraag",
+      value: demand.level,
+      tone,
+    };
+  }
+
+  function getOverviewSystemSignal() {
+    if (isFirmwareUpdateAvailable()) {
+      return {
+        label: "Systeem",
+        value: "Update beschikbaar",
+        tone: "orange",
+      };
+    }
+    if (isEntityActive("silentActive")) {
+      return {
+        label: "Systeem",
+        value: "Stille uren actief",
+        tone: "neutral",
+      };
+    }
+    if (isEntityActive("stickyActive")) {
+      return {
+        label: "Systeem",
+        value: "Pompbescherming actief",
+        tone: "neutral",
+      };
+    }
+    return {
+      label: "Systeem",
+      value: "Alles draait normaal",
+      tone: "green",
+    };
+  }
+
+  function renderOverviewSignals() {
+    const items = [
+      getOverviewPrimarySignal(),
+      getOverviewDemandSignal(),
+      getOverviewSystemSignal(),
+    ];
+    return `
+      <section class="oq-overview-signals">
+        ${items.map((item) => `
+          <article class="oq-overview-signal oq-overview-signal--${escapeHtml(item.tone)}">
+            <span>${escapeHtml(item.label)}</span>
+            <strong>${escapeHtml(item.value)}</strong>
+          </article>
+        `).join("")}
+      </section>
+    `;
+  }
+
+  function formatHeatPumpSummaryMode(mode, defrostActive) {
+    if (defrostActive) {
+      return "ontdooit";
+    }
+    if (mode === "Verwarmen") {
+      return "verwarmt";
+    }
+    if (mode === "Koelen") {
+      return "koelt";
+    }
+    if (mode === "Stand-by") {
+      return "stand-by";
+    }
+    return "onbekend";
+  }
+
+  function renderHeatPumpSummary(heatPumpPanels) {
+    if (!Array.isArray(heatPumpPanels) || heatPumpPanels.length === 0) {
+      return "";
+    }
+    const summary = heatPumpPanels.map((panel) => {
+      const mode = formatWorkingMode(getEntityStateText(panel.keys.mode, "Unknown"));
+      const defrostActive = isEntityActive(panel.keys.defrost);
+      return `${panel.title} ${formatHeatPumpSummaryMode(mode, defrostActive)}`;
+    }).join(", ");
+    return `<p class="oq-overview-hp-summary">${escapeHtml(summary)}</p>`;
+  }
+
+  function renderOverviewEnergyRow(label, key) {
+    if (!hasEntity(key)) {
+      return "";
+    }
+    return `
+      <div class="oq-overview-energy-row">
+        <span>${escapeHtml(label)}</span>
+        <strong>${escapeHtml(getEntityStateText(key))}</strong>
+      </div>
+    `;
+  }
+
+  function renderOverviewEnergyGroup(title, rows) {
+    const filledRows = rows.filter(Boolean).join("");
+    if (!filledRows) {
+      return "";
+    }
+    return `
+      <section class="oq-overview-energy-group">
+        <h5>${escapeHtml(title)}</h5>
+        <div class="oq-overview-energy-rows">
+          ${filledRows}
+        </div>
+      </section>
+    `;
+  }
+
+  function renderOverviewEnergyColumn(label, intro, groups, tone = "blue") {
+    const filledGroups = groups.filter(Boolean).join("");
+    if (!filledGroups) {
+      return "";
+    }
+    const showLabel = label && intro && label !== intro;
+    return `
+      <article class="oq-overview-energy-column oq-overview-energy-column--${escapeHtml(tone)}">
+        <div class="oq-overview-energy-column-copy">
+          ${showLabel ? `<p>${escapeHtml(label)}</p>` : ""}
+          <h4>${escapeHtml(intro)}</h4>
+        </div>
+        <div class="oq-overview-energy-groups">
+          ${filledGroups}
+        </div>
+      </article>
+    `;
+  }
+
+  function renderOverviewEnergySection() {
+    const currentColumn = renderOverviewEnergyColumn("Nu", "Live energie", [
+      renderOverviewEnergyGroup("Warmtepomp", [
+        renderOverviewEnergyRow("Elektrisch vermogen", "totalPower"),
+        renderOverviewEnergyRow("Warmteafgifte", "totalHeat"),
+        renderOverviewEnergyRow("COP", "totalCop"),
+      ]),
+      renderOverviewEnergyGroup("CV-ketel", [
+        renderOverviewEnergyRow("Warmteafgifte", "boilerHeatPower"),
+      ]),
+      renderOverviewEnergyGroup("Systeem", [
+        renderOverviewEnergyRow("Warmteafgifte", "systemHeatPower"),
+      ]),
+    ], "blue");
+
+    const dailyColumn = renderOverviewEnergyColumn("Vandaag", "Energie vandaag", [
+      renderOverviewEnergyGroup("Warmtepomp", [
+        renderOverviewEnergyRow("Elektriciteit", "electricalEnergyDaily"),
+        renderOverviewEnergyRow("Warmte", "heatpumpThermalEnergyDaily"),
+        renderOverviewEnergyRow("COP", "heatpumpCopDaily"),
+      ]),
+      renderOverviewEnergyGroup("CV-ketel", [
+        renderOverviewEnergyRow("Warmte", "boilerThermalEnergyDaily"),
+      ]),
+      renderOverviewEnergyGroup("Systeem", [
+        renderOverviewEnergyRow("Warmte", "systemThermalEnergyDaily"),
+      ]),
+    ], "orange");
+
+    const cumulativeColumn = renderOverviewEnergyColumn("Cumulatief", "Tot nu toe", [
+      renderOverviewEnergyGroup("Warmtepomp", [
+        renderOverviewEnergyRow("Elektriciteit", "electricalEnergyCumulative"),
+        renderOverviewEnergyRow("Warmte", "heatpumpThermalEnergyCumulative"),
+        renderOverviewEnergyRow("COP", "heatpumpCopCumulative"),
+      ]),
+      renderOverviewEnergyGroup("CV-ketel", [
+        renderOverviewEnergyRow("Warmte", "boilerThermalEnergyCumulative"),
+      ]),
+      renderOverviewEnergyGroup("Systeem", [
+        renderOverviewEnergyRow("Warmte", "systemThermalEnergyCumulative"),
+      ]),
+    ], "green");
+
+    const columns = [currentColumn, dailyColumn, cumulativeColumn].filter(Boolean);
+    if (!columns.length) {
+      return "";
+    }
+
+    return `
+      <section class="oq-overview-energy">
+        <div class="oq-overview-system-copy">
+          <h3>Energie</h3>
+          <p>Bekijk hier verbruik, warmte en rendement voor nu, vandaag en cumulatief.</p>
+        </div>
+        <div class="oq-overview-energy-grid">
+          ${columns.join("")}
+        </div>
+      </section>
+    `;
+  }
+
+  function renderEnergyView() {
+    const currentColumn = renderOverviewEnergyColumn("Nu", "Nu", [
+      renderOverviewEnergyGroup("Warmtepomp", [
+        renderOverviewEnergyRow("Elektrisch vermogen", "totalPower"),
+        renderOverviewEnergyRow("Warmteafgifte", "totalHeat"),
+        renderOverviewEnergyRow("COP", "totalCop"),
+      ]),
+      renderOverviewEnergyGroup("CV-ketel", [
+        renderOverviewEnergyRow("Warmteafgifte", "boilerHeatPower"),
+      ]),
+      renderOverviewEnergyGroup("Systeem", [
+        renderOverviewEnergyRow("Warmteafgifte", "systemHeatPower"),
+      ]),
+    ], "blue");
+
+    const dailyColumn = renderOverviewEnergyColumn("Vandaag", "Vandaag", [
+      renderOverviewEnergyGroup("Warmtepomp", [
+        renderOverviewEnergyRow("Elektriciteit", "electricalEnergyDaily"),
+        renderOverviewEnergyRow("Warmte", "heatpumpThermalEnergyDaily"),
+        renderOverviewEnergyRow("COP", "heatpumpCopDaily"),
+      ]),
+      renderOverviewEnergyGroup("CV-ketel", [
+        renderOverviewEnergyRow("Warmte", "boilerThermalEnergyDaily"),
+      ]),
+      renderOverviewEnergyGroup("Systeem", [
+        renderOverviewEnergyRow("Warmte", "systemThermalEnergyDaily"),
+      ]),
+    ], "orange");
+
+    const cumulativeColumn = renderOverviewEnergyColumn("Cumulatief", "Cumulatief", [
+      renderOverviewEnergyGroup("Warmtepomp", [
+        renderOverviewEnergyRow("Elektriciteit", "electricalEnergyCumulative"),
+        renderOverviewEnergyRow("Warmte", "heatpumpThermalEnergyCumulative"),
+        renderOverviewEnergyRow("COP", "heatpumpCopCumulative"),
+      ]),
+      renderOverviewEnergyGroup("CV-ketel", [
+        renderOverviewEnergyRow("Warmte", "boilerThermalEnergyCumulative"),
+      ]),
+      renderOverviewEnergyGroup("Systeem", [
+        renderOverviewEnergyRow("Warmte", "systemThermalEnergyCumulative"),
+      ]),
+    ], "green");
+
+    const columns = [currentColumn, dailyColumn, cumulativeColumn].filter(Boolean).join("");
+
+    return `
+      <section class="oq-helper-panel oq-helper-panel--flush">
+        <div class="oq-overview-board oq-overview-board--${escapeHtml(state.overviewTheme)}">
+          <div class="oq-overview-head">
+            <div>
+              <p class="oq-helper-label">Energie</p>
+              <h2 class="oq-helper-section-title">Verbruik en rendement</h2>
+              <p class="oq-helper-section-copy">Bekijk hier verbruik, warmte en rendement voor nu, vandaag en cumulatief.</p>
+            </div>
+          </div>
+          <section class="oq-overview-energy oq-overview-energy--solo">
+            <div class="oq-overview-energy-grid">
+              ${columns}
+            </div>
+          </section>
+        </div>
+      </section>
+    `;
   }
 
   function formatComponentPositionLabel(key) {
@@ -4992,22 +5323,55 @@
     `;
   }
 
-  function renderHeatPumpControls(heatPumpPanels) {
+  function renderHeatPumpControlsInner(heatPumpPanels) {
     if (!Array.isArray(heatPumpPanels) || heatPumpPanels.length === 0) {
       return "";
     }
 
     return `
-      <div class="oq-overview-hp-tools">
-        <div class="oq-overview-hp-tools-head">
+      <div class="oq-overview-hp-tools-head">
+        <div class="oq-overview-hp-tools-copy">
           <h3>Warmtepompen</h3>
-          <div class="oq-overview-hp-tool-switches">
-            <button class="oq-overview-hp-tool-chip${state.hpVisualMode === "schematic" ? " is-active" : ""}" type="button" data-oq-action="select-hp-visual" data-hp-visual="schematic">Schematisch</button>
-            <button class="oq-overview-hp-tool-chip${state.hpVisualMode === "compact" ? " is-active" : ""}" type="button" data-oq-action="select-hp-visual" data-hp-visual="compact">Compact</button>
-          </div>
+          ${renderHeatPumpSummary(heatPumpPanels)}
+        </div>
+        <div class="oq-overview-hp-tool-switches">
+          <button class="oq-overview-hp-tool-chip${state.hpVisualMode === "schematic" ? " is-active" : ""}" type="button" data-oq-action="select-hp-visual" data-hp-visual="schematic">Schematisch</button>
+          <button class="oq-overview-hp-tool-chip${state.hpVisualMode === "compact" ? " is-active" : ""}" type="button" data-oq-action="select-hp-visual" data-hp-visual="compact">Compact</button>
         </div>
       </div>
     `;
+  }
+
+  function renderHeatPumpControls(heatPumpPanels) {
+    const inner = renderHeatPumpControlsInner(heatPumpPanels);
+    if (!inner) {
+      return "";
+    }
+    return `<div class="oq-overview-hp-tools">${inner}</div>`;
+  }
+
+  function patchHeatPumpControls(hpTools, heatPumpPanels) {
+    if (!hpTools) {
+      return false;
+    }
+
+    const copy = hpTools.querySelector(".oq-overview-hp-tools-copy");
+    const switches = hpTools.querySelector(".oq-overview-hp-tool-switches");
+    const schematicButton = hpTools.querySelector('[data-hp-visual="schematic"]');
+    const compactButton = hpTools.querySelector('[data-hp-visual="compact"]');
+
+    if (!copy || !switches || !schematicButton || !compactButton) {
+      setInnerHtmlIfChanged(hpTools, renderHeatPumpControlsInner(heatPumpPanels));
+      return true;
+    }
+
+    setInnerHtmlIfChanged(copy, `
+      <h3>Warmtepompen</h3>
+      ${renderHeatPumpSummary(heatPumpPanels)}
+    `);
+    schematicButton.classList.toggle("is-active", state.hpVisualMode === "schematic");
+    compactButton.classList.toggle("is-active", state.hpVisualMode === "compact");
+    return true;
   }
 
   function renderOverviewView() {
@@ -5023,15 +5387,13 @@
           <div class="oq-overview-head">
             <div>
               <p class="oq-helper-label">Overzicht</p>
-              <h2 class="oq-helper-section-title">Live overzicht</h2>
+              <h2 class="oq-helper-section-title">Live regeling</h2>
               <p class="oq-helper-section-copy">Hier zie je in één oogopslag hoe OpenQuatt nu werkt.</p>
             </div>
             <div class="oq-overview-head-actions">
               <div class="oq-overview-status">
                 ${renderOverviewStatusChip("Strategie", strategyLabel, "blue")}
                 ${renderOverviewStatusChip("Regelmodus", getEntityStateText("controlModeLabel"), "neutral")}
-                ${renderOverviewStatusChip("Stille uren", isEntityActive("silentActive") ? "Actief" : "Uit", isEntityActive("silentActive") ? "active" : "neutral")}
-                ${renderOverviewStatusChip("Pompbescherming", isEntityActive("stickyActive") ? "Actief" : "Uit", isEntityActive("stickyActive") ? "active" : "neutral")}
               </div>
             </div>
           </div>
@@ -5041,6 +5403,7 @@
             ${renderOverviewStatCard("totalCop", "COP", "green", "rendement")}
             ${renderOverviewStatCard("flowSelected", "Flow", "sky", "watercircuit")}
           </div>
+          ${renderOverviewSignals()}
           <div class="oq-overview-main">
             ${renderOverviewStrategyPanel()}
             <section class="oq-overview-temps">
@@ -5210,7 +5573,7 @@
     const model = buildHeatPumpSchematicModel(title, keys, accent, mode, defrostActive, failures, running);
     const headStatus = panel.querySelector(".oq-overview-hp-status");
     if (headStatus) {
-      headStatus.innerHTML = renderHpPanelStatusRow(running, model.warningActive, model.failureText);
+      patchHpPanelStatusRow(headStatus, running, model.warningActive, model.failureText);
     }
 
     const board = panel.querySelector("[data-oq-hp-board]");
@@ -5356,6 +5719,7 @@
     const strategyLabel = isCurveMode() ? "Stooklijn" : "Power House";
     const status = board.querySelector(".oq-overview-status");
     const top = board.querySelector(".oq-overview-top");
+    const signals = board.querySelector(".oq-overview-signals");
     const system = board.querySelector(".oq-overview-system");
     const temps = board.querySelector(".oq-overview-temps");
     const hpTools = board.querySelector(".oq-overview-hp-tools");
@@ -5365,21 +5729,26 @@
     const returnTempKey = getOverviewReturnTempKey();
 
     if (status) {
-      status.innerHTML = `
+      setInnerHtmlIfChanged(status, `
         ${renderOverviewStatusChip("Strategie", strategyLabel, "blue")}
         ${renderOverviewStatusChip("Regelmodus", getEntityStateText("controlModeLabel"), "neutral")}
-        ${renderOverviewStatusChip("Stille uren", isEntityActive("silentActive") ? "Actief" : "Uit", isEntityActive("silentActive") ? "active" : "neutral")}
-        ${renderOverviewStatusChip("Pompbescherming", isEntityActive("stickyActive") ? "Actief" : "Uit", isEntityActive("stickyActive") ? "active" : "neutral")}
-      `;
+      `);
     }
 
     if (top) {
-      top.innerHTML = `
+      setInnerHtmlIfChanged(top, `
         ${renderOverviewStatCard("totalPower", "Stroomverbruik", "blue", "hele systeem")}
         ${renderOverviewStatCard("totalHeat", "Warmteafgifte", "orange", "thermisch vermogen")}
         ${renderOverviewStatCard("totalCop", "COP", "green", "rendement")}
         ${renderOverviewStatCard("flowSelected", "Flow", "sky", "watercircuit")}
-      `;
+      `);
+    }
+
+    if (signals) {
+      const nextSignals = renderOverviewSignals();
+      if (signals.outerHTML !== nextSignals) {
+        signals.outerHTML = nextSignals;
+      }
     }
 
     if (system) {
@@ -5406,10 +5775,7 @@
       return false;
     }
 
-    const nextHpTools = renderHeatPumpControls(heatPumpPanels);
-    if (hpTools.outerHTML !== nextHpTools) {
-      hpTools.outerHTML = nextHpTools;
-    }
+    patchHeatPumpControls(hpTools, heatPumpPanels);
 
     const renderedPanels = hpGrid.querySelectorAll("[data-oq-hp-panel]");
     if (renderedPanels.length !== heatPumpPanels.length) {
@@ -5440,11 +5806,16 @@
               ${layoutAction ? `<button class="oq-overview-hp-card-action" type="button" data-oq-action="select-hp-layout" data-hp-layout="${escapeHtml(layoutAction.layout)}">${renderMagnifyActionIcon(layoutAction.layout === "equal" ? "minus" : "plus")}<span>${escapeHtml(layoutAction.label)}</span></button>` : ""}
             `);
           }
-          setInnerHtmlIfChanged(headSide, `
-            <div class="oq-overview-hp-status">
-              ${renderHpPanelStatusRow(running, failures !== "Geen actieve storingen", failures)}
-            </div>
-          `);
+          let hpStatus = headSide.querySelector(".oq-overview-hp-status");
+          if (!hpStatus) {
+            setInnerHtmlIfChanged(headSide, `
+              <div class="oq-overview-hp-status">
+                ${renderHpPanelStatusRow(running, failures !== "Geen actieve storingen", failures)}
+              </div>
+            `);
+            hpStatus = headSide.querySelector(".oq-overview-hp-status");
+          }
+          patchHpPanelStatusRow(hpStatus, running, failures !== "Geen actieve storingen", failures);
         }
       }
       patchHeatPumpPanel(
@@ -5462,7 +5833,7 @@
     return `
       <section class="oq-helper-panel">
         <p class="oq-helper-label">Instellingen</p>
-        <h2 class="oq-helper-section-title">Instellingen</h2>
+        <h2 class="oq-helper-section-title">Regeling aanpassen</h2>
         <p class="oq-helper-section-copy">Hier pas je aan hoe OpenQuatt werkt. Wijzigingen worden direct toegepast.</p>
         <div class="oq-helper-settings-stack">
           ${renderSettingsFlowSection()}
@@ -5494,6 +5865,8 @@
       ? renderInitialLoadingView()
       : state.appView === "overview"
       ? renderOverviewView()
+      : state.appView === "energy"
+      ? renderEnergyView()
       : state.appView === "settings"
         ? renderSettingsView()
         : `
