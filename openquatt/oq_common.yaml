@@ -23,7 +23,53 @@ api:
 
 ota:
   - platform: esphome
+    on_begin:
+      then:
+        - lambda: |-
+            id(oq_ota_phase_code) = 1;
+            id(oq_ota_progress_pct) = 0.0f;
+    on_progress:
+      then:
+        - lambda: |-
+            id(oq_ota_phase_code) = 2;
+            id(oq_ota_progress_pct) = x;
+    on_end:
+      then:
+        - lambda: |-
+            id(oq_ota_phase_code) = 3;
+            id(oq_ota_progress_pct) = 100.0f;
+    on_error:
+      then:
+        - lambda: |-
+            id(oq_ota_phase_code) = 5;
+    on_abort:
+      then:
+        - lambda: |-
+            id(oq_ota_phase_code) = 6;
   - platform: http_request
+    on_begin:
+      then:
+        - lambda: |-
+            id(oq_ota_phase_code) = 1;
+            id(oq_ota_progress_pct) = 0.0f;
+    on_progress:
+      then:
+        - lambda: |-
+            id(oq_ota_phase_code) = 2;
+            id(oq_ota_progress_pct) = x;
+    on_end:
+      then:
+        - lambda: |-
+            id(oq_ota_phase_code) = 3;
+            id(oq_ota_progress_pct) = 100.0f;
+    on_error:
+      then:
+        - lambda: |-
+            id(oq_ota_phase_code) = 5;
+    on_abort:
+      then:
+        - lambda: |-
+            id(oq_ota_phase_code) = 6;
 
 # ==============================================================================
 # NETWORK + RECOVERY
@@ -88,6 +134,14 @@ globals:
     type: bool
     restore_value: false
     initial_value: 'true'
+  - id: oq_ota_progress_pct
+    type: float
+    restore_value: false
+    initial_value: '0.0f'
+  - id: oq_ota_phase_code
+    type: int
+    restore_value: false
+    initial_value: '0'
 
 # ==============================================================================
 # DIAGNOSTIC ENTITIES
@@ -231,6 +285,19 @@ binary_sensor:
       sorting_group_id: oq_diagnostics
 
 sensor:
+  - platform: template
+    name: Firmware Update Progress
+    id: oq_firmware_update_progress
+    icon: mdi:progress-upload
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    update_interval: 1s
+    entity_category: diagnostic
+    lambda: |-
+      return id(oq_ota_progress_pct);
+    web_server:
+      sorting_group_id: oq_diagnostics
+
   - platform: uptime
     name: Uptime
     id: uptime_sensor
@@ -273,6 +340,32 @@ text_sensor:
       entity_category: diagnostic
       web_server:
         sorting_group_id: oq_diagnostics
+  - platform: template
+    id: oq_firmware_update_status
+    name: Firmware Update Status
+    icon: mdi:upload-network-outline
+    entity_category: diagnostic
+    update_interval: 1s
+    lambda: |-
+      // Expose a compact OTA phase label for dashboards and the local web UI.
+      switch (id(oq_ota_phase_code)) {
+        case 1:
+          return {"Starting"};
+        case 2:
+          return {"Uploading"};
+        case 3:
+          return {"Rebooting"};
+        case 4:
+          return {"Complete"};
+        case 5:
+          return {"Error"};
+        case 6:
+          return {"Aborted"};
+        default:
+          return {"Idle"};
+      }
+    web_server:
+      sorting_group_id: oq_diagnostics
   - platform: template
     id: oq_project_version_text
     name: OpenQuatt Version

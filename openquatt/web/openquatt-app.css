@@ -768,6 +768,55 @@ body.oq-page-light {
   color: #cbd5e1;
 }
 
+.oq-helper-modal-progress {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid rgba(229, 231, 235, 0.92);
+  border-radius: var(--oq-helper-radius-md);
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.oq-helper-shell--dark .oq-helper-modal-progress {
+  border-color: rgba(71, 85, 105, 0.48);
+  background: rgba(24, 35, 49, 0.78);
+}
+
+.oq-helper-modal-progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  color: var(--oq-helper-ink);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.oq-helper-shell--dark .oq-helper-modal-progress-head {
+  color: #f8fafc;
+}
+
+.oq-helper-modal-progress-track {
+  position: relative;
+  overflow: hidden;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.18);
+}
+
+.oq-helper-shell--dark .oq-helper-modal-progress-track {
+  background: rgba(71, 85, 105, 0.42);
+}
+
+.oq-helper-modal-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f97316 0%, #fb923c 45%, #fdba74 100%);
+  box-shadow: 0 0 18px rgba(249, 115, 22, 0.28);
+  transition: width 220ms ease;
+}
+
 .oq-helper-modal-note {
   margin: 14px 0 0;
   color: var(--oq-helper-faint);

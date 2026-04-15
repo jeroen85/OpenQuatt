@@ -90,6 +90,8 @@
     setupComplete: { domain: "binary_sensor", name: "Setup Complete", optional: true },
     firmwareUpdate: { domain: "update", name: "Firmware Update", optional: true },
     firmwareUpdateChannel: { domain: "select", name: "Firmware Update Channel", optional: true },
+    firmwareUpdateProgress: { domain: "sensor", name: "Firmware Update Progress", optional: true },
+    firmwareUpdateStatus: { domain: "text_sensor", name: "Firmware Update Status", optional: true },
     checkFirmwareUpdates: { domain: "button", name: "Check Firmware Updates", optional: true },
     uptimeReadable: { domain: "text_sensor", name: "Uptime", optional: true },
     ipAddress: { domain: "text_sensor", name: "IP Address", optional: true },
@@ -299,6 +301,8 @@
   const CURVE_SETTING_KEYS = [...CURVE_POINTS.map((point) => point.key), "curveFallbackSupply", "curveControlProfile"];
   const COMPRESSOR_SETTING_KEYS = ["minRuntime", "hp1ExcludedA", "hp1ExcludedB", "hp2ExcludedA", "hp2ExcludedB"];
   const SILENT_SETTING_KEYS = ["silentStartTime", "silentEndTime", "silentMax", "dayMax"];
+  const FIRMWARE_ENTITY_KEYS = ["firmwareUpdate", "firmwareUpdateChannel", "firmwareUpdateProgress", "firmwareUpdateStatus"];
+  const FIRMWARE_MODAL_KEYS = [...FIRMWARE_ENTITY_KEYS, "projectVersionText", "releaseChannelText"];
   const HEADER_ENTITY_KEYS = ["uptimeReadable", "ipAddress", "projectVersionText", "releaseChannelText"];
   const OVERVIEW_KEYS = [
     "strategy",
@@ -900,6 +904,10 @@
     if (isFirmwareUpdateChecking()) {
       return "Controleren";
     }
+    const progress = getFirmwareProgressModel();
+    if (progress) {
+      return progress.phaseLabel;
+    }
     if (isFirmwareUpdateInstalling()) {
       return "Bezig";
     }
@@ -939,6 +947,67 @@
       return "";
     }
     return String(entity.state ?? entity.value ?? "").trim().toLowerCase();
+  }
+
+  function getFirmwareProgressPhaseRaw() {
+    const entity = state.entities.firmwareUpdateStatus;
+    if (!entity) {
+      return "";
+    }
+    return String(entity.state ?? entity.value ?? "").trim();
+  }
+
+  function getFirmwareProgressPhase() {
+    return getFirmwareProgressPhaseRaw().toLowerCase();
+  }
+
+  function getFirmwareProgressPercent() {
+    const entity = state.entities.firmwareUpdateProgress;
+    if (!entity) {
+      return Number.NaN;
+    }
+    const numeric = Number(entity.value ?? entity.state);
+    if (Number.isNaN(numeric)) {
+      return Number.NaN;
+    }
+    return Math.max(0, Math.min(100, numeric));
+  }
+
+  function isFirmwareProgressActive() {
+    const phase = getFirmwareProgressPhase();
+    return phase === "starting" || phase === "uploading" || phase === "rebooting";
+  }
+
+  function getFirmwareProgressModel() {
+    const phase = getFirmwareProgressPhase();
+    const rawPercent = getFirmwareProgressPercent();
+    const basePercent = Number.isNaN(rawPercent) ? 0 : Math.round(rawPercent);
+
+    if (!isFirmwareProgressActive() && !state.updateInstallBusy) {
+      return null;
+    }
+
+    if (phase === "rebooting") {
+      return {
+        phaseLabel: "Herstarten",
+        percent: Math.max(basePercent, 100),
+        copy: "Firmware is geplaatst. Het device start nu opnieuw op en komt daarna vanzelf terug.",
+      };
+    }
+
+    if (phase === "uploading") {
+      return {
+        phaseLabel: "Uploaden",
+        percent: basePercent,
+        copy: `Firmware wordt nu naar ${getInstallationLabel()} verzonden.`,
+      };
+    }
+
+    return {
+      phaseLabel: "Voorbereiden",
+      percent: basePercent,
+      copy: `OTA-update wordt voorbereid voor ${getInstallationLabel()}.`,
+    };
   }
 
   function getFirmwareLatestVersion(entity = getFirmwareUpdateEntity() || {}) {
@@ -986,14 +1055,24 @@
 
     if (normalizedChannel === "dev") {
       if (releaseUrl) {
-        return releaseUrl.includes("/dev-latest");
+        if (releaseUrl.includes("/dev-latest")) {
+          return true;
+        }
+        if (latest) {
+          return latest.includes("-dev");
+        }
       }
       return latest ? latest.includes("-dev") : false;
     }
 
     if (normalizedChannel === "main") {
       if (releaseUrl) {
-        return !releaseUrl.includes("/dev-latest");
+        if (releaseUrl.includes("/dev-latest")) {
+          return false;
+        }
+        if (latest) {
+          return !latest.includes("-dev");
+        }
       }
       return latest ? !latest.includes("-dev") : false;
     }
@@ -1186,7 +1265,7 @@
   async function pollFirmwareUpdateState() {
     for (let attempt = 0; attempt < 6; attempt += 1) {
       await wait(attempt === 0 ? 900 : 1200);
-      await refreshEntities(["firmwareUpdate", "firmwareUpdateChannel"], "all");
+      await refreshEntities(FIRMWARE_MODAL_KEYS, "all");
       const entityAligned = isFirmwareEntityAlignedWithChannel();
       const knownTarget = hasKnownFirmwareTargetVersion();
       const checking = isFirmwareUpdateChecking();
@@ -1197,9 +1276,37 @@
     }
   }
 
+  async function pollFirmwareInstallState() {
+    let waitingForReconnect = false;
+
+    for (let attempt = 0; attempt < 45; attempt += 1) {
+      await wait(attempt === 0 ? 700 : 1000);
+      try {
+        await refreshEntities(FIRMWARE_MODAL_KEYS, "all");
+        render();
+
+        if (isFirmwareEffectivelyCurrent() && !isFirmwareProgressActive() && !isFirmwareUpdateInstalling()) {
+          return true;
+        }
+      } catch (error) {
+        if (!waitingForReconnect) {
+          state.controlNotice = "Wachten tot het device opnieuw is opgestart...";
+          render();
+          waitingForReconnect = true;
+        }
+      }
+    }
+
+    return false;
+  }
+
   function getFirmwareModalCopy() {
     const channel = getFirmwareChannelLabel();
+    const progress = getFirmwareProgressModel();
 
+    if (progress) {
+      return progress.copy;
+    }
     if (isFirmwareUpdateInstalling()) {
       return `OTA-update wordt voorbereid voor ${getInstallationLabel()}. Het device kan kort herstarten.`;
     }
@@ -1226,6 +1333,8 @@
       getInstallationLabel(),
       getEntitySignatureFragment("firmwareUpdate"),
       getEntitySignatureFragment("firmwareUpdateChannel"),
+      getEntitySignatureFragment("firmwareUpdateProgress"),
+      getEntitySignatureFragment("firmwareUpdateStatus"),
     ].join("|");
   }
 
@@ -1424,8 +1533,11 @@
     const installing = isFirmwareUpdateInstalling();
     const available = isFirmwareUpdateAvailable();
     const summary = getFirmwareModalCopy();
+    const progress = getFirmwareProgressModel();
     const releaseUrl = getFirmwareReleaseUrl();
-    const title = installing
+    const title = progress
+      ? "Firmware-update bezig"
+      : installing
       ? "Firmware-update bezig"
       : checking
         ? "Controleren op firmware-update"
@@ -1435,7 +1547,7 @@
       : [];
 
     return `
-      <div class="oq-helper-modal-backdrop${checking || installing ? " is-busy" : ""}" data-oq-modal="firmware-update">
+      <div class="oq-helper-modal-backdrop${checking || installing || progress ? " is-busy" : ""}" data-oq-modal="firmware-update">
         <section class="oq-helper-modal" role="dialog" aria-modal="true" aria-labelledby="oq-update-modal-title">
           <div class="oq-helper-modal-head">
             <div>
@@ -1445,6 +1557,17 @@
             <button class="oq-helper-modal-close" type="button" data-oq-action="close-update-modal" aria-label="Sluit update-popup">×</button>
           </div>
           <p class="oq-helper-modal-copy">${escapeHtml(summary)}</p>
+          ${progress ? `
+            <div class="oq-helper-modal-progress" aria-live="polite">
+              <div class="oq-helper-modal-progress-head">
+                <strong>${escapeHtml(progress.phaseLabel)}</strong>
+                <span>${escapeHtml(`${progress.percent}%`)}</span>
+              </div>
+              <div class="oq-helper-modal-progress-track" aria-hidden="true">
+                <span class="oq-helper-modal-progress-fill" style="width:${Math.max(0, Math.min(100, progress.percent))}%"></span>
+              </div>
+            </div>
+          ` : ""}
           <div class="oq-helper-modal-grid">
             <div class="oq-helper-modal-row">
               <span class="oq-helper-modal-label">Status</span>
@@ -1475,10 +1598,10 @@
           ` : ""}
           <p class="oq-helper-modal-note">Laat deze pagina open tijdens de OTA-update. Het device kan na installatie kort herstarten en daarna vanzelf weer terugkomen.</p>
           <div class="oq-helper-modal-actions">
-            <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="run-firmware-check" ${checking || installing ? "disabled" : ""}>
+            <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="run-firmware-check" ${checking || installing || progress ? "disabled" : ""}>
               ${checking ? "Controleren..." : "Controleer opnieuw"}
             </button>
-            <button class="oq-helper-button" type="button" data-oq-action="install-firmware-update" ${!available || installing || checking || !entity ? "disabled" : ""}>
+            <button class="oq-helper-button" type="button" data-oq-action="install-firmware-update" ${!available || installing || checking || progress || !entity ? "disabled" : ""}>
               ${installing ? "Bijwerken..." : "Nu bijwerken"}
             </button>
             ${releaseUrl ? `<a class="oq-helper-button oq-helper-button--ghost oq-helper-modal-link" href="${escapeHtml(releaseUrl)}" target="_blank" rel="noreferrer">Release notes</a>` : ""}
@@ -1699,13 +1822,12 @@
     }
 
     const keys = state.appView === "overview"
-      ? [...OVERVIEW_KEYS, ...HEADER_ENTITY_KEYS, "setupComplete", "firmwareUpdate", "firmwareUpdateChannel"]
+      ? [...OVERVIEW_KEYS, ...HEADER_ENTITY_KEYS, "setupComplete", ...FIRMWARE_ENTITY_KEYS]
       : state.appView === "settings"
-        ? ["setupComplete", "firmwareUpdate", "firmwareUpdateChannel", ...HEADER_ENTITY_KEYS, ...SETTINGS_KEYS]
+        ? ["setupComplete", ...FIRMWARE_ENTITY_KEYS, ...HEADER_ENTITY_KEYS, ...SETTINGS_KEYS]
         : [
             "setupComplete",
-            "firmwareUpdate",
-            "firmwareUpdateChannel",
+            ...FIRMWARE_ENTITY_KEYS,
             ...HEADER_ENTITY_KEYS,
             "strategy",
             ...LIMIT_KEYS,
@@ -2156,8 +2278,10 @@
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      await refreshEntities(["firmwareUpdate", "firmwareUpdateChannel"], "all");
-      state.controlNotice = "OTA-update gestart.";
+      const completed = await pollFirmwareInstallState();
+      state.controlNotice = completed
+        ? "OTA-update afgerond."
+        : "OTA-update gestart. Wacht tot het device weer online is.";
     } catch (error) {
       state.controlError = `OTA-update kon niet worden gestart. ${error.message}`;
     } finally {

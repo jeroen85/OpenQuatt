@@ -8,6 +8,7 @@
     tick: 0,
     autoAnimate: true,
     bootedAt: Date.now() - ((2 * 3600) + (13 * 60)) * 1000,
+    otaTimers: [],
   };
 
   const HP2_ENTITIES = [
@@ -106,6 +107,17 @@
     entity.state = "";
   }
 
+  function clearOtaSimulation() {
+    state.otaTimers.forEach((timer) => window.clearTimeout(timer));
+    state.otaTimers = [];
+  }
+
+  function getMockReleaseUrl(channel) {
+    return channel === "dev"
+      ? "https://github.com/jeroen85/OpenQuatt/releases/download/dev-latest/manifest.json"
+      : "https://github.com/jeroen85/OpenQuatt/releases/latest";
+  }
+
   function syncOverviewTelemetry(single) {
     const hp1Outside = Number(getEntity("sensor", "HP1 - Outside temperature")?.value);
     const hp2Outside = Number(getEntity("sensor", "HP2 - Outside temperature")?.value);
@@ -187,6 +199,10 @@
     syncDevMeta();
     setEntity("text_sensor", "Summary", { state: "" });
     setEntity("button", "Check Firmware Updates", { state: "" });
+    setEntity("text_sensor", "OpenQuatt Version", { state: "v0.26.0", value: "v0.26.0" });
+    setEntity("text_sensor", "OpenQuatt Release Channel", { state: "dev", value: "dev" });
+    setEntity("sensor", "Firmware Update Progress", { value: 0, uom: "%" });
+    setEntity("text_sensor", "Firmware Update Status", { state: "Idle", value: "Idle" });
     setEntity("update", "Firmware Update", {
       state: "available",
       value: "available",
@@ -194,7 +210,7 @@
       latest_version: "v0.26.1-dev3",
       title: "OpenQuatt firmware",
       summary: "Nieuwe firmware met verdere UI- en regelingverbeteringen staat klaar voor deze preview.",
-      release_url: "https://github.com/jeroen85/OpenQuatt/releases",
+      release_url: getMockReleaseUrl("dev"),
     });
     setEntity("binary_sensor", "Setup Complete", { value: state.complete });
     setEntity("select", "Heating Control Mode", {
@@ -723,17 +739,22 @@
     if (name === "Preset") {
       applyPreset(value);
     } else if (name === "Firmware Update Channel") {
+      clearOtaSimulation();
+      setText("text_sensor", "OpenQuatt Release Channel", value);
+      setText("text_sensor", "Firmware Update Status", "Idle");
+      setNumber("Firmware Update Progress", 0, "%");
       const updateEntity = getEntity("update", "Firmware Update");
+      const currentVersion = String(getEntity("text_sensor", "OpenQuatt Version")?.value || "v0.26.0");
+      const latestVersion = value === "main" ? "v0.26.0" : "v0.26.1-dev3";
       if (updateEntity) {
-        if (value === "main") {
-          updateEntity.current_version = "v0.26.0";
-          updateEntity.latest_version = "v0.26.0";
+        updateEntity.current_version = currentVersion;
+        updateEntity.latest_version = latestVersion;
+        updateEntity.release_url = getMockReleaseUrl(value);
+        if (value === "main" || currentVersion === latestVersion) {
           updateEntity.state = "up_to_date";
           updateEntity.value = "up_to_date";
           updateEntity.summary = "Je preview gebruikt nu het stabiele kanaal. Er staat op dit moment geen nieuwere stable release klaar.";
         } else {
-          updateEntity.current_version = "v0.26.0";
-          updateEntity.latest_version = "v0.26.1-dev3";
           updateEntity.state = "available";
           updateEntity.value = "available";
           updateEntity.summary = "Het dev-kanaal heeft een nieuwere OTA-build beschikbaar voor deze preview.";
@@ -778,10 +799,16 @@
     } else if (name === "Check Firmware Updates") {
       const channel = String(getEntity("select", "Firmware Update Channel")?.value || "dev");
       const updateEntity = getEntity("update", "Firmware Update");
+      const currentVersion = String(getEntity("text_sensor", "OpenQuatt Version")?.value || "v0.26.0");
+      const latestVersion = channel === "main" ? "v0.26.0" : "v0.26.1-dev3";
+      clearOtaSimulation();
+      setText("text_sensor", "Firmware Update Status", "Idle");
+      setNumber("Firmware Update Progress", 0, "%");
       if (updateEntity) {
-        updateEntity.current_version = "v0.26.0";
-        updateEntity.latest_version = channel === "main" ? "v0.26.0" : "v0.26.1-dev3";
-        updateEntity.state = channel === "main" ? "up_to_date" : "available";
+        updateEntity.current_version = currentVersion;
+        updateEntity.latest_version = latestVersion;
+        updateEntity.release_url = getMockReleaseUrl(channel);
+        updateEntity.state = currentVersion === latestVersion ? "up_to_date" : "available";
         updateEntity.value = updateEntity.state;
       }
     }
@@ -798,11 +825,55 @@
     if (!updateEntity) {
       return;
     }
-    updateEntity.state = "installed";
-    updateEntity.value = "installed";
-    updateEntity.current_version = String(updateEntity.latest_version || updateEntity.current_version || "v0.26.0");
-    updateEntity.summary = "De OTA-update is in deze preview als afgerond gemarkeerd.";
+    clearOtaSimulation();
+
+    const targetVersion = String(updateEntity.latest_version || updateEntity.current_version || "v0.26.0");
+    const scheduleStep = (delay, callback) => {
+      const timer = window.setTimeout(() => {
+        callback();
+        updateSummary();
+        notifyMockUpdated();
+      }, delay);
+      state.otaTimers.push(timer);
+    };
+
+    updateEntity.state = "installing";
+    updateEntity.value = "installing";
+    updateEntity.summary = "Firmware wordt voorbereid voor upload in deze preview.";
+    setText("text_sensor", "Firmware Update Status", "Starting");
+    setNumber("Firmware Update Progress", 0, "%");
     notifyMockUpdated();
+
+    scheduleStep(700, () => {
+      updateEntity.summary = "Firmware wordt geüpload in deze preview.";
+      setText("text_sensor", "Firmware Update Status", "Uploading");
+      setNumber("Firmware Update Progress", 18, "%");
+    });
+
+    scheduleStep(1500, () => {
+      setNumber("Firmware Update Progress", 44, "%");
+    });
+
+    scheduleStep(2400, () => {
+      setNumber("Firmware Update Progress", 73, "%");
+    });
+
+    scheduleStep(3300, () => {
+      updateEntity.summary = "Firmware is geplaatst. Device start opnieuw op in deze preview.";
+      setText("text_sensor", "Firmware Update Status", "Rebooting");
+      setNumber("Firmware Update Progress", 100, "%");
+    });
+
+    scheduleStep(4800, () => {
+      updateEntity.state = "installed";
+      updateEntity.value = "installed";
+      updateEntity.current_version = targetVersion;
+      updateEntity.summary = "De OTA-update is in deze preview als afgerond gemarkeerd.";
+      setText("text_sensor", "OpenQuatt Version", targetVersion);
+      setText("text_sensor", "Firmware Update Status", "Idle");
+      setNumber("Firmware Update Progress", 0, "%");
+      clearOtaSimulation();
+    });
   }
 
   function parseMockRequest(input) {
