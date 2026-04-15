@@ -28,48 +28,64 @@ ota:
         - lambda: |-
             id(oq_ota_phase_code) = 1;
             id(oq_ota_progress_pct) = 0.0f;
+            id(oq_firmware_update_status).publish_state("Starting");
+            id(oq_firmware_update_progress).publish_state(0.0f);
     on_progress:
       then:
         - lambda: |-
             id(oq_ota_phase_code) = 2;
             id(oq_ota_progress_pct) = x;
+            id(oq_firmware_update_status).publish_state("Uploading");
+            id(oq_firmware_update_progress).publish_state(x);
     on_end:
       then:
         - lambda: |-
             id(oq_ota_phase_code) = 3;
             id(oq_ota_progress_pct) = 100.0f;
+            id(oq_firmware_update_status).publish_state("Rebooting");
+            id(oq_firmware_update_progress).publish_state(100.0f);
     on_error:
       then:
         - lambda: |-
             id(oq_ota_phase_code) = 5;
+            id(oq_firmware_update_status).publish_state("Error");
     on_abort:
       then:
         - lambda: |-
             id(oq_ota_phase_code) = 6;
+            id(oq_firmware_update_status).publish_state("Aborted");
   - platform: http_request
     on_begin:
       then:
         - lambda: |-
             id(oq_ota_phase_code) = 1;
             id(oq_ota_progress_pct) = 0.0f;
+            id(oq_firmware_update_status).publish_state("Starting");
+            id(oq_firmware_update_progress).publish_state(0.0f);
     on_progress:
       then:
         - lambda: |-
             id(oq_ota_phase_code) = 2;
             id(oq_ota_progress_pct) = x;
+            id(oq_firmware_update_status).publish_state("Uploading");
+            id(oq_firmware_update_progress).publish_state(x);
     on_end:
       then:
         - lambda: |-
             id(oq_ota_phase_code) = 3;
             id(oq_ota_progress_pct) = 100.0f;
+            id(oq_firmware_update_status).publish_state("Rebooting");
+            id(oq_firmware_update_progress).publish_state(100.0f);
     on_error:
       then:
         - lambda: |-
             id(oq_ota_phase_code) = 5;
+            id(oq_firmware_update_status).publish_state("Error");
     on_abort:
       then:
         - lambda: |-
             id(oq_ota_phase_code) = 6;
+            id(oq_firmware_update_status).publish_state("Aborted");
 
 # ==============================================================================
 # NETWORK + RECOVERY
