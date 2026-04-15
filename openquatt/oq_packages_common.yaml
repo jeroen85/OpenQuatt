@@ -1,0 +1,156 @@
+# ==============================================================================
+# OpenQuatt - Shared Package Includes
+# ==============================================================================
+# Package load order is intentional:
+# 1) Common platform runtime (API/OTA/UART/diagnostics)
+# 2) Supervisory/state
+# 3) Thermal limits / abstractions
+# 4) Strategy manager + cooling strategy
+# 5) Heating strategy implementations
+# 6) Shared thermal-request control + actuator layers
+# 7) Flow/boiler and other actuation followers
+# 8) Aggregation/energy telemetry
+# 9) External inputs (CIC)
+# 10) External HA proxy inputs
+# 11) Local sensors
+# 12) Source selection and merged selected-source signals
+# 13) OpenTherm thermostat bridge
+# 14) Debug/testing utilities
+# 15) Web UI
+# 16) Per-HP hardware adapters
+# ==============================================================================
+# Shared modules use `*_secondary_*` template vars so topology wiring stays
+# centralized in topology substitutions and avoids duplicated module files.
+oq_common: !include oq_common.yaml
+oq_supervisory_controlmode: !include
+  file: oq_supervisory_controlmode.yaml
+  vars:
+    supervisory_secondary_last_applied_level_id: "${secondary_hp_id}_last_applied_level"
+    supervisory_secondary_working_mode_id: "${secondary_hp_id}_working_mode"
+    supervisory_secondary_set_working_mode_id: "${secondary_hp_id}_set_working_mode"
+    supervisory_secondary_compressor_level_id: "${secondary_hp_id}_compressor_level"
+    supervisory_secondary_defrost_id: "${secondary_hp_id}_defrost"
+    supervisory_secondary_low_noise_mode_id: "${secondary_hp_id}_low_noise_mode"
+    supervisory_secondary_set_pump_mode_id: "${secondary_hp_id}_set_pump_mode"
+    supervisory_secondary_pump_speed_id: "${secondary_hp_id}_pump_speed"
+oq_thermal_limits: !include
+  file: oq_thermal_limits.yaml
+  vars:
+    secondary_water_out_temp_id: "${secondary_hp_id}_water_out_temp"
+oq_strategy_manager: !include
+  file: oq_strategy_manager.yaml
+  vars:
+    secondary_outside_temp_id: "${secondary_hp_id}_outside_temp"
+    secondary_outside_last_change_ms_id: "${secondary_hp_id}_outside_temp_last_change_ms"
+    secondary_outside_activity_ms_id: "${secondary_hp_id}_outside_temp_activity_ms"
+    secondary_outside_is_distinct: "${secondary_outside_is_distinct}"
+    secondary_last_applied_level_id: "${secondary_hp_id}_last_applied_level"
+    secondary_working_mode_id: "${secondary_hp_id}_working_mode"
+oq_cooling_strategy: !include
+  file: oq_cooling_strategy.yaml
+  vars:
+    cc_secondary_minutes_id: "${secondary_hp_id}_minutes"
+    cc_secondary_last_applied_level_id: "${secondary_hp_id}_last_applied_level"
+    cc_secondary_last_start_ms_id: "${secondary_hp_id}_last_start_ms"
+    cc_secondary_last_stop_ms_id: "${secondary_hp_id}_last_stop_ms"
+    cc_secondary_excluded_level_a_id: "${secondary_hp_id}_excluded_level_a"
+    cc_secondary_excluded_level_b_id: "${secondary_hp_id}_excluded_level_b"
+oq_heating_curve_strategy: !include
+  file: oq_heating_curve_strategy.yaml
+  vars:
+    curve_secondary_minutes_id: "${secondary_hp_id}_minutes"
+    curve_secondary_last_applied_level_id: "${secondary_hp_id}_last_applied_level"
+    curve_secondary_last_start_ms_id: "${secondary_hp_id}_last_start_ms"
+    curve_secondary_working_mode_id: "${secondary_hp_id}_working_mode"
+    curve_secondary_4_way_valve_id: "${secondary_hp_id}_4_way_valve"
+    curve_secondary_oil_return_id: "${secondary_hp_id}_prot_oil_return"
+    curve_secondary_excluded_level_a_id: "${secondary_hp_id}_excluded_level_a"
+    curve_secondary_excluded_level_b_id: "${secondary_hp_id}_excluded_level_b"
+oq_power_house_strategy: !include
+  file: oq_power_house_strategy.yaml
+  vars:
+    ph_secondary_minutes_id: "${secondary_hp_id}_minutes"
+    ph_secondary_defrost_id: "${secondary_hp_id}_defrost"
+    ph_secondary_oil_return_id: "${secondary_hp_id}_prot_oil_return"
+    ph_secondary_last_applied_level_id: "${secondary_hp_id}_last_applied_level"
+    ph_secondary_4_way_valve_id: "${secondary_hp_id}_4_way_valve"
+    ph_secondary_excluded_level_a_id: "${secondary_hp_id}_excluded_level_a"
+    ph_secondary_excluded_level_b_id: "${secondary_hp_id}_excluded_level_b"
+oq_thermal_request_control: !include
+  file: oq_thermal_request_control.yaml
+  vars:
+    hc_secondary_power_input_id: "${secondary_hp_id}_power_input"
+    hc_secondary_heat_power_id: "${secondary_hp_id}_heat_power"
+    hc_secondary_compressor_level_id: "${secondary_hp_id}_compressor_level"
+    hc_secondary_defrost_id: "${secondary_hp_id}_defrost"
+    hc_secondary_last_applied_level_id: "${secondary_hp_id}_last_applied_level"
+    hc_secondary_last_start_ms_id: "${secondary_hp_id}_last_start_ms"
+    hc_secondary_last_stop_ms_id: "${secondary_hp_id}_last_stop_ms"
+    hc_secondary_minutes_id: "${secondary_hp_id}_minutes"
+    hc_secondary_set_working_mode_id: "${secondary_hp_id}_set_working_mode"
+    hc_secondary_working_mode_id: "${secondary_hp_id}_working_mode"
+    hc_secondary_4_way_valve_id: "${secondary_hp_id}_4_way_valve"
+    hc_secondary_excluded_level_a_id: "${secondary_hp_id}_excluded_level_a"
+    hc_secondary_excluded_level_b_id: "${secondary_hp_id}_excluded_level_b"
+    hc_dual_tuning_internal: "${hc_dual_tuning_internal}"
+    hc_hp2_diag_internal: "${hc_hp2_diag_internal}"
+    hc_runtime_reset_button_name: "${hc_runtime_reset_button_name}"
+oq_thermal_actuator: !include
+  file: oq_thermal_actuator.yaml
+  vars:
+    ta_secondary_compressor_level_id: "${secondary_hp_id}_compressor_level"
+    ta_secondary_last_applied_level_id: "${secondary_hp_id}_last_applied_level"
+    ta_secondary_last_start_ms_id: "${secondary_hp_id}_last_start_ms"
+    ta_secondary_last_stop_ms_id: "${secondary_hp_id}_last_stop_ms"
+    ta_secondary_minutes_id: "${secondary_hp_id}_minutes"
+    ta_secondary_set_working_mode_id: "${secondary_hp_id}_set_working_mode"
+    ta_secondary_working_mode_id: "${secondary_hp_id}_working_mode"
+    ta_secondary_4_way_valve_id: "${secondary_hp_id}_4_way_valve"
+    ta_secondary_excluded_level_a_id: "${secondary_hp_id}_excluded_level_a"
+    ta_secondary_excluded_level_b_id: "${secondary_hp_id}_excluded_level_b"
+oq_flow_control: !include
+  file: oq_flow_control.yaml
+  vars:
+    flow_secondary_enabled: "${flow_secondary_enabled}"
+    flow_secondary_flow_sensor_id: "${secondary_hp_id}_flow"
+    flow_secondary_pump_speed_id: "${secondary_hp_id}_pump_speed"
+    flow_mismatch_internal: "${flow_mismatch_internal}"
+oq_flow_autotune: !include oq_flow_autotune.yaml
+oq_boiler_control: !include
+  file: oq_boiler_control.yaml
+  vars:
+    heatpump_outlet_temp_id: "${secondary_hp_id}_water_out_temp"
+oq_energy: !include oq_energy.yaml
+oq_cic: !include
+  file: oq_cic.yaml
+  vars:
+    cic_secondary_enabled: "${cic_secondary_enabled}"
+    cic_hp2_sensor_internal: "${cic_hp2_sensor_internal}"
+oq_ha_inputs: !include oq_ha_inputs.yaml
+oq_local_sensors: !include oq_local_sensors.yaml
+oq_sensor_sources: !include
+  file: oq_sensor_sources.yaml
+  vars:
+    sensor_sources_duo_flow_internal: "${sensor_sources_duo_flow_internal}"
+    flow_secondary_flow_sensor_id: "${secondary_hp_id}_flow"
+    secondary_working_mode_id: "${secondary_hp_id}_working_mode"
+oq_ot_slave: !include
+  file: oq_ot_slave.yaml
+  vars:
+    ot_secondary_present: "${ot_secondary_present}"
+    ot_secondary_last_applied_level_id: "${secondary_hp_id}_last_applied_level"
+    ot_secondary_working_mode_id: "${secondary_hp_id}_working_mode"
+    ot_secondary_fault_binary_sensor_id: "${secondary_hp_id}_ot_fault_active"
+oq_debug_testing: !include
+  file: oq_debug_testing.yaml
+  vars:
+    debug_hp2_internal: "${debug_hp2_internal}"
+    debug_secondary_hp_id: "${debug_secondary_hp_id}"
+oq_setup_status: !include oq_setup_status.yaml
+oq_webserver: !include oq_webserver.yaml
+heatpump1: !include
+  file: oq_HP_io.yaml
+  vars:
+    hp_id: "hp1"
+    prefix: "HP1 - "
+    device_address: 0x01

@@ -1,0 +1,6 @@
+heatpump2: !include
+  file: ../oq_HP_io.yaml
+  vars:
+    hp_id: "hp2"
+    prefix: "HP2 - "
+    device_address: 0x02

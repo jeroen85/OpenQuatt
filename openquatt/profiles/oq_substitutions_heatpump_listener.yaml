@@ -1,14 +1,13 @@
 # ==============================================================================
 # OpenQuatt - Hardware Profile: Heatpump Listener
 # ==============================================================================
-substitutions:
-  esp_board: "esp32dev"                                 # Active ESP32 board type.
-  esp_flash_size: "8MB"                                 # Active ESP flash size.
-  esp_variant: "esp32"                                  # Active ESP variant.
-  uart_tx_pin: "GPIO33"                                 # Active RS485 TX pin.
-  uart_rx_pin: "GPIO32"                                 # Active RS485 RX pin.
-  uart_rts_pin: "GPIO21"                                # Active RS485 DE/RE (flow control) pin.
-  oq_ot_thermostat_in_pin: "GPIO25"                     # Reserved OT thermostat RX pin placeholder for future wiring.
-  oq_ot_thermostat_out_pin: "GPIO26"                    # Reserved OT thermostat TX pin placeholder for future wiring.
-  ds18b20_pin: "GPIO27"                                 # Active DS18B20 1-Wire pin.
-  oq_boiler_relay_pin: "GPIO22"                         # Active boiler relay output pin.
+esp_board: "esp32dev"                                 # Active ESP32 board type.
+esp_flash_size: "8MB"                                 # Active ESP flash size.
+esp_variant: "esp32"                                  # Active ESP variant.
+uart_tx_pin: "GPIO33"                                 # Active RS485 TX pin.
+uart_rx_pin: "GPIO32"                                 # Active RS485 RX pin.
+uart_rts_pin: "GPIO21"                                # Active RS485 DE/RE (flow control) pin.
+oq_ot_thermostat_in_pin: "GPIO25"                     # Reserved OT thermostat RX pin placeholder for future wiring.
+oq_ot_thermostat_out_pin: "GPIO26"                    # Reserved OT thermostat TX pin placeholder for future wiring.
+ds18b20_pin: "GPIO27"                                 # Active DS18B20 1-Wire pin.
+oq_boiler_relay_pin: "GPIO22"                         # Active boiler relay output pin.

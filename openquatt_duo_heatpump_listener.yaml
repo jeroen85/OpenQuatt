@@ -1,12 +1,12 @@
 # ==============================================================================
 # OpenQuatt - Duo Topology Main Config (Heatpump Listener)
 # ==============================================================================
-substitutions: !include openquatt/oq_substitutions_common.yaml
+substitutions:
+  <<: !include openquatt/oq_substitutions_common.yaml
+  <<: !include openquatt/profiles/oq_substitutions_heatpump_listener.yaml
 
 esphome:
   build_path: build/openquatt_duo_heatpump_listener
 
 packages:
-  openquatt_hw_profile: !include openquatt/profiles/oq_substitutions_heatpump_listener.yaml
   openquatt_base: !include openquatt_base.yaml
-

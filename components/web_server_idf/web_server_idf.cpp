@@ -32,13 +32,11 @@
 
 namespace esphome::web_server_idf {
 
+static constexpr size_t OQ_HTTPD_STACK_SIZE = 8192;
+
 #ifndef HTTPD_409
 #define HTTPD_409 "409 Conflict"
 #endif
-
-// The default ESP-IDF HTTP server stack is 4096 bytes, which is too tight for
-// our V3 web UI test on ESP32-S3 and trips the task overflow guard.
-static constexpr size_t OQ_HTTPD_STACK_SIZE = 8192;
 
 #define CRLF_STR "\r\n"
 #define CRLF_LEN (sizeof(CRLF_STR) - 1)
@@ -78,12 +76,13 @@ int nonblocking_send(httpd_handle_t hd, int sockfd, const char *buf, size_t buf_
   // Use MSG_DONTWAIT to prevent blocking when TCP send buffer is full
   int ret = send(sockfd, buf, buf_len, flags | MSG_DONTWAIT);
   if (ret < 0) {
-    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+    const int err = errno;
+    if (err == EAGAIN || err == EWOULDBLOCK) {
       // Buffer full - retry later
       return HTTPD_SOCK_ERR_TIMEOUT;
     }
     // Real error
-    ESP_LOGD(TAG, "send error: errno %d", errno);
+    ESP_LOGD(TAG, "send error: errno %d", err);
     return HTTPD_SOCK_ERR_FAIL;
   }
   return ret;
@@ -261,19 +260,6 @@ StringRef AsyncWebServerRequest::url_to(std::span<char, URL_BUF_SIZE> buffer) co
   // Decode URL-encoded characters in-place (e.g., %20 -> space)
   size_t decoded_len = url_decode(buffer.data());
   return StringRef(buffer.data(), decoded_len);
-}
-
-void AsyncWebServerRequest::send(AsyncWebServerResponse *response) {
-  httpd_resp_send(*this, response->get_content_data(), response->get_content_size());
-}
-
-void AsyncWebServerRequest::send(int code, const char *content_type, const char *content) {
-  this->init_response_(nullptr, code, content_type);
-  if (content) {
-    httpd_resp_send(*this, content, HTTPD_RESP_USE_STRLEN);
-  } else {
-    httpd_resp_send(*this, nullptr, 0);
-  }
 }
 
 void AsyncWebServerRequest::redirect(const std::string &url) {
@@ -498,9 +484,12 @@ void AsyncEventSource::handleRequest(AsyncWebServerRequest *request) {
     this->on_connect_(rsp);
   }
   this->sessions_.push_back(rsp);
+  // Wake up WebServer::loop() to drain deferred event queues for this client.
+  // Safe from httpd task context via the pending_enable_loop_ flag.
+  this->web_server_->enable_loop_soon_any_context();
 }
 
-void AsyncEventSource::loop() {
+bool AsyncEventSource::loop() {
   // Clean up dead sessions safely
   // This follows the ESP-IDF pattern where free_ctx marks resources as dead
   // and the main loop handles the actual cleanup to avoid race conditions
@@ -518,6 +507,7 @@ void AsyncEventSource::loop() {
       ++i;
     }
   }
+  return !this->sessions_.empty();
 }
 
 void AsyncEventSource::try_send_nodefer(const char *message, const char *event, uint32_t id, uint32_t reconnect) {
