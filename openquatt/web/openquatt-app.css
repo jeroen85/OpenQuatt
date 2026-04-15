@@ -824,6 +824,40 @@ body.oq-page-light {
   transition: width 220ms ease;
 }
 
+.oq-helper-modal-success {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid rgba(74, 222, 128, 0.28);
+  border-radius: var(--oq-helper-radius-md);
+  background: rgba(240, 253, 244, 0.9);
+}
+
+.oq-helper-modal-success strong {
+  color: #166534;
+  font-size: 0.92rem;
+}
+
+.oq-helper-modal-success span {
+  color: #166534;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.oq-helper-shell--dark .oq-helper-modal-success,
+.oq-helper-modal-backdrop--dark .oq-helper-modal-success {
+  border-color: rgba(74, 222, 128, 0.24);
+  background: rgba(20, 83, 45, 0.28);
+}
+
+.oq-helper-shell--dark .oq-helper-modal-success strong,
+.oq-helper-shell--dark .oq-helper-modal-success span,
+.oq-helper-modal-backdrop--dark .oq-helper-modal-success strong,
+.oq-helper-modal-backdrop--dark .oq-helper-modal-success span {
+  color: #bbf7d0;
+}
+
 .oq-helper-modal-note {
   margin: 14px 0 0;
   color: var(--oq-helper-faint);

@@ -421,6 +421,8 @@
     updateInstallTargetVersion: "",
     updateInstallPhaseHint: "",
     updateInstallProgressHint: Number.NaN,
+    updateInstallCompleted: false,
+    updateInstallCompletedVersion: "",
     draggingCurveKey: "",
     motionFrame: 0,
     motionStartedAt: 0,
@@ -911,6 +913,9 @@
     if (progress) {
       return progress.phaseLabel;
     }
+    if (isFirmwareUpdateJustCompleted()) {
+      return "Bijgewerkt";
+    }
     if (isFirmwareUpdateInstalling()) {
       return "Bezig";
     }
@@ -983,6 +988,36 @@
       return false;
     }
     return compareFirmwareVersions(current, target) >= 0;
+  }
+
+  function hasInstalledFirmwareLatestVersion(entity = getFirmwareUpdateEntity() || {}) {
+    const latest = getFirmwareLatestVersion(entity);
+    const current = getFirmwareCurrentVersion(entity);
+    if (!latest || !current) {
+      return false;
+    }
+    return compareFirmwareVersions(current, latest) >= 0;
+  }
+
+  function isFirmwareInstallSettled() {
+    return (hasInstalledFirmwareTargetVersion() || hasInstalledFirmwareLatestVersion())
+      && !isFirmwareUpdateChecking()
+      && !isFirmwareProgressActive()
+      && !isFirmwareUpdateAvailable();
+  }
+
+  function isFirmwareUpdateJustCompleted() {
+    return (state.updateInstallCompleted || isFirmwareInstallSettled())
+      && !isFirmwareUpdateChecking()
+      && !getFirmwareProgressModel()
+      && !isFirmwareUpdateAvailable();
+  }
+
+  function resetFirmwareInstallUiState() {
+    state.updateInstallBusy = false;
+    state.updateInstallTargetVersion = "";
+    state.updateInstallPhaseHint = "";
+    state.updateInstallProgressHint = Number.NaN;
   }
 
   function syncFirmwareInstallHints() {
@@ -1172,6 +1207,9 @@
   }
 
   function isFirmwareUpdateInstalling() {
+    if (isFirmwareInstallSettled()) {
+      return false;
+    }
     const raw = getFirmwareUpdateState();
     return state.updateInstallBusy
       || raw === "installing"
@@ -1334,6 +1372,7 @@
 
         if (
           hasInstalledFirmwareTargetVersion()
+          || isFirmwareInstallSettled()
           || (isFirmwareEffectivelyCurrent() && !isFirmwareProgressActive() && !isFirmwareUpdateInstalling())
         ) {
           return true;
@@ -1356,6 +1395,10 @@
 
     if (progress) {
       return progress.copy;
+    }
+    if (isFirmwareUpdateJustCompleted()) {
+      const version = state.updateInstallCompletedVersion || getFirmwareCurrentVersion() || getFirmwareChannelLabel();
+      return `${getInstallationLabel()} draait nu op ${version}.`;
     }
     if (isFirmwareUpdateInstalling()) {
       return `OTA-update wordt voorbereid voor ${getInstallationLabel()}. Het device kan kort herstarten.`;
@@ -1584,8 +1627,11 @@
     const available = isFirmwareUpdateAvailable();
     const summary = getFirmwareModalCopy();
     const progress = getFirmwareProgressModel();
+    const justCompleted = isFirmwareUpdateJustCompleted();
     const releaseUrl = getFirmwareReleaseUrl();
-    const title = progress
+    const title = justCompleted
+      ? "Firmware-update afgerond"
+      : progress
       ? "Firmware-update bezig"
       : installing
       ? "Firmware-update bezig"
@@ -1607,6 +1653,12 @@
             <button class="oq-helper-modal-close" type="button" data-oq-action="close-update-modal" aria-label="Sluit update-popup">×</button>
           </div>
           <p class="oq-helper-modal-copy">${escapeHtml(summary)}</p>
+          ${justCompleted ? `
+            <div class="oq-helper-modal-success" aria-live="polite">
+              <strong>Bijgewerkt</strong>
+              <span>De nieuwe firmware draait nu op het device.</span>
+            </div>
+          ` : ""}
           ${progress ? `
             <div class="oq-helper-modal-progress" aria-live="polite">
               <div class="oq-helper-modal-progress-head">
@@ -1651,9 +1703,11 @@
             <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="run-firmware-check" ${checking || installing || progress ? "disabled" : ""}>
               ${checking ? "Controleren..." : "Controleer opnieuw"}
             </button>
-            <button class="oq-helper-button" type="button" data-oq-action="install-firmware-update" ${!available || installing || checking || progress || !entity ? "disabled" : ""}>
+            ${justCompleted
+              ? '<button class="oq-helper-button oq-helper-button--primary" type="button" data-oq-action="close-update-modal">Gereed</button>'
+              : `<button class="oq-helper-button" type="button" data-oq-action="install-firmware-update" ${!available || installing || checking || progress || !entity ? "disabled" : ""}>
               ${installing ? "Bijwerken..." : "Nu bijwerken"}
-            </button>
+            </button>`}
             ${releaseUrl ? `<a class="oq-helper-button oq-helper-button--ghost oq-helper-modal-link" href="${escapeHtml(releaseUrl)}" target="_blank" rel="noreferrer">Release notes</a>` : ""}
           </div>
         </section>
@@ -2118,6 +2172,8 @@
 
     if (action === "close-update-modal") {
       state.updateModalOpen = false;
+      state.updateInstallCompleted = false;
+      state.updateInstallCompletedVersion = "";
       render();
       return;
     }
@@ -2257,6 +2313,8 @@
       delete state.inputDrafts[key];
       state.controlNotice = `${entity.name} bijgewerkt.`;
       if (key === "firmwareUpdateChannel") {
+        state.updateInstallCompleted = false;
+        state.updateInstallCompletedVersion = "";
         state.entities.firmwareUpdateChannel = {
           ...(state.entities.firmwareUpdateChannel || {}),
           state: option,
@@ -2288,6 +2346,8 @@
       return;
     }
 
+    state.updateInstallCompleted = false;
+    state.updateInstallCompletedVersion = "";
     state.updateCheckBusy = true;
     state.controlError = "";
     state.controlNotice = "";
@@ -2317,6 +2377,8 @@
       return;
     }
 
+    state.updateInstallCompleted = false;
+    state.updateInstallCompletedVersion = "";
     state.updateInstallBusy = true;
     state.updateInstallTargetVersion = getFirmwareLatestVersion(entity);
     state.updateInstallPhaseHint = "starting";
@@ -2333,16 +2395,17 @@
         throw new Error(`HTTP ${response.status}`);
       }
       const completed = await pollFirmwareInstallState();
-      state.controlNotice = completed
-        ? "OTA-update afgerond."
-        : "OTA-update gestart. Wacht tot het device weer online is.";
+      if (completed) {
+        state.updateInstallCompleted = true;
+        state.updateInstallCompletedVersion = getFirmwareCurrentVersion() || state.updateInstallTargetVersion;
+        state.controlNotice = "";
+      } else {
+        state.controlNotice = "OTA-update gestart. Wacht tot het device weer online is.";
+      }
     } catch (error) {
       state.controlError = `OTA-update kon niet worden gestart. ${error.message}`;
     } finally {
-      state.updateInstallBusy = false;
-      state.updateInstallTargetVersion = "";
-      state.updateInstallPhaseHint = "";
-      state.updateInstallProgressHint = Number.NaN;
+      resetFirmwareInstallUiState();
       render();
     }
   }
@@ -4266,7 +4329,7 @@
       return {
         label: "Systeem",
         value: "Stand-by, gereed om te starten",
-        tone: "neutral",
+        tone: "sky",
       };
     }
     if (isEntityActive("silentActive")) {

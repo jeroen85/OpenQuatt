@@ -865,10 +865,11 @@
     });
 
     scheduleStep(4800, () => {
-      updateEntity.state = "installed";
-      updateEntity.value = "installed";
+      updateEntity.state = "up_to_date";
+      updateEntity.value = "up_to_date";
       updateEntity.current_version = targetVersion;
-      updateEntity.summary = "De OTA-update is in deze preview als afgerond gemarkeerd.";
+      updateEntity.latest_version = targetVersion;
+      updateEntity.summary = "De preview draait nu op de nieuwste firmware.";
       setText("text_sensor", "OpenQuatt Version", targetVersion);
       setText("text_sensor", "Firmware Update Status", "Idle");
       setNumber("Firmware Update Progress", 0, "%");
