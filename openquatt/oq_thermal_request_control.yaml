@@ -237,7 +237,7 @@ number:
     optimistic: true
     initial_value: 300
     web_server:
-      sorting_group_id: oq_tuning_heat
+      sorting_group_id: oq_heating_strategy
 
   # Dual-HP enable threshold on single-HP compressor level request (1..10).
   # Disable threshold is derived internally as max(1, enable - 1) to keep parameter count low.
@@ -255,7 +255,7 @@ number:
     optimistic: true
     initial_value: 5
     web_server:
-      sorting_group_id: oq_tuning_heat
+      sorting_group_id: oq_heating_strategy
 
   # Hold time before enabling dual-HP in curve mode.
   - platform: template
@@ -272,7 +272,7 @@ number:
     optimistic: true
     initial_value: 3
     web_server:
-      sorting_group_id: oq_tuning_heat
+      sorting_group_id: oq_heating_strategy
 
   # Hold time before disabling dual-HP in curve mode.
   - platform: template
@@ -289,7 +289,7 @@ number:
     optimistic: true
     initial_value: 5
     web_server:
-      sorting_group_id: oq_tuning_heat
+      sorting_group_id: oq_heating_strategy
 
 # ----------------------------
 # BUTTON
@@ -300,7 +300,7 @@ button:
     name: "${hc_runtime_reset_button_name}"
     icon: mdi:restart
     web_server:
-      sorting_group_id: oq_tuning_heat
+      sorting_group_id: oq_heating_strategy
     on_press:
       - lambda: |-
           // Reset accumulated runtime counters and measured-start latches together,
@@ -403,7 +403,7 @@ sensor:
     accuracy_decimals: 0
     update_interval: 5s
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_heating_strategy
     lambda: |-
       return (float) id(oq_demand_raw);
 
@@ -416,7 +416,7 @@ sensor:
     accuracy_decimals: 0
     update_interval: 5s
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_heating_strategy
     lambda: |-
       return (float) id(oq_demand_filtered);
 
@@ -429,7 +429,7 @@ sensor:
     accuracy_decimals: 0
     update_interval: 5s
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_heating_strategy
     lambda: |-
       if (!id(hp1_compressor_level).has_state()) return NAN;
       auto idx = id(hp1_compressor_level).active_index();
@@ -446,7 +446,7 @@ sensor:
     accuracy_decimals: 0
     update_interval: 5s
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_heating_strategy
     lambda: |-
       #if OQ_TOPOLOGY_DUO
       if (!id(${hc_secondary_compressor_level_id}).has_state()) return NAN;
@@ -471,7 +471,7 @@ sensor:
     accuracy_decimals: 0
     update_interval: 5s
     web_server:
-      sorting_group_id: oq_overview
+      sorting_group_id: oq_heating_strategy
     lambda: |-
       return id(oq_P_hp_cap_w);
 
@@ -485,7 +485,7 @@ sensor:
     accuracy_decimals: 0
     update_interval: 5s
     web_server:
-      sorting_group_id: oq_overview
+      sorting_group_id: oq_heating_strategy
     lambda: |-
       return id(oq_P_deficit_w);
 
@@ -498,7 +498,7 @@ text_sensor:
     disabled_by_default: true
     update_interval: never
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_heating_strategy
     lambda: |-
       return std::string("inactive");
 
@@ -508,7 +508,7 @@ text_sensor:
     icon: mdi:source-branch
     update_interval: 10s
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_heating_strategy
     lambda: |-
       #if OQ_TOPOLOGY_DUO
       const bool lead_is_hp1 = (id(hp1_minutes) <= id(${hc_secondary_minutes_id}));
@@ -525,7 +525,7 @@ text_sensor:
     disabled_by_default: true
     update_interval: never
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_heating_strategy
 
 # ----------------------------
 # MAIN LOOP

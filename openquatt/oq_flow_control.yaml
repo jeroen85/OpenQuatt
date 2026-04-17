@@ -243,7 +243,7 @@ binary_sensor:
     device_class: problem
     entity_category: diagnostic
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_hydraulics
     lambda: |-
       static bool state = false;
       static bool mismatch_timer_running = false;

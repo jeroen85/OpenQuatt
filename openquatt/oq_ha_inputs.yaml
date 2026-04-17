@@ -27,7 +27,7 @@ sensor:
     state_class: measurement
     accuracy_decimals: 2
     web_server:
-      sorting_group_id: oq_ha
+      sorting_group_id: oq_ha_inputs
 
   - platform: homeassistant
     id: water_supply_temp_ha
@@ -40,7 +40,7 @@ sensor:
     state_class: measurement
     accuracy_decimals: 2
     web_server:
-      sorting_group_id: oq_ha
+      sorting_group_id: oq_ha_inputs
 
   - platform: homeassistant
     id: thermostat_setpoint_ha
@@ -53,7 +53,7 @@ sensor:
     state_class: measurement
     accuracy_decimals: 2
     web_server:
-      sorting_group_id: oq_ha
+      sorting_group_id: oq_ha_inputs
 
   - platform: homeassistant
     id: thermostat_room_temp_ha
@@ -66,7 +66,7 @@ sensor:
     state_class: measurement
     accuracy_decimals: 2
     web_server:
-      sorting_group_id: oq_ha
+      sorting_group_id: oq_ha_inputs
 
   - platform: homeassistant
     id: cooling_room_count_ha
@@ -76,7 +76,7 @@ sensor:
     icon: mdi:counter
     accuracy_decimals: 0
     web_server:
-      sorting_group_id: oq_ha
+      sorting_group_id: oq_ha_inputs
 
   - platform: homeassistant
     id: cooling_room_1_dew_point_direct_ha
@@ -89,7 +89,7 @@ sensor:
     state_class: measurement
     accuracy_decimals: 2
     web_server:
-      sorting_group_id: oq_ha
+      sorting_group_id: oq_ha_inputs
 
   - platform: homeassistant
     id: cooling_room_1_temp_ha
@@ -102,7 +102,7 @@ sensor:
     state_class: measurement
     accuracy_decimals: 2
     web_server:
-      sorting_group_id: oq_ha
+      sorting_group_id: oq_ha_inputs
 
   - platform: homeassistant
     id: cooling_room_1_humidity_ha
@@ -115,7 +115,7 @@ sensor:
     state_class: measurement
     accuracy_decimals: 1
     web_server:
-      sorting_group_id: oq_ha
+      sorting_group_id: oq_ha_inputs
 
   - platform: homeassistant
     id: cooling_room_2_dew_point_direct_ha
@@ -128,7 +128,7 @@ sensor:
     state_class: measurement
     accuracy_decimals: 2
     web_server:
-      sorting_group_id: oq_ha
+      sorting_group_id: oq_ha_inputs
 
   - platform: homeassistant
     id: cooling_room_2_temp_ha
@@ -141,7 +141,7 @@ sensor:
     state_class: measurement
     accuracy_decimals: 2
     web_server:
-      sorting_group_id: oq_ha
+      sorting_group_id: oq_ha_inputs
 
   - platform: homeassistant
     id: cooling_room_2_humidity_ha
@@ -154,7 +154,7 @@ sensor:
     state_class: measurement
     accuracy_decimals: 1
     web_server:
-      sorting_group_id: oq_ha
+      sorting_group_id: oq_ha_inputs
 
   - platform: homeassistant
     id: cooling_room_3_dew_point_direct_ha
@@ -167,7 +167,7 @@ sensor:
     state_class: measurement
     accuracy_decimals: 2
     web_server:
-      sorting_group_id: oq_ha
+      sorting_group_id: oq_ha_inputs
 
   - platform: homeassistant
     id: cooling_room_3_temp_ha
@@ -180,7 +180,7 @@ sensor:
     state_class: measurement
     accuracy_decimals: 2
     web_server:
-      sorting_group_id: oq_ha
+      sorting_group_id: oq_ha_inputs
 
   - platform: homeassistant
     id: cooling_room_3_humidity_ha
@@ -193,7 +193,7 @@ sensor:
     state_class: measurement
     accuracy_decimals: 1
     web_server:
-      sorting_group_id: oq_ha
+      sorting_group_id: oq_ha_inputs
 
   - platform: homeassistant
     id: cooling_room_4_dew_point_direct_ha
@@ -206,7 +206,7 @@ sensor:
     state_class: measurement
     accuracy_decimals: 2
     web_server:
-      sorting_group_id: oq_ha
+      sorting_group_id: oq_ha_inputs
 
   - platform: homeassistant
     id: cooling_room_4_temp_ha
@@ -219,7 +219,7 @@ sensor:
     state_class: measurement
     accuracy_decimals: 2
     web_server:
-      sorting_group_id: oq_ha
+      sorting_group_id: oq_ha_inputs
 
   - platform: homeassistant
     id: cooling_room_4_humidity_ha
@@ -232,7 +232,7 @@ sensor:
     state_class: measurement
     accuracy_decimals: 1
     web_server:
-      sorting_group_id: oq_ha
+      sorting_group_id: oq_ha_inputs
 
   - platform: homeassistant
     id: cooling_room_5_dew_point_direct_ha
@@ -245,7 +245,7 @@ sensor:
     state_class: measurement
     accuracy_decimals: 2
     web_server:
-      sorting_group_id: oq_ha
+      sorting_group_id: oq_ha_inputs
 
   - platform: homeassistant
     id: cooling_room_5_temp_ha
@@ -258,7 +258,7 @@ sensor:
     state_class: measurement
     accuracy_decimals: 2
     web_server:
-      sorting_group_id: oq_ha
+      sorting_group_id: oq_ha_inputs
 
   - platform: homeassistant
     id: cooling_room_5_humidity_ha
@@ -271,7 +271,7 @@ sensor:
     state_class: measurement
     accuracy_decimals: 1
     web_server:
-      sorting_group_id: oq_ha
+      sorting_group_id: oq_ha_inputs
 
   - platform: homeassistant
     id: cooling_room_6_dew_point_direct_ha
@@ -284,7 +284,7 @@ sensor:
     state_class: measurement
     accuracy_decimals: 2
     web_server:
-      sorting_group_id: oq_ha
+      sorting_group_id: oq_ha_inputs
 
   - platform: homeassistant
     id: cooling_room_6_temp_ha
@@ -297,7 +297,7 @@ sensor:
     state_class: measurement
     accuracy_decimals: 2
     web_server:
-      sorting_group_id: oq_ha
+      sorting_group_id: oq_ha_inputs
 
   - platform: homeassistant
     id: cooling_room_6_humidity_ha
@@ -310,7 +310,7 @@ sensor:
     state_class: measurement
     accuracy_decimals: 1
     web_server:
-      sorting_group_id: oq_ha
+      sorting_group_id: oq_ha_inputs
 
 binary_sensor:
   - platform: homeassistant
@@ -321,4 +321,4 @@ binary_sensor:
     icon: mdi:snowflake-check
     device_class: cold
     web_server:
-      sorting_group_id: oq_ha
+      sorting_group_id: oq_ha_inputs

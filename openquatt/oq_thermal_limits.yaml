@@ -61,7 +61,7 @@ number:
     initial_value: 60
     entity_category: config
     web_server:
-      sorting_group_id: oq_tuning_heat
+      sorting_group_id: oq_heating_strategy
 
 sensor:
   # Shared abstractions and derived telemetry.

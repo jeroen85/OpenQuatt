@@ -44,6 +44,8 @@ switch:
       name: "OpenTherm Enabled"
       entity_category: config
       icon: mdi:thermostat-cog
+      web_server:
+        sorting_group_id: oq_opentherm
 
 binary_sensor:
   - platform: openquatt_ot_slave
@@ -52,15 +54,21 @@ binary_sensor:
       id: ot_thermostat_ch_enable
       name: "OT - Thermostat CH Enable"
       icon: mdi:radiator
+      web_server:
+        sorting_group_id: oq_opentherm
     master_cooling_enable:
       id: ot_thermostat_cooling_enable
       name: "OT - Thermostat Cooling Enable"
       icon: mdi:snowflake
+      web_server:
+        sorting_group_id: oq_opentherm
     link_problem:
       id: ot_link_problem
       name: "OT - Link Problem"
       entity_category: diagnostic
       icon: mdi:alert-circle-outline
+      web_server:
+        sorting_group_id: oq_opentherm
 
 sensor:
   - platform: openquatt_ot_slave
@@ -69,14 +77,20 @@ sensor:
       id: ot_thermostat_control_setpoint
       name: "OT - Control Setpoint"
       icon: mdi:thermostat
+      web_server:
+        sorting_group_id: oq_opentherm
     t_roomset:
       id: ot_thermostat_room_setpoint
       name: "OT - Room Setpoint"
       icon: mdi:home-thermometer-outline
+      web_server:
+        sorting_group_id: oq_opentherm
     t_room:
       id: ot_thermostat_room_temp
       name: "OT - Room Temperature"
       icon: mdi:home-thermometer
+      web_server:
+        sorting_group_id: oq_opentherm
 
 interval:
   - interval: 2s
