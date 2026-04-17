@@ -108,7 +108,6 @@
     silentStartTime: { domain: "time", name: "Silent start time" },
     silentEndTime: { domain: "time", name: "Silent end time" },
     maxWater: { domain: "number", name: "Maximum water temperature" },
-    maxWaterTrip: { domain: "number", name: "Maximum water temperature trip" },
     minRuntime: { domain: "number", name: "Minimum runtime" },
     totalPower: { domain: "sensor", name: "Total Power Input" },
     totalCop: { domain: "sensor", name: "Total COP" },
@@ -379,7 +378,6 @@
     ...LIMIT_KEYS,
     ...POWER_HOUSE_KEYS,
     ...CURVE_SETTING_KEYS,
-    "maxWaterTrip",
     ...COMPRESSOR_SETTING_KEYS,
     ...SILENT_SETTING_KEYS,
   ];
@@ -3361,11 +3359,10 @@
     return renderSettingsSection(
       "Maximale watertemperatuur",
       "Watertemperatuur",
-      "Beschermt het systeem tegen te hoge aanvoertemperaturen en bepaalt wanneer de tripgrens in beeld komt.",
+      "Beschermt het systeem tegen te hoge aanvoertemperaturen. OpenQuatt leidt daar intern zelf de terugregelband en een harde trip op 5°C boven deze grens uit af.",
       `
         <div class="oq-settings-grid">
-          ${renderSettingsNumberField("maxWater", "Maximale watertemperatuur", "Normale bovengrens voor de watertemperatuur tijdens bedrijf.")}
-          ${renderSettingsNumberField("maxWaterTrip", "Tripgrens watertemperatuur", "Veiligheidsgrens waarbij de regeling hard ingrijpt als de watertemperatuur te ver oploopt.")}
+          ${renderSettingsNumberField("maxWater", "Maximale watertemperatuur", "Normale bovengrens voor de watertemperatuur tijdens bedrijf. OpenQuatt begint enkele graden eerder al terug te regelen en bewaakt een harde trip op 5°C boven deze grens.")}
         </div>
       `,
     );
@@ -3602,10 +3599,9 @@
       <section class="oq-helper-panel">
         <p class="oq-helper-label">Stap 4</p>
         <h2 class="oq-helper-section-title">Watertemperatuur beveiligen</h2>
-        <p class="oq-helper-section-copy">Hier stel je de veilige bovengrens voor de watertemperatuur in.</p>
+        <p class="oq-helper-section-copy">Hier stel je de veilige bovengrens voor de watertemperatuur in. OpenQuatt leidt daar zelf de terugregelband en een harde trip op 5°C boven af.</p>
         <div class="oq-settings-grid oq-settings-grid--quickstart">
-          ${renderSettingsNumberField("maxWater", "Maximale watertemperatuur", "Normale bovengrens voor de watertemperatuur tijdens bedrijf.")}
-          ${renderSettingsNumberField("maxWaterTrip", "Tripgrens watertemperatuur", "Veiligheidsgrens waarbij de regeling hard ingrijpt als de watertemperatuur te ver oploopt.")}
+          ${renderSettingsNumberField("maxWater", "Maximale watertemperatuur", "Normale bovengrens voor de watertemperatuur tijdens bedrijf. OpenQuatt begint enkele graden eerder al terug te regelen en bewaakt een harde trip op 5°C boven deze grens.")}
         </div>
         ${renderQuickStartStepNav()}
       </section>
@@ -3792,7 +3788,6 @@
 
     const waterLines = [
       ["Maximale watertemperatuur", formatValue("maxWater")],
-      ["Tripgrens", formatValue("maxWaterTrip")],
     ];
 
     const silentLines = [

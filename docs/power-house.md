@@ -190,14 +190,12 @@ Ook in `Power House` blijft `Water Supply Temp (Selected)` belangrijk.
 Met:
 
 - `Maximum water temperature`
-- `Water temperature soft band`
-- `Maximum water temperature trip`
 
 doet OpenQuatt drie dingen:
 
 1. al onder de maximale aanvoer voorzichtig terugnemen;
-2. tussen `max - soft band` en `max` steeds sterker afremmen;
-3. rond `trip` uiteindelijk naar een harde stop kunnen gaan.
+2. in de laatste paar graden onder `max` steeds sterker afremmen;
+3. daarboven via een harde trip op `max + 5°C` uiteindelijk naar een harde stop kunnen gaan.
 
 Daardoor kan `Power House` niet onbeperkt blijven vragen als de aanvoer al te hoog wordt.
 
@@ -333,8 +331,6 @@ Gebruik deze vooral als het systeem in zacht weer te snel stopt en weer wil star
 ### 5. Watertempbegrenzing
 
 - `Maximum water temperature`
-- `Water temperature soft band`
-- `Maximum water temperature trip`
 
 Gebruik deze om te voorkomen dat `Power House` te lang blijft duwen terwijl de aanvoer al te hoog wordt.
 

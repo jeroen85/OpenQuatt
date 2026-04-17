@@ -267,7 +267,6 @@
       ["Day max level", 10, 0, 10, 1, ""],
       ["Silent max level", 6, 0, 10, 1, ""],
       ["Maximum water temperature", 56, 25, 75, 1, "°C"],
-      ["Maximum water temperature trip", 65, 30, 85, 0.5, "°C"],
       ["Minimum runtime", 300, 300, 3600, 30, "s"],
       ["Rated maximum house power", 4500, 500, 12000, 100, "W"],
       ["House cold temp", -10, -25, 5, 0.5, "°C"],

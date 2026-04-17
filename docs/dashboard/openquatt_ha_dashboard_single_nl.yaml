@@ -2274,13 +2274,10 @@ views:
               - **Maximum water temperature** is het normale plafond voor de
               gemeten aanvoertemperatuur.
 
-              - **Soft band** laat de regeling daaronder al terugnemen. In
-              `Power House` gebeurt de sterkste afbouw tussen `max - band` en
-              `max`.
-
-              - **Trip** is de absolute bovengrens. In `CM3` valt eerst de
-              boiler weg; alleen bij aanhoudende overshoot volgt daarna een
-              harde HP-stop.
+              - OpenQuatt leidt uit die instelling intern zelf een
+              terugregelband en een harde trip op `max + 5°C` af. In `CM3`
+              valt eerst de boiler weg; alleen bij aanhoudende overshoot volgt
+              daarna een harde HP-stop.
 
 
               </details>
@@ -2290,10 +2287,6 @@ views:
             entities:
               - entity: number.openquatt_maximum_water_temperature
                 name: Maximum water temperature
-              - entity: number.openquatt_water_temperature_soft_band
-                name: Water temperature soft band
-              - entity: number.openquatt_maximum_water_temperature_trip
-                name: Maximum water temperature trip
       - type: grid
         cards:
           - type: heading

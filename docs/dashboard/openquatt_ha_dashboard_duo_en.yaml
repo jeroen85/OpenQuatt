@@ -2449,12 +2449,9 @@ views:
               - **Maximum water temperature** is the normal ceiling for measured
               supply temperature.
 
-              - **Soft band** starts the rollback below that ceiling. Power House
-              reduces effective requested heat most strongly between `max - band`
-              and `max`.
-
-              - **Trip** is the absolute upper limit. In `CM3` the boiler drops
-              out first; a hard HP stop follows only if the overshoot persists.
+              - OpenQuatt derives an internal rollback band and a hard trip at
+              `max + 5°C` from that setting. In `CM3` the boiler drops out
+              first; a hard HP stop follows only if the overshoot persists.
 
 
               </details>
@@ -2464,10 +2461,6 @@ views:
             entities:
               - entity: number.openquatt_maximum_water_temperature
                 name: Maximum water temperature
-              - entity: number.openquatt_water_temperature_soft_band
-                name: Water temperature soft band
-              - entity: number.openquatt_maximum_water_temperature_trip
-                name: Maximum water temperature trip
       - type: grid
         cards:
           - type: heading
