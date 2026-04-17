@@ -63,36 +63,6 @@ number:
     web_server:
       sorting_group_id: oq_tuning_heat
 
-  - platform: template
-    id: water_temp_soft_band_c
-    name: "Water temperature soft band"
-    icon: mdi:arrow-expand-vertical
-    unit_of_measurement: "°C"
-    min_value: 0.5
-    max_value: 10
-    step: 0.5
-    restore_value: true
-    optimistic: true
-    initial_value: 3
-    entity_category: config
-    web_server:
-      sorting_group_id: oq_tuning_heat
-
-  - platform: template
-    id: max_water_temp_trip_c
-    name: "Maximum water temperature trip"
-    icon: mdi:alarm-light-outline
-    unit_of_measurement: "°C"
-    min_value: 30
-    max_value: 85
-    step: 0.5
-    restore_value: true
-    optimistic: true
-    initial_value: 65
-    entity_category: config
-    web_server:
-      sorting_group_id: oq_tuning_heat
-
 sensor:
   # Shared abstractions and derived telemetry.
   - platform: template
@@ -151,13 +121,11 @@ interval:
           if (isnan(max_water_temp_c)) max_water_temp_c = 60.0f;
           max_water_temp_c = clampf(max_water_temp_c, 25.0f, 75.0f);
 
-          float soft_band_c = id(water_temp_soft_band_c).state;
-          if (isnan(soft_band_c)) soft_band_c = 3.0f;
-          soft_band_c = clampf(soft_band_c, 0.5f, 10.0f);
-
-          float trip_water_temp_c = id(max_water_temp_trip_c).state;
-          if (isnan(trip_water_temp_c)) trip_water_temp_c = 65.0f;
-          trip_water_temp_c = clampf(trip_water_temp_c, max_water_temp_c + 1.0f, 85.0f);
+          constexpr float derived_soft_band_c = 3.0f;
+          constexpr float derived_trip_offset_c = 5.0f;
+          const float soft_band_c = derived_soft_band_c;
+          const float trip_water_temp_c =
+              clampf(max_water_temp_c + derived_trip_offset_c, max_water_temp_c + 1.0f, 85.0f);
 
           const float soft_start_c = max_water_temp_c - soft_band_c;
           constexpr float water_temp_factor_at_max = 0.25f;

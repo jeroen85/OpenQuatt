@@ -147,8 +147,6 @@ Belangrijke runtime-instellingen in deze groep zijn:
 - `Power House demand rise time`
 - `Power House demand fall time`
 - `Maximum water temperature`
-- `Water temperature soft band`
-- `Maximum water temperature trip`
 - `Curve Tsupply @ -20/-10/0/5/10/15°C`
 - `Heating Curve Control Profile`
 - `Heating Curve PID Kp/Ki/Kd`
@@ -163,7 +161,7 @@ Voor `Power House` geldt: `Power House response profile` is een snelle voorkeuze
 
 Deze tijden schalen mee met `Rated maximum house power` en zijn daardoor beter overdraagbaar tussen installaties dan oude absolute `W/min`-rampen.
 
-De watertempbegrenzing werkt op `water_supply_temp_selected`. In `Water Temperature Control` wordt `Heating Curve Supply Target` begrensd op `Maximum water temperature`. In `Power House` wordt `P_req` progressief teruggenomen, met de sterkste afbouw tussen `max - soft band` en `max`. In `CM3` wordt de boiler vanaf `Maximum water temperature` geblokkeerd.
+De watertempbegrenzing werkt op `water_supply_temp_selected`. In `Water Temperature Control` wordt `Heating Curve Supply Target` begrensd op `Maximum water temperature`. In `Power House` wordt `P_req` progressief teruggenomen, met de sterkste afbouw in de laatste paar graden onder die grens. In `CM3` wordt de boiler vanaf `Maximum water temperature` geblokkeerd. OpenQuatt leidt daarboven intern zelf een veiligheidsgrens af.
 
 Verander niet meerdere instellingen uit deze groep tegelijk.
 

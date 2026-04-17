@@ -88,8 +88,6 @@ Ook in deze strategie blijft `Water Supply Temp (Selected)` belangrijk.
 Met:
 
 - `Maximum water temperature`
-- `Water temperature soft band`
-- `Maximum water temperature trip`
 
 wordt het target of gedrag begrensd als de aanvoer al te hoog wordt.
 
@@ -324,8 +322,6 @@ Gebruik deze vooral als `Duo` te laat, te vroeg of te onrustig inschakelt. `Mini
 ### 4. Watertempbegrenzing
 
 - `Maximum water temperature`
-- `Water temperature soft band`
-- `Maximum water temperature trip`
 
 Gebruik deze om te voorkomen dat de aanvoerregeling te lang te hoog blijft mikken.
 
