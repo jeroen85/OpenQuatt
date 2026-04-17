@@ -119,17 +119,29 @@
     maxWater: { domain: "number", name: "Maximum water temperature" },
     minRuntime: { domain: "number", name: "Minimum runtime" },
     totalPower: { domain: "sensor", name: "Total Power Input" },
+    heatingPowerInput: { domain: "sensor", name: "Heating Power Input", optional: true },
+    coolingPowerInput: { domain: "sensor", name: "Cooling Power Input", optional: true },
     totalCop: { domain: "sensor", name: "Total COP" },
+    totalEer: { domain: "sensor", name: "Total EER", optional: true },
     totalHeat: { domain: "sensor", name: "Total Heat Power" },
+    totalCoolingPower: { domain: "sensor", name: "Total Cooling Power", optional: true },
     boilerHeatPower: { domain: "sensor", name: "Boiler Heat Power", optional: true },
     systemHeatPower: { domain: "sensor", name: "System Heat Power", optional: true },
     flowSelected: { domain: "sensor", name: "Flow average (Selected)" },
     electricalEnergyDaily: { domain: "sensor", name: "Electrical Energy Daily", optional: true },
     electricalEnergyCumulative: { domain: "sensor", name: "Electrical Energy Cumulative", optional: true },
+    heatingElectricalEnergyDaily: { domain: "sensor", name: "Heating Electrical Energy Daily", optional: true },
+    heatingElectricalEnergyCumulative: { domain: "sensor", name: "Heating Electrical Energy Cumulative", optional: true },
+    coolingElectricalEnergyDaily: { domain: "sensor", name: "Cooling Electrical Energy Daily", optional: true },
+    coolingElectricalEnergyCumulative: { domain: "sensor", name: "Cooling Electrical Energy Cumulative", optional: true },
     heatpumpThermalEnergyDaily: { domain: "sensor", name: "HeatPump Thermal Energy Daily", optional: true },
     heatpumpThermalEnergyCumulative: { domain: "sensor", name: "HeatPump Thermal Energy Cumulative", optional: true },
+    heatpumpCoolingEnergyDaily: { domain: "sensor", name: "HeatPump Cooling Energy Daily", optional: true },
+    heatpumpCoolingEnergyCumulative: { domain: "sensor", name: "HeatPump Cooling Energy Cumulative", optional: true },
     heatpumpCopDaily: { domain: "sensor", name: "HeatPump COP Daily", optional: true },
     heatpumpCopCumulative: { domain: "sensor", name: "HeatPump COP Cumulative", optional: true },
+    heatpumpEerDaily: { domain: "sensor", name: "HeatPump EER Daily", optional: true },
+    heatpumpEerCumulative: { domain: "sensor", name: "HeatPump EER Cumulative", optional: true },
     boilerThermalEnergyDaily: { domain: "sensor", name: "Boiler Thermal Energy Daily", optional: true },
     boilerThermalEnergyCumulative: { domain: "sensor", name: "Boiler Thermal Energy Cumulative", optional: true },
     systemThermalEnergyDaily: { domain: "sensor", name: "System Thermal Energy Daily", optional: true },
@@ -167,6 +179,7 @@
     hp1ExcludedB: { domain: "select", name: "HP1 - Excluded compressor level B" },
     hp1Power: { domain: "sensor", name: "HP1 - Power Input" },
     hp1Heat: { domain: "sensor", name: "HP1 - Heat Power" },
+    hp1Cooling: { domain: "sensor", name: "HP1 - Cooling Power" },
     hp1Cop: { domain: "sensor", name: "HP1 - COP" },
     hp1Compressor: { domain: "sensor", name: "HP1 compressor level" },
     hp1Freq: { domain: "sensor", name: "HP1 - Compressor frequency" },
@@ -192,6 +205,7 @@
     hp2ExcludedB: { domain: "select", name: "HP2 - Excluded compressor level B", optional: true },
     hp2Power: { domain: "sensor", name: "HP2 - Power Input", optional: true },
     hp2Heat: { domain: "sensor", name: "HP2 - Heat Power", optional: true },
+    hp2Cooling: { domain: "sensor", name: "HP2 - Cooling Power", optional: true },
     hp2Cop: { domain: "sensor", name: "HP2 - COP", optional: true },
     hp2Compressor: { domain: "sensor", name: "HP2 compressor level", optional: true },
     hp2Freq: { domain: "sensor", name: "HP2 - Compressor frequency", optional: true },
@@ -232,6 +246,7 @@
       keys: {
         power: "hp1Power",
         heat: "hp1Heat",
+        cooling: "hp1Cooling",
         cop: "hp1Cop",
         freq: "hp1Freq",
         fanSpeed: "hp1FanSpeed",
@@ -260,6 +275,7 @@
       keys: {
         power: "hp2Power",
         heat: "hp2Heat",
+        cooling: "hp2Cooling",
         cop: "hp2Cop",
         freq: "hp2Freq",
         fanSpeed: "hp2FanSpeed",
@@ -326,8 +342,12 @@
     "controlModeLabel",
     "flowMode",
     "totalPower",
+    "heatingPowerInput",
+    "coolingPowerInput",
     "totalCop",
+    "totalEer",
     "totalHeat",
+    "totalCoolingPower",
     "strategyRequestedPower",
     "phouseHouse",
     "phouseReq",
@@ -336,10 +356,18 @@
     "systemHeatPower",
     "electricalEnergyDaily",
     "electricalEnergyCumulative",
+    "heatingElectricalEnergyDaily",
+    "heatingElectricalEnergyCumulative",
+    "coolingElectricalEnergyDaily",
+    "coolingElectricalEnergyCumulative",
     "heatpumpThermalEnergyDaily",
     "heatpumpThermalEnergyCumulative",
+    "heatpumpCoolingEnergyDaily",
+    "heatpumpCoolingEnergyCumulative",
     "heatpumpCopDaily",
     "heatpumpCopCumulative",
+    "heatpumpEerDaily",
+    "heatpumpEerCumulative",
     "boilerThermalEnergyDaily",
     "boilerThermalEnergyCumulative",
     "systemThermalEnergyDaily",
@@ -353,6 +381,7 @@
     "stickyActive",
     "hp1Power",
     "hp1Heat",
+    "hp1Cooling",
     "hp1Cop",
     "hp1Compressor",
     "hp1Freq",
@@ -376,6 +405,7 @@
     "hp1FourWay",
     "hp2Power",
     "hp2Heat",
+    "hp2Cooling",
     "hp2Cop",
     "hp2Compressor",
     "hp2Freq",
@@ -4142,6 +4172,16 @@
     `;
   }
 
+  function renderOverviewStatCardValue(label, value, tone, note) {
+    return `
+      <article class="oq-overview-stat oq-overview-stat--${escapeHtml(tone)}">
+        <p>${escapeHtml(label)}</p>
+        <strong>${escapeHtml(value)}</strong>
+        <span>${escapeHtml(note)}</span>
+      </article>
+    `;
+  }
+
   function renderOverviewStatusChip(label, value, tone = "neutral") {
     return `<span class="oq-overview-chip oq-overview-chip--${escapeHtml(tone)}"><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</span>`;
   }
@@ -4682,11 +4722,15 @@
   }
 
   function renderOverviewTopCards() {
-    const heatLabel = isCoolingOverviewActive() ? "Koelafgifte" : "Warmteafgifte";
+    const coolingActive = isCoolingOverviewActive();
+    const thermalLabel = coolingActive ? "Koelafgifte" : "Warmteafgifte";
+    const thermalKey = coolingActive ? "totalCoolingPower" : "totalHeat";
+    const efficiencyKey = coolingActive ? "totalEer" : "totalCop";
+    const efficiencyLabel = coolingActive ? "EER" : "COP";
     return `
       ${renderOverviewStatCard("totalPower", "Stroomverbruik", "blue", "hele systeem")}
-      ${renderOverviewStatCard("totalHeat", heatLabel, "orange", "thermisch vermogen")}
-      ${renderOverviewStatCard("totalCop", "COP", "green", "rendement")}
+      ${renderOverviewStatCard(thermalKey, thermalLabel, "orange", "thermisch vermogen")}
+      ${renderOverviewStatCard(efficiencyKey, efficiencyLabel, "green", "rendement")}
       ${renderOverviewStatCard("flowSelected", "Flow", "sky", "watercircuit")}
     `;
   }
@@ -4805,8 +4849,8 @@
 
   function renderOverviewEnergySection() {
     const currentColumn = renderOverviewEnergyColumn("Nu", "Live energie", [
-      renderOverviewEnergyGroup("Warmtepomp", [
-        renderOverviewEnergyRow("Elektrisch vermogen", "totalPower"),
+      renderOverviewEnergyGroup("Warmtepomp verwarmen", [
+        renderOverviewEnergyRow("Elektrisch vermogen", "heatingPowerInput"),
         renderOverviewEnergyRow("Warmteafgifte", "totalHeat"),
         renderOverviewEnergyRow("COP", "totalCop"),
       ]),
@@ -4816,11 +4860,16 @@
       renderOverviewEnergyGroup("Systeem", [
         renderOverviewEnergyRow("Warmteafgifte", "systemHeatPower"),
       ]),
+      renderOverviewEnergyGroup("Warmtepomp koelen", [
+        renderOverviewEnergyRow("Elektrisch vermogen", "coolingPowerInput"),
+        renderOverviewEnergyRow("Koelafgifte", "totalCoolingPower"),
+        renderOverviewEnergyRow("EER", "totalEer"),
+      ]),
     ], "blue");
 
     const dailyColumn = renderOverviewEnergyColumn("Vandaag", "Energie vandaag", [
-      renderOverviewEnergyGroup("Warmtepomp", [
-        renderOverviewEnergyRow("Elektriciteit", "electricalEnergyDaily"),
+      renderOverviewEnergyGroup("Warmtepomp verwarmen", [
+        renderOverviewEnergyRow("Elektriciteit", "heatingElectricalEnergyDaily"),
         renderOverviewEnergyRow("Warmte", "heatpumpThermalEnergyDaily"),
         renderOverviewEnergyRow("COP", "heatpumpCopDaily"),
       ]),
@@ -4830,11 +4879,16 @@
       renderOverviewEnergyGroup("Systeem", [
         renderOverviewEnergyRow("Warmte", "systemThermalEnergyDaily"),
       ]),
+      renderOverviewEnergyGroup("Warmtepomp koelen", [
+        renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyDaily"),
+        renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyDaily"),
+        renderOverviewEnergyRow("EER", "heatpumpEerDaily"),
+      ]),
     ], "orange");
 
     const cumulativeColumn = renderOverviewEnergyColumn("Cumulatief", "Tot nu toe", [
-      renderOverviewEnergyGroup("Warmtepomp", [
-        renderOverviewEnergyRow("Elektriciteit", "electricalEnergyCumulative"),
+      renderOverviewEnergyGroup("Warmtepomp verwarmen", [
+        renderOverviewEnergyRow("Elektriciteit", "heatingElectricalEnergyCumulative"),
         renderOverviewEnergyRow("Warmte", "heatpumpThermalEnergyCumulative"),
         renderOverviewEnergyRow("COP", "heatpumpCopCumulative"),
       ]),
@@ -4843,6 +4897,11 @@
       ]),
       renderOverviewEnergyGroup("Systeem", [
         renderOverviewEnergyRow("Warmte", "systemThermalEnergyCumulative"),
+      ]),
+      renderOverviewEnergyGroup("Warmtepomp koelen", [
+        renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyCumulative"),
+        renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyCumulative"),
+        renderOverviewEnergyRow("EER", "heatpumpEerCumulative"),
       ]),
     ], "green");
 
@@ -4855,7 +4914,7 @@
       <section class="oq-overview-energy">
         <div class="oq-overview-system-copy">
           <h3>Energie</h3>
-          <p>Bekijk hier verbruik, warmte en rendement voor nu, vandaag en cumulatief.</p>
+          <p>Bekijk hier verbruik, warmte of koeling en rendement voor nu, vandaag en cumulatief.</p>
         </div>
         <div class="oq-overview-energy-grid">
           ${columns.join("")}
@@ -4866,8 +4925,8 @@
 
   function renderEnergyView() {
     const currentColumn = renderOverviewEnergyColumn("Nu", "Nu", [
-      renderOverviewEnergyGroup("Warmtepomp", [
-        renderOverviewEnergyRow("Elektrisch vermogen", "totalPower"),
+      renderOverviewEnergyGroup("Warmtepomp verwarmen", [
+        renderOverviewEnergyRow("Elektrisch vermogen", "heatingPowerInput"),
         renderOverviewEnergyRow("Warmteafgifte", "totalHeat"),
         renderOverviewEnergyRow("COP", "totalCop"),
       ]),
@@ -4877,11 +4936,16 @@
       renderOverviewEnergyGroup("Systeem", [
         renderOverviewEnergyRow("Warmteafgifte", "systemHeatPower"),
       ]),
+      renderOverviewEnergyGroup("Warmtepomp koelen", [
+        renderOverviewEnergyRow("Elektrisch vermogen", "coolingPowerInput"),
+        renderOverviewEnergyRow("Koelafgifte", "totalCoolingPower"),
+        renderOverviewEnergyRow("EER", "totalEer"),
+      ]),
     ], "blue");
 
     const dailyColumn = renderOverviewEnergyColumn("Vandaag", "Vandaag", [
-      renderOverviewEnergyGroup("Warmtepomp", [
-        renderOverviewEnergyRow("Elektriciteit", "electricalEnergyDaily"),
+      renderOverviewEnergyGroup("Warmtepomp verwarmen", [
+        renderOverviewEnergyRow("Elektriciteit", "heatingElectricalEnergyDaily"),
         renderOverviewEnergyRow("Warmte", "heatpumpThermalEnergyDaily"),
         renderOverviewEnergyRow("COP", "heatpumpCopDaily"),
       ]),
@@ -4891,11 +4955,16 @@
       renderOverviewEnergyGroup("Systeem", [
         renderOverviewEnergyRow("Warmte", "systemThermalEnergyDaily"),
       ]),
+      renderOverviewEnergyGroup("Warmtepomp koelen", [
+        renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyDaily"),
+        renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyDaily"),
+        renderOverviewEnergyRow("EER", "heatpumpEerDaily"),
+      ]),
     ], "orange");
 
     const cumulativeColumn = renderOverviewEnergyColumn("Cumulatief", "Cumulatief", [
-      renderOverviewEnergyGroup("Warmtepomp", [
-        renderOverviewEnergyRow("Elektriciteit", "electricalEnergyCumulative"),
+      renderOverviewEnergyGroup("Warmtepomp verwarmen", [
+        renderOverviewEnergyRow("Elektriciteit", "heatingElectricalEnergyCumulative"),
         renderOverviewEnergyRow("Warmte", "heatpumpThermalEnergyCumulative"),
         renderOverviewEnergyRow("COP", "heatpumpCopCumulative"),
       ]),
@@ -4905,6 +4974,11 @@
       renderOverviewEnergyGroup("Systeem", [
         renderOverviewEnergyRow("Warmte", "systemThermalEnergyCumulative"),
       ]),
+      renderOverviewEnergyGroup("Warmtepomp koelen", [
+        renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyCumulative"),
+        renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyCumulative"),
+        renderOverviewEnergyRow("EER", "heatpumpEerCumulative"),
+      ]),
     ], "green");
 
     const columns = [currentColumn, dailyColumn, cumulativeColumn].filter(Boolean).join("");
@@ -4913,11 +4987,11 @@
       <section class="oq-helper-panel oq-helper-panel--flush">
         <div class="oq-overview-board oq-overview-board--${escapeHtml(state.overviewTheme)}">
           <div class="oq-overview-head">
-            <div>
-              <p class="oq-helper-label">Energie</p>
-              <h2 class="oq-helper-section-title">Verbruik en rendement</h2>
-              <p class="oq-helper-section-copy">Bekijk hier verbruik, warmte en rendement voor nu, vandaag en cumulatief.</p>
-            </div>
+          <div>
+            <p class="oq-helper-label">Energie</p>
+            <h2 class="oq-helper-section-title">Verbruik en rendement</h2>
+            <p class="oq-helper-section-copy">Bekijk hier verbruik, warmte of koeling en rendement voor nu, vandaag en cumulatief.</p>
+          </div>
           </div>
           <section class="oq-overview-energy oq-overview-energy--solo">
             <div class="oq-overview-energy-grid">
@@ -5170,6 +5244,8 @@
     const freqText = Number.isNaN(freqValue) ? "—" : String(Math.round(freqValue));
     const powerValue = getEntityNumericValue(keys.power);
     const heatValue = getEntityNumericValue(keys.heat);
+    const coolingValue = getEntityNumericValue(keys.cooling);
+    const thermalValue = mode === "Koelen" ? coolingValue : heatValue;
     const animated = running || (!Number.isNaN(freqValue) && freqValue > 0) || (!Number.isNaN(powerValue) && powerValue > 80) || (!Number.isNaN(heatValue) && heatValue > 150);
     const statusText = getHeatPumpPanelStatusLabel(mode, animated);
     const failureText = failures === "Geen actieve storingen" ? "Geen storingen" : failures;
@@ -5190,8 +5266,12 @@
     const eevPositionText = formatComponentPositionLabel(keys.eev);
     const fourWayPositionText = formatFourWayPositionLabel(keys.fourWay);
     const powerText = formatNumericState(powerValue, 0, "W");
-    const heatText = formatNumericState(heatValue, 0, "W");
-    const copText = formatNumericState(getEntityNumericValue(keys.cop), 1);
+    const heatText = formatNumericState(thermalValue, 0, "W");
+    const efficiencyValue = mode === "Koelen"
+      ? ((!Number.isNaN(powerValue) && powerValue >= 5.0 && !Number.isNaN(coolingValue)) ? (coolingValue / powerValue) : Number.NaN)
+      : getEntityNumericValue(keys.cop);
+    const efficiencyText = formatNumericState(efficiencyValue, 1);
+    const efficiencyLabel = mode === "Koelen" ? "EER" : "COP";
     const heatLabel = mode === "Koelen" ? "Koelafgifte" : "Warmteafgifte";
     const heatDescription = mode === "Koelen" ? "afgegeven koeling" : "afgegeven warmte";
     const fanRpmValue = getEntityNumericValue(keys.fanSpeed);
@@ -5263,7 +5343,8 @@
       heatText,
       heatLabel,
       heatDescription,
-      copText,
+      efficiencyText,
+      efficiencyLabel,
       fanRpmText,
       hotgasValveHeat,
       hotgasValveCool,
@@ -5797,8 +5878,8 @@
               <strong data-oq-bind="footer-heat">${escapeHtml(model.heatText)}</strong>
             </div>
             <div class="oq-hp-tech-footer-item">
-              <span>COP</span>
-              <strong data-oq-bind="footer-cop">${escapeHtml(model.copText)}</strong>
+              <span data-oq-bind="footer-efficiency-label">${escapeHtml(model.efficiencyLabel)}</span>
+              <strong data-oq-bind="footer-efficiency">${escapeHtml(model.efficiencyText)}</strong>
             </div>
           </div>
         </div>
@@ -5890,6 +5971,7 @@
     const failures = formatFailures(getEntityStateText(keys.failures, "None"));
     const running = mode === "Verwarmen" || mode === "Koelen" || defrostActive;
     const schematicModel = buildHeatPumpSchematicModel(title, keys, accent, mode, defrostActive, failures, running);
+    const thermalKey = mode === "Koelen" ? keys.cooling : keys.heat;
 
     if (state.hpVisualMode === "schematic") {
       return `
@@ -5922,8 +6004,8 @@
         </div>
         <div class="oq-overview-hp-stats">
           ${renderOverviewStatCard(keys.power, "Stroomverbruik", "blue", "elektrisch verbruik")}
-          ${renderOverviewStatCard(keys.heat, schematicModel.heatLabel, "orange", schematicModel.heatDescription)}
-          ${renderOverviewStatCard(keys.cop, "COP", "green", "actueel")}
+          ${renderOverviewStatCard(thermalKey, schematicModel.heatLabel, "orange", schematicModel.heatDescription)}
+          ${renderOverviewStatCardValue(schematicModel.efficiencyLabel, schematicModel.efficiencyText, "green", "actueel")}
         </div>
         <div class="oq-overview-hp-meta">
           <div class="oq-overview-hp-meta-chip">
@@ -6269,7 +6351,8 @@
       }
     }
     setTextContent(board, '[data-oq-bind="footer-heat"]', model.heatText);
-    setTextContent(board, '[data-oq-bind="footer-cop"]', model.copText);
+    setTextContent(board, '[data-oq-bind="footer-efficiency-label"]', model.efficiencyLabel);
+    setTextContent(board, '[data-oq-bind="footer-efficiency"]', model.efficiencyText);
     setTextContent(board, '[data-oq-bind="fan-speed-value"]', model.fanRpmText);
     setTextContent(board, '[data-oq-bind="fourway-detail"]', model.fourWayPositionText);
     setTextContent(board, '[data-oq-bind="eev-detail"]', model.eevPositionText);

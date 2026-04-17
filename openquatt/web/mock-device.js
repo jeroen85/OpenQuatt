@@ -122,6 +122,7 @@
     const hp1Outside = Number(getEntity("sensor", "HP1 - Outside temperature")?.value);
     const hp2Outside = Number(getEntity("sensor", "HP2 - Outside temperature")?.value);
     const totalHeat = Number(getEntity("sensor", "Total Heat Power")?.value);
+    const totalPower = Number(getEntity("sensor", "Total Power Input")?.value);
     const strategy = String(getEntity("select", "Heating Control Mode")?.value || "");
     const roomTemp = Number(getEntity("sensor", "Room Temperature (Selected)")?.value);
     const roomSetpoint = Number(getEntity("sensor", "Room Setpoint (Selected)")?.value);
@@ -176,23 +177,47 @@
     const systemHeat = Math.max(0, Number((Number(totalHeat || 0) + boilerHeat).toFixed(0)));
     const electricalDaily = state.scenario === "idle" ? 3.1 : state.scenario === "defrost" ? 6.4 : state.scenario === "cooling" ? (single ? 6.8 : 8.1) : single ? 7.2 : 8.6;
     const heatpumpDaily = state.scenario === "idle" ? 9.4 : state.scenario === "defrost" ? 18.2 : state.scenario === "cooling" ? (single ? 24.6 : 31.8) : single ? 28.4 : 36.9;
+    const coolingElectricalDaily = state.scenario === "cooling" ? (single ? 1.8 : 2.4) : 0.0;
+    const coolingDaily = state.scenario === "cooling" ? (single ? 7.1 : 9.3) : 0.0;
     const boilerDaily = state.scenario === "dual" ? 2.7 : 0.0;
     const systemDaily = Number((heatpumpDaily + boilerDaily).toFixed(1));
     const heatpumpCopDaily = electricalDaily > 0 ? Number((heatpumpDaily / electricalDaily).toFixed(2)) : 0;
+    const heatpumpEerDaily = coolingElectricalDaily > 0 ? Number((coolingDaily / coolingElectricalDaily).toFixed(2)) : 0;
     const electricalCumulative = single ? 286.4 : 469.5;
     const heatpumpCumulative = single ? 1208.7 : 2048.6;
+    const coolingElectricalCumulative = state.scenario === "cooling" ? (single ? 28.6 : 41.9) : 0.0;
+    const coolingCumulative = state.scenario === "cooling" ? (single ? 109.4 : 163.7) : 0.0;
     const boilerCumulative = state.scenario === "dual" ? 114.8 : 0.0;
     const systemCumulative = Number((heatpumpCumulative + boilerCumulative).toFixed(1));
     const heatpumpCopCumulative = electricalCumulative > 0 ? Number((heatpumpCumulative / electricalCumulative).toFixed(2)) : 0;
+    const heatpumpEerCumulative = coolingElectricalCumulative > 0 ? Number((coolingCumulative / coolingElectricalCumulative).toFixed(2)) : 0;
+    const heatingElectricalDaily = Math.max(0, Number((electricalDaily - coolingElectricalDaily).toFixed(1)));
+    const heatingElectricalCumulative = Math.max(0, Number((electricalCumulative - coolingElectricalCumulative).toFixed(1)));
+    const totalCoolingPower = state.scenario === "cooling" ? Math.max(0, Number(totalHeat || 0)) : 0;
+    const totalEer = (state.scenario === "cooling" && coolingElectricalDaily > 0)
+      ? Number((coolingDaily / coolingElectricalDaily).toFixed(2))
+      : 0;
 
     setNumber("Boiler Heat Power", boilerHeat, "W");
     setNumber("System Heat Power", systemHeat, "W");
+    setNumber("Heating Power Input", state.scenario === "cooling" ? 0 : (Number.isNaN(totalPower) ? 0 : totalPower), "W");
+    setNumber("Cooling Power Input", state.scenario === "cooling" ? (Number.isNaN(totalPower) ? 0 : totalPower) : 0, "W");
     setNumber("Electrical Energy Daily", electricalDaily, "kWh");
     setNumber("Electrical Energy Cumulative", electricalCumulative, "kWh");
+    setNumber("Heating Electrical Energy Daily", heatingElectricalDaily, "kWh");
+    setNumber("Heating Electrical Energy Cumulative", heatingElectricalCumulative, "kWh");
+    setNumber("Cooling Electrical Energy Daily", coolingElectricalDaily, "kWh");
+    setNumber("Cooling Electrical Energy Cumulative", coolingElectricalCumulative, "kWh");
     setNumber("HeatPump Thermal Energy Daily", heatpumpDaily, "kWh");
     setNumber("HeatPump Thermal Energy Cumulative", heatpumpCumulative, "kWh");
+    setNumber("HeatPump Cooling Energy Daily", coolingDaily, "kWh");
+    setNumber("HeatPump Cooling Energy Cumulative", coolingCumulative, "kWh");
     setNumber("HeatPump COP Daily", heatpumpCopDaily, "");
     setNumber("HeatPump COP Cumulative", heatpumpCopCumulative, "");
+    setNumber("HeatPump EER Daily", heatpumpEerDaily, "");
+    setNumber("HeatPump EER Cumulative", heatpumpEerCumulative, "");
+    setNumber("Total Cooling Power", totalCoolingPower, "W");
+    setNumber("Total EER", totalEer, "");
     setNumber("Boiler Thermal Energy Daily", boilerDaily, "kWh");
     setNumber("Boiler Thermal Energy Cumulative", boilerCumulative, "kWh");
     setNumber("System Thermal Energy Daily", systemDaily, "kWh");
@@ -764,15 +789,19 @@
       setNumber("Cooling Supply Target", wave(18.6, 0.12), "°C");
       setNumber("Cooling Supply Error", wave(1.0, 0.2), "°C");
       setNumber("Cooling Demand (raw)", waveInt(2.2, 0.6), "");
+      setNumber("Cooling Power Input", wave(455, 18), "W");
       setNumber("Total Power Input", wave(455, 18), "W");
-      setNumber("Total Heat Power", wave(1720, 90), "W");
-      setNumber("Total COP", Number((3.9 + Math.sin(t) * 0.08).toFixed(2)));
+      setNumber("Total Heat Power", 0, "W");
+      setNumber("Total Cooling Power", wave(1720, 90), "W");
+      setNumber("Total COP", 0);
+      setNumber("Total EER", Number((3.9 + Math.sin(t) * 0.08).toFixed(2)));
       setNumber("Flow average (Selected)", wave(845, 26), "L/h");
       setNumber("Room Temperature (Selected)", wave(24.2, 0.08), "°C");
       setNumber("Room Setpoint (Selected)", 23.0, "°C");
       setNumber("Water Supply Temp (Selected)", wave(19.6, 0.2), "°C");
       setNumber("HP1 - Power Input", 5.4, "W");
       setNumber("HP1 - Heat Power", 0, "W");
+      setNumber("HP1 - Cooling Power", 0, "W");
       setNumber("HP1 - COP", 0);
       setNumber("HP1 - Compressor frequency", 0, "Hz");
       setNumber("HP1 - Fan speed", 0, "rpm");
@@ -790,7 +819,8 @@
       setText("text_sensor", "HP1 - Working Mode Label", "Standby");
       if (!single) {
         setNumber("HP2 - Power Input", wave(448, 18, 0.3), "W");
-        setNumber("HP2 - Heat Power", wave(1710, 90, 0.3), "W");
+        setNumber("HP2 - Heat Power", 0, "W");
+        setNumber("HP2 - Cooling Power", wave(1710, 90, 0.3), "W");
         setNumber("HP2 - COP", Number((3.82 + Math.sin(t + 0.3) * 0.08).toFixed(2)));
         setNumber("HP2 - Compressor frequency", waveInt(33, 2, 0.3), "Hz");
         setNumber("HP2 - Fan speed", wave(602, 14, 0.3), "rpm");

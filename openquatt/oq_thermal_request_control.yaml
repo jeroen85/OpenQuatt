@@ -351,6 +351,52 @@ sensor:
       return (total_input_w < 0.0f) ? 0.0f : total_input_w;
 
   - platform: template
+    id: oq_heating_power_input
+    name: "Heating Power Input"
+    icon: mdi:flash
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_performance
+    lambda: |-
+      auto nz = [](float value) -> float { return isnan(value) ? 0.0f : value; };
+      const float hp1_mode = id(hp1_working_mode).state;
+      const float hp1_power_w = (hp1_mode == 2.0f) ? nz(id(hp1_power_input).state) : 0.0f;
+      #if OQ_TOPOLOGY_DUO
+      const float hp2_mode = id(${hc_secondary_working_mode_id}).state;
+      const float hp2_power_w = (hp2_mode == 2.0f) ? nz(id(${hc_secondary_power_input_id}).state) : 0.0f;
+      return hp1_power_w + hp2_power_w;
+      #else
+      return hp1_power_w;
+      #endif
+
+  - platform: template
+    id: oq_cooling_power_input
+    name: "Cooling Power Input"
+    icon: mdi:flash
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_performance
+    lambda: |-
+      auto nz = [](float value) -> float { return isnan(value) ? 0.0f : value; };
+      const float hp1_mode = id(hp1_working_mode).state;
+      const float hp1_power_w = (hp1_mode == 1.0f) ? nz(id(hp1_power_input).state) : 0.0f;
+      #if OQ_TOPOLOGY_DUO
+      const float hp2_mode = id(${hc_secondary_working_mode_id}).state;
+      const float hp2_power_w = (hp2_mode == 1.0f) ? nz(id(${hc_secondary_power_input_id}).state) : 0.0f;
+      return hp1_power_w + hp2_power_w;
+      #else
+      return hp1_power_w;
+      #endif
+
+  - platform: template
     id: oq_total_heat_power
     name: "Total Heat Power"
     icon: mdi:radiator
@@ -377,6 +423,32 @@ sensor:
       #endif
 
   - platform: template
+    id: oq_total_cooling_power
+    name: "Total Cooling Power"
+    icon: mdi:snowflake
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_performance
+    lambda: |-
+      const float hp1_cooling_w = id(hp1_cooling_power).state;
+      #if OQ_TOPOLOGY_DUO
+      const float hp2_cooling_w = id(${hc_secondary_cooling_power_id}).state;
+
+      if (isnan(hp1_cooling_w) && isnan(hp2_cooling_w)) return NAN;
+      if (isnan(hp1_cooling_w)) return hp2_cooling_w;
+      if (isnan(hp2_cooling_w)) return hp1_cooling_w;
+
+      return hp1_cooling_w + hp2_cooling_w;
+      #else
+      if (isnan(hp1_cooling_w)) return NAN;
+      return hp1_cooling_w;
+      #endif
+
+  - platform: template
     id: oq_total_cop
     name: "Total COP"
     icon: mdi:chart-bell-curve-cumulative
@@ -393,6 +465,24 @@ sensor:
       if (fabsf(total_input_w) < ${oq_cop_min_input_w}) return NAN;
 
       return total_heat_w / total_input_w;
+
+  - platform: template
+    id: oq_total_eer
+    name: "Total EER"
+    icon: mdi:chart-bell-curve-cumulative
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_performance
+    lambda: |-
+      const float total_input_w = id(oq_cooling_power_input).state;
+      const float total_cooling_w = id(oq_total_cooling_power).state;
+
+      if (isnan(total_input_w) || isnan(total_cooling_w)) return NAN;
+      if (fabsf(total_input_w) < ${oq_cop_min_input_w}) return NAN;
+
+      return total_cooling_w / total_input_w;
 
   - platform: template
     id: oq_demand_raw_sensor

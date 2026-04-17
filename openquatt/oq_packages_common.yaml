@@ -81,6 +81,7 @@ oq_thermal_request_control: !include
   vars:
     hc_secondary_power_input_id: "${secondary_hp_id}_power_input"
     hc_secondary_heat_power_id: "${secondary_hp_id}_heat_power"
+    hc_secondary_cooling_power_id: "${secondary_hp_id}_cooling_power"
     hc_secondary_compressor_level_id: "${secondary_hp_id}_compressor_level"
     hc_secondary_defrost_id: "${secondary_hp_id}_defrost"
     hc_secondary_last_applied_level_id: "${secondary_hp_id}_last_applied_level"
