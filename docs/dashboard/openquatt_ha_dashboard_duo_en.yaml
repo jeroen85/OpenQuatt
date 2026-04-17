@@ -1157,7 +1157,7 @@ views:
         type: markdown
         content: |-
           # <ha-icon icon="mdi:snowflake-thermometer"></ha-icon> Cooling
-          Inspect passive-cooling permission, dew-point safety, and the CM5 control path.
+          Inspect cooling permission, dew-point safety, and the CM5 control path.
   - title: HPs
     path: HPs
     icon: mdi:heat-pump-outline

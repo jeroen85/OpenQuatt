@@ -93,9 +93,9 @@ Die geselecteerde aanvoertemperatuur kan uit de lokale ESP-sensor, uit CIC of ui
 
 Je hoeft daarvoor niet eerst de interne berekening te kennen. Relevanter is welke strategie in jouw installatie het meest stabiele en voorspelbare gedrag geeft.
 
-## Passive cooling
+## Cooling
 
-Passive cooling vraagt een andere veiligheidslogica dan verwarmen. Het belangrijkste verschil is dat bij koelen niet alleen comfort telt, maar vooral het risico op condensvorming.
+Cooling vraagt een andere veiligheidslogica dan verwarmen. Het belangrijkste verschil is dat bij koelen niet alleen comfort telt, maar vooral het risico op condensvorming.
 
 Daarom werkt OpenQuatt bij cooling in grote lijnen zo:
 

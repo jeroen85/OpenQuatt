@@ -780,7 +780,7 @@ interval:
             const bool hp2_cooling_hold = false;
             #endif
 
-            // Preserve passive-cooling holds across CM5 -> CM1/CM0 transitions.
+            // Preserve cooling holds across CM5 -> CM1/CM0 transitions.
             // Otherwise the generic inactive-CM fallback would reinterpret the hold
             // as Heating and re-arm the compressor in the wrong thermal mode.
             return oq_request::hold_request_mode_code(

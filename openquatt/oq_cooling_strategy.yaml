@@ -1,14 +1,15 @@
 # ==============================================================================
-# OpenQuatt - Passive Cooling Strategy
+# OpenQuatt - Cooling Strategy
 # ==============================================================================
 #
 # Goal:
-#   Own the complete passive-cooling path on top of the cooling safety signals.
-#   This layer produces a conservative supply target, a cooling demand `f`, and
-#   the downstream cooling compressor requests.
+#   Own the complete cooling path on top of the cooling safety signals.
+#   This layer produces a dynamic supply target, a cooling demand `f`, and the
+#   downstream cooling compressor requests.
 #
 # Scope:
-#   - Derive a safe cooling supply target from dew point + user floor
+#   - Derive a cooling supply target from dew point safety, the configured floor,
+#     and room overshoot
 #   - Run a small water-temperature PI(D) loop for cooling only
 #   - Publish `oq_cooling_demand_raw` (0..20)
 #   - Choose the active cooling owner HP and publish cooling requests
@@ -159,11 +160,29 @@ sensor:
     accuracy_decimals: 1
     update_interval: 5s
     lambda: |-
-      // Cooling may never target below the configured floor or the dew-point-safe floor.
-      float target_c = id(cooling_min_supply_temp).state;
+      // Cooling uses a simple cascade:
+      // - the configured floor and dew-point-safe floor define the lowest allowed target
+      // - room overshoot adds a fixed comfort offset above that floor
+      // This keeps strong cooling possible when the room is clearly too warm,
+      // but favors warmer water and calmer modulation near setpoint.
+      float base_floor_c = id(cooling_min_supply_temp).state;
       if (id(minimum_safe_supply_temp).has_state() && !isnan(id(minimum_safe_supply_temp).state)) {
-        target_c = fmaxf(target_c, id(minimum_safe_supply_temp).state);
+        base_floor_c = fmaxf(base_floor_c, id(minimum_safe_supply_temp).state);
       }
+
+      float comfort_offset_c = 0.8f;
+      if (id(room_temp_selected).has_state() && !isnan(id(room_temp_selected).state) &&
+          id(room_setpoint_selected).has_state() && !isnan(id(room_setpoint_selected).state)) {
+        const float room_error_c = id(room_temp_selected).state - id(room_setpoint_selected).state;
+        if (room_error_c > 1.2f) comfort_offset_c = 0.0f;
+        else if (room_error_c > 0.8f) comfort_offset_c = 0.4f;
+        else if (room_error_c > 0.4f) comfort_offset_c = 0.8f;
+        else if (room_error_c > 0.2f) comfort_offset_c = 1.2f;
+        else comfort_offset_c = 1.6f;
+      }
+
+      float target_c = base_floor_c + comfort_offset_c;
+      if (target_c < base_floor_c) target_c = base_floor_c;
       return target_c;
     web_server:
       sorting_group_id: oq_cooling
@@ -203,6 +222,8 @@ interval:
       - lambda: |-
           const float near_safe_floor_limit_c = 0.30f;
           const float stop_safe_floor_limit_c = 0.10f;
+          const float simmer_room_error_min_c = 0.20f;
+          const float simmer_supply_error_max_c = 0.45f;
 
           // Resolve loop timing and reset the controller cleanly when cooling is not allowed.
           const uint32_t now_ms = (uint32_t) millis();
@@ -244,9 +265,22 @@ interval:
             derivative = (error_c - id(oq_cooling_pid_last_error_c)) / dt_s;
           }
 
+          float room_error_c = NAN;
+          bool room_error_valid = false;
+          if (id(room_temp_selected).has_state() && !isnan(id(room_temp_selected).state) &&
+              id(room_setpoint_selected).has_state() && !isnan(id(room_setpoint_selected).state)) {
+            room_error_c = id(room_temp_selected).state - id(room_setpoint_selected).state;
+            room_error_valid = true;
+          }
+
           int demand_max = (int) lroundf(id(cooling_demand_max_f).state);
           if (demand_max < 0) demand_max = 0;
           if (demand_max > 20) demand_max = 20;
+          if (room_error_valid) {
+            if (room_error_c < 0.4f) demand_max = std::min(demand_max, 1);
+            else if (room_error_c < 0.8f) demand_max = std::min(demand_max, 2);
+            else if (room_error_c < 1.2f) demand_max = std::min(demand_max, 3);
+          }
 
           // Keep the integrator from "sticking" to level 1 when the supply is already
           // at or below target, and stop winding up while the output is saturated high.
@@ -267,9 +301,10 @@ interval:
           if (demand < 0) demand = 0;
           if (demand > demand_max) demand = demand_max;
 
+          float safe_gap_c = NAN;
           // Add a small explicit approach zone near the dew-point-safe floor.
           if (id(minimum_safe_supply_temp).has_state() && !isnan(id(minimum_safe_supply_temp).state)) {
-            const float safe_gap_c = id(oq_system_supply_temp).state - id(minimum_safe_supply_temp).state;
+            safe_gap_c = id(oq_system_supply_temp).state - id(minimum_safe_supply_temp).state;
             if (safe_gap_c <= stop_safe_floor_limit_c) {
               demand = 0;
               integral = 0.0f;
@@ -277,6 +312,18 @@ interval:
               if (demand > 1) demand = 1;
               integral = fminf(integral, 1.0f);
             }
+          }
+
+          // When the room still needs a little cooling and supply is already close to target,
+          // prefer a gentle level-1 simmer over dropping to zero immediately.
+          const bool can_simmer =
+              (!room_error_valid || room_error_c > simmer_room_error_min_c) &&
+              error_c > 0.0f && error_c <= simmer_supply_error_max_c &&
+              (isnan(safe_gap_c) || safe_gap_c > (near_safe_floor_limit_c + 0.2f));
+          if (can_simmer) {
+            if (demand < 1) demand = 1;
+            if (demand > 1) demand = 1;
+            integral = fminf(fmaxf(integral, 0.0f), 1.0f);
           }
 
           id(oq_cooling_pid_integral) = integral;
