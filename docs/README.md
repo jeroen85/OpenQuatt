@@ -22,7 +22,7 @@ Gebruik je de standaardfirmware, dan is de web installer uit de README meestal d
 - [Dashboardoverzicht](dashboardoverzicht.md): de belangrijkste dashboardtabs en de volgorde waarin je ze gebruikt.
 - [Diagnose en afstelling](diagnose-en-afstelling.md): diagnose, werkvolgorde en terughoudend afstellen.
 
-Passive cooling wordt nu in hoofdlijnen beschreven in:
+Cooling wordt nu in hoofdlijnen beschreven in:
 
 - [Hoe OpenQuatt werkt](hoe-openquatt-werkt.md): wat koeling wel en niet van OpenQuatt vraagt.
 - [Dashboardoverzicht](dashboardoverzicht.md): waar je de cooling-tab en sensorconfiguratie gebruikt.

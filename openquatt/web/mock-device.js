@@ -122,6 +122,7 @@
     const hp1Outside = Number(getEntity("sensor", "HP1 - Outside temperature")?.value);
     const hp2Outside = Number(getEntity("sensor", "HP2 - Outside temperature")?.value);
     const totalHeat = Number(getEntity("sensor", "Total Heat Power")?.value);
+    const totalPower = Number(getEntity("sensor", "Total Power Input")?.value);
     const strategy = String(getEntity("select", "Heating Control Mode")?.value || "");
     const roomTemp = Number(getEntity("sensor", "Room Temperature (Selected)")?.value);
     const roomSetpoint = Number(getEntity("sensor", "Room Setpoint (Selected)")?.value);
@@ -148,7 +149,9 @@
     const roomDelta = Number.isNaN(roomSetpoint) || Number.isNaN(roomTemp) ? 0 : roomSetpoint - roomTemp;
     const roomCorrection = Number.isNaN(kp) ? 0 : Math.round(Math.max(-1500, Math.min(1500, roomDelta * kp)));
     const powerHouseRequested = Math.max(0, Math.round(houseModel + roomCorrection));
-    const strategyRequested = Math.max(0, Math.round(strategy === "Power House" ? powerHouseRequested : totalHeat || 0));
+    const strategyRequested = state.scenario === "cooling"
+      ? 0
+      : Math.max(0, Math.round(strategy === "Power House" ? powerHouseRequested : totalHeat || 0));
 
     let capacity = 0;
     if (state.scenario === "idle") {
@@ -159,36 +162,62 @@
       capacity = 5200;
     } else if (state.scenario === "defrost") {
       capacity = single ? 1800 : 3200;
+    } else if (state.scenario === "cooling") {
+      capacity = single ? 2600 : 4200;
     }
 
     setNumber("Outside Temperature (Selected)", selectedOutside, "°C");
-    setNumber("Power House – P_house", houseModel, "W");
-    setNumber("Power House – P_req", powerHouseRequested, "W");
+    setNumber("Power House – P_house", state.scenario === "cooling" ? 0 : houseModel, "W");
+    setNumber("Power House – P_req", state.scenario === "cooling" ? 0 : powerHouseRequested, "W");
     setNumber("Strategy requested power", strategyRequested, "W");
     setNumber("HP capacity (W)", capacity, "W");
     setNumber("HP deficit (W)", Math.max(0, strategyRequested - capacity), "W");
 
     const boilerHeat = state.scenario === "dual" ? 180 : 0;
     const systemHeat = Math.max(0, Number((Number(totalHeat || 0) + boilerHeat).toFixed(0)));
-    const electricalDaily = state.scenario === "idle" ? 3.1 : state.scenario === "defrost" ? 6.4 : single ? 7.2 : 8.6;
-    const heatpumpDaily = state.scenario === "idle" ? 9.4 : state.scenario === "defrost" ? 18.2 : single ? 28.4 : 36.9;
+    const electricalDaily = state.scenario === "idle" ? 3.1 : state.scenario === "defrost" ? 6.4 : state.scenario === "cooling" ? (single ? 6.8 : 8.1) : single ? 7.2 : 8.6;
+    const heatpumpDaily = state.scenario === "idle" ? 9.4 : state.scenario === "defrost" ? 18.2 : state.scenario === "cooling" ? (single ? 24.6 : 31.8) : single ? 28.4 : 36.9;
+    const coolingElectricalDaily = state.scenario === "cooling" ? (single ? 1.8 : 2.4) : 0.0;
+    const coolingDaily = state.scenario === "cooling" ? (single ? 7.1 : 9.3) : 0.0;
     const boilerDaily = state.scenario === "dual" ? 2.7 : 0.0;
     const systemDaily = Number((heatpumpDaily + boilerDaily).toFixed(1));
     const heatpumpCopDaily = electricalDaily > 0 ? Number((heatpumpDaily / electricalDaily).toFixed(2)) : 0;
+    const heatpumpEerDaily = coolingElectricalDaily > 0 ? Number((coolingDaily / coolingElectricalDaily).toFixed(2)) : 0;
     const electricalCumulative = single ? 286.4 : 469.5;
     const heatpumpCumulative = single ? 1208.7 : 2048.6;
+    const coolingElectricalCumulative = state.scenario === "cooling" ? (single ? 28.6 : 41.9) : 0.0;
+    const coolingCumulative = state.scenario === "cooling" ? (single ? 109.4 : 163.7) : 0.0;
     const boilerCumulative = state.scenario === "dual" ? 114.8 : 0.0;
     const systemCumulative = Number((heatpumpCumulative + boilerCumulative).toFixed(1));
     const heatpumpCopCumulative = electricalCumulative > 0 ? Number((heatpumpCumulative / electricalCumulative).toFixed(2)) : 0;
+    const heatpumpEerCumulative = coolingElectricalCumulative > 0 ? Number((coolingCumulative / coolingElectricalCumulative).toFixed(2)) : 0;
+    const heatingElectricalDaily = Math.max(0, Number((electricalDaily - coolingElectricalDaily).toFixed(1)));
+    const heatingElectricalCumulative = Math.max(0, Number((electricalCumulative - coolingElectricalCumulative).toFixed(1)));
+    const totalCoolingPower = state.scenario === "cooling" ? Math.max(0, Number(totalHeat || 0)) : 0;
+    const totalEer = (state.scenario === "cooling" && coolingElectricalDaily > 0)
+      ? Number((coolingDaily / coolingElectricalDaily).toFixed(2))
+      : 0;
 
     setNumber("Boiler Heat Power", boilerHeat, "W");
     setNumber("System Heat Power", systemHeat, "W");
+    setNumber("Heating Power Input", state.scenario === "cooling" ? 0 : (Number.isNaN(totalPower) ? 0 : totalPower), "W");
+    setNumber("Cooling Power Input", state.scenario === "cooling" ? (Number.isNaN(totalPower) ? 0 : totalPower) : 0, "W");
     setNumber("Electrical Energy Daily", electricalDaily, "kWh");
     setNumber("Electrical Energy Cumulative", electricalCumulative, "kWh");
+    setNumber("Heating Electrical Energy Daily", heatingElectricalDaily, "kWh");
+    setNumber("Heating Electrical Energy Cumulative", heatingElectricalCumulative, "kWh");
+    setNumber("Cooling Electrical Energy Daily", coolingElectricalDaily, "kWh");
+    setNumber("Cooling Electrical Energy Cumulative", coolingElectricalCumulative, "kWh");
     setNumber("HeatPump Thermal Energy Daily", heatpumpDaily, "kWh");
     setNumber("HeatPump Thermal Energy Cumulative", heatpumpCumulative, "kWh");
+    setNumber("HeatPump Cooling Energy Daily", coolingDaily, "kWh");
+    setNumber("HeatPump Cooling Energy Cumulative", coolingCumulative, "kWh");
     setNumber("HeatPump COP Daily", heatpumpCopDaily, "");
     setNumber("HeatPump COP Cumulative", heatpumpCopCumulative, "");
+    setNumber("HeatPump EER Daily", heatpumpEerDaily, "");
+    setNumber("HeatPump EER Cumulative", heatpumpEerCumulative, "");
+    setNumber("Total Cooling Power", totalCoolingPower, "W");
+    setNumber("Total EER", totalEer, "");
     setNumber("Boiler Thermal Energy Daily", boilerDaily, "kWh");
     setNumber("Boiler Thermal Energy Cumulative", boilerCumulative, "kWh");
     setNumber("System Thermal Energy Daily", systemDaily, "kWh");
@@ -224,6 +253,7 @@
       option: ["Flow Setpoint", "Manual PWM"],
     });
     setEntity("text_sensor", "Control Mode (Label)", { state: "CM98" });
+    setEntity("text_sensor", "Cooling Block Reason", { state: "Ready", value: "Ready" });
     setEntity("text_sensor", "Flow Mode", { state: "Adaptive" });
     setEntity("select", "Behavior", {
       value: "Balanced",
@@ -330,6 +360,11 @@
       ["Heating Curve Supply Target", 33.0, "°C"],
       ["Power House – P_house", 2500, "W"],
       ["Power House – P_req", 2800, "W"],
+      ["Cooling Dew Point (Selected)", 16.1, "°C"],
+      ["Cooling Minimum Safe Supply Temp", 18.1, "°C"],
+      ["Cooling Supply Target", 18.6, "°C"],
+      ["Cooling Supply Error", 0.9, "°C"],
+      ["Cooling Demand (raw)", 2, ""],
       ["HP1 - Power Input", 0, "W"],
       ["HP1 - Heat Power", 0, "W"],
       ["HP1 - COP", 0, ""],
@@ -360,6 +395,9 @@
     [
       ["Silent active", false],
       ["Sticky pump active", false],
+      ["Cooling Enable (Selected)", false],
+      ["Cooling Request Active", false],
+      ["Cooling Permitted", false],
       ["HP1 - Defrost", false],
       ["HP1 - 4-Way valve", false],
       ["HP1 - Bottom plate heater", false],
@@ -505,6 +543,10 @@
 
     if (name === "idle") {
       setText("text_sensor", "Control Mode (Label)", "CM98");
+      setBinary("Cooling Enable (Selected)", false);
+      setBinary("Cooling Request Active", false);
+      setBinary("Cooling Permitted", false);
+      setText("text_sensor", "Cooling Block Reason", "Ready");
       setText("text_sensor", "Flow Mode", "Adaptive");
       setNumber("Total Power Input", single ? 5.2 : 10.3, "W");
       setNumber("Total Heat Power", 0, "W");
@@ -557,6 +599,10 @@
 
     if (name === "heating") {
       setText("text_sensor", "Control Mode (Label)", "CM98");
+      setBinary("Cooling Enable (Selected)", false);
+      setBinary("Cooling Request Active", false);
+      setBinary("Cooling Permitted", false);
+      setText("text_sensor", "Cooling Block Reason", "Ready");
       setText("text_sensor", "Flow Mode", "Adaptive");
       const hp1Power = wave(418, 22);
       const hp1Heat = wave(1880, 120);
@@ -612,6 +658,10 @@
 
     if (name === "dual") {
       setText("text_sensor", "Control Mode (Label)", "CM99");
+      setBinary("Cooling Enable (Selected)", false);
+      setBinary("Cooling Request Active", false);
+      setBinary("Cooling Permitted", false);
+      setText("text_sensor", "Cooling Block Reason", "Ready");
       setText("text_sensor", "Flow Mode", "Mixed test");
       setBinary("Silent active", true);
       setText("text_sensor", "HP2 - Active Failures List", "Compressor oil return");
@@ -665,6 +715,10 @@
 
     if (name === "defrost") {
       setText("text_sensor", "Control Mode (Label)", "CM99");
+      setBinary("Cooling Enable (Selected)", false);
+      setBinary("Cooling Request Active", false);
+      setBinary("Cooling Permitted", false);
+      setText("text_sensor", "Cooling Block Reason", "Ready");
       setText("text_sensor", "Flow Mode", "Defrost recovery");
       setBinary("Sticky pump active", true);
       setBinary("HP1 - Defrost", true);
@@ -718,6 +772,71 @@
         setText("text_sensor", "HP2 - Working Mode Label", "Standby");
         setBinary("HP2 - Bottom plate heater", false);
         setBinary("HP2 - Crankcase heater", true);
+      }
+      syncOverviewTelemetry(single);
+      return;
+    }
+
+    if (name === "cooling") {
+      setText("text_sensor", "Control Mode (Label)", "CM5 - Cooling");
+      setText("text_sensor", "Flow Mode", "Adaptive");
+      setBinary("Cooling Enable (Selected)", true);
+      setBinary("Cooling Request Active", true);
+      setBinary("Cooling Permitted", true);
+      setText("text_sensor", "Cooling Block Reason", "Ready");
+      setNumber("Cooling Dew Point (Selected)", wave(16.0, 0.15), "°C");
+      setNumber("Cooling Minimum Safe Supply Temp", wave(18.0, 0.15), "°C");
+      setNumber("Cooling Supply Target", wave(18.6, 0.12), "°C");
+      setNumber("Cooling Supply Error", wave(1.0, 0.2), "°C");
+      setNumber("Cooling Demand (raw)", waveInt(2.2, 0.6), "");
+      setNumber("Cooling Power Input", wave(455, 18), "W");
+      setNumber("Total Power Input", wave(455, 18), "W");
+      setNumber("Total Heat Power", 0, "W");
+      setNumber("Total Cooling Power", wave(1720, 90), "W");
+      setNumber("Total COP", 0);
+      setNumber("Total EER", Number((3.9 + Math.sin(t) * 0.08).toFixed(2)));
+      setNumber("Flow average (Selected)", wave(845, 26), "L/h");
+      setNumber("Room Temperature (Selected)", wave(24.2, 0.08), "°C");
+      setNumber("Room Setpoint (Selected)", 23.0, "°C");
+      setNumber("Water Supply Temp (Selected)", wave(19.6, 0.2), "°C");
+      setNumber("HP1 - Power Input", 5.4, "W");
+      setNumber("HP1 - Heat Power", 0, "W");
+      setNumber("HP1 - Cooling Power", 0, "W");
+      setNumber("HP1 - COP", 0);
+      setNumber("HP1 - Compressor frequency", 0, "Hz");
+      setNumber("HP1 - Fan speed", 0, "rpm");
+      setNumber("HP1 - Flow", 0, "L/h");
+      setNumber("HP1 - Evaporator coil temperature", wave(24.8, 0.2), "\u00B0C");
+      setNumber("HP1 - Inner coil temperature", wave(25.7, 0.2), "\u00B0C");
+      setNumber("HP1 - Outside temperature", wave(26.1, 0.2), "\u00B0C");
+      setNumber("HP1 - Condenser pressure", wave(8.0, 0.1), "bar");
+      setNumber("HP1 - Gas discharge temperature", wave(27.6, 0.2), "\u00B0C");
+      setNumber("HP1 - Evaporator pressure", wave(7.8, 0.1), "bar");
+      setNumber("HP1 - Gas return temperature", wave(25.3, 0.2), "\u00B0C");
+      setNumber("HP1 - EEV steps", 0, "p");
+      setNumber("HP1 - Water in temperature", wave(20.8, 0.2), "°C");
+      setNumber("HP1 - Water out temperature", wave(20.1, 0.2), "°C");
+      setText("text_sensor", "HP1 - Working Mode Label", "Standby");
+      if (!single) {
+        setNumber("HP2 - Power Input", wave(448, 18, 0.3), "W");
+        setNumber("HP2 - Heat Power", 0, "W");
+        setNumber("HP2 - Cooling Power", wave(1710, 90, 0.3), "W");
+        setNumber("HP2 - COP", Number((3.82 + Math.sin(t + 0.3) * 0.08).toFixed(2)));
+        setNumber("HP2 - Compressor frequency", waveInt(33, 2, 0.3), "Hz");
+        setNumber("HP2 - Fan speed", wave(602, 14, 0.3), "rpm");
+        setNumber("HP2 - Flow", wave(842, 18, 0.3), "L/h");
+        setNumber("HP2 - Evaporator coil temperature", wave(8.2, 0.3, 0.3), "\u00B0C");
+        setNumber("HP2 - Inner coil temperature", wave(12.0, 0.3, 0.2), "\u00B0C");
+        setNumber("HP2 - Outside temperature", wave(25.9, 0.2, 0.2), "\u00B0C");
+        setNumber("HP2 - Condenser pressure", wave(17.8, 0.3, 0.3), "bar");
+        setNumber("HP2 - Gas discharge temperature", wave(47.0, 0.8, 0.3), "\u00B0C");
+        setNumber("HP2 - Evaporator pressure", wave(6.0, 0.15, 0.3), "bar");
+        setNumber("HP2 - Gas return temperature", wave(10.4, 0.2, 0.3), "\u00B0C");
+        setNumber("HP2 - EEV steps", waveInt(268, 12, 0.3), "p");
+        setNumber("HP2 - Water in temperature", wave(21.0, 0.2, 0.3), "°C");
+        setNumber("HP2 - Water out temperature", wave(19.3, 0.2, 0.3), "°C");
+        setText("text_sensor", "HP2 - Working Mode Label", "Cooling");
+        setBinary("HP2 - 4-Way valve", true);
       }
       syncOverviewTelemetry(single);
       return;
@@ -959,6 +1078,7 @@
               <option value="idle">Idle</option>
               <option value="heating">HP1 heating</option>
               ${state.installation === "duo" ? '<option value="dual">HP1 heat + HP2 cool</option>' : ""}
+              ${state.installation === "duo" ? '<option value="cooling">HP1 standby + HP2 cooling</option>' : ""}
               <option value="defrost">Defrost</option>
             </select>
           </label>

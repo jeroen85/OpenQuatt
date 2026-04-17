@@ -98,6 +98,15 @@
     projectVersionText: { domain: "text_sensor", name: "OpenQuatt Version", optional: true },
     releaseChannelText: { domain: "text_sensor", name: "OpenQuatt Release Channel", optional: true },
     strategy: { domain: "select", name: "Heating Control Mode" },
+    coolingEnableSelected: { domain: "binary_sensor", name: "Cooling Enable (Selected)", optional: true },
+    coolingRequestActive: { domain: "binary_sensor", name: "Cooling Request Active", optional: true },
+    coolingPermitted: { domain: "binary_sensor", name: "Cooling Permitted", optional: true },
+    coolingBlockReason: { domain: "text_sensor", name: "Cooling Block Reason", optional: true },
+    coolingDewPointSelected: { domain: "sensor", name: "Cooling Dew Point (Selected)", optional: true },
+    coolingMinimumSafeSupplyTemp: { domain: "sensor", name: "Cooling Minimum Safe Supply Temp", optional: true },
+    coolingSupplyTarget: { domain: "sensor", name: "Cooling Supply Target", optional: true },
+    coolingSupplyError: { domain: "sensor", name: "Cooling Supply Error", optional: true },
+    coolingDemandRaw: { domain: "sensor", name: "Cooling Demand (raw)", optional: true },
     flowControlMode: { domain: "select", name: "Flow Control Mode" },
     flowSetpoint: { domain: "number", name: "Flow Setpoint" },
     manualIpwm: { domain: "number", name: "Manual iPWM" },
@@ -110,17 +119,29 @@
     maxWater: { domain: "number", name: "Maximum water temperature" },
     minRuntime: { domain: "number", name: "Minimum runtime" },
     totalPower: { domain: "sensor", name: "Total Power Input" },
+    heatingPowerInput: { domain: "sensor", name: "Heating Power Input", optional: true },
+    coolingPowerInput: { domain: "sensor", name: "Cooling Power Input", optional: true },
     totalCop: { domain: "sensor", name: "Total COP" },
+    totalEer: { domain: "sensor", name: "Total EER", optional: true },
     totalHeat: { domain: "sensor", name: "Total Heat Power" },
+    totalCoolingPower: { domain: "sensor", name: "Total Cooling Power", optional: true },
     boilerHeatPower: { domain: "sensor", name: "Boiler Heat Power", optional: true },
     systemHeatPower: { domain: "sensor", name: "System Heat Power", optional: true },
     flowSelected: { domain: "sensor", name: "Flow average (Selected)" },
     electricalEnergyDaily: { domain: "sensor", name: "Electrical Energy Daily", optional: true },
     electricalEnergyCumulative: { domain: "sensor", name: "Electrical Energy Cumulative", optional: true },
+    heatingElectricalEnergyDaily: { domain: "sensor", name: "Heating Electrical Energy Daily", optional: true },
+    heatingElectricalEnergyCumulative: { domain: "sensor", name: "Heating Electrical Energy Cumulative", optional: true },
+    coolingElectricalEnergyDaily: { domain: "sensor", name: "Cooling Electrical Energy Daily", optional: true },
+    coolingElectricalEnergyCumulative: { domain: "sensor", name: "Cooling Electrical Energy Cumulative", optional: true },
     heatpumpThermalEnergyDaily: { domain: "sensor", name: "HeatPump Thermal Energy Daily", optional: true },
     heatpumpThermalEnergyCumulative: { domain: "sensor", name: "HeatPump Thermal Energy Cumulative", optional: true },
+    heatpumpCoolingEnergyDaily: { domain: "sensor", name: "HeatPump Cooling Energy Daily", optional: true },
+    heatpumpCoolingEnergyCumulative: { domain: "sensor", name: "HeatPump Cooling Energy Cumulative", optional: true },
     heatpumpCopDaily: { domain: "sensor", name: "HeatPump COP Daily", optional: true },
     heatpumpCopCumulative: { domain: "sensor", name: "HeatPump COP Cumulative", optional: true },
+    heatpumpEerDaily: { domain: "sensor", name: "HeatPump EER Daily", optional: true },
+    heatpumpEerCumulative: { domain: "sensor", name: "HeatPump EER Cumulative", optional: true },
     boilerThermalEnergyDaily: { domain: "sensor", name: "Boiler Thermal Energy Daily", optional: true },
     boilerThermalEnergyCumulative: { domain: "sensor", name: "Boiler Thermal Energy Cumulative", optional: true },
     systemThermalEnergyDaily: { domain: "sensor", name: "System Thermal Energy Daily", optional: true },
@@ -158,6 +179,7 @@
     hp1ExcludedB: { domain: "select", name: "HP1 - Excluded compressor level B" },
     hp1Power: { domain: "sensor", name: "HP1 - Power Input" },
     hp1Heat: { domain: "sensor", name: "HP1 - Heat Power" },
+    hp1Cooling: { domain: "sensor", name: "HP1 - Cooling Power" },
     hp1Cop: { domain: "sensor", name: "HP1 - COP" },
     hp1Compressor: { domain: "sensor", name: "HP1 compressor level" },
     hp1Freq: { domain: "sensor", name: "HP1 - Compressor frequency" },
@@ -183,6 +205,7 @@
     hp2ExcludedB: { domain: "select", name: "HP2 - Excluded compressor level B", optional: true },
     hp2Power: { domain: "sensor", name: "HP2 - Power Input", optional: true },
     hp2Heat: { domain: "sensor", name: "HP2 - Heat Power", optional: true },
+    hp2Cooling: { domain: "sensor", name: "HP2 - Cooling Power", optional: true },
     hp2Cop: { domain: "sensor", name: "HP2 - COP", optional: true },
     hp2Compressor: { domain: "sensor", name: "HP2 compressor level", optional: true },
     hp2Freq: { domain: "sensor", name: "HP2 - Compressor frequency", optional: true },
@@ -223,6 +246,7 @@
       keys: {
         power: "hp1Power",
         heat: "hp1Heat",
+        cooling: "hp1Cooling",
         cop: "hp1Cop",
         freq: "hp1Freq",
         fanSpeed: "hp1FanSpeed",
@@ -251,6 +275,7 @@
       keys: {
         power: "hp2Power",
         heat: "hp2Heat",
+        cooling: "hp2Cooling",
         cop: "hp2Cop",
         freq: "hp2Freq",
         fanSpeed: "hp2FanSpeed",
@@ -305,11 +330,24 @@
   const HEADER_ENTITY_KEYS = ["uptimeReadable", "ipAddress", "projectVersionText", "releaseChannelText"];
   const OVERVIEW_KEYS = [
     "strategy",
+    "coolingEnableSelected",
+    "coolingRequestActive",
+    "coolingPermitted",
+    "coolingBlockReason",
+    "coolingDewPointSelected",
+    "coolingMinimumSafeSupplyTemp",
+    "coolingSupplyTarget",
+    "coolingSupplyError",
+    "coolingDemandRaw",
     "controlModeLabel",
     "flowMode",
     "totalPower",
+    "heatingPowerInput",
+    "coolingPowerInput",
     "totalCop",
+    "totalEer",
     "totalHeat",
+    "totalCoolingPower",
     "strategyRequestedPower",
     "phouseHouse",
     "phouseReq",
@@ -318,10 +356,18 @@
     "systemHeatPower",
     "electricalEnergyDaily",
     "electricalEnergyCumulative",
+    "heatingElectricalEnergyDaily",
+    "heatingElectricalEnergyCumulative",
+    "coolingElectricalEnergyDaily",
+    "coolingElectricalEnergyCumulative",
     "heatpumpThermalEnergyDaily",
     "heatpumpThermalEnergyCumulative",
+    "heatpumpCoolingEnergyDaily",
+    "heatpumpCoolingEnergyCumulative",
     "heatpumpCopDaily",
     "heatpumpCopCumulative",
+    "heatpumpEerDaily",
+    "heatpumpEerCumulative",
     "boilerThermalEnergyDaily",
     "boilerThermalEnergyCumulative",
     "systemThermalEnergyDaily",
@@ -335,10 +381,15 @@
     "stickyActive",
     "hp1Power",
     "hp1Heat",
+    "hp1Cooling",
     "hp1Cop",
+    "hp1Compressor",
     "hp1Freq",
+    "hp1FanSpeed",
     "hp1Flow",
     "hp1EvaporatorCoilTemp",
+    "hp1InnerCoilTemp",
+    "hp1OutsideTemp",
     "hp1CondenserPressure",
     "hp1DischargeTemp",
     "hp1EvaporatorPressure",
@@ -354,10 +405,15 @@
     "hp1FourWay",
     "hp2Power",
     "hp2Heat",
+    "hp2Cooling",
     "hp2Cop",
+    "hp2Compressor",
     "hp2Freq",
+    "hp2FanSpeed",
     "hp2Flow",
     "hp2EvaporatorCoilTemp",
+    "hp2InnerCoilTemp",
+    "hp2OutsideTemp",
     "hp2CondenserPressure",
     "hp2DischargeTemp",
     "hp2EvaporatorPressure",
@@ -839,11 +895,15 @@
       return;
     }
 
-    const boards = state.root.querySelectorAll(".oq-hp-schematic-board.is-running");
-    boards.forEach((board) => {
+    const runningBoards = state.root.querySelectorAll(".oq-hp-schematic-board.is-running");
+    runningBoards.forEach((board) => {
       board.querySelectorAll(".oq-hp-tech-pipe-flow").forEach((node) => {
         state.motionTargets.pipeFlows.push(node);
       });
+    });
+
+    const fanBoards = state.root.querySelectorAll(".oq-hp-schematic-board.is-fan-running");
+    fanBoards.forEach((board) => {
       board.querySelectorAll(".oq-hp-tech-fan-blades").forEach((node) => {
         state.motionTargets.fanBlades.push(node);
       });
@@ -4112,6 +4172,16 @@
     `;
   }
 
+  function renderOverviewStatCardValue(label, value, tone, note) {
+    return `
+      <article class="oq-overview-stat oq-overview-stat--${escapeHtml(tone)}">
+        <p>${escapeHtml(label)}</p>
+        <strong>${escapeHtml(value)}</strong>
+        <span>${escapeHtml(note)}</span>
+      </article>
+    `;
+  }
+
   function renderOverviewStatusChip(label, value, tone = "neutral") {
     return `<span class="oq-overview-chip oq-overview-chip--${escapeHtml(tone)}"><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</span>`;
   }
@@ -4272,6 +4342,21 @@
     return "";
   }
 
+  function isCoolingOverviewActive() {
+    const modeLabel = getEntityStateText("controlModeLabel", "").toLowerCase();
+    if (modeLabel.includes("cm5") || modeLabel.includes("cooling") || modeLabel.includes("koeling")) {
+      return true;
+    }
+    return isEntityActive("coolingRequestActive") || isEntityActive("coolingEnableSelected");
+  }
+
+  function getOverviewStrategyLabel() {
+    if (isCoolingOverviewActive()) {
+      return "Koeling";
+    }
+    return isCurveMode() ? "Stooklijn" : "Power House";
+  }
+
   function getPowerHouseRequestedPower() {
     const keys = ["phouseReq", "strategyRequestedPower"];
     for (const key of keys) {
@@ -4352,6 +4437,55 @@
     };
   }
 
+  function getCoolingOverviewModel() {
+    const target = getEntityNumericValue("coolingSupplyTarget");
+    const supply = getEntityNumericValue("supplyTemp");
+    const safeFloor = getEntityNumericValue("coolingMinimumSafeSupplyTemp");
+    const dewPoint = getEntityNumericValue("coolingDewPointSelected");
+    const supplyError = getEntityNumericValue("coolingSupplyError");
+    const rawDemand = getEntityNumericValue("coolingDemandRaw");
+    const permitted = isEntityActive("coolingPermitted");
+    const requestActive = isEntityActive("coolingRequestActive");
+    const blockReason = getEntityStateText("coolingBlockReason", "Onbekend");
+
+    let statusTitle = "Wacht op koelvraag";
+    let statusCopy = "Zodra er koelvraag is, zie je hier hoe de regeling de aanvoer richting het koeldoel stuurt.";
+
+    if (!permitted) {
+      statusTitle = "Koeling geblokkeerd";
+      statusCopy = `Blokkade: ${blockReason}.`;
+    } else if (!requestActive) {
+      statusTitle = "Koeling gereed";
+      statusCopy = "Koeling is toegestaan, maar wacht nog op actieve koelvraag vanuit de kamerregeling.";
+    } else if (!Number.isNaN(rawDemand) && rawDemand <= 0.0) {
+      statusTitle = "Houdt doel vast";
+      statusCopy = "De koelvraag loopt nog, maar de compressor hoeft nu niet harder te werken.";
+    } else if (!Number.isNaN(supplyError) && supplyError > 1.0) {
+      statusTitle = "Trekt aanvoer omlaag";
+      statusCopy = "De actuele aanvoertemperatuur ligt nog ruim boven het koeldoel.";
+    } else if (!Number.isNaN(supplyError) && supplyError > 0.2) {
+      statusTitle = "Benadert koeldoel";
+      statusCopy = "De regeling koelt nog door, maar zit al dicht bij de gewenste aanvoertemperatuur.";
+    } else if (!Number.isNaN(supplyError)) {
+      statusTitle = "Koelt rustig door";
+      statusCopy = "De aanvoertemperatuur zit dicht bij het koeldoel en de regeling werkt nu op laag pitje.";
+    }
+
+    return {
+      targetText: formatOverviewStatValue("coolingSupplyTarget"),
+      supplyText: formatOverviewStatValue("supplyTemp"),
+      safeFloorText: formatOverviewStatValue("coolingMinimumSafeSupplyTemp"),
+      dewPointText: formatOverviewStatValue("coolingDewPointSelected"),
+      demandText: formatOverviewStatValue("coolingDemandRaw"),
+      deltaText: formatSignedTemperature(supplyError),
+      statusTitle,
+      statusCopy,
+      permitted,
+      requestActive,
+      blockReason,
+    };
+  }
+
   function renderPowerHouseOverviewCard() {
     const model = getPowerHouseOverviewModel();
 
@@ -4402,11 +4536,54 @@
     `;
   }
 
+  function renderCoolingOverviewCard() {
+    const model = getCoolingOverviewModel();
+
+    return `
+      <section class="oq-overview-system">
+        <div class="oq-overview-system-copy">
+          <h3>Koelregeling</h3>
+          <p>Koeling laat zien op welke aanvoertemperatuur de regeling nu mikt en hoe dicht die bij de veilige grens zit.</p>
+        </div>
+        <div class="oq-overview-hero">
+          <div class="oq-overview-hero-main">
+            <span class="oq-overview-focus-label">Koeldoel</span>
+            <strong>${escapeHtml(model.targetText)}</strong>
+            <p>${escapeHtml(model.statusCopy)}</p>
+          </div>
+        </div>
+        <div class="oq-overview-metrics oq-overview-metrics--three-column">
+          ${renderOverviewMetricCard("Actuele aanvoertemperatuur", model.supplyText, "orange", "Wat nu door het systeem loopt.")}
+          ${renderOverviewMetricCard("Veilige aanvoergrens", model.safeFloorText, "blue", "Dauwpunt plus veiligheidsmarge.")}
+          ${renderOverviewMetricCard("Koelvraag", model.demandText, "sky", "De huidige koelvraag van de regelaar.")}
+        </div>
+      </section>
+    `;
+  }
+
   function renderOverviewStrategyPanel() {
+    if (isCoolingOverviewActive()) {
+      return renderCoolingOverviewCard();
+    }
     return isCurveMode() ? renderCurveOverviewCard() : renderPowerHouseOverviewCard();
   }
 
   function getOverviewPrimarySignal() {
+    if (isCoolingOverviewActive()) {
+      const model = getCoolingOverviewModel();
+      const tone = !model.permitted
+        ? "orange"
+        : model.statusTitle === "Koelt rustig door" || model.statusTitle === "Houdt temperatuur vast"
+          ? "green"
+          : model.statusTitle === "Koeling gereed"
+            ? "neutral"
+            : "sky";
+      return {
+        label: "Regeling nu",
+        value: model.statusTitle,
+        tone,
+      };
+    }
     if (isSystemInStandby()) {
       return {
         label: "Regeling nu",
@@ -4429,6 +4606,26 @@
   }
 
   function getOverviewDemandSignal() {
+    if (isCoolingOverviewActive()) {
+      if (!isEntityActive("coolingRequestActive")) {
+        return {
+          label: "Koelvraag",
+          value: "Geen koelvraag",
+          tone: "neutral",
+        };
+      }
+      const rawDemand = getEntityNumericValue("coolingDemandRaw");
+      const value = Number.isNaN(rawDemand)
+        ? "Koelvraag actief"
+        : rawDemand <= 0
+          ? "Koelvraag actief, compressor rust"
+          : "Koelvraag actief";
+      return {
+        label: "Koelvraag",
+        value,
+        tone: rawDemand > 0 ? "sky" : "neutral",
+      };
+    }
     if (isSystemInStandby()) {
       return {
         label: "Warmtevraag",
@@ -4450,6 +4647,27 @@
   }
 
   function getOverviewSystemSignal() {
+    if (isCoolingOverviewActive()) {
+      if (!isEntityActive("coolingPermitted")) {
+        return {
+          label: "Systeem",
+          value: getEntityStateText("coolingBlockReason", "Koeling geblokkeerd"),
+          tone: "orange",
+        };
+      }
+      if (isEntityActive("silentActive")) {
+        return {
+          label: "Systeem",
+          value: "Stille uren actief",
+          tone: "neutral",
+        };
+      }
+      return {
+        label: "Systeem",
+        value: "Koeling toegestaan",
+        tone: "green",
+      };
+    }
     if (isFirmwareUpdateAvailable()) {
       return {
         label: "Systeem",
@@ -4500,6 +4718,54 @@
           </article>
         `).join("")}
       </section>
+    `;
+  }
+
+  function renderOverviewTopCards() {
+    const coolingActive = isCoolingOverviewActive();
+    const thermalLabel = coolingActive ? "Koelafgifte" : "Warmteafgifte";
+    const thermalKey = coolingActive ? "totalCoolingPower" : "totalHeat";
+    const efficiencyKey = coolingActive ? "totalEer" : "totalCop";
+    const efficiencyLabel = coolingActive ? "EER" : "COP";
+    return `
+      ${renderOverviewStatCard("totalPower", "Stroomverbruik", "blue", "hele systeem")}
+      ${renderOverviewStatCard(thermalKey, thermalLabel, "orange", "thermisch vermogen")}
+      ${renderOverviewStatCard(efficiencyKey, efficiencyLabel, "green", "rendement")}
+      ${renderOverviewStatCard("flowSelected", "Flow", "sky", "watercircuit")}
+    `;
+  }
+
+  function renderOverviewTempsSection() {
+    const outsideTempKey = getOverviewOutsideTempKey();
+    const returnTempKey = getOverviewReturnTempKey();
+    if (isCoolingOverviewActive()) {
+      return `
+        <div class="oq-overview-system-copy">
+          <h3>Koeltemperaturen</h3>
+          <p>De belangrijkste temperaturen voor koeldoel, dauwpuntveiligheid en comfort.</p>
+        </div>
+        <div class="oq-overview-temps-list">
+          ${renderTempRow("Kamertemperatuur", "roomTemp")}
+          ${renderTempRow("Kamer setpoint", "roomSetpoint")}
+          ${renderTempRow("Aanvoertemperatuur", "supplyTemp")}
+          ${renderTempRow("Koeldoel", "coolingSupplyTarget")}
+          ${renderTempRow("Veilige aanvoergrens", "coolingMinimumSafeSupplyTemp")}
+          ${renderTempRow("Dauwpunt", "coolingDewPointSelected")}
+        </div>
+      `;
+    }
+    return `
+      <div class="oq-overview-system-copy">
+        <h3>Temperaturen</h3>
+        <p>De belangrijkste temperaturen voor comfort en regeling.</p>
+      </div>
+      <div class="oq-overview-temps-list">
+        ${renderTempRow("Kamertemperatuur", "roomTemp")}
+        ${renderTempRow("Kamer setpoint", "roomSetpoint")}
+        ${renderTempRow("Aanvoertemperatuur", "supplyTemp")}
+        ${returnTempKey ? renderTempRow("Retourtemperatuur", returnTempKey) : ""}
+        ${outsideTempKey ? renderTempRow("Buitentemperatuur", outsideTempKey) : renderTempRow("Buitentemperatuur", "", "—")}
+      </div>
     `;
   }
 
@@ -4583,8 +4849,8 @@
 
   function renderOverviewEnergySection() {
     const currentColumn = renderOverviewEnergyColumn("Nu", "Live energie", [
-      renderOverviewEnergyGroup("Warmtepomp", [
-        renderOverviewEnergyRow("Elektrisch vermogen", "totalPower"),
+      renderOverviewEnergyGroup("Warmtepomp verwarmen", [
+        renderOverviewEnergyRow("Elektrisch vermogen", "heatingPowerInput"),
         renderOverviewEnergyRow("Warmteafgifte", "totalHeat"),
         renderOverviewEnergyRow("COP", "totalCop"),
       ]),
@@ -4594,11 +4860,16 @@
       renderOverviewEnergyGroup("Systeem", [
         renderOverviewEnergyRow("Warmteafgifte", "systemHeatPower"),
       ]),
+      renderOverviewEnergyGroup("Warmtepomp koelen", [
+        renderOverviewEnergyRow("Elektrisch vermogen", "coolingPowerInput"),
+        renderOverviewEnergyRow("Koelafgifte", "totalCoolingPower"),
+        renderOverviewEnergyRow("EER", "totalEer"),
+      ]),
     ], "blue");
 
     const dailyColumn = renderOverviewEnergyColumn("Vandaag", "Energie vandaag", [
-      renderOverviewEnergyGroup("Warmtepomp", [
-        renderOverviewEnergyRow("Elektriciteit", "electricalEnergyDaily"),
+      renderOverviewEnergyGroup("Warmtepomp verwarmen", [
+        renderOverviewEnergyRow("Elektriciteit", "heatingElectricalEnergyDaily"),
         renderOverviewEnergyRow("Warmte", "heatpumpThermalEnergyDaily"),
         renderOverviewEnergyRow("COP", "heatpumpCopDaily"),
       ]),
@@ -4608,11 +4879,16 @@
       renderOverviewEnergyGroup("Systeem", [
         renderOverviewEnergyRow("Warmte", "systemThermalEnergyDaily"),
       ]),
+      renderOverviewEnergyGroup("Warmtepomp koelen", [
+        renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyDaily"),
+        renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyDaily"),
+        renderOverviewEnergyRow("EER", "heatpumpEerDaily"),
+      ]),
     ], "orange");
 
     const cumulativeColumn = renderOverviewEnergyColumn("Cumulatief", "Tot nu toe", [
-      renderOverviewEnergyGroup("Warmtepomp", [
-        renderOverviewEnergyRow("Elektriciteit", "electricalEnergyCumulative"),
+      renderOverviewEnergyGroup("Warmtepomp verwarmen", [
+        renderOverviewEnergyRow("Elektriciteit", "heatingElectricalEnergyCumulative"),
         renderOverviewEnergyRow("Warmte", "heatpumpThermalEnergyCumulative"),
         renderOverviewEnergyRow("COP", "heatpumpCopCumulative"),
       ]),
@@ -4621,6 +4897,11 @@
       ]),
       renderOverviewEnergyGroup("Systeem", [
         renderOverviewEnergyRow("Warmte", "systemThermalEnergyCumulative"),
+      ]),
+      renderOverviewEnergyGroup("Warmtepomp koelen", [
+        renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyCumulative"),
+        renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyCumulative"),
+        renderOverviewEnergyRow("EER", "heatpumpEerCumulative"),
       ]),
     ], "green");
 
@@ -4633,7 +4914,7 @@
       <section class="oq-overview-energy">
         <div class="oq-overview-system-copy">
           <h3>Energie</h3>
-          <p>Bekijk hier verbruik, warmte en rendement voor nu, vandaag en cumulatief.</p>
+          <p>Bekijk hier verbruik, warmte of koeling en rendement voor nu, vandaag en cumulatief.</p>
         </div>
         <div class="oq-overview-energy-grid">
           ${columns.join("")}
@@ -4644,8 +4925,8 @@
 
   function renderEnergyView() {
     const currentColumn = renderOverviewEnergyColumn("Nu", "Nu", [
-      renderOverviewEnergyGroup("Warmtepomp", [
-        renderOverviewEnergyRow("Elektrisch vermogen", "totalPower"),
+      renderOverviewEnergyGroup("Warmtepomp verwarmen", [
+        renderOverviewEnergyRow("Elektrisch vermogen", "heatingPowerInput"),
         renderOverviewEnergyRow("Warmteafgifte", "totalHeat"),
         renderOverviewEnergyRow("COP", "totalCop"),
       ]),
@@ -4655,11 +4936,16 @@
       renderOverviewEnergyGroup("Systeem", [
         renderOverviewEnergyRow("Warmteafgifte", "systemHeatPower"),
       ]),
+      renderOverviewEnergyGroup("Warmtepomp koelen", [
+        renderOverviewEnergyRow("Elektrisch vermogen", "coolingPowerInput"),
+        renderOverviewEnergyRow("Koelafgifte", "totalCoolingPower"),
+        renderOverviewEnergyRow("EER", "totalEer"),
+      ]),
     ], "blue");
 
     const dailyColumn = renderOverviewEnergyColumn("Vandaag", "Vandaag", [
-      renderOverviewEnergyGroup("Warmtepomp", [
-        renderOverviewEnergyRow("Elektriciteit", "electricalEnergyDaily"),
+      renderOverviewEnergyGroup("Warmtepomp verwarmen", [
+        renderOverviewEnergyRow("Elektriciteit", "heatingElectricalEnergyDaily"),
         renderOverviewEnergyRow("Warmte", "heatpumpThermalEnergyDaily"),
         renderOverviewEnergyRow("COP", "heatpumpCopDaily"),
       ]),
@@ -4669,11 +4955,16 @@
       renderOverviewEnergyGroup("Systeem", [
         renderOverviewEnergyRow("Warmte", "systemThermalEnergyDaily"),
       ]),
+      renderOverviewEnergyGroup("Warmtepomp koelen", [
+        renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyDaily"),
+        renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyDaily"),
+        renderOverviewEnergyRow("EER", "heatpumpEerDaily"),
+      ]),
     ], "orange");
 
     const cumulativeColumn = renderOverviewEnergyColumn("Cumulatief", "Cumulatief", [
-      renderOverviewEnergyGroup("Warmtepomp", [
-        renderOverviewEnergyRow("Elektriciteit", "electricalEnergyCumulative"),
+      renderOverviewEnergyGroup("Warmtepomp verwarmen", [
+        renderOverviewEnergyRow("Elektriciteit", "heatingElectricalEnergyCumulative"),
         renderOverviewEnergyRow("Warmte", "heatpumpThermalEnergyCumulative"),
         renderOverviewEnergyRow("COP", "heatpumpCopCumulative"),
       ]),
@@ -4683,6 +4974,11 @@
       renderOverviewEnergyGroup("Systeem", [
         renderOverviewEnergyRow("Warmte", "systemThermalEnergyCumulative"),
       ]),
+      renderOverviewEnergyGroup("Warmtepomp koelen", [
+        renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyCumulative"),
+        renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyCumulative"),
+        renderOverviewEnergyRow("EER", "heatpumpEerCumulative"),
+      ]),
     ], "green");
 
     const columns = [currentColumn, dailyColumn, cumulativeColumn].filter(Boolean).join("");
@@ -4691,11 +4987,11 @@
       <section class="oq-helper-panel oq-helper-panel--flush">
         <div class="oq-overview-board oq-overview-board--${escapeHtml(state.overviewTheme)}">
           <div class="oq-overview-head">
-            <div>
-              <p class="oq-helper-label">Energie</p>
-              <h2 class="oq-helper-section-title">Verbruik en rendement</h2>
-              <p class="oq-helper-section-copy">Bekijk hier verbruik, warmte en rendement voor nu, vandaag en cumulatief.</p>
-            </div>
+          <div>
+            <p class="oq-helper-label">Energie</p>
+            <h2 class="oq-helper-section-title">Verbruik en rendement</h2>
+            <p class="oq-helper-section-copy">Bekijk hier verbruik, warmte of koeling en rendement voor nu, vandaag en cumulatief.</p>
+          </div>
           </div>
           <section class="oq-overview-energy oq-overview-energy--solo">
             <div class="oq-overview-energy-grid">
@@ -4948,6 +5244,8 @@
     const freqText = Number.isNaN(freqValue) ? "—" : String(Math.round(freqValue));
     const powerValue = getEntityNumericValue(keys.power);
     const heatValue = getEntityNumericValue(keys.heat);
+    const coolingValue = getEntityNumericValue(keys.cooling);
+    const thermalValue = mode === "Koelen" ? coolingValue : heatValue;
     const animated = running || (!Number.isNaN(freqValue) && freqValue > 0) || (!Number.isNaN(powerValue) && powerValue > 80) || (!Number.isNaN(heatValue) && heatValue > 150);
     const statusText = getHeatPumpPanelStatusLabel(mode, animated);
     const failureText = failures === "Geen actieve storingen" ? "Geen storingen" : failures;
@@ -4968,9 +5266,16 @@
     const eevPositionText = formatComponentPositionLabel(keys.eev);
     const fourWayPositionText = formatFourWayPositionLabel(keys.fourWay);
     const powerText = formatNumericState(powerValue, 0, "W");
-    const heatText = formatNumericState(heatValue, 0, "W");
-    const copText = formatNumericState(getEntityNumericValue(keys.cop), 1);
+    const heatText = formatNumericState(thermalValue, 0, "W");
+    const efficiencyValue = mode === "Koelen"
+      ? ((!Number.isNaN(powerValue) && powerValue >= 5.0 && !Number.isNaN(coolingValue)) ? (coolingValue / powerValue) : Number.NaN)
+      : getEntityNumericValue(keys.cop);
+    const efficiencyText = formatNumericState(efficiencyValue, 1);
+    const efficiencyLabel = mode === "Koelen" ? "EER" : "COP";
+    const heatLabel = mode === "Koelen" ? "Koelafgifte" : "Warmteafgifte";
+    const heatDescription = mode === "Koelen" ? "afgegeven koeling" : "afgegeven warmte";
     const fanRpmValue = getEntityNumericValue(keys.fanSpeed);
+    const fanRunning = !Number.isNaN(fanRpmValue) && fanRpmValue > 0;
     const fanRpmText = Number.isNaN(fanRpmValue)
       ? "—"
       : `${Math.round(fanRpmValue)} rpm`;
@@ -5000,6 +5305,7 @@
       "oq-hp-schematic-board",
       `oq-hp-schematic-board--${accent}`,
       animated ? "is-running" : "",
+      fanRunning ? "is-fan-running" : "",
       reverseCycle ? "is-reversed" : "",
       defrostActive ? "is-defrost" : "",
     ].filter(Boolean).join(" ");
@@ -5035,7 +5341,10 @@
       fourWayPositionText,
       powerText,
       heatText,
-      copText,
+      heatLabel,
+      heatDescription,
+      efficiencyText,
+      efficiencyLabel,
       fanRpmText,
       hotgasValveHeat,
       hotgasValveCool,
@@ -5565,12 +5874,12 @@
               <strong data-oq-bind="footer-power">${escapeHtml(model.powerText)}</strong>
             </div>
             <div class="oq-hp-tech-footer-item">
-              <span aria-label="Warmteafgifte">Warmte<br>afgifte</span>
+              <span aria-label="${escapeHtml(model.heatLabel)}" data-oq-bind="footer-heat-label">${model.heatLabel === "Koelafgifte" ? "Koel<br>afgifte" : "Warmte<br>afgifte"}</span>
               <strong data-oq-bind="footer-heat">${escapeHtml(model.heatText)}</strong>
             </div>
             <div class="oq-hp-tech-footer-item">
-              <span>COP</span>
-              <strong data-oq-bind="footer-cop">${escapeHtml(model.copText)}</strong>
+              <span data-oq-bind="footer-efficiency-label">${escapeHtml(model.efficiencyLabel)}</span>
+              <strong data-oq-bind="footer-efficiency">${escapeHtml(model.efficiencyText)}</strong>
             </div>
           </div>
         </div>
@@ -5662,6 +5971,7 @@
     const failures = formatFailures(getEntityStateText(keys.failures, "None"));
     const running = mode === "Verwarmen" || mode === "Koelen" || defrostActive;
     const schematicModel = buildHeatPumpSchematicModel(title, keys, accent, mode, defrostActive, failures, running);
+    const thermalKey = mode === "Koelen" ? keys.cooling : keys.heat;
 
     if (state.hpVisualMode === "schematic") {
       return `
@@ -5694,8 +6004,8 @@
         </div>
         <div class="oq-overview-hp-stats">
           ${renderOverviewStatCard(keys.power, "Stroomverbruik", "blue", "elektrisch verbruik")}
-          ${renderOverviewStatCard(keys.heat, "Warmteafgifte", "orange", "afgegeven warmte")}
-          ${renderOverviewStatCard(keys.cop, "COP", "green", "actueel")}
+          ${renderOverviewStatCard(thermalKey, schematicModel.heatLabel, "orange", schematicModel.heatDescription)}
+          ${renderOverviewStatCardValue(schematicModel.efficiencyLabel, schematicModel.efficiencyText, "green", "actueel")}
         </div>
         <div class="oq-overview-hp-meta">
           <div class="oq-overview-hp-meta-chip">
@@ -5822,11 +6132,9 @@
   }
 
   function renderOverviewView() {
-    const strategyLabel = isCurveMode() ? "Stooklijn" : "Power House";
+    const strategyLabel = getOverviewStrategyLabel();
     const heatPumpPanels = getHeatPumpPanels();
     const hpLayoutMode = getEffectiveHpLayoutMode(heatPumpPanels);
-    const outsideTempKey = getOverviewOutsideTempKey();
-    const returnTempKey = getOverviewReturnTempKey();
 
     return `
       <section class="oq-helper-panel oq-helper-panel--flush">
@@ -5840,31 +6148,18 @@
             <div class="oq-overview-head-actions">
               <div class="oq-overview-status">
                 ${renderOverviewStatusChip("Strategie", strategyLabel, "blue")}
-                ${renderOverviewStatusChip("Regelmodus", getEntityStateText("controlModeLabel"), "neutral")}
+                ${renderOverviewStatusChip("Controlmode", getEntityStateText("controlModeLabel"), "neutral")}
               </div>
             </div>
           </div>
           <div class="oq-overview-top">
-            ${renderOverviewStatCard("totalPower", "Stroomverbruik", "blue", "hele systeem")}
-            ${renderOverviewStatCard("totalHeat", "Warmteafgifte", "orange", "thermisch vermogen")}
-            ${renderOverviewStatCard("totalCop", "COP", "green", "rendement")}
-            ${renderOverviewStatCard("flowSelected", "Flow", "sky", "watercircuit")}
+            ${renderOverviewTopCards()}
           </div>
           ${renderOverviewSignals()}
           <div class="oq-overview-main">
             ${renderOverviewStrategyPanel()}
             <section class="oq-overview-temps">
-              <div class="oq-overview-system-copy">
-                <h3>Temperaturen</h3>
-                <p>De belangrijkste temperaturen voor comfort en regeling.</p>
-              </div>
-              <div class="oq-overview-temps-list">
-                ${renderTempRow("Kamertemperatuur", "roomTemp")}
-                ${renderTempRow("Kamer setpoint", "roomSetpoint")}
-                ${renderTempRow("Aanvoertemperatuur", "supplyTemp")}
-                ${returnTempKey ? renderTempRow("Retourtemperatuur", returnTempKey) : ""}
-                ${outsideTempKey ? renderTempRow("Buitentemperatuur", outsideTempKey) : renderTempRow("Buitentemperatuur", "", "—")}
-              </div>
+              ${renderOverviewTempsSection()}
             </section>
           </div>
           ${renderHeatPumpControls(heatPumpPanels)}
@@ -6047,8 +6342,17 @@
     setTextContent(board, '[data-oq-bind="return-value"]', model.waterInText);
     setTextContent(board, '[data-oq-bind="footer-mode"]', model.mode);
     setTextContent(board, '[data-oq-bind="footer-power"]', model.powerText);
+    const footerHeatLabel = board.querySelector('[data-oq-bind="footer-heat-label"]');
+    if (footerHeatLabel) {
+      footerHeatLabel.setAttribute("aria-label", model.heatLabel);
+      const nextHeatLabelMarkup = model.heatLabel === "Koelafgifte" ? "Koel<br>afgifte" : "Warmte<br>afgifte";
+      if (footerHeatLabel.innerHTML !== nextHeatLabelMarkup) {
+        footerHeatLabel.innerHTML = nextHeatLabelMarkup;
+      }
+    }
     setTextContent(board, '[data-oq-bind="footer-heat"]', model.heatText);
-    setTextContent(board, '[data-oq-bind="footer-cop"]', model.copText);
+    setTextContent(board, '[data-oq-bind="footer-efficiency-label"]', model.efficiencyLabel);
+    setTextContent(board, '[data-oq-bind="footer-efficiency"]', model.efficiencyText);
     setTextContent(board, '[data-oq-bind="fan-speed-value"]', model.fanRpmText);
     setTextContent(board, '[data-oq-bind="fourway-detail"]', model.fourWayPositionText);
     setTextContent(board, '[data-oq-bind="eev-detail"]', model.eevPositionText);
@@ -6163,7 +6467,7 @@
       return false;
     }
 
-    const strategyLabel = isCurveMode() ? "Stooklijn" : "Power House";
+    const strategyLabel = getOverviewStrategyLabel();
     const status = board.querySelector(".oq-overview-status");
     const top = board.querySelector(".oq-overview-top");
     const signals = board.querySelector(".oq-overview-signals");
@@ -6172,23 +6476,16 @@
     const hpTools = board.querySelector(".oq-overview-hp-tools");
     const hpGrid = board.querySelector(".oq-overview-hp-grid");
     const heatPumpPanels = getHeatPumpPanels();
-    const outsideTempKey = getOverviewOutsideTempKey();
-    const returnTempKey = getOverviewReturnTempKey();
 
     if (status) {
       setInnerHtmlIfChanged(status, `
         ${renderOverviewStatusChip("Strategie", strategyLabel, "blue")}
-        ${renderOverviewStatusChip("Regelmodus", getEntityStateText("controlModeLabel"), "neutral")}
+        ${renderOverviewStatusChip("Controlmode", getEntityStateText("controlModeLabel"), "neutral")}
       `);
     }
 
     if (top) {
-      setInnerHtmlIfChanged(top, `
-        ${renderOverviewStatCard("totalPower", "Stroomverbruik", "blue", "hele systeem")}
-        ${renderOverviewStatCard("totalHeat", "Warmteafgifte", "orange", "thermisch vermogen")}
-        ${renderOverviewStatCard("totalCop", "COP", "green", "rendement")}
-        ${renderOverviewStatCard("flowSelected", "Flow", "sky", "watercircuit")}
-      `);
+      setInnerHtmlIfChanged(top, renderOverviewTopCards());
     }
 
     if (signals) {
@@ -6203,19 +6500,7 @@
     }
 
     if (temps) {
-      temps.innerHTML = `
-        <div class="oq-overview-system-copy">
-          <h3>Temperaturen</h3>
-          <p>De belangrijkste temperaturen voor comfort en regeling.</p>
-        </div>
-        <div class="oq-overview-temps-list">
-          ${renderTempRow("Kamertemperatuur", "roomTemp")}
-          ${renderTempRow("Kamer setpoint", "roomSetpoint")}
-          ${renderTempRow("Aanvoertemperatuur", "supplyTemp")}
-          ${returnTempKey ? renderTempRow("Retourtemperatuur", returnTempKey) : ""}
-          ${outsideTempKey ? renderTempRow("Buitentemperatuur", outsideTempKey) : renderTempRow("Buitentemperatuur", "", "—")}
-        </div>
-      `;
+      temps.innerHTML = renderOverviewTempsSection();
     }
 
     if (!hpTools || !hpGrid) {

@@ -84,7 +84,7 @@ Deze tab is bedoeld voor gedrag dat niet direct verklaarbaar is. Bijvoorbeeld wa
 
 ### Koeling
 
-Gebruik deze tab zodra je passive cooling gebruikt of voorbereidt. Hier zie je onder meer:
+Gebruik deze tab zodra je cooling gebruikt of voorbereidt. Hier zie je onder meer:
 
 - of cooling request actief is;
 - of cooling op dit moment toegestaan is;

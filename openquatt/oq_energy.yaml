@@ -16,7 +16,10 @@ button:
     on_press:
       - lambda: |-
           id(oq_electrical_energy_cumulative).reset();
+          id(oq_heating_electrical_energy_cumulative).reset();
+          id(oq_cooling_electrical_energy_cumulative).reset();
           id(oq_heatpump_thermal_energy_cumulative).reset();
+          id(oq_heatpump_cooling_energy_cumulative).reset();
           id(oq_boiler_thermal_energy_cumulative).reset();
           id(oq_system_thermal_energy_cumulative).reset();
           ESP_LOGW("quatt", "Cumulative energy counters reset.");
@@ -38,11 +41,75 @@ sensor:
     web_server:
       sorting_group_id: oq_performance
 
+  # Heating electrical input energy (daily, kWh). Keeps COP heating-only when cooling is active.
+  - platform: total_daily_energy
+    id: oq_heating_electrical_energy_daily
+    name: "Heating Electrical Energy Daily"
+    power_id: oq_heating_power_input
+    time_id: oq_time
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.001
+    restore: true
+    web_server:
+      sorting_group_id: oq_performance
+
+  # Cooling electrical input energy (daily, kWh). Used for cooling-only EER.
+  - platform: total_daily_energy
+    id: oq_cooling_electrical_energy_daily
+    name: "Cooling Electrical Energy Daily"
+    power_id: oq_cooling_power_input
+    time_id: oq_time
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.001
+    restore: true
+    web_server:
+      sorting_group_id: oq_performance
+
   # Electrical input energy (cumulative, kWh).
   - platform: integration
     id: oq_electrical_energy_cumulative
     name: "Electrical Energy Cumulative"
     sensor: oq_total_power_input
+    time_unit: h
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.001
+    restore: true
+    web_server:
+      sorting_group_id: oq_performance
+
+  # Heating electrical input energy (cumulative, kWh).
+  - platform: integration
+    id: oq_heating_electrical_energy_cumulative
+    name: "Heating Electrical Energy Cumulative"
+    sensor: oq_heating_power_input
+    time_unit: h
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.001
+    restore: true
+    web_server:
+      sorting_group_id: oq_performance
+
+  # Cooling electrical input energy (cumulative, kWh).
+  - platform: integration
+    id: oq_cooling_electrical_energy_cumulative
+    name: "Cooling Electrical Energy Cumulative"
+    sensor: oq_cooling_power_input
     time_unit: h
     unit_of_measurement: "kWh"
     device_class: energy
@@ -84,7 +151,7 @@ sensor:
       sorting_group_id: oq_performance
     lambda: |-
       const float heat_kwh = id(oq_heatpump_thermal_energy_daily).state;
-      const float elec_kwh = id(oq_electrical_energy_daily).state;
+      const float elec_kwh = id(oq_heating_electrical_energy_daily).state;
 
       if (isnan(heat_kwh) || isnan(elec_kwh)) return NAN;
       if (elec_kwh < 0.01f) return NAN;
@@ -123,6 +190,38 @@ sensor:
     web_server:
       sorting_group_id: oq_performance
 
+  # HeatPump cooling energy (daily, kWh).
+  - platform: total_daily_energy
+    id: oq_heatpump_cooling_energy_daily
+    name: "HeatPump Cooling Energy Daily"
+    power_id: oq_total_cooling_power
+    time_id: oq_time
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.001
+    restore: true
+    web_server:
+      sorting_group_id: oq_performance
+
+  # HeatPump cooling energy (cumulative, kWh).
+  - platform: integration
+    id: oq_heatpump_cooling_energy_cumulative
+    name: "HeatPump Cooling Energy Cumulative"
+    sensor: oq_total_cooling_power
+    time_unit: h
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.001
+    restore: true
+    web_server:
+      sorting_group_id: oq_performance
+
   # HeatPump COP based on cumulative thermal/electrical energy (kWh/kWh).
   - platform: template
     id: oq_heatpump_cop_cumulative
@@ -135,12 +234,50 @@ sensor:
       sorting_group_id: oq_performance
     lambda: |-
       const float heat_kwh = id(oq_heatpump_thermal_energy_cumulative).state;
-      const float elec_kwh = id(oq_electrical_energy_cumulative).state;
+      const float elec_kwh = id(oq_heating_electrical_energy_cumulative).state;
 
       if (isnan(heat_kwh) || isnan(elec_kwh)) return NAN;
       if (elec_kwh < 0.01f) return NAN;
 
       return heat_kwh / elec_kwh;
+
+  # HeatPump EER based on daily cooling/electrical energy (kWh/kWh).
+  - platform: template
+    id: oq_heatpump_eer_daily
+    name: "HeatPump EER Daily"
+    icon: mdi:chart-bell-curve-cumulative
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_performance
+    lambda: |-
+      const float cooling_kwh = id(oq_heatpump_cooling_energy_daily).state;
+      const float elec_kwh = id(oq_cooling_electrical_energy_daily).state;
+
+      if (isnan(cooling_kwh) || isnan(elec_kwh)) return NAN;
+      if (elec_kwh < 0.01f) return NAN;
+
+      return cooling_kwh / elec_kwh;
+
+  # HeatPump EER based on cumulative cooling/electrical energy (kWh/kWh).
+  - platform: template
+    id: oq_heatpump_eer_cumulative
+    name: "HeatPump EER Cumulative"
+    icon: mdi:chart-bell-curve-cumulative
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_performance
+    lambda: |-
+      const float cooling_kwh = id(oq_heatpump_cooling_energy_cumulative).state;
+      const float elec_kwh = id(oq_cooling_electrical_energy_cumulative).state;
+
+      if (isnan(cooling_kwh) || isnan(elec_kwh)) return NAN;
+      if (elec_kwh < 0.01f) return NAN;
+
+      return cooling_kwh / elec_kwh;
 
   # Boiler thermal energy (daily, kWh).
   - platform: total_daily_energy

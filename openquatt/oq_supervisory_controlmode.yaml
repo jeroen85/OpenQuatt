@@ -30,7 +30,7 @@
 #   - CM1: holding (heat demand but insufficient flow)
 #   - CM2: heating (HP only)
 #   - CM3: heating (HP + boiler auxiliary heating)
-#   - CM5: passive cooling
+#   - CM5: cooling
 #   - CM98: frost
 #
 # Safety / fail-safe:
@@ -657,7 +657,7 @@ interval:
             if (strcmp(cm_id, "CM1") == 0) return std::string("CM1 - Preflow/Postflow");
             if (strcmp(cm_id, "CM2") == 0) return std::string("CM2 - Heating - Heat Pump Only");
             if (strcmp(cm_id, "CM3") == 0) return std::string("CM3 - Heating - Heat Pump + Boiler");
-            if (strcmp(cm_id, "CM5") == 0) return std::string("CM5 - Passive Cooling");
+            if (strcmp(cm_id, "CM5") == 0) return std::string("CM5 - Cooling");
             if (strcmp(cm_id, "CM98") == 0) return std::string("CM98 - Anti-Freeze Protection - Water Circulation");
             return std::string("Unknown");
           };

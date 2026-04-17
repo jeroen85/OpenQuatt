@@ -795,6 +795,33 @@ sensor:
       return mass_flow_kgps * water_cp_j_per_kgk * delta_t_k;
 
   - platform: template
+    id: ${hp_id}_cooling_power
+    name: "${prefix}Cooling Power"
+    icon: mdi:snowflake
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_performance
+    lambda: |-
+      // Cooling power follows measured HP working mode (1 = Cooling), not supervisory CM.
+      const float working_mode = id(${hp_id}_working_mode).state;
+      if (working_mode != 1.0f) return 0.0f;
+
+      const float t_in_c = id(${hp_id}_water_in_temp).state;
+      const float t_out_c = id(${hp_id}_water_out_temp).state;
+      const float flow_lph = id(flow_rate_selected).state;
+
+      if (isnan(t_in_c) || isnan(t_out_c) || isnan(flow_lph)) return 0.0f;
+
+      const float water_cp_j_per_kgk = ${oq_water_cp_j_per_kgk};  // J/(kg·K)
+      const float mass_flow_kgps = flow_lph / 3600.0f;            // kg/s (≈ L/h)
+      const float delta_t_k = t_in_c - t_out_c;                   // K, positive while cooling
+      return mass_flow_kgps * water_cp_j_per_kgk * delta_t_k;
+
+  - platform: template
     id: ${hp_id}_cop
     name: "${prefix}COP"
     icon: mdi:chart-bell-curve

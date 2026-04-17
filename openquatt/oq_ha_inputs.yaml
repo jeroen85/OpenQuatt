@@ -7,7 +7,7 @@
 #
 # Scope:
 #   - Fixed HA-backed temperature and thermostat proxy inputs
-#   - Fixed HA cooling proxy contracts used for passive-cooling safety
+#   - Fixed HA cooling proxy contracts used for cooling safety
 #
 # Notes:
 #   - Entity IDs are compile-time substitutions in oq_substitutions_common.yaml.
