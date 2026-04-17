@@ -491,6 +491,56 @@ body.oq-page-light {
   font-size: 0.85rem;
 }
 
+.oq-native-surface-shell {
+  margin-bottom: 16px;
+}
+
+.oq-native-surface-card {
+  padding-block: 18px;
+}
+
+.oq-native-surface-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 18px;
+  align-items: end;
+}
+
+.oq-native-surface-copy {
+  min-width: 0;
+}
+
+.oq-native-surface-copy h1 {
+  margin: 0;
+  color: var(--oq-helper-ink);
+  font-size: clamp(1.45rem, 2.5vw, 1.9rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.oq-native-surface-copy p {
+  margin: 10px 0 0;
+  color: var(--oq-helper-soft);
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.oq-native-surface-controls {
+  width: 100%;
+}
+
+.oq-native-surface-note {
+  margin: 14px 0 0;
+  color: var(--oq-helper-faint);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.oq-native-surface-note--error {
+  color: var(--oq-helper-accent-deep);
+  font-weight: 600;
+}
+
 .oq-helper-hub-dev-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -4795,7 +4845,8 @@ esp-app.oq-native-app.oq-native-app--collapsed {
 
 @media (max-width: 860px) {
   .oq-helper-head,
-  .oq-overview-head {
+  .oq-overview-head,
+  .oq-native-surface-head {
     grid-template-columns: 1fr;
   }
 
@@ -4806,6 +4857,10 @@ esp-app.oq-native-app.oq-native-app--collapsed {
 
   .oq-helper-head h1 {
     font-size: clamp(1.95rem, 7.5vw, 2.5rem);
+  }
+
+  .oq-native-surface-controls {
+    max-width: 100%;
   }
 
   .oq-helper-lead {
