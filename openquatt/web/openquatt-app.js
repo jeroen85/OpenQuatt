@@ -5192,6 +5192,8 @@
     const powerText = formatNumericState(powerValue, 0, "W");
     const heatText = formatNumericState(heatValue, 0, "W");
     const copText = formatNumericState(getEntityNumericValue(keys.cop), 1);
+    const heatLabel = mode === "Koelen" ? "Koelafgifte" : "Warmteafgifte";
+    const heatDescription = mode === "Koelen" ? "afgegeven koeling" : "afgegeven warmte";
     const fanRpmValue = getEntityNumericValue(keys.fanSpeed);
     const fanRunning = !Number.isNaN(fanRpmValue) && fanRpmValue > 0;
     const fanRpmText = Number.isNaN(fanRpmValue)
@@ -5259,6 +5261,8 @@
       fourWayPositionText,
       powerText,
       heatText,
+      heatLabel,
+      heatDescription,
       copText,
       fanRpmText,
       hotgasValveHeat,
@@ -5789,7 +5793,7 @@
               <strong data-oq-bind="footer-power">${escapeHtml(model.powerText)}</strong>
             </div>
             <div class="oq-hp-tech-footer-item">
-              <span aria-label="Warmteafgifte">Warmte<br>afgifte</span>
+              <span aria-label="${escapeHtml(model.heatLabel)}" data-oq-bind="footer-heat-label">${model.heatLabel === "Koelafgifte" ? "Koel<br>afgifte" : "Warmte<br>afgifte"}</span>
               <strong data-oq-bind="footer-heat">${escapeHtml(model.heatText)}</strong>
             </div>
             <div class="oq-hp-tech-footer-item">
@@ -5918,7 +5922,7 @@
         </div>
         <div class="oq-overview-hp-stats">
           ${renderOverviewStatCard(keys.power, "Stroomverbruik", "blue", "elektrisch verbruik")}
-          ${renderOverviewStatCard(keys.heat, "Warmteafgifte", "orange", "afgegeven warmte")}
+          ${renderOverviewStatCard(keys.heat, schematicModel.heatLabel, "orange", schematicModel.heatDescription)}
           ${renderOverviewStatCard(keys.cop, "COP", "green", "actueel")}
         </div>
         <div class="oq-overview-hp-meta">
@@ -6256,6 +6260,14 @@
     setTextContent(board, '[data-oq-bind="return-value"]', model.waterInText);
     setTextContent(board, '[data-oq-bind="footer-mode"]', model.mode);
     setTextContent(board, '[data-oq-bind="footer-power"]', model.powerText);
+    const footerHeatLabel = board.querySelector('[data-oq-bind="footer-heat-label"]');
+    if (footerHeatLabel) {
+      footerHeatLabel.setAttribute("aria-label", model.heatLabel);
+      const nextHeatLabelMarkup = model.heatLabel === "Koelafgifte" ? "Koel<br>afgifte" : "Warmte<br>afgifte";
+      if (footerHeatLabel.innerHTML !== nextHeatLabelMarkup) {
+        footerHeatLabel.innerHTML = nextHeatLabelMarkup;
+      }
+    }
     setTextContent(board, '[data-oq-bind="footer-heat"]', model.heatText);
     setTextContent(board, '[data-oq-bind="footer-cop"]', model.copText);
     setTextContent(board, '[data-oq-bind="fan-speed-value"]', model.fanRpmText);
