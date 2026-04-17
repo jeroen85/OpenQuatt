@@ -3861,7 +3861,7 @@ body.oq-page-light {
   text-align: right;
 }
 
-.oq-hp-schematic-board.is-running .oq-hp-schematic-fan-blades {
+.oq-hp-schematic-board.is-fan-running .oq-hp-schematic-fan-blades {
   animation: oq-hp-spin 3.2s linear infinite;
 }
 

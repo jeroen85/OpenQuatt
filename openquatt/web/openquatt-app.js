@@ -354,9 +354,13 @@
     "hp1Power",
     "hp1Heat",
     "hp1Cop",
+    "hp1Compressor",
     "hp1Freq",
+    "hp1FanSpeed",
     "hp1Flow",
     "hp1EvaporatorCoilTemp",
+    "hp1InnerCoilTemp",
+    "hp1OutsideTemp",
     "hp1CondenserPressure",
     "hp1DischargeTemp",
     "hp1EvaporatorPressure",
@@ -373,9 +377,13 @@
     "hp2Power",
     "hp2Heat",
     "hp2Cop",
+    "hp2Compressor",
     "hp2Freq",
+    "hp2FanSpeed",
     "hp2Flow",
     "hp2EvaporatorCoilTemp",
+    "hp2InnerCoilTemp",
+    "hp2OutsideTemp",
     "hp2CondenserPressure",
     "hp2DischargeTemp",
     "hp2EvaporatorPressure",
@@ -857,11 +865,15 @@
       return;
     }
 
-    const boards = state.root.querySelectorAll(".oq-hp-schematic-board.is-running");
-    boards.forEach((board) => {
+    const runningBoards = state.root.querySelectorAll(".oq-hp-schematic-board.is-running");
+    runningBoards.forEach((board) => {
       board.querySelectorAll(".oq-hp-tech-pipe-flow").forEach((node) => {
         state.motionTargets.pipeFlows.push(node);
       });
+    });
+
+    const fanBoards = state.root.querySelectorAll(".oq-hp-schematic-board.is-fan-running");
+    fanBoards.forEach((board) => {
       board.querySelectorAll(".oq-hp-tech-fan-blades").forEach((node) => {
         state.motionTargets.fanBlades.push(node);
       });
@@ -4292,7 +4304,7 @@
 
   function isCoolingOverviewActive() {
     const modeLabel = getEntityStateText("controlModeLabel", "").toLowerCase();
-    if (modeLabel.includes("cm5") || modeLabel.includes("cooling")) {
+    if (modeLabel.includes("cm5") || modeLabel.includes("cooling") || modeLabel.includes("koeling")) {
       return true;
     }
     return isEntityActive("coolingRequestActive") || isEntityActive("coolingEnableSelected");
@@ -4300,7 +4312,7 @@
 
   function getOverviewStrategyLabel() {
     if (isCoolingOverviewActive()) {
-      return "Cooling";
+      return "Koeling";
     }
     return isCurveMode() ? "Stooklijn" : "Power House";
   }
@@ -4406,7 +4418,7 @@
       statusTitle = "Koeling gereed";
       statusCopy = "Koeling is toegestaan, maar wacht nog op actieve koelvraag vanuit de kamerregeling.";
     } else if (!Number.isNaN(rawDemand) && rawDemand <= 0.0) {
-      statusTitle = "Houdt temperatuur vast";
+      statusTitle = "Houdt doel vast";
       statusCopy = "De koelvraag loopt nog, maar de compressor hoeft nu niet harder te werken.";
     } else if (!Number.isNaN(supplyError) && supplyError > 1.0) {
       statusTitle = "Trekt aanvoer omlaag";
@@ -4491,7 +4503,7 @@
       <section class="oq-overview-system">
         <div class="oq-overview-system-copy">
           <h3>Koelregeling</h3>
-          <p>Cooling laat zien op welke aanvoertemperatuur de regeling nu mikt en hoe dicht die bij de veilige grens zit.</p>
+          <p>Koeling laat zien op welke aanvoertemperatuur de regeling nu mikt en hoe dicht die bij de veilige grens zit.</p>
         </div>
         <div class="oq-overview-hero">
           <div class="oq-overview-hero-main">
@@ -4503,7 +4515,7 @@
         <div class="oq-overview-metrics oq-overview-metrics--three-column">
           ${renderOverviewMetricCard("Actuele aanvoertemperatuur", model.supplyText, "orange", "Wat nu door het systeem loopt.")}
           ${renderOverviewMetricCard("Veilige aanvoergrens", model.safeFloorText, "blue", "Dauwpunt plus veiligheidsmarge.")}
-          ${renderOverviewMetricCard("Cooling demand", model.demandText, "sky", "De huidige koelvraag van de regelaar.")}
+          ${renderOverviewMetricCard("Koelvraag", model.demandText, "sky", "De huidige koelvraag van de regelaar.")}
         </div>
       </section>
     `;
@@ -4567,7 +4579,7 @@
         ? "Koelvraag actief"
         : rawDemand <= 0
           ? "Koelvraag actief, compressor rust"
-          : `Cooling demand ${Math.round(rawDemand)}`;
+          : `Koelvraag ${Math.round(rawDemand)}`;
       return {
         label: "Koelvraag",
         value,
@@ -5181,6 +5193,7 @@
     const heatText = formatNumericState(heatValue, 0, "W");
     const copText = formatNumericState(getEntityNumericValue(keys.cop), 1);
     const fanRpmValue = getEntityNumericValue(keys.fanSpeed);
+    const fanRunning = !Number.isNaN(fanRpmValue) && fanRpmValue > 0;
     const fanRpmText = Number.isNaN(fanRpmValue)
       ? "—"
       : `${Math.round(fanRpmValue)} rpm`;
@@ -5210,6 +5223,7 @@
       "oq-hp-schematic-board",
       `oq-hp-schematic-board--${accent}`,
       animated ? "is-running" : "",
+      fanRunning ? "is-fan-running" : "",
       reverseCycle ? "is-reversed" : "",
       defrostActive ? "is-defrost" : "",
     ].filter(Boolean).join(" ");
