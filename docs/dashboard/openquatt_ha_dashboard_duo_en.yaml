@@ -1138,6 +1138,8 @@ views:
           - type: entities
             show_header_toggle: false
             entities:
+              - entity: sensor.openquatt_water_supply_temp_selected
+                name: Water supply temperature
               - entity: sensor.openquatt_cooling_supply_target
                 name: Cooling supply target
               - entity: sensor.openquatt_cooling_supply_error
