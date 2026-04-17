@@ -4579,7 +4579,7 @@
         ? "Koelvraag actief"
         : rawDemand <= 0
           ? "Koelvraag actief, compressor rust"
-          : `Koelvraag ${Math.round(rawDemand)}`;
+          : "Koelvraag actief";
       return {
         label: "Koelvraag",
         value,
