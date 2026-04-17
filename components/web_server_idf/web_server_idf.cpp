@@ -32,7 +32,7 @@
 
 namespace esphome::web_server_idf {
 
-static constexpr size_t OQ_HTTPD_STACK_SIZE = 8192;
+static constexpr size_t OQ_HTTPD_STACK_SIZE = 6144;
 
 #ifndef HTTPD_409
 #define HTTPD_409 "409 Conflict"
