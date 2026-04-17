@@ -82,7 +82,7 @@ number:
     initial_value: 18.0
     entity_category: config
     web_server:
-      sorting_group_id: oq_control
+      sorting_group_id: oq_cooling
 
   - platform: template
     id: cooling_demand_max_f
@@ -98,7 +98,7 @@ number:
     initial_value: 4
     entity_category: config
     web_server:
-      sorting_group_id: oq_control
+      sorting_group_id: oq_cooling
 
   - platform: template
     id: cooling_pid_kp
@@ -114,7 +114,7 @@ number:
     initial_value: 3.0
     entity_category: config
     web_server:
-      sorting_group_id: oq_tuning_heat
+      sorting_group_id: oq_cooling
 
   - platform: template
     id: cooling_pid_ki
@@ -130,7 +130,7 @@ number:
     initial_value: 0.12
     entity_category: config
     web_server:
-      sorting_group_id: oq_tuning_heat
+      sorting_group_id: oq_cooling
 
   - platform: template
     id: cooling_pid_kd
@@ -146,7 +146,7 @@ number:
     initial_value: 0.0
     entity_category: config
     web_server:
-      sorting_group_id: oq_tuning_heat
+      sorting_group_id: oq_cooling
 
 sensor:
   - platform: template
@@ -166,7 +166,7 @@ sensor:
       }
       return target_c;
     web_server:
-      sorting_group_id: oq_temperatures
+      sorting_group_id: oq_cooling
 
   - platform: template
     id: cooling_supply_error
@@ -182,7 +182,7 @@ sensor:
       // Positive error means the supply is warmer than target, so more cooling may be requested.
       return id(oq_system_supply_temp).state - id(cooling_supply_target).state;
     web_server:
-      sorting_group_id: oq_temperatures
+      sorting_group_id: oq_cooling
 
   - platform: template
     id: oq_cooling_demand_raw_sensor
@@ -193,7 +193,7 @@ sensor:
     accuracy_decimals: 0
     update_interval: 5s
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_cooling
     lambda: |-
       return (float) id(oq_cooling_demand_raw);
 

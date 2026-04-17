@@ -403,7 +403,7 @@ binary_sensor:
     device_class: problem
     entity_category: diagnostic
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_system_diagnostics
 
   - platform: template
     id: oq_time_valid
@@ -413,7 +413,7 @@ binary_sensor:
     device_class: connectivity
     entity_category: diagnostic
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_system_diagnostics
 
 text_sensor:
   - platform: template
@@ -421,7 +421,7 @@ text_sensor:
     name: "Control Mode"
     icon: mdi:state-machine
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_system_diagnostics
 
   - platform: template
     id: oq_control_mode_label
@@ -440,7 +440,7 @@ text_sensor:
     update_interval: never
     entity_category: diagnostic
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_system_diagnostics
 
   - platform: template
     id: oq_silent_window_hhmm
@@ -450,7 +450,7 @@ text_sensor:
     update_interval: never
     entity_category: diagnostic
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_system_diagnostics
 
   - platform: template
     id: oq_silent_status
@@ -460,7 +460,7 @@ text_sensor:
     update_interval: never
     entity_category: diagnostic
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_system_diagnostics
 
   # DEBUG-RUNTIME START: Power House low-load diagnostics
   - platform: template
@@ -471,7 +471,7 @@ text_sensor:
     entity_category: diagnostic
     disabled_by_default: true
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_system_diagnostics
     lambda: |-
       // Read the active threshold set from diagnostics.
       const float pmin = id(oq_low_load_pmin_dyn_w);

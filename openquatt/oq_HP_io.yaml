@@ -192,7 +192,7 @@ select:
       - "L9 (H85/C71)"
       - "L10 (H90/C74)"
     web_server:
-      sorting_group_id: oq_advanced_levels_${hp_id}
+      sorting_group_id: oq_advanced_hp_levels
       sorting_weight: 41
 
   - platform: template
@@ -215,7 +215,7 @@ select:
       - "L9 (H85/C71)"
       - "L10 (H90/C74)"
     web_server:
-      sorting_group_id: oq_advanced_levels_${hp_id}
+      sorting_group_id: oq_advanced_hp_levels
       sorting_weight: 42
 
 # ----------------------------
@@ -958,7 +958,7 @@ binary_sensor:
     entity_category: diagnostic
     skip_updates: ${oq_skip_30s}
     web_server:
-      sorting_group_id: oq_diagnostics_hp
+      sorting_group_id: oq_hp_diagnostics
 
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
@@ -973,7 +973,7 @@ binary_sensor:
     entity_category: diagnostic
     skip_updates: ${oq_skip_30s}
     web_server:
-      sorting_group_id: oq_diagnostics_hp
+      sorting_group_id: oq_hp_diagnostics
 
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
@@ -988,7 +988,7 @@ binary_sensor:
     entity_category: diagnostic
     skip_updates: ${oq_skip_30s}
     web_server:
-      sorting_group_id: oq_diagnostics_hp
+      sorting_group_id: oq_hp_diagnostics
 
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
@@ -1022,7 +1022,7 @@ binary_sensor:
       }
       return (static_cast<uint16_t>(lroundf(raw)) & 0x0008u) != 0;
     web_server:
-      sorting_group_id: oq_diagnostics_hp
+      sorting_group_id: oq_hp_diagnostics
 
   - platform: template
     id: ${hp_id}_ot_fault_active
@@ -1107,7 +1107,7 @@ text_sensor:
     icon: mdi:speedometer-slow
     update_interval: 10s
     web_server:
-      sorting_group_id: oq_advanced_levels_${hp_id}
+      sorting_group_id: oq_advanced_hp_levels
       sorting_weight: 43
     lambda: |-
       // Summarize the two exclusion selectors into one compact diagnostic label.
@@ -1135,7 +1135,7 @@ text_sensor:
     entity_category: diagnostic
     update_interval: 5s
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_hp_diagnostics
     icon: mdi:alert-circle-outline
     lambda: |-
       std::string s;
@@ -1225,4 +1225,4 @@ text_sensor:
       return std::string(buf);
     update_interval: never
     web_server:
-      sorting_group_id: oq_diagnostics_hp
+      sorting_group_id: oq_hp_diagnostics

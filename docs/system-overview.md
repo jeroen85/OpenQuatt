@@ -286,11 +286,12 @@ Compile-time profile selection is done by choosing the firmware entrypoint:
 
 `oq_webserver.yaml` defines stable sorting groups used across packages:
 
-- Overview, Control, Temperatures, Flow & Pump, Performance, Boiler, CIC
-- HP1, HP2
-- Tuning groups
-- Diagnostics groups
-- Diagnostics groups surfaced in the dedicated dashboard tab
+- Quick Start and Overview
+- System Control, Heating Strategy, Heating Curve, Power House, Cooling
+- Sensor Selection, OpenTherm, CIC Feed, HA Inputs
+- Temperatures, Flow & Pump, Flow Tuning, Performance, Boiler
+- HP1, HP2, Advanced HP Levels
+- System Diagnostics and HP Diagnostics
 
 This keeps ESPHome web UI and Home Assistant mapping coherent.
 

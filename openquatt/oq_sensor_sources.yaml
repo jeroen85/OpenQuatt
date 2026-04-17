@@ -81,7 +81,7 @@ select:
       - HA input
     initial_option: Local
     web_server:
-      sorting_group_id: oq_cic
+      sorting_group_id: oq_sensor_selection
 
   - platform: template
     name: "Flow Source"
@@ -95,7 +95,7 @@ select:
       - CIC
     initial_option: Outdoor unit
     web_server:
-      sorting_group_id: oq_cic
+      sorting_group_id: oq_sensor_selection
 
   - platform: template
     name: "Outdoor Unit Flow Mode"
@@ -111,7 +111,7 @@ select:
       - Local aggregate HP1/HP2
     initial_option: Local aggregate HP1/HP2
     web_server:
-      sorting_group_id: oq_cic
+      sorting_group_id: oq_sensor_selection
 
   - platform: template
     name: "Outside Temperature Source"
@@ -126,7 +126,7 @@ select:
       - HA input
     initial_option: Auto
     web_server:
-      sorting_group_id: oq_cic
+      sorting_group_id: oq_sensor_selection
 
   - platform: template
     name: "Room Temperature Source"
@@ -141,7 +141,7 @@ select:
       - HA input
     initial_option: CIC
     web_server:
-      sorting_group_id: oq_cic
+      sorting_group_id: oq_sensor_selection
 
   - platform: template
     name: "Room Setpoint Source"
@@ -156,7 +156,7 @@ select:
       - HA input
     initial_option: CIC
     web_server:
-      sorting_group_id: oq_cic
+      sorting_group_id: oq_sensor_selection
 
   - platform: template
     name: "Cooling Enable Source"
@@ -171,7 +171,7 @@ select:
       - CIC or HA input
     initial_option: CIC or HA input
     web_server:
-      sorting_group_id: oq_cic
+      sorting_group_id: oq_sensor_selection
 
 binary_sensor:
   - platform: template
@@ -189,7 +189,7 @@ binary_sensor:
       if (source == "CIC or HA input") return cic_enabled || ha_enabled;
       return false;
     web_server:
-      sorting_group_id: oq_cic
+      sorting_group_id: oq_sensor_selection
 
 text_sensor:
   - platform: template
@@ -202,7 +202,7 @@ text_sensor:
       return {id(room_temp_source).current_option().c_str()};
     entity_category: diagnostic
     web_server:
-      sorting_group_id: oq_cic
+      sorting_group_id: oq_sensor_selection
 
   - platform: template
     id: oq_room_setpoint_effective_source
@@ -214,7 +214,7 @@ text_sensor:
       return {id(room_setpoint_source).current_option().c_str()};
     entity_category: diagnostic
     web_server:
-      sorting_group_id: oq_cic
+      sorting_group_id: oq_sensor_selection
 
   - platform: template
     id: oq_cooling_enable_effective_source
@@ -240,7 +240,7 @@ text_sensor:
       }
       return {"Unknown"};
     web_server:
-      sorting_group_id: oq_cic
+      sorting_group_id: oq_sensor_selection
 
   - platform: template
     id: oq_selected_input_hold_active
@@ -268,7 +268,7 @@ text_sensor:
       if (active.empty()) active = "None";
       return {active};
     web_server:
-      sorting_group_id: oq_cic
+      sorting_group_id: oq_sensor_selection
 
 sensor:
   - platform: template

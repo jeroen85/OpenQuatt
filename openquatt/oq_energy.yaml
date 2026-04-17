@@ -12,7 +12,7 @@ button:
     name: "Reset Cumulative Energy Counters"
     icon: mdi:restart
     web_server:
-      sorting_group_id: oq_tuning_heat
+      sorting_group_id: oq_performance
     on_press:
       - lambda: |-
           id(oq_electrical_energy_cumulative).reset();

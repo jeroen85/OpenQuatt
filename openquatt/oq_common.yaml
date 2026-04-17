@@ -168,7 +168,7 @@ select:
     id: oq_firmware_update_channel
     icon: mdi:source-branch
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_system_diagnostics
     entity_category: config
     optimistic: true
     restore_value: true
@@ -205,7 +205,7 @@ select:
     disabled_by_default: true
     icon: mdi:lan
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_system_diagnostics
     entity_category: diagnostic
     optimistic: true
     restore_value: true
@@ -230,7 +230,7 @@ select:
     disabled_by_default: true
     icon: mdi:lan
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_system_diagnostics
     entity_category: diagnostic
     optimistic: true
     restore_value: true
@@ -258,14 +258,14 @@ button:
     icon: mdi:restart
     id: restart_switch
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_system_diagnostics
 
   - platform: safe_mode
     name: Safe mode
     icon: mdi:shield-alert
     id: safe_mode_button
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_system_diagnostics
 
   - platform: template
     id: oq_check_firmware_updates
@@ -273,7 +273,7 @@ button:
     icon: mdi:update
     entity_category: diagnostic
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_system_diagnostics
     on_press:
       - if:
           condition:
@@ -298,7 +298,7 @@ binary_sensor:
     icon: mdi:check-circle-outline
     entity_category: diagnostic
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_system_diagnostics
 
 sensor:
   - platform: template
@@ -312,7 +312,7 @@ sensor:
     lambda: |-
       return id(oq_ota_progress_pct);
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_system_diagnostics
 
   - platform: uptime
     name: Uptime
@@ -324,7 +324,7 @@ sensor:
     unit_of_measurement: s
     entity_category: diagnostic
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_system_diagnostics
 
   - platform: internal_temperature
     name: ESP Internal Temperature
@@ -332,7 +332,7 @@ sensor:
     update_interval: 60s
     entity_category: diagnostic
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_system_diagnostics
 
   - platform: wifi_signal
     name: WiFi Signal
@@ -340,7 +340,7 @@ sensor:
     update_interval: 300s
     entity_category: diagnostic
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_system_diagnostics
 
 text_sensor:
   - platform: wifi_info
@@ -349,13 +349,13 @@ text_sensor:
       icon: mdi:ip-network-outline
       entity_category: diagnostic
       web_server:
-        sorting_group_id: oq_diagnostics
+        sorting_group_id: oq_system_diagnostics
     ssid:
       name: WiFi SSID
       icon: mdi:wifi
       entity_category: diagnostic
       web_server:
-        sorting_group_id: oq_diagnostics
+        sorting_group_id: oq_system_diagnostics
   - platform: template
     id: oq_firmware_update_status
     name: Firmware Update Status
@@ -381,7 +381,7 @@ text_sensor:
           return {"Idle"};
       }
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_system_diagnostics
   - platform: template
     id: oq_project_version_text
     name: OpenQuatt Version
@@ -391,7 +391,7 @@ text_sensor:
     lambda: |-
       return {"${project_version}"};
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_system_diagnostics
   - platform: template
     id: oq_release_channel_text
     name: OpenQuatt Release Channel
@@ -401,14 +401,14 @@ text_sensor:
     lambda: |-
       return {"${release_channel}"};
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_system_diagnostics
   - platform: version
     name: ESPHome Version
     icon: mdi:information-outline
     hide_timestamp: true
     entity_category: diagnostic
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_system_diagnostics
   - platform: template
     id: uptime_readable_text
     name: Uptime
@@ -440,7 +440,7 @@ text_sensor:
       }
       return {buffer};
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_system_diagnostics
 
 update:
   - platform: http_request
@@ -451,4 +451,4 @@ update:
     icon: mdi:update
     entity_category: diagnostic
     web_server:
-      sorting_group_id: oq_diagnostics
+      sorting_group_id: oq_system_diagnostics
