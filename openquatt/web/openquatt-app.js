@@ -98,6 +98,15 @@
     projectVersionText: { domain: "text_sensor", name: "OpenQuatt Version", optional: true },
     releaseChannelText: { domain: "text_sensor", name: "OpenQuatt Release Channel", optional: true },
     strategy: { domain: "select", name: "Heating Control Mode" },
+    coolingEnableSelected: { domain: "binary_sensor", name: "Cooling Enable (Selected)", optional: true },
+    coolingRequestActive: { domain: "binary_sensor", name: "Cooling Request Active", optional: true },
+    coolingPermitted: { domain: "binary_sensor", name: "Cooling Permitted", optional: true },
+    coolingBlockReason: { domain: "text_sensor", name: "Cooling Block Reason", optional: true },
+    coolingDewPointSelected: { domain: "sensor", name: "Cooling Dew Point (Selected)", optional: true },
+    coolingMinimumSafeSupplyTemp: { domain: "sensor", name: "Cooling Minimum Safe Supply Temp", optional: true },
+    coolingSupplyTarget: { domain: "sensor", name: "Cooling Supply Target", optional: true },
+    coolingSupplyError: { domain: "sensor", name: "Cooling Supply Error", optional: true },
+    coolingDemandRaw: { domain: "sensor", name: "Cooling Demand (raw)", optional: true },
     flowControlMode: { domain: "select", name: "Flow Control Mode" },
     flowSetpoint: { domain: "number", name: "Flow Setpoint" },
     manualIpwm: { domain: "number", name: "Manual iPWM" },
@@ -305,6 +314,15 @@
   const HEADER_ENTITY_KEYS = ["uptimeReadable", "ipAddress", "projectVersionText", "releaseChannelText"];
   const OVERVIEW_KEYS = [
     "strategy",
+    "coolingEnableSelected",
+    "coolingRequestActive",
+    "coolingPermitted",
+    "coolingBlockReason",
+    "coolingDewPointSelected",
+    "coolingMinimumSafeSupplyTemp",
+    "coolingSupplyTarget",
+    "coolingSupplyError",
+    "coolingDemandRaw",
     "controlModeLabel",
     "flowMode",
     "totalPower",
@@ -4272,6 +4290,21 @@
     return "";
   }
 
+  function isCoolingOverviewActive() {
+    const modeLabel = getEntityStateText("controlModeLabel", "").toLowerCase();
+    if (modeLabel.includes("cm5") || modeLabel.includes("cooling")) {
+      return true;
+    }
+    return isEntityActive("coolingRequestActive") || isEntityActive("coolingEnableSelected");
+  }
+
+  function getOverviewStrategyLabel() {
+    if (isCoolingOverviewActive()) {
+      return "Cooling";
+    }
+    return isCurveMode() ? "Stooklijn" : "Power House";
+  }
+
   function getPowerHouseRequestedPower() {
     const keys = ["phouseReq", "strategyRequestedPower"];
     for (const key of keys) {
@@ -4352,6 +4385,55 @@
     };
   }
 
+  function getCoolingOverviewModel() {
+    const target = getEntityNumericValue("coolingSupplyTarget");
+    const supply = getEntityNumericValue("supplyTemp");
+    const safeFloor = getEntityNumericValue("coolingMinimumSafeSupplyTemp");
+    const dewPoint = getEntityNumericValue("coolingDewPointSelected");
+    const supplyError = getEntityNumericValue("coolingSupplyError");
+    const rawDemand = getEntityNumericValue("coolingDemandRaw");
+    const permitted = isEntityActive("coolingPermitted");
+    const requestActive = isEntityActive("coolingRequestActive");
+    const blockReason = getEntityStateText("coolingBlockReason", "Onbekend");
+
+    let statusTitle = "Wacht op koelvraag";
+    let statusCopy = "Zodra er koelvraag is, zie je hier hoe de regeling de aanvoer richting het koeldoel stuurt.";
+
+    if (!permitted) {
+      statusTitle = "Koeling geblokkeerd";
+      statusCopy = `Blokkade: ${blockReason}.`;
+    } else if (!requestActive) {
+      statusTitle = "Koeling gereed";
+      statusCopy = "Koeling is toegestaan, maar wacht nog op actieve koelvraag vanuit de kamerregeling.";
+    } else if (!Number.isNaN(rawDemand) && rawDemand <= 0.0) {
+      statusTitle = "Houdt temperatuur vast";
+      statusCopy = "De koelvraag loopt nog, maar de compressor hoeft nu niet harder te werken.";
+    } else if (!Number.isNaN(supplyError) && supplyError > 1.0) {
+      statusTitle = "Trekt aanvoer omlaag";
+      statusCopy = "De actuele aanvoertemperatuur ligt nog ruim boven het koeldoel.";
+    } else if (!Number.isNaN(supplyError) && supplyError > 0.2) {
+      statusTitle = "Benadert koeldoel";
+      statusCopy = "De regeling koelt nog door, maar zit al dicht bij de gewenste aanvoertemperatuur.";
+    } else if (!Number.isNaN(supplyError)) {
+      statusTitle = "Koelt rustig door";
+      statusCopy = "De aanvoertemperatuur zit dicht bij het koeldoel en de regeling werkt nu op laag pitje.";
+    }
+
+    return {
+      targetText: formatOverviewStatValue("coolingSupplyTarget"),
+      supplyText: formatOverviewStatValue("supplyTemp"),
+      safeFloorText: formatOverviewStatValue("coolingMinimumSafeSupplyTemp"),
+      dewPointText: formatOverviewStatValue("coolingDewPointSelected"),
+      demandText: formatOverviewStatValue("coolingDemandRaw"),
+      deltaText: formatSignedTemperature(supplyError),
+      statusTitle,
+      statusCopy,
+      permitted,
+      requestActive,
+      blockReason,
+    };
+  }
+
   function renderPowerHouseOverviewCard() {
     const model = getPowerHouseOverviewModel();
 
@@ -4402,11 +4484,54 @@
     `;
   }
 
+  function renderCoolingOverviewCard() {
+    const model = getCoolingOverviewModel();
+
+    return `
+      <section class="oq-overview-system">
+        <div class="oq-overview-system-copy">
+          <h3>Koelregeling</h3>
+          <p>Cooling laat zien op welke aanvoertemperatuur de regeling nu mikt en hoe dicht die bij de veilige grens zit.</p>
+        </div>
+        <div class="oq-overview-hero">
+          <div class="oq-overview-hero-main">
+            <span class="oq-overview-focus-label">Koeldoel</span>
+            <strong>${escapeHtml(model.targetText)}</strong>
+            <p>${escapeHtml(model.statusCopy)}</p>
+          </div>
+        </div>
+        <div class="oq-overview-metrics oq-overview-metrics--three-column">
+          ${renderOverviewMetricCard("Actuele aanvoertemperatuur", model.supplyText, "orange", "Wat nu door het systeem loopt.")}
+          ${renderOverviewMetricCard("Veilige aanvoergrens", model.safeFloorText, "blue", "Dauwpunt plus veiligheidsmarge.")}
+          ${renderOverviewMetricCard("Cooling demand", model.demandText, "sky", "De huidige koelvraag van de regelaar.")}
+        </div>
+      </section>
+    `;
+  }
+
   function renderOverviewStrategyPanel() {
+    if (isCoolingOverviewActive()) {
+      return renderCoolingOverviewCard();
+    }
     return isCurveMode() ? renderCurveOverviewCard() : renderPowerHouseOverviewCard();
   }
 
   function getOverviewPrimarySignal() {
+    if (isCoolingOverviewActive()) {
+      const model = getCoolingOverviewModel();
+      const tone = !model.permitted
+        ? "orange"
+        : model.statusTitle === "Koelt rustig door" || model.statusTitle === "Houdt temperatuur vast"
+          ? "green"
+          : model.statusTitle === "Koeling gereed"
+            ? "neutral"
+            : "sky";
+      return {
+        label: "Regeling nu",
+        value: model.statusTitle,
+        tone,
+      };
+    }
     if (isSystemInStandby()) {
       return {
         label: "Regeling nu",
@@ -4429,6 +4554,26 @@
   }
 
   function getOverviewDemandSignal() {
+    if (isCoolingOverviewActive()) {
+      if (!isEntityActive("coolingRequestActive")) {
+        return {
+          label: "Koelvraag",
+          value: "Geen koelvraag",
+          tone: "neutral",
+        };
+      }
+      const rawDemand = getEntityNumericValue("coolingDemandRaw");
+      const value = Number.isNaN(rawDemand)
+        ? "Koelvraag actief"
+        : rawDemand <= 0
+          ? "Koelvraag actief, compressor rust"
+          : `Cooling demand ${Math.round(rawDemand)}`;
+      return {
+        label: "Koelvraag",
+        value,
+        tone: rawDemand > 0 ? "sky" : "neutral",
+      };
+    }
     if (isSystemInStandby()) {
       return {
         label: "Warmtevraag",
@@ -4450,6 +4595,27 @@
   }
 
   function getOverviewSystemSignal() {
+    if (isCoolingOverviewActive()) {
+      if (!isEntityActive("coolingPermitted")) {
+        return {
+          label: "Systeem",
+          value: getEntityStateText("coolingBlockReason", "Koeling geblokkeerd"),
+          tone: "orange",
+        };
+      }
+      if (isEntityActive("silentActive")) {
+        return {
+          label: "Systeem",
+          value: "Stille uren actief",
+          tone: "neutral",
+        };
+      }
+      return {
+        label: "Systeem",
+        value: "Koeling toegestaan",
+        tone: "green",
+      };
+    }
     if (isFirmwareUpdateAvailable()) {
       return {
         label: "Systeem",
@@ -4500,6 +4666,50 @@
           </article>
         `).join("")}
       </section>
+    `;
+  }
+
+  function renderOverviewTopCards() {
+    const heatLabel = isCoolingOverviewActive() ? "Koelafgifte" : "Warmteafgifte";
+    return `
+      ${renderOverviewStatCard("totalPower", "Stroomverbruik", "blue", "hele systeem")}
+      ${renderOverviewStatCard("totalHeat", heatLabel, "orange", "thermisch vermogen")}
+      ${renderOverviewStatCard("totalCop", "COP", "green", "rendement")}
+      ${renderOverviewStatCard("flowSelected", "Flow", "sky", "watercircuit")}
+    `;
+  }
+
+  function renderOverviewTempsSection() {
+    const outsideTempKey = getOverviewOutsideTempKey();
+    const returnTempKey = getOverviewReturnTempKey();
+    if (isCoolingOverviewActive()) {
+      return `
+        <div class="oq-overview-system-copy">
+          <h3>Koeltemperaturen</h3>
+          <p>De belangrijkste temperaturen voor koeldoel, dauwpuntveiligheid en comfort.</p>
+        </div>
+        <div class="oq-overview-temps-list">
+          ${renderTempRow("Kamertemperatuur", "roomTemp")}
+          ${renderTempRow("Kamer setpoint", "roomSetpoint")}
+          ${renderTempRow("Aanvoertemperatuur", "supplyTemp")}
+          ${renderTempRow("Koeldoel", "coolingSupplyTarget")}
+          ${renderTempRow("Veilige aanvoergrens", "coolingMinimumSafeSupplyTemp")}
+          ${renderTempRow("Dauwpunt", "coolingDewPointSelected")}
+        </div>
+      `;
+    }
+    return `
+      <div class="oq-overview-system-copy">
+        <h3>Temperaturen</h3>
+        <p>De belangrijkste temperaturen voor comfort en regeling.</p>
+      </div>
+      <div class="oq-overview-temps-list">
+        ${renderTempRow("Kamertemperatuur", "roomTemp")}
+        ${renderTempRow("Kamer setpoint", "roomSetpoint")}
+        ${renderTempRow("Aanvoertemperatuur", "supplyTemp")}
+        ${returnTempKey ? renderTempRow("Retourtemperatuur", returnTempKey) : ""}
+        ${outsideTempKey ? renderTempRow("Buitentemperatuur", outsideTempKey) : renderTempRow("Buitentemperatuur", "", "—")}
+      </div>
     `;
   }
 
@@ -5822,11 +6032,9 @@
   }
 
   function renderOverviewView() {
-    const strategyLabel = isCurveMode() ? "Stooklijn" : "Power House";
+    const strategyLabel = getOverviewStrategyLabel();
     const heatPumpPanels = getHeatPumpPanels();
     const hpLayoutMode = getEffectiveHpLayoutMode(heatPumpPanels);
-    const outsideTempKey = getOverviewOutsideTempKey();
-    const returnTempKey = getOverviewReturnTempKey();
 
     return `
       <section class="oq-helper-panel oq-helper-panel--flush">
@@ -5840,31 +6048,18 @@
             <div class="oq-overview-head-actions">
               <div class="oq-overview-status">
                 ${renderOverviewStatusChip("Strategie", strategyLabel, "blue")}
-                ${renderOverviewStatusChip("Regelmodus", getEntityStateText("controlModeLabel"), "neutral")}
+                ${renderOverviewStatusChip("Controlmode", getEntityStateText("controlModeLabel"), "neutral")}
               </div>
             </div>
           </div>
           <div class="oq-overview-top">
-            ${renderOverviewStatCard("totalPower", "Stroomverbruik", "blue", "hele systeem")}
-            ${renderOverviewStatCard("totalHeat", "Warmteafgifte", "orange", "thermisch vermogen")}
-            ${renderOverviewStatCard("totalCop", "COP", "green", "rendement")}
-            ${renderOverviewStatCard("flowSelected", "Flow", "sky", "watercircuit")}
+            ${renderOverviewTopCards()}
           </div>
           ${renderOverviewSignals()}
           <div class="oq-overview-main">
             ${renderOverviewStrategyPanel()}
             <section class="oq-overview-temps">
-              <div class="oq-overview-system-copy">
-                <h3>Temperaturen</h3>
-                <p>De belangrijkste temperaturen voor comfort en regeling.</p>
-              </div>
-              <div class="oq-overview-temps-list">
-                ${renderTempRow("Kamertemperatuur", "roomTemp")}
-                ${renderTempRow("Kamer setpoint", "roomSetpoint")}
-                ${renderTempRow("Aanvoertemperatuur", "supplyTemp")}
-                ${returnTempKey ? renderTempRow("Retourtemperatuur", returnTempKey) : ""}
-                ${outsideTempKey ? renderTempRow("Buitentemperatuur", outsideTempKey) : renderTempRow("Buitentemperatuur", "", "—")}
-              </div>
+              ${renderOverviewTempsSection()}
             </section>
           </div>
           ${renderHeatPumpControls(heatPumpPanels)}
@@ -6163,7 +6358,7 @@
       return false;
     }
 
-    const strategyLabel = isCurveMode() ? "Stooklijn" : "Power House";
+    const strategyLabel = getOverviewStrategyLabel();
     const status = board.querySelector(".oq-overview-status");
     const top = board.querySelector(".oq-overview-top");
     const signals = board.querySelector(".oq-overview-signals");
@@ -6172,23 +6367,16 @@
     const hpTools = board.querySelector(".oq-overview-hp-tools");
     const hpGrid = board.querySelector(".oq-overview-hp-grid");
     const heatPumpPanels = getHeatPumpPanels();
-    const outsideTempKey = getOverviewOutsideTempKey();
-    const returnTempKey = getOverviewReturnTempKey();
 
     if (status) {
       setInnerHtmlIfChanged(status, `
         ${renderOverviewStatusChip("Strategie", strategyLabel, "blue")}
-        ${renderOverviewStatusChip("Regelmodus", getEntityStateText("controlModeLabel"), "neutral")}
+        ${renderOverviewStatusChip("Controlmode", getEntityStateText("controlModeLabel"), "neutral")}
       `);
     }
 
     if (top) {
-      setInnerHtmlIfChanged(top, `
-        ${renderOverviewStatCard("totalPower", "Stroomverbruik", "blue", "hele systeem")}
-        ${renderOverviewStatCard("totalHeat", "Warmteafgifte", "orange", "thermisch vermogen")}
-        ${renderOverviewStatCard("totalCop", "COP", "green", "rendement")}
-        ${renderOverviewStatCard("flowSelected", "Flow", "sky", "watercircuit")}
-      `);
+      setInnerHtmlIfChanged(top, renderOverviewTopCards());
     }
 
     if (signals) {
@@ -6203,19 +6391,7 @@
     }
 
     if (temps) {
-      temps.innerHTML = `
-        <div class="oq-overview-system-copy">
-          <h3>Temperaturen</h3>
-          <p>De belangrijkste temperaturen voor comfort en regeling.</p>
-        </div>
-        <div class="oq-overview-temps-list">
-          ${renderTempRow("Kamertemperatuur", "roomTemp")}
-          ${renderTempRow("Kamer setpoint", "roomSetpoint")}
-          ${renderTempRow("Aanvoertemperatuur", "supplyTemp")}
-          ${returnTempKey ? renderTempRow("Retourtemperatuur", returnTempKey) : ""}
-          ${outsideTempKey ? renderTempRow("Buitentemperatuur", outsideTempKey) : renderTempRow("Buitentemperatuur", "", "—")}
-        </div>
-      `;
+      temps.innerHTML = renderOverviewTempsSection();
     }
 
     if (!hpTools || !hpGrid) {
