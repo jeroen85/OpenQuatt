@@ -1700,7 +1700,7 @@
     const surface = state.nativeOpen ? "native" : "app";
     const statusCopy = state.nativeFrontendLoading
       ? "ESPHome fallback wordt geladen. Daarna blijft alleen de native webinterface actief."
-      : "De OpenQuatt-app staat nu stil: geen entity-polling, geen overview-render en geen helperlaag boven de ESPHome-interface.";
+      : "De OpenQuatt-app is tijdelijk uitgeschakeld, zodat de ESPHome fallback zelfstandig en zonder extra interfacebelasting kan draaien.";
     const errorMarkup = state.controlError
       ? `<p class="oq-native-surface-note oq-native-surface-note--error">${escapeHtml(state.controlError)}</p>`
       : "";
