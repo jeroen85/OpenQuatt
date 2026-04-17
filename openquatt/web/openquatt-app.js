@@ -397,7 +397,7 @@
     stage: "Laden...",
     interfacePanelOpen: getStoredInterfacePanelOpen(),
     devPanelOpen: getStoredDevPanelOpen(),
-    nativeOpen: false,
+    nativeOpen: getStoredSurface() === "native",
     currentStep: "strategy",
     appView: "",
     overviewTheme: getStoredOverviewTheme(),
@@ -468,6 +468,22 @@
     }
   }
 
+  function getStoredSurface() {
+    try {
+      return window.localStorage.getItem("oq-active-surface") === "native" ? "native" : "app";
+    } catch (_error) {
+      return "app";
+    }
+  }
+
+  function setStoredSurface(surface) {
+    try {
+      window.localStorage.setItem("oq-active-surface", surface === "native" ? "native" : "app");
+    } catch (_error) {
+      // Ignore storage failures in embedded browsers.
+    }
+  }
+
   function getStoredDevPanelOpen() {
     try {
       return window.localStorage.getItem("oq-dev-panel-open") === "true";
@@ -522,6 +538,57 @@
 
   function getDefaultAppView() {
     return state.complete ? "overview" : QUICK_START_VIEW;
+  }
+
+  function hasLoadedEntities() {
+    return Object.keys(state.entities).length > 0;
+  }
+
+  function stopMotionLoop() {
+    if (state.motionFrame) {
+      window.cancelAnimationFrame(state.motionFrame);
+      state.motionFrame = 0;
+    }
+    state.motionStartedAt = 0;
+    clearLegacyMotionVariables();
+  }
+
+  function startEntityPolling() {
+    if (!state.pollTimer) {
+      state.pollTimer = window.setInterval(syncEntities, POLL_INTERVAL_MS);
+    }
+  }
+
+  function stopEntityPolling() {
+    if (!state.pollTimer) {
+      return;
+    }
+    window.clearInterval(state.pollTimer);
+    state.pollTimer = null;
+  }
+
+  function syncSurfaceRuntime(options = {}) {
+    syncNativeVisibility();
+    if (state.nativeOpen) {
+      stopEntityPolling();
+      stopMotionLoop();
+      if (!state.nativeFrontendLoaded) {
+        void ensureNativeFrontendLoaded();
+      }
+      return;
+    }
+
+    startMotionLoop();
+    startEntityPolling();
+
+    if (options.refresh === false) {
+      return;
+    }
+    if (!hasLoadedEntities()) {
+      void primeEntities();
+      return;
+    }
+    void syncEntities();
   }
 
   function normalizeAppView(view) {
@@ -631,13 +698,14 @@
 
     if (!state.mounted) {
       mountPanel(app);
-      primeEntities();
-      state.pollTimer = window.setInterval(syncEntities, POLL_INTERVAL_MS);
       state.mounted = true;
+      syncSurfaceRuntime();
     }
 
     syncNativeVisibility();
-    syncEntities();
+    if (!state.nativeOpen) {
+      void syncEntities();
+    }
   }
 
   function ensureViewportMeta() {
@@ -717,15 +785,23 @@
     }
 
     state.nativeFrontendLoading = true;
+    if (state.nativeOpen) {
+      render();
+    }
     try {
       await loadScriptOnce(OFFICIAL_ESPHOME_UI_URL);
       state.nativeFrontendLoaded = true;
     } catch (error) {
       state.controlError = `ESPHome fallback kon niet worden geladen. ${error.message || error}`;
       state.nativeOpen = false;
+      setStoredSurface("app");
       render();
+      syncSurfaceRuntime();
     } finally {
       state.nativeFrontendLoading = false;
+      if (state.nativeOpen) {
+        render();
+      }
     }
   }
 
@@ -1620,6 +1696,38 @@
     `;
   }
 
+  function renderNativeSurfaceShell() {
+    const surface = state.nativeOpen ? "native" : "app";
+    const statusCopy = state.nativeFrontendLoading
+      ? "ESPHome fallback wordt geladen. Daarna blijft alleen de native webinterface actief."
+      : "De OpenQuatt-app staat nu stil: geen entity-polling, geen overview-render en geen helperlaag boven de ESPHome-interface.";
+    const errorMarkup = state.controlError
+      ? `<p class="oq-native-surface-note oq-native-surface-note--error">${escapeHtml(state.controlError)}</p>`
+      : "";
+
+    return `
+      <div class="oq-helper-shell${state.overviewTheme === "dark" ? " oq-helper-shell--dark" : ""} oq-native-surface-shell">
+        <div class="oq-helper-card oq-native-surface-card">
+          <div class="oq-native-surface-head">
+            <div class="oq-native-surface-copy">
+              <p class="oq-helper-kicker">Weergave</p>
+              <h1>ESPHome fallback actief</h1>
+              <p>${escapeHtml(statusCopy)}</p>
+            </div>
+            <div class="oq-native-surface-controls">
+              <div class="oq-helper-hub-switches">
+                <button class="oq-helper-hub-chip${surface === "app" ? " is-active" : ""}" type="button" data-oq-action="select-surface" data-surface="app">OpenQuatt-app</button>
+                <button class="oq-helper-hub-chip${surface === "native" ? " is-active" : ""}" type="button" data-oq-action="select-surface" data-surface="native">ESPHome fallback</button>
+              </div>
+            </div>
+          </div>
+          <p class="oq-native-surface-note">Schakel terug naar OpenQuatt-app om tuning, live overzicht en instellingen weer te activeren.</p>
+          ${errorMarkup}
+        </div>
+      </div>
+    `;
+  }
+
   function renderUpdateModal() {
     if (!state.updateModalOpen) {
       return "";
@@ -1915,6 +2023,9 @@
   }
 
   async function primeEntities() {
+    if (state.nativeOpen) {
+      return;
+    }
     state.loadingEntities = true;
     render();
     const keys = Object.keys(ENTITY_DEFS).filter((key) => !["apply", "reset"].includes(key));
@@ -1927,7 +2038,7 @@
   }
 
   async function syncEntities() {
-    if (state.loadingEntities || state.focusedField || state.draggingCurveKey || state.busyAction || state.settingsInteractionLock) {
+    if (state.nativeOpen || state.loadingEntities || state.focusedField || state.draggingCurveKey || state.busyAction || state.settingsInteractionLock) {
       return;
     }
 
@@ -2185,11 +2296,25 @@
     }
 
     if (action === "select-surface") {
-      state.nativeOpen = button.dataset.surface === "native";
+      const nextNativeOpen = button.dataset.surface === "native";
+      if (state.nativeOpen === nextNativeOpen) {
+        if (state.nativeOpen) {
+          void ensureNativeFrontendLoaded();
+        }
+        return;
+      }
+
+      state.nativeOpen = nextNativeOpen;
+      setStoredSurface(state.nativeOpen ? "native" : "app");
+      state.controlError = "";
+      state.controlNotice = "";
+      state.settingsInfoOpen = "";
+      state.updateModalOpen = false;
       if (state.nativeOpen) {
         void ensureNativeFrontendLoaded();
       }
       render();
+      syncSurfaceRuntime();
       window.requestAnimationFrame(() => {
         if (state.nativeOpen) {
           if (state.nativeApp) {
@@ -3954,6 +4079,10 @@
 
   function syncDocumentTitle() {
     if (typeof document === "undefined") {
+      return;
+    }
+    if (state.nativeOpen) {
+      document.title = "ESPHome fallback • OpenQuatt";
       return;
     }
     const viewLabel = getAppViewLabel();
@@ -6179,7 +6308,23 @@
       return;
     }
 
-    const mainContent = !state.appView && state.loadingEntities
+    if (state.nativeOpen) {
+      state.root.innerHTML = `
+        ${renderDevPanel()}
+        ${renderNativeSurfaceShell()}
+      `;
+      state.quickStartRenderSignature = "";
+      state.settingsRenderSignature = "";
+      state.headerRenderSignature = getHeaderRenderSignature();
+      stopMotionLoop();
+      syncNativeVisibility();
+      bindHeaderDevControls();
+      syncDocumentTheme();
+      syncDocumentTitle();
+      return;
+    }
+
+    const mainContent = state.loadingEntities || !hasLoadedEntities()
       ? renderInitialLoadingView()
       : state.appView === "overview"
       ? renderOverviewView()
