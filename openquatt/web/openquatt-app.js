@@ -3359,10 +3359,10 @@
     return renderSettingsSection(
       "Maximale watertemperatuur",
       "Watertemperatuur",
-      "Beschermt het systeem tegen te hoge aanvoertemperaturen. OpenQuatt leidt daar intern zelf de terugregelband en veiligheidsgrens uit af.",
+      "Beschermt het systeem tegen te hoge aanvoertemperaturen. OpenQuatt leidt daar intern zelf de terugregelband en een harde trip op 5°C boven deze grens uit af.",
       `
         <div class="oq-settings-grid">
-          ${renderSettingsNumberField("maxWater", "Maximale watertemperatuur", "Normale bovengrens voor de watertemperatuur tijdens bedrijf. OpenQuatt begint enkele graden eerder al terug te regelen en bewaakt daarboven een interne veiligheidsgrens.")}
+          ${renderSettingsNumberField("maxWater", "Maximale watertemperatuur", "Normale bovengrens voor de watertemperatuur tijdens bedrijf. OpenQuatt begint enkele graden eerder al terug te regelen en bewaakt een harde trip op 5°C boven deze grens.")}
         </div>
       `,
     );
@@ -3599,9 +3599,9 @@
       <section class="oq-helper-panel">
         <p class="oq-helper-label">Stap 4</p>
         <h2 class="oq-helper-section-title">Watertemperatuur beveiligen</h2>
-        <p class="oq-helper-section-copy">Hier stel je de veilige bovengrens voor de watertemperatuur in. OpenQuatt leidt de interne beveiligingsmarges daar zelf uit af.</p>
+        <p class="oq-helper-section-copy">Hier stel je de veilige bovengrens voor de watertemperatuur in. OpenQuatt leidt daar zelf de terugregelband en een harde trip op 5°C boven af.</p>
         <div class="oq-settings-grid oq-settings-grid--quickstart">
-          ${renderSettingsNumberField("maxWater", "Maximale watertemperatuur", "Normale bovengrens voor de watertemperatuur tijdens bedrijf. OpenQuatt begint enkele graden eerder al terug te regelen en bewaakt daarboven een interne veiligheidsgrens.")}
+          ${renderSettingsNumberField("maxWater", "Maximale watertemperatuur", "Normale bovengrens voor de watertemperatuur tijdens bedrijf. OpenQuatt begint enkele graden eerder al terug te regelen en bewaakt een harde trip op 5°C boven deze grens.")}
         </div>
         ${renderQuickStartStepNav()}
       </section>

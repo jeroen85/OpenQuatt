@@ -133,14 +133,14 @@ OpenQuatt heeft daarnaast een gedeelde begrenzing op basis van `water_supply_tem
 Belangrijke eigenschappen:
 
 - `Maximum water temperature` is het normale bovendoel voor de gemeten aanvoer;
-- OpenQuatt leidt intern een terugregelband en absolute veiligheidsgrens af.
+- OpenQuatt leidt intern een terugregelband en een harde trip op `5°C` boven die grens af.
 
 Praktisch betekent dit:
 
 - in `Water Temperature Control` wordt `Heating Curve Supply Target` geclampt op `Maximum water temperature`;
 - in `Power House` wordt de effectieve warmtevraag progressief verlaagd, met de sterkste afbouw in de laatste paar graden onder `Maximum water temperature`;
 - in `CM3` wordt de boiler vanaf `Maximum water temperature` geblokkeerd;
-- daarboven bewaakt een interne veiligheidsgrens of een harde stop nodig is, zonder dat OpenQuatt de `Control Mode` zelf herschrijft.
+- daarboven bewaakt een harde trip op `max + 5°C` of een harde stop nodig is, zonder dat OpenQuatt de `Control Mode` zelf herschrijft.
 
 ## Flow Mode
 

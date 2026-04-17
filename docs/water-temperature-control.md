@@ -85,11 +85,7 @@ Als de buitentemperatuur ontbreekt, gebruikt OpenQuatt:
 
 Ook in deze strategie blijft `Water Supply Temp (Selected)` belangrijk.
 
-Met:
-
-- `Maximum water temperature`
-
-wordt het target of gedrag begrensd als de aanvoer al te hoog wordt.
+Met `Maximum water temperature` wordt het target of gedrag begrensd als de aanvoer al te hoog wordt. OpenQuatt leidt daar intern ook een harde trip op `max + 5°C` uit af.
 
 In `Water Temperature Control` betekent dat vooral:
 

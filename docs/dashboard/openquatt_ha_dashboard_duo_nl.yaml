@@ -2572,8 +2572,8 @@ views:
               gemeten aanvoertemperatuur.
 
               - OpenQuatt leidt uit die instelling intern zelf een
-              terugregelband en absolute veiligheidsgrens af. In `CM3` valt
-              eerst de boiler weg; alleen bij aanhoudende overshoot volgt
+              terugregelband en een harde trip op `max + 5°C` af. In `CM3`
+              valt eerst de boiler weg; alleen bij aanhoudende overshoot volgt
               daarna een harde HP-stop.
 
 

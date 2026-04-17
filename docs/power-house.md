@@ -195,7 +195,7 @@ doet OpenQuatt drie dingen:
 
 1. al onder de maximale aanvoer voorzichtig terugnemen;
 2. in de laatste paar graden onder `max` steeds sterker afremmen;
-3. daarboven via een interne veiligheidsgrens uiteindelijk naar een harde stop kunnen gaan.
+3. daarboven via een harde trip op `max + 5°C` uiteindelijk naar een harde stop kunnen gaan.
 
 Daardoor kan `Power House` niet onbeperkt blijven vragen als de aanvoer al te hoog wordt.
 

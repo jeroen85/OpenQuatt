@@ -2190,9 +2190,9 @@ views:
               - **Maximum water temperature** is the normal ceiling for measured
               supply temperature.
 
-              - OpenQuatt derives an internal rollback band and absolute safety
-              threshold from that setting. In `CM3` the boiler drops out first;
-              a hard HP stop follows only if the overshoot persists.
+              - OpenQuatt derives an internal rollback band and a hard trip at
+              `max + 5°C` from that setting. In `CM3` the boiler drops out
+              first; a hard HP stop follows only if the overshoot persists.
 
 
               </details>

@@ -161,7 +161,7 @@ Voor `Power House` geldt: `Power House response profile` is een snelle voorkeuze
 
 Deze tijden schalen mee met `Rated maximum house power` en zijn daardoor beter overdraagbaar tussen installaties dan oude absolute `W/min`-rampen.
 
-De watertempbegrenzing werkt op `water_supply_temp_selected`. In `Water Temperature Control` wordt `Heating Curve Supply Target` begrensd op `Maximum water temperature`. In `Power House` wordt `P_req` progressief teruggenomen, met de sterkste afbouw in de laatste paar graden onder die grens. In `CM3` wordt de boiler vanaf `Maximum water temperature` geblokkeerd. OpenQuatt leidt daarboven intern zelf een veiligheidsgrens af.
+De watertempbegrenzing werkt op `water_supply_temp_selected`. In `Water Temperature Control` wordt `Heating Curve Supply Target` begrensd op `Maximum water temperature`. In `Power House` wordt `P_req` progressief teruggenomen, met de sterkste afbouw in de laatste paar graden onder die grens. In `CM3` wordt de boiler vanaf `Maximum water temperature` geblokkeerd. OpenQuatt bewaakt daarboven een harde trip op `max + 5°C`.
 
 Verander niet meerdere instellingen uit deze groep tegelijk.
 
