@@ -4814,6 +4814,7 @@ body.oq-page-light {
   color: #f8fafc;
   font-size: 1.04rem;
   line-height: 1.2;
+  font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
 
@@ -5171,7 +5172,7 @@ esp-app.oq-native-app.oq-native-app--collapsed {
 @media (max-width: 640px) {
   #oq-helper-root {
     width: calc(100vw - 12px);
-    margin-top: 8px;
+    margin: 8px auto 0;
   }
 
   .oq-helper-card,
@@ -5221,6 +5222,19 @@ esp-app.oq-native-app.oq-native-app--collapsed {
     grid-template-columns: 1fr;
   }
 
+  .oq-helper-card--wide-flush .oq-helper-panel--flush {
+    margin-inline: -8px;
+  }
+
+  .oq-helper-card--wide-flush .oq-overview-hp-grid {
+    margin-inline: -4px;
+  }
+
+  .oq-overview-board {
+    padding: 14px 8px 16px;
+    border-radius: 22px;
+  }
+
   .oq-overview-chip {
     font-size: 0.84rem;
     padding: 8px 10px;
@@ -5244,9 +5258,39 @@ esp-app.oq-native-app.oq-native-app--collapsed {
     margin-top: 14px;
   }
 
+  .oq-overview-main,
+  .oq-overview-hp-grid {
+    gap: 6px;
+    margin-top: 10px;
+  }
+
   .oq-overview-hp-head,
   .oq-overview-hp-head-title {
     gap: 10px;
+  }
+
+  .oq-overview-hp {
+    padding: 8px 4px;
+    border-radius: 14px;
+  }
+
+  .oq-hp-schematic-board {
+    margin-top: 8px;
+    padding: 4px 0 2px;
+    border-radius: 14px;
+  }
+
+  .oq-hp-tech-shell {
+    gap: 6px;
+  }
+
+  .oq-hp-tech-visual {
+    margin-inline: 0;
+  }
+
+  .oq-hp-tech-svg {
+    width: 100%;
+    max-width: none;
   }
 
   .oq-overview-hp-card-action {
@@ -5256,12 +5300,28 @@ esp-app.oq-native-app.oq-native-app--collapsed {
   }
 
   .oq-hp-tech-footer {
-    grid-template-columns: 1fr;
-    gap: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
 
   .oq-hp-tech-footer-item {
-    padding: 11px 12px;
+    display: grid;
+    gap: 5px;
+    min-height: 0;
+    padding: 9px 10px;
+    border-radius: 14px;
+  }
+
+  .oq-hp-tech-footer-item span {
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    line-height: 1.04;
+  }
+
+  .oq-hp-tech-footer-item strong {
+    margin-top: 0;
+    font-size: 0.88rem;
+    line-height: 1.04;
   }
 
   esp-app.oq-native-app {

@@ -6664,11 +6664,12 @@
             ${renderQuickStartSidebar()}
           </div>
         `;
+    const wideFlushCard = state.appView === "overview" || state.appView === "energy";
 
     state.root.innerHTML = `
       ${renderDevPanel()}
       <div class="oq-helper-shell${state.overviewTheme === "dark" ? " oq-helper-shell--dark" : ""}">
-        <div class="oq-helper-card">
+        <div class="oq-helper-card${wideFlushCard ? " oq-helper-card--wide-flush" : ""}">
           <div class="oq-helper-head">
             <div class="oq-helper-brand">
               <div class="oq-helper-logo-lockup">
