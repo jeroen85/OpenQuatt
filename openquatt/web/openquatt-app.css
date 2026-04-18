@@ -5311,13 +5311,13 @@ esp-app.oq-native-app.oq-native-app--collapsed {
 
 @media (max-width: 640px) {
   #oq-helper-root {
-    width: calc(100vw - 10px);
-    margin: 5px auto 0;
+    width: calc(100vw - 6px);
+    margin: 4px auto 0;
   }
 
   .oq-helper-card,
   .oq-helper-panel {
-    padding: 12px;
+    padding: 10px;
   }
 
   .oq-helper-head {
@@ -5359,7 +5359,8 @@ esp-app.oq-native-app.oq-native-app--collapsed {
   }
 
   .oq-helper-hub:not(.oq-helper-hub--collapsed) {
-    margin-top: 12px;
+    width: auto;
+    margin: 12px -2px 0;
     padding: 10px 11px;
     border-radius: 18px;
   }
