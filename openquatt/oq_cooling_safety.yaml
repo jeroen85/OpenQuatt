@@ -20,6 +20,23 @@ globals:
     restore_value: false
     initial_value: 'false'
 
+  - id: oq_cooling_fallback_night_min_current_c
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+  - id: oq_cooling_fallback_night_window_day_key
+    type: int
+    restore_value: false
+    initial_value: '-1'
+  - id: oq_cooling_fallback_night_min_last_c
+    type: float
+    restore_value: true
+    initial_value: 'NAN'
+  - id: oq_cooling_fallback_night_min_last_day_key
+    type: int
+    restore_value: true
+    initial_value: '-1'
+
   - id: oq_cooling_room_count_selected_last_valid
     type: float
     restore_value: false
@@ -110,7 +127,47 @@ number:
     web_server:
       sorting_group_id: oq_control
 
+select:
+  - platform: template
+    id: cooling_without_dew_point_mode
+    name: "Cooling Without Dew Point"
+    icon: mdi:water-alert
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    options:
+      - Dew point required
+      - Allow without dew point
+    initial_option: Dew point required
+    web_server:
+      sorting_group_id: oq_cooling
+
 binary_sensor:
+  - platform: template
+    id: cooling_without_dew_point_enabled
+    name: "Cooling Without Dew Point Enabled"
+    internal: true
+    lambda: |-
+      return id(cooling_without_dew_point_mode).has_state() &&
+             id(cooling_without_dew_point_mode).current_option() == "Allow without dew point";
+
+  - platform: template
+    id: cooling_fallback_active
+    name: "Cooling Fallback Active"
+    icon: mdi:water-alert
+    device_class: running
+    lambda: |-
+      const bool no_rooms_configured =
+          !id(cooling_room_count_selected).has_state() || isnan(id(cooling_room_count_selected).state) ||
+          id(cooling_room_count_selected).state < 1.0f;
+      const bool fallback_floor_ok =
+          id(cooling_fallback_min_supply_temp).has_state() && !isnan(id(cooling_fallback_min_supply_temp).state);
+      return no_rooms_configured &&
+             id(cooling_without_dew_point_enabled).state &&
+             fallback_floor_ok;
+    web_server:
+      sorting_group_id: oq_cooling
+
   - platform: template
     id: cooling_permitted_core
     name: "Cooling Permitted Core"
@@ -127,7 +184,14 @@ binary_sensor:
           id(cooling_dew_point_available).state &&
           id(cooling_dew_point_selected).has_state() && !isnan(id(cooling_dew_point_selected).state) &&
           id(minimum_safe_supply_temp).has_state() && !isnan(id(minimum_safe_supply_temp).state);
-      return rooms_configured && valid_rooms && dew_point_ok;
+      const bool fallback_ok =
+          !rooms_configured &&
+          id(cooling_without_dew_point_enabled).state &&
+          id(cooling_fallback_min_supply_temp).has_state() && !isnan(id(cooling_fallback_min_supply_temp).state);
+      if (rooms_configured) {
+        return valid_rooms && dew_point_ok;
+      }
+      return fallback_ok;
 
   - platform: template
     id: cooling_request_active
@@ -189,6 +253,26 @@ binary_sensor:
 
 text_sensor:
   - platform: template
+    id: cooling_guard_mode
+    name: "Cooling Guard Mode"
+    icon: mdi:shield-half-full
+    entity_category: diagnostic
+    update_interval: 10s
+    lambda: |-
+      const bool rooms_configured =
+          id(cooling_room_count_selected).has_state() && !isnan(id(cooling_room_count_selected).state) &&
+          id(cooling_room_count_selected).state >= 1.0f;
+      if (rooms_configured) {
+        return {"Dew point"};
+      }
+      if (id(cooling_without_dew_point_enabled).state) {
+        return {"Fallback"};
+      }
+      return {"Blocked"};
+    web_server:
+      sorting_group_id: oq_cooling
+
+  - platform: template
     id: cooling_block_reason
     name: "Cooling Block Reason"
     icon: mdi:information-outline
@@ -196,9 +280,38 @@ text_sensor:
     update_interval: 5s
     lambda: |-
       // Report the first blocking condition in operator-friendly terms.
-      if (!id(cooling_room_count_selected).has_state() || isnan(id(cooling_room_count_selected).state) ||
-          id(cooling_room_count_selected).state < 1.0f) {
-        return {"No cooling rooms configured"};
+      if (!id(cooling_room_count_selected).has_state() || isnan(id(cooling_room_count_selected).state)) {
+        return {"Cooling room count unavailable"};
+      }
+      if (id(cooling_room_count_selected).state < 1.0f) {
+        if (!id(cooling_without_dew_point_enabled).state) {
+          return {"No dew point source"};
+        }
+        if (!id(outside_temp_selected).has_state() || isnan(id(outside_temp_selected).state)) {
+          return {"Fallback outside temperature unavailable"};
+        }
+        if (id(outside_temp_selected).state < 20.0f) {
+          return {"Fallback blocked below 20°C outdoor"};
+        }
+        if (id(cooling_fallback_night_min_outdoor_temp).has_state() &&
+            !isnan(id(cooling_fallback_night_min_outdoor_temp).state) &&
+            id(cooling_fallback_night_min_outdoor_temp).state >= 20.0f) {
+          return {"Fallback blocked by tropical night"};
+        }
+        if (!id(cooling_fallback_min_supply_temp).has_state() || isnan(id(cooling_fallback_min_supply_temp).state)) {
+          return {"Fallback minimum unavailable"};
+        }
+        if (id(cooling_fallback_night_min_outdoor_temp).has_state() &&
+            !isnan(id(cooling_fallback_night_min_outdoor_temp).state) &&
+            id(cooling_fallback_night_min_outdoor_temp).state >= 19.0f) {
+          return {"Fallback active (+2°C very warm night)"};
+        }
+        if (id(cooling_fallback_night_min_outdoor_temp).has_state() &&
+            !isnan(id(cooling_fallback_night_min_outdoor_temp).state) &&
+            id(cooling_fallback_night_min_outdoor_temp).state >= 18.0f) {
+          return {"Fallback active (+1°C warm night)"};
+        }
+        return {"Fallback active"};
       }
       if (!id(cooling_valid_room_count).has_state() || isnan(id(cooling_valid_room_count).state) ||
           id(cooling_valid_room_count).state < 1.0f) {
@@ -593,3 +706,115 @@ sensor:
       return id(cooling_dew_point_selected).state + id(cooling_safety_margin_selected).state;
     web_server:
       sorting_group_id: oq_cooling
+
+  - platform: template
+    id: cooling_fallback_night_min_outdoor_temp
+    name: "Cooling Fallback Night Minimum Outdoor Temp"
+    icon: mdi:weather-night
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 60s
+    lambda: |-
+      if (!id(oq_time).now().is_valid()) return NAN;
+      const auto now = id(oq_time).now();
+      if (now.hour < 6 &&
+          id(oq_cooling_fallback_night_window_day_key) >= 0 &&
+          !isnan(id(oq_cooling_fallback_night_min_current_c))) {
+        return id(oq_cooling_fallback_night_min_current_c);
+      }
+      if (!isnan(id(oq_cooling_fallback_night_min_last_c))) {
+        return id(oq_cooling_fallback_night_min_last_c);
+      }
+      return NAN;
+    web_server:
+      sorting_group_id: oq_cooling
+
+  - platform: template
+    id: cooling_fallback_min_supply_temp
+    name: "Cooling Fallback Minimum Supply Temp"
+    icon: mdi:thermometer-chevron-down
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      // Conservative fallback floor for systems without a dew-point source.
+      if (!id(outside_temp_selected).has_state() || isnan(id(outside_temp_selected).state)) return NAN;
+      const float outside_c = id(outside_temp_selected).state;
+      if (outside_c < 20.0f) return NAN;
+
+      float base_floor_c = 19.0f;
+      if (outside_c >= 32.0f) base_floor_c = 22.0f;
+      else if (outside_c >= 28.0f) base_floor_c = 21.0f;
+      else if (outside_c >= 24.0f) base_floor_c = 20.0f;
+
+      float correction_c = 0.0f;
+      if (id(cooling_fallback_night_min_outdoor_temp).has_state() &&
+          !isnan(id(cooling_fallback_night_min_outdoor_temp).state)) {
+        const float night_min_c = id(cooling_fallback_night_min_outdoor_temp).state;
+        if (night_min_c >= 20.0f) return NAN;
+        if (night_min_c >= 19.0f) correction_c = 2.0f;
+        else if (night_min_c >= 18.0f) correction_c = 1.0f;
+      }
+
+      return base_floor_c + correction_c;
+    web_server:
+      sorting_group_id: oq_cooling
+
+  - platform: template
+    id: cooling_effective_min_supply_temp
+    name: "Cooling Effective Minimum Supply Temp"
+    icon: mdi:shield-thermometer
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      if (id(minimum_safe_supply_temp).has_state() && !isnan(id(minimum_safe_supply_temp).state)) {
+        return id(minimum_safe_supply_temp).state;
+      }
+      if (id(cooling_fallback_active).state &&
+          id(cooling_fallback_min_supply_temp).has_state() &&
+          !isnan(id(cooling_fallback_min_supply_temp).state)) {
+        return id(cooling_fallback_min_supply_temp).state;
+      }
+      return NAN;
+    web_server:
+      sorting_group_id: oq_cooling
+
+interval:
+  - interval: 60s
+    then:
+      - lambda: |-
+          // Track the minimum selected outside temperature during the local 00:00-06:00 window.
+          if (!id(oq_time).now().is_valid()) return;
+          if (!id(outside_temp_selected).has_state() || isnan(id(outside_temp_selected).state)) return;
+
+          const auto now = id(oq_time).now();
+          const int day_key = (now.year * 10000) + (now.month * 100) + now.day_of_month;
+          const bool in_night_window = now.hour < 6;
+          const float outside_c = id(outside_temp_selected).state;
+
+          if (in_night_window) {
+            if (id(oq_cooling_fallback_night_window_day_key) != day_key) {
+              id(oq_cooling_fallback_night_window_day_key) = day_key;
+              id(oq_cooling_fallback_night_min_current_c) = outside_c;
+            } else if (isnan(id(oq_cooling_fallback_night_min_current_c))) {
+              id(oq_cooling_fallback_night_min_current_c) = outside_c;
+            } else {
+              id(oq_cooling_fallback_night_min_current_c) =
+                  fminf(id(oq_cooling_fallback_night_min_current_c), outside_c);
+            }
+            return;
+          }
+
+          if (id(oq_cooling_fallback_night_window_day_key) >= 0 &&
+              id(oq_cooling_fallback_night_window_day_key) != id(oq_cooling_fallback_night_min_last_day_key) &&
+              !isnan(id(oq_cooling_fallback_night_min_current_c))) {
+            id(oq_cooling_fallback_night_min_last_c) = id(oq_cooling_fallback_night_min_current_c);
+            id(oq_cooling_fallback_night_min_last_day_key) = id(oq_cooling_fallback_night_window_day_key);
+          }

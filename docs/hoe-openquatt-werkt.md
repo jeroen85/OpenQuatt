@@ -102,7 +102,7 @@ Daarom werkt OpenQuatt bij cooling in grote lijnen zo:
 - er is een aparte control mode voor cooling;
 - dauwpuntinformatie is leidend voor de minimale veilige aanvoertemperatuur;
 - flowbewaking blijft net zo belangrijk als bij verwarmen;
-- zonder bruikbare dauwpuntinformatie hoort normale cooling niet vrijgegeven te worden.
+- zonder bruikbare dauwpuntinformatie hoort normale cooling niet vrijgegeven te worden, tenzij je expliciet een conservatieve fallback inschakelt.
 
 Praktisch betekent dit dat OpenQuatt cooling niet behandelt als "negatief verwarmen". Er is een eigen koelvraag, een eigen veilige aanvoergrens en een aparte bewakingslaag bovenop de warmtepompsturing.
 
@@ -115,6 +115,39 @@ OpenQuatt kan voor cooling gebruikmaken van:
 - meerdere ruimtes, waarbij de hoogste geldige dauwpuntwaarde leidend mag zijn.
 
 Voor centrale vloerkoeling is dat laatste belangrijk: de vochtigste relevante ruimte is maatgevend voor het condensrisico.
+
+### Fallback zonder dauwpunt
+
+OpenQuatt kan ook een expliciete fallback gebruiken als er geen bruikbare dauwpuntbron is. Die fallback staat standaard uit en moet je bewust inschakelen via `Koeling zonder dauwpuntbeveiliging`.
+
+Belangrijk:
+
+- dit is geen echte condensgarantie;
+- OpenQuatt gebruikt dan geen gemeten binnendauwpunt, maar een conservatieve benadering voor Nederland;
+- de fallback is bedoeld als pragmatische noodroute, niet als vervanging van echte dauwpuntbewaking.
+
+De fallback gebruikt deze basistabel voor de minimale watertemperatuur:
+
+- buitentemperatuur `< 20°C`: cooling uit;
+- `20–24°C`: minimum water `19°C`;
+- `24–28°C`: minimum water `20°C`;
+- `28–32°C`: minimum water `21°C`;
+- `> 32°C`: minimum water `22°C`.
+
+Daarbovenop kijkt OpenQuatt naar de minimum buitentemperatuur van de afgelopen nacht:
+
+- nachtminimum `< 18°C`: geen correctie;
+- nachtminimum `18–19°C`: `+1°C` op de fallback-ondergrens;
+- nachtminimum `19–20°C`: `+2°C` op de fallback-ondergrens;
+- nachtminimum `>= 20°C`: fallback-cooling geblokkeerd.
+
+Die warme-nachtcorrectie werkt als een eenvoudige risicovlag voor benauwde of tropische luchtmassa's. Juist op zulke dagen is de kans groter dat de woning al met een hoger intern dauwpunt aan de dag begint.
+
+### Waarom geen extra `+2K` erbovenop?
+
+Bij normale dauwpuntregeling gebruikt OpenQuatt wel een aparte veiligheidsmarge boven het gemeten of berekende dauwpunt. In de fallback-route gebeurt dat niet nog eens.
+
+De reden is simpel: de conservatieve staffel en de nachtcorrectie vormen hier samen al de veiligheidsmarge. Nog eens een extra generieke `+2K` zou de fallback onnodig dubbel-conservatief maken en in veel gevallen praktisch onbruikbaar.
 
 ### Wat blijft gedeeld met heating?
 

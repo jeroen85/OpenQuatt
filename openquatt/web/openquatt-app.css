@@ -1715,6 +1715,125 @@ body.oq-page-light {
   line-height: 1.6;
 }
 
+.oq-settings-callout {
+  margin-top: 16px;
+  padding: 16px 18px;
+  border-radius: var(--oq-helper-radius-lg);
+  border: 1px solid var(--oq-helper-line);
+  background: linear-gradient(180deg, rgba(255, 247, 237, 0.72), rgba(255, 255, 255, 0.98));
+}
+
+.oq-helper-shell--dark .oq-settings-callout {
+  background: linear-gradient(180deg, rgba(66, 32, 14, 0.34), rgba(22, 33, 49, 0.94));
+}
+
+.oq-settings-callout strong {
+  display: block;
+  margin: 0 0 10px;
+  color: var(--oq-helper-ink);
+  font-size: 0.98rem;
+  line-height: 1.3;
+}
+
+.oq-settings-callout summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--oq-helper-ink);
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.oq-settings-callout summary::-webkit-details-marker {
+  display: none;
+}
+
+.oq-settings-callout summary::before {
+  content: "i";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.12);
+  color: rgb(37, 99, 235);
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.oq-settings-callout[open] summary {
+  margin-bottom: 10px;
+}
+
+.oq-settings-callout-body p {
+  margin: 0 0 10px;
+  color: var(--oq-helper-soft);
+  line-height: 1.6;
+}
+
+.oq-settings-rule-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.oq-settings-rule-group {
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.oq-helper-shell--dark .oq-settings-rule-group {
+  border-color: rgba(148, 163, 184, 0.16);
+  background: rgba(15, 23, 42, 0.24);
+}
+
+.oq-settings-rule-group h4 {
+  margin: 0 0 10px;
+  color: var(--oq-helper-ink);
+  font-size: 0.92rem;
+  line-height: 1.3;
+}
+
+.oq-settings-rule-table {
+  display: grid;
+  gap: 8px;
+}
+
+.oq-settings-rule-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.oq-helper-shell--dark .oq-settings-rule-row {
+  background: rgba(15, 23, 42, 0.36);
+}
+
+.oq-settings-rule-key {
+  color: var(--oq-helper-soft);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.oq-settings-rule-value {
+  flex: 0 0 auto;
+  color: var(--oq-helper-ink);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
 .oq-settings-grid,
 .oq-settings-hp-group-grid,
 .oq-settings-curve-grid {
@@ -5139,6 +5258,7 @@ esp-app.oq-native-app.oq-native-app--collapsed {
   .oq-settings-choice-grid,
   .oq-settings-response-grid,
   .oq-settings-choice-inline-grid,
+  .oq-settings-rule-groups,
   .oq-settings-curve-grid,
   .oq-settings-hp-columns,
   .oq-settings-hp-group-grid {
@@ -5258,6 +5378,23 @@ esp-app.oq-native-app.oq-native-app--collapsed {
     margin-top: 14px;
   }
 
+  .oq-overview-hp-tools {
+    margin-top: 14px;
+  }
+
+  .oq-overview-hp-tools-head {
+    gap: 10px;
+  }
+
+  .oq-overview-hp-tool-switches {
+    gap: 6px;
+  }
+
+  .oq-overview-hp-tool-chip {
+    min-height: 36px;
+    padding: 0 12px;
+  }
+
   .oq-overview-main,
   .oq-overview-hp-grid {
     gap: 6px;
@@ -5267,6 +5404,22 @@ esp-app.oq-native-app.oq-native-app--collapsed {
   .oq-overview-hp-head,
   .oq-overview-hp-head-title {
     gap: 10px;
+  }
+
+  .oq-overview-hp-head {
+    align-items: center;
+  }
+
+  .oq-overview-hp-head h3 {
+    margin-top: 0;
+  }
+
+  .oq-overview-hp-head-side {
+    gap: 6px;
+  }
+
+  .oq-overview-hp-status {
+    gap: 6px;
   }
 
   .oq-overview-hp {
@@ -5314,14 +5467,14 @@ esp-app.oq-native-app.oq-native-app--collapsed {
 
   .oq-hp-tech-footer-item span {
     font-size: 0.72rem;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
     line-height: 1.04;
   }
 
   .oq-hp-tech-footer-item strong {
     margin-top: 0;
-    font-size: 0.88rem;
-    line-height: 1.04;
+    font-size: 0.9rem;
+    line-height: 1.02;
   }
 
   esp-app.oq-native-app {

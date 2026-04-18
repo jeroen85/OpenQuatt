@@ -56,6 +56,8 @@ Bij cooling is deze tab extra belangrijk. Daar configureer je ook:
 - het aantal koelruimtes;
 - de dauwpunt-, temperatuur- en RH-bronnen die via Home Assistant-proxy's worden ingelezen.
 
+Gebruik je bewust de fallback zonder dauwpunt, dan configureer je die niet hier maar via `Instellingen`. De sensorconfiguratie-tab blijft dan leeg voor koelruimtes, en OpenQuatt schakelt over op de conservatieve fallback-route.
+
 Als deze bronlaag niet klopt, is ook de cooling-tab niet betrouwbaar.
 
 ### Flow
@@ -93,6 +95,25 @@ Gebruik deze tab zodra je cooling gebruikt of voorbereidt. Hier zie je onder mee
 - welk cooling-target en welke ruwe cooling demand OpenQuatt nu gebruikt.
 
 De cooling-tab is dus vooral een runtime- en veiligheidsweergave. De bronkeuze zelf doe je op `Sensorconfiguratie`.
+
+Gebruik je de fallback zonder dauwpunt, dan zie je hier ook:
+
+- welke beveiligingsroute actief is (`Dew point`, `Fallback` of `Blocked`);
+- wat het nachtminimum van de afgelopen nacht was;
+- welke fallback minimale aanvoer OpenQuatt daaruit heeft afgeleid.
+
+De fallback werkt bewust simpel:
+
+- buiten `< 20°C`: cooling uit;
+- `20–24°C`: minimum water `19°C`;
+- `24–28°C`: minimum water `20°C`;
+- `28–32°C`: minimum water `21°C`;
+- `> 32°C`: minimum water `22°C`;
+- nachtminimum `18–19°C`: `+1°C`;
+- nachtminimum `19–20°C`: `+2°C`;
+- nachtminimum `>= 20°C`: fallback uit.
+
+De gewone dauwpuntmarge komt daar niet nog eens extra bovenop. Die conservatieve staffel is in de fallbackmodus zelf al de veiligheidsmarge.
 
 ## Tabs voor gevorderden
 

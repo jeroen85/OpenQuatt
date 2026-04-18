@@ -1266,9 +1266,9 @@ interval:
           if (!id(oq_water_temp_hard_trip_active) && min_rt_s > 0) {
             const bool cooling_floor_trip =
                 is_cooling_mode &&
-                id(minimum_safe_supply_temp).has_state() && !isnan(id(minimum_safe_supply_temp).state) &&
+                id(cooling_effective_min_supply_temp).has_state() && !isnan(id(cooling_effective_min_supply_temp).state) &&
                 id(oq_system_supply_temp).has_state() && !isnan(id(oq_system_supply_temp).state) &&
-                (id(oq_system_supply_temp).state <= (id(minimum_safe_supply_temp).state + 0.10f));
+                (id(oq_system_supply_temp).state <= (id(cooling_effective_min_supply_temp).state + 0.10f));
             // HP1/HP2: if request is 0 but measured heating start is still within
             // the minimum runtime window, keep that compressor alive at >=1.
             // This guard intentionally keys off real heating start instead of the
