@@ -4828,6 +4828,23 @@
     `;
   }
 
+  function renderOverviewEnergyCategory(title, tone, groups) {
+    const filledGroups = groups.filter(Boolean).join("");
+    if (!filledGroups) {
+      return "";
+    }
+    return `
+      <section class="oq-overview-energy-category oq-overview-energy-category--${escapeHtml(tone)}">
+        <div class="oq-overview-energy-category-head">
+          <span>${escapeHtml(title)}</span>
+        </div>
+        <div class="oq-overview-energy-category-groups">
+          ${filledGroups}
+        </div>
+      </section>
+    `;
+  }
+
   function renderOverviewEnergyColumn(label, intro, groups, tone = "blue") {
     const filledGroups = groups.filter(Boolean).join("");
     if (!filledGroups) {
@@ -4849,59 +4866,71 @@
 
   function renderOverviewEnergySection() {
     const currentColumn = renderOverviewEnergyColumn("Nu", "Live energie", [
-      renderOverviewEnergyGroup("Warmtepomp verwarmen", [
-        renderOverviewEnergyRow("Elektrisch vermogen", "heatingPowerInput"),
-        renderOverviewEnergyRow("Warmteafgifte", "totalHeat"),
-        renderOverviewEnergyRow("COP", "totalCop"),
+      renderOverviewEnergyCategory("Verwarmen", "blue", [
+        renderOverviewEnergyGroup("Warmtepomp", [
+          renderOverviewEnergyRow("Elektrisch vermogen", "heatingPowerInput"),
+          renderOverviewEnergyRow("Warmteafgifte", "totalHeat"),
+          renderOverviewEnergyRow("COP", "totalCop"),
+        ]),
+        renderOverviewEnergyGroup("CV-ketel", [
+          renderOverviewEnergyRow("Warmteafgifte", "boilerHeatPower"),
+        ]),
+        renderOverviewEnergyGroup("Systeem", [
+          renderOverviewEnergyRow("Warmteafgifte", "systemHeatPower"),
+        ]),
       ]),
-      renderOverviewEnergyGroup("CV-ketel", [
-        renderOverviewEnergyRow("Warmteafgifte", "boilerHeatPower"),
-      ]),
-      renderOverviewEnergyGroup("Systeem", [
-        renderOverviewEnergyRow("Warmteafgifte", "systemHeatPower"),
-      ]),
-      renderOverviewEnergyGroup("Warmtepomp koelen", [
-        renderOverviewEnergyRow("Elektrisch vermogen", "coolingPowerInput"),
-        renderOverviewEnergyRow("Koelafgifte", "totalCoolingPower"),
-        renderOverviewEnergyRow("EER", "totalEer"),
+      renderOverviewEnergyCategory("Koelen", "orange", [
+        renderOverviewEnergyGroup("Warmtepomp", [
+          renderOverviewEnergyRow("Elektrisch vermogen", "coolingPowerInput"),
+          renderOverviewEnergyRow("Koelafgifte", "totalCoolingPower"),
+          renderOverviewEnergyRow("EER", "totalEer"),
+        ]),
       ]),
     ], "blue");
 
     const dailyColumn = renderOverviewEnergyColumn("Vandaag", "Energie vandaag", [
-      renderOverviewEnergyGroup("Warmtepomp verwarmen", [
-        renderOverviewEnergyRow("Elektriciteit", "heatingElectricalEnergyDaily"),
-        renderOverviewEnergyRow("Warmte", "heatpumpThermalEnergyDaily"),
-        renderOverviewEnergyRow("COP", "heatpumpCopDaily"),
+      renderOverviewEnergyCategory("Verwarmen", "blue", [
+        renderOverviewEnergyGroup("Warmtepomp", [
+          renderOverviewEnergyRow("Elektriciteit", "heatingElectricalEnergyDaily"),
+          renderOverviewEnergyRow("Warmte", "heatpumpThermalEnergyDaily"),
+          renderOverviewEnergyRow("COP", "heatpumpCopDaily"),
+        ]),
+        renderOverviewEnergyGroup("CV-ketel", [
+          renderOverviewEnergyRow("Warmte", "boilerThermalEnergyDaily"),
+        ]),
+        renderOverviewEnergyGroup("Systeem", [
+          renderOverviewEnergyRow("Warmte", "systemThermalEnergyDaily"),
+        ]),
       ]),
-      renderOverviewEnergyGroup("CV-ketel", [
-        renderOverviewEnergyRow("Warmte", "boilerThermalEnergyDaily"),
-      ]),
-      renderOverviewEnergyGroup("Systeem", [
-        renderOverviewEnergyRow("Warmte", "systemThermalEnergyDaily"),
-      ]),
-      renderOverviewEnergyGroup("Warmtepomp koelen", [
-        renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyDaily"),
-        renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyDaily"),
-        renderOverviewEnergyRow("EER", "heatpumpEerDaily"),
+      renderOverviewEnergyCategory("Koelen", "orange", [
+        renderOverviewEnergyGroup("Warmtepomp", [
+          renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyDaily"),
+          renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyDaily"),
+          renderOverviewEnergyRow("EER", "heatpumpEerDaily"),
+        ]),
       ]),
     ], "orange");
 
     const cumulativeColumn = renderOverviewEnergyColumn("Cumulatief", "Tot nu toe", [
-      renderOverviewEnergyGroup("Warmtepomp verwarmen", [
-        renderOverviewEnergyRow("Elektriciteit", "heatingElectricalEnergyCumulative"),
-        renderOverviewEnergyRow("Warmte", "heatpumpThermalEnergyCumulative"),
-        renderOverviewEnergyRow("COP", "heatpumpCopCumulative"),
+      renderOverviewEnergyCategory("Verwarmen", "blue", [
+        renderOverviewEnergyGroup("Warmtepomp", [
+          renderOverviewEnergyRow("Elektriciteit", "heatingElectricalEnergyCumulative"),
+          renderOverviewEnergyRow("Warmte", "heatpumpThermalEnergyCumulative"),
+          renderOverviewEnergyRow("COP", "heatpumpCopCumulative"),
+        ]),
+        renderOverviewEnergyGroup("CV-ketel", [
+          renderOverviewEnergyRow("Warmte", "boilerThermalEnergyCumulative"),
+        ]),
+        renderOverviewEnergyGroup("Systeem", [
+          renderOverviewEnergyRow("Warmte", "systemThermalEnergyCumulative"),
+        ]),
       ]),
-      renderOverviewEnergyGroup("CV-ketel", [
-        renderOverviewEnergyRow("Warmte", "boilerThermalEnergyCumulative"),
-      ]),
-      renderOverviewEnergyGroup("Systeem", [
-        renderOverviewEnergyRow("Warmte", "systemThermalEnergyCumulative"),
-      ]),
-      renderOverviewEnergyGroup("Warmtepomp koelen", [
-        renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyCumulative"),
-        renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyCumulative"),
-        renderOverviewEnergyRow("EER", "heatpumpEerCumulative"),
+      renderOverviewEnergyCategory("Koelen", "orange", [
+        renderOverviewEnergyGroup("Warmtepomp", [
+          renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyCumulative"),
+          renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyCumulative"),
+          renderOverviewEnergyRow("EER", "heatpumpEerCumulative"),
+        ]),
       ]),
     ], "green");
 
@@ -4925,59 +4954,71 @@
 
   function renderEnergyView() {
     const currentColumn = renderOverviewEnergyColumn("Nu", "Nu", [
-      renderOverviewEnergyGroup("Warmtepomp verwarmen", [
-        renderOverviewEnergyRow("Elektrisch vermogen", "heatingPowerInput"),
-        renderOverviewEnergyRow("Warmteafgifte", "totalHeat"),
-        renderOverviewEnergyRow("COP", "totalCop"),
+      renderOverviewEnergyCategory("Verwarmen", "blue", [
+        renderOverviewEnergyGroup("Warmtepomp", [
+          renderOverviewEnergyRow("Elektrisch vermogen", "heatingPowerInput"),
+          renderOverviewEnergyRow("Warmteafgifte", "totalHeat"),
+          renderOverviewEnergyRow("COP", "totalCop"),
+        ]),
+        renderOverviewEnergyGroup("CV-ketel", [
+          renderOverviewEnergyRow("Warmteafgifte", "boilerHeatPower"),
+        ]),
+        renderOverviewEnergyGroup("Systeem", [
+          renderOverviewEnergyRow("Warmteafgifte", "systemHeatPower"),
+        ]),
       ]),
-      renderOverviewEnergyGroup("CV-ketel", [
-        renderOverviewEnergyRow("Warmteafgifte", "boilerHeatPower"),
-      ]),
-      renderOverviewEnergyGroup("Systeem", [
-        renderOverviewEnergyRow("Warmteafgifte", "systemHeatPower"),
-      ]),
-      renderOverviewEnergyGroup("Warmtepomp koelen", [
-        renderOverviewEnergyRow("Elektrisch vermogen", "coolingPowerInput"),
-        renderOverviewEnergyRow("Koelafgifte", "totalCoolingPower"),
-        renderOverviewEnergyRow("EER", "totalEer"),
+      renderOverviewEnergyCategory("Koelen", "orange", [
+        renderOverviewEnergyGroup("Warmtepomp", [
+          renderOverviewEnergyRow("Elektrisch vermogen", "coolingPowerInput"),
+          renderOverviewEnergyRow("Koelafgifte", "totalCoolingPower"),
+          renderOverviewEnergyRow("EER", "totalEer"),
+        ]),
       ]),
     ], "blue");
 
     const dailyColumn = renderOverviewEnergyColumn("Vandaag", "Vandaag", [
-      renderOverviewEnergyGroup("Warmtepomp verwarmen", [
-        renderOverviewEnergyRow("Elektriciteit", "heatingElectricalEnergyDaily"),
-        renderOverviewEnergyRow("Warmte", "heatpumpThermalEnergyDaily"),
-        renderOverviewEnergyRow("COP", "heatpumpCopDaily"),
+      renderOverviewEnergyCategory("Verwarmen", "blue", [
+        renderOverviewEnergyGroup("Warmtepomp", [
+          renderOverviewEnergyRow("Elektriciteit", "heatingElectricalEnergyDaily"),
+          renderOverviewEnergyRow("Warmte", "heatpumpThermalEnergyDaily"),
+          renderOverviewEnergyRow("COP", "heatpumpCopDaily"),
+        ]),
+        renderOverviewEnergyGroup("CV-ketel", [
+          renderOverviewEnergyRow("Warmte", "boilerThermalEnergyDaily"),
+        ]),
+        renderOverviewEnergyGroup("Systeem", [
+          renderOverviewEnergyRow("Warmte", "systemThermalEnergyDaily"),
+        ]),
       ]),
-      renderOverviewEnergyGroup("CV-ketel", [
-        renderOverviewEnergyRow("Warmte", "boilerThermalEnergyDaily"),
-      ]),
-      renderOverviewEnergyGroup("Systeem", [
-        renderOverviewEnergyRow("Warmte", "systemThermalEnergyDaily"),
-      ]),
-      renderOverviewEnergyGroup("Warmtepomp koelen", [
-        renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyDaily"),
-        renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyDaily"),
-        renderOverviewEnergyRow("EER", "heatpumpEerDaily"),
+      renderOverviewEnergyCategory("Koelen", "orange", [
+        renderOverviewEnergyGroup("Warmtepomp", [
+          renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyDaily"),
+          renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyDaily"),
+          renderOverviewEnergyRow("EER", "heatpumpEerDaily"),
+        ]),
       ]),
     ], "orange");
 
     const cumulativeColumn = renderOverviewEnergyColumn("Cumulatief", "Cumulatief", [
-      renderOverviewEnergyGroup("Warmtepomp verwarmen", [
-        renderOverviewEnergyRow("Elektriciteit", "heatingElectricalEnergyCumulative"),
-        renderOverviewEnergyRow("Warmte", "heatpumpThermalEnergyCumulative"),
-        renderOverviewEnergyRow("COP", "heatpumpCopCumulative"),
+      renderOverviewEnergyCategory("Verwarmen", "blue", [
+        renderOverviewEnergyGroup("Warmtepomp", [
+          renderOverviewEnergyRow("Elektriciteit", "heatingElectricalEnergyCumulative"),
+          renderOverviewEnergyRow("Warmte", "heatpumpThermalEnergyCumulative"),
+          renderOverviewEnergyRow("COP", "heatpumpCopCumulative"),
+        ]),
+        renderOverviewEnergyGroup("CV-ketel", [
+          renderOverviewEnergyRow("Warmte", "boilerThermalEnergyCumulative"),
+        ]),
+        renderOverviewEnergyGroup("Systeem", [
+          renderOverviewEnergyRow("Warmte", "systemThermalEnergyCumulative"),
+        ]),
       ]),
-      renderOverviewEnergyGroup("CV-ketel", [
-        renderOverviewEnergyRow("Warmte", "boilerThermalEnergyCumulative"),
-      ]),
-      renderOverviewEnergyGroup("Systeem", [
-        renderOverviewEnergyRow("Warmte", "systemThermalEnergyCumulative"),
-      ]),
-      renderOverviewEnergyGroup("Warmtepomp koelen", [
-        renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyCumulative"),
-        renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyCumulative"),
-        renderOverviewEnergyRow("EER", "heatpumpEerCumulative"),
+      renderOverviewEnergyCategory("Koelen", "orange", [
+        renderOverviewEnergyGroup("Warmtepomp", [
+          renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyCumulative"),
+          renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyCumulative"),
+          renderOverviewEnergyRow("EER", "heatpumpEerCumulative"),
+        ]),
       ]),
     ], "green");
 

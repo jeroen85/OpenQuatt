@@ -3217,6 +3217,65 @@ body.oq-page-light {
 
 .oq-overview-energy-groups {
   display: grid;
+  gap: 14px;
+}
+
+.oq-overview-energy-category {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--oq-overview-row-border);
+  background: color-mix(in srgb, var(--oq-overview-surface) 90%, transparent);
+}
+
+.oq-overview-energy-category--blue {
+  background: color-mix(in srgb, rgba(59, 130, 246, 0.08) 100%, var(--oq-overview-surface));
+}
+
+.oq-overview-energy-category--orange {
+  background: color-mix(in srgb, rgba(249, 115, 22, 0.08) 100%, var(--oq-overview-surface));
+}
+
+.oq-overview-energy-category-head {
+  display: flex;
+  align-items: center;
+}
+
+.oq-overview-energy-category-head span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.oq-overview-energy-category--blue .oq-overview-energy-category-head span {
+  color: #1d4ed8;
+  background: rgba(59, 130, 246, 0.14);
+}
+
+.oq-overview-energy-category--orange .oq-overview-energy-category-head span {
+  color: #c2410c;
+  background: rgba(249, 115, 22, 0.16);
+}
+
+.oq-helper-shell--dark .oq-overview-energy-category--blue .oq-overview-energy-category-head span {
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.22);
+}
+
+.oq-helper-shell--dark .oq-overview-energy-category--orange .oq-overview-energy-category-head span {
+  color: #fdba74;
+  background: rgba(249, 115, 22, 0.24);
+}
+
+.oq-overview-energy-category-groups {
+  display: grid;
   gap: 10px;
 }
 
