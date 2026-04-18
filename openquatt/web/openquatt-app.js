@@ -363,6 +363,9 @@
   ];
   const OVERVIEW_KEYS = [
     "strategy",
+    "openquattEnabled",
+    "manualCoolingEnable",
+    "manualSilentEnable",
     "coolingEnableSelected",
     "coolingRequestActive",
     "coolingPermitted",
@@ -467,6 +470,9 @@
   ];
   const SETTINGS_KEYS = [
     "strategy",
+    "openquattEnabled",
+    "manualCoolingEnable",
+    "manualSilentEnable",
     ...FLOW_SETTING_KEYS,
     ...COOLING_SETTING_KEYS,
     ...LIMIT_KEYS,
@@ -2808,8 +2814,20 @@
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
+      state.entities[key] = {
+        ...(state.entities[key] || {}),
+        value: enabled,
+        state: enabled,
+      };
       state.controlNotice = `${entity.name} ${enabled ? "ingeschakeld" : "uitgeschakeld"}.`;
-      await syncEntities();
+      state.busyAction = "";
+      if (state.appView === "overview") {
+        await refreshEntities([...OVERVIEW_KEYS, ...HEADER_ENTITY_KEYS, "setupComplete", ...FIRMWARE_ENTITY_KEYS], "state");
+      } else if (state.appView === "settings") {
+        await refreshEntities(getSettingsRefreshKeys(), "state");
+      } else {
+        await refreshEntities(["setupComplete", "strategy", "openquattEnabled", "manualCoolingEnable", "manualSilentEnable", ...FLOW_SETTING_KEYS, ...LIMIT_KEYS], "state");
+      }
       render();
     } catch (error) {
       state.controlError = `${entity.name} aanpassen mislukt (${error.message}).`;
