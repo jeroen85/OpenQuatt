@@ -5218,40 +5218,40 @@
     const coolingModeActive = getEntityStateText("controlModeLabel", "").toLowerCase().includes("cm5");
 
     let coolingStatus = "Uit";
-    let coolingCopy = "Handmatige koeltoestemming staat uit.";
+    let coolingCopy = "Koeling staat uit.";
     if (manualCoolingEnabled && coolingModeActive) {
       coolingStatus = "Actief";
-      coolingCopy = "Koeling draait nu en blijft verder door safety en koelvraag begrensd.";
+      coolingCopy = "Koeling draait nu.";
     } else if (manualCoolingEnabled && coolingBlocked) {
       coolingStatus = "Geblokkeerd";
       coolingCopy = formatCoolingBlockReason(getEntityStateText("coolingBlockReason", "Koeling wacht nog op veilige condities."));
     } else if (manualCoolingEnabled && coolingRequestActive) {
-      coolingStatus = "Wacht op start";
-      coolingCopy = "Koelvraag is actief; de compressor start zodra de regeling ruimte ziet.";
+      coolingStatus = "Start bijna";
+      coolingCopy = "Er is koelvraag. Koeling start zodra dat kan.";
     } else if (manualCoolingEnabled) {
-      coolingStatus = "Toegestaan";
-      coolingCopy = "Koeling is handmatig toegestaan en wacht op koelvraag vanuit de kamerregeling.";
+      coolingStatus = "Aan";
+      coolingCopy = "Koeling staat aan en wacht op koelvraag.";
     }
 
     let silentStatus = "Uit";
-    let silentCopy = "Normale compressorlimieten zijn actief.";
+    let silentCopy = "Stille modus staat uit.";
     if (manualSilentEnabled) {
-      silentStatus = "Geforceerd";
-      silentCopy = "Handmatige override houdt stille modus actief, los van het tijdvenster.";
+      silentStatus = "Aan";
+      silentCopy = "Stille modus staat aan, ook buiten het tijdvenster.";
     } else if (isEntityActive("silentActive")) {
       silentStatus = "Actief";
-      silentCopy = "Stille modus is nu actief via het ingestelde tijdvenster.";
+      silentCopy = "Stille modus staat nu aan via het tijdvenster.";
     }
 
     return [
       {
         key: "openquattEnabled",
         label: "OpenQuatt",
-        status: openquattEnabled ? "Actief" : "Gepauzeerd",
+        status: openquattEnabled ? "Aan" : "Gepauzeerd",
         copy: openquattEnabled
-          ? "Warmte- en koelregeling mogen normaal doorlopen."
-          : "Nieuwe warmte- en koelvraag staan uit; bewaking en vorstbeveiliging blijven actief.",
-        buttonLabel: openquattEnabled ? "Pauzeer" : "Hervat",
+          ? "Verwarmen en koelen mogen gewoon werken."
+          : "Verwarmen en koelen staan uit. Bescherming blijft actief.",
+        buttonLabel: openquattEnabled ? "Pauzeer" : "Zet aan",
         nextState: openquattEnabled ? "off" : "on",
         tone: openquattEnabled ? "green" : "neutral",
       },
@@ -5260,7 +5260,7 @@
         label: "Koeling",
         status: coolingStatus,
         copy: coolingCopy,
-        buttonLabel: manualCoolingEnabled ? "Stop" : "Sta toe",
+        buttonLabel: manualCoolingEnabled ? "Zet uit" : "Zet aan",
         nextState: manualCoolingEnabled ? "off" : "on",
         tone: manualCoolingEnabled ? (coolingModeActive ? "blue" : "sky") : "neutral",
       },
@@ -5269,7 +5269,7 @@
         label: "Stille modus",
         status: silentStatus,
         copy: silentCopy,
-        buttonLabel: manualSilentEnabled ? "Normaal" : "Forceer",
+        buttonLabel: manualSilentEnabled ? "Zet uit" : "Zet aan",
         nextState: manualSilentEnabled ? "off" : "on",
         tone: manualSilentEnabled ? "orange" : "neutral",
       },
