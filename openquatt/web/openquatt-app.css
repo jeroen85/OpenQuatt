@@ -1735,6 +1735,47 @@ body.oq-page-light {
   line-height: 1.3;
 }
 
+.oq-settings-callout summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--oq-helper-ink);
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.oq-settings-callout summary::-webkit-details-marker {
+  display: none;
+}
+
+.oq-settings-callout summary::before {
+  content: "i";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.12);
+  color: rgb(37, 99, 235);
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.oq-settings-callout[open] summary {
+  margin-bottom: 10px;
+}
+
+.oq-settings-callout-body p {
+  margin: 0 0 10px;
+  color: var(--oq-helper-soft);
+  line-height: 1.6;
+}
+
 .oq-settings-callout ul {
   margin: 0;
   padding-left: 18px;

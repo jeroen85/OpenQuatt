@@ -3629,19 +3629,22 @@
       "Koeling zonder dauwpunt",
       "Standaard blijft koeling zonder dauwpuntbron geblokkeerd. Met deze opt-in mag OpenQuatt een conservatieve fallback gebruiken op basis van buitentemperatuur en de afgelopen nacht.",
       `
-        <div class="oq-settings-callout oq-settings-callout--cooling">
-          <strong>Fallback-regel</strong>
-          <ul>
-            <li>Buiten &lt; 20°C: uit</li>
-            <li>20-24°C: minimum water 19°C</li>
-            <li>24-28°C: minimum water 20°C</li>
-            <li>28-32°C: minimum water 21°C</li>
-            <li>Boven 32°C: minimum water 22°C</li>
-            <li>Warme nacht 18-19°C: +1°C</li>
-            <li>Zeer warme nacht 19-20°C: +2°C</li>
-            <li>Tropische nacht vanaf 20°C: fallback uit</li>
-          </ul>
-        </div>
+        <details class="oq-settings-callout oq-settings-callout--cooling">
+          <summary>Fallback-regel bekijken</summary>
+          <div class="oq-settings-callout-body">
+            <p>Onder de 20°C buiten blijft fallback-cooling uit. Daarboven gebruikt OpenQuatt 19/20/21/22°C als minimum water, met extra correctie voor warme nachten.</p>
+            <ul>
+              <li>Buiten &lt; 20°C: uit</li>
+              <li>20-24°C: minimum water 19°C</li>
+              <li>24-28°C: minimum water 20°C</li>
+              <li>28-32°C: minimum water 21°C</li>
+              <li>Boven 32°C: minimum water 22°C</li>
+              <li>Warme nacht 18-19°C: +1°C</li>
+              <li>Zeer warme nacht 19-20°C: +2°C</li>
+              <li>Tropische nacht vanaf 20°C: fallback uit</li>
+            </ul>
+          </div>
+        </details>
         <div class="oq-settings-grid">
           ${renderSettingsOptionCardsField("coolingWithoutDewPointMode", "Koeling zonder dauwpuntbeveiliging", "Kies of OpenQuatt zonder dauwpuntbron volledig moet blokkeren, of een conservatieve fallback mag gebruiken.", fallbackModeCopy, "oq-settings-field--span-2")}
           ${renderSettingsStaticField("coolingGuardMode", "Actieve beveiligingsroute", "Laat zien of koeling nu via dauwpunt of via de fallback wordt begrensd.", guardMode)}
