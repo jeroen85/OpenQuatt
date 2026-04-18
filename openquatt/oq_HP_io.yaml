@@ -847,6 +847,15 @@ sensor:
   # individual Modbus bit entities per heat pump.
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
+    id: ${hp_id}_status_2115_raw
+    register_type: holding
+    address: 2115
+    value_type: U_WORD
+    skip_updates: ${oq_skip_30s}
+    internal: true
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
     id: ${hp_id}_status_2119_raw
     register_type: holding
     address: 2119
@@ -971,51 +980,6 @@ binary_sensor:
     skip_updates: ${oq_skip_10s}
     web_server:
       sorting_group_id: oq_${hp_id}
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_prot_low_pressure
-    name: "${prefix}Protection - Low pressure switch active"
-    icon: mdi:gauge-low
-    register_type: holding
-    address: 2115
-    bitmask: 0x0800   # bit 11
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_hp_diagnostics
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_prot_high_pressure
-    name: "${prefix}Protection - High pressure switch active"
-    icon: mdi:gauge-high
-    register_type: holding
-    address: 2115
-    bitmask: 0x1000   # bit 12
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_hp_diagnostics
-
-  - platform: modbus_controller
-    modbus_controller_id: ${hp_id}
-    id: ${hp_id}_prot_water_flow
-    name: "${prefix}Protection - Water flow switch"
-    icon: mdi:water-alert
-    register_type: holding
-    address: 2115
-    bitmask: 0x2000   # bit 13
-    device_class: problem
-    disabled_by_default: true
-    entity_category: diagnostic
-    skip_updates: ${oq_skip_30s}
-    web_server:
-      sorting_group_id: oq_hp_diagnostics
 
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
@@ -1177,9 +1141,15 @@ text_sensor:
         return !isnan(raw) && ((static_cast<uint16_t>(lroundf(raw)) & bitmask) != 0);
       };
 
+      const float status_2115 = id(${hp_id}_status_2115_raw).state;
       const float status_2119 = id(${hp_id}_status_2119_raw).state;
       const float status_2120 = id(${hp_id}_status_2120_raw).state;
       const float status_2121 = id(${hp_id}_status_2121_raw).state;
+
+      // 2115
+      if (has_bit(status_2115, 0x0800u)) add("Low pressure switch active");
+      if (has_bit(status_2115, 0x1000u)) add("High pressure switch active");
+      if (has_bit(status_2115, 0x2000u)) add("Water flow switch");
 
       // 2119
       if (has_bit(status_2119, 0x0001u)) add("Main line current");
