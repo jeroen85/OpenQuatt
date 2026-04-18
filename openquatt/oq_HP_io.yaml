@@ -848,11 +848,16 @@ sensor:
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
     id: ${hp_id}_status_2115_raw
+    name: "${prefix}Status 2115 raw"
+    icon: mdi:counter
     register_type: holding
     address: 2115
     value_type: U_WORD
+    entity_category: diagnostic
+    disabled_by_default: true
     skip_updates: ${oq_skip_30s}
-    internal: true
+    web_server:
+      sorting_group_id: oq_hp_diagnostics
 
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
