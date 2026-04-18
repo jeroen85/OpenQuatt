@@ -1185,8 +1185,9 @@ views:
               - `> 32°C`: minimum water `22°C`
 
               Nachtcorrectie:
-              - nachtminimum `< 18°C`: `+0K`
-              - `18–20°C`: `+1K`
+              - nachtminimum `< 18°C`: `+0°C`
+              - `18–19°C`: `+1°C`
+              - `19–20°C`: `+2°C`
               - `>= 20°C`: fallback uit
 
               Deze staffel vervangt de normale dauwpuntmarge; er komt dus niet nog eens extra `+2K` bovenop.

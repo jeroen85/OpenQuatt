@@ -154,8 +154,9 @@ Met `Cooling Without Dew Point` kun je expliciet een fallback toestaan. Die fall
 
 Daarbovenop telt de minimum buitentemperatuur van de afgelopen nacht mee:
 
-- `< 18°C`: `+0K`
-- `18–20°C`: `+1K`
+- `< 18°C`: `+0°C`
+- `18–19°C`: `+1°C`
+- `19–20°C`: `+2°C`
 - `>= 20°C`: fallback uit
 
 Belangrijk: in deze fallback-route wordt de gewone dauwpuntmarge niet nog eens extra bovenop de staffel gezet. De staffel zelf ís hier de conservatieve marge.

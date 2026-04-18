@@ -1134,8 +1134,9 @@ views:
               - `> 32°C`: minimum water `22°C`
 
               Night correction:
-              - night minimum `< 18°C`: `+0K`
-              - `18–20°C`: `+1K`
+              - night minimum `< 18°C`: `+0°C`
+              - `18–19°C`: `+1°C`
+              - `19–20°C`: `+2°C`
               - `>= 20°C`: fallback off
 
               This table replaces the normal dew-point safety margin, so no extra `+2K` is added on top.

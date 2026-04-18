@@ -3637,7 +3637,8 @@
             <li>24-28°C: minimum water 20°C</li>
             <li>28-32°C: minimum water 21°C</li>
             <li>Boven 32°C: minimum water 22°C</li>
-            <li>Warme nacht 18-20°C: +1°C</li>
+            <li>Warme nacht 18-19°C: +1°C</li>
+            <li>Zeer warme nacht 19-20°C: +2°C</li>
             <li>Tropische nacht vanaf 20°C: fallback uit</li>
           </ul>
         </div>

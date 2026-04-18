@@ -137,7 +137,8 @@ De fallback gebruikt deze basistabel voor de minimale watertemperatuur:
 Daarbovenop kijkt OpenQuatt naar de minimum buitentemperatuur van de afgelopen nacht:
 
 - nachtminimum `< 18°C`: geen correctie;
-- nachtminimum `18–20°C`: `+1K` op de fallback-ondergrens;
+- nachtminimum `18–19°C`: `+1°C` op de fallback-ondergrens;
+- nachtminimum `19–20°C`: `+2°C` op de fallback-ondergrens;
 - nachtminimum `>= 20°C`: fallback-cooling geblokkeerd.
 
 Die warme-nachtcorrectie werkt als een eenvoudige risicovlag voor benauwde of tropische luchtmassa's. Juist op zulke dagen is de kans groter dat de woning al met een hoger intern dauwpunt aan de dag begint.

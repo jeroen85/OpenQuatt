@@ -109,7 +109,8 @@ De fallback werkt bewust simpel:
 - `24–28°C`: minimum water `20°C`;
 - `28–32°C`: minimum water `21°C`;
 - `> 32°C`: minimum water `22°C`;
-- nachtminimum `18–20°C`: `+1K`;
+- nachtminimum `18–19°C`: `+1°C`;
+- nachtminimum `19–20°C`: `+2°C`;
 - nachtminimum `>= 20°C`: fallback uit.
 
 De gewone dauwpuntmarge komt daar niet nog eens extra bovenop. Die conservatieve staffel is in de fallbackmodus zelf al de veiligheidsmarge.

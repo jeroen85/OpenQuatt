@@ -303,8 +303,13 @@ text_sensor:
         }
         if (id(cooling_fallback_night_min_outdoor_temp).has_state() &&
             !isnan(id(cooling_fallback_night_min_outdoor_temp).state) &&
+            id(cooling_fallback_night_min_outdoor_temp).state >= 19.0f) {
+          return {"Fallback active (+2°C very warm night)"};
+        }
+        if (id(cooling_fallback_night_min_outdoor_temp).has_state() &&
+            !isnan(id(cooling_fallback_night_min_outdoor_temp).state) &&
             id(cooling_fallback_night_min_outdoor_temp).state >= 18.0f) {
-          return {"Fallback active (+1K warm night)"};
+          return {"Fallback active (+1°C warm night)"};
         }
         return {"Fallback active"};
       }
@@ -751,7 +756,8 @@ sensor:
           !isnan(id(cooling_fallback_night_min_outdoor_temp).state)) {
         const float night_min_c = id(cooling_fallback_night_min_outdoor_temp).state;
         if (night_min_c >= 20.0f) return NAN;
-        if (night_min_c >= 18.0f) correction_c = 1.0f;
+        if (night_min_c >= 19.0f) correction_c = 2.0f;
+        else if (night_min_c >= 18.0f) correction_c = 1.0f;
       }
 
       return base_floor_c + correction_c;
