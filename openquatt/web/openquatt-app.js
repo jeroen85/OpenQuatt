@@ -94,7 +94,8 @@
     firmwareUpdateStatus: { domain: "text_sensor", name: "Firmware Update Status", optional: true },
     checkFirmwareUpdates: { domain: "button", name: "Check Firmware Updates", optional: true },
     uptime: { domain: "sensor", name: "Uptime", optional: true },
-    uptimeReadable: { domain: "text_sensor", name: "Uptime", optional: true },
+    uptimeReadable: { domain: "text_sensor", name: "Uptime readable", optional: true },
+    uptimeReadableLegacy: { domain: "text_sensor", name: "Uptime", optional: true },
     ipAddress: { domain: "text_sensor", name: "IP Address", optional: true },
     projectVersionText: { domain: "text_sensor", name: "OpenQuatt Version", optional: true },
     releaseChannelText: { domain: "text_sensor", name: "OpenQuatt Release Channel", optional: true },
@@ -340,7 +341,7 @@
   const SILENT_SETTING_KEYS = ["silentStartTime", "silentEndTime", "silentMax", "dayMax"];
   const FIRMWARE_ENTITY_KEYS = ["firmwareUpdate", "firmwareUpdateChannel", "firmwareUpdateProgress", "firmwareUpdateStatus"];
   const FIRMWARE_MODAL_KEYS = [...FIRMWARE_ENTITY_KEYS, "projectVersionText", "releaseChannelText"];
-  const HEADER_ENTITY_KEYS = ["uptime", "uptimeReadable", "ipAddress", "projectVersionText", "releaseChannelText"];
+  const HEADER_ENTITY_KEYS = ["uptime", "uptimeReadable", "uptimeReadableLegacy", "ipAddress", "projectVersionText", "releaseChannelText"];
   const OVERVIEW_KEYS = [
     "strategy",
     "coolingEnableSelected",
@@ -1047,8 +1048,21 @@
     return String(entity?.uom ?? entity?.unit_of_measurement ?? "").trim().toLowerCase();
   }
 
+  function getNumericEntityValue(entity) {
+    const rawState = entity?.state;
+    if (rawState !== "" && rawState !== null && rawState !== undefined) {
+      const numericState = Number(rawState);
+      if (Number.isFinite(numericState)) {
+        return numericState;
+      }
+    }
+    const rawValue = entity?.value;
+    const numericValue = Number(rawValue);
+    return Number.isFinite(numericValue) ? numericValue : NaN;
+  }
+
   function formatUptimeFromMeta() {
-    const uptimeValue = Number(state.entities.uptime?.state ?? state.entities.uptime?.value);
+    const uptimeValue = getNumericEntityValue(state.entities.uptime);
     if (Number.isFinite(uptimeValue) && uptimeValue >= 0) {
       const uptimeUnit = getNumericEntityUnit(state.entities.uptime);
       if (uptimeUnit === "d") {
@@ -1061,7 +1075,13 @@
         return formatDurationFromMinutes(uptimeValue / 60);
       }
     }
-    const uptimeText = String(state.entities.uptimeReadable?.state ?? state.entities.uptimeReadable?.value ?? "").trim();
+    const uptimeText = String(
+      state.entities.uptimeReadable?.state
+      ?? state.entities.uptimeReadable?.value
+      ?? state.entities.uptimeReadableLegacy?.state
+      ?? state.entities.uptimeReadableLegacy?.value
+      ?? ""
+    ).trim();
     if (uptimeText && uptimeText.toLowerCase() !== "unknown") {
       return uptimeText;
     }

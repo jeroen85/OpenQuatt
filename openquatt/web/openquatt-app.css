@@ -5036,6 +5036,26 @@ esp-app.oq-native-app.oq-native-app--collapsed {
   display: none;
 }
 
+@media (max-width: 980px) {
+  .oq-helper-logo-lockup {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .oq-helper-brand-copy {
+    width: 100%;
+  }
+
+  .oq-helper-logo-mark {
+    width: clamp(104px, 20vw, 126px);
+  }
+
+  .oq-helper-head h1 {
+    font-size: clamp(1.9rem, 8vw, 2.7rem);
+  }
+}
+
 @media (max-width: 860px) {
   .oq-helper-head,
   .oq-overview-head,
@@ -5291,13 +5311,13 @@ esp-app.oq-native-app.oq-native-app--collapsed {
 
 @media (max-width: 640px) {
   #oq-helper-root {
-    width: calc(100vw - 12px);
-    margin: 8px auto 0;
+    width: calc(100vw - 10px);
+    margin: 5px auto 0;
   }
 
   .oq-helper-card,
   .oq-helper-panel {
-    padding: 14px;
+    padding: 12px;
   }
 
   .oq-helper-head {
@@ -5338,8 +5358,59 @@ esp-app.oq-native-app.oq-native-app--collapsed {
     font-size: 0.95rem;
   }
 
+  .oq-helper-hub:not(.oq-helper-hub--collapsed) {
+    margin-top: 12px;
+    padding: 10px 11px;
+    border-radius: 18px;
+  }
+
+  .oq-helper-hub-head {
+    gap: 8px;
+  }
+
+  .oq-helper-hub-block {
+    gap: 7px;
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+
+  .oq-helper-hub-title {
+    font-size: 0.92rem;
+  }
+
+  .oq-helper-hub-toggle--close {
+    width: 32px;
+    height: 32px;
+    font-size: 0.94rem;
+  }
+
+  .oq-helper-hub-chip,
+  .oq-helper-hub-action {
+    min-height: 34px;
+    padding-inline: 10px;
+    font-size: 0.82rem;
+  }
+
+  .oq-helper-hub-switches,
+  .oq-helper-hub-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .oq-helper-status-item {
+    padding: 8px 10px;
+    border-radius: 13px;
+  }
+
+  .oq-helper-status-label {
+    font-size: 0.56rem;
+  }
+
+  .oq-helper-status-value {
+    font-size: 0.8rem;
+  }
+
   .oq-helper-status-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
 
   .oq-helper-card--wide-flush .oq-helper-panel--flush {
@@ -5479,5 +5550,13 @@ esp-app.oq-native-app.oq-native-app--collapsed {
 
   esp-app.oq-native-app {
     width: calc(100vw - 12px);
+  }
+}
+
+@media (max-width: 390px) {
+  .oq-helper-status-grid,
+  .oq-helper-hub-switches,
+  .oq-helper-hub-actions {
+    grid-template-columns: 1fr;
   }
 }
