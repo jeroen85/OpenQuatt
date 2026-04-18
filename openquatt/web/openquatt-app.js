@@ -93,6 +93,7 @@
     firmwareUpdateProgress: { domain: "sensor", name: "Firmware Update Progress", optional: true },
     firmwareUpdateStatus: { domain: "text_sensor", name: "Firmware Update Status", optional: true },
     checkFirmwareUpdates: { domain: "button", name: "Check Firmware Updates", optional: true },
+    uptimeDays: { domain: "sensor", name: "Uptime", optional: true },
     uptimeReadable: { domain: "text_sensor", name: "Uptime", optional: true },
     ipAddress: { domain: "text_sensor", name: "IP Address", optional: true },
     projectVersionText: { domain: "text_sensor", name: "OpenQuatt Version", optional: true },
@@ -339,7 +340,7 @@
   const SILENT_SETTING_KEYS = ["silentStartTime", "silentEndTime", "silentMax", "dayMax"];
   const FIRMWARE_ENTITY_KEYS = ["firmwareUpdate", "firmwareUpdateChannel", "firmwareUpdateProgress", "firmwareUpdateStatus"];
   const FIRMWARE_MODAL_KEYS = [...FIRMWARE_ENTITY_KEYS, "projectVersionText", "releaseChannelText"];
-  const HEADER_ENTITY_KEYS = ["uptimeReadable", "ipAddress", "projectVersionText", "releaseChannelText"];
+  const HEADER_ENTITY_KEYS = ["uptimeDays", "uptimeReadable", "ipAddress", "projectVersionText", "releaseChannelText"];
   const OVERVIEW_KEYS = [
     "strategy",
     "coolingEnableSelected",
@@ -1025,7 +1026,28 @@
     }
   }
 
+  function formatDurationFromMinutes(totalMinutes) {
+    if (!Number.isFinite(totalMinutes) || totalMinutes < 0) {
+      return "—";
+    }
+    const wholeMinutes = Math.floor(totalMinutes);
+    const days = Math.floor(wholeMinutes / 1440);
+    const hours = Math.floor((wholeMinutes % 1440) / 60);
+    const minutes = wholeMinutes % 60;
+    if (days > 0) {
+      return `${days}d ${hours}u`;
+    }
+    if (hours > 0) {
+      return `${hours}u ${minutes}m`;
+    }
+    return `${minutes}m`;
+  }
+
   function formatUptimeFromMeta() {
+    const uptimeDays = Number(state.entities.uptimeDays?.state ?? state.entities.uptimeDays?.value);
+    if (Number.isFinite(uptimeDays) && uptimeDays >= 0) {
+      return formatDurationFromMinutes(uptimeDays * 1440);
+    }
     const uptimeText = String(state.entities.uptimeReadable?.state ?? state.entities.uptimeReadable?.value ?? "").trim();
     if (uptimeText && uptimeText.toLowerCase() !== "unknown") {
       return uptimeText;
@@ -1034,17 +1056,7 @@
     if (!Number.isFinite(bootedAt) || bootedAt <= 0) {
       return "—";
     }
-    const totalMinutes = Math.max(0, Math.floor((Date.now() - bootedAt) / 60000));
-    const days = Math.floor(totalMinutes / 1440);
-    const hours = Math.floor((totalMinutes % 1440) / 60);
-    const minutes = totalMinutes % 60;
-    if (days > 0) {
-      return `${days}d ${hours}u`;
-    }
-    if (hours > 0) {
-      return `${hours}u ${minutes}m`;
-    }
-    return `${minutes}m`;
+    return formatDurationFromMinutes((Date.now() - bootedAt) / 60000);
   }
 
   function formatDeviceUptime() {

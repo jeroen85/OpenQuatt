@@ -90,6 +90,11 @@
     }
   }
 
+  function syncUptimeEntity() {
+    const uptimeDays = Math.max(0, (Date.now() - state.bootedAt) / 86400000);
+    setNumber("Uptime", Number(uptimeDays.toFixed(3)), "d");
+  }
+
   function setText(domain, name, value) {
     const entity = getEntity(domain, name);
     if (!entity) {
@@ -231,6 +236,8 @@
     setEntity("button", "Check Firmware Updates", { state: "" });
     setEntity("text_sensor", "OpenQuatt Version", { state: "v0.26.0", value: "v0.26.0" });
     setEntity("text_sensor", "OpenQuatt Release Channel", { state: "dev", value: "dev" });
+    setEntity("sensor", "Uptime", { value: 0, uom: "d" });
+    syncUptimeEntity();
     setEntity("sensor", "Firmware Update Progress", { value: 0, uom: "%" });
     setEntity("text_sensor", "Firmware Update Status", { state: "Idle", value: "Idle" });
     setEntity("update", "Firmware Update", {
@@ -460,6 +467,7 @@
   }
 
   function syncDevMeta() {
+    syncUptimeEntity();
     const updateEntity = getEntity("update", "Firmware Update");
     const updateAvailable = Boolean(
       updateEntity
