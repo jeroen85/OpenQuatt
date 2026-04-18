@@ -1154,32 +1154,67 @@ views:
               - entity: binary_sensor.openquatt_cooling_enable_selected
                 name: Geselecteerde koeltoestemming
               - entity: binary_sensor.openquatt_cooling_request_active
-                name: Cooling request active
+                name: Koelvraag actief
               - entity: binary_sensor.openquatt_cooling_permitted
-                name: Cooling permitted
+                name: Koeling toegestaan
+              - entity: select.openquatt_cooling_without_dew_point
+                name: Koeling zonder dauwpunt
+              - entity: sensor.openquatt_cooling_guard_mode
+                name: Actieve koelbeveiliging
               - entity: sensor.openquatt_cooling_block_reason
-                name: Cooling block reason
+                name: Reden koelblokkade
       - type: grid
         cards:
           - type: heading
             icon: mdi:water-thermometer
             heading: Dauwpuntveiligheid
             heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Uitleg fallback zonder dauwpunt</strong></summary>
+
+              Normaal gebruikt OpenQuatt het hoogste geldige dauwpunt plus de ingestelde veiligheidsmarge.
+
+              Zonder dauwpuntbron blijft koeling standaard geblokkeerd. Alleen als `Koeling zonder dauwpunt` expliciet is toegestaan, gebruikt OpenQuatt een conservatieve fallback:
+
+              - `< 20°C` buiten: uit
+              - `20–24°C`: minimum water `19°C`
+              - `24–28°C`: minimum water `20°C`
+              - `28–32°C`: minimum water `21°C`
+              - `> 32°C`: minimum water `22°C`
+
+              Nachtcorrectie:
+              - nachtminimum `< 18°C`: `+0K`
+              - `18–20°C`: `+1K`
+              - `>= 20°C`: fallback uit
+
+              Deze staffel vervangt de normale dauwpuntmarge; er komt dus niet nog eens extra `+2K` bovenop.
+              </details>
+            text_only: true
+            grid_options:
+              columns: full
           - type: entities
             show_header_toggle: false
             entities:
               - entity: sensor.openquatt_cooling_room_count_selected
-                name: Cooling room count
+                name: Aantal koelruimtes
               - entity: sensor.openquatt_cooling_valid_room_count
-                name: Cooling valid room count
+                name: Geldige koelruimtes
               - entity: binary_sensor.openquatt_cooling_dew_point_available
-                name: Cooling dew point available
+                name: Dauwpunt beschikbaar
               - entity: sensor.openquatt_cooling_dew_point_selected
-                name: Cooling dew point (selected)
+                name: Geselecteerd dauwpunt
               - entity: sensor.openquatt_cooling_safety_margin_selected
-                name: Cooling safety margin
+                name: Dauwpunt veiligheidsmarge
               - entity: sensor.openquatt_cooling_minimum_safe_supply_temp
-                name: Cooling minimum safe supply temp
+                name: Minimale veilige aanvoer
+              - entity: sensor.openquatt_cooling_effective_min_supply_temp
+                name: Actieve minimale aanvoer
+              - entity: sensor.openquatt_cooling_fallback_min_supply_temp
+                name: Fallback minimale aanvoer
+              - entity: sensor.openquatt_cooling_fallback_night_min_outdoor_temp
+                name: Nachtminimum buitentemperatuur
       - type: grid
         cards:
           - type: heading

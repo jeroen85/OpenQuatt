@@ -166,8 +166,8 @@ sensor:
       // This keeps strong cooling possible when the room is clearly too warm,
       // but favors warmer water and calmer modulation near setpoint.
       float base_floor_c = id(cooling_min_supply_temp).state;
-      if (id(minimum_safe_supply_temp).has_state() && !isnan(id(minimum_safe_supply_temp).state)) {
-        base_floor_c = fmaxf(base_floor_c, id(minimum_safe_supply_temp).state);
+      if (id(cooling_effective_min_supply_temp).has_state() && !isnan(id(cooling_effective_min_supply_temp).state)) {
+        base_floor_c = fmaxf(base_floor_c, id(cooling_effective_min_supply_temp).state);
       }
 
       float comfort_offset_c = 0.8f;
@@ -303,8 +303,8 @@ interval:
 
           float safe_gap_c = NAN;
           // Add a small explicit approach zone near the dew-point-safe floor.
-          if (id(minimum_safe_supply_temp).has_state() && !isnan(id(minimum_safe_supply_temp).state)) {
-            safe_gap_c = id(oq_system_supply_temp).state - id(minimum_safe_supply_temp).state;
+          if (id(cooling_effective_min_supply_temp).has_state() && !isnan(id(cooling_effective_min_supply_temp).state)) {
+            safe_gap_c = id(oq_system_supply_temp).state - id(cooling_effective_min_supply_temp).state;
             if (safe_gap_c <= stop_safe_floor_limit_c) {
               demand = 0;
               integral = 0.0f;

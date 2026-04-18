@@ -1094,6 +1094,10 @@ views:
                 name: Cooling request active
               - entity: binary_sensor.openquatt_cooling_permitted
                 name: Cooling permitted
+              - entity: select.openquatt_cooling_without_dew_point
+                name: Allow cooling without dew point
+              - entity: sensor.openquatt_cooling_guard_mode
+                name: Cooling guard mode
               - entity: sensor.openquatt_cooling_block_reason
                 name: Cooling block reason
       - type: grid
@@ -1102,6 +1106,31 @@ views:
             icon: mdi:water-thermometer
             heading: Dew point safety
             heading_style: title
+          - type: markdown
+            content: |-
+              <details>
+              <summary><strong>Fallback without dew point</strong></summary>
+
+              Normally OpenQuatt uses the highest valid dew point plus the configured safety margin.
+
+              Without a dew point source, cooling stays blocked by default. Only when `Cooling without dew point` is explicitly allowed, OpenQuatt uses a conservative fallback:
+
+              - outdoor `< 20°C`: off
+              - `20–24°C`: minimum water `19°C`
+              - `24–28°C`: minimum water `20°C`
+              - `28–32°C`: minimum water `21°C`
+              - `> 32°C`: minimum water `22°C`
+
+              Night correction:
+              - night minimum `< 18°C`: `+0K`
+              - `18–20°C`: `+1K`
+              - `>= 20°C`: fallback off
+
+              This table replaces the normal dew-point safety margin, so no extra `+2K` is added on top.
+              </details>
+            text_only: true
+            grid_options:
+              columns: full
           - type: entities
             show_header_toggle: false
             entities:
@@ -1117,6 +1146,12 @@ views:
                 name: Cooling safety margin
               - entity: sensor.openquatt_cooling_minimum_safe_supply_temp
                 name: Cooling minimum safe supply temp
+              - entity: sensor.openquatt_cooling_effective_min_supply_temp
+                name: Cooling effective minimum supply temp
+              - entity: sensor.openquatt_cooling_fallback_min_supply_temp
+                name: Cooling fallback minimum supply temp
+              - entity: sensor.openquatt_cooling_fallback_night_min_outdoor_temp
+                name: Cooling fallback night minimum outdoor temp
       - type: grid
         cards:
           - type: heading

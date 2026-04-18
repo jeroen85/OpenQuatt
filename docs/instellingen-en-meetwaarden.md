@@ -132,6 +132,34 @@ Belangrijke runtime-instellingen in deze groep zijn:
 - `Room Temperature Source`
 - `Room Setpoint Source`
 
+### Cooling en fallback zonder dauwpunt
+
+Belangrijke runtime-instellingen en signalen in deze groep zijn:
+
+- `Cooling Without Dew Point`
+- `Cooling Guard Mode`
+- `Cooling Fallback Night Minimum Outdoor Temp`
+- `Cooling Fallback Minimum Supply Temp`
+- `Cooling Effective Minimum Supply Temp`
+
+Normaal verwacht OpenQuatt bij cooling een geldige dauwpuntbron. Ontbreekt die, dan blijft cooling geblokkeerd.
+
+Met `Cooling Without Dew Point` kun je expliciet een fallback toestaan. Die fallback gebruikt een conservatieve staffel op basis van buitentemperatuur:
+
+- `< 20°C`: cooling uit
+- `20–24°C`: minimum water `19°C`
+- `24–28°C`: minimum water `20°C`
+- `28–32°C`: minimum water `21°C`
+- `> 32°C`: minimum water `22°C`
+
+Daarbovenop telt de minimum buitentemperatuur van de afgelopen nacht mee:
+
+- `< 18°C`: `+0K`
+- `18–20°C`: `+1K`
+- `>= 20°C`: fallback uit
+
+Belangrijk: in deze fallback-route wordt de gewone dauwpuntmarge niet nog eens extra bovenop de staffel gezet. De staffel zelf ís hier de conservatieve marge.
+
 ### Verwarmingsstrategie
 
 Belangrijke runtime-instellingen in deze groep zijn:
@@ -283,6 +311,8 @@ Gebruik deze groep vooral voor onderhoud en diagnose, niet voor dagelijks gebrui
 - `Demand filtered`
 - `Heating Curve Supply Target`
 - `Water Supply Temp (Selected)`
+- `Cooling Supply Target`
+- `Cooling Demand (raw)`
 
 ### Voor flow en veiligheid
 
@@ -290,6 +320,11 @@ Gebruik deze groep vooral voor onderhoud en diagnose, niet voor dagelijks gebrui
 - `Flow average (Selected)`
 - `Flow mismatch (HP1 vs HP2)`
 - `Flow Mode`
+- `Cooling Block Reason`
+- `Cooling Guard Mode`
+- `Cooling Effective Minimum Supply Temp`
+- `Cooling Fallback Night Minimum Outdoor Temp`
+- `Cooling Fallback Minimum Supply Temp`
 
 ### Voor vermogen en prestaties
 

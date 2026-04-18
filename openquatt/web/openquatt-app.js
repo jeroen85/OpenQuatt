@@ -102,11 +102,16 @@
     coolingRequestActive: { domain: "binary_sensor", name: "Cooling Request Active", optional: true },
     coolingPermitted: { domain: "binary_sensor", name: "Cooling Permitted", optional: true },
     coolingBlockReason: { domain: "text_sensor", name: "Cooling Block Reason", optional: true },
+    coolingGuardMode: { domain: "text_sensor", name: "Cooling Guard Mode", optional: true },
     coolingDewPointSelected: { domain: "sensor", name: "Cooling Dew Point (Selected)", optional: true },
     coolingMinimumSafeSupplyTemp: { domain: "sensor", name: "Cooling Minimum Safe Supply Temp", optional: true },
+    coolingEffectiveMinSupplyTemp: { domain: "sensor", name: "Cooling Effective Minimum Supply Temp", optional: true },
+    coolingFallbackNightMinOutdoorTemp: { domain: "sensor", name: "Cooling Fallback Night Minimum Outdoor Temp", optional: true },
+    coolingFallbackMinSupplyTemp: { domain: "sensor", name: "Cooling Fallback Minimum Supply Temp", optional: true },
     coolingSupplyTarget: { domain: "sensor", name: "Cooling Supply Target", optional: true },
     coolingSupplyError: { domain: "sensor", name: "Cooling Supply Error", optional: true },
     coolingDemandRaw: { domain: "sensor", name: "Cooling Demand (raw)", optional: true },
+    coolingWithoutDewPointMode: { domain: "select", name: "Cooling Without Dew Point", optional: true },
     flowControlMode: { domain: "select", name: "Flow Control Mode" },
     flowSetpoint: { domain: "number", name: "Flow Setpoint" },
     manualIpwm: { domain: "number", name: "Manual iPWM" },
@@ -322,6 +327,13 @@
   ];
   const LIMIT_KEYS = ["dayMax", "silentMax", "maxWater"];
   const FLOW_SETTING_KEYS = ["flowControlMode", "flowSetpoint", "manualIpwm"];
+  const COOLING_SETTING_KEYS = [
+    "coolingWithoutDewPointMode",
+    "coolingGuardMode",
+    "coolingFallbackNightMinOutdoorTemp",
+    "coolingFallbackMinSupplyTemp",
+    "coolingEffectiveMinSupplyTemp",
+  ];
   const CURVE_SETTING_KEYS = [...CURVE_POINTS.map((point) => point.key), "curveFallbackSupply", "curveControlProfile"];
   const COMPRESSOR_SETTING_KEYS = ["minRuntime", "hp1ExcludedA", "hp1ExcludedB", "hp2ExcludedA", "hp2ExcludedB"];
   const SILENT_SETTING_KEYS = ["silentStartTime", "silentEndTime", "silentMax", "dayMax"];
@@ -334,8 +346,12 @@
     "coolingRequestActive",
     "coolingPermitted",
     "coolingBlockReason",
+    "coolingGuardMode",
     "coolingDewPointSelected",
     "coolingMinimumSafeSupplyTemp",
+    "coolingEffectiveMinSupplyTemp",
+    "coolingFallbackNightMinOutdoorTemp",
+    "coolingFallbackMinSupplyTemp",
     "coolingSupplyTarget",
     "coolingSupplyError",
     "coolingDemandRaw",
@@ -431,6 +447,7 @@
   const SETTINGS_KEYS = [
     "strategy",
     ...FLOW_SETTING_KEYS,
+    ...COOLING_SETTING_KEYS,
     ...LIMIT_KEYS,
     ...POWER_HOUSE_KEYS,
     ...CURVE_SETTING_KEYS,
@@ -2868,6 +2885,8 @@
       Custom: "Aangepast",
       [STRATEGY_OPTION_CURVE]: "Stooklijn",
       [STRATEGY_OPTION_POWER_HOUSE]: "Power House",
+      "Dew point required": "Dauwpunt verplicht",
+      "Allow without dew point": "Toestaan zonder dauwpunt",
     };
 
     return labels[value] || value;
@@ -2916,7 +2935,7 @@
               aria-pressed="${option === currentValue ? "true" : "false"}"
               ${busy ? "disabled" : ""}
             >
-              <span class="oq-settings-choice-title">${escapeHtml(option)}</span>
+              <span class="oq-settings-choice-title">${escapeHtml(formatSettingsOptionLabel(option))}</span>
               ${optionCopy ? `<span class="oq-settings-choice-copy">${escapeHtml(optionCopy)}</span>` : ""}
             </button>
           `;
@@ -3585,6 +3604,37 @@
           ${renderSettingsTimeField("silentEndTime", "Einde stille uren", "Vanaf dit tijdstip stopt de stille modus weer.")}
           ${renderSettingsSliderField("silentMax", "Maximaal niveau tijdens stille uren", "Zo ver mag het systeem nog opschalen tijdens stille uren.")}
           ${renderSettingsSliderField("dayMax", "Maximaal niveau overdag", "Zo ver mag het systeem overdag opschalen.")}
+        </div>
+      `,
+    );
+  }
+
+  function renderSettingsCoolingSection() {
+    if (!hasEntity("coolingWithoutDewPointMode")) {
+      return "";
+    }
+
+    const fallbackModeCopy = {
+      "Dew point required": "Blokkeer koeling zodra er geen dauwpuntbron beschikbaar is.",
+      "Allow without dew point": "Sta een conservatieve fallback toe op basis van buitentemperatuur en de minimum buitentemperatuur van de afgelopen nacht.",
+    };
+
+    const guardMode = getEntityStateText("coolingGuardMode", "Onbekend");
+    const fallbackFloor = getEntityStateText("coolingFallbackMinSupplyTemp", "—");
+    const nightMin = getEntityStateText("coolingFallbackNightMinOutdoorTemp", "—");
+    const effectiveFloor = getEntityStateText("coolingEffectiveMinSupplyTemp", "—");
+
+    return renderSettingsSection(
+      "Koeling",
+      "Koeling zonder dauwpunt",
+      "Standaard blijft koeling zonder dauwpuntbron geblokkeerd. Met deze opt-in mag OpenQuatt een conservatieve fallback gebruiken op basis van buitentemperatuur en de afgelopen nacht. Basisstaffel: onder 20°C buiten uit, daarna 19/20/21/22°C minimum water. Warme nachten tellen daar +1K bovenop, tropische nachten blokkeren fallback helemaal.",
+      `
+        <div class="oq-settings-grid">
+          ${renderSettingsOptionCardsField("coolingWithoutDewPointMode", "Koeling zonder dauwpuntbeveiliging", "Kies of OpenQuatt zonder dauwpuntbron volledig moet blokkeren, of een conservatieve fallback mag gebruiken.", fallbackModeCopy, "oq-settings-field--span-2")}
+          ${renderSettingsStaticField("coolingGuardMode", "Actieve beveiligingsroute", "Laat zien of koeling nu via dauwpunt of via de fallback wordt begrensd.", guardMode)}
+          ${renderSettingsStaticField("coolingFallbackNightMinOutdoorTemp", "Nachtminimum buitentemperatuur", "Minimum buitentemperatuur van de afgelopen nacht. Warme nachten maken fallback-cooling conservatiever of blokkeren die helemaal.", nightMin)}
+          ${renderSettingsStaticField("coolingFallbackMinSupplyTemp", "Fallback minimum watertemperatuur", "De conservatieve ondergrens die OpenQuatt gebruikt als er geen dauwpuntbron beschikbaar is en fallback is toegestaan.", fallbackFloor)}
+          ${renderSettingsStaticField("coolingEffectiveMinSupplyTemp", "Actieve minimum ondergrens", "De ondergrens die de koeling nu daadwerkelijk gebruikt: dauwpunt plus marge, of de fallback-ondergrens.", effectiveFloor)}
         </div>
       `,
     );
@@ -4440,8 +4490,10 @@
   function getCoolingOverviewModel() {
     const target = getEntityNumericValue("coolingSupplyTarget");
     const supply = getEntityNumericValue("supplyTemp");
-    const safeFloor = getEntityNumericValue("coolingMinimumSafeSupplyTemp");
+    const safeFloor = getEntityNumericValue("coolingEffectiveMinSupplyTemp");
     const dewPoint = getEntityNumericValue("coolingDewPointSelected");
+    const guardMode = getEntityStateText("coolingGuardMode", "");
+    const fallbackNightMin = getEntityStateText("coolingFallbackNightMinOutdoorTemp", "—");
     const supplyError = getEntityNumericValue("coolingSupplyError");
     const rawDemand = getEntityNumericValue("coolingDemandRaw");
     const permitted = isEntityActive("coolingPermitted");
@@ -4474,8 +4526,10 @@
     return {
       targetText: formatOverviewStatValue("coolingSupplyTarget"),
       supplyText: formatOverviewStatValue("supplyTemp"),
-      safeFloorText: formatOverviewStatValue("coolingMinimumSafeSupplyTemp"),
+      safeFloorText: formatOverviewStatValue("coolingEffectiveMinSupplyTemp"),
       dewPointText: formatOverviewStatValue("coolingDewPointSelected"),
+      guardMode,
+      fallbackNightMin,
       demandText: formatOverviewStatValue("coolingDemandRaw"),
       deltaText: formatSignedTemperature(supplyError),
       statusTitle,
@@ -4538,6 +4592,10 @@
 
   function renderCoolingOverviewCard() {
     const model = getCoolingOverviewModel();
+    const floorLabel = model.guardMode.toLowerCase().includes("fallback") ? "Fallback ondergrens" : "Veilige aanvoergrens";
+    const floorCopy = model.guardMode.toLowerCase().includes("fallback")
+      ? `Conservatieve ondergrens zonder dauwpuntmeting. Nachtminimum: ${model.fallbackNightMin}.`
+      : "Dauwpunt plus veiligheidsmarge.";
 
     return `
       <section class="oq-overview-system">
@@ -4554,7 +4612,7 @@
         </div>
         <div class="oq-overview-metrics oq-overview-metrics--three-column">
           ${renderOverviewMetricCard("Actuele aanvoertemperatuur", model.supplyText, "orange", "Wat nu door het systeem loopt.")}
-          ${renderOverviewMetricCard("Veilige aanvoergrens", model.safeFloorText, "blue", "Dauwpunt plus veiligheidsmarge.")}
+          ${renderOverviewMetricCard(floorLabel, model.safeFloorText, "blue", floorCopy)}
           ${renderOverviewMetricCard("Koelvraag", model.demandText, "sky", "De huidige koelvraag van de regelaar.")}
         </div>
       </section>
@@ -6611,6 +6669,7 @@
         <div class="oq-helper-settings-stack">
           ${renderSettingsFlowSection()}
           ${renderSettingsHeatingSection()}
+          ${renderSettingsCoolingSection()}
           ${renderSettingsWaterSection()}
           ${renderSettingsCompressorSection()}
           ${renderSettingsSilentSection()}
