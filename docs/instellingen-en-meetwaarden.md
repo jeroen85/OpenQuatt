@@ -111,6 +111,9 @@ Belangrijk: `oq_flow_mismatch_threshold_lph` en `oq_flow_mismatch_hyst_lph` zijn
 
 Deze instellingen gebruik je als eerste als je gedrag wilt begrenzen of verklaren:
 
+- `OpenQuatt Enabled`
+- `Manual Cooling Enable`
+- `Manual Silent Enable`
 - `CM Override`
 - `Day max level`
 - `Silent max level`
@@ -124,6 +127,12 @@ Deze instellingen gebruik je als eerste als je gedrag wilt begrenzen of verklare
 - `Low-load CM2 re-entry block`
 
 Praktisch bepaal je hiermee hoeveel ruimte OpenQuatt krijgt, wanneer stille uren gelden en hoe snel het systeem naar ketelhulp of terugschakelen beweegt. De vaste low-load fallbackdrempels zitten intern in substitutions; tijdens runtime tune je vooral de dynamische factoren, hysterese en re-entry block.
+
+De drie runtime-switches hebben elk een andere rol:
+
+- `OpenQuatt Enabled`: pauzeert of hervat de normale warmte- en koelregeling. Bewaking en vorstbeveiliging blijven actief.
+- `Manual Cooling Enable`: telt mee als extra koeltoestemming bovenop CIC en/of HA-invoer.
+- `Manual Silent Enable`: forceert stille modus los van het tijdvenster.
 
 ### Bronselectie
 
@@ -143,6 +152,8 @@ Belangrijke runtime-instellingen en signalen in deze groep zijn:
 - `Cooling Effective Minimum Supply Temp`
 
 Normaal verwacht OpenQuatt bij cooling een geldige dauwpuntbron. Ontbreekt die, dan blijft cooling geblokkeerd.
+
+`Manual Cooling Enable` staat hier los van. Die switch geeft OpenQuatt expliciet extra koeltoestemming, maar vervangt nog steeds geen koelvraag, flowbewaking of dauwpunt-/fallbackbeveiliging.
 
 Met `Cooling Without Dew Point` kun je expliciet een fallback toestaan. Die fallback gebruikt een conservatieve staffel op basis van buitentemperatuur:
 

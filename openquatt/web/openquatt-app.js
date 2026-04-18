@@ -105,6 +105,9 @@
     wifiSignal: { domain: "sensor", name: "WiFi Signal", optional: true },
     espInternalTemp: { domain: "sensor", name: "ESP Internal Temperature", optional: true },
     strategy: { domain: "select", name: "Heating Control Mode" },
+    openquattEnabled: { domain: "switch", name: "OpenQuatt Enabled", optional: true },
+    manualCoolingEnable: { domain: "switch", name: "Manual Cooling Enable", optional: true },
+    manualSilentEnable: { domain: "switch", name: "Manual Silent Enable", optional: true },
     coolingEnableSelected: { domain: "binary_sensor", name: "Cooling Enable (Selected)", optional: true },
     coolingRequestActive: { domain: "binary_sensor", name: "Cooling Request Active", optional: true },
     coolingPermitted: { domain: "binary_sensor", name: "Cooling Permitted", optional: true },
@@ -2680,6 +2683,15 @@
       return;
     }
 
+    if (action === "toggle-overview-control") {
+      const key = button.dataset.controlKey || "";
+      const nextState = (button.dataset.controlState || "").toLowerCase();
+      if (key && (nextState === "on" || nextState === "off")) {
+        commitSwitch(key, nextState === "on");
+      }
+      return;
+    }
+
     if (action === "suggest-curve-fallback") {
       const suggestion = getCurveFallbackSuggestion();
       if (suggestion) {
@@ -2773,6 +2785,35 @@
       }
     } catch (error) {
       state.controlError = `${entity.name} kon niet worden bijgewerkt. ${error.message}`;
+    } finally {
+      state.busyAction = "";
+      render();
+    }
+  }
+
+  async function commitSwitch(key, enabled) {
+    const entity = ENTITY_DEFS[key];
+    if (!entity) {
+      return;
+    }
+
+    state.busyAction = `switch-${key}`;
+    state.controlNotice = "";
+    state.controlError = "";
+    render();
+
+    try {
+      const action = enabled ? "turn_on" : "turn_off";
+      const response = await fetch(buildEntityPath(entity.domain, entity.name, action), { method: "POST" });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      state.controlNotice = `${entity.name} ${enabled ? "ingeschakeld" : "uitgeschakeld"}.`;
+      await syncEntities();
+      render();
+    } catch (error) {
+      state.controlError = `${entity.name} aanpassen mislukt (${error.message}).`;
+      render();
     } finally {
       state.busyAction = "";
       render();
@@ -4712,7 +4753,7 @@
     if (modeLabel.includes("cm5") || modeLabel.includes("cooling") || modeLabel.includes("koeling")) {
       return true;
     }
-    return isEntityActive("coolingRequestActive") || isEntityActive("coolingEnableSelected");
+    return isEntityActive("coolingRequestActive");
   }
 
   function getOverviewStrategyLabel() {
@@ -4942,6 +4983,13 @@
   }
 
   function getOverviewPrimarySignal() {
+    if (!isEntityActive("openquattEnabled")) {
+      return {
+        label: "Regeling nu",
+        value: "OpenQuatt gepauzeerd",
+        tone: "neutral",
+      };
+    }
     if (isCoolingOverviewActive()) {
       const model = getCoolingOverviewModel();
       const tone = !model.permitted
@@ -4979,6 +5027,13 @@
   }
 
   function getOverviewDemandSignal() {
+    if (!isEntityActive("openquattEnabled")) {
+      return {
+        label: "Warmte/koelvraag",
+        value: "Handmatig uitgezet",
+        tone: "neutral",
+      };
+    }
     if (isCoolingOverviewActive()) {
       if (!isEntityActive("coolingRequestActive")) {
         return {
@@ -5020,6 +5075,13 @@
   }
 
   function getOverviewSystemSignal() {
+    if (!isEntityActive("openquattEnabled")) {
+      return {
+        label: "Systeem",
+        value: "Vorstbeveiliging blijft actief",
+        tone: "neutral",
+      };
+    }
     if (isCoolingOverviewActive()) {
       if (!isEntityActive("coolingPermitted")) {
         return {
@@ -5105,6 +5167,107 @@
       ${renderOverviewStatCard(thermalKey, thermalLabel, "orange", "thermisch vermogen")}
       ${renderOverviewStatCard(efficiencyKey, efficiencyLabel, "green", "rendement")}
       ${renderOverviewStatCard("flowSelected", "Flow", "sky", "watercircuit")}
+    `;
+  }
+
+  function getOverviewControlCards() {
+    const openquattEnabled = isEntityActive("openquattEnabled");
+    const manualCoolingEnabled = isEntityActive("manualCoolingEnable");
+    const manualSilentEnabled = isEntityActive("manualSilentEnable");
+    const coolingBlocked = !isEntityActive("coolingPermitted");
+    const coolingRequestActive = isEntityActive("coolingRequestActive");
+    const coolingModeActive = getEntityStateText("controlModeLabel", "").toLowerCase().includes("cm5");
+
+    let coolingStatus = "Uit";
+    let coolingCopy = "Handmatige koeltoestemming staat uit.";
+    if (manualCoolingEnabled && coolingModeActive) {
+      coolingStatus = "Actief";
+      coolingCopy = "Koeling draait nu en blijft verder door safety en koelvraag begrensd.";
+    } else if (manualCoolingEnabled && coolingBlocked) {
+      coolingStatus = "Geblokkeerd";
+      coolingCopy = getEntityStateText("coolingBlockReason", "Koeling wacht nog op veilige condities.");
+    } else if (manualCoolingEnabled && coolingRequestActive) {
+      coolingStatus = "Wacht op start";
+      coolingCopy = "Koelvraag is actief; de compressor start zodra de regeling ruimte ziet.";
+    } else if (manualCoolingEnabled) {
+      coolingStatus = "Toegestaan";
+      coolingCopy = "Koeling is handmatig toegestaan en wacht op koelvraag vanuit de kamerregeling.";
+    }
+
+    let silentStatus = "Uit";
+    let silentCopy = "Normale compressorlimieten zijn actief.";
+    if (manualSilentEnabled) {
+      silentStatus = "Geforceerd";
+      silentCopy = "Handmatige override houdt stille modus actief, los van het tijdvenster.";
+    } else if (isEntityActive("silentActive")) {
+      silentStatus = "Actief";
+      silentCopy = "Stille modus is nu actief via het ingestelde tijdvenster.";
+    }
+
+    return [
+      {
+        key: "openquattEnabled",
+        label: "OpenQuatt",
+        status: openquattEnabled ? "Actief" : "Gepauzeerd",
+        copy: openquattEnabled
+          ? "Warmte- en koelregeling mogen normaal doorlopen."
+          : "Nieuwe warmte- en koelvraag staan uit; bewaking en vorstbeveiliging blijven actief.",
+        buttonLabel: openquattEnabled ? "Uitzetten" : "Aanzetten",
+        nextState: openquattEnabled ? "off" : "on",
+        tone: openquattEnabled ? "green" : "neutral",
+      },
+      {
+        key: "manualCoolingEnable",
+        label: "Koeling",
+        status: coolingStatus,
+        copy: coolingCopy,
+        buttonLabel: manualCoolingEnabled ? "Uitzetten" : "Aanzetten",
+        nextState: manualCoolingEnabled ? "off" : "on",
+        tone: manualCoolingEnabled ? (coolingModeActive ? "blue" : "sky") : "neutral",
+      },
+      {
+        key: "manualSilentEnable",
+        label: "Stille modus",
+        status: silentStatus,
+        copy: silentCopy,
+        buttonLabel: manualSilentEnabled ? "Opheffen" : "Forceren",
+        nextState: manualSilentEnabled ? "off" : "on",
+        tone: manualSilentEnabled ? "orange" : "neutral",
+      },
+    ].filter((card) => hasEntity(card.key));
+  }
+
+  function renderOverviewControls() {
+    const cards = getOverviewControlCards();
+    if (!cards.length) {
+      return "";
+    }
+    return `
+      <section class="oq-overview-controls">
+        <div class="oq-overview-controls-copy">
+          <h3>Bediening</h3>
+          <p>Directe schakelaars voor regeling, koeling en stille modus.</p>
+        </div>
+        <div class="oq-overview-controls-grid">
+          ${cards.map((card) => `
+            <article class="oq-overview-control oq-overview-control--${escapeHtml(card.tone)}">
+              <div class="oq-overview-control-head">
+                <span>${escapeHtml(card.label)}</span>
+                <strong>${escapeHtml(card.status)}</strong>
+              </div>
+              <p>${escapeHtml(card.copy)}</p>
+              <button
+                class="oq-overview-control-toggle${state.busyAction === `switch-${card.key}` ? " is-busy" : ""}"
+                type="button"
+                data-oq-action="toggle-overview-control"
+                data-control-key="${escapeHtml(card.key)}"
+                data-control-state="${escapeHtml(card.nextState)}"
+                ${state.busyAction ? "disabled" : ""}
+              >${escapeHtml(state.busyAction === `switch-${card.key}` ? "Bezig..." : card.buttonLabel)}</button>
+            </article>
+          `).join("")}
+        </div>
+      </section>
     `;
   }
 
@@ -6569,6 +6732,7 @@
           <div class="oq-overview-top">
             ${renderOverviewTopCards()}
           </div>
+          ${renderOverviewControls()}
           ${renderOverviewSignals()}
           <div class="oq-overview-main">
             ${renderOverviewStrategyPanel()}

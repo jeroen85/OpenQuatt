@@ -24,7 +24,8 @@ Kijk hier als eerste naar:
 - of het systeem online is;
 - welke temperatuurwaarden geselecteerd zijn;
 - hoeveel vermogen en warmte nu geleverd wordt;
-- of het systeem rustig en logisch reageert.
+- of het systeem rustig en logisch reageert;
+- of in `Bediening` een handmatige override actief is.
 
 ### Thermostaat en hoofdstanden
 
@@ -33,6 +34,14 @@ Hier zie je onder meer:
 - welke verwarmingsstrategie actief is;
 - of er een override actief is;
 - of stille uren of niveaubegrenzingen meespelen.
+
+Je vindt hier nu ook een aparte `Bediening`-sectie met directe runtime-schakelaars voor:
+
+- `OpenQuatt actief`;
+- `Handmatige koeling`;
+- `Handmatige stille modus`.
+
+Die schakelaars zijn bedoeld voor directe bediening. Ze vervangen geen bronconfiguratie of tuning.
 
 ### Energie
 
@@ -53,6 +62,7 @@ Als hier de verkeerde bron gekozen is, raken ook andere schermen al snel misleid
 Bij cooling is deze tab extra belangrijk. Daar configureer je ook:
 
 - de cooling enable bron;
+- de handmatige koeltoestemming van OpenQuatt;
 - het aantal koelruimtes;
 - de dauwpunt-, temperatuur- en RH-bronnen die via Home Assistant-proxy's worden ingelezen.
 
@@ -90,6 +100,7 @@ Gebruik deze tab zodra je cooling gebruikt of voorbereidt. Hier zie je onder mee
 
 - of cooling request actief is;
 - of cooling op dit moment toegestaan is;
+- of OpenQuatt handmatig koeltoestemming geeft;
 - waarom cooling eventueel geblokkeerd wordt;
 - welk dauwpunt en welke minimale veilige aanvoer actief zijn;
 - welk cooling-target en welke ruwe cooling demand OpenQuatt nu gebruikt.

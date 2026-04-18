@@ -173,6 +173,16 @@ select:
     web_server:
       sorting_group_id: oq_sensor_selection
 
+switch:
+  - platform: template
+    id: oq_manual_cooling_enable
+    name: "Manual Cooling Enable"
+    icon: mdi:snowflake-check
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+    web_server:
+      sorting_group_id: oq_control
+
 binary_sensor:
   - platform: template
     id: cooling_enable_selected
@@ -184,9 +194,10 @@ binary_sensor:
       const auto source = id(cooling_enable_source).current_option();
       const bool cic_enabled = id(cic_cooling_enabled).has_state() && id(cic_cooling_enabled).state;
       const bool ha_enabled = id(cooling_enable_ha).has_state() && id(cooling_enable_ha).state;
-      if (source == "CIC") return cic_enabled;
-      if (source == "HA input") return ha_enabled;
-      if (source == "CIC or HA input") return cic_enabled || ha_enabled;
+      const bool manual_enabled = id(oq_manual_cooling_enable).state;
+      if (source == "CIC") return cic_enabled || manual_enabled;
+      if (source == "HA input") return ha_enabled || manual_enabled;
+      if (source == "CIC or HA input") return cic_enabled || ha_enabled || manual_enabled;
       return false;
     web_server:
       sorting_group_id: oq_sensor_selection
@@ -229,14 +240,21 @@ text_sensor:
       const auto source = id(cooling_enable_source).current_option();
       const bool cic_enabled = id(cic_cooling_enabled).has_state() && id(cic_cooling_enabled).state;
       const bool ha_enabled = id(cooling_enable_ha).has_state() && id(cooling_enable_ha).state;
+      const bool manual_enabled = id(oq_manual_cooling_enable).state;
 
-      if (source == "CIC") return {cic_enabled ? "CIC" : "None"};
-      if (source == "HA input") return {ha_enabled ? "HA input" : "None"};
+      auto with_manual = [&](const std::string &base) -> std::string {
+        if (!manual_enabled) return base;
+        if (base == "None") return "Manual";
+        return base + " + Manual";
+      };
+
+      if (source == "CIC") return {with_manual(cic_enabled ? "CIC" : "None")};
+      if (source == "HA input") return {with_manual(ha_enabled ? "HA input" : "None")};
       if (source == "CIC or HA input") {
-        if (cic_enabled && ha_enabled) return {"CIC + HA input"};
-        if (cic_enabled) return {"CIC"};
-        if (ha_enabled) return {"HA input"};
-        return {"None"};
+        if (cic_enabled && ha_enabled) return {with_manual("CIC + HA input")};
+        if (cic_enabled) return {with_manual("CIC")};
+        if (ha_enabled) return {with_manual("HA input")};
+        return {with_manual("None")};
       }
       return {"Unknown"};
     web_server:

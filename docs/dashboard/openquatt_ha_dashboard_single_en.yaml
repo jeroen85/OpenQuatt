@@ -135,6 +135,53 @@ views:
             vertical: false
             features_position: bottom
           - type: heading
+            icon: mdi:tune-variant
+            heading: Controls
+            heading_style: title
+          - type: markdown
+            content: >-
+              <details>
+
+              <summary><strong>Explanation</strong></summary>
+
+
+              Use these switches for direct runtime control:
+
+              - `OpenQuatt enabled`: pauses or resumes normal heating and
+              cooling control. Safety monitoring and freeze protection stay
+              active.
+
+              - `Manual cooling`: adds an extra cooling permission on top of
+              CIC and/or HA input.
+
+              - `Manual silent mode`: forces silent mode outside the scheduled
+              window.
+
+
+              </details>
+            text_only: true
+          - type: tile
+            entity: switch.openquatt_enabled
+            name: OpenQuatt enabled
+            vertical: false
+            features:
+              - type: toggle
+            features_position: inline
+          - type: tile
+            entity: switch.openquatt_manual_cooling_enable
+            name: Manual cooling
+            vertical: false
+            features:
+              - type: toggle
+            features_position: inline
+          - type: tile
+            entity: switch.openquatt_manual_silent_enable
+            name: Manual silent mode
+            vertical: false
+            features:
+              - type: toggle
+            features_position: inline
+          - type: heading
             icon: mdi:stethoscope
             heading: Debug
             heading_style: title
@@ -1080,7 +1127,14 @@ views:
             heading: Cooling state
             heading_style: title
           - type: tile
+            entity: switch.openquatt_manual_cooling_enable
+            name: OpenQuatt manual cooling
+            features:
+              - type: toggle
+            features_position: inline
+          - type: tile
             entity: input_boolean.koeling_aan
+            name: HA helper cooling
           - type: entities
             show_header_toggle: false
             entities:
@@ -1590,6 +1644,8 @@ views:
                 entities:
                   - entity: select.openquatt_cooling_enable_source
                     name: Cooling enable source
+                  - entity: switch.openquatt_manual_cooling_enable
+                    name: Manual cooling enable (OpenQuatt)
                   - entity: sensor.openquatt_cooling_enable_effective_source
                     name: Effective cooling enable source
                   - entity: binary_sensor.openquatt_cooling_enable_selected

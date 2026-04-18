@@ -1,5 +1,5 @@
 (function () {
-  const DOMAINS = new Set(["select", "number", "sensor", "text_sensor", "binary_sensor", "button", "time", "update"]);
+  const DOMAINS = new Set(["select", "number", "sensor", "text_sensor", "binary_sensor", "button", "time", "update", "switch"]);
   const entities = new Map();
   const state = {
     scenario: "dual",
@@ -255,6 +255,9 @@
       state: "Power House",
       option: ["Power House", "Water Temperature Control (heating curve)"],
     });
+    setEntity("switch", "OpenQuatt Enabled", { value: true, state: true });
+    setEntity("switch", "Manual Cooling Enable", { value: false, state: false });
+    setEntity("switch", "Manual Silent Enable", { value: false, state: false });
     setEntity("select", "Flow Control Mode", {
       value: "Flow Setpoint",
       state: "Flow Setpoint",
@@ -944,6 +947,17 @@
     notifyMockUpdated();
   }
 
+  function handleSwitchSet(name, enabled) {
+    const entity = getEntity("switch", name);
+    if (!entity) {
+      return;
+    }
+    entity.value = Boolean(enabled);
+    entity.state = Boolean(enabled);
+    updateSummary();
+    notifyMockUpdated();
+  }
+
   function handleButtonPress(name) {
     if (name === "Complete setup") {
       state.complete = true;
@@ -1034,7 +1048,7 @@
     const url = new URL(String(typeof input === "string" ? input : input.url), window.location.href);
     const parts = url.pathname.split("/").filter(Boolean);
     const maybeAction = parts.at(-1);
-    const action = maybeAction === "set" || maybeAction === "press" || maybeAction === "install" ? parts.pop() : "";
+    const action = ["set", "press", "install", "turn_on", "turn_off"].includes(maybeAction) ? parts.pop() : "";
     const name = decodeURIComponent(parts.pop() || "");
     const domain = parts.pop() || "";
     if (!DOMAINS.has(domain)) {
@@ -1079,6 +1093,13 @@
           handleTimeSet(request.name, rawValue || "");
         }
         return mockResponse(200, entity);
+      }
+
+      if (request.action === "turn_on" || request.action === "turn_off") {
+        if (request.domain === "switch") {
+          handleSwitchSet(request.name, request.action === "turn_on");
+        }
+        return mockResponse(200, { ok: true });
       }
 
       if (request.action === "press") {

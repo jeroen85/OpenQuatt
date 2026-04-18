@@ -29,9 +29,18 @@ OpenQuatt is de laag die:
 - bepaalt welke bronwaarden gebruikt worden;
 - beoordeelt hoe terughoudend of actief het systeem moet reageren;
 - extra beveiliging en bewaking toevoegt;
+- directe runtime-bediening mogelijk maakt;
 - de gegevens ontsluit voor Home Assistant.
 
 OpenQuatt vormt daarmee de schakel tussen warmtevraag, beschikbare data en de manier waarop het systeem daarop reageert.
+
+Die runtime-bediening is bewust beperkt tot een paar duidelijke schakelaars:
+
+- `OpenQuatt Enabled`;
+- `Manual Cooling Enable`;
+- `Manual Silent Enable`.
+
+Daarmee kun je de regeling pauzeren, extra koeltoestemming geven of stille modus forceren, zonder onderliggende bronconfiguratie of veiligheidslogica te vervangen.
 
 ### De warmtepomp
 
@@ -102,6 +111,7 @@ Daarom werkt OpenQuatt bij cooling in grote lijnen zo:
 - er is een aparte control mode voor cooling;
 - dauwpuntinformatie is leidend voor de minimale veilige aanvoertemperatuur;
 - flowbewaking blijft net zo belangrijk als bij verwarmen;
+- handmatige koeltoestemming mag cooling vrijgeven, maar vervangt geen koelvraag;
 - zonder bruikbare dauwpuntinformatie hoort normale cooling niet vrijgegeven te worden, tenzij je expliciet een conservatieve fallback inschakelt.
 
 Praktisch betekent dit dat OpenQuatt cooling niet behandelt als "negatief verwarmen". Er is een eigen koelvraag, een eigen veilige aanvoergrens en een aparte bewakingslaag bovenop de warmtepompsturing.

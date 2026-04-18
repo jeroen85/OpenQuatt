@@ -210,6 +210,25 @@ select:
     entity_category: config
     web_server:
       sorting_group_id: oq_control
+
+switch:
+  - platform: template
+    id: oq_enabled
+    name: "OpenQuatt Enabled"
+    icon: mdi:power-standby
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
+    web_server:
+      sorting_group_id: oq_control
+
+  - platform: template
+    id: oq_manual_silent_enable
+    name: "Manual Silent Enable"
+    icon: mdi:weather-night
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+    web_server:
+      sorting_group_id: oq_control
 # ----------------------------
 # TUNING
 # ----------------------------
@@ -675,6 +694,7 @@ interval:
           // -------------------------------------------------
           const char* cur_cm_state = id(oq_control_mode).state.c_str();
           const bool in_cm2 = strcmp(cur_cm_state, "CM2") == 0;
+          const bool openquatt_enabled = id(oq_enabled).state;
           const int strategy_active_code = id(oq_strategy_active_code);
           const bool heating_strategy_active = (strategy_active_code == 2 || strategy_active_code == 3);
           const bool heating_req_raw = heating_strategy_active && id(oq_strategy_heat_request_active);
@@ -682,7 +702,7 @@ interval:
               id(cooling_enable_selected).has_state() && id(cooling_enable_selected).state &&
               id(cooling_request_active).has_state() && id(cooling_request_active).state &&
               id(cooling_permitted_core).has_state() && id(cooling_permitted_core).state;
-          const bool cooling_req = cooling_req_raw;
+          const bool cooling_req = cooling_req_raw && openquatt_enabled;
           const bool power_house_active = (strategy_active_code == 3);
 
           const int hp1_lvl = id(hp1_last_applied_level);
@@ -746,7 +766,7 @@ interval:
           };
           const bool both_units_idle = !any_hp_active_guard;
 
-          bool heating_req = heating_req_raw;
+          bool heating_req = heating_req_raw && openquatt_enabled;
           float p_req_w = NAN;
           float low_load_off_w = NAN;
           float low_load_on_w = NAN;
@@ -1218,6 +1238,7 @@ interval:
           auto apply_silent_window = [&]() -> void {
             // Silent window + diagnostics + low-noise mode selection.
             bool silent_active = false;
+            const bool manual_silent_enabled = id(oq_manual_silent_enable).state;
             auto now_time = id(oq_time).now();
             const bool time_valid = now_time.is_valid();
 
@@ -1265,6 +1286,17 @@ interval:
                 // over midnight
                 silent_active = (cur_min >= start_min) || (cur_min < end_min);
                 silent_status = silent_active ? "in_window" : "out_of_window";
+              }
+            }
+
+            if (manual_silent_enabled) {
+              silent_active = true;
+              if (silent_status == "in_window") {
+                silent_status = "manual + window";
+              } else if (silent_status == "time_invalid") {
+                silent_status = "manual";
+              } else {
+                silent_status = "manual";
               }
             }
 
