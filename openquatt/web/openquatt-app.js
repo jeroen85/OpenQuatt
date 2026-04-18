@@ -2111,6 +2111,29 @@
       `;
     }
 
+    if (state.systemModal === "silent-settings") {
+      return `
+        <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
+          <section class="oq-helper-modal oq-helper-modal--wide" role="dialog" aria-modal="true" aria-labelledby="oq-silent-settings-modal-title">
+            <div class="oq-helper-modal-head">
+              <div>
+                <p class="oq-helper-modal-kicker">Stille uren</p>
+                <h2 class="oq-helper-modal-title" id="oq-silent-settings-modal-title">Stille uren instellen</h2>
+              </div>
+              <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit stille-uren-popup">×</button>
+            </div>
+            <p class="oq-helper-modal-copy">Kies wanneer het systeem stiller moet werken, en hoe ver het dan nog mag opschalen. Wijzigingen worden direct toegepast.</p>
+            <div class="oq-helper-modal-body">
+              ${renderSilentSettingsFields()}
+            </div>
+            <div class="oq-helper-modal-actions">
+              <button class="oq-helper-button oq-helper-button--primary" type="button" data-oq-action="close-system-modal">Gereed</button>
+            </div>
+          </section>
+        </div>
+      `;
+    }
+
     return "";
   }
 
@@ -2586,6 +2609,12 @@
 
     if (action === "open-restart-confirm") {
       state.systemModal = "restart-confirm";
+      render();
+      return;
+    }
+
+    if (action === "open-silent-settings-modal") {
+      state.systemModal = "silent-settings";
       render();
       return;
     }
@@ -3944,19 +3973,32 @@
   }
 
   function renderSettingsSilentSection() {
+    const silentFields = `
+      <div class="oq-settings-grid">
+        ${renderSettingsTimeField("silentStartTime", "Start stille uren", "Vanaf dit tijdstip werkt het systeem in stille modus.")}
+        ${renderSettingsTimeField("silentEndTime", "Einde stille uren", "Vanaf dit tijdstip stopt de stille modus weer.")}
+        ${renderSettingsSliderField("silentMax", "Maximaal niveau tijdens stille uren", "Zo ver mag het systeem nog opschalen tijdens stille uren.")}
+        ${renderSettingsSliderField("dayMax", "Maximaal niveau overdag", "Zo ver mag het systeem overdag opschalen.")}
+      </div>
+    `;
+
     return renderSettingsSection(
       "Stille uren",
       "Stille uren",
       "Kies wanneer het systeem stiller moet werken, en hoe ver het dan nog mag opschalen.",
-      `
-        <div class="oq-settings-grid">
-          ${renderSettingsTimeField("silentStartTime", "Start stille uren", "Vanaf dit tijdstip werkt het systeem in stille modus.")}
-          ${renderSettingsTimeField("silentEndTime", "Einde stille uren", "Vanaf dit tijdstip stopt de stille modus weer.")}
-          ${renderSettingsSliderField("silentMax", "Maximaal niveau tijdens stille uren", "Zo ver mag het systeem nog opschalen tijdens stille uren.")}
-          ${renderSettingsSliderField("dayMax", "Maximaal niveau overdag", "Zo ver mag het systeem overdag opschalen.")}
-        </div>
-      `,
+      silentFields,
     );
+  }
+
+  function renderSilentSettingsFields() {
+    return `
+      <div class="oq-settings-grid oq-settings-grid--modal">
+        ${renderSettingsTimeField("silentStartTime", "Start stille uren", "Vanaf dit tijdstip werkt het systeem in stille modus.")}
+        ${renderSettingsTimeField("silentEndTime", "Einde stille uren", "Vanaf dit tijdstip stopt de stille modus weer.")}
+        ${renderSettingsSliderField("silentMax", "Maximaal niveau tijdens stille uren", "Zo ver mag het systeem nog opschalen tijdens stille uren.")}
+        ${renderSettingsSliderField("dayMax", "Maximaal niveau overdag", "Zo ver mag het systeem overdag opschalen.")}
+      </div>
+    `;
   }
 
   function renderSettingsCoolingSection() {
@@ -5288,6 +5330,7 @@
         tone: silentTone,
         kind: "select",
         selectedOption: silentModeOverride,
+        settingsAction: true,
         options: [
           { value: "Off", label: "Uit" },
           { value: "On", label: "Aan" },
@@ -5297,53 +5340,88 @@
     ].filter((card) => hasEntity(card.key));
   }
 
-  function renderOverviewControls() {
+  function renderOverviewControlStrip(options = {}) {
+    const { stacked = false } = options;
     const cards = getOverviewControlCards();
     if (!cards.length) {
       return "";
     }
+
     return `
-      <section class="oq-overview-controls">
-        <div class="oq-overview-controls-head">
-          <div class="oq-overview-controls-copy">
-            <h3>Bediening</h3>
-            <p>Directe runtime-schakelaars voor regeling, koeling en stille modus.</p>
+      <section class="oq-overview-controlstrip${stacked ? " oq-overview-controlstrip--stacked" : ""}" aria-label="Bediening">
+        ${cards.map((card) => `
+          <article class="oq-overview-controlstrip-item oq-overview-controlstrip-item--${escapeHtml(card.tone)}">
+            <div class="oq-overview-controlstrip-head">
+              <span>${escapeHtml(card.label)}</span>
+              <strong class="oq-overview-controlstrip-state oq-overview-controlstrip-state--${escapeHtml(card.tone)}">${escapeHtml(card.status)}</strong>
+            </div>
+            <p>${escapeHtml(card.copy)}</p>
+            <div class="oq-overview-controlstrip-actions${card.settingsAction ? " oq-overview-controlstrip-actions--split" : ""}">
+              ${card.kind === "select"
+                ? `<div class="oq-overview-controlstrip-segmented">
+                    ${card.options.map((option) => `
+                      <button
+                        class="oq-overview-controlstrip-segment${card.selectedOption === option.value ? " is-selected" : ""}${state.busyAction === `save-${card.key}` ? " is-busy" : ""}"
+                        type="button"
+                        data-oq-action="select-overview-control-option"
+                        data-control-key="${escapeHtml(card.key)}"
+                        data-control-option="${escapeHtml(option.value)}"
+                        ${state.busyAction ? "disabled" : ""}
+                      >${escapeHtml(option.label)}</button>
+                    `).join("")}
+                  </div>`
+                : `<button
+                    class="oq-overview-controlstrip-toggle${state.busyAction === `switch-${card.key}` ? " is-busy" : ""}"
+                    type="button"
+                    data-oq-action="toggle-overview-control"
+                    data-control-key="${escapeHtml(card.key)}"
+                    data-control-state="${escapeHtml(card.nextState)}"
+                    ${state.busyAction ? "disabled" : ""}
+                  >${escapeHtml(state.busyAction === `switch-${card.key}` ? "Bezig..." : card.buttonLabel)}</button>`
+              }
+              ${card.settingsAction
+                ? `<button
+                    class="oq-overview-controlstrip-icon"
+                    type="button"
+                    data-oq-action="open-silent-settings-modal"
+                    aria-label="Open instellingen voor stille uren"
+                    title="Stille uren instellen"
+                  >⚙</button>`
+                : ""
+              }
+            </div>
+          </article>
+        `).join("")}
+      </section>
+    `;
+  }
+
+  function renderOverviewSummaryShell(strategyLabel) {
+    return `
+      <section class="oq-overview-summary-shell">
+        <div class="oq-overview-head">
+          <div>
+            <p class="oq-helper-label">Overzicht</p>
+            <h2 class="oq-helper-section-title">Live regeling</h2>
+            <p class="oq-helper-section-copy">Hier zie je in één oogopslag hoe OpenQuatt nu werkt.</p>
+          </div>
+          <div class="oq-overview-head-actions">
+            <div class="oq-overview-status">
+              ${renderOverviewStatusChip("Strategie", strategyLabel, "blue")}
+              ${renderOverviewStatusChip("Controlmode", getEntityStateText("controlModeLabel"), "neutral")}
+            </div>
           </div>
         </div>
-        <div class="oq-overview-controls-grid">
-          ${cards.map((card) => `
-            <article class="oq-overview-control oq-overview-control--${escapeHtml(card.tone)}">
-              <div class="oq-overview-control-head">
-                <span>${escapeHtml(card.label)}</span>
-                <strong class="oq-overview-control-state oq-overview-control-state--${escapeHtml(card.tone)}">${escapeHtml(card.status)}</strong>
-              </div>
-              <p>${escapeHtml(card.copy)}</p>
-              <div class="oq-overview-control-actions">
-                ${card.kind === "select"
-                  ? `<div class="oq-overview-control-segmented">
-                      ${card.options.map((option) => `
-                        <button
-                          class="oq-overview-control-segment${card.selectedOption === option.value ? " is-selected" : ""}${state.busyAction === `save-${card.key}` ? " is-busy" : ""}"
-                          type="button"
-                          data-oq-action="select-overview-control-option"
-                          data-control-key="${escapeHtml(card.key)}"
-                          data-control-option="${escapeHtml(option.value)}"
-                          ${state.busyAction ? "disabled" : ""}
-                        >${escapeHtml(option.label)}</button>
-                      `).join("")}
-                    </div>`
-                  : `<button
-                      class="oq-overview-control-toggle${state.busyAction === `switch-${card.key}` ? " is-busy" : ""}"
-                      type="button"
-                      data-oq-action="toggle-overview-control"
-                      data-control-key="${escapeHtml(card.key)}"
-                      data-control-state="${escapeHtml(card.nextState)}"
-                      ${state.busyAction ? "disabled" : ""}
-                    >${escapeHtml(state.busyAction === `switch-${card.key}` ? "Bezig..." : card.buttonLabel)}</button>`
-                }
-              </div>
-            </article>
-          `).join("")}
+        <div class="oq-overview-summary-layout">
+          <div class="oq-overview-summary-main">
+            <div class="oq-overview-top">
+              ${renderOverviewTopCards()}
+            </div>
+            ${renderOverviewSignals()}
+          </div>
+          <aside class="oq-overview-summary-side">
+            ${renderOverviewControlStrip({ stacked: true })}
+          </aside>
         </div>
       </section>
     `;
@@ -5497,7 +5575,7 @@
         renderOverviewEnergyGroup("Warmtepomp", [
           renderOverviewEnergyRow("Elektrisch vermogen", "coolingPowerInput"),
           renderOverviewEnergyRow("Koelafgifte", "totalCoolingPower"),
-          renderOverviewEnergyRow("EER", "totalEer"),
+          renderOverviewEnergyRow("COP (EER)", "totalEer"),
         ]),
       ]),
     ], "blue");
@@ -5520,7 +5598,7 @@
         renderOverviewEnergyGroup("Warmtepomp", [
           renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyDaily"),
           renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyDaily"),
-          renderOverviewEnergyRow("EER", "heatpumpEerDaily"),
+          renderOverviewEnergyRow("COP (EER)", "heatpumpEerDaily"),
         ]),
       ]),
     ], "orange");
@@ -5543,7 +5621,7 @@
         renderOverviewEnergyGroup("Warmtepomp", [
           renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyCumulative"),
           renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyCumulative"),
-          renderOverviewEnergyRow("EER", "heatpumpEerCumulative"),
+          renderOverviewEnergyRow("COP (EER)", "heatpumpEerCumulative"),
         ]),
       ]),
     ], "green");
@@ -5585,7 +5663,7 @@
         renderOverviewEnergyGroup("Warmtepomp", [
           renderOverviewEnergyRow("Elektrisch vermogen", "coolingPowerInput"),
           renderOverviewEnergyRow("Koelafgifte", "totalCoolingPower"),
-          renderOverviewEnergyRow("EER", "totalEer"),
+          renderOverviewEnergyRow("COP (EER)", "totalEer"),
         ]),
       ]),
     ], "blue");
@@ -5608,7 +5686,7 @@
         renderOverviewEnergyGroup("Warmtepomp", [
           renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyDaily"),
           renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyDaily"),
-          renderOverviewEnergyRow("EER", "heatpumpEerDaily"),
+          renderOverviewEnergyRow("COP (EER)", "heatpumpEerDaily"),
         ]),
       ]),
     ], "orange");
@@ -5631,7 +5709,7 @@
         renderOverviewEnergyGroup("Warmtepomp", [
           renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyCumulative"),
           renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyCumulative"),
-          renderOverviewEnergyRow("EER", "heatpumpEerCumulative"),
+          renderOverviewEnergyRow("COP (EER)", "heatpumpEerCumulative"),
         ]),
       ]),
     ], "green");
@@ -6794,24 +6872,7 @@
     return `
       <section class="oq-helper-panel oq-helper-panel--flush">
         <div class="oq-overview-board oq-overview-board--${escapeHtml(state.overviewTheme)}">
-          <div class="oq-overview-head">
-            <div>
-              <p class="oq-helper-label">Overzicht</p>
-              <h2 class="oq-helper-section-title">Live regeling</h2>
-              <p class="oq-helper-section-copy">Hier zie je in één oogopslag hoe OpenQuatt nu werkt.</p>
-            </div>
-            <div class="oq-overview-head-actions">
-              <div class="oq-overview-status">
-                ${renderOverviewStatusChip("Strategie", strategyLabel, "blue")}
-                ${renderOverviewStatusChip("Controlmode", getEntityStateText("controlModeLabel"), "neutral")}
-              </div>
-            </div>
-          </div>
-          <div class="oq-overview-top">
-            ${renderOverviewTopCards()}
-          </div>
-          ${renderOverviewControls()}
-          ${renderOverviewSignals()}
+          ${renderOverviewSummaryShell(strategyLabel)}
           <div class="oq-overview-main">
             ${renderOverviewStrategyPanel()}
             <section class="oq-overview-temps">
@@ -7124,30 +7185,17 @@
     }
 
     const strategyLabel = getOverviewStrategyLabel();
-    const status = board.querySelector(".oq-overview-status");
-    const top = board.querySelector(".oq-overview-top");
-    const signals = board.querySelector(".oq-overview-signals");
+    const summaryShell = board.querySelector(".oq-overview-summary-shell");
     const system = board.querySelector(".oq-overview-system");
     const temps = board.querySelector(".oq-overview-temps");
     const hpTools = board.querySelector(".oq-overview-hp-tools");
     const hpGrid = board.querySelector(".oq-overview-hp-grid");
     const heatPumpPanels = getHeatPumpPanels();
 
-    if (status) {
-      setInnerHtmlIfChanged(status, `
-        ${renderOverviewStatusChip("Strategie", strategyLabel, "blue")}
-        ${renderOverviewStatusChip("Controlmode", getEntityStateText("controlModeLabel"), "neutral")}
-      `);
-    }
-
-    if (top) {
-      setInnerHtmlIfChanged(top, renderOverviewTopCards());
-    }
-
-    if (signals) {
-      const nextSignals = renderOverviewSignals();
-      if (signals.outerHTML !== nextSignals) {
-        signals.outerHTML = nextSignals;
+    if (summaryShell) {
+      const nextSummaryShell = renderOverviewSummaryShell(strategyLabel);
+      if (summaryShell.outerHTML !== nextSummaryShell) {
+        summaryShell.outerHTML = nextSummaryShell;
       }
     }
 
