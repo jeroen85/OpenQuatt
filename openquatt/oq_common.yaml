@@ -328,19 +328,19 @@ sensor:
 
   - platform: template
     name: Uptime
-    id: uptime_days_sensor
+    id: uptime_hours_sensor
     icon: mdi:timer-outline
     update_interval: 60s
     device_class: duration
-    unit_of_measurement: d
-    accuracy_decimals: 3
+    unit_of_measurement: h
+    accuracy_decimals: 2
     state_class: total_increasing
     entity_category: diagnostic
     lambda: |-
       if (isnan(id(uptime_sensor).state)) {
         return NAN;
       }
-      return id(uptime_sensor).state / 86400.0f;
+      return id(uptime_sensor).state / 3600.0f;
     web_server:
       sorting_group_id: oq_system_diagnostics
 
