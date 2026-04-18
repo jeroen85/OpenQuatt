@@ -32,8 +32,6 @@
 
 namespace esphome::web_server_idf {
 
-static constexpr size_t OQ_HTTPD_STACK_SIZE = 6144;
-
 #ifndef HTTPD_409
 #define HTTPD_409 "409 Conflict"
 #endif
@@ -124,7 +122,9 @@ void AsyncWebServer::begin() {
     this->end();
   }
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-  config.stack_size = OQ_HTTPD_STACK_SIZE;
+  // Match upstream ESPHome default: ESP-IDF default plus a small safety margin
+  // for JSON serialization in the web server handlers.
+  config.stack_size = config.stack_size + 256;
   config.server_port = this->port_;
   config.uri_match_fn = [](const char * /*unused*/, const char * /*unused*/, size_t /*unused*/) { return true; };
   // Always enable LRU purging to handle socket exhaustion gracefully.
