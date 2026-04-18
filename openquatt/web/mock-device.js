@@ -261,7 +261,11 @@
     });
     setEntity("switch", "OpenQuatt Enabled", { value: true, state: true });
     setEntity("switch", "Manual Cooling Enable", { value: false, state: false });
-    setEntity("switch", "Manual Silent Enable", { value: false, state: false });
+    setEntity("select", "Silent Mode Override", {
+      value: "Schedule",
+      state: "Schedule",
+      option: ["Schedule", "On", "Off"],
+    });
     setEntity("select", "Flow Control Mode", {
       value: "Flow Setpoint",
       state: "Flow Setpoint",
@@ -888,10 +892,12 @@
   function applyRuntimeControlOverlay(single) {
     const openquattEnabled = isSwitchEnabled("OpenQuatt Enabled");
     const manualCoolingEnabled = isSwitchEnabled("Manual Cooling Enable");
-    const manualSilentEnabled = isSwitchEnabled("Manual Silent Enable");
+    const silentModeOverride = String(getEntity("select", "Silent Mode Override")?.value || "Schedule");
 
-    if (manualSilentEnabled) {
+    if (silentModeOverride === "On") {
       setBinary("Silent active", true);
+    } else if (silentModeOverride === "Off") {
+      setBinary("Silent active", false);
     }
 
     if (manualCoolingEnabled) {
@@ -992,7 +998,7 @@
         setNumber("Power House demand fall time", 2);
       }
     }
-    syncOverviewTelemetry(state.installation === "single");
+    applyScenario(state.scenario);
     updateSummary();
     notifyMockUpdated();
   }

@@ -39,7 +39,7 @@ Je vindt hier nu ook een aparte `Bediening`-sectie met directe runtime-schakelaa
 
 - `OpenQuatt actief`;
 - `Handmatige koeling`;
-- `Handmatige stille modus`.
+- `Stille modus override`.
 
 Die schakelaars zijn bedoeld voor directe bediening. Ze vervangen geen bronconfiguratie of tuning.
 

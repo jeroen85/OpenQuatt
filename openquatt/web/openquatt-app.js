@@ -107,7 +107,7 @@
     strategy: { domain: "select", name: "Heating Control Mode" },
     openquattEnabled: { domain: "switch", name: "OpenQuatt Enabled", optional: true },
     manualCoolingEnable: { domain: "switch", name: "Manual Cooling Enable", optional: true },
-    manualSilentEnable: { domain: "switch", name: "Manual Silent Enable", optional: true },
+    silentModeOverride: { domain: "select", name: "Silent Mode Override", optional: true },
     coolingEnableSelected: { domain: "binary_sensor", name: "Cooling Enable (Selected)", optional: true },
     coolingRequestActive: { domain: "binary_sensor", name: "Cooling Request Active", optional: true },
     coolingPermitted: { domain: "binary_sensor", name: "Cooling Permitted", optional: true },
@@ -365,7 +365,7 @@
     "strategy",
     "openquattEnabled",
     "manualCoolingEnable",
-    "manualSilentEnable",
+    "silentModeOverride",
     "coolingEnableSelected",
     "coolingRequestActive",
     "coolingPermitted",
@@ -472,7 +472,7 @@
     "strategy",
     "openquattEnabled",
     "manualCoolingEnable",
-    "manualSilentEnable",
+    "silentModeOverride",
     ...FLOW_SETTING_KEYS,
     ...COOLING_SETTING_KEYS,
     ...LIMIT_KEYS,
@@ -2698,6 +2698,15 @@
       return;
     }
 
+    if (action === "select-overview-control-option") {
+      const key = button.dataset.controlKey || "";
+      const option = button.dataset.controlOption || "";
+      if (key && option && String(getEntityValue(key) || "") !== option) {
+        commitSelect(key, option);
+      }
+      return;
+    }
+
     if (action === "suggest-curve-fallback") {
       const suggestion = getCurveFallbackSuggestion();
       if (suggestion) {
@@ -2784,7 +2793,7 @@
       } else if (state.appView === "settings") {
         await refreshEntities(getSettingsRefreshKeys(), "state");
       } else {
-        await refreshEntities(["setupComplete", "strategy", ...FLOW_SETTING_KEYS, ...LIMIT_KEYS], "state");
+        await refreshEntities(["setupComplete", "strategy", "openquattEnabled", "manualCoolingEnable", "silentModeOverride", ...FLOW_SETTING_KEYS, ...LIMIT_KEYS], "state");
       }
       if (key === "strategy" && state.appView !== "settings") {
         await refreshEntities(isCurveMode(option) ? CURVE_POINTS.map((point) => point.key) : POWER_HOUSE_KEYS, "state");
@@ -2826,7 +2835,7 @@
       } else if (state.appView === "settings") {
         await refreshEntities(getSettingsRefreshKeys(), "state");
       } else {
-        await refreshEntities(["setupComplete", "strategy", "openquattEnabled", "manualCoolingEnable", "manualSilentEnable", ...FLOW_SETTING_KEYS, ...LIMIT_KEYS], "state");
+        await refreshEntities(["setupComplete", "strategy", "openquattEnabled", "manualCoolingEnable", "silentModeOverride", ...FLOW_SETTING_KEYS, ...LIMIT_KEYS], "state");
       }
       render();
     } catch (error) {
@@ -5212,7 +5221,7 @@
   function getOverviewControlCards() {
     const openquattEnabled = isEntityActive("openquattEnabled");
     const manualCoolingEnabled = isEntityActive("manualCoolingEnable");
-    const manualSilentEnabled = isEntityActive("manualSilentEnable");
+    const silentModeOverride = String(getEntityValue("silentModeOverride") || "Schedule");
     const coolingBlocked = !isEntityActive("coolingPermitted");
     const coolingRequestActive = isEntityActive("coolingRequestActive");
     const coolingModeActive = getEntityStateText("controlModeLabel", "").toLowerCase().includes("cm5");
@@ -5235,12 +5244,19 @@
 
     let silentStatus = "Uit";
     let silentCopy = "Stille modus staat uit.";
-    if (manualSilentEnabled) {
+    let silentTone = "neutral";
+    if (silentModeOverride === "On") {
       silentStatus = "Aan";
-      silentCopy = "Stille modus staat aan, ook buiten het tijdvenster.";
-    } else if (isEntityActive("silentActive")) {
-      silentStatus = "Actief";
-      silentCopy = "Stille modus staat nu aan via het tijdvenster.";
+      silentCopy = "Stille modus staat geforceerd aan, ook buiten het tijdvenster.";
+      silentTone = "orange";
+    } else if (silentModeOverride === "Schedule") {
+      silentStatus = "Schema";
+      if (isEntityActive("silentActive")) {
+        silentCopy = "Stille modus staat nu aan via het tijdvenster.";
+        silentTone = "violet";
+      } else {
+        silentCopy = "Stille modus volgt het tijdvenster.";
+      }
     }
 
     return [
@@ -5265,13 +5281,18 @@
         tone: manualCoolingEnabled ? (coolingModeActive ? "blue" : "sky") : "neutral",
       },
       {
-        key: "manualSilentEnable",
+        key: "silentModeOverride",
         label: "Stille modus",
         status: silentStatus,
         copy: silentCopy,
-        buttonLabel: manualSilentEnabled ? "Zet uit" : "Zet aan",
-        nextState: manualSilentEnabled ? "off" : "on",
-        tone: manualSilentEnabled ? "orange" : "neutral",
+        tone: silentTone,
+        kind: "select",
+        selectedOption: silentModeOverride,
+        options: [
+          { value: "Off", label: "Uit" },
+          { value: "On", label: "Aan" },
+          { value: "Schedule", label: "Schema" },
+        ],
       },
     ].filter((card) => hasEntity(card.key));
   }
@@ -5298,14 +5319,28 @@
               </div>
               <p>${escapeHtml(card.copy)}</p>
               <div class="oq-overview-control-actions">
-                <button
-                  class="oq-overview-control-toggle${state.busyAction === `switch-${card.key}` ? " is-busy" : ""}"
-                  type="button"
-                  data-oq-action="toggle-overview-control"
-                  data-control-key="${escapeHtml(card.key)}"
-                  data-control-state="${escapeHtml(card.nextState)}"
-                  ${state.busyAction ? "disabled" : ""}
-                >${escapeHtml(state.busyAction === `switch-${card.key}` ? "Bezig..." : card.buttonLabel)}</button>
+                ${card.kind === "select"
+                  ? `<div class="oq-overview-control-segmented">
+                      ${card.options.map((option) => `
+                        <button
+                          class="oq-overview-control-segment${card.selectedOption === option.value ? " is-selected" : ""}${state.busyAction === `save-${card.key}` ? " is-busy" : ""}"
+                          type="button"
+                          data-oq-action="select-overview-control-option"
+                          data-control-key="${escapeHtml(card.key)}"
+                          data-control-option="${escapeHtml(option.value)}"
+                          ${state.busyAction ? "disabled" : ""}
+                        >${escapeHtml(option.label)}</button>
+                      `).join("")}
+                    </div>`
+                  : `<button
+                      class="oq-overview-control-toggle${state.busyAction === `switch-${card.key}` ? " is-busy" : ""}"
+                      type="button"
+                      data-oq-action="toggle-overview-control"
+                      data-control-key="${escapeHtml(card.key)}"
+                      data-control-state="${escapeHtml(card.nextState)}"
+                      ${state.busyAction ? "disabled" : ""}
+                    >${escapeHtml(state.busyAction === `switch-${card.key}` ? "Bezig..." : card.buttonLabel)}</button>`
+                }
               </div>
             </article>
           `).join("")}

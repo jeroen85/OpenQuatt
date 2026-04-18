@@ -157,8 +157,8 @@ views:
               - `Handmatige koeling`: telt mee als extra koeltoestemming,
               bovenop CIC en/of HA-invoer.
 
-              - `Handmatige stille modus`: forceert stille modus los van het
-              tijdvenster.
+              - `Stille modus override`: zet stille modus op `Schema`, `Aan`
+              of `Uit`.
 
 
               </details>
@@ -178,12 +178,9 @@ views:
               - type: toggle
             features_position: inline
           - type: tile
-            entity: switch.openquatt_manual_silent_enable
-            name: Handmatige stille modus
+            entity: select.openquatt_silent_mode_override
+            name: Stille modus override
             vertical: false
-            features:
-              - type: toggle
-            features_position: inline
           - type: heading
             icon: mdi:stethoscope
             heading: Debug

@@ -211,21 +211,26 @@ select:
     web_server:
       sorting_group_id: oq_control
 
+  - platform: template
+    id: oq_silent_mode_override
+    name: "Silent Mode Override"
+    icon: mdi:weather-night
+    options:
+      - "Schedule"
+      - "On"
+      - "Off"
+    initial_option: "Schedule"
+    restore_value: true
+    optimistic: true
+    web_server:
+      sorting_group_id: oq_control
+
 switch:
   - platform: template
     id: oq_enabled
     name: "OpenQuatt Enabled"
     icon: mdi:power-standby
     restore_mode: RESTORE_DEFAULT_ON
-    optimistic: true
-    web_server:
-      sorting_group_id: oq_control
-
-  - platform: template
-    id: oq_manual_silent_enable
-    name: "Manual Silent Enable"
-    icon: mdi:weather-night
-    restore_mode: RESTORE_DEFAULT_OFF
     optimistic: true
     web_server:
       sorting_group_id: oq_control
@@ -1238,7 +1243,9 @@ interval:
           auto apply_silent_window = [&]() -> void {
             // Silent window + diagnostics + low-noise mode selection.
             bool silent_active = false;
-            const bool manual_silent_enabled = id(oq_manual_silent_enable).state;
+            const std::string silent_override = id(oq_silent_mode_override).active_index().has_value()
+              ? id(oq_silent_mode_override).at(id(oq_silent_mode_override).active_index().value()).value()
+              : std::string("Schedule");
             auto now_time = id(oq_time).now();
             const bool time_valid = now_time.is_valid();
 
@@ -1289,15 +1296,12 @@ interval:
               }
             }
 
-            if (manual_silent_enabled) {
+            if (silent_override == "On") {
               silent_active = true;
-              if (silent_status == "in_window") {
-                silent_status = "manual + window";
-              } else if (silent_status == "time_invalid") {
-                silent_status = "manual";
-              } else {
-                silent_status = "manual";
-              }
+              silent_status = "forced_on";
+            } else if (silent_override == "Off") {
+              silent_active = false;
+              silent_status = "forced_off";
             }
 
             static std::string last_silent_status;

@@ -38,9 +38,9 @@ Die runtime-bediening is bewust beperkt tot een paar duidelijke schakelaars:
 
 - `OpenQuatt Enabled`;
 - `Manual Cooling Enable`;
-- `Manual Silent Enable`.
+- `Silent Mode Override`.
 
-Daarmee kun je de regeling pauzeren, extra koeltoestemming geven of stille modus forceren, zonder onderliggende bronconfiguratie of veiligheidslogica te vervangen.
+Daarmee kun je de regeling pauzeren, extra koeltoestemming geven of stille modus laten volgen, forceren of uitschakelen, zonder onderliggende bronconfiguratie of veiligheidslogica te vervangen.
 
 ### De warmtepomp
 

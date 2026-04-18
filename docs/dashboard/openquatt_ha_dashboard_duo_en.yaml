@@ -154,8 +154,8 @@ views:
               - `Manual cooling`: adds an extra cooling permission on top of
               CIC and/or HA input.
 
-              - `Manual silent mode`: forces silent mode outside the scheduled
-              window.
+              - `Silent mode override`: sets silent mode to `Schedule`, `On`
+              or `Off`.
 
 
               </details>
@@ -175,12 +175,9 @@ views:
               - type: toggle
             features_position: inline
           - type: tile
-            entity: switch.openquatt_manual_silent_enable
-            name: Manual silent mode
+            entity: select.openquatt_silent_mode_override
+            name: Silent mode override
             vertical: false
-            features:
-              - type: toggle
-            features_position: inline
           - type: heading
             icon: mdi:stethoscope
             heading: Debug

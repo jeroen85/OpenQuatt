@@ -3015,6 +3015,11 @@ body.oq-page-light {
   border-color: rgba(249, 115, 22, 0.32);
 }
 
+.oq-overview-control-state--violet {
+  border-color: rgba(139, 92, 246, 0.30);
+  background: rgba(139, 92, 246, 0.08);
+}
+
 .oq-overview-control p {
   margin: 10px 0 16px;
   color: var(--oq-overview-soft);
@@ -3026,6 +3031,47 @@ body.oq-page-light {
 .oq-overview-control-actions {
   display: flex;
   justify-content: flex-start;
+}
+
+.oq-overview-control-segmented {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.oq-overview-control-segment {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--oq-overview-chip-border);
+  background: var(--oq-overview-chip-bg);
+  color: var(--oq-overview-title);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.oq-overview-control-segment:hover {
+  transform: translateY(-1px);
+}
+
+.oq-overview-control-segment.is-selected {
+  border-color: rgba(37, 99, 235, 0.28);
+  background: rgba(37, 99, 235, 0.12);
+}
+
+.oq-overview-control-segment:disabled,
+.oq-overview-control-segment.is-busy {
+  cursor: wait;
+  opacity: 0.75;
+  transform: none;
 }
 
 .oq-overview-control-toggle {
@@ -3075,6 +3121,10 @@ body.oq-page-light {
 
 .oq-overview-control--orange {
   box-shadow: inset 0 4px 0 0 rgba(249, 115, 22, 0.9);
+}
+
+.oq-overview-control--violet {
+  box-shadow: inset 0 4px 0 0 rgba(139, 92, 246, 0.9);
 }
 
 .oq-overview-stat {

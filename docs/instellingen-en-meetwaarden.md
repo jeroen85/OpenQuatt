@@ -113,7 +113,7 @@ Deze instellingen gebruik je als eerste als je gedrag wilt begrenzen of verklare
 
 - `OpenQuatt Enabled`
 - `Manual Cooling Enable`
-- `Manual Silent Enable`
+- `Silent Mode Override`
 - `CM Override`
 - `Day max level`
 - `Silent max level`
@@ -128,11 +128,11 @@ Deze instellingen gebruik je als eerste als je gedrag wilt begrenzen of verklare
 
 Praktisch bepaal je hiermee hoeveel ruimte OpenQuatt krijgt, wanneer stille uren gelden en hoe snel het systeem naar ketelhulp of terugschakelen beweegt. De vaste low-load fallbackdrempels zitten intern in substitutions; tijdens runtime tune je vooral de dynamische factoren, hysterese en re-entry block.
 
-De drie runtime-switches hebben elk een andere rol:
+De runtime-bediening heeft drie duidelijke onderdelen:
 
 - `OpenQuatt Enabled`: pauzeert of hervat de normale warmte- en koelregeling. Bewaking en vorstbeveiliging blijven actief.
 - `Manual Cooling Enable`: telt mee als extra koeltoestemming bovenop CIC en/of HA-invoer.
-- `Manual Silent Enable`: forceert stille modus los van het tijdvenster.
+- `Silent Mode Override`: zet stille modus op `Schedule`, `On` of `Off`.
 
 ### Bronselectie
 
