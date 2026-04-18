@@ -3243,35 +3243,49 @@ body.oq-page-light {
 }
 
 .oq-overview-energy-category-head span {
-  display: inline-flex;
-  align-items: center;
-  min-height: 30px;
-  padding: 0 12px;
-  border-radius: 999px;
-  font-size: 0.76rem;
+  display: inline-block;
+  padding-left: 12px;
+  font-size: 0.74rem;
   font-weight: 800;
   letter-spacing: 0.11em;
+  line-height: 1.2;
   text-transform: uppercase;
+  position: relative;
+}
+
+.oq-overview-energy-category-head span::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  transform: translateY(-50%);
 }
 
 .oq-overview-energy-category--blue .oq-overview-energy-category-head span {
   color: #1d4ed8;
-  background: rgba(59, 130, 246, 0.14);
+}
+
+.oq-overview-energy-category--blue .oq-overview-energy-category-head span::before {
+  background: linear-gradient(180deg, #1d4ed8, #60a5fa);
 }
 
 .oq-overview-energy-category--orange .oq-overview-energy-category-head span {
   color: #c2410c;
-  background: rgba(249, 115, 22, 0.16);
+}
+
+.oq-overview-energy-category--orange .oq-overview-energy-category-head span::before {
+  background: linear-gradient(180deg, #f59e0b, #ef4444);
 }
 
 .oq-helper-shell--dark .oq-overview-energy-category--blue .oq-overview-energy-category-head span {
   color: #93c5fd;
-  background: rgba(59, 130, 246, 0.22);
 }
 
 .oq-helper-shell--dark .oq-overview-energy-category--orange .oq-overview-energy-category-head span {
   color: #fdba74;
-  background: rgba(249, 115, 22, 0.24);
 }
 
 .oq-overview-energy-category-groups {
