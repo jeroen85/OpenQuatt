@@ -1776,15 +1776,62 @@ body.oq-page-light {
   line-height: 1.6;
 }
 
-.oq-settings-callout ul {
-  margin: 0;
-  padding-left: 18px;
-  color: var(--oq-helper-soft);
-  line-height: 1.6;
+.oq-settings-rule-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
-.oq-settings-callout li + li {
-  margin-top: 4px;
+.oq-settings-rule-group {
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.oq-helper-shell--dark .oq-settings-rule-group {
+  border-color: rgba(148, 163, 184, 0.16);
+  background: rgba(15, 23, 42, 0.24);
+}
+
+.oq-settings-rule-group h4 {
+  margin: 0 0 10px;
+  color: var(--oq-helper-ink);
+  font-size: 0.92rem;
+  line-height: 1.3;
+}
+
+.oq-settings-rule-table {
+  display: grid;
+  gap: 8px;
+}
+
+.oq-settings-rule-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.oq-helper-shell--dark .oq-settings-rule-row {
+  background: rgba(15, 23, 42, 0.36);
+}
+
+.oq-settings-rule-key {
+  color: var(--oq-helper-soft);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.oq-settings-rule-value {
+  flex: 0 0 auto;
+  color: var(--oq-helper-ink);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
 .oq-settings-grid,
@@ -5211,6 +5258,7 @@ esp-app.oq-native-app.oq-native-app--collapsed {
   .oq-settings-choice-grid,
   .oq-settings-response-grid,
   .oq-settings-choice-inline-grid,
+  .oq-settings-rule-groups,
   .oq-settings-curve-grid,
   .oq-settings-hp-columns,
   .oq-settings-hp-group-grid {
