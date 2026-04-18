@@ -483,12 +483,35 @@ body.oq-page-light {
   gap: 7px;
 }
 
+.oq-helper-hub-actions--single {
+  grid-template-columns: 1fr;
+  margin-top: 8px;
+}
+
 .oq-helper-hub-action {
   justify-content: center;
   width: 100%;
   min-height: 36px;
   padding-inline: 12px;
   font-size: 0.85rem;
+}
+
+.oq-helper-hub-action--warning {
+  border-color: rgba(249, 115, 22, 0.26);
+  color: var(--oq-helper-accent-deep);
+  background: rgba(255, 247, 237, 0.88);
+}
+
+.oq-helper-hub-action--warning:hover,
+.oq-helper-hub-action--warning:focus-visible {
+  border-color: rgba(249, 115, 22, 0.38);
+  background: rgba(255, 237, 213, 0.96);
+}
+
+.oq-helper-shell--dark .oq-helper-hub-action--warning {
+  border-color: rgba(249, 115, 22, 0.34);
+  color: #fdba74;
+  background: linear-gradient(180deg, rgba(74, 33, 18, 0.72), rgba(52, 24, 15, 0.84));
 }
 
 .oq-native-surface-shell {

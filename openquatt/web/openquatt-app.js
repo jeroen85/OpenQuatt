@@ -88,17 +88,22 @@
 
   const ENTITY_DEFS = {
     setupComplete: { domain: "binary_sensor", name: "Setup Complete", optional: true },
+    status: { domain: "binary_sensor", name: "Status", optional: true },
     firmwareUpdate: { domain: "update", name: "Firmware Update", optional: true },
     firmwareUpdateChannel: { domain: "select", name: "Firmware Update Channel", optional: true },
     firmwareUpdateProgress: { domain: "sensor", name: "Firmware Update Progress", optional: true },
     firmwareUpdateStatus: { domain: "text_sensor", name: "Firmware Update Status", optional: true },
     checkFirmwareUpdates: { domain: "button", name: "Check Firmware Updates", optional: true },
+    restartAction: { domain: "button", name: "Restart", optional: true },
     uptime: { domain: "sensor", name: "Uptime", optional: true },
     uptimeReadable: { domain: "text_sensor", name: "Uptime readable", optional: true },
     uptimeReadableLegacy: { domain: "text_sensor", name: "Uptime", optional: true },
     ipAddress: { domain: "text_sensor", name: "IP Address", optional: true },
+    wifiSsid: { domain: "text_sensor", name: "WiFi SSID", optional: true },
     projectVersionText: { domain: "text_sensor", name: "OpenQuatt Version", optional: true },
     releaseChannelText: { domain: "text_sensor", name: "OpenQuatt Release Channel", optional: true },
+    wifiSignal: { domain: "sensor", name: "WiFi Signal", optional: true },
+    espInternalTemp: { domain: "sensor", name: "ESP Internal Temperature", optional: true },
     strategy: { domain: "select", name: "Heating Control Mode" },
     coolingEnableSelected: { domain: "binary_sensor", name: "Cooling Enable (Selected)", optional: true },
     coolingRequestActive: { domain: "binary_sensor", name: "Cooling Request Active", optional: true },
@@ -341,7 +346,18 @@
   const SILENT_SETTING_KEYS = ["silentStartTime", "silentEndTime", "silentMax", "dayMax"];
   const FIRMWARE_ENTITY_KEYS = ["firmwareUpdate", "firmwareUpdateChannel", "firmwareUpdateProgress", "firmwareUpdateStatus"];
   const FIRMWARE_MODAL_KEYS = [...FIRMWARE_ENTITY_KEYS, "projectVersionText", "releaseChannelText"];
-  const HEADER_ENTITY_KEYS = ["uptime", "uptimeReadable", "uptimeReadableLegacy", "ipAddress", "projectVersionText", "releaseChannelText"];
+  const HEADER_ENTITY_KEYS = [
+    "status",
+    "uptime",
+    "uptimeReadable",
+    "uptimeReadableLegacy",
+    "ipAddress",
+    "wifiSsid",
+    "wifiSignal",
+    "projectVersionText",
+    "releaseChannelText",
+    "espInternalTemp",
+  ];
   const OVERVIEW_KEYS = [
     "strategy",
     "coolingEnableSelected",
@@ -493,6 +509,7 @@
     inputDrafts: {},
     focusedField: "",
     updateModalOpen: false,
+    systemModal: "",
     updateCheckBusy: false,
     updateInstallBusy: false,
     updateInstallTargetVersion: "",
@@ -1628,6 +1645,7 @@
       state.overviewTheme,
       state.hpVisualMode,
       getInstallationLabel(),
+      ...HEADER_ENTITY_KEYS.map((key) => getEntitySignatureFragment(key)),
       getEntitySignatureFragment("firmwareUpdate"),
       getEntitySignatureFragment("firmwareUpdateChannel"),
       getEntitySignatureFragment("firmwareUpdateProgress"),
@@ -1635,13 +1653,73 @@
     ].join("|");
   }
 
+  function getConnectivityStatus() {
+    if (state.entities.status && !isEntityActive("status")) {
+      return "Offline";
+    }
+    const ip = getDeviceIpAddress();
+    if (ip && ip !== "—") {
+      return "Verbonden";
+    }
+    return "Bezig";
+  }
+
+  function getDeviceVersionLabel() {
+    const version = String(getEntityValue("projectVersionText") || "").trim();
+    return version || "—";
+  }
+
+  function getEspTemperatureLabel() {
+    const entity = state.entities.espInternalTemp;
+    if (!entity) {
+      return "—";
+    }
+    const numeric = getEntityNumericValue("espInternalTemp");
+    if (!Number.isNaN(numeric)) {
+      return formatNumericState(numeric, 1, entity.uom || " °C");
+    }
+    return getEntityStateText("espInternalTemp");
+  }
+
+  function getConnectivityModalRows() {
+    const rows = [
+      ["Netwerkstatus", getConnectivityStatus()],
+      ["IP-adres", getDeviceIpAddress()],
+    ];
+    const ssid = String(getEntityValue("wifiSsid") || "").trim();
+    if (ssid) {
+      rows.push(["WiFi SSID", ssid]);
+    }
+    const signalEntity = state.entities.wifiSignal;
+    if (signalEntity) {
+      const signal = getEntityNumericValue("wifiSignal");
+      if (!Number.isNaN(signal)) {
+        rows.push(["WiFi signaal", formatNumericState(signal, 0, signalEntity.uom || " dBm")]);
+      }
+    }
+    return rows;
+  }
+
+  function getHeaderStatusAction(key) {
+    if (key === "update") {
+      return "open-update-modal";
+    }
+    if (key === "connectivity") {
+      return "open-connectivity-modal";
+    }
+    return "";
+  }
+
   function getHeaderStatusItems() {
     return [
       ["installation", "Installatie", getInstallationLabel()],
       ["setup", "Setup", state.complete ? "Afgerond" : "Open"],
       ["uptime", "Uptime", formatUptimeFromMeta()],
+      ["connectivity", "Connectiviteit", getConnectivityStatus()],
+      ["espTemp", "ESP-temp", getEspTemperatureLabel()],
       ["time", "Tijd", formatDeviceClock()],
       ["ip", "IP-adres", getDeviceIpAddress()],
+      ["version", "Versie", getDeviceVersionLabel()],
       ["update", "Update", getUpdateStatus(), Boolean(getFirmwareUpdateEntity())],
     ];
   }
@@ -1655,16 +1733,20 @@
 
     return `
       <div class="oq-helper-status-grid">
-        ${statusItems.map(([key, label, value, interactive]) => `
-          <${interactive ? "button" : "div"}
-            class="oq-helper-status-item${interactive ? " oq-helper-status-item--button" : ""}${key === "update" && hasFirmwareUpdateAttention() ? " oq-helper-status-item--attention" : ""}"
+        ${statusItems.map(([key, label, value, interactive]) => {
+          const action = getHeaderStatusAction(key);
+          const isInteractive = Boolean(interactive || action);
+          return `
+          <${isInteractive ? "button" : "div"}
+            class="oq-helper-status-item${isInteractive ? " oq-helper-status-item--button" : ""}${key === "update" && hasFirmwareUpdateAttention() ? " oq-helper-status-item--attention" : ""}"
             data-oq-header-status="${escapeHtml(key)}"
-            ${interactive ? 'type="button" data-oq-action="open-update-modal"' : ""}
+            ${isInteractive ? `type="button" data-oq-action="${escapeHtml(action)}"` : ""}
           >
             <span class="oq-helper-status-label">${escapeHtml(label)}</span>
             <strong class="oq-helper-status-value">${escapeHtml(value)}</strong>
-          </${interactive ? "button" : "div"}>
-        `).join("")}
+          </${isInteractive ? "button" : "div"}>
+        `;
+        }).join("")}
       </div>
     `;
   }
@@ -1686,9 +1768,15 @@
       return true;
     }
 
-    for (const [key, label, value] of statusItems) {
+    for (const [key, label, value, interactive] of statusItems) {
       const item = statusGrid.querySelector(`[data-oq-header-status="${key}"]`);
       if (!item) {
+        statusGrid.outerHTML = renderHeaderStatusGrid();
+        return true;
+      }
+      const action = getHeaderStatusAction(key);
+      const isInteractive = Boolean(interactive || action);
+      if (item.tagName.toLowerCase() !== (isInteractive ? "button" : "div")) {
         statusGrid.outerHTML = renderHeaderStatusGrid();
         return true;
       }
@@ -1706,6 +1794,12 @@
       if (valueNode.textContent !== value) {
         valueNode.textContent = value;
       }
+      if (isInteractive) {
+        item.setAttribute("data-oq-action", action);
+      } else {
+        item.removeAttribute("data-oq-action");
+      }
+      item.classList.toggle("oq-helper-status-item--button", isInteractive);
       item.classList.toggle("oq-helper-status-item--attention", key === "update" && hasFirmwareUpdateAttention());
     }
 
@@ -1813,6 +1907,11 @@
         <div class="oq-helper-hub-block">
           <p class="oq-helper-hub-kicker">Systeem</p>
           ${renderHeaderStatusGrid()}
+          <div class="oq-helper-hub-actions oq-helper-hub-actions--single">
+            <button class="oq-helper-hub-action oq-helper-hub-action--warning" type="button" data-oq-action="open-restart-confirm">
+              Herstart OpenQuatt
+            </button>
+          </div>
         </div>
       </aside>
     `;
@@ -1949,6 +2048,61 @@
         </section>
       </div>
     `;
+  }
+
+  function renderSystemModal() {
+    if (state.systemModal === "connectivity") {
+      const rows = getConnectivityModalRows();
+      return `
+        <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
+          <section class="oq-helper-modal" role="dialog" aria-modal="true" aria-labelledby="oq-system-modal-title">
+            <div class="oq-helper-modal-head">
+              <div>
+                <p class="oq-helper-modal-kicker">Systeem</p>
+                <h2 class="oq-helper-modal-title" id="oq-system-modal-title">Connectiviteit</h2>
+              </div>
+              <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit systeem-popup">×</button>
+            </div>
+            <p class="oq-helper-modal-copy">Status en details van de actieve netwerkverbinding van OpenQuatt.</p>
+            <div class="oq-helper-modal-grid">
+              ${rows.map(([label, value]) => `
+                <div class="oq-helper-modal-row">
+                  <span class="oq-helper-modal-label">${escapeHtml(label)}</span>
+                  <strong class="oq-helper-modal-value">${escapeHtml(value)}</strong>
+                </div>
+              `).join("")}
+            </div>
+            <div class="oq-helper-modal-actions">
+              <button class="oq-helper-button oq-helper-button--primary" type="button" data-oq-action="close-system-modal">Gereed</button>
+            </div>
+          </section>
+        </div>
+      `;
+    }
+
+    if (state.systemModal === "restart-confirm") {
+      const busy = state.busyAction === "restartAction";
+      return `
+        <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
+          <section class="oq-helper-modal" role="dialog" aria-modal="true" aria-labelledby="oq-restart-modal-title">
+            <div class="oq-helper-modal-head">
+              <div>
+                <p class="oq-helper-modal-kicker">Systeem</p>
+                <h2 class="oq-helper-modal-title" id="oq-restart-modal-title">OpenQuatt herstarten?</h2>
+              </div>
+              <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit herstart-popup">×</button>
+            </div>
+            <p class="oq-helper-modal-copy">De webinterface en regeling zijn tijdens de herstart kort niet bereikbaar. Daarna komt OpenQuatt vanzelf terug.</p>
+            <div class="oq-helper-modal-actions">
+              <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="close-system-modal" ${busy ? "disabled" : ""}>Annuleren</button>
+              <button class="oq-helper-button oq-helper-button--primary" type="button" data-oq-action="confirm-restart" ${busy ? "disabled" : ""}>${busy ? "Herstarten..." : "Herstarten"}</button>
+            </div>
+          </section>
+        </div>
+      `;
+    }
+
+    return "";
   }
 
   function getEntityValue(key) {
@@ -2367,9 +2521,15 @@
         setInterfacePanelOpen(false);
         shouldRender = true;
       }
-      if (modalBackdrop && event.target === modalBackdrop && state.updateModalOpen) {
-        state.updateModalOpen = false;
-        shouldRender = true;
+      if (modalBackdrop && event.target === modalBackdrop) {
+        if (state.updateModalOpen) {
+          state.updateModalOpen = false;
+          shouldRender = true;
+        }
+        if (state.systemModal) {
+          state.systemModal = "";
+          shouldRender = true;
+        }
       }
       if (shouldRender) {
         render();
@@ -2409,11 +2569,37 @@
       return;
     }
 
+    if (action === "open-connectivity-modal") {
+      state.systemModal = "connectivity";
+      render();
+      return;
+    }
+
+    if (action === "open-restart-confirm") {
+      state.systemModal = "restart-confirm";
+      render();
+      return;
+    }
+
     if (action === "close-update-modal") {
       state.updateModalOpen = false;
       state.updateInstallCompleted = false;
       state.updateInstallCompletedVersion = "";
       render();
+      return;
+    }
+
+    if (action === "close-system-modal") {
+      state.systemModal = "";
+      render();
+      return;
+    }
+
+    if (action === "confirm-restart") {
+      void triggerNamedButton("restartAction", {
+        successNotice: "OpenQuatt wordt opnieuw opgestart. Wacht even tot de webinterface weer terugkomt.",
+        errorPrefix: "Herstart mislukt",
+      });
       return;
     }
 
@@ -2755,6 +2941,36 @@
       setAppView(action === "apply" ? "overview" : QUICK_START_VIEW, { syncMode: "replace" });
     } catch (error) {
       state.controlError = `Actie mislukt voor "${entity.name}". ${error.message}`;
+    } finally {
+      state.busyAction = "";
+      render();
+    }
+  }
+
+  async function triggerNamedButton(key, options = {}) {
+    const entity = ENTITY_DEFS[key];
+    if (!entity) {
+      return;
+    }
+    state.busyAction = key;
+    state.controlError = "";
+    state.controlNotice = "";
+    render();
+
+    try {
+      const response = await fetch(buildEntityPath(entity.domain, entity.name, "press"), {
+        method: "POST",
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      state.systemModal = "";
+      state.controlNotice = options.successNotice || `${entity.name} gestart.`;
+      if (Array.isArray(options.refreshKeys) && options.refreshKeys.length) {
+        await refreshEntities(options.refreshKeys, "state");
+      }
+    } catch (error) {
+      state.controlError = `${options.errorPrefix || `Actie mislukt voor "${entity.name}"`}. ${error.message}`;
     } finally {
       state.busyAction = "";
       render();
@@ -6845,6 +7061,7 @@
         </div>
       </div>
       ${renderUpdateModal()}
+      ${renderSystemModal()}
     `;
     state.quickStartRenderSignature = state.appView === QUICK_START_VIEW ? getQuickStartRenderSignature() : "";
     state.settingsRenderSignature = state.appView === "settings" ? getSettingsRenderSignature() : "";
