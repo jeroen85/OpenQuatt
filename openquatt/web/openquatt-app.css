@@ -5082,9 +5082,20 @@ esp-app.oq-native-app.oq-native-app--collapsed {
   }
 
   .oq-helper-hub:not(.oq-helper-hub--collapsed) {
-    position: static;
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 8px);
+    left: 8px;
+    right: 8px;
     width: auto;
-    margin-top: 18px;
+    margin-top: 0;
+    max-height: calc(100vh - env(safe-area-inset-top, 0px) - 16px);
+    overflow: auto;
+    overscroll-behavior: contain;
+    border-radius: 22px;
+    z-index: 40;
+    box-shadow:
+      0 18px 40px rgba(15, 23, 42, 0.12),
+      0 0 0 999px rgba(248, 250, 252, 0.42);
   }
 
   .oq-helper-hub--collapsed {
@@ -5093,6 +5104,12 @@ esp-app.oq-native-app.oq-native-app--collapsed {
     right: 0;
     margin-top: 0;
     z-index: 6;
+  }
+
+  .oq-helper-shell--dark .oq-helper-hub:not(.oq-helper-hub--collapsed) {
+    box-shadow:
+      0 22px 48px rgba(2, 6, 23, 0.32),
+      0 0 0 999px rgba(9, 14, 24, 0.56);
   }
 
   .oq-helper-devdock,
@@ -5359,8 +5376,7 @@ esp-app.oq-native-app.oq-native-app--collapsed {
   }
 
   .oq-helper-hub:not(.oq-helper-hub--collapsed) {
-    width: auto;
-    margin: 12px -2px 0;
+    margin: 0;
     padding: 10px 11px;
     border-radius: 18px;
   }
