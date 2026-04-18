@@ -5212,7 +5212,7 @@
         copy: openquattEnabled
           ? "Warmte- en koelregeling mogen normaal doorlopen."
           : "Nieuwe warmte- en koelvraag staan uit; bewaking en vorstbeveiliging blijven actief.",
-        buttonLabel: openquattEnabled ? "Uitzetten" : "Aanzetten",
+        buttonLabel: openquattEnabled ? "Pauzeer" : "Hervat",
         nextState: openquattEnabled ? "off" : "on",
         tone: openquattEnabled ? "green" : "neutral",
       },
@@ -5221,7 +5221,7 @@
         label: "Koeling",
         status: coolingStatus,
         copy: coolingCopy,
-        buttonLabel: manualCoolingEnabled ? "Uitzetten" : "Aanzetten",
+        buttonLabel: manualCoolingEnabled ? "Stop" : "Sta toe",
         nextState: manualCoolingEnabled ? "off" : "on",
         tone: manualCoolingEnabled ? (coolingModeActive ? "blue" : "sky") : "neutral",
       },
@@ -5230,7 +5230,7 @@
         label: "Stille modus",
         status: silentStatus,
         copy: silentCopy,
-        buttonLabel: manualSilentEnabled ? "Opheffen" : "Forceren",
+        buttonLabel: manualSilentEnabled ? "Normaal" : "Forceer",
         nextState: manualSilentEnabled ? "off" : "on",
         tone: manualSilentEnabled ? "orange" : "neutral",
       },
@@ -5244,26 +5244,30 @@
     }
     return `
       <section class="oq-overview-controls">
-        <div class="oq-overview-controls-copy">
-          <h3>Bediening</h3>
-          <p>Directe schakelaars voor regeling, koeling en stille modus.</p>
+        <div class="oq-overview-controls-head">
+          <div class="oq-overview-controls-copy">
+            <h3>Bediening</h3>
+            <p>Directe runtime-schakelaars voor regeling, koeling en stille modus.</p>
+          </div>
         </div>
         <div class="oq-overview-controls-grid">
           ${cards.map((card) => `
             <article class="oq-overview-control oq-overview-control--${escapeHtml(card.tone)}">
               <div class="oq-overview-control-head">
                 <span>${escapeHtml(card.label)}</span>
-                <strong>${escapeHtml(card.status)}</strong>
+                <strong class="oq-overview-control-state oq-overview-control-state--${escapeHtml(card.tone)}">${escapeHtml(card.status)}</strong>
               </div>
               <p>${escapeHtml(card.copy)}</p>
-              <button
-                class="oq-overview-control-toggle${state.busyAction === `switch-${card.key}` ? " is-busy" : ""}"
-                type="button"
-                data-oq-action="toggle-overview-control"
-                data-control-key="${escapeHtml(card.key)}"
-                data-control-state="${escapeHtml(card.nextState)}"
-                ${state.busyAction ? "disabled" : ""}
-              >${escapeHtml(state.busyAction === `switch-${card.key}` ? "Bezig..." : card.buttonLabel)}</button>
+              <div class="oq-overview-control-actions">
+                <button
+                  class="oq-overview-control-toggle${state.busyAction === `switch-${card.key}` ? " is-busy" : ""}"
+                  type="button"
+                  data-oq-action="toggle-overview-control"
+                  data-control-key="${escapeHtml(card.key)}"
+                  data-control-state="${escapeHtml(card.nextState)}"
+                  ${state.busyAction ? "disabled" : ""}
+                >${escapeHtml(state.busyAction === `switch-${card.key}` ? "Bezig..." : card.buttonLabel)}</button>
+              </div>
             </article>
           `).join("")}
         </div>

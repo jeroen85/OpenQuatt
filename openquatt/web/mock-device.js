@@ -113,6 +113,10 @@
     entity.state = "";
   }
 
+  function isSwitchEnabled(name) {
+    return Boolean(getEntity("switch", name)?.value);
+  }
+
   function clearOtaSimulation() {
     state.otaTimers.forEach((timer) => window.clearTimeout(timer));
     state.otaTimers = [];
@@ -627,7 +631,7 @@
         setBinary("HP2 - Bottom plate heater", true);
         setBinary("HP2 - Crankcase heater", true);
       }
-      syncOverviewTelemetry(single);
+      applyRuntimeControlOverlay(single);
       return;
     }
 
@@ -686,7 +690,7 @@
         setBinary("HP2 - Bottom plate heater", false);
         setBinary("HP2 - Crankcase heater", true);
       }
-      syncOverviewTelemetry(single);
+      applyRuntimeControlOverlay(single);
       return;
     }
 
@@ -743,7 +747,7 @@
       setBinary("HP2 - 4-Way valve", true);
       setBinary("HP2 - Bottom plate heater", true);
       setBinary("HP2 - Crankcase heater", true);
-      syncOverviewTelemetry(single);
+      applyRuntimeControlOverlay(single);
       return;
     }
 
@@ -807,7 +811,7 @@
         setBinary("HP2 - Bottom plate heater", false);
         setBinary("HP2 - Crankcase heater", true);
       }
-      syncOverviewTelemetry(single);
+      applyRuntimeControlOverlay(single);
       return;
     }
 
@@ -876,9 +880,69 @@
         setText("text_sensor", "HP2 - Working Mode Label", "Cooling");
         setBinary("HP2 - 4-Way valve", true);
       }
-      syncOverviewTelemetry(single);
+      applyRuntimeControlOverlay(single);
       return;
     }
+  }
+
+  function applyRuntimeControlOverlay(single) {
+    const openquattEnabled = isSwitchEnabled("OpenQuatt Enabled");
+    const manualCoolingEnabled = isSwitchEnabled("Manual Cooling Enable");
+    const manualSilentEnabled = isSwitchEnabled("Manual Silent Enable");
+
+    if (manualSilentEnabled) {
+      setBinary("Silent active", true);
+    }
+
+    if (manualCoolingEnabled) {
+      setBinary("Cooling Enable (Selected)", true);
+      if (!getEntity("text_sensor", "Cooling Block Reason")?.state || getEntity("text_sensor", "Cooling Block Reason")?.state === "Ready") {
+        setText("text_sensor", "Cooling Block Reason", state.scenario === "cooling" ? "Ready" : "Waiting for room request");
+      }
+    }
+
+    if (!openquattEnabled) {
+      setText("text_sensor", "Control Mode (Label)", "CM0 - Standby");
+      setBinary("Cooling Request Active", false);
+      setBinary("Cooling Permitted", false);
+      setText("text_sensor", "Cooling Block Reason", manualCoolingEnabled ? "OpenQuatt paused" : "Cooling disabled");
+      setText("text_sensor", "Flow Mode", "Paused");
+
+      setNumber("Total Power Input", single ? 5.2 : 10.3, "W");
+      setNumber("Heating Power Input", 0, "W");
+      setNumber("Cooling Power Input", 0, "W");
+      setNumber("Total Heat Power", 0, "W");
+      setNumber("Total Cooling Power", 0, "W");
+      setNumber("Total COP", 0, "");
+      setNumber("Total EER", 0, "");
+      setNumber("Flow average (Selected)", 0, "L/h");
+
+      setNumber("HP1 - Power Input", 5.2, "W");
+      setNumber("HP1 - Heat Power", 0, "W");
+      setNumber("HP1 - Cooling Power", 0, "W");
+      setNumber("HP1 - COP", 0, "");
+      setNumber("HP1 - Compressor frequency", 0, "Hz");
+      setNumber("HP1 - Fan speed", 0, "rpm");
+      setNumber("HP1 - Flow", 0, "L/h");
+      setText("text_sensor", "HP1 - Working Mode Label", "Standby");
+      setBinary("HP1 - Defrost", false);
+      setBinary("HP1 - 4-Way valve", false);
+
+      if (!single) {
+        setNumber("HP2 - Power Input", 5.1, "W");
+        setNumber("HP2 - Heat Power", 0, "W");
+        setNumber("HP2 - Cooling Power", 0, "W");
+        setNumber("HP2 - COP", 0, "");
+        setNumber("HP2 - Compressor frequency", 0, "Hz");
+        setNumber("HP2 - Fan speed", 0, "rpm");
+        setNumber("HP2 - Flow", 0, "L/h");
+        setText("text_sensor", "HP2 - Working Mode Label", "Standby");
+        setBinary("HP2 - Defrost", false);
+        setBinary("HP2 - 4-Way valve", false);
+      }
+    }
+
+    syncOverviewTelemetry(single);
   }
 
   function stepSimulation(force = false) {
@@ -954,6 +1018,7 @@
     }
     entity.value = Boolean(enabled);
     entity.state = Boolean(enabled);
+    applyScenario(state.scenario);
     updateSummary();
     notifyMockUpdated();
   }

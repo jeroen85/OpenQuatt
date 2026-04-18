@@ -2924,15 +2924,20 @@ body.oq-page-light {
 }
 
 .oq-overview-controls {
-  display: grid;
-  grid-template-columns: minmax(220px, 0.42fr) minmax(0, 1fr);
-  gap: 14px;
+  display: block;
   margin-top: 14px;
   padding: 18px;
   border-radius: 22px;
   background: var(--oq-overview-panel-bg);
   border: 1px solid var(--oq-overview-panel-border);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 12px 26px rgba(2, 6, 23, 0.08);
+}
+
+.oq-overview-controls-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .oq-overview-controls-copy h3 {
@@ -2942,15 +2947,17 @@ body.oq-page-light {
 }
 
 .oq-overview-controls-copy p {
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   color: var(--oq-overview-soft);
   line-height: 1.5;
+  font-size: 0.94rem;
 }
 
 .oq-overview-controls-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+  margin-top: 14px;
 }
 
 .oq-overview-control {
@@ -2959,11 +2966,14 @@ body.oq-page-light {
   background: var(--oq-overview-surface);
   border: 1px solid var(--oq-overview-surface-border);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
 }
 
 .oq-overview-control-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
 }
@@ -2978,14 +2988,44 @@ body.oq-page-light {
 
 .oq-overview-control-head strong {
   color: var(--oq-overview-title);
-  font-size: 1rem;
+  font-size: 0.86rem;
+}
+
+.oq-overview-control-state {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--oq-overview-chip-border);
+  background: var(--oq-overview-chip-bg);
+}
+
+.oq-overview-control-state--green {
+  border-color: rgba(34, 197, 94, 0.34);
+}
+
+.oq-overview-control-state--blue,
+.oq-overview-control-state--sky {
+  border-color: rgba(59, 130, 246, 0.28);
+}
+
+.oq-overview-control-state--orange {
+  border-color: rgba(249, 115, 22, 0.32);
 }
 
 .oq-overview-control p {
-  margin: 10px 0 14px;
+  margin: 10px 0 16px;
   color: var(--oq-overview-soft);
   font-size: 0.92rem;
   line-height: 1.45;
+  flex: 1;
+}
+
+.oq-overview-control-actions {
+  display: flex;
+  justify-content: flex-start;
 }
 
 .oq-overview-control-toggle {
@@ -2993,7 +3033,7 @@ body.oq-page-light {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 38px;
+  min-height: 36px;
   padding: 0 14px;
   border-radius: 999px;
   border: 1px solid var(--oq-overview-chip-border);
@@ -5686,12 +5726,19 @@ esp-app.oq-native-app.oq-native-app--collapsed {
   }
 
   .oq-overview-controls {
-    grid-template-columns: 1fr;
     padding: 16px;
+  }
+
+  .oq-overview-controls-head {
+    align-items: flex-start;
   }
 
   .oq-overview-controls-grid {
     grid-template-columns: 1fr;
+  }
+
+  .oq-overview-control {
+    min-height: 0;
   }
 
   .oq-overview-hp-tools {
