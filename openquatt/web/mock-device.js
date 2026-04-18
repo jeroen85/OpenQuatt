@@ -897,7 +897,7 @@
     if (manualCoolingEnabled) {
       setBinary("Cooling Enable (Selected)", true);
       if (!getEntity("text_sensor", "Cooling Block Reason")?.state || getEntity("text_sensor", "Cooling Block Reason")?.state === "Ready") {
-        setText("text_sensor", "Cooling Block Reason", state.scenario === "cooling" ? "Ready" : "Waiting for room request");
+        setText("text_sensor", "Cooling Block Reason", state.scenario === "cooling" ? "Ready" : "Wacht op kamervraag");
       }
     }
 
@@ -905,8 +905,8 @@
       setText("text_sensor", "Control Mode (Label)", "CM0 - Standby");
       setBinary("Cooling Request Active", false);
       setBinary("Cooling Permitted", false);
-      setText("text_sensor", "Cooling Block Reason", manualCoolingEnabled ? "OpenQuatt paused" : "Cooling disabled");
-      setText("text_sensor", "Flow Mode", "Paused");
+      setText("text_sensor", "Cooling Block Reason", manualCoolingEnabled ? "OpenQuatt gepauzeerd" : "Koeling uitgeschakeld");
+      setText("text_sensor", "Flow Mode", "Gepauzeerd");
 
       setNumber("Total Power Input", single ? 5.2 : 10.3, "W");
       setNumber("Heating Power Input", 0, "W");

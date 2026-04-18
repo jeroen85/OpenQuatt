@@ -3212,6 +3212,27 @@
     return labels[value] || value;
   }
 
+  function formatCoolingBlockReason(reason) {
+    const value = String(reason || "").trim();
+    if (!value) {
+      return "";
+    }
+
+    const labels = {
+      Ready: "Gereed",
+      "Waiting for room request": "Wacht op kamervraag",
+      "No dew point source": "Geen dauwpuntbron",
+      "OpenQuatt paused": "OpenQuatt gepauzeerd",
+      "Cooling disabled": "Koeling uitgeschakeld",
+      "Flow too low": "Flow te laag",
+      "Fallback cooling active": "Fallback-koeling actief",
+      "Fallback corrected by warm night": "Fallback gecorrigeerd door warme nacht",
+      "Fallback blocked by tropical night": "Fallback geblokkeerd door tropische nacht",
+    };
+
+    return labels[value] || value;
+  }
+
   function renderSettingsSelectField(key, title, copy, className = "") {
     if (!hasEntity(key)) {
       return "";
@@ -4872,7 +4893,7 @@
     const rawDemand = getEntityNumericValue("coolingDemandRaw");
     const permitted = isEntityActive("coolingPermitted");
     const requestActive = isEntityActive("coolingRequestActive");
-    const blockReason = getEntityStateText("coolingBlockReason", "Onbekend");
+    const blockReason = formatCoolingBlockReason(getEntityStateText("coolingBlockReason", "Onbekend"));
 
     let statusTitle = "Wacht op koelvraag";
     let statusCopy = "Zodra er koelvraag is, zie je hier hoe de regeling de aanvoer richting het koeldoel stuurt.";
@@ -5203,7 +5224,7 @@
       coolingCopy = "Koeling draait nu en blijft verder door safety en koelvraag begrensd.";
     } else if (manualCoolingEnabled && coolingBlocked) {
       coolingStatus = "Geblokkeerd";
-      coolingCopy = getEntityStateText("coolingBlockReason", "Koeling wacht nog op veilige condities.");
+      coolingCopy = formatCoolingBlockReason(getEntityStateText("coolingBlockReason", "Koeling wacht nog op veilige condities."));
     } else if (manualCoolingEnabled && coolingRequestActive) {
       coolingStatus = "Wacht op start";
       coolingCopy = "Koelvraag is actief; de compressor start zodra de regeling ruimte ziet.";
