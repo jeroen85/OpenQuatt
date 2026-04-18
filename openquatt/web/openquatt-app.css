@@ -5463,6 +5463,8 @@ esp-app.oq-native-app.oq-native-app--collapsed {
 
   .oq-ph-concept-meta-pill {
     width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
     justify-content: space-between;
     padding: 7px 10px;
     font-size: 0.79rem;
