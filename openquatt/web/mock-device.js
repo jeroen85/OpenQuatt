@@ -2,7 +2,7 @@
   const DOMAINS = new Set(["select", "number", "sensor", "text_sensor", "binary_sensor", "button", "time", "update", "switch"]);
   const entities = new Map();
   const state = {
-    scenario: "dual",
+    scenario: "heating",
     installation: "duo",
     complete: true,
     tick: 0,
@@ -640,7 +640,7 @@
     }
 
     if (name === "heating") {
-      setText("text_sensor", "Control Mode (Label)", "CM98");
+      setText("text_sensor", "Control Mode (Label)", "CM2 - Heating - Heat Pump Only");
       setBinary("Cooling Enable (Selected)", false);
       setBinary("Cooling Request Active", false);
       setBinary("Cooling Permitted", false);
