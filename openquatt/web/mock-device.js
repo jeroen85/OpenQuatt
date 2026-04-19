@@ -1,5 +1,5 @@
 (function () {
-  const DOMAINS = new Set(["select", "number", "sensor", "text_sensor", "binary_sensor", "button", "time", "update"]);
+  const DOMAINS = new Set(["select", "number", "sensor", "text_sensor", "binary_sensor", "button", "time", "update", "switch"]);
   const entities = new Map();
   const state = {
     scenario: "dual",
@@ -111,6 +111,10 @@
     }
     entity.value = Boolean(value);
     entity.state = "";
+  }
+
+  function isSwitchEnabled(name) {
+    return Boolean(getEntity("switch", name)?.value);
   }
 
   function clearOtaSimulation() {
@@ -254,6 +258,13 @@
       value: "Power House",
       state: "Power House",
       option: ["Power House", "Water Temperature Control (heating curve)"],
+    });
+    setEntity("switch", "OpenQuatt Enabled", { value: true, state: true });
+    setEntity("switch", "Manual Cooling Enable", { value: false, state: false });
+    setEntity("select", "Silent Mode Override", {
+      value: "Schedule",
+      state: "Schedule",
+      option: ["Schedule", "On", "Off"],
     });
     setEntity("select", "Flow Control Mode", {
       value: "Flow Setpoint",
@@ -624,7 +635,7 @@
         setBinary("HP2 - Bottom plate heater", true);
         setBinary("HP2 - Crankcase heater", true);
       }
-      syncOverviewTelemetry(single);
+      applyRuntimeControlOverlay(single);
       return;
     }
 
@@ -683,7 +694,7 @@
         setBinary("HP2 - Bottom plate heater", false);
         setBinary("HP2 - Crankcase heater", true);
       }
-      syncOverviewTelemetry(single);
+      applyRuntimeControlOverlay(single);
       return;
     }
 
@@ -740,7 +751,7 @@
       setBinary("HP2 - 4-Way valve", true);
       setBinary("HP2 - Bottom plate heater", true);
       setBinary("HP2 - Crankcase heater", true);
-      syncOverviewTelemetry(single);
+      applyRuntimeControlOverlay(single);
       return;
     }
 
@@ -804,7 +815,7 @@
         setBinary("HP2 - Bottom plate heater", false);
         setBinary("HP2 - Crankcase heater", true);
       }
-      syncOverviewTelemetry(single);
+      applyRuntimeControlOverlay(single);
       return;
     }
 
@@ -873,9 +884,71 @@
         setText("text_sensor", "HP2 - Working Mode Label", "Cooling");
         setBinary("HP2 - 4-Way valve", true);
       }
-      syncOverviewTelemetry(single);
+      applyRuntimeControlOverlay(single);
       return;
     }
+  }
+
+  function applyRuntimeControlOverlay(single) {
+    const openquattEnabled = isSwitchEnabled("OpenQuatt Enabled");
+    const manualCoolingEnabled = isSwitchEnabled("Manual Cooling Enable");
+    const silentModeOverride = String(getEntity("select", "Silent Mode Override")?.value || "Schedule");
+
+    if (silentModeOverride === "On") {
+      setBinary("Silent active", true);
+    } else if (silentModeOverride === "Off") {
+      setBinary("Silent active", false);
+    }
+
+    if (manualCoolingEnabled) {
+      setBinary("Cooling Enable (Selected)", true);
+      if (!getEntity("text_sensor", "Cooling Block Reason")?.state || getEntity("text_sensor", "Cooling Block Reason")?.state === "Ready") {
+        setText("text_sensor", "Cooling Block Reason", state.scenario === "cooling" ? "Ready" : "Wacht op kamervraag");
+      }
+    }
+
+    if (!openquattEnabled) {
+      setText("text_sensor", "Control Mode (Label)", "CM0 - Standby");
+      setBinary("Cooling Request Active", false);
+      setBinary("Cooling Permitted", false);
+      setText("text_sensor", "Cooling Block Reason", manualCoolingEnabled ? "OpenQuatt gepauzeerd" : "Koeling uitgeschakeld");
+      setText("text_sensor", "Flow Mode", "Gepauzeerd");
+
+      setNumber("Total Power Input", single ? 5.2 : 10.3, "W");
+      setNumber("Heating Power Input", 0, "W");
+      setNumber("Cooling Power Input", 0, "W");
+      setNumber("Total Heat Power", 0, "W");
+      setNumber("Total Cooling Power", 0, "W");
+      setNumber("Total COP", 0, "");
+      setNumber("Total EER", 0, "");
+      setNumber("Flow average (Selected)", 0, "L/h");
+
+      setNumber("HP1 - Power Input", 5.2, "W");
+      setNumber("HP1 - Heat Power", 0, "W");
+      setNumber("HP1 - Cooling Power", 0, "W");
+      setNumber("HP1 - COP", 0, "");
+      setNumber("HP1 - Compressor frequency", 0, "Hz");
+      setNumber("HP1 - Fan speed", 0, "rpm");
+      setNumber("HP1 - Flow", 0, "L/h");
+      setText("text_sensor", "HP1 - Working Mode Label", "Standby");
+      setBinary("HP1 - Defrost", false);
+      setBinary("HP1 - 4-Way valve", false);
+
+      if (!single) {
+        setNumber("HP2 - Power Input", 5.1, "W");
+        setNumber("HP2 - Heat Power", 0, "W");
+        setNumber("HP2 - Cooling Power", 0, "W");
+        setNumber("HP2 - COP", 0, "");
+        setNumber("HP2 - Compressor frequency", 0, "Hz");
+        setNumber("HP2 - Fan speed", 0, "rpm");
+        setNumber("HP2 - Flow", 0, "L/h");
+        setText("text_sensor", "HP2 - Working Mode Label", "Standby");
+        setBinary("HP2 - Defrost", false);
+        setBinary("HP2 - 4-Way valve", false);
+      }
+    }
+
+    syncOverviewTelemetry(single);
   }
 
   function stepSimulation(force = false) {
@@ -925,7 +998,7 @@
         setNumber("Power House demand fall time", 2);
       }
     }
-    syncOverviewTelemetry(state.installation === "single");
+    applyScenario(state.scenario);
     updateSummary();
     notifyMockUpdated();
   }
@@ -940,6 +1013,18 @@
   function handleTimeSet(name, value) {
     const normalized = String(value || "").trim().length === 5 ? `${value}:00` : String(value || "");
     setText("time", name, normalized);
+    updateSummary();
+    notifyMockUpdated();
+  }
+
+  function handleSwitchSet(name, enabled) {
+    const entity = getEntity("switch", name);
+    if (!entity) {
+      return;
+    }
+    entity.value = Boolean(enabled);
+    entity.state = Boolean(enabled);
+    applyScenario(state.scenario);
     updateSummary();
     notifyMockUpdated();
   }
@@ -1034,7 +1119,7 @@
     const url = new URL(String(typeof input === "string" ? input : input.url), window.location.href);
     const parts = url.pathname.split("/").filter(Boolean);
     const maybeAction = parts.at(-1);
-    const action = maybeAction === "set" || maybeAction === "press" || maybeAction === "install" ? parts.pop() : "";
+    const action = ["set", "press", "install", "turn_on", "turn_off"].includes(maybeAction) ? parts.pop() : "";
     const name = decodeURIComponent(parts.pop() || "");
     const domain = parts.pop() || "";
     if (!DOMAINS.has(domain)) {
@@ -1079,6 +1164,13 @@
           handleTimeSet(request.name, rawValue || "");
         }
         return mockResponse(200, entity);
+      }
+
+      if (request.action === "turn_on" || request.action === "turn_off") {
+        if (request.domain === "switch") {
+          handleSwitchSet(request.name, request.action === "turn_on");
+        }
+        return mockResponse(200, { ok: true });
       }
 
       if (request.action === "press") {

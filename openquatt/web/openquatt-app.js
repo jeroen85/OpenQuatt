@@ -105,6 +105,9 @@
     wifiSignal: { domain: "sensor", name: "WiFi Signal", optional: true },
     espInternalTemp: { domain: "sensor", name: "ESP Internal Temperature", optional: true },
     strategy: { domain: "select", name: "Heating Control Mode" },
+    openquattEnabled: { domain: "switch", name: "OpenQuatt Enabled", optional: true },
+    manualCoolingEnable: { domain: "switch", name: "Manual Cooling Enable", optional: true },
+    silentModeOverride: { domain: "select", name: "Silent Mode Override", optional: true },
     coolingEnableSelected: { domain: "binary_sensor", name: "Cooling Enable (Selected)", optional: true },
     coolingRequestActive: { domain: "binary_sensor", name: "Cooling Request Active", optional: true },
     coolingPermitted: { domain: "binary_sensor", name: "Cooling Permitted", optional: true },
@@ -360,6 +363,9 @@
   ];
   const OVERVIEW_KEYS = [
     "strategy",
+    "openquattEnabled",
+    "manualCoolingEnable",
+    "silentModeOverride",
     "coolingEnableSelected",
     "coolingRequestActive",
     "coolingPermitted",
@@ -464,6 +470,9 @@
   ];
   const SETTINGS_KEYS = [
     "strategy",
+    "openquattEnabled",
+    "manualCoolingEnable",
+    "silentModeOverride",
     ...FLOW_SETTING_KEYS,
     ...COOLING_SETTING_KEYS,
     ...LIMIT_KEYS,
@@ -2102,6 +2111,29 @@
       `;
     }
 
+    if (state.systemModal === "silent-settings") {
+      return `
+        <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
+          <section class="oq-helper-modal oq-helper-modal--wide" role="dialog" aria-modal="true" aria-labelledby="oq-silent-settings-modal-title">
+            <div class="oq-helper-modal-head">
+              <div>
+                <p class="oq-helper-modal-kicker">Stille uren</p>
+                <h2 class="oq-helper-modal-title" id="oq-silent-settings-modal-title">Stille uren instellen</h2>
+              </div>
+              <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit stille-uren-popup">×</button>
+            </div>
+            <p class="oq-helper-modal-copy">Kies wanneer het systeem stiller moet werken, en hoe ver het dan nog mag opschalen. Wijzigingen worden direct toegepast.</p>
+            <div class="oq-helper-modal-body">
+              ${renderSilentSettingsFields()}
+            </div>
+            <div class="oq-helper-modal-actions">
+              <button class="oq-helper-button oq-helper-button--primary" type="button" data-oq-action="close-system-modal">Gereed</button>
+            </div>
+          </section>
+        </div>
+      `;
+    }
+
     return "";
   }
 
@@ -2581,6 +2613,12 @@
       return;
     }
 
+    if (action === "open-silent-settings-modal") {
+      state.systemModal = "silent-settings";
+      render();
+      return;
+    }
+
     if (action === "close-update-modal") {
       state.updateModalOpen = false;
       state.updateInstallCompleted = false;
@@ -2680,6 +2718,24 @@
       return;
     }
 
+    if (action === "toggle-overview-control") {
+      const key = button.dataset.controlKey || "";
+      const nextState = (button.dataset.controlState || "").toLowerCase();
+      if (key && (nextState === "on" || nextState === "off")) {
+        commitSwitch(key, nextState === "on");
+      }
+      return;
+    }
+
+    if (action === "select-overview-control-option") {
+      const key = button.dataset.controlKey || "";
+      const option = button.dataset.controlOption || "";
+      if (key && option && String(getEntityValue(key) || "") !== option) {
+        commitSelect(key, option);
+      }
+      return;
+    }
+
     if (action === "suggest-curve-fallback") {
       const suggestion = getCurveFallbackSuggestion();
       if (suggestion) {
@@ -2738,6 +2794,11 @@
     state.busyAction = `save-${key}`;
     state.controlNotice = "";
     state.controlError = "";
+    state.entities[key] = {
+      ...(state.entities[key] || {}),
+      state: option,
+      value: option,
+    };
     render();
 
     try {
@@ -2766,13 +2827,54 @@
       } else if (state.appView === "settings") {
         await refreshEntities(getSettingsRefreshKeys(), "state");
       } else {
-        await refreshEntities(["setupComplete", "strategy", ...FLOW_SETTING_KEYS, ...LIMIT_KEYS], "state");
+        await refreshEntities(["setupComplete", "strategy", "openquattEnabled", "manualCoolingEnable", "silentModeOverride", ...FLOW_SETTING_KEYS, ...LIMIT_KEYS], "state");
       }
       if (key === "strategy" && state.appView !== "settings") {
         await refreshEntities(isCurveMode(option) ? CURVE_POINTS.map((point) => point.key) : POWER_HOUSE_KEYS, "state");
       }
     } catch (error) {
       state.controlError = `${entity.name} kon niet worden bijgewerkt. ${error.message}`;
+    } finally {
+      state.busyAction = "";
+      render();
+    }
+  }
+
+  async function commitSwitch(key, enabled) {
+    const entity = ENTITY_DEFS[key];
+    if (!entity) {
+      return;
+    }
+
+    state.busyAction = `switch-${key}`;
+    state.controlNotice = "";
+    state.controlError = "";
+    render();
+
+    try {
+      const action = enabled ? "turn_on" : "turn_off";
+      const response = await fetch(buildEntityPath(entity.domain, entity.name, action), { method: "POST" });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      state.entities[key] = {
+        ...(state.entities[key] || {}),
+        value: enabled,
+        state: enabled,
+      };
+      state.controlNotice = `${entity.name} ${enabled ? "ingeschakeld" : "uitgeschakeld"}.`;
+      state.busyAction = "";
+      if (state.appView === "overview") {
+        await refreshEntities([...OVERVIEW_KEYS, ...HEADER_ENTITY_KEYS, "setupComplete", ...FIRMWARE_ENTITY_KEYS], "state");
+      } else if (state.appView === "settings") {
+        await refreshEntities(getSettingsRefreshKeys(), "state");
+      } else {
+        await refreshEntities(["setupComplete", "strategy", "openquattEnabled", "manualCoolingEnable", "silentModeOverride", ...FLOW_SETTING_KEYS, ...LIMIT_KEYS], "state");
+      }
+      render();
+    } catch (error) {
+      state.controlError = `${entity.name} aanpassen mislukt (${error.message}).`;
+      render();
     } finally {
       state.busyAction = "";
       render();
@@ -3148,6 +3250,27 @@
       [STRATEGY_OPTION_POWER_HOUSE]: "Power House",
       "Dew point required": "Dauwpunt verplicht",
       "Allow without dew point": "Toestaan zonder dauwpunt",
+    };
+
+    return labels[value] || value;
+  }
+
+  function formatCoolingBlockReason(reason) {
+    const value = String(reason || "").trim();
+    if (!value) {
+      return "";
+    }
+
+    const labels = {
+      Ready: "Gereed",
+      "Waiting for room request": "Wacht op kamervraag",
+      "No dew point source": "Geen dauwpuntbron",
+      "OpenQuatt paused": "OpenQuatt gepauzeerd",
+      "Cooling disabled": "Koeling uitgeschakeld",
+      "Flow too low": "Flow te laag",
+      "Fallback cooling active": "Fallback-koeling actief",
+      "Fallback corrected by warm night": "Fallback gecorrigeerd door warme nacht",
+      "Fallback blocked by tropical night": "Fallback geblokkeerd door tropische nacht",
     };
 
     return labels[value] || value;
@@ -3855,19 +3978,32 @@
   }
 
   function renderSettingsSilentSection() {
+    const silentFields = `
+      <div class="oq-settings-grid">
+        ${renderSettingsTimeField("silentStartTime", "Start stille uren", "Vanaf dit tijdstip werkt het systeem in stille modus.")}
+        ${renderSettingsTimeField("silentEndTime", "Einde stille uren", "Vanaf dit tijdstip stopt de stille modus weer.")}
+        ${renderSettingsSliderField("silentMax", "Maximaal niveau tijdens stille uren", "Zo ver mag het systeem nog opschalen tijdens stille uren.")}
+        ${renderSettingsSliderField("dayMax", "Maximaal niveau overdag", "Zo ver mag het systeem overdag opschalen.")}
+      </div>
+    `;
+
     return renderSettingsSection(
       "Stille uren",
       "Stille uren",
       "Kies wanneer het systeem stiller moet werken, en hoe ver het dan nog mag opschalen.",
-      `
-        <div class="oq-settings-grid">
-          ${renderSettingsTimeField("silentStartTime", "Start stille uren", "Vanaf dit tijdstip werkt het systeem in stille modus.")}
-          ${renderSettingsTimeField("silentEndTime", "Einde stille uren", "Vanaf dit tijdstip stopt de stille modus weer.")}
-          ${renderSettingsSliderField("silentMax", "Maximaal niveau tijdens stille uren", "Zo ver mag het systeem nog opschalen tijdens stille uren.")}
-          ${renderSettingsSliderField("dayMax", "Maximaal niveau overdag", "Zo ver mag het systeem overdag opschalen.")}
-        </div>
-      `,
+      silentFields,
     );
+  }
+
+  function renderSilentSettingsFields() {
+    return `
+      <div class="oq-settings-grid oq-settings-grid--modal">
+        ${renderSettingsTimeField("silentStartTime", "Start stille uren", "Vanaf dit tijdstip werkt het systeem in stille modus.")}
+        ${renderSettingsTimeField("silentEndTime", "Einde stille uren", "Vanaf dit tijdstip stopt de stille modus weer.")}
+        ${renderSettingsSliderField("silentMax", "Maximaal niveau tijdens stille uren", "Zo ver mag het systeem nog opschalen tijdens stille uren.")}
+        ${renderSettingsSliderField("dayMax", "Maximaal niveau overdag", "Zo ver mag het systeem overdag opschalen.")}
+      </div>
+    `;
   }
 
   function renderSettingsCoolingSection() {
@@ -4547,8 +4683,14 @@
     `;
   }
 
-  function renderOverviewStatusChip(label, value, tone = "neutral") {
-    return `<span class="oq-overview-chip oq-overview-chip--${escapeHtml(tone)}"><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</span>`;
+  function renderOverviewStatusStatCard(label, value, tone, note) {
+    return `
+      <article class="oq-overview-stat oq-overview-stat--${escapeHtml(tone)} oq-overview-stat--status${label === "Systeem" ? " oq-overview-stat--system" : ""}">
+        <p>${escapeHtml(label)}</p>
+        <strong>${escapeHtml(value)}</strong>
+        <span>${escapeHtml(note)}</span>
+      </article>
+    `;
   }
 
   function getHeatPumpPanelStatusLabel(mode, running) {
@@ -4712,7 +4854,7 @@
     if (modeLabel.includes("cm5") || modeLabel.includes("cooling") || modeLabel.includes("koeling")) {
       return true;
     }
-    return isEntityActive("coolingRequestActive") || isEntityActive("coolingEnableSelected");
+    return isEntityActive("coolingRequestActive");
   }
 
   function getOverviewStrategyLabel() {
@@ -4813,7 +4955,7 @@
     const rawDemand = getEntityNumericValue("coolingDemandRaw");
     const permitted = isEntityActive("coolingPermitted");
     const requestActive = isEntityActive("coolingRequestActive");
-    const blockReason = getEntityStateText("coolingBlockReason", "Onbekend");
+    const blockReason = formatCoolingBlockReason(getEntityStateText("coolingBlockReason", "Onbekend"));
 
     let statusTitle = "Wacht op koelvraag";
     let statusCopy = "Zodra er koelvraag is, zie je hier hoe de regeling de aanvoer richting het koeldoel stuurt.";
@@ -4942,6 +5084,13 @@
   }
 
   function getOverviewPrimarySignal() {
+    if (!isEntityActive("openquattEnabled")) {
+      return {
+        label: "Regeling nu",
+        value: "OpenQuatt gepauzeerd",
+        tone: "neutral",
+      };
+    }
     if (isCoolingOverviewActive()) {
       const model = getCoolingOverviewModel();
       const tone = !model.permitted
@@ -4978,48 +5127,14 @@
     };
   }
 
-  function getOverviewDemandSignal() {
-    if (isCoolingOverviewActive()) {
-      if (!isEntityActive("coolingRequestActive")) {
-        return {
-          label: "Koelvraag",
-          value: "Geen koelvraag",
-          tone: "neutral",
-        };
-      }
-      const rawDemand = getEntityNumericValue("coolingDemandRaw");
-      const value = Number.isNaN(rawDemand)
-        ? "Koelvraag actief"
-        : rawDemand <= 0
-          ? "Koelvraag actief, compressor rust"
-          : "Koelvraag actief";
+  function getOverviewSystemSignal() {
+    if (!isEntityActive("openquattEnabled")) {
       return {
-        label: "Koelvraag",
-        value,
-        tone: rawDemand > 0 ? "sky" : "neutral",
-      };
-    }
-    if (isSystemInStandby()) {
-      return {
-        label: "Warmtevraag",
-        value: "Geen warmtevraag",
+        label: "Systeem",
+        value: "Vorstbeveiliging blijft actief",
         tone: "neutral",
       };
     }
-    const demand = getHomeDemandState();
-    const tone = demand.tone === "high" || demand.tone === "active"
-      ? "orange"
-      : demand.tone === "steady"
-        ? "green"
-        : "neutral";
-    return {
-      label: "Warmtevraag",
-      value: demand.level,
-      tone,
-    };
-  }
-
-  function getOverviewSystemSignal() {
     if (isCoolingOverviewActive()) {
       if (!isEntityActive("coolingPermitted")) {
         return {
@@ -5037,22 +5152,8 @@
       }
       return {
         label: "Systeem",
-        value: "Koeling toegestaan",
+        value: "Normaal",
         tone: "green",
-      };
-    }
-    if (isFirmwareUpdateAvailable()) {
-      return {
-        label: "Systeem",
-        value: "Update beschikbaar",
-        tone: "orange",
-      };
-    }
-    if (isSystemInStandby()) {
-      return {
-        label: "Systeem",
-        value: "Stand-by, gereed om te starten",
-        tone: "sky",
       };
     }
     if (isEntityActive("silentActive")) {
@@ -5071,25 +5172,25 @@
     }
     return {
       label: "Systeem",
-      value: "Alles draait normaal",
+      value: "Normaal",
       tone: "green",
     };
   }
 
-  function renderOverviewSignals() {
-    const items = [
-      getOverviewPrimarySignal(),
-      getOverviewDemandSignal(),
-      getOverviewSystemSignal(),
-    ];
+  function renderOverviewStatusStack(strategyLabel, controlModeLabel) {
+    const primary = getOverviewPrimarySignal();
+    const system = getOverviewSystemSignal();
     return `
-      <section class="oq-overview-signals">
-        ${items.map((item) => `
-          <article class="oq-overview-signal oq-overview-signal--${escapeHtml(item.tone)}">
-            <span>${escapeHtml(item.label)}</span>
-            <strong>${escapeHtml(item.value)}</strong>
-          </article>
-        `).join("")}
+      <section class="oq-overview-statuspanel" aria-label="Systeemstatus">
+        <div class="oq-overview-sectionhead">
+          <h3>Systeemstatus</h3>
+        </div>
+        <div class="oq-overview-statusgrid">
+          ${renderOverviewStatusStatCard("Strategie", strategyLabel, "blue", "regelstrategie")}
+          ${renderOverviewStatusStatCard("Controlmode", controlModeLabel, "sky", "actieve modus")}
+          ${renderOverviewStatusStatCard("Regeling", primary.value, primary.tone, "wat OpenQuatt nu doet")}
+          ${renderOverviewStatusStatCard("Systeem", system.value, system.tone, "actieve randvoorwaarde")}
+        </div>
       </section>
     `;
   }
@@ -5105,6 +5206,203 @@
       ${renderOverviewStatCard(thermalKey, thermalLabel, "orange", "thermisch vermogen")}
       ${renderOverviewStatCard(efficiencyKey, efficiencyLabel, "green", "rendement")}
       ${renderOverviewStatCard("flowSelected", "Flow", "sky", "watercircuit")}
+    `;
+  }
+
+  function getOverviewControlCards() {
+    const openquattEnabled = isEntityActive("openquattEnabled");
+    const manualCoolingEnabled = isEntityActive("manualCoolingEnable");
+    const silentModeOverride = String(getEntityValue("silentModeOverride") || "Schedule");
+    const coolingBlocked = !isEntityActive("coolingPermitted");
+    const coolingRequestActive = isEntityActive("coolingRequestActive");
+    const coolingModeActive = getEntityStateText("controlModeLabel", "").toLowerCase().includes("cm5");
+
+    let coolingStatus = "Uit";
+    let coolingCopy = "Koeling staat uit.";
+    if (manualCoolingEnabled && coolingModeActive) {
+      coolingStatus = "Actief";
+      coolingCopy = "Koeling draait nu.";
+    } else if (manualCoolingEnabled && coolingBlocked) {
+      coolingStatus = "Geblokkeerd";
+      coolingCopy = formatCoolingBlockReason(getEntityStateText("coolingBlockReason", "Koeling wacht nog op veilige condities."));
+    } else if (manualCoolingEnabled && coolingRequestActive) {
+      coolingStatus = "Start bijna";
+      coolingCopy = "Er is koelvraag. Koeling start zodra dat kan.";
+    } else if (manualCoolingEnabled) {
+      coolingStatus = "Aan";
+      coolingCopy = "Koeling staat aan en wacht op koelvraag.";
+    }
+
+    let silentStatus = "Uit";
+    let silentCopy = "Stille modus staat uit.";
+    let silentTone = "neutral";
+    if (silentModeOverride === "On") {
+      silentStatus = "Aan";
+      silentCopy = "Stille modus staat geforceerd aan, ook buiten het tijdvenster.";
+      silentTone = "orange";
+    } else if (silentModeOverride === "Schedule") {
+      silentStatus = "Schema";
+      if (isEntityActive("silentActive")) {
+        silentCopy = "Stille modus staat nu aan via het tijdvenster.";
+        silentTone = "violet";
+      } else {
+        silentCopy = "Stille modus volgt het tijdvenster.";
+      }
+    }
+
+    return [
+      {
+        key: "openquattEnabled",
+        label: "OpenQuatt",
+        status: openquattEnabled ? "Aan" : "Gepauzeerd",
+        copy: openquattEnabled
+          ? "Verwarmen en koelen mogen gewoon werken."
+          : "Verwarmen en koelen staan uit. Bescherming blijft actief.",
+        buttonLabel: openquattEnabled ? "Pauzeer" : "Zet aan",
+        nextState: openquattEnabled ? "off" : "on",
+        tone: openquattEnabled ? "green" : "neutral",
+      },
+      {
+        key: "manualCoolingEnable",
+        label: "Koeling",
+        status: coolingStatus,
+        copy: coolingCopy,
+        buttonLabel: manualCoolingEnabled ? "Zet uit" : "Zet aan",
+        nextState: manualCoolingEnabled ? "off" : "on",
+        tone: manualCoolingEnabled ? (coolingModeActive ? "blue" : "sky") : "neutral",
+      },
+      {
+        key: "silentModeOverride",
+        label: "Stille modus",
+        status: silentStatus,
+        copy: silentCopy,
+        tone: silentTone,
+        kind: "select",
+        selectedOption: silentModeOverride,
+        settingsAction: true,
+        options: [
+          { value: "Off", label: "Uit" },
+          { value: "On", label: "Aan" },
+          { value: "Schedule", label: "Schema" },
+        ],
+      },
+    ].filter((card) => hasEntity(card.key));
+  }
+
+  function renderOverviewControlBody(card) {
+    if (card.kind === "select") {
+      return `
+        <div class="oq-overview-controlpanel-actions oq-overview-controlpanel-actions--split">
+          <div class="oq-overview-controlpanel-segmented">
+            ${card.options.map((option) => `
+              <button
+                class="oq-overview-controlpanel-segment${card.selectedOption === option.value ? " is-selected" : ""}${state.busyAction === `save-${card.key}` ? " is-busy" : ""}"
+                type="button"
+                data-oq-action="select-overview-control-option"
+                data-control-key="${escapeHtml(card.key)}"
+                data-control-option="${escapeHtml(option.value)}"
+                ${state.busyAction ? "disabled" : ""}
+              >${escapeHtml(option.label)}</button>
+            `).join("")}
+          </div>
+          ${card.settingsAction
+            ? `<button
+                class="oq-overview-controlpanel-icon"
+                type="button"
+                data-oq-action="open-silent-settings-modal"
+                aria-label="Open instellingen voor stille uren"
+                title="Stille uren instellen"
+              >⚙</button>`
+            : ""
+          }
+        </div>
+      `;
+    }
+
+    return `
+      <div class="oq-overview-controlpanel-actions">
+        <button
+          class="oq-overview-controlpanel-toggle${state.busyAction === `switch-${card.key}` ? " is-busy" : ""}"
+          type="button"
+          data-oq-action="toggle-overview-control"
+          data-control-key="${escapeHtml(card.key)}"
+          data-control-state="${escapeHtml(card.nextState)}"
+          ${state.busyAction ? "disabled" : ""}
+        >${escapeHtml(state.busyAction === `switch-${card.key}` ? "Bezig..." : card.buttonLabel)}</button>
+      </div>
+    `;
+  }
+
+  function renderOverviewControlPanels() {
+    const cards = getOverviewControlCards();
+    if (!cards.length) {
+      return "";
+    }
+
+    const openquattCard = cards.find((card) => card.key === "openquattEnabled");
+    const coolingCard = cards.find((card) => card.key === "manualCoolingEnable");
+    const silentCard = cards.find((card) => card.key === "silentModeOverride");
+
+    return `
+      <section class="oq-overview-controlpanel-stack" aria-label="Bediening">
+        <div class="oq-overview-sectionhead">
+          <h3>Bediening</h3>
+        </div>
+        ${openquattCard
+          ? `
+            <article class="oq-overview-controlpanel oq-overview-controlpanel--${escapeHtml(openquattCard.tone)}">
+              <div class="oq-overview-controlpanel-head">
+                <span>${escapeHtml(openquattCard.label)}</span>
+                <strong class="oq-overview-controlpanel-state oq-overview-controlpanel-state--${escapeHtml(openquattCard.tone)}">${escapeHtml(openquattCard.status)}</strong>
+              </div>
+              <p>${escapeHtml(openquattCard.copy)}</p>
+              ${renderOverviewControlBody(openquattCard)}
+            </article>
+          `
+          : ""
+        }
+        ${[coolingCard, silentCard].filter(Boolean).map((card) => `
+          <article class="oq-overview-controlpanel oq-overview-controlpanel--${escapeHtml(card.tone)}">
+            <div class="oq-overview-controlpanel-head">
+              <span>${escapeHtml(card.label)}</span>
+              <strong class="oq-overview-controlpanel-state oq-overview-controlpanel-state--${escapeHtml(card.tone)}">${escapeHtml(card.status)}</strong>
+            </div>
+            <p>${escapeHtml(card.copy)}</p>
+            ${renderOverviewControlBody(card)}
+          </article>
+        `).join("")}
+      </section>
+    `;
+  }
+
+  function renderOverviewSummaryShell(strategyLabel) {
+    const controlModeLabel = getEntityStateText("controlModeLabel");
+    return `
+      <section class="oq-overview-summary-shell">
+        <div class="oq-overview-head">
+          <div>
+            <p class="oq-helper-label">Overzicht</p>
+            <h2 class="oq-helper-section-title">Live regeling</h2>
+            <p class="oq-helper-section-copy">Hier zie je in één oogopslag hoe OpenQuatt nu werkt.</p>
+          </div>
+        </div>
+        <div class="oq-overview-summary-layout">
+          <div class="oq-overview-summary-main">
+            <section class="oq-overview-kpis" aria-label="Kerncijfers">
+              <div class="oq-overview-sectionhead">
+                <h3>Kerncijfers</h3>
+              </div>
+              <div class="oq-overview-top">
+                ${renderOverviewTopCards()}
+              </div>
+            </section>
+            ${renderOverviewStatusStack(strategyLabel, controlModeLabel)}
+          </div>
+          <aside class="oq-overview-summary-side">
+            ${renderOverviewControlPanels()}
+          </aside>
+        </div>
+      </section>
     `;
   }
 
@@ -5256,7 +5554,7 @@
         renderOverviewEnergyGroup("Warmtepomp", [
           renderOverviewEnergyRow("Elektrisch vermogen", "coolingPowerInput"),
           renderOverviewEnergyRow("Koelafgifte", "totalCoolingPower"),
-          renderOverviewEnergyRow("EER", "totalEer"),
+          renderOverviewEnergyRow("COP (EER)", "totalEer"),
         ]),
       ]),
     ], "blue");
@@ -5279,7 +5577,7 @@
         renderOverviewEnergyGroup("Warmtepomp", [
           renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyDaily"),
           renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyDaily"),
-          renderOverviewEnergyRow("EER", "heatpumpEerDaily"),
+          renderOverviewEnergyRow("COP (EER)", "heatpumpEerDaily"),
         ]),
       ]),
     ], "orange");
@@ -5302,7 +5600,7 @@
         renderOverviewEnergyGroup("Warmtepomp", [
           renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyCumulative"),
           renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyCumulative"),
-          renderOverviewEnergyRow("EER", "heatpumpEerCumulative"),
+          renderOverviewEnergyRow("COP (EER)", "heatpumpEerCumulative"),
         ]),
       ]),
     ], "green");
@@ -5344,7 +5642,7 @@
         renderOverviewEnergyGroup("Warmtepomp", [
           renderOverviewEnergyRow("Elektrisch vermogen", "coolingPowerInput"),
           renderOverviewEnergyRow("Koelafgifte", "totalCoolingPower"),
-          renderOverviewEnergyRow("EER", "totalEer"),
+          renderOverviewEnergyRow("COP (EER)", "totalEer"),
         ]),
       ]),
     ], "blue");
@@ -5367,7 +5665,7 @@
         renderOverviewEnergyGroup("Warmtepomp", [
           renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyDaily"),
           renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyDaily"),
-          renderOverviewEnergyRow("EER", "heatpumpEerDaily"),
+          renderOverviewEnergyRow("COP (EER)", "heatpumpEerDaily"),
         ]),
       ]),
     ], "orange");
@@ -5390,7 +5688,7 @@
         renderOverviewEnergyGroup("Warmtepomp", [
           renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyCumulative"),
           renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyCumulative"),
-          renderOverviewEnergyRow("EER", "heatpumpEerCumulative"),
+          renderOverviewEnergyRow("COP (EER)", "heatpumpEerCumulative"),
         ]),
       ]),
     ], "green");
@@ -6553,23 +6851,7 @@
     return `
       <section class="oq-helper-panel oq-helper-panel--flush">
         <div class="oq-overview-board oq-overview-board--${escapeHtml(state.overviewTheme)}">
-          <div class="oq-overview-head">
-            <div>
-              <p class="oq-helper-label">Overzicht</p>
-              <h2 class="oq-helper-section-title">Live regeling</h2>
-              <p class="oq-helper-section-copy">Hier zie je in één oogopslag hoe OpenQuatt nu werkt.</p>
-            </div>
-            <div class="oq-overview-head-actions">
-              <div class="oq-overview-status">
-                ${renderOverviewStatusChip("Strategie", strategyLabel, "blue")}
-                ${renderOverviewStatusChip("Controlmode", getEntityStateText("controlModeLabel"), "neutral")}
-              </div>
-            </div>
-          </div>
-          <div class="oq-overview-top">
-            ${renderOverviewTopCards()}
-          </div>
-          ${renderOverviewSignals()}
+          ${renderOverviewSummaryShell(strategyLabel)}
           <div class="oq-overview-main">
             ${renderOverviewStrategyPanel()}
             <section class="oq-overview-temps">
@@ -6882,30 +7164,17 @@
     }
 
     const strategyLabel = getOverviewStrategyLabel();
-    const status = board.querySelector(".oq-overview-status");
-    const top = board.querySelector(".oq-overview-top");
-    const signals = board.querySelector(".oq-overview-signals");
+    const summaryShell = board.querySelector(".oq-overview-summary-shell");
     const system = board.querySelector(".oq-overview-system");
     const temps = board.querySelector(".oq-overview-temps");
     const hpTools = board.querySelector(".oq-overview-hp-tools");
     const hpGrid = board.querySelector(".oq-overview-hp-grid");
     const heatPumpPanels = getHeatPumpPanels();
 
-    if (status) {
-      setInnerHtmlIfChanged(status, `
-        ${renderOverviewStatusChip("Strategie", strategyLabel, "blue")}
-        ${renderOverviewStatusChip("Controlmode", getEntityStateText("controlModeLabel"), "neutral")}
-      `);
-    }
-
-    if (top) {
-      setInnerHtmlIfChanged(top, renderOverviewTopCards());
-    }
-
-    if (signals) {
-      const nextSignals = renderOverviewSignals();
-      if (signals.outerHTML !== nextSignals) {
-        signals.outerHTML = nextSignals;
+    if (summaryShell) {
+      const nextSummaryShell = renderOverviewSummaryShell(strategyLabel);
+      if (summaryShell.outerHTML !== nextSummaryShell) {
+        summaryShell.outerHTML = nextSummaryShell;
       }
     }
 
