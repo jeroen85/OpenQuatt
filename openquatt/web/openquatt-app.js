@@ -2794,6 +2794,11 @@
     state.busyAction = `save-${key}`;
     state.controlNotice = "";
     state.controlError = "";
+    state.entities[key] = {
+      ...(state.entities[key] || {}),
+      state: option,
+      value: option,
+    };
     render();
 
     try {
@@ -4678,8 +4683,14 @@
     `;
   }
 
-  function renderOverviewStatusChip(label, value, tone = "neutral") {
-    return `<span class="oq-overview-chip oq-overview-chip--${escapeHtml(tone)}"><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</span>`;
+  function renderOverviewStatusStatCard(label, value, tone, note) {
+    return `
+      <article class="oq-overview-stat oq-overview-stat--${escapeHtml(tone)} oq-overview-stat--status${label === "Systeem" ? " oq-overview-stat--system" : ""}">
+        <p>${escapeHtml(label)}</p>
+        <strong>${escapeHtml(value)}</strong>
+        <span>${escapeHtml(note)}</span>
+      </article>
+    `;
   }
 
   function getHeatPumpPanelStatusLabel(mode, running) {
@@ -5116,54 +5127,6 @@
     };
   }
 
-  function getOverviewDemandSignal() {
-    if (!isEntityActive("openquattEnabled")) {
-      return {
-        label: "Warmte/koelvraag",
-        value: "Handmatig uitgezet",
-        tone: "neutral",
-      };
-    }
-    if (isCoolingOverviewActive()) {
-      if (!isEntityActive("coolingRequestActive")) {
-        return {
-          label: "Koelvraag",
-          value: "Geen koelvraag",
-          tone: "neutral",
-        };
-      }
-      const rawDemand = getEntityNumericValue("coolingDemandRaw");
-      const value = Number.isNaN(rawDemand)
-        ? "Koelvraag actief"
-        : rawDemand <= 0
-          ? "Koelvraag actief, compressor rust"
-          : "Koelvraag actief";
-      return {
-        label: "Koelvraag",
-        value,
-        tone: rawDemand > 0 ? "sky" : "neutral",
-      };
-    }
-    if (isSystemInStandby()) {
-      return {
-        label: "Warmtevraag",
-        value: "Geen warmtevraag",
-        tone: "neutral",
-      };
-    }
-    const demand = getHomeDemandState();
-    const tone = demand.tone === "high" || demand.tone === "active"
-      ? "orange"
-      : demand.tone === "steady"
-        ? "green"
-        : "neutral";
-    return {
-      label: "Warmtevraag",
-      value: demand.level,
-      tone,
-    };
-  }
-
   function getOverviewSystemSignal() {
     if (!isEntityActive("openquattEnabled")) {
       return {
@@ -5189,22 +5152,8 @@
       }
       return {
         label: "Systeem",
-        value: "Koeling toegestaan",
+        value: "Normaal",
         tone: "green",
-      };
-    }
-    if (isFirmwareUpdateAvailable()) {
-      return {
-        label: "Systeem",
-        value: "Update beschikbaar",
-        tone: "orange",
-      };
-    }
-    if (isSystemInStandby()) {
-      return {
-        label: "Systeem",
-        value: "Stand-by, gereed om te starten",
-        tone: "sky",
       };
     }
     if (isEntityActive("silentActive")) {
@@ -5223,25 +5172,25 @@
     }
     return {
       label: "Systeem",
-      value: "Alles draait normaal",
+      value: "Normaal",
       tone: "green",
     };
   }
 
-  function renderOverviewSignals() {
-    const items = [
-      getOverviewPrimarySignal(),
-      getOverviewDemandSignal(),
-      getOverviewSystemSignal(),
-    ];
+  function renderOverviewStatusStack(strategyLabel, controlModeLabel) {
+    const primary = getOverviewPrimarySignal();
+    const system = getOverviewSystemSignal();
     return `
-      <section class="oq-overview-signals">
-        ${items.map((item) => `
-          <article class="oq-overview-signal oq-overview-signal--${escapeHtml(item.tone)}">
-            <span>${escapeHtml(item.label)}</span>
-            <strong>${escapeHtml(item.value)}</strong>
-          </article>
-        `).join("")}
+      <section class="oq-overview-statuspanel" aria-label="Systeemstatus">
+        <div class="oq-overview-sectionhead">
+          <h3>Systeemstatus</h3>
+        </div>
+        <div class="oq-overview-statusgrid">
+          ${renderOverviewStatusStatCard("Strategie", strategyLabel, "blue", "regelstrategie")}
+          ${renderOverviewStatusStatCard("Controlmode", controlModeLabel, "sky", "actieve modus")}
+          ${renderOverviewStatusStatCard("Regeling", primary.value, primary.tone, "wat OpenQuatt nu doet")}
+          ${renderOverviewStatusStatCard("Systeem", system.value, system.tone, "actieve randvoorwaarde")}
+        </div>
       </section>
     `;
   }
@@ -5340,56 +5289,86 @@
     ].filter((card) => hasEntity(card.key));
   }
 
-  function renderOverviewControlStrip(options = {}) {
-    const { stacked = false } = options;
+  function renderOverviewControlBody(card) {
+    if (card.kind === "select") {
+      return `
+        <div class="oq-overview-controlpanel-actions oq-overview-controlpanel-actions--split">
+          <div class="oq-overview-controlpanel-segmented">
+            ${card.options.map((option) => `
+              <button
+                class="oq-overview-controlpanel-segment${card.selectedOption === option.value ? " is-selected" : ""}${state.busyAction === `save-${card.key}` ? " is-busy" : ""}"
+                type="button"
+                data-oq-action="select-overview-control-option"
+                data-control-key="${escapeHtml(card.key)}"
+                data-control-option="${escapeHtml(option.value)}"
+                ${state.busyAction ? "disabled" : ""}
+              >${escapeHtml(option.label)}</button>
+            `).join("")}
+          </div>
+          ${card.settingsAction
+            ? `<button
+                class="oq-overview-controlpanel-icon"
+                type="button"
+                data-oq-action="open-silent-settings-modal"
+                aria-label="Open instellingen voor stille uren"
+                title="Stille uren instellen"
+              >⚙</button>`
+            : ""
+          }
+        </div>
+      `;
+    }
+
+    return `
+      <div class="oq-overview-controlpanel-actions">
+        <button
+          class="oq-overview-controlpanel-toggle${state.busyAction === `switch-${card.key}` ? " is-busy" : ""}"
+          type="button"
+          data-oq-action="toggle-overview-control"
+          data-control-key="${escapeHtml(card.key)}"
+          data-control-state="${escapeHtml(card.nextState)}"
+          ${state.busyAction ? "disabled" : ""}
+        >${escapeHtml(state.busyAction === `switch-${card.key}` ? "Bezig..." : card.buttonLabel)}</button>
+      </div>
+    `;
+  }
+
+  function renderOverviewControlPanels() {
     const cards = getOverviewControlCards();
     if (!cards.length) {
       return "";
     }
 
+    const openquattCard = cards.find((card) => card.key === "openquattEnabled");
+    const coolingCard = cards.find((card) => card.key === "manualCoolingEnable");
+    const silentCard = cards.find((card) => card.key === "silentModeOverride");
+
     return `
-      <section class="oq-overview-controlstrip${stacked ? " oq-overview-controlstrip--stacked" : ""}" aria-label="Bediening">
-        ${cards.map((card) => `
-          <article class="oq-overview-controlstrip-item oq-overview-controlstrip-item--${escapeHtml(card.tone)}">
-            <div class="oq-overview-controlstrip-head">
+      <section class="oq-overview-controlpanel-stack" aria-label="Bediening">
+        <div class="oq-overview-sectionhead">
+          <h3>Bediening</h3>
+        </div>
+        ${openquattCard
+          ? `
+            <article class="oq-overview-controlpanel oq-overview-controlpanel--${escapeHtml(openquattCard.tone)}">
+              <div class="oq-overview-controlpanel-head">
+                <span>${escapeHtml(openquattCard.label)}</span>
+                <strong class="oq-overview-controlpanel-state oq-overview-controlpanel-state--${escapeHtml(openquattCard.tone)}">${escapeHtml(openquattCard.status)}</strong>
+              </div>
+              <p>${escapeHtml(openquattCard.copy)}</p>
+              ${renderOverviewControlBody(openquattCard)}
+            </article>
+          `
+          : ""
+        }
+        ${[coolingCard, silentCard].filter(Boolean).map((card) => `
+          <article class="oq-overview-controlpanel oq-overview-controlpanel--${escapeHtml(card.tone)}">
+            <div class="oq-overview-controlpanel-head">
               <span>${escapeHtml(card.label)}</span>
-              <strong class="oq-overview-controlstrip-state oq-overview-controlstrip-state--${escapeHtml(card.tone)}">${escapeHtml(card.status)}</strong>
+              <strong class="oq-overview-controlpanel-state oq-overview-controlpanel-state--${escapeHtml(card.tone)}">${escapeHtml(card.status)}</strong>
             </div>
             <p>${escapeHtml(card.copy)}</p>
-            <div class="oq-overview-controlstrip-actions${card.settingsAction ? " oq-overview-controlstrip-actions--split" : ""}">
-              ${card.kind === "select"
-                ? `<div class="oq-overview-controlstrip-segmented">
-                    ${card.options.map((option) => `
-                      <button
-                        class="oq-overview-controlstrip-segment${card.selectedOption === option.value ? " is-selected" : ""}${state.busyAction === `save-${card.key}` ? " is-busy" : ""}"
-                        type="button"
-                        data-oq-action="select-overview-control-option"
-                        data-control-key="${escapeHtml(card.key)}"
-                        data-control-option="${escapeHtml(option.value)}"
-                        ${state.busyAction ? "disabled" : ""}
-                      >${escapeHtml(option.label)}</button>
-                    `).join("")}
-                  </div>`
-                : `<button
-                    class="oq-overview-controlstrip-toggle${state.busyAction === `switch-${card.key}` ? " is-busy" : ""}"
-                    type="button"
-                    data-oq-action="toggle-overview-control"
-                    data-control-key="${escapeHtml(card.key)}"
-                    data-control-state="${escapeHtml(card.nextState)}"
-                    ${state.busyAction ? "disabled" : ""}
-                  >${escapeHtml(state.busyAction === `switch-${card.key}` ? "Bezig..." : card.buttonLabel)}</button>`
-              }
-              ${card.settingsAction
-                ? `<button
-                    class="oq-overview-controlstrip-icon"
-                    type="button"
-                    data-oq-action="open-silent-settings-modal"
-                    aria-label="Open instellingen voor stille uren"
-                    title="Stille uren instellen"
-                  >⚙</button>`
-                : ""
-              }
-            </div>
+            ${renderOverviewControlBody(card)}
           </article>
         `).join("")}
       </section>
@@ -5397,6 +5376,7 @@
   }
 
   function renderOverviewSummaryShell(strategyLabel) {
+    const controlModeLabel = getEntityStateText("controlModeLabel");
     return `
       <section class="oq-overview-summary-shell">
         <div class="oq-overview-head">
@@ -5405,22 +5385,21 @@
             <h2 class="oq-helper-section-title">Live regeling</h2>
             <p class="oq-helper-section-copy">Hier zie je in één oogopslag hoe OpenQuatt nu werkt.</p>
           </div>
-          <div class="oq-overview-head-actions">
-            <div class="oq-overview-status">
-              ${renderOverviewStatusChip("Strategie", strategyLabel, "blue")}
-              ${renderOverviewStatusChip("Controlmode", getEntityStateText("controlModeLabel"), "neutral")}
-            </div>
-          </div>
         </div>
         <div class="oq-overview-summary-layout">
           <div class="oq-overview-summary-main">
-            <div class="oq-overview-top">
-              ${renderOverviewTopCards()}
-            </div>
-            ${renderOverviewSignals()}
+            <section class="oq-overview-kpis" aria-label="Kerncijfers">
+              <div class="oq-overview-sectionhead">
+                <h3>Kerncijfers</h3>
+              </div>
+              <div class="oq-overview-top">
+                ${renderOverviewTopCards()}
+              </div>
+            </section>
+            ${renderOverviewStatusStack(strategyLabel, controlModeLabel)}
           </div>
           <aside class="oq-overview-summary-side">
-            ${renderOverviewControlStrip({ stacked: true })}
+            ${renderOverviewControlPanels()}
           </aside>
         </div>
       </section>
