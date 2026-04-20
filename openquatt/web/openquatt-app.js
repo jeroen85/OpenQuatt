@@ -2652,6 +2652,22 @@
     ].join("|");
   }
 
+  function getOverviewControlsRenderSignature() {
+    return [
+      state.appView,
+      state.busyAction,
+      getEntitySignatureFragment("openquattEnabled"),
+      getEntitySignatureFragment("openquattResumeAt"),
+      getEntitySignatureFragment("manualCoolingEnable"),
+      getEntitySignatureFragment("silentModeOverride"),
+      getEntitySignatureFragment("controlModeLabel"),
+      getEntitySignatureFragment("coolingPermitted"),
+      getEntitySignatureFragment("coolingRequestActive"),
+      getEntitySignatureFragment("coolingBlockReason"),
+      getEntitySignatureFragment("silentActive"),
+    ].join("|");
+  }
+
   function getQuickStartRenderSignature() {
     return [
       state.appView,
@@ -7620,9 +7636,27 @@
     const heatPumpPanels = getHeatPumpPanels();
 
     if (summaryShell) {
-      const nextSummaryShell = renderOverviewSummaryShell(strategyLabel);
-      if (summaryShell.outerHTML !== nextSummaryShell) {
-        summaryShell.outerHTML = nextSummaryShell;
+      const top = summaryShell.querySelector(".oq-overview-top");
+      if (top) {
+        setInnerHtmlIfChanged(top, renderOverviewTopCards());
+      }
+
+      const statusPanel = summaryShell.querySelector(".oq-overview-statuspanel");
+      if (statusPanel) {
+        const controlModeLabel = getEntityStateText("controlModeLabel");
+        const nextStatusPanel = renderOverviewStatusStack(strategyLabel, controlModeLabel);
+        if (statusPanel.outerHTML !== nextStatusPanel) {
+          statusPanel.outerHTML = nextStatusPanel;
+        }
+      }
+
+      const summarySide = summaryShell.querySelector(".oq-overview-summary-side");
+      if (summarySide) {
+        const nextControlsSignature = getOverviewControlsRenderSignature();
+        if (summarySide.dataset.renderSignature !== nextControlsSignature) {
+          setInnerHtmlIfChanged(summarySide, renderOverviewControlPanels());
+          summarySide.dataset.renderSignature = nextControlsSignature;
+        }
       }
     }
 

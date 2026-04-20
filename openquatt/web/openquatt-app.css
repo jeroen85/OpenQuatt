@@ -2987,16 +2987,20 @@ body.oq-page-light {
   display: grid;
   gap: 10px;
   min-width: 0;
+  align-content: start;
+  align-self: start;
 }
 
 .oq-overview-kpis {
   display: grid;
   gap: 8px;
+  align-content: start;
 }
 
 .oq-overview-summary-side {
   display: grid;
   align-content: start;
+  align-self: start;
   gap: 10px;
   min-width: 0;
   padding-top: 0;
