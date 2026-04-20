@@ -1,5 +1,6 @@
 (function () {
-  const DOMAINS = new Set(["select", "number", "sensor", "text_sensor", "binary_sensor", "button", "time", "update", "switch"]);
+  const DOMAINS = new Set(["select", "number", "sensor", "text_sensor", "binary_sensor", "button", "time", "datetime", "update", "switch"]);
+  const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
   const entities = new Map();
   const state = {
     scenario: "heating",
@@ -356,6 +357,10 @@
         value,
         state: value,
       });
+    });
+    setEntity("datetime", "OpenQuatt resume at", {
+      value: OPENQUATT_RESUME_CLEAR_VALUE,
+      state: OPENQUATT_RESUME_CLEAR_VALUE,
     });
 
     [
@@ -889,7 +894,65 @@
     }
   }
 
+  function normalizeDateTimeValue(rawValue) {
+    const value = String(rawValue || "").trim();
+    if (!value) {
+      return "";
+    }
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2}))?)$/);
+    if (!match) {
+      return "";
+    }
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const hour = Number(match[4]);
+    const minute = Number(match[5]);
+    const second = Number(match[6] || "0");
+    if ([year, month, day, hour, minute, second].some((part) => Number.isNaN(part))) {
+      return "";
+    }
+    return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")} ${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:${String(second).padStart(2, "0")}`;
+  }
+
+  function parseDateTimeValue(rawValue) {
+    const normalized = normalizeDateTimeValue(rawValue);
+    if (!normalized || normalized === OPENQUATT_RESUME_CLEAR_VALUE) {
+      return null;
+    }
+    const match = normalized.match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/);
+    if (!match) {
+      return null;
+    }
+    const date = new Date(
+      Number(match[1]),
+      Number(match[2]) - 1,
+      Number(match[3]),
+      Number(match[4]),
+      Number(match[5]),
+      Number(match[6]),
+      0
+    );
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  function applyOpenQuattResumeSchedule() {
+    const resumeAt = parseDateTimeValue(getEntity("datetime", "OpenQuatt resume at")?.value || "");
+    if (!resumeAt || isSwitchEnabled("OpenQuatt Enabled")) {
+      return;
+    }
+    if (Date.now() >= resumeAt.getTime()) {
+      const enabledEntity = getEntity("switch", "OpenQuatt Enabled");
+      if (enabledEntity) {
+        enabledEntity.value = true;
+        enabledEntity.state = true;
+      }
+      setText("datetime", "OpenQuatt resume at", OPENQUATT_RESUME_CLEAR_VALUE);
+    }
+  }
+
   function applyRuntimeControlOverlay(single) {
+    applyOpenQuattResumeSchedule();
     const openquattEnabled = isSwitchEnabled("OpenQuatt Enabled");
     const manualCoolingEnabled = isSwitchEnabled("Manual Cooling Enable");
     const silentModeOverride = String(getEntity("select", "Silent Mode Override")?.value || "Schedule");
@@ -1017,6 +1080,13 @@
     notifyMockUpdated();
   }
 
+  function handleDateTimeSet(name, value) {
+    const normalized = normalizeDateTimeValue(value) || OPENQUATT_RESUME_CLEAR_VALUE;
+    setText("datetime", name, normalized);
+    updateSummary();
+    notifyMockUpdated();
+  }
+
   function handleSwitchSet(name, enabled) {
     const entity = getEntity("switch", name);
     if (!entity) {
@@ -1024,6 +1094,9 @@
     }
     entity.value = Boolean(enabled);
     entity.state = Boolean(enabled);
+    if (name === "OpenQuatt Enabled" && enabled && getEntity("datetime", "OpenQuatt resume at")) {
+      setText("datetime", "OpenQuatt resume at", OPENQUATT_RESUME_CLEAR_VALUE);
+    }
     applyScenario(state.scenario);
     updateSummary();
     notifyMockUpdated();
@@ -1162,6 +1235,8 @@
           handleNumberSet(request.name, rawValue || "0");
         } else if (request.domain === "time") {
           handleTimeSet(request.name, rawValue || "");
+        } else if (request.domain === "datetime") {
+          handleDateTimeSet(request.name, rawValue || "");
         }
         return mockResponse(200, entity);
       }

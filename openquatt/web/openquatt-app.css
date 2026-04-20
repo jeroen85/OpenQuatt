@@ -922,6 +922,11 @@ body.oq-page-light {
   line-height: 1.5;
 }
 
+.oq-helper-modal-success--compact {
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+
 .oq-helper-shell--dark .oq-helper-modal-success,
 .oq-helper-modal-backdrop--dark .oq-helper-modal-success {
   border-color: rgba(74, 222, 128, 0.24);
@@ -1023,6 +1028,38 @@ body.oq-page-light {
 
 .oq-helper-modal-body {
   min-width: 0;
+}
+
+.oq-helper-modal-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.oq-helper-modal-channel--datetime {
+  margin-top: 16px;
+}
+
+.oq-helper-modal-inline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.oq-helper-modal-inline .oq-helper-button {
+  min-width: 128px;
+}
+
+@media (max-width: 640px) {
+  .oq-helper-modal-inline {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .oq-helper-modal-inline .oq-helper-button {
+    width: 100%;
+  }
 }
 
 .oq-helper-modal-link {
@@ -2669,45 +2706,54 @@ body.oq-page-light {
   align-content: start;
 }
 
-.oq-settings-control--time {
+.oq-settings-control--time,
+.oq-settings-control--datetime {
   position: relative;
   display: block;
   min-width: 0;
 }
 
-.oq-settings-control--time .oq-helper-input {
+.oq-settings-control--time .oq-helper-input,
+.oq-settings-control--datetime .oq-helper-input {
   min-height: 54px;
   padding: 0 50px 0 16px;
   font-variant-numeric: tabular-nums;
   color-scheme: light;
 }
 
-.oq-helper-shell--dark .oq-settings-control--time .oq-helper-input {
+.oq-helper-shell--dark .oq-settings-control--time .oq-helper-input,
+.oq-helper-shell--dark .oq-settings-control--datetime .oq-helper-input {
   color-scheme: dark;
 }
 
-.oq-settings-control--time .oq-helper-input::-webkit-date-and-time-value {
+.oq-settings-control--time .oq-helper-input::-webkit-date-and-time-value,
+.oq-settings-control--datetime .oq-helper-input::-webkit-date-and-time-value {
   text-align: left;
 }
 
-.oq-settings-control--time .oq-helper-input::-webkit-datetime-edit {
+.oq-settings-control--time .oq-helper-input::-webkit-datetime-edit,
+.oq-settings-control--datetime .oq-helper-input::-webkit-datetime-edit {
   display: inline-flex;
   align-items: center;
   min-height: 100%;
   padding: 0;
 }
 
-.oq-settings-control--time .oq-helper-input::-webkit-datetime-edit-fields-wrapper {
+.oq-settings-control--time .oq-helper-input::-webkit-datetime-edit-fields-wrapper,
+.oq-settings-control--datetime .oq-helper-input::-webkit-datetime-edit-fields-wrapper {
   display: inline-flex;
   align-items: center;
 }
 
 .oq-settings-control--time .oq-helper-input::-webkit-clear-button,
-.oq-settings-control--time .oq-helper-input::-webkit-inner-spin-button {
+.oq-settings-control--time .oq-helper-input::-webkit-inner-spin-button,
+.oq-settings-control--datetime .oq-helper-input::-webkit-clear-button,
+.oq-settings-control--datetime .oq-helper-input::-webkit-inner-spin-button {
   display: none;
 }
 
-.oq-settings-control--time .oq-helper-input::-webkit-calendar-picker-indicator {
+.oq-settings-control--time .oq-helper-input::-webkit-calendar-picker-indicator,
+.oq-settings-control--datetime .oq-helper-input::-webkit-calendar-picker-indicator {
   opacity: 0;
   width: 22px;
   height: 22px;
@@ -2736,7 +2782,8 @@ body.oq-page-light {
   transition: color 160ms ease;
 }
 
-.oq-settings-control--time:focus-within .oq-settings-time-icon {
+.oq-settings-control--time:focus-within .oq-settings-time-icon,
+.oq-settings-control--datetime:focus-within .oq-settings-time-icon {
   color: var(--oq-helper-accent-deep);
 }
 
@@ -3192,6 +3239,12 @@ body.oq-page-light {
   line-height: 1.38;
 }
 
+.oq-overview-controlpanel-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .oq-overview-controlpanel-meta-item,
 .oq-overview-controlpanel-head {
   display: flex;
@@ -3247,6 +3300,10 @@ body.oq-page-light {
 
 .oq-overview-controlpanel-meta-item--green strong {
   color: #16a34a;
+}
+
+.oq-overview-controlpanel-meta-item--orange strong {
+  color: #c2410c;
 }
 
 .oq-overview-controlpanel--green .oq-overview-controlpanel-head span {

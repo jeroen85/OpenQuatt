@@ -131,6 +131,7 @@
     silentMax: { domain: "number", name: "Silent max level" },
     silentStartTime: { domain: "time", name: "Silent start time" },
     silentEndTime: { domain: "time", name: "Silent end time" },
+    openquattResumeAt: { domain: "datetime", name: "OpenQuatt resume at", optional: true },
     maxWater: { domain: "number", name: "Maximum water temperature" },
     minRuntime: { domain: "number", name: "Minimum runtime" },
     totalPower: { domain: "sensor", name: "Total Power Input" },
@@ -364,6 +365,7 @@
   const OVERVIEW_KEYS = [
     "strategy",
     "openquattEnabled",
+    "openquattResumeAt",
     "manualCoolingEnable",
     "silentModeOverride",
     "coolingEnableSelected",
@@ -485,6 +487,7 @@
   const FLOW_DASH_CYCLE_PX = 22;
   const FLOW_OFFSET_PX_PER_SEC = FLOW_DASH_CYCLE_PX / 1.7;
   const FAN_ROTATION_DEG_PER_SEC = 360 / 3.2;
+  const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
 
   const state = {
     mounted: false,
@@ -526,6 +529,7 @@
     updateInstallProgressHint: Number.NaN,
     updateInstallCompleted: false,
     updateInstallCompletedVersion: "",
+    pauseResumeDraft: "",
     draggingCurveKey: "",
     motionFrame: 0,
     motionStartedAt: 0,
@@ -2134,6 +2138,81 @@
       `;
     }
 
+    if (state.systemModal === "openquatt-pause") {
+      const enabled = isEntityActive("openquattEnabled");
+      const busy = state.busyAction === "openquatt-regulation";
+      const hasResumeEntity = hasEntity("openquattResumeAt");
+      const resumeScheduled = hasOpenQuattResumeSchedule();
+      const resumeLabel = formatOpenQuattResumeDateTime(getEntityValue("openquattResumeAt"));
+      const draftValue = getOpenQuattPauseDraftValue();
+      return `
+        <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
+          <section class="oq-helper-modal oq-helper-modal--wide" role="dialog" aria-modal="true" aria-labelledby="oq-openquatt-pause-modal-title">
+            <div class="oq-helper-modal-head">
+              <div>
+                <p class="oq-helper-modal-kicker">Bediening</p>
+                <h2 class="oq-helper-modal-title" id="oq-openquatt-pause-modal-title">Openquatt regeling</h2>
+              </div>
+              <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit regeling-popup">×</button>
+            </div>
+            <p class="oq-helper-modal-copy">${enabled
+              ? "Kies hoe lang de regeling uit moet blijven. Verwarmen en koelen stoppen dan, maar beveiligingen blijven actief."
+              : "De regeling staat nu tijdelijk uit. Je kunt meteen weer inschakelen of een nieuw hervatmoment plannen."
+            }</p>
+            ${resumeScheduled
+              ? `<div class="oq-helper-modal-success oq-helper-modal-success--compact">
+                  <strong>Hervat nu automatisch</strong>
+                  <span>${escapeHtml(resumeLabel)}</span>
+                </div>`
+              : ""
+            }
+            ${hasResumeEntity
+              ? `
+                <div class="oq-helper-modal-presets">
+                  <button class="oq-helper-button" type="button" data-oq-action="apply-openquatt-preset" data-pause-preset="2h" ${busy ? "disabled" : ""}>2 uur</button>
+                  <button class="oq-helper-button" type="button" data-oq-action="apply-openquatt-preset" data-pause-preset="8h" ${busy ? "disabled" : ""}>8 uur</button>
+                  <button class="oq-helper-button" type="button" data-oq-action="apply-openquatt-preset" data-pause-preset="tomorrow-morning" ${busy ? "disabled" : ""}>Tot morgenochtend</button>
+                </div>
+                <div class="oq-helper-modal-channel oq-helper-modal-channel--datetime">
+                  <span class="oq-helper-modal-label">Hervatten op</span>
+                  <div class="oq-helper-modal-inline">
+                    <label class="oq-settings-control oq-settings-control--datetime">
+                      <input
+                        class="oq-helper-input"
+                        type="datetime-local"
+                        step="60"
+                        lang="nl-NL"
+                        data-oq-field="openquattPauseDraft"
+                        data-oq-pause-draft="resume"
+                        value="${escapeHtml(draftValue)}"
+                        ${busy ? "disabled" : ""}
+                      >
+                      <span class="oq-settings-time-icon" aria-hidden="true">
+                        <svg viewBox="0 0 20 20" focusable="false">
+                          <rect x="3.2" y="4.2" width="13.6" height="12.6" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.5" />
+                          <path d="M6.2 2.9V5.4M13.8 2.9V5.4M3.8 8.1H16.2M10 10.3V13.1L12.3 14.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                      </span>
+                    </label>
+                    <button class="oq-helper-button oq-helper-button--primary" type="button" data-oq-action="apply-openquatt-custom-pause" ${busy ? "disabled" : ""}>Plan moment</button>
+                  </div>
+                </div>
+              `
+              : `<p class="oq-helper-modal-note">Automatisch hervatten is nog niet beschikbaar op deze firmware. Je kunt de regeling wel zonder eindtijd uitschakelen.</p>`
+            }
+            <div class="oq-helper-modal-actions">
+              <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="close-system-modal" ${busy ? "disabled" : ""}>Annuleren</button>
+              ${!enabled
+                ? `<button class="oq-helper-button" type="button" data-oq-action="enable-openquatt-now" ${busy ? "disabled" : ""}>Nu inschakelen</button>`
+                : ""
+              }
+              <button class="oq-helper-button" type="button" data-oq-action="apply-openquatt-indefinite" ${busy ? "disabled" : ""}>${enabled ? "Zonder eindtijd uitschakelen" : "Zonder eindtijd"}</button>
+            </div>
+          </section>
+        </div>
+      `;
+    }
+
     return "";
   }
 
@@ -2208,6 +2287,130 @@
   function toTimeInputValue(rawValue) {
     const normalized = normalizeTimeValue(rawValue);
     return normalized ? normalized.slice(0, 5) : "";
+  }
+
+  function normalizeDateTimeValue(rawValue) {
+    const value = String(rawValue || "").trim();
+    if (!value) {
+      return "";
+    }
+
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2}))?)$/);
+    if (!match) {
+      return "";
+    }
+
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const hour = Number(match[4]);
+    const minute = Number(match[5]);
+    const second = Number(match[6] || "0");
+    if ([year, month, day, hour, minute, second].some((part) => Number.isNaN(part))) {
+      return "";
+    }
+    if (
+      year < 2000
+      || month < 1
+      || month > 12
+      || day < 1
+      || day > 31
+      || hour < 0
+      || hour > 23
+      || minute < 0
+      || minute > 59
+      || second < 0
+      || second > 59
+    ) {
+      return "";
+    }
+
+    return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")} ${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:${String(second).padStart(2, "0")}`;
+  }
+
+  function toDateTimeInputValue(rawValue) {
+    const normalized = normalizeDateTimeValue(rawValue);
+    return normalized ? normalized.slice(0, 16).replace(" ", "T") : "";
+  }
+
+  function parseDateTimeValue(rawValue) {
+    const normalized = normalizeDateTimeValue(rawValue);
+    if (!normalized || normalized === OPENQUATT_RESUME_CLEAR_VALUE) {
+      return null;
+    }
+
+    const match = normalized.match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/);
+    if (!match) {
+      return null;
+    }
+
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const hour = Number(match[4]);
+    const minute = Number(match[5]);
+    const second = Number(match[6]);
+    const date = new Date(year, month - 1, day, hour, minute, second, 0);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  function hasOpenQuattResumeSchedule(rawValue = getEntityValue("openquattResumeAt")) {
+    return Boolean(parseDateTimeValue(rawValue));
+  }
+
+  function formatOpenQuattResumeDateTime(rawValue, short = false) {
+    const date = parseDateTimeValue(rawValue);
+    if (!date) {
+      return "";
+    }
+    return new Intl.DateTimeFormat("nl-NL", short
+      ? { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }
+      : { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }
+    ).format(date);
+  }
+
+  function formatDateTimeForInput(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hour = String(date.getHours()).padStart(2, "0");
+    const minute = String(date.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hour}:${minute}`;
+  }
+
+  function roundDateToNextQuarter(date) {
+    const rounded = new Date(date.getTime());
+    rounded.setSeconds(0, 0);
+    const minutes = rounded.getMinutes();
+    const remainder = minutes % 15;
+    if (remainder !== 0) {
+      rounded.setMinutes(minutes + (15 - remainder));
+    }
+    return rounded;
+  }
+
+  function getOpenQuattPausePresetValue(preset) {
+    const now = new Date();
+    if (preset === "2h" || preset === "8h") {
+      const hours = preset === "2h" ? 2 : 8;
+      const target = roundDateToNextQuarter(new Date(now.getTime() + (hours * 3600 * 1000)));
+      return formatDateTimeForInput(target);
+    }
+    if (preset === "tomorrow-morning") {
+      const target = new Date(now);
+      target.setDate(target.getDate() + 1);
+      target.setHours(7, 0, 0, 0);
+      return formatDateTimeForInput(target);
+    }
+    return "";
+  }
+
+  function getOpenQuattPauseDraftValue() {
+    if (state.pauseResumeDraft) {
+      return state.pauseResumeDraft;
+    }
+    const scheduledValue = toDateTimeInputValue(getEntityValue("openquattResumeAt"));
+    return scheduledValue || getOpenQuattPausePresetValue("8h");
   }
 
   function getSettingsRefreshKeys() {
@@ -2472,6 +2675,11 @@
       return;
     }
 
+    if (event.target.dataset.oqPauseDraft) {
+      state.pauseResumeDraft = String(event.target.value || "");
+      return;
+    }
+
     if (event.target.type === "range" || event.target.type === "number") {
       if (event.target.type === "number") {
         state.inputDrafts[field] = event.target.value;
@@ -2514,16 +2722,27 @@
         return;
       }
       commitTime(field, normalized);
+      return;
+    }
+
+    if (entity.domain === "datetime") {
+      const normalized = normalizeDateTimeValue(event.target.value);
+      if (!normalized) {
+        state.controlError = `${entity.name} verwacht datum en tijd.`;
+        render();
+        return;
+      }
+      commitDateTime(field, normalized);
     }
   }
 
   function handleClick(event) {
-    const timeControl = event.target.closest(".oq-settings-control--time");
-    if (timeControl) {
-      const timeInput = timeControl.querySelector('input[data-oq-field]');
-      if (timeInput && timeInput.type === "time" && typeof timeInput.showPicker === "function") {
+    const dateTimeControl = event.target.closest(".oq-settings-control--time, .oq-settings-control--datetime");
+    if (dateTimeControl) {
+      const pickerInput = dateTimeControl.querySelector('input[data-oq-field]');
+      if (pickerInput && (pickerInput.type === "time" || pickerInput.type === "datetime-local") && typeof pickerInput.showPicker === "function") {
         try {
-          timeInput.showPicker();
+          pickerInput.showPicker();
         } catch (_error) {
           // Ignore browsers that block this call.
         }
@@ -2616,6 +2835,40 @@
     if (action === "open-silent-settings-modal") {
       state.systemModal = "silent-settings";
       render();
+      return;
+    }
+
+    if (action === "open-openquatt-pause-modal") {
+      state.pauseResumeDraft = getOpenQuattPauseDraftValue();
+      state.systemModal = "openquatt-pause";
+      render();
+      return;
+    }
+
+    if (action === "enable-openquatt-now") {
+      commitOpenQuattRegulationResumeNow();
+      return;
+    }
+
+    if (action === "apply-openquatt-preset") {
+      const presetValue = getOpenQuattPausePresetValue(button.dataset.pausePreset || "");
+      state.pauseResumeDraft = presetValue;
+      commitOpenQuattRegulationPause(presetValue);
+      return;
+    }
+
+    if (action === "apply-openquatt-indefinite") {
+      commitOpenQuattRegulationPause("");
+      return;
+    }
+
+    if (action === "apply-openquatt-custom-pause") {
+      if (!String(state.pauseResumeDraft || "").trim()) {
+        state.controlError = "Kies eerst een datum en tijd om automatisch te hervatten.";
+        render();
+        return;
+      }
+      commitOpenQuattRegulationPause(state.pauseResumeDraft || "");
       return;
     }
 
@@ -3013,6 +3266,137 @@
       );
     } catch (error) {
       state.controlError = `${entity.name} kon niet worden bijgewerkt. ${error.message}`;
+    } finally {
+      state.busyAction = "";
+      render();
+    }
+  }
+
+  async function postDateTimeValue(key, value) {
+    const entity = ENTITY_DEFS[key];
+    const normalized = normalizeDateTimeValue(value) || OPENQUATT_RESUME_CLEAR_VALUE;
+    const response = await fetch(
+      `${buildEntityPath(entity.domain, entity.name, "set")}?value=${encodeURIComponent(normalized)}`,
+      { method: "POST" }
+    );
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    state.entities[key] = {
+      ...(state.entities[key] || {}),
+      value: normalized,
+      state: normalized,
+    };
+    return normalized;
+  }
+
+  async function postSwitchState(key, enabled) {
+    const entity = ENTITY_DEFS[key];
+    const action = enabled ? "turn_on" : "turn_off";
+    const response = await fetch(buildEntityPath(entity.domain, entity.name, action), { method: "POST" });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    state.entities[key] = {
+      ...(state.entities[key] || {}),
+      value: enabled,
+      state: enabled,
+    };
+    return enabled;
+  }
+
+  async function refreshOpenQuattControlState() {
+    await refreshEntities(
+      [...new Set([...OVERVIEW_KEYS, ...HEADER_ENTITY_KEYS, "setupComplete", ...FIRMWARE_ENTITY_KEYS])],
+      "state"
+    );
+  }
+
+  async function commitDateTime(key, value) {
+    const entity = ENTITY_DEFS[key];
+    const normalized = normalizeDateTimeValue(value);
+    state.busyAction = `save-${key}`;
+    state.controlNotice = "";
+    state.controlError = "";
+    render();
+
+    try {
+      await postDateTimeValue(key, normalized);
+      state.controlNotice = `${entity.name} bijgewerkt.`;
+      await refreshEntities(
+        state.appView === "settings"
+          ? getSettingsRefreshKeys()
+          : [key, "setupComplete", "openquattEnabled"],
+        "state"
+      );
+    } catch (error) {
+      state.controlError = `${entity.name} kon niet worden bijgewerkt. ${error.message}`;
+    } finally {
+      state.busyAction = "";
+      render();
+    }
+  }
+
+  async function commitOpenQuattRegulationPause(rawResumeValue) {
+    const scheduledValue = normalizeDateTimeValue(rawResumeValue);
+    if (rawResumeValue && !scheduledValue) {
+      state.controlError = "Kies een geldig hervatmoment om automatisch weer in te schakelen.";
+      render();
+      return;
+    }
+    if (scheduledValue && !hasEntity("openquattResumeAt")) {
+      state.controlError = "Automatisch hervatten is op deze firmware nog niet beschikbaar.";
+      render();
+      return;
+    }
+
+    state.busyAction = "openquatt-regulation";
+    state.controlNotice = "";
+    state.controlError = "";
+    render();
+
+    let resumeScheduled = false;
+    try {
+      if (hasEntity("openquattResumeAt")) {
+        await postDateTimeValue("openquattResumeAt", scheduledValue || OPENQUATT_RESUME_CLEAR_VALUE);
+        resumeScheduled = Boolean(scheduledValue);
+      }
+      await postSwitchState("openquattEnabled", false);
+      state.pauseResumeDraft = scheduledValue ? toDateTimeInputValue(scheduledValue) : "";
+      state.systemModal = "";
+      state.controlNotice = scheduledValue
+        ? `Openquatt regeling is tijdelijk uitgeschakeld tot ${formatOpenQuattResumeDateTime(scheduledValue)}.`
+        : "Openquatt regeling is uitgeschakeld zonder eindmoment.";
+      await refreshOpenQuattControlState();
+    } catch (error) {
+      if (resumeScheduled && hasEntity("openquattResumeAt")) {
+        try {
+          await postDateTimeValue("openquattResumeAt", OPENQUATT_RESUME_CLEAR_VALUE);
+        } catch (_rollbackError) {
+          // Best effort rollback to avoid leaving a stray resume moment behind.
+        }
+      }
+      state.controlError = `Openquatt regeling kon niet worden bijgewerkt. ${error.message}`;
+    } finally {
+      state.busyAction = "";
+      render();
+    }
+  }
+
+  async function commitOpenQuattRegulationResumeNow() {
+    state.busyAction = "openquatt-regulation";
+    state.controlNotice = "";
+    state.controlError = "";
+    render();
+
+    try {
+      await postSwitchState("openquattEnabled", true);
+      state.pauseResumeDraft = "";
+      state.systemModal = "";
+      state.controlNotice = "Openquatt regeling is weer actief.";
+      await refreshOpenQuattControlState();
+    } catch (error) {
+      state.controlError = `Openquatt regeling kon niet worden ingeschakeld. ${error.message}`;
     } finally {
       state.busyAction = "";
       render();
@@ -5087,8 +5471,8 @@
     if (!isEntityActive("openquattEnabled")) {
       return {
         label: "Regeling nu",
-        value: "OpenQuatt gepauzeerd",
-        tone: "neutral",
+        value: "Regeling tijdelijk uit",
+        tone: "orange",
       };
     }
     if (isCoolingOverviewActive()) {
@@ -5211,6 +5595,8 @@
 
   function getOverviewControlCards() {
     const openquattEnabled = isEntityActive("openquattEnabled");
+    const openquattResumeAt = getEntityValue("openquattResumeAt");
+    const openquattResumeScheduled = hasOpenQuattResumeSchedule(openquattResumeAt);
     const manualCoolingEnabled = isEntityActive("manualCoolingEnable");
     const silentModeOverride = String(getEntityValue("silentModeOverride") || "Schedule");
     const coolingBlocked = !isEntityActive("coolingPermitted");
@@ -5253,14 +5639,24 @@
     return [
       {
         key: "openquattEnabled",
-        label: "OpenQuatt",
-        status: openquattEnabled ? "Aan" : "Gepauzeerd",
+        label: "Openquatt regeling",
+        status: openquattEnabled ? "Actief" : "Tijdelijk uit",
         copy: openquattEnabled
-          ? "Verwarmen en koelen mogen gewoon werken."
-          : "Verwarmen en koelen staan uit. Bescherming blijft actief.",
-        buttonLabel: openquattEnabled ? "Pauzeer" : "Zet aan",
-        nextState: openquattEnabled ? "off" : "on",
-        tone: openquattEnabled ? "green" : "neutral",
+          ? "Verwarmen en koelen worden automatisch geregeld."
+          : openquattResumeScheduled
+            ? "Verwarming en koeling zijn tijdelijk uitgeschakeld. Beveiligingen blijven actief."
+            : "Verwarming en koeling zijn uitgeschakeld. Beveiligingen blijven actief.",
+        tone: openquattEnabled ? "green" : "orange",
+        kind: "openquatt-control",
+        meta: openquattEnabled
+          ? []
+          : [
+              {
+                label: openquattResumeScheduled ? "Hervat automatisch" : "Hervatten",
+                value: openquattResumeScheduled ? formatOpenQuattResumeDateTime(openquattResumeAt, true) : "Handmatig",
+                tone: openquattResumeScheduled ? "orange" : "neutral",
+              },
+            ],
       },
       {
         key: "manualCoolingEnable",
@@ -5289,7 +5685,57 @@
     ].filter((card) => hasEntity(card.key));
   }
 
+  function renderOverviewControlMeta(card) {
+    if (!Array.isArray(card.meta) || !card.meta.length) {
+      return "";
+    }
+
+    return `
+      <div class="oq-overview-controlpanel-meta">
+        ${card.meta.map((item) => `
+          <div class="oq-overview-controlpanel-meta-item oq-overview-controlpanel-meta-item--${escapeHtml(item.tone || "neutral")}">
+            <span>${escapeHtml(item.label)}</span>
+            <strong>${escapeHtml(item.value)}</strong>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+
   function renderOverviewControlBody(card) {
+    if (card.kind === "openquatt-control") {
+      const busy = state.busyAction === "openquatt-regulation";
+      if (isEntityActive("openquattEnabled")) {
+        return `
+          <div class="oq-overview-controlpanel-actions">
+            <button
+              class="oq-overview-controlpanel-toggle${busy ? " is-busy" : ""}"
+              type="button"
+              data-oq-action="open-openquatt-pause-modal"
+              ${state.busyAction ? "disabled" : ""}
+            >${escapeHtml(busy ? "Bezig..." : "Tijdelijk uitschakelen")}</button>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="oq-overview-controlpanel-actions oq-overview-controlpanel-actions--split">
+          <button
+            class="oq-overview-controlpanel-toggle${busy ? " is-busy" : ""}"
+            type="button"
+            data-oq-action="enable-openquatt-now"
+            ${state.busyAction ? "disabled" : ""}
+          >${escapeHtml(busy ? "Bezig..." : "Nu inschakelen")}</button>
+          <button
+            class="oq-overview-controlpanel-segment"
+            type="button"
+            data-oq-action="open-openquatt-pause-modal"
+            ${state.busyAction ? "disabled" : ""}
+          >${escapeHtml(hasOpenQuattResumeSchedule() ? "Moment wijzigen" : "Automatisch hervatten")}</button>
+        </div>
+      `;
+    }
+
     if (card.kind === "select") {
       return `
         <div class="oq-overview-controlpanel-actions oq-overview-controlpanel-actions--split">
@@ -5356,6 +5802,7 @@
                 <strong class="oq-overview-controlpanel-state oq-overview-controlpanel-state--${escapeHtml(openquattCard.tone)}">${escapeHtml(openquattCard.status)}</strong>
               </div>
               <p>${escapeHtml(openquattCard.copy)}</p>
+              ${renderOverviewControlMeta(openquattCard)}
               ${renderOverviewControlBody(openquattCard)}
             </article>
           `
@@ -5368,6 +5815,7 @@
               <strong class="oq-overview-controlpanel-state oq-overview-controlpanel-state--${escapeHtml(card.tone)}">${escapeHtml(card.status)}</strong>
             </div>
             <p>${escapeHtml(card.copy)}</p>
+            ${renderOverviewControlMeta(card)}
             ${renderOverviewControlBody(card)}
           </article>
         `).join("")}
