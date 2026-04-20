@@ -1122,10 +1122,6 @@
     return formatDurationFromMinutes((Date.now() - bootedAt) / 60000);
   }
 
-  function formatDeviceUptime() {
-    return formatUptimeFromMeta();
-  }
-
   function getDeviceIpAddress() {
     const entityText = String(state.entities.ipAddress?.state ?? state.entities.ipAddress?.value ?? "").trim();
     if (entityText) {
@@ -1539,10 +1535,6 @@
       return fallbackUrl;
     }
     return entityUrl;
-  }
-
-  function getFirmwareSummary() {
-    return String((getFirmwareUpdateEntity() || {}).summary || "").trim();
   }
 
   function getFirmwareTitle() {
@@ -3499,35 +3491,6 @@
     }
   }
 
-  function renderFieldList(fields) {
-    return fields.map((field) => `
-      <article class="oq-helper-field">
-        <h3>${escapeHtml(field.title)}</h3>
-        <p>${escapeHtml(field.copy)}</p>
-      </article>
-    `).join("");
-  }
-
-  function renderSelectField(key, title, copy) {
-    const entity = state.entities[key] || {};
-    const value = String(getEntityValue(key) || "");
-    const options = Array.isArray(entity.option) ? entity.option : [];
-
-    return `
-      <article class="oq-helper-control-card">
-        <div class="oq-helper-control-copy">
-          <h3>${escapeHtml(title)}</h3>
-          <p>${escapeHtml(copy)}</p>
-        </div>
-        <label class="oq-helper-control">
-          <select class="oq-helper-select" data-oq-field="${escapeHtml(key)}" ${state.loadingEntities ? "disabled" : ""}>
-            ${options.map((option) => `<option value="${escapeHtml(option)}" ${option === value ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}
-          </select>
-        </label>
-      </article>
-    `;
-  }
-
   function renderNumberInputField(key, title, copy, options = {}) {
     const meta = getNumberMeta(key);
     const value = getInputDraftValue(key);
@@ -3551,36 +3514,6 @@
           <span class="oq-helper-unit">${escapeHtml(meta.uom || "")}</span>
         </label>
         ${options.footerMarkup || ""}
-      </article>
-    `;
-  }
-
-  function renderSliderField(key, title, copy) {
-    const meta = getNumberMeta(key);
-    const value = normalizeNumber(key, getEntityValue(key));
-    return `
-      <article class="oq-helper-control-card">
-        <div class="oq-helper-control-copy">
-          <h3>${escapeHtml(title)}</h3>
-          <p>${escapeHtml(copy)}</p>
-        </div>
-        <label class="oq-helper-slider-field">
-          <div class="oq-helper-slider-meta">
-            <span>${escapeHtml(meta.min)}${escapeHtml(meta.uom || "")}</span>
-            <strong>${escapeHtml(formatValue(key, value))}</strong>
-            <span>${escapeHtml(meta.max)}${escapeHtml(meta.uom || "")}</span>
-          </div>
-          <input
-            class="oq-helper-range"
-            type="range"
-            data-oq-field="${escapeHtml(key)}"
-            min="${meta.min}"
-            max="${meta.max}"
-            step="${meta.step}"
-            value="${value}"
-            ${state.loadingEntities ? "disabled" : ""}
-          >
-        </label>
       </article>
     `;
   }
@@ -4491,21 +4424,6 @@
     );
   }
 
-  function renderPowerHouseWorkspace() {
-    return `
-      <section class="oq-helper-mode-panel">
-        <div class="oq-helper-mode-head">
-          <p class="oq-helper-label">Verplicht Voor Power House</p>
-          <p class="oq-helper-section-copy">Met deze waarden schat OpenQuatt hoeveel warmte je woning nodig heeft. Heb je deze gegevens van Quatt, dan kun je ze hier gebruiken.</p>
-        </div>
-        <div class="oq-helper-control-grid">
-          ${renderNumberInputField("housePower", "Rated maximum house power", "Hoeveel warmte je woning ongeveer nodig heeft op een koude dag.")}
-          ${renderNumberInputField("houseOutdoorMax", "Maximum heating outdoor temperature", "Bij deze buitentemperatuur is verwarmen meestal niet meer nodig.")}
-        </div>
-      </section>
-    `;
-  }
-
   function renderCurveGraph() {
     const width = 560;
     const height = 240;
@@ -4595,19 +4513,6 @@
         ${CURVE_POINTS.map((point) => renderNumberInputField(point.key, `Aanvoertemp. bij ${point.label}`, `Doelaanvoertemperatuur bij ${point.label} buitentemperatuur.`)).join("")}
         ${renderNumberInputField("curveFallbackSupply", "Fallback-aanvoertemperatuur zonder buitentemperatuur", "Aanvoertemperatuur die gebruikt wordt als de buitentemperatuursensor niet beschikbaar is.", { footerMarkup: suggestionMarkup })}
       </div>
-    `;
-  }
-
-  function renderCurveWorkspace() {
-    return `
-      <section class="oq-helper-mode-panel">
-        <div class="oq-helper-mode-head">
-          <p class="oq-helper-label">Verplicht voor Stooklijn</p>
-          <p class="oq-helper-section-copy">Deze zes punten vormen samen je stooklijn. Zo bepaal je welke aanvoertemperatuur hoort bij welke buitentemperatuur.</p>
-        </div>
-        ${renderCurveGraph()}
-        ${renderCurveInputs()}
-      </section>
     `;
   }
 
@@ -5179,16 +5084,6 @@
         <span>${escapeHtml(label)}</span>
         <strong>${escapeHtml(explicitValue || getEntityStateText(key))}</strong>
       </div>
-    `;
-  }
-
-  function renderOverviewLane(label, value, tone = "blue", note = "") {
-    return `
-      <article class="oq-overview-lane oq-overview-lane--${escapeHtml(tone)}">
-        <span>${escapeHtml(label)}</span>
-        <strong>${escapeHtml(value)}</strong>
-        ${note ? `<p>${escapeHtml(note)}</p>` : ""}
-      </article>
     `;
   }
 
@@ -5996,94 +5891,6 @@
           ${filledGroups}
         </div>
       </article>
-    `;
-  }
-
-  function renderOverviewEnergySection() {
-    const currentColumn = renderOverviewEnergyColumn("Nu", "Live energie", [
-      renderOverviewEnergyCategory("Verwarmen", "orange", [
-        renderOverviewEnergyGroup("Warmtepomp", [
-          renderOverviewEnergyRow("Elektrisch vermogen", "heatingPowerInput"),
-          renderOverviewEnergyRow("Warmteafgifte", "totalHeat"),
-          renderOverviewEnergyRow("COP", "totalCop"),
-        ]),
-        renderOverviewEnergyGroup("CV-ketel", [
-          renderOverviewEnergyRow("Warmteafgifte", "boilerHeatPower"),
-        ]),
-        renderOverviewEnergyGroup("Systeem", [
-          renderOverviewEnergyRow("Warmteafgifte", "systemHeatPower"),
-        ]),
-      ]),
-      renderOverviewEnergyCategory("Koelen", "blue", [
-        renderOverviewEnergyGroup("Warmtepomp", [
-          renderOverviewEnergyRow("Elektrisch vermogen", "coolingPowerInput"),
-          renderOverviewEnergyRow("Koelafgifte", "totalCoolingPower"),
-          renderOverviewEnergyRow("COP (EER)", "totalEer"),
-        ]),
-      ]),
-    ], "blue");
-
-    const dailyColumn = renderOverviewEnergyColumn("Vandaag", "Energie vandaag", [
-      renderOverviewEnergyCategory("Verwarmen", "orange", [
-        renderOverviewEnergyGroup("Warmtepomp", [
-          renderOverviewEnergyRow("Elektriciteit", "heatingElectricalEnergyDaily"),
-          renderOverviewEnergyRow("Warmte", "heatpumpThermalEnergyDaily"),
-          renderOverviewEnergyRow("COP", "heatpumpCopDaily"),
-        ]),
-        renderOverviewEnergyGroup("CV-ketel", [
-          renderOverviewEnergyRow("Warmte", "boilerThermalEnergyDaily"),
-        ]),
-        renderOverviewEnergyGroup("Systeem", [
-          renderOverviewEnergyRow("Warmte", "systemThermalEnergyDaily"),
-        ]),
-      ]),
-      renderOverviewEnergyCategory("Koelen", "blue", [
-        renderOverviewEnergyGroup("Warmtepomp", [
-          renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyDaily"),
-          renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyDaily"),
-          renderOverviewEnergyRow("COP (EER)", "heatpumpEerDaily"),
-        ]),
-      ]),
-    ], "orange");
-
-    const cumulativeColumn = renderOverviewEnergyColumn("Cumulatief", "Tot nu toe", [
-      renderOverviewEnergyCategory("Verwarmen", "orange", [
-        renderOverviewEnergyGroup("Warmtepomp", [
-          renderOverviewEnergyRow("Elektriciteit", "heatingElectricalEnergyCumulative"),
-          renderOverviewEnergyRow("Warmte", "heatpumpThermalEnergyCumulative"),
-          renderOverviewEnergyRow("COP", "heatpumpCopCumulative"),
-        ]),
-        renderOverviewEnergyGroup("CV-ketel", [
-          renderOverviewEnergyRow("Warmte", "boilerThermalEnergyCumulative"),
-        ]),
-        renderOverviewEnergyGroup("Systeem", [
-          renderOverviewEnergyRow("Warmte", "systemThermalEnergyCumulative"),
-        ]),
-      ]),
-      renderOverviewEnergyCategory("Koelen", "blue", [
-        renderOverviewEnergyGroup("Warmtepomp", [
-          renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyCumulative"),
-          renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyCumulative"),
-          renderOverviewEnergyRow("COP (EER)", "heatpumpEerCumulative"),
-        ]),
-      ]),
-    ], "green");
-
-    const columns = [currentColumn, dailyColumn, cumulativeColumn].filter(Boolean);
-    if (!columns.length) {
-      return "";
-    }
-
-    return `
-      <section class="oq-overview-energy">
-        <div class="oq-overview-system-copy">
-          <h3>Energie</h3>
-          <p>Bekijk hier verbruik, warmte of koeling en rendement voor nu, vandaag en cumulatief.</p>
-        </div>
-        <div class="oq-overview-energy-grid">
-          ${columns.join("")}
-        </div>
-      </section>
     `;
   }
 
@@ -7056,81 +6863,6 @@
             <div class="oq-hp-tech-footer-item">
               <span data-oq-bind="footer-efficiency-label">${escapeHtml(model.efficiencyLabel)}</span>
               <strong data-oq-bind="footer-efficiency">${escapeHtml(model.efficiencyText)}</strong>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  function getHomeDemandState() {
-    const roomTemp = getEntityNumericValue("roomTemp");
-    const roomSetpoint = getEntityNumericValue("roomSetpoint");
-    const delta = roomSetpoint - roomTemp;
-
-    if (Number.isNaN(delta)) {
-      return {
-        tone: "unknown",
-        level: "Onbekend",
-        score: 0,
-        description: "Nog niet genoeg ruimtegegevens om de warmtevraag betrouwbaar te duiden.",
-      };
-    }
-
-    if (delta >= 1.0) {
-      return {
-        tone: "high",
-        level: "Hoge warmtevraag",
-        score: Math.min(100, Math.round((delta / 2) * 100)),
-        description: "De woning zit merkbaar onder setpoint. Het systeem mag nu duidelijk doorverwarmen richting comfort.",
-      };
-    }
-
-    if (delta >= 0.3) {
-      return {
-        tone: "active",
-        level: "Warmtevraag actief",
-        score: Math.min(100, Math.round((delta / 2) * 100)),
-        description: "Er is nog warmtevraag, maar minder agressief dan bij een grote achterstand.",
-      };
-    }
-
-    if (delta >= -0.2) {
-      return {
-        tone: "steady",
-        level: "Bijna op setpoint",
-        score: Math.max(8, Math.round(((delta + 0.2) / 0.5) * 35)),
-        description: "De woning zit dicht bij setpoint. Het systeem hoeft vooral vast te houden en rustig bij te sturen.",
-      };
-    }
-
-    return {
-      tone: "low",
-      level: "Lage warmtevraag",
-      score: 6,
-      description: "De woning zit boven setpoint. De installatie kan terugmoduleren of afbouwen.",
-    };
-  }
-
-  function renderHomeDemandCard() {
-    const demand = getHomeDemandState();
-
-    return `
-      <div class="oq-overview-home-demand">
-        <div class="oq-overview-home-badge oq-overview-home-badge--${escapeHtml(demand.tone)}">
-          <span>Vraag</span>
-          <strong>${escapeHtml(demand.level)}</strong>
-        </div>
-        <div class="oq-overview-home-copy">
-          <h4>Warmtevraag woning</h4>
-          <p>${escapeHtml(demand.description)}</p>
-          <div class="oq-overview-home-meter">
-            <div class="oq-overview-home-meter-track">
-              <span class="oq-overview-home-meter-fill oq-overview-home-meter-fill--${escapeHtml(demand.tone)}" style="width:${demand.score}%"></span>
-            </div>
-            <div class="oq-overview-home-meter-labels">
-              <span>laag</span>
-              <span>hoog</span>
             </div>
           </div>
         </div>
