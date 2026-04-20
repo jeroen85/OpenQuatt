@@ -151,8 +151,13 @@ views:
 
               Gebruik deze schakelaars voor directe runtime-bediening:
 
-              - `OpenQuatt actief`: pauzeert of hervat de normale warmte- en
-              koelregeling. Bewaking en vorstbeveiliging blijven actief.
+              - `OpenQuatt regeling`: schakelt de automatische verwarmings- en
+              koelregeling tijdelijk uit of weer in. Bewaking en
+              vorstbeveiliging blijven actief.
+
+              - `Hervat automatisch`: kies een datum en tijd waarop de
+              regeling vanzelf weer wordt ingeschakeld nadat je haar tijdelijk
+              hebt uitgezet.
 
               - `Handmatige koeling`: telt mee als extra koeltoestemming,
               bovenop CIC en/of HA-invoer.
@@ -165,11 +170,20 @@ views:
             text_only: true
           - type: tile
             entity: switch.openquatt_enabled
-            name: OpenQuatt actief
+            name: OpenQuatt regeling
             vertical: false
             features:
               - type: toggle
             features_position: inline
+          - type: tile
+            visibility:
+              - condition: state
+                entity: switch.openquatt_enabled
+                state: 'off'
+            entity: datetime.openquatt_resume_at
+            name: Hervat automatisch
+            icon: mdi:calendar-clock
+            vertical: false
           - type: tile
             entity: switch.openquatt_manual_cooling_enable
             name: Handmatige koeling
