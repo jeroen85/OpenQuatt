@@ -3085,10 +3085,6 @@ body.oq-page-light {
   font-size: 0.74rem;
 }
 
-.oq-overview-stat--system p {
-  color: var(--oq-overview-muted);
-}
-
 .oq-overview-sectionhead {
   display: flex;
   align-items: center;

@@ -5085,7 +5085,7 @@
 
   function renderOverviewStatusStatCard(label, value, tone, note) {
     return `
-      <article class="oq-overview-stat oq-overview-stat--${escapeHtml(tone)} oq-overview-stat--status${label === "Systeem" ? " oq-overview-stat--system" : ""}">
+      <article class="oq-overview-stat oq-overview-stat--${escapeHtml(tone)} oq-overview-stat--status">
         <p>${escapeHtml(label)}</p>
         <strong>${escapeHtml(value)}</strong>
         <span>${escapeHtml(note)}</span>
@@ -5553,7 +5553,7 @@
       return {
         label: "Systeem",
         value: "Normaal",
-        tone: "green",
+        tone: "neutral",
       };
     }
     if (isEntityActive("silentActive")) {
@@ -5573,7 +5573,7 @@
     return {
       label: "Systeem",
       value: "Normaal",
-      tone: "green",
+      tone: "neutral",
     };
   }
 
@@ -5586,10 +5586,10 @@
           <h3>Systeemstatus</h3>
         </div>
         <div class="oq-overview-statusgrid">
-          ${renderOverviewStatusStatCard("Strategie", strategyLabel, "blue", "regelstrategie")}
-          ${renderOverviewStatusStatCard("Controlmode", controlModeLabel, "sky", "actieve modus")}
-          ${renderOverviewStatusStatCard("Regeling", primary.value, primary.tone, "wat OpenQuatt nu doet")}
-          ${renderOverviewStatusStatCard("Systeem", system.value, system.tone, "actieve randvoorwaarde")}
+          ${renderOverviewStatusStatCard("Strategie", strategyLabel, "orange", "regelstrategie")}
+          ${renderOverviewStatusStatCard("Controlmode", controlModeLabel, "orange", "actieve modus")}
+          ${renderOverviewStatusStatCard("Regeling", primary.value, "orange", "wat OpenQuatt nu doet")}
+          ${renderOverviewStatusStatCard("Systeem", system.value, "orange", "actieve randvoorwaarde")}
         </div>
       </section>
     `;
