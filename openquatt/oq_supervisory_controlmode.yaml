@@ -232,6 +232,11 @@ switch:
     icon: mdi:power-standby
     restore_mode: RESTORE_DEFAULT_ON
     optimistic: true
+    on_turn_on:
+      then:
+        - datetime.datetime.set:
+            id: oq_openquatt_resume_at
+            datetime: "2000-01-01 00:00:00"
     web_server:
       sorting_group_id: oq_control
 # ----------------------------
@@ -398,6 +403,17 @@ datetime:
     entity_category: config
     web_server:
       sorting_group_id: oq_control
+
+  - platform: template
+    id: oq_openquatt_resume_at
+    name: "OpenQuatt resume at"
+    type: datetime
+    optimistic: true
+    restore_value: true
+    initial_value: "2000-01-01 00:00:00"
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_control
 # ----------------------------
 # DIAGNOSTICS
 # ----------------------------
@@ -554,6 +570,15 @@ interval:
           const uint32_t now_ms = (uint32_t) millis();
           static uint32_t boot_ms = 0;
           if (boot_ms == 0) boot_ms = now_ms;
+          auto now_time = id(oq_time).now();
+          const bool time_valid = now_time.is_valid();
+          const auto openquatt_resume_at = id(oq_openquatt_resume_at).state_as_esptime();
+          const bool openquatt_resume_scheduled =
+              openquatt_resume_at.is_valid() && openquatt_resume_at.year >= 2024;
+
+          if (!id(oq_enabled).state && time_valid && openquatt_resume_scheduled && now_time >= openquatt_resume_at) {
+            id(oq_enabled).turn_on();
+          }
           // -------------------------------------------------
           // -------------------------------------------------
           // Power Limiter (16A guard) - simplified safety net
@@ -1246,8 +1271,6 @@ interval:
             const std::string silent_override = id(oq_silent_mode_override).active_index().has_value()
               ? id(oq_silent_mode_override).at(id(oq_silent_mode_override).active_index().value()).value()
               : std::string("Schedule");
-            auto now_time = id(oq_time).now();
-            const bool time_valid = now_time.is_valid();
 
             static bool last_time_valid_diag = false;
             if (time_valid != last_time_valid_diag) {

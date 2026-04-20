@@ -922,6 +922,11 @@ body.oq-page-light {
   line-height: 1.5;
 }
 
+.oq-helper-modal-success--compact {
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+
 .oq-helper-shell--dark .oq-helper-modal-success,
 .oq-helper-modal-backdrop--dark .oq-helper-modal-success {
   border-color: rgba(74, 222, 128, 0.24);
@@ -1023,6 +1028,38 @@ body.oq-page-light {
 
 .oq-helper-modal-body {
   min-width: 0;
+}
+
+.oq-helper-modal-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.oq-helper-modal-channel--datetime {
+  margin-top: 16px;
+}
+
+.oq-helper-modal-inline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.oq-helper-modal-inline .oq-helper-button {
+  min-width: 128px;
+}
+
+@media (max-width: 640px) {
+  .oq-helper-modal-inline {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .oq-helper-modal-inline .oq-helper-button {
+    width: 100%;
+  }
 }
 
 .oq-helper-modal-link {
@@ -2669,45 +2706,54 @@ body.oq-page-light {
   align-content: start;
 }
 
-.oq-settings-control--time {
+.oq-settings-control--time,
+.oq-settings-control--datetime {
   position: relative;
   display: block;
   min-width: 0;
 }
 
-.oq-settings-control--time .oq-helper-input {
+.oq-settings-control--time .oq-helper-input,
+.oq-settings-control--datetime .oq-helper-input {
   min-height: 54px;
   padding: 0 50px 0 16px;
   font-variant-numeric: tabular-nums;
   color-scheme: light;
 }
 
-.oq-helper-shell--dark .oq-settings-control--time .oq-helper-input {
+.oq-helper-shell--dark .oq-settings-control--time .oq-helper-input,
+.oq-helper-shell--dark .oq-settings-control--datetime .oq-helper-input {
   color-scheme: dark;
 }
 
-.oq-settings-control--time .oq-helper-input::-webkit-date-and-time-value {
+.oq-settings-control--time .oq-helper-input::-webkit-date-and-time-value,
+.oq-settings-control--datetime .oq-helper-input::-webkit-date-and-time-value {
   text-align: left;
 }
 
-.oq-settings-control--time .oq-helper-input::-webkit-datetime-edit {
+.oq-settings-control--time .oq-helper-input::-webkit-datetime-edit,
+.oq-settings-control--datetime .oq-helper-input::-webkit-datetime-edit {
   display: inline-flex;
   align-items: center;
   min-height: 100%;
   padding: 0;
 }
 
-.oq-settings-control--time .oq-helper-input::-webkit-datetime-edit-fields-wrapper {
+.oq-settings-control--time .oq-helper-input::-webkit-datetime-edit-fields-wrapper,
+.oq-settings-control--datetime .oq-helper-input::-webkit-datetime-edit-fields-wrapper {
   display: inline-flex;
   align-items: center;
 }
 
 .oq-settings-control--time .oq-helper-input::-webkit-clear-button,
-.oq-settings-control--time .oq-helper-input::-webkit-inner-spin-button {
+.oq-settings-control--time .oq-helper-input::-webkit-inner-spin-button,
+.oq-settings-control--datetime .oq-helper-input::-webkit-clear-button,
+.oq-settings-control--datetime .oq-helper-input::-webkit-inner-spin-button {
   display: none;
 }
 
-.oq-settings-control--time .oq-helper-input::-webkit-calendar-picker-indicator {
+.oq-settings-control--time .oq-helper-input::-webkit-calendar-picker-indicator,
+.oq-settings-control--datetime .oq-helper-input::-webkit-calendar-picker-indicator {
   opacity: 0;
   width: 22px;
   height: 22px;
@@ -2736,7 +2782,8 @@ body.oq-page-light {
   transition: color 160ms ease;
 }
 
-.oq-settings-control--time:focus-within .oq-settings-time-icon {
+.oq-settings-control--time:focus-within .oq-settings-time-icon,
+.oq-settings-control--datetime:focus-within .oq-settings-time-icon {
   color: var(--oq-helper-accent-deep);
 }
 
@@ -2889,11 +2936,6 @@ body.oq-page-light {
   --oq-overview-meter-track: #e5e7eb;
 }
 
-.oq-overview-board--light .oq-overview-home-badge {
-  background: #ffffff;
-  border-color: #dbe3ee;
-}
-
 .oq-overview-summary-shell {
   padding: 16px;
   border-radius: 26px;
@@ -2917,14 +2959,12 @@ body.oq-page-light {
 
 .oq-overview-head .oq-helper-section-title,
 .oq-overview-system-copy h3,
-.oq-overview-hp h3,
-.oq-overview-home-demand h4 {
+.oq-overview-hp h3 {
   color: var(--oq-overview-title);
 }
 
 .oq-overview-head .oq-helper-section-copy,
-.oq-overview-system-copy p,
-.oq-overview-home-demand p {
+.oq-overview-system-copy p {
   color: var(--oq-overview-soft);
 }
 
@@ -2940,16 +2980,20 @@ body.oq-page-light {
   display: grid;
   gap: 10px;
   min-width: 0;
+  align-content: start;
+  align-self: start;
 }
 
 .oq-overview-kpis {
   display: grid;
   gap: 8px;
+  align-content: start;
 }
 
 .oq-overview-summary-side {
   display: grid;
   align-content: start;
+  align-self: start;
   gap: 10px;
   min-width: 0;
   padding-top: 0;
@@ -3034,10 +3078,6 @@ body.oq-page-light {
   font-size: 0.74rem;
 }
 
-.oq-overview-stat--system p {
-  color: var(--oq-overview-muted);
-}
-
 .oq-overview-sectionhead {
   display: flex;
   align-items: center;
@@ -3067,114 +3107,6 @@ body.oq-page-light {
   align-items: stretch;
 }
 
-.oq-overview-statusmeta-card {
-  width: 100%;
-  max-width: none;
-  padding: 8px 10px;
-  border-radius: 12px;
-  background: var(--oq-overview-lane-bg);
-  border: 1px solid var(--oq-overview-panel-border);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025), 0 3px 8px rgba(2, 6, 23, 0.025);
-}
-
-.oq-overview-statusmeta-item {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-
-.oq-overview-statusmeta-item span {
-  color: var(--oq-overview-muted);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.oq-overview-statusmeta-item strong {
-  color: var(--oq-overview-title);
-  font-size: 0.84rem;
-  line-height: 1.22;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-
-.oq-overview-statuscard {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 4px;
-  padding: 12px 14px;
-  min-height: 0;
-  border-radius: 14px;
-  background: var(--oq-overview-lane-bg);
-  border: 1px solid var(--oq-overview-panel-border);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025), 0 3px 8px rgba(2, 6, 23, 0.025);
-}
-
-.oq-overview-statuscard--primary {
-  padding: 13px 15px;
-  min-height: 86px;
-}
-
-.oq-overview-statuscard--compact {
-  padding: 12px 14px;
-  min-height: 86px;
-}
-
-.oq-overview-statuscard::before {
-  content: "";
-  position: absolute;
-  left: 14px;
-  top: 14px;
-  width: 9px;
-  height: 9px;
-  border-radius: 999px;
-}
-
-.oq-overview-statuscard span {
-  padding-left: 15px;
-  color: var(--oq-overview-muted);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.oq-overview-statuscard strong {
-  color: var(--oq-overview-title);
-  font-size: 0.9rem;
-  line-height: 1.22;
-  max-width: 30ch;
-}
-
-.oq-overview-statuscard--primary strong {
-  font-size: 1rem;
-  max-width: 18ch;
-}
-
-.oq-overview-statuscard--blue::before {
-  background: #3b82f6;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
-}
-
-.oq-overview-statuscard--orange::before {
-  background: #f97316;
-  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.12);
-}
-
-.oq-overview-statuscard--green::before {
-  background: #22c55e;
-  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.12);
-}
-
-.oq-overview-statuscard--neutral::before {
-  background: #94a3b8;
-  box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.12);
-}
-
 .oq-overview-controlpanel {
   display: grid;
   gap: 10px;
@@ -3190,6 +3122,12 @@ body.oq-page-light {
   color: var(--oq-overview-soft);
   font-size: 0.83rem;
   line-height: 1.38;
+}
+
+.oq-overview-controlpanel-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .oq-overview-controlpanel-meta-item,
@@ -3247,6 +3185,10 @@ body.oq-page-light {
 
 .oq-overview-controlpanel-meta-item--green strong {
   color: #16a34a;
+}
+
+.oq-overview-controlpanel-meta-item--orange strong {
+  color: #c2410c;
 }
 
 .oq-overview-controlpanel--green .oq-overview-controlpanel-head span {
@@ -3455,73 +3397,6 @@ body.oq-page-light {
   border-color: rgba(249, 115, 22, 0.32);
   background: rgba(249, 115, 22, 0.1);
   color: var(--oq-overview-title);
-}
-
-.oq-overview-home-demand {
-  display: grid;
-  grid-template-columns: minmax(180px, 0.34fr) minmax(0, 1fr);
-  align-items: stretch;
-  gap: 16px;
-  margin-top: 16px;
-  padding: 18px;
-  border-radius: 20px;
-  background: var(--oq-overview-chip-bg);
-  border: 1px solid var(--oq-overview-panel-border);
-}
-
-.oq-overview-home-badge {
-  display: grid;
-  align-content: center;
-  gap: 10px;
-  padding: 18px;
-  border-radius: 18px;
-  border: 1px solid var(--oq-overview-panel-border);
-  background: var(--oq-overview-surface);
-}
-
-.oq-overview-home-badge span {
-  color: var(--oq-overview-muted);
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.oq-overview-home-badge strong {
-  color: var(--oq-overview-title);
-  font-size: 1.25rem;
-  line-height: 1.15;
-}
-
-.oq-overview-home-badge--high {
-  box-shadow: inset 0 0 0 2px rgba(249, 115, 22, 0.18);
-}
-
-.oq-overview-home-badge--active {
-  box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.18);
-}
-
-.oq-overview-home-badge--steady {
-  box-shadow: inset 0 0 0 2px rgba(34, 197, 94, 0.16);
-}
-
-.oq-overview-home-badge--low,
-.oq-overview-home-badge--unknown {
-  box-shadow: inset 0 0 0 2px rgba(148, 163, 184, 0.18);
-}
-
-.oq-overview-home-copy {
-  display: grid;
-  gap: 12px;
-}
-
-.oq-overview-home-copy h4 {
-  margin: 0;
-  color: var(--oq-overview-title);
-}
-
-.oq-overview-home-copy p {
-  margin: 0;
 }
 
 .oq-overview-hero {
@@ -3827,50 +3702,6 @@ body.oq-page-light {
   color: var(--oq-overview-title);
   font-size: 0.98rem;
   text-align: right;
-}
-
-.oq-overview-home-meter {
-  display: grid;
-  gap: 8px;
-}
-
-.oq-overview-home-meter-track {
-  height: 12px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--oq-overview-meter-track);
-}
-
-.oq-overview-home-meter-fill {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-}
-
-.oq-overview-home-meter-fill--high {
-  background: linear-gradient(90deg, #f97316, #ef4444);
-}
-
-.oq-overview-home-meter-fill--active {
-  background: linear-gradient(90deg, #2563eb, #60a5fa);
-}
-
-.oq-overview-home-meter-fill--steady {
-  background: linear-gradient(90deg, #22c55e, #86efac);
-}
-
-.oq-overview-home-meter-fill--low,
-.oq-overview-home-meter-fill--unknown {
-  background: linear-gradient(90deg, #94a3b8, #cbd5e1);
-}
-
-.oq-overview-home-meter-labels {
-  display: flex;
-  justify-content: space-between;
-  color: var(--oq-overview-muted);
-  font-size: 0.82rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
 }
 
 .oq-overview-temps-list {
@@ -5573,23 +5404,7 @@ esp-app.oq-native-app.oq-native-app--collapsed {
     justify-items: flex-start;
   }
 
-  .oq-overview-home-demand {
-    grid-template-columns: 1fr;
-  }
-
-  .oq-overview-lanes--two-column {
-    grid-template-columns: 1fr;
-  }
-
   .oq-overview-energy-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .oq-overview-statusmeta {
-    grid-template-columns: 1fr;
-  }
-
-  .oq-overview-statuscards {
     grid-template-columns: 1fr;
   }
 

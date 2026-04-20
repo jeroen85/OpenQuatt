@@ -145,11 +145,15 @@ views:
               <summary><strong>Explanation</strong></summary>
 
 
-              Use these switches for direct runtime control:
+              Use these controls for direct runtime interaction:
 
-              - `OpenQuatt enabled`: pauses or resumes normal heating and
-              cooling control. Safety monitoring and freeze protection stay
-              active.
+              - `OpenQuatt regulation`: temporarily disables or re-enables
+              automatic heating and cooling control. Safety monitoring and
+              freeze protection stay active.
+
+              - `Resume automatically`: choose the date and time when the
+              regulation should turn itself back on after being temporarily
+              disabled.
 
               - `Manual cooling`: adds an extra cooling permission on top of
               CIC and/or HA input.
@@ -162,11 +166,20 @@ views:
             text_only: true
           - type: tile
             entity: switch.openquatt_enabled
-            name: OpenQuatt enabled
+            name: OpenQuatt regulation
             vertical: false
             features:
               - type: toggle
             features_position: inline
+          - type: tile
+            visibility:
+              - condition: state
+                entity: switch.openquatt_enabled
+                state: 'off'
+            entity: datetime.openquatt_resume_at
+            name: Resume automatically
+            icon: mdi:calendar-clock
+            vertical: false
           - type: tile
             entity: switch.openquatt_manual_cooling_enable
             name: Manual cooling
