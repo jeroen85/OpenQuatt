@@ -2061,6 +2061,7 @@ body.oq-page-light {
   min-width: 0;
   text-align: left;
   display: grid;
+  align-content: start;
   gap: 10px;
   padding: 16px;
   border-radius: var(--oq-helper-radius-lg);

@@ -301,6 +301,7 @@ sensor:
 
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
+    id: ${hp_id}_compressor_frequency_demand
     name: "${prefix}Compressor frequency demand"
     icon: mdi:sine-wave
     register_type: holding
@@ -321,6 +322,7 @@ sensor:
 
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
+    id: ${hp_id}_compressor_frequency
     name: "${prefix}Compressor frequency"
     icon: mdi:sine-wave
     register_type: holding
@@ -341,6 +343,7 @@ sensor:
 
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
+    id: ${hp_id}_fan_speed_max
     name: "${prefix}Fan speed max"
     icon: mdi:fan
     register_type: holding
@@ -381,6 +384,7 @@ sensor:
 
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
+    id: ${hp_id}_eev_steps
     name: "${prefix}EEV steps"
     icon: mdi:valve
     register_type: holding
@@ -428,6 +432,7 @@ sensor:
 
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
+    id: ${hp_id}_evaporator_coil_temp
     name: "${prefix}Evaporator coil temperature"
     icon: mdi:thermometer
     register_type: holding
@@ -449,6 +454,7 @@ sensor:
 
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
+    id: ${hp_id}_gas_discharge_temp
     name: "${prefix}Gas discharge temperature"
     icon: mdi:thermometer
     register_type: holding
@@ -470,6 +476,7 @@ sensor:
 
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
+    id: ${hp_id}_gas_return_temp
     name: "${prefix}Gas return temperature"
     icon: mdi:thermometer
     register_type: holding
@@ -492,6 +499,7 @@ sensor:
 
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
+    id: ${hp_id}_evaporator_pressure
     name: "${prefix}Evaporator pressure"
     icon: mdi:gauge
     register_type: holding
@@ -512,6 +520,7 @@ sensor:
 
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
+    id: ${hp_id}_condenser_pressure
     name: "${prefix}Condenser pressure"
     icon: mdi:gauge
     register_type: holding
@@ -566,6 +575,7 @@ sensor:
 
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
+    id: ${hp_id}_condensing_temp
     name: "${prefix}Condensing temperature"
     icon: mdi:thermometer
     register_type: holding
@@ -587,6 +597,7 @@ sensor:
 
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
+    id: ${hp_id}_evaporating_temp
     name: "${prefix}Evaporating temperature"
     icon: mdi:thermometer
     register_type: holding
@@ -652,6 +663,7 @@ sensor:
 
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
+    id: ${hp_id}_inner_coil_temp
     name: "${prefix}Inner coil temperature"
     icon: mdi:thermometer
     register_type: holding
@@ -879,6 +891,7 @@ binary_sensor:
   # At least bits 0,2,4,5,6,11 are used for status in R2108.
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
+    id: ${hp_id}_fan_low_speed_mode
     name: "${prefix}Fan Low Speed Mode"
     disabled_by_default: true
     icon: mdi:fan-speed-1
@@ -918,6 +931,7 @@ binary_sensor:
 
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
+    id: ${hp_id}_fan_defrost_mode
     name: "${prefix}Fan Defrost Mode"
     disabled_by_default: true
     icon: mdi:snowflake-melt
@@ -931,6 +945,7 @@ binary_sensor:
 
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
+    id: ${hp_id}_fan_high_speed_mode
     name: "${prefix}Fan High Speed Mode"
     disabled_by_default: true
     icon: mdi:fan-speed-3

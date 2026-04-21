@@ -8,6 +8,7 @@
           ${renderSettingsFlowSection()}
           ${renderSettingsHeatingSection()}
           ${renderSettingsCoolingSection()}
+          ${renderSettingsCiCCompatibilitySection()}
           ${renderSettingsWaterSection()}
           ${renderSettingsCompressorSection()}
           ${renderSettingsSilentSection()}
