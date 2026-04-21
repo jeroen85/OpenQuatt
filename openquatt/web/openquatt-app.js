@@ -2500,25 +2500,6 @@
   }
 
   function getCurveFallbackSuggestion() {
-    const midLeft = CURVE_POINTS[Math.floor(CURVE_POINTS.length / 2) - 1];
-    const midRight = CURVE_POINTS[Math.floor(CURVE_POINTS.length / 2)];
-    if (!midLeft || !midRight || !hasEntity("curveFallbackSupply")) {
-      return null;
-    }
-
-    const leftValue = normalizeNumber(midLeft.key, getEntityValue(midLeft.key));
-    const rightValue = normalizeNumber(midRight.key, getEntityValue(midRight.key));
-    const suggestionValue = normalizeNumber("curveFallbackSupply", (leftValue + rightValue) / 2);
-
-    return {
-      value: suggestionValue,
-      label: formatValue("curveFallbackSupply", suggestionValue),
-      basis: `Afgeleid uit het midden van je stooklijn (${midLeft.label} en ${midRight.label}).`,
-      isCurrent: normalizeNumber("curveFallbackSupply", getEntityValue("curveFallbackSupply")) === suggestionValue,
-    };
-  }
-
-  function getCurveFallbackSuggestion() {
     const middleLeft = CURVE_POINTS[Math.floor((CURVE_POINTS.length / 2) - 1)];
     const middleRight = CURVE_POINTS[Math.floor(CURVE_POINTS.length / 2)];
     if (!middleLeft || !middleRight || !hasEntity("curveFallbackSupply")) {
@@ -3567,6 +3548,24 @@
     }
   }
 
+  function renderNumberInputControl({ key, value, meta, controlClass, inputClass = "oq-helper-input", unitMarkup = "" }) {
+    return `
+      <label class="${controlClass}">
+        <input
+          class="${inputClass}"
+          type="number"
+          data-oq-field="${escapeHtml(key)}"
+          min="${meta.min}"
+          max="${meta.max}"
+          step="${meta.step}"
+          value="${escapeHtml(value)}"
+          ${state.loadingEntities ? "disabled" : ""}
+        >
+        ${unitMarkup}
+      </label>
+    `;
+  }
+
   function renderNumberInputField(key, title, copy, options = {}) {
     const meta = getNumberMeta(key);
     const value = getInputDraftValue(key);
@@ -3576,19 +3575,7 @@
           <h3>${escapeHtml(title)}</h3>
           <p>${escapeHtml(copy)}</p>
         </div>
-        <label class="oq-helper-control oq-helper-control--split">
-          <input
-            class="oq-helper-input"
-            type="number"
-            data-oq-field="${escapeHtml(key)}"
-            min="${meta.min}"
-            max="${meta.max}"
-            step="${meta.step}"
-            value="${escapeHtml(value)}"
-            ${state.loadingEntities ? "disabled" : ""}
-          >
-          <span class="oq-helper-unit">${escapeHtml(meta.uom || "")}</span>
-        </label>
+        ${renderNumberInputControl({ key, value, meta, controlClass: "oq-helper-control oq-helper-control--split", unitMarkup: `<span class="oq-helper-unit">${escapeHtml(meta.uom || "")}</span>` })}
         ${options.footerMarkup || ""}
       </article>
     `;
@@ -3617,28 +3604,11 @@
   }
 
   function renderSettingsFieldCard(fieldKey, title, copy, controlMarkup, className = "", footerMarkup = "") {
-    return `
-      <article class="oq-settings-field${className ? ` ${className}` : ""}">
-        <div class="oq-settings-field-head">
-          <h3>${escapeHtml(title)}</h3>
-          ${renderSettingsInfoToggle(fieldKey, title, copy)}
-        </div>
-        <div class="oq-settings-field-control">
-          ${controlMarkup}
-        </div>
-        ${footerMarkup}
-      </article>
-    `;
+    return `<article class="oq-settings-field${className ? ` ${className}` : ""}"><div class="oq-settings-field-head"><h3>${escapeHtml(title)}</h3>${renderSettingsInfoToggle(fieldKey, title, copy)}</div><div class="oq-settings-field-control">${controlMarkup}</div>${footerMarkup}</article>`;
   }
 
   function renderSettingsStaticField(fieldKey, title, copy, value, className = "") {
-    return renderSettingsFieldCard(
-      fieldKey,
-      title,
-      copy,
-      `<div class="oq-settings-static-value">${escapeHtml(value)}</div>`,
-      className,
-    );
+    return renderSettingsFieldCard(fieldKey, title, copy, `<div class="oq-settings-static-value">${escapeHtml(value)}</div>`, className);
   }
 
   function formatSettingsOptionLabel(option) {
@@ -3685,24 +3655,19 @@
     return labels[value] || value;
   }
 
+  function renderSettingsChoiceOption({ key, option, currentValue, busy, copy = "", meta = "" }) {
+    const active = option === currentValue;
+    return `<button class="oq-settings-choice-card${active ? " is-active" : ""}" type="button" data-oq-action="select-settings-option" data-select-key="${escapeHtml(key)}" data-select-option="${escapeHtml(option)}" aria-pressed="${active ? "true" : "false"}" ${busy ? "disabled" : ""}><span class="oq-settings-choice-title">${escapeHtml(formatSettingsOptionLabel(option))}</span>${meta ? `<div class="oq-settings-choice-meta"><span class="oq-settings-choice-meta-text">${escapeHtml(meta)}</span></div>` : ""}${copy ? `<span class="oq-settings-choice-copy">${escapeHtml(copy)}</span>` : ""}</button>`;
+  }
+
   function renderSettingsSelectField(key, title, copy, className = "") {
     if (!hasEntity(key)) {
       return "";
     }
-
     const entity = state.entities[key] || {};
     const value = String(getEntityValue(key) || "");
     const options = Array.isArray(entity.option) ? entity.option : [];
-    const controlMarkup = `
-      <label class="oq-settings-control oq-settings-control--select">
-        <select class="oq-helper-select" data-oq-field="${escapeHtml(key)}" ${state.loadingEntities ? "disabled" : ""}>
-          ${options.map((option) => `<option value="${escapeHtml(option)}" ${option === value ? "selected" : ""}>${escapeHtml(formatSettingsOptionLabel(option))}</option>`).join("")}
-        </select>
-        <span class="oq-settings-select-caret" aria-hidden="true"></span>
-      </label>
-    `;
-
-    return renderSettingsFieldCard(key, title, copy, controlMarkup, className);
+    return renderSettingsFieldCard(key, title, copy, `<label class="oq-settings-control oq-settings-control--select"><select class="oq-helper-select" data-oq-field="${escapeHtml(key)}" ${state.loadingEntities ? "disabled" : ""}>${options.map((option) => `<option value="${escapeHtml(option)}" ${option === value ? "selected" : ""}>${escapeHtml(formatSettingsOptionLabel(option))}</option>`).join("")}</select><span class="oq-settings-select-caret" aria-hidden="true"></span></label>`, className);
   }
 
   function renderSettingsOptionCardsField(key, title, copy, descriptions, className = "") {
@@ -3716,23 +3681,7 @@
     const busy = state.loadingEntities || state.busyAction === `save-${key}`;
     const controlMarkup = `
       <div class="oq-settings-choice-grid">
-        ${options.map((option) => {
-          const optionCopy = descriptions[option] || "";
-          return `
-            <button
-              class="oq-settings-choice-card${option === currentValue ? " is-active" : ""}"
-              type="button"
-              data-oq-action="select-settings-option"
-              data-select-key="${escapeHtml(key)}"
-              data-select-option="${escapeHtml(option)}"
-              aria-pressed="${option === currentValue ? "true" : "false"}"
-              ${busy ? "disabled" : ""}
-            >
-              <span class="oq-settings-choice-title">${escapeHtml(formatSettingsOptionLabel(option))}</span>
-              ${optionCopy ? `<span class="oq-settings-choice-copy">${escapeHtml(optionCopy)}</span>` : ""}
-            </button>
-          `;
-        }).join("")}
+        ${options.map((option) => renderSettingsChoiceOption({ key, option, currentValue, busy, copy: descriptions[option] || "" })).join("")}
       </div>
     `;
 
@@ -3749,25 +3698,17 @@
     const unit = options.unitOverride || meta.uom || "";
     const showUnit = options.showUnit !== false && Boolean(unit);
     const useInlineUnit = showUnit && options.unitMode !== "outside";
-    const controlMarkup = `
-      <label class="oq-helper-control${showUnit && !useInlineUnit ? " oq-helper-control--split" : ""}${useInlineUnit ? " oq-helper-control--suffix" : ""}">
-        <input
-          class="oq-helper-input"
-          type="number"
-          data-oq-field="${escapeHtml(key)}"
-          min="${meta.min}"
-          max="${meta.max}"
-          step="${meta.step}"
-          value="${escapeHtml(value)}"
-          ${state.loadingEntities ? "disabled" : ""}
-        >
-        ${showUnit
-          ? useInlineUnit
-            ? `<span class="oq-helper-unit-chip">${escapeHtml(unit)}</span>`
-            : `<span class="oq-helper-unit">${escapeHtml(unit)}</span>`
-          : ""}
-      </label>
-    `;
+    const controlMarkup = renderNumberInputControl({
+      key,
+      value,
+      meta,
+      controlClass: `oq-helper-control${showUnit && !useInlineUnit ? " oq-helper-control--split" : ""}${useInlineUnit ? " oq-helper-control--suffix" : ""}`,
+      unitMarkup: showUnit
+        ? useInlineUnit
+          ? `<span class="oq-helper-unit-chip">${escapeHtml(unit)}</span>`
+          : `<span class="oq-helper-unit">${escapeHtml(unit)}</span>`
+        : "",
+    });
 
     return renderSettingsFieldCard(key, title, copy, controlMarkup, className, options.footerMarkup || "");
   }
@@ -3776,30 +3717,9 @@
     if (!hasEntity(key)) {
       return "";
     }
-
     const meta = getNumberMeta(key);
     const value = normalizeNumber(key, getEntityValue(key));
-    const controlMarkup = `
-      <label class="oq-helper-slider-field">
-        <div class="oq-helper-slider-meta">
-          <span>${escapeHtml(meta.min)}${escapeHtml(meta.uom || "")}</span>
-          <strong>${escapeHtml(formatValue(key, value))}</strong>
-          <span>${escapeHtml(meta.max)}${escapeHtml(meta.uom || "")}</span>
-        </div>
-        <input
-          class="oq-helper-range"
-          type="range"
-          data-oq-field="${escapeHtml(key)}"
-          min="${meta.min}"
-          max="${meta.max}"
-          step="${meta.step}"
-          value="${value}"
-          ${state.loadingEntities ? "disabled" : ""}
-        >
-      </label>
-    `;
-
-    return renderSettingsFieldCard(key, title, copy, controlMarkup, className);
+    return renderSettingsFieldCard(key, title, copy, `<label class="oq-helper-slider-field"><div class="oq-helper-slider-meta"><span>${escapeHtml(meta.min)}${escapeHtml(meta.uom || "")}</span><strong>${escapeHtml(formatValue(key, value))}</strong><span>${escapeHtml(meta.max)}${escapeHtml(meta.uom || "")}</span></div><input class="oq-helper-range" type="range" data-oq-field="${escapeHtml(key)}" min="${meta.min}" max="${meta.max}" step="${meta.step}" value="${value}" ${state.loadingEntities ? "disabled" : ""}></label>`, className);
   }
 
   function renderSettingsMiniNumberField(key, title, copy, options = {}) {
@@ -3822,19 +3742,14 @@
           </div>
           ${copy && showCopy ? `<p>${escapeHtml(copy)}</p>` : ""}
         </div>
-        <label class="oq-helper-control oq-helper-control--suffix">
-          <input
-            class="oq-helper-input oq-helper-input--compact-number"
-            type="number"
-            data-oq-field="${escapeHtml(key)}"
-            min="${meta.min}"
-            max="${meta.max}"
-            step="${meta.step}"
-            value="${escapeHtml(value)}"
-            ${state.loadingEntities ? "disabled" : ""}
-          >
-          ${meta.uom ? `<span class="oq-helper-unit-chip">${escapeHtml(meta.uom)}</span>` : ""}
-        </label>
+        ${renderNumberInputControl({
+          key,
+          value,
+          meta,
+          controlClass: "oq-helper-control oq-helper-control--suffix",
+          inputClass: "oq-helper-input oq-helper-input--compact-number",
+          unitMarkup: meta.uom ? `<span class="oq-helper-unit-chip">${escapeHtml(meta.uom)}</span>` : "",
+        })}
       </article>
     `;
   }
@@ -3843,49 +3758,21 @@
     if (!hasEntity(key)) {
       return "";
     }
-
     const value = toTimeInputValue(getEntityValue(key));
-    const controlMarkup = `
-      <label class="oq-settings-control oq-settings-control--time">
-        <input
-          class="oq-helper-input oq-helper-input--time"
-          type="time"
-          step="60"
-          lang="nl-NL"
-          inputmode="numeric"
-          data-oq-field="${escapeHtml(key)}"
-          value="${escapeHtml(value)}"
-          ${state.loadingEntities ? "disabled" : ""}
-        >
-        <span class="oq-settings-time-icon" aria-hidden="true">
-          <svg viewBox="0 0 20 20" focusable="false">
-            <circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6" />
-            <path d="M10 6.2 V10 L12.9 11.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </span>
-      </label>
-    `;
-
-    return renderSettingsFieldCard(key, title, copy, controlMarkup, className || "oq-settings-field--time");
+    return renderSettingsFieldCard(key, title, copy, `<label class="oq-settings-control oq-settings-control--time"><input class="oq-helper-input oq-helper-input--time" type="time" step="60" lang="nl-NL" inputmode="numeric" data-oq-field="${escapeHtml(key)}" value="${escapeHtml(value)}" ${state.loadingEntities ? "disabled" : ""}><span class="oq-settings-time-icon" aria-hidden="true"><svg viewBox="0 0 20 20" focusable="false"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6" /><path d="M10 6.2 V10 L12.9 11.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg></span></label>`, className || "oq-settings-field--time");
   }
 
   function renderSettingsSection(kicker, title, copy, body) {
-    return `
-      <section class="oq-settings-section">
-        <div class="oq-settings-section-head">
-          <p class="oq-helper-label">${escapeHtml(kicker)}</p>
-          <h3>${escapeHtml(title)}</h3>
-          <p>${escapeHtml(copy)}</p>
-        </div>
-        ${body}
-      </section>
-    `;
+    return `<section class="oq-settings-section"><div class="oq-settings-section-head"><p class="oq-helper-label">${escapeHtml(kicker)}</p><h3>${escapeHtml(title)}</h3><p>${escapeHtml(copy)}</p></div>${body}</section>`;
   }
 
-  function renderSettingsCurveInputs() {
+  function renderCurveFallbackSuggestionMarkup(helper = false) {
     const suggestion = getCurveFallbackSuggestion();
-    const suggestionMarkup = suggestion ? `
-      <div class="oq-curve-fallback-suggest oq-curve-fallback-suggest--inside">
+    if (!suggestion) {
+      return "";
+    }
+    return `
+      <div class="oq-curve-fallback-suggest oq-curve-fallback-suggest--inside${helper ? " oq-curve-fallback-suggest--helper" : ""}">
         <div class="oq-curve-fallback-suggest-copy">
           <strong>Suggestie: ${escapeHtml(suggestion.label)}</strong>
           <span>${escapeHtml(suggestion.basis)}</span>
@@ -3899,11 +3786,62 @@
           ${suggestion.isCurrent ? "Actief" : "Gebruik suggestie"}
         </button>
       </div>
-    ` : "";
+    `;
+  }
+
+  function renderSettingsCurveInputs() {
     return `
       <div class="oq-settings-curve-grid">
         ${CURVE_POINTS.map((point) => renderSettingsNumberField(point.key, `Aanvoertemp. bij ${point.label}`, `Doelaanvoertemperatuur bij ${point.label} buitentemperatuur.`)).join("")}
-        ${renderSettingsNumberField("curveFallbackSupply", "Fallback-aanvoertemperatuur zonder buitentemperatuur", "Aanvoertemperatuur die gebruikt wordt als de buitentemperatuursensor niet beschikbaar is.", "oq-settings-field--curve-fallback-card", { footerMarkup: suggestionMarkup })}
+        ${renderSettingsNumberField("curveFallbackSupply", "Fallback-aanvoertemperatuur zonder buitentemperatuur", "Aanvoertemperatuur die gebruikt wordt als de buitentemperatuursensor niet beschikbaar is.", "oq-settings-field--curve-fallback-card", { footerMarkup: renderCurveFallbackSuggestionMarkup() })}
+      </div>
+    `;
+  }
+
+  function renderStrategySelectionFields(className = "oq-settings-grid") {
+    return `
+      <div class="${escapeHtml(className)}">
+        ${renderSettingsSelectField("strategy", "Verwarmingsstrategie", "Kies tussen automatisch regelen met Power House of regelen met een stooklijn.")}
+      </div>
+    `;
+  }
+
+  function renderFlowSettingsFields(className = "oq-settings-grid") {
+    return `
+      <div class="${escapeHtml(className)}">
+        ${renderSettingsSelectField("flowControlMode", "Regelmodus", "Kies tussen automatische flowregeling en een vaste pompstand.")}
+        ${isManualFlowMode()
+          ? renderSettingsNumberField("manualIpwm", "Vaste pompstand", "Deze pompstand wordt gebruikt zolang de regeling op handmatig staat.")
+          : renderSettingsNumberField("flowSetpoint", "Gewenste flow", "De flow die OpenQuatt zoveel mogelijk probeert vast te houden.")}
+      </div>
+    `;
+  }
+
+  function renderPowerHouseBaseFields(className = "oq-settings-grid") {
+    return `
+      <div class="${escapeHtml(className)}">
+        ${renderSettingsNumberField("houseOutdoorMax", "Maximum heating outdoor temperature", "Bij deze buitentemperatuur is verwarmen meestal niet meer nodig.")}
+        ${renderSettingsNumberField("housePower", "Rated maximum house power", "Hoeveel warmte je woning ongeveer nodig heeft op een koude dag.")}
+        ${renderPowerHouseResponseProfilesField()}
+      </div>
+    `;
+  }
+
+  function renderWaterSettingsFields(className = "oq-settings-grid") {
+    return `
+      <div class="${escapeHtml(className)}">
+        ${renderSettingsNumberField("maxWater", "Maximale watertemperatuur", "Normale bovengrens voor de watertemperatuur tijdens bedrijf. OpenQuatt begint enkele graden eerder al terug te regelen en bewaakt een harde trip op 5°C boven deze grens.")}
+      </div>
+    `;
+  }
+
+  function renderSilentSettingsGrid(className = "oq-settings-grid") {
+    return `
+      <div class="${escapeHtml(className)}">
+        ${renderSettingsTimeField("silentStartTime", "Start stille uren", "Vanaf dit tijdstip werkt het systeem in stille modus.")}
+        ${renderSettingsTimeField("silentEndTime", "Einde stille uren", "Vanaf dit tijdstip stopt de stille modus weer.")}
+        ${renderSettingsSliderField("silentMax", "Maximaal niveau tijdens stille uren", "Zo ver mag het systeem nog opschalen tijdens stille uren.")}
+        ${renderSettingsSliderField("dayMax", "Maximaal niveau overdag", "Zo ver mag het systeem overdag opschalen.")}
       </div>
     `;
   }
@@ -4012,23 +3950,7 @@
               </div>
             `;
           }
-          return `
-            <button
-              class="oq-settings-choice-card${isActive ? " is-active" : ""}"
-              type="button"
-              data-oq-action="select-settings-option"
-              data-select-key="phResponseProfile"
-              data-select-option="${escapeHtml(option.value)}"
-              aria-pressed="${isActive ? "true" : "false"}"
-              ${busy ? "disabled" : ""}
-            >
-              <span class="oq-settings-choice-title">${escapeHtml(option.label)}</span>
-              <div class="oq-settings-choice-meta">
-                <span class="oq-settings-choice-meta-text">${escapeHtml(option.meta)}</span>
-              </div>
-              <span class="oq-settings-choice-copy">${escapeHtml(option.copy)}</span>
-            </button>
-          `;
+          return renderSettingsChoiceOption({ key: "phResponseProfile", option: option.value, currentValue, busy, copy: option.copy, meta: option.meta });
         }).join("")}
       </div>
     `;
@@ -4072,23 +3994,7 @@
 
     const controlMarkup = `
       <div class="oq-settings-choice-grid oq-settings-choice-grid--curve">
-        ${options.map((option) => `
-          <button
-            class="oq-settings-choice-card${option.value === currentValue ? " is-active" : ""}"
-            type="button"
-            data-oq-action="select-settings-option"
-            data-select-key="curveControlProfile"
-            data-select-option="${escapeHtml(option.value)}"
-            aria-pressed="${option.value === currentValue ? "true" : "false"}"
-            ${busy ? "disabled" : ""}
-          >
-            <span class="oq-settings-choice-title">${escapeHtml(option.label)}</span>
-            <div class="oq-settings-choice-meta">
-              <span class="oq-settings-choice-meta-text">${escapeHtml(option.meta)}</span>
-            </div>
-            <span class="oq-settings-choice-copy">${escapeHtml(option.copy)}</span>
-          </button>
-        `).join("")}
+        ${options.map((option) => renderSettingsChoiceOption({ key: "curveControlProfile", option: option.value, currentValue, busy, copy: option.copy, meta: option.meta })).join("")}
       </div>
     `;
 
@@ -4293,14 +4199,7 @@
       "Flow",
       "Flowregeling",
       "Kies of OpenQuatt de pomp automatisch op flow regelt, of dat je zelf een vaste pompstand instelt.",
-      `
-        <div class="oq-settings-grid">
-          ${renderSettingsSelectField("flowControlMode", "Regelmodus", "Kies tussen automatische flowregeling en een vaste pompstand.")}
-          ${isManualFlowMode()
-            ? renderSettingsNumberField("manualIpwm", "Vaste pompstand", "Deze pompstand wordt gebruikt zolang de regeling op handmatig staat.")
-            : renderSettingsNumberField("flowSetpoint", "Gewenste flow", "De flow die OpenQuatt zoveel mogelijk probeert vast te houden.")}
-        </div>
-      `,
+      renderFlowSettingsFields(),
     );
   }
 
@@ -4329,11 +4228,7 @@
             <h4>Power House</h4>
             <p>Met deze waarden schat OpenQuatt hoeveel warmte je woning nodig heeft. Heb je deze gegevens van Quatt, dan kun je ze hier als startpunt gebruiken.</p>
           </div>
-          <div class="oq-settings-grid">
-            ${renderSettingsNumberField("houseOutdoorMax", "Maximum heating outdoor temperature", "Bij deze buitentemperatuur is verwarmen meestal niet meer nodig.")}
-            ${renderSettingsNumberField("housePower", "Rated maximum house power", "Hoeveel warmte je woning ongeveer nodig heeft op een koude dag.")}
-            ${renderPowerHouseResponseProfilesField()}
-          </div>
+          ${renderPowerHouseBaseFields()}
           ${renderPowerHouseAdvancedField()}
         </div>
       `;
@@ -4343,9 +4238,7 @@
       "Verwarmingsstrategie",
       "Kies hier hoe OpenQuatt je verwarming regelt. De instellingen hieronder passen zich automatisch aan.",
       `
-        <div class="oq-settings-grid">
-          ${renderSettingsSelectField("strategy", "Verwarmingsstrategie", "Kies tussen automatisch regelen met Power House of regelen met een stooklijn.")}
-        </div>
+        ${renderStrategySelectionFields()}
         ${renderHeatingStrategyExplainCards()}
         ${strategyContent}
       `,
@@ -4357,11 +4250,7 @@
       "Maximale watertemperatuur",
       "Watertemperatuur",
       "Beschermt het systeem tegen te hoge aanvoertemperaturen. OpenQuatt regelt richting deze grens terug en grijpt 5°C erboven hard in.",
-      `
-        <div class="oq-settings-grid">
-          ${renderSettingsNumberField("maxWater", "Maximale watertemperatuur", "Normale bovengrens voor de watertemperatuur tijdens bedrijf. OpenQuatt begint enkele graden eerder al terug te regelen en bewaakt een harde trip op 5°C boven deze grens.")}
-        </div>
-      `,
+      renderWaterSettingsFields(),
     );
   }
 
@@ -4387,32 +4276,16 @@
   }
 
   function renderSettingsSilentSection() {
-    const silentFields = `
-      <div class="oq-settings-grid">
-        ${renderSettingsTimeField("silentStartTime", "Start stille uren", "Vanaf dit tijdstip werkt het systeem in stille modus.")}
-        ${renderSettingsTimeField("silentEndTime", "Einde stille uren", "Vanaf dit tijdstip stopt de stille modus weer.")}
-        ${renderSettingsSliderField("silentMax", "Maximaal niveau tijdens stille uren", "Zo ver mag het systeem nog opschalen tijdens stille uren.")}
-        ${renderSettingsSliderField("dayMax", "Maximaal niveau overdag", "Zo ver mag het systeem overdag opschalen.")}
-      </div>
-    `;
-
     return renderSettingsSection(
       "Stille uren",
       "Stille uren",
       "Kies wanneer het systeem stiller moet werken, en hoe ver het dan nog mag opschalen.",
-      silentFields,
+      renderSilentSettingsGrid(),
     );
   }
 
   function renderSilentSettingsFields() {
-    return `
-      <div class="oq-settings-grid oq-settings-grid--modal">
-        ${renderSettingsTimeField("silentStartTime", "Start stille uren", "Vanaf dit tijdstip werkt het systeem in stille modus.")}
-        ${renderSettingsTimeField("silentEndTime", "Einde stille uren", "Vanaf dit tijdstip stopt de stille modus weer.")}
-        ${renderSettingsSliderField("silentMax", "Maximaal niveau tijdens stille uren", "Zo ver mag het systeem nog opschalen tijdens stille uren.")}
-        ${renderSettingsSliderField("dayMax", "Maximaal niveau overdag", "Zo ver mag het systeem overdag opschalen.")}
-      </div>
-    `;
+    return renderSilentSettingsGrid("oq-settings-grid oq-settings-grid--modal");
   }
 
   function renderSettingsCoolingSection() {
@@ -4567,27 +4440,10 @@
   }
 
   function renderCurveInputs() {
-    const suggestion = getCurveFallbackSuggestion();
-    const suggestionMarkup = suggestion ? `
-      <div class="oq-curve-fallback-suggest oq-curve-fallback-suggest--inside oq-curve-fallback-suggest--helper">
-        <div class="oq-curve-fallback-suggest-copy">
-          <strong>Suggestie: ${escapeHtml(suggestion.label)}</strong>
-          <span>${escapeHtml(suggestion.basis)}</span>
-        </div>
-        <button
-          class="oq-helper-button oq-helper-button--ghost"
-          type="button"
-          data-oq-action="suggest-curve-fallback"
-          ${state.loadingEntities || state.busyAction === "save-curveFallbackSupply" || suggestion.isCurrent ? "disabled" : ""}
-        >
-          ${suggestion.isCurrent ? "Actief" : "Gebruik suggestie"}
-        </button>
-      </div>
-    ` : "";
     return `
       <div class="oq-helper-curve-grid">
         ${CURVE_POINTS.map((point) => renderNumberInputField(point.key, `Aanvoertemp. bij ${point.label}`, `Doelaanvoertemperatuur bij ${point.label} buitentemperatuur.`)).join("")}
-        ${renderNumberInputField("curveFallbackSupply", "Fallback-aanvoertemperatuur zonder buitentemperatuur", "Aanvoertemperatuur die gebruikt wordt als de buitentemperatuursensor niet beschikbaar is.", { footerMarkup: suggestionMarkup })}
+        ${renderNumberInputField("curveFallbackSupply", "Fallback-aanvoertemperatuur zonder buitentemperatuur", "Aanvoertemperatuur die gebruikt wordt als de buitentemperatuursensor niet beschikbaar is.", { footerMarkup: renderCurveFallbackSuggestionMarkup(true) })}
       </div>
     `;
   }
@@ -4599,28 +4455,19 @@
         <h2 class="oq-helper-section-title">Kies de verwarmingsstrategie</h2>
         <p class="oq-helper-section-copy">Kies hier hoe OpenQuatt je verwarming regelt. Daarna lopen we samen de belangrijkste instellingen langs.</p>
         ${renderHeatingStrategyExplainCards()}
-        <div class="oq-settings-grid oq-settings-grid--quickstart">
-          ${renderSettingsSelectField("strategy", "Verwarmingsstrategie", "Kies tussen automatisch regelen met Power House of regelen met een stooklijn.")}
-        </div>
+        ${renderStrategySelectionFields("oq-settings-grid oq-settings-grid--quickstart")}
         ${renderQuickStartStepNav()}
       </section>
     `;
   }
 
   function renderFlowWorkspace() {
-    const flowSecondaryField = String(getEntityValue("flowControlMode") || "") === "Manual PWM"
-      ? renderSettingsNumberField("manualIpwm", "Vaste pompstand", "Deze pompstand wordt gebruikt zolang de regeling op handmatig staat.")
-      : renderSettingsNumberField("flowSetpoint", "Gewenste flow", "De flow die OpenQuatt zoveel mogelijk probeert vast te houden.");
-
     return `
       <section class="oq-helper-panel">
         <p class="oq-helper-label">Stap 3</p>
         <h2 class="oq-helper-section-title">Flow en pompregeling</h2>
         <p class="oq-helper-section-copy">Kies hier of OpenQuatt de pomp automatisch regelt, of dat je zelf een vaste pompstand instelt.</p>
-        <div class="oq-settings-grid oq-settings-grid--quickstart">
-          ${renderSettingsSelectField("flowControlMode", "Regelmodus", "Kies tussen automatische flowregeling en een vaste pompstand.")}
-          ${flowSecondaryField}
-        </div>
+        ${renderFlowSettingsFields("oq-settings-grid oq-settings-grid--quickstart")}
         ${renderQuickStartStepNav()}
       </section>
     `;
@@ -4640,20 +4487,14 @@
         </p>
         ${isCurveMode()
           ? `
-            <div class="oq-settings-grid oq-settings-grid--quickstart">
-              ${renderHeatingCurveProfileField()}
-            </div>
+            <div class="oq-settings-grid oq-settings-grid--quickstart">${renderHeatingCurveProfileField()}</div>
             <div class="oq-settings-curve-shell">
               ${renderCurveGraph()}
             </div>
             ${renderSettingsCurveInputs()}
           `
           : `
-            <div class="oq-settings-grid oq-settings-grid--quickstart">
-              ${renderSettingsNumberField("houseOutdoorMax", "Maximum heating outdoor temperature", "Bij deze buitentemperatuur is verwarmen meestal niet meer nodig.")}
-              ${renderSettingsNumberField("housePower", "Rated maximum house power", "Hoeveel warmte je woning ongeveer nodig heeft op een koude dag.")}
-              ${renderPowerHouseResponseProfilesField()}
-            </div>
+            ${renderPowerHouseBaseFields("oq-settings-grid oq-settings-grid--quickstart")}
             ${renderPowerHouseAdvancedField()}
           `}
         ${renderQuickStartStepNav()}
@@ -4667,9 +4508,7 @@
         <p class="oq-helper-label">Stap 4</p>
         <h2 class="oq-helper-section-title">Watertemperatuur beveiligen</h2>
         <p class="oq-helper-section-copy">Hier stel je de veilige bovengrens voor de watertemperatuur in. OpenQuatt regelt richting deze grens terug en grijpt 5°C erboven hard in.</p>
-        <div class="oq-settings-grid oq-settings-grid--quickstart">
-          ${renderSettingsNumberField("maxWater", "Maximale watertemperatuur", "Normale bovengrens voor de watertemperatuur tijdens bedrijf. OpenQuatt begint enkele graden eerder al terug te regelen en bewaakt een harde trip op 5°C boven deze grens.")}
-        </div>
+        ${renderWaterSettingsFields("oq-settings-grid oq-settings-grid--quickstart")}
         ${renderQuickStartStepNav()}
       </section>
     `;
@@ -4681,12 +4520,7 @@
         <p class="oq-helper-label">Stap 5</p>
         <h2 class="oq-helper-section-title">Stille uren en niveaus</h2>
         <p class="oq-helper-section-copy">Kies hier wanneer het systeem stiller moet werken, en hoe ver het dan nog mag opschalen.</p>
-        <div class="oq-settings-grid oq-settings-grid--quickstart">
-          ${renderSettingsTimeField("silentStartTime", "Start stille uren", "Vanaf dit tijdstip werkt het systeem in stille modus.")}
-          ${renderSettingsTimeField("silentEndTime", "Einde stille uren", "Vanaf dit tijdstip stopt de stille modus weer.")}
-          ${renderSettingsSliderField("silentMax", "Maximaal niveau tijdens stille uren", "Zo ver mag het systeem nog opschalen tijdens stille uren.")}
-          ${renderSettingsSliderField("dayMax", "Maximaal niveau overdag", "Zo ver mag het systeem overdag opschalen.")}
-        </div>
+        ${renderSilentSettingsGrid("oq-settings-grid oq-settings-grid--quickstart")}
         ${renderQuickStartStepNav()}
       </section>
     `;
@@ -4879,29 +4713,23 @@
           .join("")}
       </div>
     `;
+    const renderReviewCard = (title, lines, summary = "") => `
+      <article class="oq-helper-field oq-helper-field--review">
+        <h3>${escapeHtml(title)}</h3>
+        ${summary ? `<p class="oq-helper-review-summary"><strong>${escapeHtml(summary)}</strong></p>` : ""}
+        ${renderReviewList(lines)}
+      </article>
+    `;
 
     return `
       <div class="oq-helper-fields oq-helper-fields--review">
         <div class="oq-helper-review-column">
-          <article class="oq-helper-field oq-helper-field--review">
-            <h3>Verwarmingsstrategie</h3>
-            <p class="oq-helper-review-summary"><strong>${escapeHtml(strategyTitle)}</strong></p>
-            ${renderReviewList(strategyLines)}
-          </article>
-          <article class="oq-helper-field oq-helper-field--review">
-            <h3>Watertemperatuur</h3>
-            ${renderReviewList(waterLines)}
-          </article>
+          ${renderReviewCard("Verwarmingsstrategie", strategyLines, strategyTitle)}
+          ${renderReviewCard("Watertemperatuur", waterLines)}
         </div>
         <div class="oq-helper-review-column">
-          <article class="oq-helper-field oq-helper-field--review">
-            <h3>Flowregeling</h3>
-            ${renderReviewList(flowLines)}
-          </article>
-          <article class="oq-helper-field oq-helper-field--review">
-            <h3>Stille uren</h3>
-            ${renderReviewList(silentLines)}
-          </article>
+          ${renderReviewCard("Flowregeling", flowLines)}
+          ${renderReviewCard("Stille uren", silentLines)}
         </div>
       </div>
     `;
