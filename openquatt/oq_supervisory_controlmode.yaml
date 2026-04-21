@@ -475,7 +475,6 @@ text_sensor:
   - platform: template
     id: oq_time_now_hhmm
     name: "Time now (HH:MM)"
-    disabled_by_default: true
     icon: mdi:clock-outline
     update_interval: never
     entity_category: diagnostic

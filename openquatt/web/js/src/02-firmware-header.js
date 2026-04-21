@@ -38,6 +38,14 @@
   }
 
   function formatDeviceClock() {
+    const timeValid = isEntityActive("timeValid");
+    const deviceClock = String(getEntityValue("timeNowHhmm") || "").trim();
+    if (deviceClock && deviceClock !== "invalid") {
+      return deviceClock;
+    }
+    if (hasEntity("timeValid") && !timeValid) {
+      return "Geen tijdsync";
+    }
     try {
       return new Intl.DateTimeFormat("nl-NL", {
         hour: "2-digit",
@@ -1198,4 +1206,3 @@
 
     return "";
   }
-

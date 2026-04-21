@@ -102,6 +102,8 @@
     uptime: { domain: "sensor", name: "Uptime", optional: true },
     uptimeReadable: { domain: "text_sensor", name: "Uptime readable", optional: true },
     uptimeReadableLegacy: { domain: "text_sensor", name: "Uptime", optional: true },
+    timeNowHhmm: { domain: "text_sensor", name: "Time now (HH:MM)", optional: true },
+    timeValid: { domain: "binary_sensor", name: "Time valid", optional: true },
     ipAddress: { domain: "text_sensor", name: "IP Address", optional: true },
     wifiSsid: { domain: "text_sensor", name: "WiFi SSID", optional: true },
     projectVersionText: { domain: "text_sensor", name: "OpenQuatt Version", optional: true },
@@ -361,6 +363,8 @@
     "uptime",
     "uptimeReadable",
     "uptimeReadableLegacy",
+    "timeNowHhmm",
+    "timeValid",
     "ipAddress",
     "wifiSsid",
     "wifiSignal",
@@ -1124,6 +1128,14 @@
   }
 
   function formatDeviceClock() {
+    const timeValid = isEntityActive("timeValid");
+    const deviceClock = String(getEntityValue("timeNowHhmm") || "").trim();
+    if (deviceClock && deviceClock !== "invalid") {
+      return deviceClock;
+    }
+    if (hasEntity("timeValid") && !timeValid) {
+      return "Geen tijdsync";
+    }
     try {
       return new Intl.DateTimeFormat("nl-NL", {
         hour: "2-digit",
