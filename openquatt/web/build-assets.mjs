@@ -10,7 +10,10 @@ const bundles = [
     label: "JS",
     output: path.join(__dirname, "js", "openquatt-app.js"),
     sources: [
-      path.join(__dirname, "js", "src", "00-core.js"),
+      path.join(__dirname, "js", "src", "00-config.js"),
+      path.join(__dirname, "js", "src", "01-runtime.js"),
+      path.join(__dirname, "js", "src", "02-firmware-header.js"),
+      path.join(__dirname, "js", "src", "03-entities-controls.js"),
       path.join(__dirname, "js", "src", "05-app-shared.js"),
       path.join(__dirname, "js", "src", "10-settings.js"),
       path.join(__dirname, "js", "src", "15-quickstart.js"),
