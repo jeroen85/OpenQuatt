@@ -736,7 +736,7 @@ def preview_pages_command(args: argparse.Namespace) -> int:
         print(f"Preview directory: {site_dir}")
         print("Open:")
         print(f"  http://{args.host}:{args.port}/")
-        print(f"  http://{args.host}:{args.port}/documentatie.html")
+        print(f"  http://{args.host}:{args.port}/verwarmen-en-koelen.html")
         print(f"  http://{args.host}:{args.port}/install/index.html")
 
         if not args.firmware_dir:

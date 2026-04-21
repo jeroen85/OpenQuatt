@@ -34,15 +34,13 @@ class RenderedPage:
 
 PAGES = [
     Page(PurePosixPath("README.md"), PurePosixPath("index.html"), "OpenQuatt", "Project", "Projectoverzicht, snelle start en hoofdroute."),
-    Page(PurePosixPath("docs/README.md"), PurePosixPath("documentatie.html"), "Documentatie", "Docs", "Hoofdingang voor alle handleidingen en naslag."),
     Page(PurePosixPath("docs/installatie-en-ingebruikname.md"), PurePosixPath("installatie-en-ingebruikname.html"), "Installatie en ingebruikname", "Docs", "Eerste installatie en controle na de eerste start."),
-    Page(PurePosixPath("docs/hoe-openquatt-werkt.md"), PurePosixPath("hoe-openquatt-werkt.html"), "Hoe OpenQuatt werkt", "Docs", "Rolverdeling tussen thermostaat, OpenQuatt, warmtepomp en Home Assistant."),
-    Page(PurePosixPath("docs/heating-strategy.md"), PurePosixPath("heating-strategy.html"), "Heating Strategy", "Docs", "Overzicht van Power House en Water Temperature Control."),
+    Page(PurePosixPath("docs/verwarmen-en-koelen.md"), PurePosixPath("verwarmen-en-koelen.html"), "Verwarmen en koelen uitgelegd", "Uitleg", "Heldere uitleg van Power House, stooklijnregeling, koeling, Single en Duo."),
     Page(PurePosixPath("docs/power-house.md"), PurePosixPath("power-house.html"), "Power House", "Docs", "Uitleg van huismodel, comfortlogica en Single/Duo-gedrag."),
     Page(PurePosixPath("docs/water-temperature-control.md"), PurePosixPath("water-temperature-control.html"), "Water Temperature Control", "Docs", "Uitleg van stooklijn, PID en Single/Duo-gedrag in curve-modus."),
-    Page(PurePosixPath("docs/dashboardoverzicht.md"), PurePosixPath("dashboardoverzicht.html"), "Dashboardoverzicht", "Docs", "Gebruik, controle en diagnose in Home Assistant."),
+    Page(PurePosixPath("docs/dashboardoverzicht.md"), PurePosixPath("dashboardoverzicht.html"), "Dashboard gebruiken", "Handleiding", "Dagelijkse controle en diagnosevolgorde in Home Assistant."),
     Page(PurePosixPath("docs/dashboard/README.md"), PurePosixPath("dashboard/index.html"), "Dashboard installeren", "Docs", "Importeer het juiste dashboardbestand voor Single of Duo."),
-    Page(PurePosixPath("docs/diagnose-en-afstelling.md"), PurePosixPath("diagnose-en-afstelling.html"), "Diagnose en afstelling", "Docs", "Werkvolgorde bij klachten, onrustig gedrag en gerichte afstelling."),
+    Page(PurePosixPath("docs/diagnose-en-afstelling.md"), PurePosixPath("diagnose-en-afstelling.html"), "Problemen oplossen en afstellen", "Handleiding", "Werkvolgorde bij klachten, onrustig gedrag en kleine aanpassingen."),
     Page(PurePosixPath("docs/regelgedrag-van-openquatt.md"), PurePosixPath("regelgedrag-van-openquatt.html"), "Regelgedrag van OpenQuatt", "Naslag", "Technische runtime-uitleg over systeemstanden, flowregeling en bronkeuze."),
     Page(PurePosixPath("docs/instellingen-en-meetwaarden.md"), PurePosixPath("instellingen-en-meetwaarden.html"), "Instellingen en meetwaarden", "Naslag", "Praktische naslag voor runtime- en compile-time instellingen."),
 ]
@@ -51,30 +49,27 @@ PAGE_BY_SOURCE = {page.source: page for page in PAGES}
 SIDEBAR_GROUPS = [
     (
         "Aan de slag",
-        "Van projectintro naar eerste firmwareflash.",
+        "Van projectintro naar eerste werkende installatie.",
         [
             PurePosixPath("README.md"),
-            PurePosixPath("docs/README.md"),
             PurePosixPath("docs/installatie-en-ingebruikname.md"),
         ],
     ),
     (
-        "Handleiding",
-        "Dagelijkse route voor inzicht, dashboard en diagnose.",
+        "Dagelijks gebruik",
+        "Begrijpen, volgen en rustig bijsturen.",
         [
-            PurePosixPath("docs/hoe-openquatt-werkt.md"),
-            PurePosixPath("docs/heating-strategy.md"),
-            PurePosixPath("docs/power-house.md"),
-            PurePosixPath("docs/water-temperature-control.md"),
-            PurePosixPath("docs/dashboard/README.md"),
+            PurePosixPath("docs/verwarmen-en-koelen.md"),
             PurePosixPath("docs/dashboardoverzicht.md"),
             PurePosixPath("docs/diagnose-en-afstelling.md"),
         ],
     ),
     (
-        "Naslag",
-        "Voor wie dieper wil afstellen of het regelgedrag wil volgen.",
+        "Verdieping",
+        "Technische uitleg en aanvullende naslag wanneer je verder wilt kijken.",
         [
+            PurePosixPath("docs/power-house.md"),
+            PurePosixPath("docs/water-temperature-control.md"),
             PurePosixPath("docs/regelgedrag-van-openquatt.md"),
             PurePosixPath("docs/instellingen-en-meetwaarden.md"),
         ],
@@ -505,7 +500,7 @@ def render_template(rendered_page: RenderedPage, rendered_pages: list[RenderedPa
         <div class="sidebar-inner">
           <section class="sidebar-overview">
             <p class="sidebar-kicker">OpenQuatt Docs</p>
-            <p class="sidebar-copy">Installatie, gebruik en technische naslag voor Single en Duo.</p>
+            <p class="sidebar-copy">Een korte route voor installeren, begrijpen en rustig bijsturen.</p>
             <a class="sidebar-utility" href="{install_href}">Open webinstaller</a>
           </section>
           {build_sidebar(page)}
