@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 920" role="img" aria-labelledby="title desc">
+  <title id="title">Kamercorrectie op Power House-huisvraag</title>
+  <desc id="desc">Conceptuele grafiek van de kamercorrectie in Power House met setpoint 20,0 graden, comfortband 19,9 tot 20,3 graden en temperatuurreactie 3000 watt per kelvin.</desc>
+  <defs>
+    <linearGradient id="cardBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f8fafc"/>
+    </linearGradient>
+    <linearGradient id="belowBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#dbeafe" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#dbeafe" stop-opacity="0.46"/>
+    </linearGradient>
+    <linearGradient id="calmBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e5e7eb" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#e5e7eb" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="aboveBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffedd5" stop-opacity="0.82"/>
+      <stop offset="100%" stop-color="#ffedd5" stop-opacity="0.5"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#0f172a" flood-opacity="0.08"/>
+    </filter>
+    <style>
+      .frame { fill: url(#cardBg); stroke: #e5e7eb; stroke-width: 2; }
+      .small-kicker { font: 800 20px 'Inter', 'Segoe UI', sans-serif; letter-spacing: 0.08em; text-transform: uppercase; fill: #ea580c; }
+      .body { font: 500 22px 'Inter', 'Segoe UI', sans-serif; fill: #475569; }
+      .pill { fill: #ffffff; stroke: #e5e7eb; stroke-width: 2; }
+      .pill-label { font: 700 16px 'Inter', 'Segoe UI', sans-serif; fill: #475569; }
+      .pill-value { font: 800 18px 'Inter', 'Segoe UI', sans-serif; fill: #0f172a; }
+      .zone-title { font: 800 18px 'Inter', 'Segoe UI', sans-serif; fill: #475569; }
+      .zone-meta { font: 700 15px 'Inter', 'Segoe UI', sans-serif; fill: #64748b; }
+      .axis { stroke: #9ca3af; stroke-width: 5; stroke-linecap: round; opacity: 0.75; }
+      .axis-dashed { stroke-dasharray: 14 16; }
+      .curve { fill: none; stroke: #ea580c; stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; }
+      .marker-below { stroke: #60a5fa; stroke-width: 6; stroke-linecap: round; }
+      .marker-setpoint { stroke: #64748b; stroke-width: 7; stroke-linecap: round; }
+      .marker-above { stroke: #fb923c; stroke-width: 6; stroke-linecap: round; }
+      .point-core { fill: #ffffff; stroke-width: 6; }
+      .point-below { stroke: #93c5fd; }
+      .point-setpoint { stroke: #c4b5fd; }
+      .point-above { stroke: #fdba74; }
+      .chart-label { font: 800 28px 'Inter', 'Segoe UI', sans-serif; fill: #4b5563; }
+      .chart-label-soft { font: 800 28px 'Inter', 'Segoe UI', sans-serif; fill: #6b7280; }
+      .tick { font: 800 24px 'Inter', 'Segoe UI', sans-serif; fill: #111827; }
+    </style>
+  </defs>
+
+  <rect x="10" y="10" width="1580" height="900" rx="30" class="frame" filter="url(#shadow)"/>
+
+  <text x="54" y="68" class="small-kicker">Kamercorrectie op Power House-huisvraag</text>
+  <text x="54" y="116" class="body">Conceptueel: deze grafiek toont de kamercorrectie boven op de berekende Power House-huisvraag. Onder de comfortgrens loopt die</text>
+  <text x="54" y="152" class="body">correctie op, binnen de comfortband blijft de directe reactie vlak terwijl opgebouwde comfort memory nog kan doorwerken,</text>
+  <text x="54" y="188" class="body">en boven de bovengrens start warme tegensturing.</text>
+
+  <g transform="translate(54 226)">
+    <rect width="192" height="46" rx="22" class="pill"/>
+    <text x="20" y="30" class="pill-label">Setpoint</text>
+    <text x="172" y="30" text-anchor="end" class="pill-value">20.0 °C</text>
+  </g>
+  <g transform="translate(262 226)">
+    <rect width="344" height="46" rx="22" class="pill"/>
+    <text x="20" y="30" class="pill-label">Comfortband</text>
+    <text x="324" y="30" text-anchor="end" class="pill-value">19.9 °C – 20.3 °C</text>
+  </g>
+  <g transform="translate(622 226)">
+    <rect width="392" height="46" rx="22" class="pill"/>
+    <text x="20" y="30" class="pill-label">Temperatuurreactie</text>
+    <text x="372" y="30" text-anchor="end" class="pill-value">3000 W/K</text>
+  </g>
+
+  <g transform="translate(0 0)">
+    <rect x="170" y="338" width="610" height="316" rx="44" fill="url(#belowBg)"/>
+    <rect x="780" y="338" width="228" height="316" rx="44" fill="url(#calmBg)"/>
+    <rect x="1008" y="338" width="510" height="316" rx="44" fill="url(#aboveBg)"/>
+
+    <line x1="170" y1="338" x2="170" y2="653" class="axis"/>
+    <line x1="170" y1="495" x2="1518" y2="495" class="axis"/>
+    <line x1="833" y1="338" x2="833" y2="653" class="axis axis-dashed"/>
+
+    <path d="M 170 360 L 780 495 L 1008 495 L 1518 653" class="curve"/>
+
+    <line x1="780" y1="464" x2="780" y2="526" class="marker-below"/>
+    <line x1="833" y1="460" x2="833" y2="530" class="marker-setpoint"/>
+    <line x1="1008" y1="464" x2="1008" y2="526" class="marker-above"/>
+
+    <circle cx="780" cy="495" r="18" class="point-core point-below"/>
+    <circle cx="833" cy="495" r="20" class="point-core point-setpoint"/>
+    <circle cx="1008" cy="495" r="18" class="point-core point-above"/>
+
+    <text x="148" y="345" class="chart-label">meer warmte</text>
+    <text x="148" y="631" class="chart-label-soft">minder warmte</text>
+    <text x="170" y="713" class="chart-label">kouder</text>
+    <text x="1518" y="713" text-anchor="end" class="chart-label">warmer</text>
+
+    <text x="740" y="742" text-anchor="end" class="tick">19.9 °C</text>
+    <text x="833" y="742" text-anchor="middle" class="tick">20.0 °C</text>
+    <text x="1048" y="742" text-anchor="start" class="tick">20.3 °C</text>
+  </g>
+
+  <g transform="translate(54 786)">
+    <rect width="480" height="72" rx="22" fill="#dbeafe" fill-opacity="0.72" stroke="#cbd5e1" stroke-width="2"/>
+    <text x="240" y="40" text-anchor="middle" class="zone-title">extra opwarming</text>
+    <text x="240" y="61" text-anchor="middle" class="zone-meta">onder 19.9 °C</text>
+  </g>
+  <g transform="translate(550 786)">
+    <rect width="500" height="72" rx="22" fill="#e5e7eb" fill-opacity="0.72" stroke="#cbd5e1" stroke-width="2"/>
+    <text x="250" y="40" text-anchor="middle" class="zone-title">comfortband</text>
+    <text x="250" y="61" text-anchor="middle" class="zone-meta">19.9 °C – 20.3 °C</text>
+  </g>
+  <g transform="translate(1066 786)">
+    <rect width="480" height="72" rx="22" fill="#ffedd5" fill-opacity="0.78" stroke="#fed7aa" stroke-width="2"/>
+    <text x="240" y="40" text-anchor="middle" class="zone-title">warme tegensturing</text>
+    <text x="240" y="61" text-anchor="middle" class="zone-meta">boven 20.3 °C</text>
+  </g>
+</svg>

@@ -22,44 +22,30 @@ Je hoeft voor de eerste installatie niet eerst alle technische achtergronddocume
 
 ## Ondersteunde combinaties
 
-OpenQuatt ondersteunt momenteel deze Quatt-opstellingen en hardwarevarianten.
+OpenQuatt ondersteunt momenteel:
 
-Quatt-opstellingen (V1 en V1.5):
+- Quatt `Single` en `Duo` (V1 en V1.5)
+- `Waveshare ESP32-S3-Relay-1CH`
+- `Heatpump Listener`
 
-- Single
-- Duo
-
-Ondersteunde hardware:
-
-- Waveshare ESP32-S3-Relay-1CH
-- Heatpump Listener
-
-Elke combinatie van bovenstaande Quatt-opstellingen en hardware wordt ondersteund:
-
-- Single + Waveshare ESP32-S3-Relay-1CH
-- Single + Heatpump Listener
-- Duo + Waveshare ESP32-S3-Relay-1CH
-- Duo + Heatpump Listener
+Alle combinaties van bovenstaande opstelling en hardware worden ondersteund.
 
 ## Snel starten
 
 1. Open de [OpenQuatt installer](https://jeroen85.github.io/OpenQuatt/install/).
 2. Kies exact de combinatie die past bij jouw installatie en hardware.
 3. Flash de firmware via USB in Chrome of Edge.
-4. Stel wifi in via de browserflow of via het fallback access point `OpenQuatt` met wachtwoord `openquatt`.
-5. Voeg het apparaat toe in Home Assistant.
-6. Importeer het dashboard dat past bij jouw taal en opstelling:
-   - Duo NL: [docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml](docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml)
-   - Duo EN: [docs/dashboard/openquatt_ha_dashboard_duo_en.yaml](docs/dashboard/openquatt_ha_dashboard_duo_en.yaml)
-   - Single NL: [docs/dashboard/openquatt_ha_dashboard_single_nl.yaml](docs/dashboard/openquatt_ha_dashboard_single_nl.yaml)
-   - Single EN: [docs/dashboard/openquatt_ha_dashboard_single_en.yaml](docs/dashboard/openquatt_ha_dashboard_single_en.yaml)
+4. Rond wifi-configuratie af en voeg het apparaat toe in Home Assistant.
+5. Volg daarna de documentatieroute voor dashboard en eerste controle.
 
 Alleen de nieuwste stabiele eerste-installatiebestanden worden standaard via de installer aangeboden.
 
-Loopt de eerste installatie vast, kijk dan hier:
+Voor de volledige installatiestappen en eerste controle:
 
+- [Installatie en ingebruikname](docs/installatie-en-ingebruikname.md)
 - [Dashboard installeren](docs/dashboard/README.md)
-- [Diagnose en afstelling](docs/diagnose-en-afstelling.md)
+- [Dashboard gebruiken](docs/dashboardoverzicht.md)
+- [Problemen oplossen en afstellen](docs/diagnose-en-afstelling.md)
 
 ## Ondersteunde hardware
 
@@ -70,22 +56,15 @@ OpenQuatt richt zich nu bewust op twee hardwareprofielen:
 
 ## Documentatie
 
-Begin hier:
-
-- [Documentatie-overzicht](docs/README.md)
-
 Belangrijkste pagina's voor gebruikers:
 
 - [Installatie en ingebruikname](docs/installatie-en-ingebruikname.md) voor installeren en controle na de eerste start
-- [Hoe OpenQuatt werkt](docs/hoe-openquatt-werkt.md) voor de rolverdeling tussen thermostaat, OpenQuatt, warmtepomp en Home Assistant
-- [Dashboardoverzicht](docs/dashboardoverzicht.md) voor gebruik en diagnose van de dashboardweergaven
+- [Verwarmen en koelen uitgelegd](docs/verwarmen-en-koelen.md) voor een eenvoudige uitleg van `Power House`, stooklijnregeling, koeling, `Single` en `Duo`
+- [Dashboard gebruiken](docs/dashboardoverzicht.md) voor dagelijkse controle en de juiste diagnosevolgorde in Home Assistant
 - [Dashboard installeren](docs/dashboard/README.md) voor het importeren van dashboards
-- [Diagnose en afstelling](docs/diagnose-en-afstelling.md) voor diagnose en gerichte afstelling
+- [Problemen oplossen en afstellen](docs/diagnose-en-afstelling.md) voor diagnose en gerichte afstelling
 
-Technischere naslag blijft beschikbaar, maar staat niet meer centraal in de publieksroute:
-
-- [Regelgedrag van OpenQuatt](docs/regelgedrag-van-openquatt.md)
-- [Instellingen en meetwaarden](docs/instellingen-en-meetwaarden.md)
+Meer heb je voor normaal gebruik meestal niet nodig.
 
 ## Licentie
 

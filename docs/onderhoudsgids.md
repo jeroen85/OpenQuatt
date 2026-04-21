@@ -35,8 +35,7 @@ This guide keeps the configuration maintainable and predictable while preserving
 - Preserve package include order in `openquatt/oq_packages.yaml` unless dependencies are intentionally redesigned.
 - If you add/remove packages or user-facing entities, update the affected docs in the same PR:
   - `README.md`
-  - `docs/README.md`
-  - `docs/hoe-openquatt-werkt.md`
+  - `docs/verwarmen-en-koelen.md`
   - `docs/instellingen-en-meetwaarden.md`
   - `docs/dashboardoverzicht.md`
 
