@@ -115,7 +115,6 @@ def main() -> int:
     docs_home = REPO_ROOT / "docs/dashboardoverzicht.md"
     docs_settings = REPO_ROOT / "docs/instellingen-en-meetwaarden.md"
     docs_tuning = REPO_ROOT / "docs/diagnose-en-afstelling.md"
-    docs_system = REPO_ROOT / "docs/hoe-openquatt-werkt.md"
     dash_en = REPO_ROOT / "docs/dashboard/openquatt_ha_dashboard_duo_en.yaml"
     dash_nl = REPO_ROOT / "docs/dashboard/openquatt_ha_dashboard_duo_nl.yaml"
     dash_single_nl = REPO_ROOT / "docs/dashboard/openquatt_ha_dashboard_single_nl.yaml"
@@ -258,12 +257,12 @@ def main() -> int:
                 1,
                 "Dashboard YAML changed; consider updating docs/dashboardoverzicht.md.",
             )
-        if any_changed(changed, {"openquatt/oq_common.yaml"}) and not any_changed(changed, {"docs/dashboardoverzicht.md", "docs/instellingen-en-meetwaarden.md", "docs/hoe-openquatt-werkt.md"}):
+        if any_changed(changed, {"openquatt/oq_common.yaml"}) and not any_changed(changed, {"docs/dashboardoverzicht.md", "docs/instellingen-en-meetwaarden.md", "docs/verwarmen-en-koelen.md"}):
             add(
                 findings,
                 "docs/dashboardoverzicht.md",
                 1,
-                "Service/debug entities changed; consider updating dashboard/settings/system docs.",
+                "Service/debug entities changed; consider updating dashboard/settings/user docs.",
             )
 
     if not findings:

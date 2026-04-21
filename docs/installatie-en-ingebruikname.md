@@ -62,7 +62,7 @@ Controleer na de eerste start bij voorkeur in deze volgorde:
 Zie voor het dashboard:
 
 - [Dashboard installeren](dashboard/README.md)
-- [Dashboardoverzicht](dashboardoverzicht.md)
+- [Dashboard gebruiken](dashboardoverzicht.md)
 
 ## Bij problemen
 

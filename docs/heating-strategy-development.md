@@ -287,7 +287,7 @@ Stop generieke guards of actuator-diagnostiek niet terug in de strategy module.
 
 Bij een nieuwe strategy horen minimaal updates in:
 
-- `docs/heating-strategy.md`
+- `docs/verwarmen-en-koelen.md`
 - eventueel een eigen detailpagina
 - dashboards als er een nieuwe user-facing selector of status bijkomt
 
