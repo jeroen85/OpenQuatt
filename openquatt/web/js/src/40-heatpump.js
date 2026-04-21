@@ -1,29 +1,51 @@
-  function renderEnergyView() {
-    const renderedColumns = OVERVIEW_ENERGY_COLUMN_CONFIGS.map(renderOverviewEnergyColumn).filter(Boolean);
-    const gridClassName = [
-      "oq-overview-energy-grid",
-      renderedColumns.length === 1 ? "oq-overview-energy-grid--single" : "",
-      renderedColumns.length === 2 ? "oq-overview-energy-grid--two" : "",
-    ].filter(Boolean).join(" ");
+  function getHeatPumpRuntimeModel(title, keys, accent) {
+    const mode = formatWorkingMode(getEntityStateText(keys.mode, "Unknown"));
+    const defrostActive = isEntityActive(keys.defrost);
+    const failures = formatFailures(getEntityStateText(keys.failures, "None"));
+    const running = mode === "Verwarmen" || mode === "Koelen" || defrostActive;
+    return {
+      mode,
+      defrostActive,
+      failures,
+      running,
+      thermalKey: mode === "Koelen" ? keys.cooling : keys.heat,
+      schematic: buildHeatPumpSchematicModel(title, keys, accent, mode, defrostActive, failures, running),
+    };
+  }
 
-    return `
-      <section class="oq-helper-panel oq-helper-panel--flush">
-        <div class="oq-overview-board oq-overview-board--${escapeHtml(state.overviewTheme)}">
-          <div class="oq-overview-head">
-          <div>
-            <p class="oq-helper-label">Energie</p>
-            <h2 class="oq-helper-section-title">Verbruik en rendement</h2>
-            <p class="oq-helper-section-copy">Bekijk hier verbruik, warmte of koeling en rendement voor nu, vandaag en cumulatief.</p>
-          </div>
-          </div>
-          <section class="oq-overview-energy oq-overview-energy--solo">
-            <div class="${escapeHtml(gridClassName)}">
-              ${renderedColumns.join("")}
-            </div>
-          </section>
-        </div>
-      </section>
-    `;
+  function renderHeatPumpPanelTitle(title, layoutAction = null) {
+    return `<h3>${escapeHtml(title)}</h3>${layoutAction ? `<button class="oq-overview-hp-card-action" type="button" data-oq-action="select-hp-layout" data-hp-layout="${escapeHtml(layoutAction.layout)}">${renderMagnifyActionIcon(layoutAction.layout === "equal" ? "minus" : "plus")}<span>${escapeHtml(layoutAction.label)}</span></button>` : ""}`;
+  }
+
+  function renderHeatPumpPanelStatus(mode, running, warningActive, failureText) {
+    return `<div class="oq-overview-hp-status">${renderHpPanelStatusRow(mode, running, warningActive, failureText)}</div>`;
+  }
+
+  function isSystemInStandby() {
+    return getEntityStateText("controlModeLabel", "").toLowerCase().includes("standby");
+  }
+
+  function formatHeatPumpSummaryMode(mode, defrostActive) {
+    if (defrostActive) {
+      return "ontdooit";
+    }
+    if (mode === "Verwarmen") {
+      return "verwarmt";
+    }
+    if (mode === "Koelen") {
+      return "koelt";
+    }
+    if (mode === "Stand-by") {
+      return "stand-by";
+    }
+    return "onbekend";
+  }
+
+  function renderHeatPumpSummary(heatPumpPanels) {
+    if (!Array.isArray(heatPumpPanels) || heatPumpPanels.length === 0) {
+      return "";
+    }
+    return `<p class="oq-overview-hp-summary">${escapeHtml(heatPumpPanels.map((panel) => `${panel.title} ${formatHeatPumpSummaryMode(formatWorkingMode(getEntityStateText(panel.keys.mode, "Unknown")), isEntityActive(panel.keys.defrost))}`).join(", "))}</p>`;
   }
 
   function formatComponentPositionLabel(key) {

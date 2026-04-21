@@ -3505,6 +3505,30 @@ body.oq-page-light {
   background: linear-gradient(180deg, #0ea5e9, #67e8f9);
 }
 
+.oq-overview-temps-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.oq-overview-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--oq-overview-row-border);
+  color: var(--oq-overview-chip-ink);
+}
+
+.oq-overview-row:last-child {
+  border-bottom: none;
+}
+
+.oq-overview-row strong {
+  color: var(--oq-overview-title);
+}
+
+/* --- css/src/30-energy.css --- */
 .oq-overview-energy {
   margin-top: 16px;
 }
@@ -3698,29 +3722,7 @@ body.oq-page-light {
   text-align: right;
 }
 
-.oq-overview-temps-list {
-  display: grid;
-  gap: 10px;
-  margin-top: 14px;
-}
-
-.oq-overview-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 13px 0;
-  border-bottom: 1px solid var(--oq-overview-row-border);
-  color: var(--oq-overview-chip-ink);
-}
-
-.oq-overview-row:last-child {
-  border-bottom: none;
-}
-
-.oq-overview-row strong {
-  color: var(--oq-overview-title);
-}
-
+/* --- css/src/40-heatpump.css --- */
 .oq-overview-hp-tools {
   display: block;
   margin-top: 18px;

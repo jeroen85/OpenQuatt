@@ -3585,7 +3585,145 @@
     `;
   }
 
-/* --- js/src/10-settings-quickstart.js --- */
+/* --- js/src/05-app-shared.js --- */
+  function renderAppSummary() {
+    const parts = [];
+    parts.push(isCurveMode() ? "Stooklijn" : "Power House");
+    const profile = String(getEntityValue(isCurveMode() ? "curveControlProfile" : "phResponseProfile") || "").trim();
+    if (profile) {
+      parts.push(`profiel ${profile}`);
+    }
+    const flowMode = String(getEntityValue("flowControlMode") || "").trim();
+    if (flowMode) {
+      parts.push(`flow ${flowMode === "Manual PWM" ? "handmatig" : "setpoint"}`);
+    }
+    if (flowMode === "Manual PWM" && hasEntity("manualIpwm")) {
+      parts.push(`iPWM ${formatValue("manualIpwm")}`);
+    } else if (hasEntity("flowSetpoint")) {
+      parts.push(`flow ${formatValue("flowSetpoint")}`);
+    }
+
+    if (hasEntity("dayMax")) {
+      parts.push(`dag ${formatValue("dayMax")}`);
+    }
+    if (hasEntity("silentMax")) {
+      parts.push(`silent ${formatValue("silentMax")}`);
+    }
+    if (hasEntity("maxWater")) {
+      parts.push(`max water ${formatValue("maxWater")}`);
+    }
+
+    return parts.filter(Boolean).join(", ") || "Quick Start-instellingen beschikbaar";
+  }
+
+  function hasEntity(key) {
+    const entity = state.entities[key];
+    return Boolean(entity && (entity.state !== undefined || entity.value !== undefined));
+  }
+
+  function getEntityStateText(key, fallback = "—") {
+    const entity = state.entities[key];
+    if (!entity) {
+      return fallback;
+    }
+    if (typeof entity.state === "string" && entity.state.trim() !== "") {
+      return entity.state;
+    }
+    const value = entity.value ?? entity.state;
+    if (value === undefined || value === null || value === "") {
+      return fallback;
+    }
+    if (typeof value === "boolean") {
+      return value ? "Aan" : "Uit";
+    }
+    if (typeof value === "number" && !Number.isNaN(value)) {
+      return entity.uom ? `${value} ${entity.uom}` : String(value);
+    }
+    return String(value);
+  }
+
+  function getEntityNumericValue(key) {
+    const value = Number(getEntityValue(key));
+    return Number.isNaN(value) ? NaN : value;
+  }
+
+  function formatOverviewStatValue(key) {
+    const entity = state.entities[key];
+    if (!entity) {
+      return "—";
+    }
+    const numeric = getEntityNumericValue(key);
+    if (Number.isNaN(numeric)) {
+      return getEntityStateText(key);
+    }
+    const decimals = key.toLowerCase().includes("cop") ? 1 : 0;
+    return formatNumericState(numeric, decimals, entity.uom || "");
+  }
+
+  function isEntityActive(key) {
+    const entity = state.entities[key];
+    if (!entity) {
+      return false;
+    }
+    if (typeof entity.value === "boolean") {
+      return entity.value;
+    }
+    const raw = String(entity.state ?? entity.value ?? "").toLowerCase();
+    return raw === "on" || raw === "true" || raw === "1";
+  }
+
+  function renderAppNav() {
+    return `
+      <div class="oq-helper-app-nav">
+        ${APP_VIEWS.map((view) => `
+          <button
+            class="oq-helper-app-tab ${state.appView === view.id ? "is-active" : ""}"
+            type="button"
+            data-oq-action="select-view"
+            data-view-id="${escapeHtml(view.id)}"
+          >
+            <span>${escapeHtml(view.label)}</span>
+            ${view.id === QUICK_START_VIEW && state.complete ? `
+              <svg class="oq-helper-app-tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z" />
+              </svg>
+            ` : ""}
+          </button>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  function getAppViewLabel(view = state.appView) {
+    return APP_VIEWS.find((item) => item.id === view)?.label || "OpenQuatt";
+  }
+
+  function syncDocumentTitle() {
+    if (typeof document === "undefined") {
+      return;
+    }
+    if (state.nativeOpen) {
+      document.title = "ESPHome fallback • OpenQuatt";
+      return;
+    }
+    const viewLabel = getAppViewLabel();
+    document.title = `${viewLabel} • OpenQuatt`;
+  }
+
+  function syncDocumentTheme() {
+    if (typeof document === "undefined") {
+      return;
+    }
+    const isDark = state.overviewTheme === "dark";
+    document.documentElement.classList.toggle("oq-page-dark", isDark);
+    document.documentElement.classList.toggle("oq-page-light", !isDark);
+    if (document.body) {
+      document.body.classList.toggle("oq-page-dark", isDark);
+      document.body.classList.toggle("oq-page-light", !isDark);
+    }
+  }
+
+/* --- js/src/10-settings.js --- */
   function renderSettingsInfoToggle(infoId, title, copy) {
     if (!copy) {
       return "";
@@ -4453,6 +4591,7 @@
     `;
   }
 
+/* --- js/src/15-quickstart.js --- */
   function renderStrategyWorkspace() {
     return `
       <section class="oq-helper-panel">
@@ -4738,143 +4877,6 @@
         </div>
       </div>
     `;
-  }
-
-  function renderAppSummary() {
-    const parts = [];
-    parts.push(isCurveMode() ? "Stooklijn" : "Power House");
-    const profile = String(getEntityValue(isCurveMode() ? "curveControlProfile" : "phResponseProfile") || "").trim();
-    if (profile) {
-      parts.push(`profiel ${profile}`);
-    }
-    const flowMode = String(getEntityValue("flowControlMode") || "").trim();
-    if (flowMode) {
-      parts.push(`flow ${flowMode === "Manual PWM" ? "handmatig" : "setpoint"}`);
-    }
-    if (flowMode === "Manual PWM" && hasEntity("manualIpwm")) {
-      parts.push(`iPWM ${formatValue("manualIpwm")}`);
-    } else if (hasEntity("flowSetpoint")) {
-      parts.push(`flow ${formatValue("flowSetpoint")}`);
-    }
-
-    if (hasEntity("dayMax")) {
-      parts.push(`dag ${formatValue("dayMax")}`);
-    }
-    if (hasEntity("silentMax")) {
-      parts.push(`silent ${formatValue("silentMax")}`);
-    }
-    if (hasEntity("maxWater")) {
-      parts.push(`max water ${formatValue("maxWater")}`);
-    }
-
-    return parts.filter(Boolean).join(", ") || "Quick Start-instellingen beschikbaar";
-  }
-
-  function hasEntity(key) {
-    const entity = state.entities[key];
-    return Boolean(entity && (entity.state !== undefined || entity.value !== undefined));
-  }
-
-  function getEntityStateText(key, fallback = "—") {
-    const entity = state.entities[key];
-    if (!entity) {
-      return fallback;
-    }
-    if (typeof entity.state === "string" && entity.state.trim() !== "") {
-      return entity.state;
-    }
-    const value = entity.value ?? entity.state;
-    if (value === undefined || value === null || value === "") {
-      return fallback;
-    }
-    if (typeof value === "boolean") {
-      return value ? "Aan" : "Uit";
-    }
-    if (typeof value === "number" && !Number.isNaN(value)) {
-      return entity.uom ? `${value} ${entity.uom}` : String(value);
-    }
-    return String(value);
-  }
-
-  function getEntityNumericValue(key) {
-    const value = Number(getEntityValue(key));
-    return Number.isNaN(value) ? NaN : value;
-  }
-
-  function formatOverviewStatValue(key) {
-    const entity = state.entities[key];
-    if (!entity) {
-      return "—";
-    }
-    const numeric = getEntityNumericValue(key);
-    if (Number.isNaN(numeric)) {
-      return getEntityStateText(key);
-    }
-    const decimals = key.toLowerCase().includes("cop") ? 1 : 0;
-    return formatNumericState(numeric, decimals, entity.uom || "");
-  }
-
-  function isEntityActive(key) {
-    const entity = state.entities[key];
-    if (!entity) {
-      return false;
-    }
-    if (typeof entity.value === "boolean") {
-      return entity.value;
-    }
-    const raw = String(entity.state ?? entity.value ?? "").toLowerCase();
-    return raw === "on" || raw === "true" || raw === "1";
-  }
-
-  function renderAppNav() {
-    return `
-      <div class="oq-helper-app-nav">
-        ${APP_VIEWS.map((view) => `
-          <button
-            class="oq-helper-app-tab ${state.appView === view.id ? "is-active" : ""}"
-            type="button"
-            data-oq-action="select-view"
-            data-view-id="${escapeHtml(view.id)}"
-          >
-            <span>${escapeHtml(view.label)}</span>
-            ${view.id === QUICK_START_VIEW && state.complete ? `
-              <svg class="oq-helper-app-tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z" />
-              </svg>
-            ` : ""}
-          </button>
-        `).join("")}
-      </div>
-    `;
-  }
-
-  function getAppViewLabel(view = state.appView) {
-    return APP_VIEWS.find((item) => item.id === view)?.label || "OpenQuatt";
-  }
-
-  function syncDocumentTitle() {
-    if (typeof document === "undefined") {
-      return;
-    }
-    if (state.nativeOpen) {
-      document.title = "ESPHome fallback • OpenQuatt";
-      return;
-    }
-    const viewLabel = getAppViewLabel();
-    document.title = `${viewLabel} • OpenQuatt`;
-  }
-
-  function syncDocumentTheme() {
-    if (typeof document === "undefined") {
-      return;
-    }
-    const isDark = state.overviewTheme === "dark";
-    document.documentElement.classList.toggle("oq-page-dark", isDark);
-    document.documentElement.classList.toggle("oq-page-light", !isDark);
-    if (document.body) {
-      document.body.classList.toggle("oq-page-dark", isDark);
-      document.body.classList.toggle("oq-page-light", !isDark);
-    }
   }
 
 /* --- js/src/20-overview.js --- */
@@ -5577,56 +5579,7 @@
     });
   }
 
-  function getHeatPumpRuntimeModel(title, keys, accent) {
-    const mode = formatWorkingMode(getEntityStateText(keys.mode, "Unknown"));
-    const defrostActive = isEntityActive(keys.defrost);
-    const failures = formatFailures(getEntityStateText(keys.failures, "None"));
-    const running = mode === "Verwarmen" || mode === "Koelen" || defrostActive;
-    return {
-      mode,
-      defrostActive,
-      failures,
-      running,
-      thermalKey: mode === "Koelen" ? keys.cooling : keys.heat,
-      schematic: buildHeatPumpSchematicModel(title, keys, accent, mode, defrostActive, failures, running),
-    };
-  }
-
-  function renderHeatPumpPanelTitle(title, layoutAction = null) {
-    return `<h3>${escapeHtml(title)}</h3>${layoutAction ? `<button class="oq-overview-hp-card-action" type="button" data-oq-action="select-hp-layout" data-hp-layout="${escapeHtml(layoutAction.layout)}">${renderMagnifyActionIcon(layoutAction.layout === "equal" ? "minus" : "plus")}<span>${escapeHtml(layoutAction.label)}</span></button>` : ""}`;
-  }
-
-  function renderHeatPumpPanelStatus(mode, running, warningActive, failureText) {
-    return `<div class="oq-overview-hp-status">${renderHpPanelStatusRow(mode, running, warningActive, failureText)}</div>`;
-  }
-
-  function isSystemInStandby() {
-    return getEntityStateText("controlModeLabel", "").toLowerCase().includes("standby");
-  }
-
-  function formatHeatPumpSummaryMode(mode, defrostActive) {
-    if (defrostActive) {
-      return "ontdooit";
-    }
-    if (mode === "Verwarmen") {
-      return "verwarmt";
-    }
-    if (mode === "Koelen") {
-      return "koelt";
-    }
-    if (mode === "Stand-by") {
-      return "stand-by";
-    }
-    return "onbekend";
-  }
-
-  function renderHeatPumpSummary(heatPumpPanels) {
-    if (!Array.isArray(heatPumpPanels) || heatPumpPanels.length === 0) {
-      return "";
-    }
-    return `<p class="oq-overview-hp-summary">${escapeHtml(heatPumpPanels.map((panel) => `${panel.title} ${formatHeatPumpSummaryMode(formatWorkingMode(getEntityStateText(panel.keys.mode, "Unknown")), isEntityActive(panel.keys.defrost))}`).join(", "))}</p>`;
-  }
-
+/* --- js/src/30-energy.js --- */
   function renderOverviewEnergyRow([label, key]) {
     if (!hasEntity(key)) {
       return "";
@@ -5688,7 +5641,6 @@
     `;
   }
 
-/* --- js/src/30-energy-heatpump.js --- */
   function renderEnergyView() {
     const renderedColumns = OVERVIEW_ENERGY_COLUMN_CONFIGS.map(renderOverviewEnergyColumn).filter(Boolean);
     const gridClassName = [
@@ -5715,6 +5667,57 @@
         </div>
       </section>
     `;
+  }
+
+/* --- js/src/40-heatpump.js --- */
+  function getHeatPumpRuntimeModel(title, keys, accent) {
+    const mode = formatWorkingMode(getEntityStateText(keys.mode, "Unknown"));
+    const defrostActive = isEntityActive(keys.defrost);
+    const failures = formatFailures(getEntityStateText(keys.failures, "None"));
+    const running = mode === "Verwarmen" || mode === "Koelen" || defrostActive;
+    return {
+      mode,
+      defrostActive,
+      failures,
+      running,
+      thermalKey: mode === "Koelen" ? keys.cooling : keys.heat,
+      schematic: buildHeatPumpSchematicModel(title, keys, accent, mode, defrostActive, failures, running),
+    };
+  }
+
+  function renderHeatPumpPanelTitle(title, layoutAction = null) {
+    return `<h3>${escapeHtml(title)}</h3>${layoutAction ? `<button class="oq-overview-hp-card-action" type="button" data-oq-action="select-hp-layout" data-hp-layout="${escapeHtml(layoutAction.layout)}">${renderMagnifyActionIcon(layoutAction.layout === "equal" ? "minus" : "plus")}<span>${escapeHtml(layoutAction.label)}</span></button>` : ""}`;
+  }
+
+  function renderHeatPumpPanelStatus(mode, running, warningActive, failureText) {
+    return `<div class="oq-overview-hp-status">${renderHpPanelStatusRow(mode, running, warningActive, failureText)}</div>`;
+  }
+
+  function isSystemInStandby() {
+    return getEntityStateText("controlModeLabel", "").toLowerCase().includes("standby");
+  }
+
+  function formatHeatPumpSummaryMode(mode, defrostActive) {
+    if (defrostActive) {
+      return "ontdooit";
+    }
+    if (mode === "Verwarmen") {
+      return "verwarmt";
+    }
+    if (mode === "Koelen") {
+      return "koelt";
+    }
+    if (mode === "Stand-by") {
+      return "stand-by";
+    }
+    return "onbekend";
+  }
+
+  function renderHeatPumpSummary(heatPumpPanels) {
+    if (!Array.isArray(heatPumpPanels) || heatPumpPanels.length === 0) {
+      return "";
+    }
+    return `<p class="oq-overview-hp-summary">${escapeHtml(heatPumpPanels.map((panel) => `${panel.title} ${formatHeatPumpSummaryMode(formatWorkingMode(getEntityStateText(panel.keys.mode, "Unknown")), isEntityActive(panel.keys.defrost))}`).join(", "))}</p>`;
   }
 
   function formatComponentPositionLabel(key) {

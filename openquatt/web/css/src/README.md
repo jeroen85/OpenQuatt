@@ -3,7 +3,9 @@
 Current split:
 - `00-base.css`: app shell, helper primitives, native surface, modal and shared controls
 - `10-settings.css`: settings and form-specific styling
-- `20-overview.css`: overview, energy and heat pump styling
+- `20-overview.css`: overview summary, control and temperature styling
+- `30-energy.css`: energy board styling
+- `40-heatpump.css`: heat pump cards, schematic and tooltips
 - `90-responsive.css`: responsive overrides and compact breakpoints
 
 The deployed/runtime file remains:
