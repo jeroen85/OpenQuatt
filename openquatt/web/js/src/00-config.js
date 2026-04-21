@@ -107,6 +107,7 @@
     strategy: { domain: "select", name: "Heating Control Mode" },
     openquattEnabled: { domain: "switch", name: "OpenQuatt Enabled", optional: true },
     manualCoolingEnable: { domain: "switch", name: "Manual Cooling Enable", optional: true },
+    cicCompatibilityMode: { domain: "switch", name: "CiC Compatibility Mode", optional: true },
     silentModeOverride: { domain: "select", name: "Silent Mode Override", optional: true },
     coolingEnableSelected: { domain: "binary_sensor", name: "Cooling Enable (Selected)", optional: true },
     coolingRequestActive: { domain: "binary_sensor", name: "Cooling Request Active", optional: true },
@@ -338,6 +339,7 @@
   ];
   const LIMIT_KEYS = ["dayMax", "silentMax", "maxWater"];
   const FLOW_SETTING_KEYS = ["flowControlMode", "flowSetpoint", "manualIpwm"];
+  const CIC_COMPATIBILITY_KEYS = ["cicCompatibilityMode"];
   const COOLING_SETTING_KEYS = [
     "coolingWithoutDewPointMode",
     "coolingGuardMode",
@@ -543,6 +545,7 @@
     "openquattEnabled",
     "manualCoolingEnable",
     "silentModeOverride",
+    ...CIC_COMPATIBILITY_KEYS,
     ...FLOW_SETTING_KEYS,
     ...COOLING_SETTING_KEYS,
     ...LIMIT_KEYS,
@@ -556,4 +559,3 @@
   const FLOW_OFFSET_PX_PER_SEC = FLOW_DASH_CYCLE_PX / 1.7;
   const FAN_ROTATION_DEG_PER_SEC = 360 / 3.2;
   const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
-

@@ -265,6 +265,7 @@ Zie autotune als hulpmiddel, niet als automatische oplossing. Controleer eerst o
 
 Belangrijke instellingen en signalen:
 
+- `CiC Compatibility Mode`
 - `CIC - Enable polling`
 - `CIC - Feed URL`
 - `CIC - JSON Feed OK`
@@ -280,6 +281,8 @@ Belangrijke instellingen en signalen:
 - `Room Setpoint Effective Source`
 
 Dit is vaak de belangrijkste groep bij onverklaarbaar gedrag. Als de geselecteerde bron niet klopt, helpt fijnregelen vrijwel nooit.
+
+`CiC Compatibility Mode` is bedoeld voor de route `ODU -> OpenQuatt -> CiC`. Daarmee kan OpenQuatt read-only warmtepompdata terug aan de CiC aanbieden zodat Quatt Cloud en de app bruikbaar blijven. De modus staat standaard uit en accepteert geen writes vanuit de CiC.
 
 Voor `Outside Temperature Source` is `Auto` de aanbevolen optie. OpenQuatt kiest dan de laagste geldige bron uit de beschikbare buitenmetingen. Daarmee blijft de regeling robuust tegen een bron die tijdelijk te warm uitvalt door zon, stilstand of lokale opwarming.
 

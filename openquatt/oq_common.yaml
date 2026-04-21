@@ -127,12 +127,26 @@ uart:
     parity: EVEN
     rx_full_threshold: 1
     rx_timeout: 1
+  - id: cic_compat_uart_bus
+    tx_pin: ${cic_compat_uart_tx_pin}
+    rx_pin: ${cic_compat_uart_rx_pin}
+    baud_rate: 19200
+    data_bits: 8
+    stop_bits: 1
+    parity: EVEN
+    rx_full_threshold: 1
+    rx_timeout: 1
 
 modbus:
   - uart_id: uart_bus
     id: mod_bus
     flow_control_pin: ${uart_rts_pin}
     send_wait_time: 100ms
+  - uart_id: cic_compat_uart_bus
+    id: cic_compat_modbus
+    role: server
+    flow_control_pin: ${cic_compat_uart_rts_pin}
+    send_wait_time: 50ms
 
 # ==============================================================================
 # SHARED RUNTIME STATE

@@ -262,6 +262,7 @@
     });
     setEntity("switch", "OpenQuatt Enabled", { value: true, state: true });
     setEntity("switch", "Manual Cooling Enable", { value: false, state: false });
+    setEntity("switch", "CiC Compatibility Mode", { value: false, state: false });
     setEntity("select", "Silent Mode Override", {
       value: "Schedule",
       state: "Schedule",

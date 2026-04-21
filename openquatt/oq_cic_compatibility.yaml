@@ -1,0 +1,32 @@
+# ==============================================================================
+# OpenQuatt - CiC Compatibility Mode
+# ==============================================================================
+#
+# Goal:
+#   Expose a read-only, CiC-facing Modbus compatibility layer so OpenQuatt can
+#   keep Quatt app/cloud telemetry alive via `ODU -> OpenQuatt -> CiC`.
+#
+# Notes:
+#   - This mode is intentionally read-only; no CiC writes are mapped back into
+#     OpenQuatt control entities.
+#   - Default state is OFF. When disabled, the compatibility register map stays
+#     inert and only returns empty/default values.
+#
+# ==============================================================================
+
+globals:
+  - id: cic_compatibility_last_request_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
+switch:
+  - platform: template
+    id: cic_compatibility_enable
+    name: "CiC Compatibility Mode"
+    icon: mdi:transit-connection-variant
+    entity_category: config
+    optimistic: true
+    restore_mode: ${oq_cic_compat_restore_mode_default}
+    web_server:
+      sorting_group_id: oq_cic_compatibility

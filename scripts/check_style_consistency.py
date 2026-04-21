@@ -83,6 +83,8 @@ STRICT_TOP_LEVEL_ORDER_RULES = {
         "oq_boiler_control",
         "oq_energy",
         "oq_cic",
+        "oq_cic_compatibility",
+        "oq_cic_compatibility_hp1",
         "oq_ha_inputs",
         "oq_local_sensors",
         "oq_sensor_sources",
@@ -106,6 +108,7 @@ STRICT_TOP_LEVEL_ORDER_RULES = {
     ),
     "openquatt/topology/oq_topology_packages_duo.yaml": (
         "heatpump2",
+        "oq_cic_compatibility_hp2",
     ),
     "openquatt/topology/oq_topology_single.yaml": (
         "secondary_hp_id",
@@ -158,6 +161,7 @@ SUBSTITUTION_SECTION_ORDER_RULES = {
         "FLOW AUTOTUNE",
         "BOILER CONTROL",
         "CIC FEED",
+        "CIC COMPATIBILITY",
         "HA INPUT ENTITY MAPPING",
         "HP IO (MODBUS POLLING)",
     ),

@@ -4,3 +4,9 @@ heatpump2: !include
     hp_id: "hp2"
     prefix: "HP2 - "
     device_address: 0x02
+oq_cic_compatibility_hp2: !include
+  file: ../oq_cic_compatibility_server.yaml
+  vars:
+    cic_compat_hp_id: "hp2"
+    cic_compat_label: "HP2"
+    cic_compat_device_address: "${cic_compat_modbus_address_hp2}"

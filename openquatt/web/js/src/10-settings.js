@@ -87,6 +87,42 @@
     return renderSettingsFieldCard(key, title, copy, `<label class="oq-settings-control oq-settings-control--select"><select class="oq-helper-select" data-oq-field="${escapeHtml(key)}" ${state.loadingEntities ? "disabled" : ""}>${options.map((option) => `<option value="${escapeHtml(option)}" ${option === value ? "selected" : ""}>${escapeHtml(formatSettingsOptionLabel(option))}</option>`).join("")}</select><span class="oq-settings-select-caret" aria-hidden="true"></span></label>`, className);
   }
 
+  function renderSettingsSwitchField(key, title, copy, enabledCopy = "", disabledCopy = "", className = "") {
+    if (!hasEntity(key)) {
+      return "";
+    }
+
+    const enabled = Boolean(getEntityValue(key));
+    const busy = state.loadingEntities || state.busyAction === `switch-${key}`;
+    const renderToggleCard = (label, active, targetState, detail) => `
+      <button
+        class="oq-settings-choice-card${active ? " is-active" : ""}"
+        type="button"
+        data-oq-action="toggle-overview-control"
+        data-control-key="${escapeHtml(key)}"
+        data-control-state="${escapeHtml(targetState)}"
+        aria-pressed="${active ? "true" : "false"}"
+        ${busy ? "disabled" : ""}
+      >
+        <span class="oq-settings-choice-title">${escapeHtml(label)}</span>
+        ${detail ? `<span class="oq-settings-choice-copy">${escapeHtml(detail)}</span>` : ""}
+      </button>
+    `;
+
+    return renderSettingsFieldCard(
+      key,
+      title,
+      copy,
+      `
+        <div class="oq-settings-choice-grid">
+          ${renderToggleCard("Uit", !enabled, "off", disabledCopy)}
+          ${renderToggleCard("Aan", enabled, "on", enabledCopy)}
+        </div>
+      `,
+      className,
+    );
+  }
+
   function renderSettingsOptionCardsField(key, title, copy, descriptions, className = "") {
     if (!hasEntity(key)) {
       return "";
@@ -671,6 +707,29 @@
     );
   }
 
+  function renderSettingsCiCCompatibilitySection() {
+    if (!hasEntity("cicCompatibilityMode")) {
+      return "";
+    }
+
+    return renderSettingsSection(
+      "Integratie",
+      "CiC Compatibility Mode",
+      "Zet dit aan als je de Quatt app wilt blijven gebruiken terwijl OpenQuatt tussen de warmtepomp en de CiC zit.",
+      `
+        <div class="oq-settings-grid">
+          ${renderSettingsSwitchField(
+            "cicCompatibilityMode",
+            "Quatt app-verbinding via CiC",
+            "Zet dit aan als je wilt dat OpenQuatt gegevens blijft doorgeven aan de CiC voor de Quatt app. Standaard staat dit uit.",
+            "OpenQuatt houdt de gegevensstroom naar de CiC in stand, zodat de Quatt app kan blijven werken.",
+            "OpenQuatt geeft geen gegevens door aan de CiC voor de Quatt app."
+          )}
+        </div>
+      `,
+    );
+  }
+
   function renderSettingsCompressorSection() {
     const hpGroups = [
       renderSettingsHeatPumpLimiterCard("HP1", "hp1ExcludedA", "hp1ExcludedB"),
@@ -864,4 +923,3 @@
       </div>
     `;
   }
-
