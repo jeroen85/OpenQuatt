@@ -573,7 +573,8 @@ interval:
           const bool time_valid = now_time.is_valid();
           const auto openquatt_resume_at = id(oq_openquatt_resume_at).state_as_esptime();
           const bool openquatt_resume_scheduled =
-              openquatt_resume_at.is_valid() && openquatt_resume_at.year >= 2024;
+              openquatt_resume_at.year >= 2024 && openquatt_resume_at.fields_in_range(false, false) &&
+              openquatt_resume_at.timestamp != -1;
 
           if (!id(oq_enabled).state && time_valid && openquatt_resume_scheduled && now_time >= openquatt_resume_at) {
             id(oq_enabled).turn_on();
