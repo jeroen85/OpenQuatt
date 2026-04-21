@@ -470,6 +470,74 @@
     "hp2Eev",
     "hp2FourWay",
   ];
+  const OVERVIEW_ENERGY_COLUMN_CONFIGS = [
+    {
+      label: "Nu",
+      tone: "blue",
+      categories: [
+        {
+          title: "Verwarmen",
+          tone: "orange",
+          groups: [
+            { title: "Warmtepomp", rows: [["Elektrisch vermogen", "heatingPowerInput"], ["Warmteafgifte", "totalHeat"], ["COP", "totalCop"]] },
+            { title: "CV-ketel", rows: [["Warmteafgifte", "boilerHeatPower"]] },
+            { title: "Systeem", rows: [["Warmteafgifte", "systemHeatPower"]] },
+          ],
+        },
+        {
+          title: "Koelen",
+          tone: "blue",
+          groups: [
+            { title: "Warmtepomp", rows: [["Elektrisch vermogen", "coolingPowerInput"], ["Koelafgifte", "totalCoolingPower"], ["COP (EER)", "totalEer"]] },
+          ],
+        },
+      ],
+    },
+    {
+      label: "Vandaag",
+      tone: "orange",
+      categories: [
+        {
+          title: "Verwarmen",
+          tone: "orange",
+          groups: [
+            { title: "Warmtepomp", rows: [["Elektriciteit", "heatingElectricalEnergyDaily"], ["Warmte", "heatpumpThermalEnergyDaily"], ["COP", "heatpumpCopDaily"]] },
+            { title: "CV-ketel", rows: [["Warmte", "boilerThermalEnergyDaily"]] },
+            { title: "Systeem", rows: [["Warmte", "systemThermalEnergyDaily"]] },
+          ],
+        },
+        {
+          title: "Koelen",
+          tone: "blue",
+          groups: [
+            { title: "Warmtepomp", rows: [["Elektriciteit", "coolingElectricalEnergyDaily"], ["Koeling", "heatpumpCoolingEnergyDaily"], ["COP (EER)", "heatpumpEerDaily"]] },
+          ],
+        },
+      ],
+    },
+    {
+      label: "Cumulatief",
+      tone: "green",
+      categories: [
+        {
+          title: "Verwarmen",
+          tone: "orange",
+          groups: [
+            { title: "Warmtepomp", rows: [["Elektriciteit", "heatingElectricalEnergyCumulative"], ["Warmte", "heatpumpThermalEnergyCumulative"], ["COP", "heatpumpCopCumulative"]] },
+            { title: "CV-ketel", rows: [["Warmte", "boilerThermalEnergyCumulative"]] },
+            { title: "Systeem", rows: [["Warmte", "systemThermalEnergyCumulative"]] },
+          ],
+        },
+        {
+          title: "Koelen",
+          tone: "blue",
+          groups: [
+            { title: "Warmtepomp", rows: [["Elektriciteit", "coolingElectricalEnergyCumulative"], ["Koeling", "heatpumpCoolingEnergyCumulative"], ["COP (EER)", "heatpumpEerCumulative"]] },
+          ],
+        },
+      ],
+    },
+  ];
   const SETTINGS_KEYS = [
     "strategy",
     "openquattEnabled",
@@ -2642,6 +2710,14 @@
       state.settingsInfoOpen,
       ...SETTINGS_KEYS.map(getEntitySignatureFragment),
     ].join("|");
+  }
+
+  function getRenderSignature(value) {
+    try {
+      return JSON.stringify(value);
+    } catch (error) {
+      return String(value ?? "");
+    }
   }
 
   function getOverviewControlsRenderSignature() {
@@ -4968,19 +5044,9 @@
     }
   }
 
-  function renderOverviewStatCard(key, label, tone, note) {
+  function renderOverviewStatCardMarkup({ label, value, tone, note, status = false }) {
     return `
-      <article class="oq-overview-stat oq-overview-stat--${escapeHtml(tone)}">
-        <p>${escapeHtml(label)}</p>
-        <strong>${escapeHtml(formatOverviewStatValue(key))}</strong>
-        <span>${escapeHtml(note)}</span>
-      </article>
-    `;
-  }
-
-  function renderOverviewStatCardValue(label, value, tone, note) {
-    return `
-      <article class="oq-overview-stat oq-overview-stat--${escapeHtml(tone)}">
+      <article class="oq-overview-stat oq-overview-stat--${escapeHtml(tone)}${status ? " oq-overview-stat--status" : ""}">
         <p>${escapeHtml(label)}</p>
         <strong>${escapeHtml(value)}</strong>
         <span>${escapeHtml(note)}</span>
@@ -4988,13 +5054,29 @@
     `;
   }
 
-  function renderOverviewStatusStatCard(label, value, tone, note) {
+  function renderOverviewStatCards(cards, status = false) {
+    return cards.map((card) => renderOverviewStatCardMarkup({
+      ...card,
+      value: Object.prototype.hasOwnProperty.call(card, "key") ? formatOverviewStatValue(card.key) : card.value,
+      status,
+    })).join("");
+  }
+
+  function renderOverviewSectionHead(title) {
     return `
-      <article class="oq-overview-stat oq-overview-stat--${escapeHtml(tone)} oq-overview-stat--status">
-        <p>${escapeHtml(label)}</p>
-        <strong>${escapeHtml(value)}</strong>
-        <span>${escapeHtml(note)}</span>
-      </article>
+      <div class="oq-overview-sectionhead">
+        <h3>${escapeHtml(title)}</h3>
+      </div>
+    `;
+  }
+
+  function renderOverviewShell({ className, title, copy, body, signature = "" }) {
+    const signatureAttr = signature ? ` data-render-signature="${escapeHtml(signature)}"` : "";
+    return `
+      <section class="${escapeHtml(className)}"${signatureAttr}>
+        ${title ? `<div class="oq-overview-system-copy"><h3>${escapeHtml(title)}</h3><p>${escapeHtml(copy)}</p></div>` : ""}
+        ${body}
+      </section>
     `;
   }
 
@@ -5044,37 +5126,10 @@
     if (!headStatus) {
       return;
     }
-
-    let warningNode = headStatus.querySelector('[data-oq-bind="panel-warning"]');
-    if (warningActive) {
-      if (!warningNode) {
-        headStatus.insertAdjacentHTML("afterbegin", renderHpPanelWarningChip(failureText));
-        warningNode = headStatus.querySelector('[data-oq-bind="panel-warning"]');
-      }
-      if (warningNode) {
-        warningNode.setAttribute("aria-label", `Waarschuwing: ${failureText}`);
-        const warningTooltip = warningNode.querySelector(".oq-overview-chip-warning-tooltip");
-        if (warningTooltip && warningTooltip.textContent !== failureText) {
-          warningTooltip.textContent = failureText;
-        }
-      }
-    } else if (warningNode) {
-      warningNode.remove();
-    }
-
-    const statusTone = running ? "active" : "neutral";
-    const statusLabel = getHeatPumpPanelStatusLabel(mode, running);
-    let statusNode = headStatus.querySelector('[data-oq-bind="panel-status"]');
-    if (!statusNode) {
-      headStatus.insertAdjacentHTML("beforeend", renderHpPanelStatusChip(mode, running));
-      statusNode = headStatus.querySelector('[data-oq-bind="panel-status"]');
-    }
-    if (statusNode) {
-      statusNode.classList.remove("oq-overview-chip--active", "oq-overview-chip--neutral");
-      statusNode.classList.add(`oq-overview-chip--${statusTone}`);
-      if (statusNode.textContent !== statusLabel) {
-        statusNode.textContent = statusLabel;
-      }
+    const signature = getRenderSignature({ mode, running, warningActive, failureText });
+    if (headStatus.dataset.renderSignature !== signature) {
+      setInnerHtmlIfChanged(headStatus, renderHpPanelStatusRow(mode, running, warningActive, failureText));
+      headStatus.dataset.renderSignature = signature;
     }
   }
 
@@ -5122,41 +5177,20 @@
   }
 
   function getOverviewOutsideTempKey() {
-    if (hasEntity("outsideTempSelected")) {
-      return "outsideTempSelected";
-    }
-    if (hasEntity("hp1OutsideTemp")) {
-      return "hp1OutsideTemp";
-    }
-    if (hasEntity("hp2OutsideTemp")) {
-      return "hp2OutsideTemp";
-    }
-    return "";
+    return ["outsideTempSelected", "hp1OutsideTemp", "hp2OutsideTemp"].find((key) => hasEntity(key)) || "";
   }
 
   function getOverviewReturnTempKey() {
-    if (hasEntity("hp1WaterIn")) {
-      return "hp1WaterIn";
-    }
-    if (hasEntity("hp2WaterIn")) {
-      return "hp2WaterIn";
-    }
-    return "";
+    return ["hp1WaterIn", "hp2WaterIn"].find((key) => hasEntity(key)) || "";
   }
 
   function isCoolingOverviewActive() {
     const modeLabel = getEntityStateText("controlModeLabel", "").toLowerCase();
-    if (modeLabel.includes("cm5") || modeLabel.includes("cooling") || modeLabel.includes("koeling")) {
-      return true;
-    }
-    return isEntityActive("coolingRequestActive");
+    return modeLabel.includes("cm5") || modeLabel.includes("cooling") || modeLabel.includes("koeling") || isEntityActive("coolingRequestActive");
   }
 
   function getOverviewStrategyLabel() {
-    if (isCoolingOverviewActive()) {
-      return "Koeling";
-    }
-    return isCurveMode() ? "Stooklijn" : "Power House";
+    return isCoolingOverviewActive() ? "Koeling" : isCurveMode() ? "Stooklijn" : "Power House";
   }
 
   function getPowerHouseRequestedPower() {
@@ -5240,10 +5274,7 @@
   }
 
   function getCoolingOverviewModel() {
-    const target = getEntityNumericValue("coolingSupplyTarget");
     const supply = getEntityNumericValue("supplyTemp");
-    const safeFloor = getEntityNumericValue("coolingEffectiveMinSupplyTemp");
-    const dewPoint = getEntityNumericValue("coolingDewPointSelected");
     const guardMode = getEntityStateText("coolingGuardMode", "");
     const fallbackNightMin = getEntityStateText("coolingFallbackNightMinOutdoorTemp", "—");
     const supplyError = getEntityNumericValue("coolingSupplyError");
@@ -5279,11 +5310,9 @@
       targetText: formatOverviewStatValue("coolingSupplyTarget"),
       supplyText: formatOverviewStatValue("supplyTemp"),
       safeFloorText: formatOverviewStatValue("coolingEffectiveMinSupplyTemp"),
-      dewPointText: formatOverviewStatValue("coolingDewPointSelected"),
       guardMode,
       fallbackNightMin,
       demandText: formatOverviewStatValue("coolingDemandRaw"),
-      deltaText: formatSignedTemperature(supplyError),
       statusTitle,
       statusCopy,
       permitted,
@@ -5292,90 +5321,74 @@
     };
   }
 
-  function renderPowerHouseOverviewCard() {
-    const model = getPowerHouseOverviewModel();
-
-    return `
-      <section class="oq-overview-system">
-        <div class="oq-overview-system-copy">
-          <h3>Vermogensbalans</h3>
-          <p>Power House laat zien waar de warmtevraag nu vandaan komt en of de warmtepomp dat kan volgen.</p>
-        </div>
-        <div class="oq-overview-hero">
-          <div class="oq-overview-hero-main">
-            <span class="oq-overview-focus-label">Gevraagd vermogen</span>
-            <strong>${escapeHtml(model.requestedText)}</strong>
-            <p>De warmtevraag waar Power House nu naartoe stuurt.</p>
-          </div>
-        </div>
-        <div class="oq-overview-metrics oq-overview-metrics--three-column">
-          ${renderOverviewMetricCard("Berekende huisvraag", model.houseText, "blue", "Op basis van woning en buitentemperatuur.")}
-          ${renderOverviewMetricCard("Kamercorrectie", model.correctionText, "orange", "Extra bijsturing rond setpoint.")}
-          ${renderOverviewMetricCard("Beschikbare warmtecapaciteit", model.capacityText, "sky", "Bij huidige buitentemperatuur.")}
-        </div>
-      </section>
-    `;
-  }
-
-  function renderCurveOverviewCard() {
-    const model = getCurveOverviewModel();
-
-    return `
-      <section class="oq-overview-system">
-        <div class="oq-overview-system-copy">
-          <h3>Stooklijnregeling</h3>
-          <p>De stooklijn laat zien op welke aanvoertemperatuur de regeling nu mikt en hoe dicht die al benaderd wordt.</p>
-        </div>
-        <div class="oq-overview-hero">
-          <div class="oq-overview-hero-main">
-            <span class="oq-overview-focus-label">Doelaanvoer</span>
-            <strong>${escapeHtml(model.targetText)}</strong>
-            <p>De aanvoertemperatuur waar de regeling nu naartoe werkt.</p>
-          </div>
-        </div>
-        <div class="oq-overview-metrics oq-overview-metrics--three-column">
-          ${renderOverviewMetricCard("Actuele aanvoertemperatuur", model.supplyText, "orange", "Wat nu wordt geleverd.")}
-          ${renderOverviewMetricCard("Afwijking doelaanvoer", model.deltaText, "blue", "Verschil met het doel.")}
-          ${renderOverviewMetricCard("Beschikbare warmtecapaciteit", model.capacityText, "sky", "Bij huidige buitentemperatuur.")}
-        </div>
-      </section>
-    `;
-  }
-
-  function renderCoolingOverviewCard() {
-    const model = getCoolingOverviewModel();
-    const floorLabel = model.guardMode.toLowerCase().includes("fallback") ? "Fallback ondergrens" : "Veilige aanvoergrens";
-    const floorCopy = model.guardMode.toLowerCase().includes("fallback")
-      ? `Conservatieve ondergrens zonder dauwpuntmeting. Nachtminimum: ${model.fallbackNightMin}.`
-      : "Dauwpunt plus veiligheidsmarge.";
-
-    return `
-      <section class="oq-overview-system">
-        <div class="oq-overview-system-copy">
-          <h3>Koelregeling</h3>
-          <p>Koeling laat zien op welke aanvoertemperatuur de regeling nu mikt en hoe dicht die bij de veilige grens zit.</p>
-        </div>
-        <div class="oq-overview-hero">
-          <div class="oq-overview-hero-main">
-            <span class="oq-overview-focus-label">Koeldoel</span>
-            <strong>${escapeHtml(model.targetText)}</strong>
-            <p>${escapeHtml(model.statusCopy)}</p>
-          </div>
-        </div>
-        <div class="oq-overview-metrics oq-overview-metrics--three-column">
-          ${renderOverviewMetricCard("Actuele aanvoertemperatuur", model.supplyText, "orange", "Wat nu door het systeem loopt.")}
-          ${renderOverviewMetricCard(floorLabel, model.safeFloorText, "blue", floorCopy)}
-          ${renderOverviewMetricCard("Koelvraag", model.demandText, "sky", "De huidige koelvraag van de regelaar.")}
-        </div>
-      </section>
-    `;
-  }
-
-  function renderOverviewStrategyPanel() {
+  function getOverviewStrategySectionModel() {
     if (isCoolingOverviewActive()) {
-      return renderCoolingOverviewCard();
+      const model = getCoolingOverviewModel();
+      const guardMode = model.guardMode.toLowerCase();
+      return {
+        title: "Koelregeling",
+        copy: "Koeling laat zien op welke aanvoertemperatuur de regeling nu mikt en hoe dicht die bij de veilige grens zit.",
+        focusLabel: "Koeldoel",
+        focusValue: model.targetText,
+        focusCopy: model.statusCopy,
+        metrics: [
+          { label: "Actuele aanvoertemperatuur", value: model.supplyText, tone: "orange", note: "Wat nu door het systeem loopt." },
+          { label: guardMode.includes("fallback") ? "Fallback ondergrens" : "Veilige aanvoergrens", value: model.safeFloorText, tone: "blue", note: guardMode.includes("fallback") ? `Conservatieve ondergrens zonder dauwpuntmeting. Nachtminimum: ${model.fallbackNightMin}.` : "Dauwpunt plus veiligheidsmarge." },
+          { label: "Koelvraag", value: model.demandText, tone: "sky", note: "De huidige koelvraag van de regelaar." },
+        ],
+      };
     }
-    return isCurveMode() ? renderCurveOverviewCard() : renderPowerHouseOverviewCard();
+
+    if (isCurveMode()) {
+      const model = getCurveOverviewModel();
+      return {
+        title: "Stooklijnregeling",
+        copy: "De stooklijn laat zien op welke aanvoertemperatuur de regeling nu mikt en hoe dicht die al benaderd wordt.",
+        focusLabel: "Doelaanvoer",
+        focusValue: model.targetText,
+        focusCopy: "De aanvoertemperatuur waar de regeling nu naartoe werkt.",
+        metrics: [
+          { label: "Actuele aanvoertemperatuur", value: model.supplyText, tone: "orange", note: "Wat nu wordt geleverd." },
+          { label: "Afwijking doelaanvoer", value: model.deltaText, tone: "blue", note: "Verschil met het doel." },
+          { label: "Beschikbare warmtecapaciteit", value: model.capacityText, tone: "sky", note: "Bij huidige buitentemperatuur." },
+        ],
+      };
+    }
+
+    const model = getPowerHouseOverviewModel();
+    return {
+      title: "Vermogensbalans",
+      copy: "Power House laat zien waar de warmtevraag nu vandaan komt en of de warmtepomp dat kan volgen.",
+      focusLabel: "Gevraagd vermogen",
+      focusValue: model.requestedText,
+      focusCopy: "De warmtevraag waar Power House nu naartoe stuurt.",
+      metrics: [
+        { label: "Berekende huisvraag", value: model.houseText, tone: "blue", note: "Op basis van woning en buitentemperatuur." },
+        { label: "Kamercorrectie", value: model.correctionText, tone: "orange", note: "Extra bijsturing rond setpoint." },
+        { label: "Beschikbare warmtecapaciteit", value: model.capacityText, tone: "sky", note: "Bij huidige buitentemperatuur." },
+      ],
+    };
+  }
+
+  function renderOverviewNarrativePanel(model) {
+    return renderOverviewShell({
+      className: "oq-overview-system",
+      title: model.title,
+      copy: model.copy,
+      signature: getRenderSignature(model),
+      body: `
+        <div class="oq-overview-hero">
+          <div class="oq-overview-hero-main">
+            <span class="oq-overview-focus-label">${escapeHtml(model.focusLabel)}</span>
+            <strong>${escapeHtml(model.focusValue)}</strong>
+            <p>${escapeHtml(model.focusCopy)}</p>
+          </div>
+        </div>
+        <div class="oq-overview-metrics oq-overview-metrics--three-column">
+          ${model.metrics.map((metric) => renderOverviewMetricCard(metric.label, metric.value, metric.tone, metric.note)).join("")}
+        </div>
+      `,
+    });
   }
 
   function getOverviewPrimarySignal() {
@@ -5472,36 +5485,37 @@
     };
   }
 
-  function renderOverviewStatusStack(strategyLabel, controlModeLabel) {
+  function getOverviewStatusCards(strategyLabel, controlModeLabel) {
     const primary = getOverviewPrimarySignal();
     const system = getOverviewSystemSignal();
+    return [
+      { label: "Strategie", value: strategyLabel, tone: "orange", note: "regelstrategie" },
+      { label: "Controlmode", value: controlModeLabel, tone: "orange", note: "actieve modus" },
+      { label: "Regeling", value: primary.value, tone: "orange", note: "wat OpenQuatt nu doet" },
+      { label: "Systeem", value: system.value, tone: "orange", note: "actieve randvoorwaarde" },
+    ];
+  }
+
+  function renderOverviewStatusPanel(strategyLabel, controlModeLabel) {
+    const cards = getOverviewStatusCards(strategyLabel, controlModeLabel);
     return `
-      <section class="oq-overview-statuspanel" aria-label="Systeemstatus">
-        <div class="oq-overview-sectionhead">
-          <h3>Systeemstatus</h3>
-        </div>
+      <section class="oq-overview-statuspanel" aria-label="Systeemstatus" data-render-signature="${escapeHtml(getRenderSignature(cards))}">
+        ${renderOverviewSectionHead("Systeemstatus")}
         <div class="oq-overview-statusgrid">
-          ${renderOverviewStatusStatCard("Strategie", strategyLabel, "orange", "regelstrategie")}
-          ${renderOverviewStatusStatCard("Controlmode", controlModeLabel, "orange", "actieve modus")}
-          ${renderOverviewStatusStatCard("Regeling", primary.value, "orange", "wat OpenQuatt nu doet")}
-          ${renderOverviewStatusStatCard("Systeem", system.value, "orange", "actieve randvoorwaarde")}
+          ${renderOverviewStatCards(cards, true)}
         </div>
       </section>
     `;
   }
 
-  function renderOverviewTopCards() {
+  function getOverviewTopCards() {
     const coolingActive = isCoolingOverviewActive();
-    const thermalLabel = coolingActive ? "Koelafgifte" : "Warmteafgifte";
-    const thermalKey = coolingActive ? "totalCoolingPower" : "totalHeat";
-    const efficiencyKey = coolingActive ? "totalEer" : "totalCop";
-    const efficiencyLabel = coolingActive ? "EER" : "COP";
-    return `
-      ${renderOverviewStatCard("totalPower", "Stroomverbruik", "blue", "hele systeem")}
-      ${renderOverviewStatCard(thermalKey, thermalLabel, "orange", "thermisch vermogen")}
-      ${renderOverviewStatCard(efficiencyKey, efficiencyLabel, "green", "rendement")}
-      ${renderOverviewStatCard("flowSelected", "Flow", "sky", "watercircuit")}
-    `;
+    return [
+      { key: "totalPower", label: "Stroomverbruik", tone: "blue", note: "hele systeem" },
+      { key: coolingActive ? "totalCoolingPower" : "totalHeat", label: coolingActive ? "Koelafgifte" : "Warmteafgifte", tone: "orange", note: "thermisch vermogen" },
+      { key: coolingActive ? "totalEer" : "totalCop", label: coolingActive ? "EER" : "COP", tone: "green", note: "rendement" },
+      { key: "flowSelected", label: "Flow", tone: "sky", note: "watercircuit" },
+    ];
   }
 
   function getOverviewControlCards() {
@@ -5548,62 +5562,16 @@
     }
 
     return [
-      {
-        key: "openquattEnabled",
-        label: "Openquatt regeling",
-        status: openquattEnabled ? "Actief" : "Tijdelijk uit",
-        copy: openquattEnabled
-          ? "Verwarmen en koelen worden automatisch geregeld."
-          : openquattResumeScheduled
-            ? "Verwarming en koeling zijn tijdelijk uitgeschakeld. Beveiligingen blijven actief."
-            : "Verwarming en koeling zijn uitgeschakeld. Beveiligingen blijven actief.",
-        tone: openquattEnabled ? "green" : "orange",
-        kind: "openquatt-control",
-        meta: openquattEnabled
-          ? []
-          : [
-              {
-                label: openquattResumeScheduled ? "Hervat automatisch" : "Hervatten",
-                value: openquattResumeScheduled ? formatOpenQuattResumeDateTime(openquattResumeAt, true) : "Handmatig",
-                tone: openquattResumeScheduled ? "orange" : "neutral",
-              },
-            ],
-      },
-      {
-        key: "manualCoolingEnable",
-        label: "Koeling",
-        status: coolingStatus,
-        copy: coolingCopy,
-        buttonLabel: manualCoolingEnabled ? "Zet uit" : "Zet aan",
-        nextState: manualCoolingEnabled ? "off" : "on",
-        tone: manualCoolingEnabled ? (coolingModeActive ? "blue" : "sky") : "neutral",
-      },
-      {
-        key: "silentModeOverride",
-        label: "Stille modus",
-        status: silentStatus,
-        copy: silentCopy,
-        tone: silentTone,
-        kind: "select",
-        selectedOption: silentModeOverride,
-        settingsAction: true,
-        options: [
-          { value: "Off", label: "Uit" },
-          { value: "On", label: "Aan" },
-          { value: "Schedule", label: "Schema" },
-        ],
-      },
+      { key: "openquattEnabled", label: "Openquatt regeling", status: openquattEnabled ? "Actief" : "Tijdelijk uit", copy: openquattEnabled ? "Verwarmen en koelen worden automatisch geregeld." : openquattResumeScheduled ? "Verwarming en koeling zijn tijdelijk uitgeschakeld. Beveiligingen blijven actief." : "Verwarming en koeling zijn uitgeschakeld. Beveiligingen blijven actief.", tone: openquattEnabled ? "green" : "orange", kind: "openquatt-control", meta: openquattEnabled ? [] : [{ label: openquattResumeScheduled ? "Hervat automatisch" : "Hervatten", value: openquattResumeScheduled ? formatOpenQuattResumeDateTime(openquattResumeAt, true) : "Handmatig", tone: openquattResumeScheduled ? "orange" : "neutral" }] },
+      { key: "manualCoolingEnable", label: "Koeling", status: coolingStatus, copy: coolingCopy, buttonLabel: manualCoolingEnabled ? "Zet uit" : "Zet aan", nextState: manualCoolingEnabled ? "off" : "on", tone: manualCoolingEnabled ? (coolingModeActive ? "blue" : "sky") : "neutral" },
+      { key: "silentModeOverride", label: "Stille modus", status: silentStatus, copy: silentCopy, tone: silentTone, kind: "select", selectedOption: silentModeOverride, settingsAction: true, options: [{ value: "Off", label: "Uit" }, { value: "On", label: "Aan" }, { value: "Schedule", label: "Schema" }] },
     ].filter((card) => hasEntity(card.key));
   }
 
-  function renderOverviewControlMeta(card) {
-    if (!Array.isArray(card.meta) || !card.meta.length) {
-      return "";
-    }
-
-    return `
+  function renderOverviewControlMeta(meta = []) {
+    return !meta.length ? "" : `
       <div class="oq-overview-controlpanel-meta">
-        ${card.meta.map((item) => `
+        ${meta.map((item) => `
           <div class="oq-overview-controlpanel-meta-item oq-overview-controlpanel-meta-item--${escapeHtml(item.tone || "neutral")}">
             <span>${escapeHtml(item.label)}</span>
             <strong>${escapeHtml(item.value)}</strong>
@@ -5613,79 +5581,60 @@
     `;
   }
 
-  function renderOverviewControlBody(card) {
+  function renderOverviewControlButton({ className, action, label, busy = false, attrs = "" }) {
+    return `
+      <button
+        class="${className}${busy ? " is-busy" : ""}"
+        type="button"
+        data-oq-action="${escapeHtml(action)}"
+        ${attrs}
+        ${state.busyAction ? "disabled" : ""}
+      >${escapeHtml(busy ? "Bezig..." : label)}</button>
+    `;
+  }
+
+  function renderOverviewControlActions(card) {
     if (card.kind === "openquatt-control") {
       const busy = state.busyAction === "openquatt-regulation";
-      if (isEntityActive("openquattEnabled")) {
-        return `
-          <div class="oq-overview-controlpanel-actions">
-            <button
-              class="oq-overview-controlpanel-toggle${busy ? " is-busy" : ""}"
-              type="button"
-              data-oq-action="open-openquatt-pause-modal"
-              ${state.busyAction ? "disabled" : ""}
-            >${escapeHtml(busy ? "Bezig..." : "Tijdelijk uitschakelen")}</button>
+      return isEntityActive("openquattEnabled")
+        ? `<div class="oq-overview-controlpanel-actions">${renderOverviewControlButton({ className: "oq-overview-controlpanel-toggle", action: "open-openquatt-pause-modal", label: "Tijdelijk uitschakelen", busy })}</div>`
+        : `
+          <div class="oq-overview-controlpanel-actions oq-overview-controlpanel-actions--split">
+            ${renderOverviewControlButton({ className: "oq-overview-controlpanel-toggle", action: "enable-openquatt-now", label: "Nu inschakelen", busy })}
+            ${renderOverviewControlButton({ className: "oq-overview-controlpanel-segment", action: "open-openquatt-pause-modal", label: hasOpenQuattResumeSchedule() ? "Moment wijzigen" : "Automatisch hervatten" })}
           </div>
         `;
-      }
-
-      return `
-        <div class="oq-overview-controlpanel-actions oq-overview-controlpanel-actions--split">
-          <button
-            class="oq-overview-controlpanel-toggle${busy ? " is-busy" : ""}"
-            type="button"
-            data-oq-action="enable-openquatt-now"
-            ${state.busyAction ? "disabled" : ""}
-          >${escapeHtml(busy ? "Bezig..." : "Nu inschakelen")}</button>
-          <button
-            class="oq-overview-controlpanel-segment"
-            type="button"
-            data-oq-action="open-openquatt-pause-modal"
-            ${state.busyAction ? "disabled" : ""}
-          >${escapeHtml(hasOpenQuattResumeSchedule() ? "Moment wijzigen" : "Automatisch hervatten")}</button>
-        </div>
-      `;
     }
 
     if (card.kind === "select") {
+      const busy = state.busyAction === `save-${card.key}`;
       return `
         <div class="oq-overview-controlpanel-actions oq-overview-controlpanel-actions--split">
           <div class="oq-overview-controlpanel-segmented">
-            ${card.options.map((option) => `
-              <button
-                class="oq-overview-controlpanel-segment${card.selectedOption === option.value ? " is-selected" : ""}${state.busyAction === `save-${card.key}` ? " is-busy" : ""}"
-                type="button"
-                data-oq-action="select-overview-control-option"
-                data-control-key="${escapeHtml(card.key)}"
-                data-control-option="${escapeHtml(option.value)}"
-                ${state.busyAction ? "disabled" : ""}
-              >${escapeHtml(option.label)}</button>
-            `).join("")}
+            ${card.options.map((option) => renderOverviewControlButton({
+              className: `oq-overview-controlpanel-segment${card.selectedOption === option.value ? " is-selected" : ""}`,
+              action: "select-overview-control-option",
+              label: option.label,
+              busy,
+              attrs: `data-control-key="${escapeHtml(card.key)}" data-control-option="${escapeHtml(option.value)}"`,
+            })).join("")}
           </div>
           ${card.settingsAction
-            ? `<button
-                class="oq-overview-controlpanel-icon"
-                type="button"
-                data-oq-action="open-silent-settings-modal"
-                aria-label="Open instellingen voor stille uren"
-                title="Stille uren instellen"
-              >⚙</button>`
-            : ""
-          }
+            ? `<button class="oq-overview-controlpanel-icon" type="button" data-oq-action="open-silent-settings-modal" aria-label="Open instellingen voor stille uren" title="Stille uren instellen">⚙</button>`
+            : ""}
         </div>
       `;
     }
 
     return `
       <div class="oq-overview-controlpanel-actions">
-        <button
-          class="oq-overview-controlpanel-toggle${state.busyAction === `switch-${card.key}` ? " is-busy" : ""}"
-          type="button"
-          data-oq-action="toggle-overview-control"
-          data-control-key="${escapeHtml(card.key)}"
-          data-control-state="${escapeHtml(card.nextState)}"
-          ${state.busyAction ? "disabled" : ""}
-        >${escapeHtml(state.busyAction === `switch-${card.key}` ? "Bezig..." : card.buttonLabel)}</button>
+        ${renderOverviewControlButton({
+          className: "oq-overview-controlpanel-toggle",
+          action: "toggle-overview-control",
+          label: card.buttonLabel,
+          busy: state.busyAction === `switch-${card.key}`,
+          attrs: `data-control-key="${escapeHtml(card.key)}" data-control-state="${escapeHtml(card.nextState)}"`,
+        })}
       </div>
     `;
   }
@@ -5696,38 +5645,18 @@
       return "";
     }
 
-    const openquattCard = cards.find((card) => card.key === "openquattEnabled");
-    const coolingCard = cards.find((card) => card.key === "manualCoolingEnable");
-    const silentCard = cards.find((card) => card.key === "silentModeOverride");
-
     return `
       <section class="oq-overview-controlpanel-stack" aria-label="Bediening">
-        <div class="oq-overview-sectionhead">
-          <h3>Bediening</h3>
-        </div>
-        ${openquattCard
-          ? `
-            <article class="oq-overview-controlpanel oq-overview-controlpanel--${escapeHtml(openquattCard.tone)}">
-              <div class="oq-overview-controlpanel-head">
-                <span>${escapeHtml(openquattCard.label)}</span>
-                <strong class="oq-overview-controlpanel-state oq-overview-controlpanel-state--${escapeHtml(openquattCard.tone)}">${escapeHtml(openquattCard.status)}</strong>
-              </div>
-              <p>${escapeHtml(openquattCard.copy)}</p>
-              ${renderOverviewControlMeta(openquattCard)}
-              ${renderOverviewControlBody(openquattCard)}
-            </article>
-          `
-          : ""
-        }
-        ${[coolingCard, silentCard].filter(Boolean).map((card) => `
+        ${renderOverviewSectionHead("Bediening")}
+        ${cards.map((card) => `
           <article class="oq-overview-controlpanel oq-overview-controlpanel--${escapeHtml(card.tone)}">
             <div class="oq-overview-controlpanel-head">
               <span>${escapeHtml(card.label)}</span>
               <strong class="oq-overview-controlpanel-state oq-overview-controlpanel-state--${escapeHtml(card.tone)}">${escapeHtml(card.status)}</strong>
             </div>
             <p>${escapeHtml(card.copy)}</p>
-            ${renderOverviewControlMeta(card)}
-            ${renderOverviewControlBody(card)}
+            ${renderOverviewControlMeta(card.meta)}
+            ${renderOverviewControlActions(card)}
           </article>
         `).join("")}
       </section>
@@ -5748,16 +5677,14 @@
         <div class="oq-overview-summary-layout">
           <div class="oq-overview-summary-main">
             <section class="oq-overview-kpis" aria-label="Kerncijfers">
-              <div class="oq-overview-sectionhead">
-                <h3>Kerncijfers</h3>
-              </div>
+              ${renderOverviewSectionHead("Kerncijfers")}
               <div class="oq-overview-top">
-                ${renderOverviewTopCards()}
+                ${renderOverviewStatCards(getOverviewTopCards())}
               </div>
             </section>
-            ${renderOverviewStatusStack(strategyLabel, controlModeLabel)}
+            ${renderOverviewStatusPanel(strategyLabel, controlModeLabel)}
           </div>
-          <aside class="oq-overview-summary-side">
+          <aside class="oq-overview-summary-side" data-render-signature="${escapeHtml(getOverviewControlsRenderSignature())}">
             ${renderOverviewControlPanels()}
           </aside>
         </div>
@@ -5765,38 +5692,74 @@
     `;
   }
 
-  function renderOverviewTempsSection() {
+  function getOverviewTempsModel() {
     const outsideTempKey = getOverviewOutsideTempKey();
     const returnTempKey = getOverviewReturnTempKey();
     if (isCoolingOverviewActive()) {
-      return `
-        <div class="oq-overview-system-copy">
-          <h3>Koeltemperaturen</h3>
-          <p>De belangrijkste temperaturen voor koeldoel, dauwpuntveiligheid en comfort.</p>
-        </div>
-        <div class="oq-overview-temps-list">
-          ${renderTempRow("Kamertemperatuur", "roomTemp")}
-          ${renderTempRow("Kamer setpoint", "roomSetpoint")}
-          ${renderTempRow("Aanvoertemperatuur", "supplyTemp")}
-          ${renderTempRow("Koeldoel", "coolingSupplyTarget")}
-          ${renderTempRow("Veilige aanvoergrens", "coolingMinimumSafeSupplyTemp")}
-          ${renderTempRow("Dauwpunt", "coolingDewPointSelected")}
-        </div>
-      `;
+      return {
+        title: "Koeltemperaturen",
+        copy: "De belangrijkste temperaturen voor koeldoel, dauwpuntveiligheid en comfort.",
+        rows: [
+          { label: "Kamertemperatuur", key: "roomTemp" },
+          { label: "Kamer setpoint", key: "roomSetpoint" },
+          { label: "Aanvoertemperatuur", key: "supplyTemp" },
+          { label: "Koeldoel", key: "coolingSupplyTarget" },
+          { label: "Veilige aanvoergrens", key: "coolingMinimumSafeSupplyTemp" },
+          { label: "Dauwpunt", key: "coolingDewPointSelected" },
+        ],
+      };
     }
-    return `
-      <div class="oq-overview-system-copy">
-        <h3>Temperaturen</h3>
-        <p>De belangrijkste temperaturen voor comfort en regeling.</p>
-      </div>
-      <div class="oq-overview-temps-list">
-        ${renderTempRow("Kamertemperatuur", "roomTemp")}
-        ${renderTempRow("Kamer setpoint", "roomSetpoint")}
-        ${renderTempRow("Aanvoertemperatuur", "supplyTemp")}
-        ${returnTempKey ? renderTempRow("Retourtemperatuur", returnTempKey) : ""}
-        ${outsideTempKey ? renderTempRow("Buitentemperatuur", outsideTempKey) : renderTempRow("Buitentemperatuur", "", "—")}
-      </div>
-    `;
+    return {
+      title: "Temperaturen",
+      copy: "De belangrijkste temperaturen voor comfort en regeling.",
+      rows: [
+        { label: "Kamertemperatuur", key: "roomTemp" },
+        { label: "Kamer setpoint", key: "roomSetpoint" },
+        { label: "Aanvoertemperatuur", key: "supplyTemp" },
+        ...(returnTempKey ? [{ label: "Retourtemperatuur", key: returnTempKey }] : []),
+        outsideTempKey
+          ? { label: "Buitentemperatuur", key: outsideTempKey }
+          : { label: "Buitentemperatuur", key: "", value: "—" },
+      ],
+    };
+  }
+
+  function renderOverviewTempsPanel() {
+    const model = getOverviewTempsModel();
+    return renderOverviewShell({
+      className: "oq-overview-temps",
+      title: model.title,
+      copy: model.copy,
+      signature: getRenderSignature(model),
+      body: `
+        <div class="oq-overview-temps-list">
+          ${model.rows.map((row) => renderTempRow(row.label, row.key, row.value || "")).join("")}
+        </div>
+      `,
+    });
+  }
+
+  function getHeatPumpRuntimeModel(title, keys, accent) {
+    const mode = formatWorkingMode(getEntityStateText(keys.mode, "Unknown"));
+    const defrostActive = isEntityActive(keys.defrost);
+    const failures = formatFailures(getEntityStateText(keys.failures, "None"));
+    const running = mode === "Verwarmen" || mode === "Koelen" || defrostActive;
+    return {
+      mode,
+      defrostActive,
+      failures,
+      running,
+      thermalKey: mode === "Koelen" ? keys.cooling : keys.heat,
+      schematic: buildHeatPumpSchematicModel(title, keys, accent, mode, defrostActive, failures, running),
+    };
+  }
+
+  function renderHeatPumpPanelTitle(title, layoutAction = null) {
+    return `<h3>${escapeHtml(title)}</h3>${layoutAction ? `<button class="oq-overview-hp-card-action" type="button" data-oq-action="select-hp-layout" data-hp-layout="${escapeHtml(layoutAction.layout)}">${renderMagnifyActionIcon(layoutAction.layout === "equal" ? "minus" : "plus")}<span>${escapeHtml(layoutAction.label)}</span></button>` : ""}`;
+  }
+
+  function renderHeatPumpPanelStatus(mode, running, warningActive, failureText) {
+    return `<div class="oq-overview-hp-status">${renderHpPanelStatusRow(mode, running, warningActive, failureText)}</div>`;
   }
 
   function isSystemInStandby() {
@@ -5823,15 +5786,10 @@
     if (!Array.isArray(heatPumpPanels) || heatPumpPanels.length === 0) {
       return "";
     }
-    const summary = heatPumpPanels.map((panel) => {
-      const mode = formatWorkingMode(getEntityStateText(panel.keys.mode, "Unknown"));
-      const defrostActive = isEntityActive(panel.keys.defrost);
-      return `${panel.title} ${formatHeatPumpSummaryMode(mode, defrostActive)}`;
-    }).join(", ");
-    return `<p class="oq-overview-hp-summary">${escapeHtml(summary)}</p>`;
+    return `<p class="oq-overview-hp-summary">${escapeHtml(heatPumpPanels.map((panel) => `${panel.title} ${formatHeatPumpSummaryMode(formatWorkingMode(getEntityStateText(panel.keys.mode, "Unknown")), isEntityActive(panel.keys.defrost))}`).join(", "))}</p>`;
   }
 
-  function renderOverviewEnergyRow(label, key) {
+  function renderOverviewEnergyRow([label, key]) {
     if (!hasEntity(key)) {
       return "";
     }
@@ -5843,14 +5801,14 @@
     `;
   }
 
-  function renderOverviewEnergyGroup(title, rows) {
-    const filledRows = rows.filter(Boolean).join("");
+  function renderOverviewEnergyGroup(group) {
+    const filledRows = group.rows.map(renderOverviewEnergyRow).filter(Boolean).join("");
     if (!filledRows) {
       return "";
     }
     return `
       <section class="oq-overview-energy-group">
-        <h5>${escapeHtml(title)}</h5>
+        <h5>${escapeHtml(group.title)}</h5>
         <div class="oq-overview-energy-rows">
           ${filledRows}
         </div>
@@ -5858,15 +5816,15 @@
     `;
   }
 
-  function renderOverviewEnergyCategory(title, tone, groups) {
-    const filledGroups = groups.filter(Boolean).join("");
+  function renderOverviewEnergyCategory(category) {
+    const filledGroups = category.groups.map(renderOverviewEnergyGroup).filter(Boolean).join("");
     if (!filledGroups) {
       return "";
     }
     return `
-      <section class="oq-overview-energy-category oq-overview-energy-category--${escapeHtml(tone)}">
+      <section class="oq-overview-energy-category oq-overview-energy-category--${escapeHtml(category.tone)}">
         <div class="oq-overview-energy-category-head">
-          <span>${escapeHtml(title)}</span>
+          <span>${escapeHtml(category.title)}</span>
         </div>
         <div class="oq-overview-energy-category-groups">
           ${filledGroups}
@@ -5875,17 +5833,15 @@
     `;
   }
 
-  function renderOverviewEnergyColumn(label, intro, groups, tone = "blue") {
-    const filledGroups = groups.filter(Boolean).join("");
+  function renderOverviewEnergyColumn(column) {
+    const filledGroups = column.categories.map(renderOverviewEnergyCategory).filter(Boolean).join("");
     if (!filledGroups) {
       return "";
     }
-    const showLabel = label && intro && label !== intro;
     return `
-      <article class="oq-overview-energy-column oq-overview-energy-column--${escapeHtml(tone)}">
+      <article class="oq-overview-energy-column oq-overview-energy-column--${escapeHtml(column.tone)}">
         <div class="oq-overview-energy-column-copy">
-          ${showLabel ? `<p>${escapeHtml(label)}</p>` : ""}
-          <h4>${escapeHtml(intro)}</h4>
+          <h4>${escapeHtml(column.label)}</h4>
         </div>
         <div class="oq-overview-energy-groups">
           ${filledGroups}
@@ -5895,76 +5851,12 @@
   }
 
   function renderEnergyView() {
-    const currentColumn = renderOverviewEnergyColumn("Nu", "Nu", [
-      renderOverviewEnergyCategory("Verwarmen", "orange", [
-        renderOverviewEnergyGroup("Warmtepomp", [
-          renderOverviewEnergyRow("Elektrisch vermogen", "heatingPowerInput"),
-          renderOverviewEnergyRow("Warmteafgifte", "totalHeat"),
-          renderOverviewEnergyRow("COP", "totalCop"),
-        ]),
-        renderOverviewEnergyGroup("CV-ketel", [
-          renderOverviewEnergyRow("Warmteafgifte", "boilerHeatPower"),
-        ]),
-        renderOverviewEnergyGroup("Systeem", [
-          renderOverviewEnergyRow("Warmteafgifte", "systemHeatPower"),
-        ]),
-      ]),
-      renderOverviewEnergyCategory("Koelen", "blue", [
-        renderOverviewEnergyGroup("Warmtepomp", [
-          renderOverviewEnergyRow("Elektrisch vermogen", "coolingPowerInput"),
-          renderOverviewEnergyRow("Koelafgifte", "totalCoolingPower"),
-          renderOverviewEnergyRow("COP (EER)", "totalEer"),
-        ]),
-      ]),
-    ], "blue");
-
-    const dailyColumn = renderOverviewEnergyColumn("Vandaag", "Vandaag", [
-      renderOverviewEnergyCategory("Verwarmen", "orange", [
-        renderOverviewEnergyGroup("Warmtepomp", [
-          renderOverviewEnergyRow("Elektriciteit", "heatingElectricalEnergyDaily"),
-          renderOverviewEnergyRow("Warmte", "heatpumpThermalEnergyDaily"),
-          renderOverviewEnergyRow("COP", "heatpumpCopDaily"),
-        ]),
-        renderOverviewEnergyGroup("CV-ketel", [
-          renderOverviewEnergyRow("Warmte", "boilerThermalEnergyDaily"),
-        ]),
-        renderOverviewEnergyGroup("Systeem", [
-          renderOverviewEnergyRow("Warmte", "systemThermalEnergyDaily"),
-        ]),
-      ]),
-      renderOverviewEnergyCategory("Koelen", "blue", [
-        renderOverviewEnergyGroup("Warmtepomp", [
-          renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyDaily"),
-          renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyDaily"),
-          renderOverviewEnergyRow("COP (EER)", "heatpumpEerDaily"),
-        ]),
-      ]),
-    ], "orange");
-
-    const cumulativeColumn = renderOverviewEnergyColumn("Cumulatief", "Cumulatief", [
-      renderOverviewEnergyCategory("Verwarmen", "orange", [
-        renderOverviewEnergyGroup("Warmtepomp", [
-          renderOverviewEnergyRow("Elektriciteit", "heatingElectricalEnergyCumulative"),
-          renderOverviewEnergyRow("Warmte", "heatpumpThermalEnergyCumulative"),
-          renderOverviewEnergyRow("COP", "heatpumpCopCumulative"),
-        ]),
-        renderOverviewEnergyGroup("CV-ketel", [
-          renderOverviewEnergyRow("Warmte", "boilerThermalEnergyCumulative"),
-        ]),
-        renderOverviewEnergyGroup("Systeem", [
-          renderOverviewEnergyRow("Warmte", "systemThermalEnergyCumulative"),
-        ]),
-      ]),
-      renderOverviewEnergyCategory("Koelen", "blue", [
-        renderOverviewEnergyGroup("Warmtepomp", [
-          renderOverviewEnergyRow("Elektriciteit", "coolingElectricalEnergyCumulative"),
-          renderOverviewEnergyRow("Koeling", "heatpumpCoolingEnergyCumulative"),
-          renderOverviewEnergyRow("COP (EER)", "heatpumpEerCumulative"),
-        ]),
-      ]),
-    ], "green");
-
-    const columns = [currentColumn, dailyColumn, cumulativeColumn].filter(Boolean).join("");
+    const renderedColumns = OVERVIEW_ENERGY_COLUMN_CONFIGS.map(renderOverviewEnergyColumn).filter(Boolean);
+    const gridClassName = [
+      "oq-overview-energy-grid",
+      renderedColumns.length === 1 ? "oq-overview-energy-grid--single" : "",
+      renderedColumns.length === 2 ? "oq-overview-energy-grid--two" : "",
+    ].filter(Boolean).join(" ");
 
     return `
       <section class="oq-helper-panel oq-helper-panel--flush">
@@ -5977,8 +5869,8 @@
           </div>
           </div>
           <section class="oq-overview-energy oq-overview-energy--solo">
-            <div class="oq-overview-energy-grid">
-              ${columns}
+            <div class="${escapeHtml(gridClassName)}">
+              ${renderedColumns.join("")}
             </div>
           </section>
         </div>
@@ -6222,6 +6114,38 @@
     `;
   }
 
+  function renderTechReadingWithTooltip({ tooltip, ...reading }) {
+    return `${renderTechWaterReading(reading)}${renderTechTooltip({ bind: reading.bind, ...tooltip })}`;
+  }
+
+  function renderTechHotspotWithTooltip({ bind, ariaLabel, x, y, width, height, rx, tooltip }) {
+    return `
+      <g class="oq-hp-tech-hotspot" data-oq-bind="${escapeHtml(bind)}-trigger" data-oq-tooltip-target="${escapeHtml(bind)}" tabindex="0" aria-label="${escapeHtml(ariaLabel)}">
+        <rect class="oq-hp-tech-hotspot-hit" x="${x}" y="${y}" width="${width}" height="${height}" rx="${rx}" />
+      </g>
+      ${renderTechTooltip({ bind, ...tooltip })}
+    `;
+  }
+
+  function renderTechTooltipTriggerGroup({ bind, className, active, ariaLabel, attrs = "", activeClass = "is-active", content, tooltip }) {
+    const resolvedClassName = [className, active && activeClass ? activeClass : ""].filter(Boolean).join(" ");
+    return `
+      <g class="${resolvedClassName}" data-oq-bind="${escapeHtml(bind)}" data-oq-tooltip-target="${escapeHtml(bind)}" tabindex="${active ? "0" : "-1"}" aria-label="${escapeHtml(ariaLabel)}" ${attrs}>
+        ${content}
+      </g>
+      ${renderTechTooltip({ bind, ...tooltip })}
+    `;
+  }
+
+  function renderHeatPumpFooterItem({ label, value, bind, ariaLabel = "", valueBind = "", labelBind = "", labelMarkup = "" }) {
+    return `
+      <div class="oq-hp-tech-footer-item">
+        <span${ariaLabel ? ` aria-label="${escapeHtml(ariaLabel)}"` : ""}${labelBind ? ` data-oq-bind="${escapeHtml(labelBind)}"` : ""}>${labelMarkup || escapeHtml(label)}</span>
+        <strong${valueBind ? ` data-oq-bind="${escapeHtml(valueBind)}"` : ""}>${escapeHtml(value)}</strong>
+      </div>
+    `;
+  }
+
   function buildHeatPumpSchematicModel(title, keys, accent, mode, defrostActive, failures, running) {
     const freqValue = getEntityNumericValue(keys.freq);
     const freqText = Number.isNaN(freqValue) ? "—" : String(Math.round(freqValue));
@@ -6354,6 +6278,30 @@
     const condWaterCoolGradientId = `${svgIdBase}-cond-water-cool`;
     const condRefGradientId = `${svgIdBase}-cond-ref`;
     const activeCondWaterGradientId = model.reverseCycle ? condWaterCoolGradientId : condWaterHeatGradientId;
+    const footerItems = [
+      { label: "Werkmodus", value: model.mode, valueBind: "footer-mode" },
+      { label: "Stroomverbruik", ariaLabel: "Stroomverbruik", labelMarkup: "Stroom<br>verbruik", value: model.powerText, valueBind: "footer-power" },
+      { label: model.heatLabel, ariaLabel: model.heatLabel, labelBind: "footer-heat-label", labelMarkup: model.heatLabel === "Koelafgifte" ? "Koel<br>afgifte" : "Warmte<br>afgifte", value: model.heatText, valueBind: "footer-heat" },
+      { label: model.efficiencyLabel, labelBind: "footer-efficiency-label", value: model.efficiencyText, valueBind: "footer-efficiency" },
+    ];
+    const readings = [
+      { bind: "flow", x: 52, y: 308, width: 72, value: model.flowText, label: "Flow", ariaLabel: `Flow ${model.flowText}`, align: "center", tooltip: { modifier: model.returnLineTone, icon: "flow", x: 110, y: 276, width: 126, kicker: "Flow", detail: "CV-circuit", direction: "left" } },
+      { bind: "discharge-pressure", x: 218, y: 138, width: 50, value: model.dischargePressureText, label: "Persdruk", ariaLabel: `Persdruk ${model.dischargePressureText}`, align: "end", tooltip: { modifier: "warm", icon: "pressure", x: 82, y: 120, width: 118, kicker: "Druk", detail: "Perszijde", direction: "right" } },
+      { bind: "discharge-temp", x: 218, y: 166, width: 50, value: model.dischargeTempText, label: "Perstemperatuur", ariaLabel: `Perstemperatuur ${model.dischargeTempText}`, align: "end", tooltip: { modifier: "warm", icon: "temperature", x: 80, y: 174, width: 142, kicker: "Temperatuur", detail: "Perszijde", direction: "right" } },
+      { bind: "suction-pressure", x: 378, y: 138, width: 50, value: model.suctionPressureText, label: "Zuigdruk", ariaLabel: `Zuigdruk ${model.suctionPressureText}`, tooltip: { modifier: "component", icon: "pressure", x: 438, y: 120, width: 118, kicker: "Druk", detail: "Zuigzijde", direction: "left" } },
+      { bind: "suction-temp", x: 378, y: 166, width: 50, value: model.suctionTempText, label: "Zuigtemperatuur", ariaLabel: `Zuigtemperatuur ${model.suctionTempText}`, tooltip: { modifier: "component", icon: "temperature", x: 414, y: 174, width: 142, kicker: "Temperatuur", detail: "Zuigzijde", direction: "left" } },
+      { bind: "inner-coil-temp", x: 120, y: 166, width: 52, value: model.innerCoilTempText, label: "Inner coil temperatuur", ariaLabel: `Inner coil temperatuur ${model.innerCoilTempText}`, align: "center", tooltip: { modifier: "component", icon: "temperature", x: 174, y: 148, width: 132, kicker: "Temperatuur", detail: "Condensor", direction: "right" } },
+      { bind: "evaporator-temp", x: 484, y: 166, width: 52, value: model.evaporatorCoilTempText, label: "Verdampertemperatuur", ariaLabel: `Verdampertemperatuur ${model.evaporatorCoilTempText}`, align: "center", tooltip: { modifier: "component", icon: "temperature", x: 344, y: 148, width: 132, kicker: "Temperatuur", detail: "Verdamper", direction: "right" } },
+      { bind: "outside-temp", x: 548, y: 110, width: 48, value: model.outsideTempText, label: "Buitentemperatuur", ariaLabel: `Buitentemperatuur ${model.outsideTempText}`, align: "center", tooltip: { modifier: "component", icon: "temperature", x: 424, y: 92, width: 136, kicker: "Temperatuur", detail: "Buitenlucht", direction: "right" } },
+      { bind: "fan-speed", x: 520, y: 258, width: 60, value: model.fanRpmText, label: "Ventilatorsnelheid", ariaLabel: `Ventilatorsnelheid ${model.fanRpmText}`, align: "center", tooltip: { modifier: "component", icon: "fan", x: 410, y: 236, width: 118, kicker: "Ventilator", detail: "Toerental", direction: "right" } },
+      { bind: "supply", x: 22, y: 114, width: 58, value: model.waterOutText, label: "Aanvoer", tooltip: { modifier: model.supplyLineTone, icon: "temperature", x: 96, y: 96, width: 124, kicker: "Temperatuur", detail: "Aanvoer", direction: "left" } },
+      { bind: "return", x: 22, y: 274, width: 58, value: model.waterInText, label: "Retour", tooltip: { modifier: model.returnLineTone, icon: "temperature", x: 96, y: 252, width: 124, kicker: "Temperatuur", detail: "Retour", direction: "left" } },
+    ];
+    const hotspots = [
+      { bind: "compressor-freq", ariaLabel: `Compressorfrequentie ${model.compressorFreqText}`, x: 300, y: 148, width: 52, height: 26, rx: 12, tooltip: { modifier: "component", icon: "fan", x: 366, y: 130, width: 136, kicker: "Frequentie", detail: "Compressor", direction: "left" } },
+      { bind: "fourway", ariaLabel: `4-wegklep, ${model.fourWayPositionText}`, x: 252, y: 208, width: 52, height: 52, rx: 16, tooltip: { modifier: "component", icon: "fourway", x: 308, y: 198, width: 196, kicker: "4-wegklep", detail: model.fourWayPositionText, detailBind: "fourway-detail", direction: "left" } },
+      { bind: "eev", ariaLabel: `Expansieventiel, ${model.eevPositionText}`, x: 301, y: 275, width: 50, height: 38, rx: 12, tooltip: { modifier: "component", icon: "eev", x: 340, y: 252, width: 202, kicker: "Expansieventiel", detail: model.eevPositionText, detailBind: "eev-detail", direction: "left" } },
+    ];
     return `
       <div class="${escapeHtml(model.boardClass)}" data-oq-hp-board="${escapeHtml(model.title)}">
         <div class="oq-hp-tech-shell">
@@ -6436,14 +6384,7 @@
               </g>
             </g>
 
-            ${renderTechPipeLayer("supply", model.pipes.supply.tone, model.pipes.supply.d, model.pipes.supply.animated, model.pipes.supply.flowVariant)}
-            ${renderTechPipeLayer("return", model.pipes.return.tone, model.pipes.return.d, model.pipes.return.animated, model.pipes.return.flowVariant)}
-            ${renderTechPipeLayer("compressor-discharge", model.pipes.compressorDischarge.tone, model.pipes.compressorDischarge.d, model.pipes.compressorDischarge.animated, model.pipes.compressorDischarge.flowVariant)}
-            ${renderTechPipeLayer("liquid", model.pipes.liquid.tone, model.pipes.liquid.d, model.pipes.liquid.animated, model.pipes.liquid.flowVariant)}
-            ${renderTechPipeLayer("expansion", model.pipes.expansion.tone, model.pipes.expansion.d, model.pipes.expansion.animated, model.pipes.expansion.flowVariant)}
-            ${renderTechPipeLayer("suction-compressor", model.pipes.suctionCompressor.tone, model.pipes.suctionCompressor.d, model.pipes.suctionCompressor.animated, model.pipes.suctionCompressor.flowVariant)}
-            ${renderTechPipeLayer("hotgas-external", model.pipes.hotgasExternal.tone, model.pipes.hotgasExternal.d, model.pipes.hotgasExternal.animated, model.pipes.hotgasExternal.flowVariant)}
-            ${renderTechPipeLayer("suction-external", model.pipes.suctionExternal.tone, model.pipes.suctionExternal.d, model.pipes.suctionExternal.animated, model.pipes.suctionExternal.flowVariant)}
+            ${Object.entries(model.pipes).map(([id, pipe]) => renderTechPipeLayer(id.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`), pipe.tone, pipe.d, pipe.animated, pipe.flowVariant)).join("")}
 
             <g class="oq-hp-tech-pump oq-hp-tech-pump--${model.returnLineTone}">
               <circle class="oq-hp-tech-pump-ring" cx="88" cy="294" r="16" />
@@ -6451,419 +6392,79 @@
               <path class="oq-hp-tech-pump-blade" d="M81 287 L96 294 L81 301 Z" />
             </g>
 
-            ${renderTechWaterReading({
-              bind: "flow",
-              x: 52,
-              y: 308,
-              width: 72,
-              value: model.flowText,
-              label: "Flow",
-              ariaLabel: `Flow ${model.flowText}`,
-              align: "center",
-            })}
-            ${renderTechTooltip({
-              bind: "flow",
-              modifier: model.returnLineTone,
-              icon: "flow",
-              x: 110,
-              y: 276,
-              width: 126,
-              kicker: "Flow",
-              detail: "CV-circuit",
-              direction: "left",
-            })}
-
-            ${renderTechWaterReading({
-              bind: "discharge-pressure",
-              x: 218,
-              y: 138,
-              width: 50,
-              value: model.dischargePressureText,
-              label: "Persdruk",
-              ariaLabel: `Persdruk ${model.dischargePressureText}`,
-              align: "end",
-            })}
-            ${renderTechTooltip({
-              bind: "discharge-pressure",
-              modifier: "warm",
-              icon: "pressure",
-              x: 82,
-              y: 120,
-              width: 118,
-              kicker: "Druk",
-              detail: "Perszijde",
-              direction: "right",
-            })}
-
-            ${renderTechWaterReading({
-              bind: "discharge-temp",
-              x: 218,
-              y: 166,
-              width: 50,
-              value: model.dischargeTempText,
-              label: "Perstemperatuur",
-              ariaLabel: `Perstemperatuur ${model.dischargeTempText}`,
-              align: "end",
-            })}
-            ${renderTechTooltip({
-              bind: "discharge-temp",
-              modifier: "warm",
-              icon: "temperature",
-              x: 80,
-              y: 174,
-              width: 142,
-              kicker: "Temperatuur",
-              detail: "Perszijde",
-              direction: "right",
-            })}
-
-            ${renderTechWaterReading({
-              bind: "suction-pressure",
-              x: 378,
-              y: 138,
-              width: 50,
-              value: model.suctionPressureText,
-              label: "Zuigdruk",
-              ariaLabel: `Zuigdruk ${model.suctionPressureText}`,
-            })}
-            ${renderTechTooltip({
-              bind: "suction-pressure",
-              modifier: "component",
-              icon: "pressure",
-              x: 438,
-              y: 120,
-              width: 118,
-              kicker: "Druk",
-              detail: "Zuigzijde",
-              direction: "left",
-            })}
-
-            ${renderTechWaterReading({
-              bind: "suction-temp",
-              x: 378,
-              y: 166,
-              width: 50,
-              value: model.suctionTempText,
-              label: "Zuigtemperatuur",
-              ariaLabel: `Zuigtemperatuur ${model.suctionTempText}`,
-            })}
-            ${renderTechTooltip({
-              bind: "suction-temp",
-              modifier: "component",
-              icon: "temperature",
-              x: 414,
-              y: 174,
-              width: 142,
-              kicker: "Temperatuur",
-              detail: "Zuigzijde",
-              direction: "left",
-            })}
-
-            ${renderTechWaterReading({
-              bind: "inner-coil-temp",
-              x: 120,
-              y: 166,
-              width: 52,
-              value: model.innerCoilTempText,
-              label: "Inner coil temperatuur",
-              ariaLabel: `Inner coil temperatuur ${model.innerCoilTempText}`,
-              align: "center",
-            })}
-            ${renderTechTooltip({
-              bind: "inner-coil-temp",
-              modifier: "component",
-              icon: "temperature",
-              x: 174,
-              y: 148,
-              width: 132,
-              kicker: "Temperatuur",
-              detail: "Condensor",
-              direction: "right",
-            })}
-
-            ${renderTechWaterReading({
-              bind: "evaporator-temp",
-              x: 484,
-              y: 166,
-              width: 52,
-              value: model.evaporatorCoilTempText,
-              label: "Verdampertemperatuur",
-              ariaLabel: `Verdampertemperatuur ${model.evaporatorCoilTempText}`,
-              align: "center",
-            })}
-            ${renderTechTooltip({
-              bind: "evaporator-temp",
-              modifier: "component",
-              icon: "temperature",
-              x: 344,
-              y: 148,
-              width: 132,
-              kicker: "Temperatuur",
-              detail: "Verdamper",
-              direction: "right",
-            })}
-
-            ${renderTechWaterReading({
-              bind: "outside-temp",
-              x: 548,
-              y: 110,
-              width: 48,
-              value: model.outsideTempText,
-              label: "Buitentemperatuur",
-              ariaLabel: `Buitentemperatuur ${model.outsideTempText}`,
-              align: "center",
-            })}
-            ${renderTechTooltip({
-              bind: "outside-temp",
-              modifier: "component",
-              icon: "temperature",
-              x: 424,
-              y: 92,
-              width: 136,
-              kicker: "Temperatuur",
-              detail: "Buitenlucht",
-              direction: "right",
-            })}
-
-            ${renderTechWaterReading({
-              bind: "fan-speed",
-              x: 520,
-              y: 258,
-              width: 60,
-              value: model.fanRpmText,
-              label: "Ventilatorsnelheid",
-              ariaLabel: `Ventilatorsnelheid ${model.fanRpmText}`,
-              align: "center",
-            })}
-            ${renderTechTooltip({
-              bind: "fan-speed",
-              modifier: "component",
-              icon: "fan",
-              x: 410,
-              y: 236,
-              width: 118,
-              kicker: "Ventilator",
-              detail: "Toerental",
-              direction: "right",
-            })}
-
-            ${renderTechWaterReading({
-              bind: "supply",
-              x: 22,
-              y: 114,
-              width: 58,
-              value: model.waterOutText,
-              label: "Aanvoer",
-            })}
-            ${renderTechTooltip({
-              bind: "supply",
-              modifier: model.supplyLineTone,
-              icon: "temperature",
-              x: 96,
-              y: 96,
-              width: 124,
-              kicker: "Temperatuur",
-              detail: "Aanvoer",
-              direction: "left",
-            })}
-
-            ${renderTechWaterReading({
-              bind: "return",
-              x: 22,
-              y: 274,
-              width: 58,
-              value: model.waterInText,
-              label: "Retour",
-            })}
-            ${renderTechTooltip({
-              bind: "return",
-              modifier: model.returnLineTone,
-              icon: "temperature",
-              x: 96,
-              y: 252,
-              width: 124,
-              kicker: "Temperatuur",
-              detail: "Retour",
-              direction: "left",
-            })}
-
-            <g
-              class="oq-hp-tech-bottom-heater ${model.bottomPlateActive ? "is-active" : ""}"
-              data-oq-bind="bottom-heater"
-              data-oq-tooltip-target="bottom-heater"
-              tabindex="${model.bottomPlateActive ? "0" : "-1"}"
-              aria-label="Bottom plate heater actief"
-            >
-              <path class="oq-hp-tech-bottom-heater-glow" d="M475 320 L485 314 L495 320 L505 314 L515 320 L525 314 L535 320 L545 314" />
-              <path class="oq-hp-tech-bottom-heater-core" d="M475 320 L485 314 L495 320 L505 314 L515 320 L525 314 L535 320 L545 314" />
-            </g>
-            ${renderTechTooltip({
+            ${readings.map(renderTechReadingWithTooltip).join("")}
+            ${renderTechTooltipTriggerGroup({
               bind: "bottom-heater",
-              modifier: "warm",
-              x: 372,
-              y: 269,
-              width: 210,
-              kicker: "Verwarming",
-              detail: "Bodemplaatverwarming aan",
+              className: "oq-hp-tech-bottom-heater",
+              active: model.bottomPlateActive,
+              ariaLabel: "Bottom plate heater actief",
+              content: `
+                <path class="oq-hp-tech-bottom-heater-glow" d="M475 320 L485 314 L495 320 L505 314 L515 320 L525 314 L535 320 L545 314" />
+                <path class="oq-hp-tech-bottom-heater-core" d="M475 320 L485 314 L495 320 L505 314 L515 320 L525 314 L535 320 L545 314" />
+              `,
+              tooltip: { modifier: "warm", x: 372, y: 269, width: 210, kicker: "Verwarming", detail: "Bodemplaatverwarming aan" },
             })}
-
-            <g
-              class="oq-hp-tech-crankcase-heater ${model.crankcaseActive ? "is-active" : ""}"
-              data-oq-bind="crankcase-heater"
-              data-oq-tooltip-target="crankcase-heater"
-              tabindex="${model.crankcaseActive ? "0" : "-1"}"
-              aria-label="Crank case heater actief"
-            >
-              <path class="oq-hp-tech-crankcase-heater-glow" d="M302 194 L310 189 L318 194 L326 189 L334 194 L342 189 L350 194" />
-              <path class="oq-hp-tech-crankcase-heater-core" d="M302 194 L310 189 L318 194 L326 189 L334 194 L342 189 L350 194" />
-            </g>
-            ${renderTechTooltip({
+            ${renderTechTooltipTriggerGroup({
               bind: "crankcase-heater",
-              modifier: "warm",
-              x: 224,
-              y: 142,
-              width: 172,
-              kicker: "Verwarming",
-              detail: "Carterverwarming aan",
+              className: "oq-hp-tech-crankcase-heater",
+              active: model.crankcaseActive,
+              ariaLabel: "Crank case heater actief",
+              content: `
+                <path class="oq-hp-tech-crankcase-heater-glow" d="M302 194 L310 189 L318 194 L326 189 L334 194 L342 189 L350 194" />
+                <path class="oq-hp-tech-crankcase-heater-core" d="M302 194 L310 189 L318 194 L326 189 L334 194 L342 189 L350 194" />
+              `,
+              tooltip: { modifier: "warm", x: 224, y: 142, width: 172, kicker: "Verwarming", detail: "Carterverwarming aan" },
             })}
-
-            <g
-              class="oq-hp-tech-defrost-badge"
-              data-oq-bind="defrost-badge"
-              data-oq-tooltip-target="defrost-badge"
-              transform="translate(532 288)"
-              tabindex="${model.defrostActive ? "0" : "-1"}"
-              aria-label="Defrost actief"
-            >
-              <circle class="oq-hp-tech-defrost-hit" cx="0" cy="0" r="12" />
-              <g class="oq-hp-tech-defrost-icon">
-                <path class="oq-hp-tech-defrost-glyph" d="M16.46 12V10.56L18.46 9.43L20.79 10.05L21.31 8.12L19.54 7.65L20 5.88L18.07 5.36L17.45 7.69L15.45 8.82L13 7.38V5.12L14.71 3.41L13.29 2L12 3.29L10.71 2L9.29 3.41L11 5.12V7.38L8.5 8.82L6.5 7.69L5.92 5.36L4 5.88L4.47 7.65L2.7 8.12L3.22 10.05L5.55 9.43L7.55 10.56V12H2V13H22V12H16.46M9.5 12V10.56L12 9.11L14.5 10.56V12H9.5" />
-                <g class="oq-hp-tech-defrost-drips">
-                  <path class="oq-hp-tech-defrost-drip oq-hp-tech-defrost-drip--left" d="M8 17.85C8 19.04 7.11 20 6 20S4 19.04 4 17.85C4 16.42 6 14 6 14S8 16.42 8 17.85Z" />
-                  <path class="oq-hp-tech-defrost-drip oq-hp-tech-defrost-drip--right" d="M20 17.85C20 19.04 19.11 20 18 20S16 19.04 16 17.85C16 16.42 18 14 18 14S20 16.42 20 17.85Z" />
-                  <path class="oq-hp-tech-defrost-drip oq-hp-tech-defrost-drip--center" d="M14 20.85C14 22.04 13.11 23 12 23S10 22.04 10 20.85C10 19.42 12 17 12 17S14 19.42 14 20.85Z" />
-                </g>
-                <g class="oq-hp-tech-defrost-mists">
-                  <g transform="translate(6 20.45)">
-                    <g class="oq-hp-tech-defrost-mist oq-hp-tech-defrost-mist--left">
-                      <circle cx="0" cy="0" r="0.92" />
-                      <circle cx="-1.18" cy="0.34" r="0.58" />
-                      <circle cx="1.16" cy="0.38" r="0.54" />
-                    </g>
-                  </g>
-                  <g transform="translate(12 23.4)">
-                    <g class="oq-hp-tech-defrost-mist oq-hp-tech-defrost-mist--center">
-                      <circle cx="0" cy="0" r="1.08" />
-                      <circle cx="-1.42" cy="0.42" r="0.66" />
-                      <circle cx="1.38" cy="0.46" r="0.62" />
-                    </g>
-                  </g>
-                  <g transform="translate(18 20.45)">
-                    <g class="oq-hp-tech-defrost-mist oq-hp-tech-defrost-mist--right">
-                      <circle cx="0" cy="0" r="0.92" />
-                      <circle cx="-1.16" cy="0.38" r="0.54" />
-                      <circle cx="1.18" cy="0.34" r="0.58" />
-                    </g>
-                  </g>
-                </g>
-              </g>
-            </g>
-            ${renderTechTooltip({
+            ${renderTechTooltipTriggerGroup({
               bind: "defrost-badge",
-              modifier: "return",
-              icon: "defrost",
-              x: 398,
-              y: 266,
-              width: 118,
-              kicker: "Defrost",
-              detail: "Actief",
-              direction: "left",
+              className: "oq-hp-tech-defrost-badge",
+              active: model.defrostActive,
+              activeClass: "",
+              ariaLabel: model.defrostActive ? "Defrost actief" : "Defrost uit",
+              attrs: 'transform="translate(532 288)"',
+              content: `
+                <circle class="oq-hp-tech-defrost-hit" cx="0" cy="0" r="12" />
+                <g class="oq-hp-tech-defrost-icon">
+                  <path class="oq-hp-tech-defrost-glyph" d="M16.46 12V10.56L18.46 9.43L20.79 10.05L21.31 8.12L19.54 7.65L20 5.88L18.07 5.36L17.45 7.69L15.45 8.82L13 7.38V5.12L14.71 3.41L13.29 2L12 3.29L10.71 2L9.29 3.41L11 5.12V7.38L8.5 8.82L6.5 7.69L5.92 5.36L4 5.88L4.47 7.65L2.7 8.12L3.22 10.05L5.55 9.43L7.55 10.56V12H2V13H22V12H16.46M9.5 12V10.56L12 9.11L14.5 10.56V12H9.5" />
+                  <g class="oq-hp-tech-defrost-drips">
+                    <path class="oq-hp-tech-defrost-drip oq-hp-tech-defrost-drip--left" d="M8 17.85C8 19.04 7.11 20 6 20S4 19.04 4 17.85C4 16.42 6 14 6 14S8 16.42 8 17.85Z" />
+                    <path class="oq-hp-tech-defrost-drip oq-hp-tech-defrost-drip--right" d="M20 17.85C20 19.04 19.11 20 18 20S16 19.04 16 17.85C16 16.42 18 14 18 14S20 16.42 20 17.85Z" />
+                    <path class="oq-hp-tech-defrost-drip oq-hp-tech-defrost-drip--center" d="M14 20.85C14 22.04 13.11 23 12 23S10 22.04 10 20.85C10 19.42 12 17 12 17S14 19.42 14 20.85Z" />
+                  </g>
+                  <g class="oq-hp-tech-defrost-mists">
+                    <g transform="translate(6 20.45)">
+                      <g class="oq-hp-tech-defrost-mist oq-hp-tech-defrost-mist--left">
+                        <circle cx="0" cy="0" r="0.92" />
+                        <circle cx="-1.18" cy="0.34" r="0.58" />
+                        <circle cx="1.16" cy="0.38" r="0.54" />
+                      </g>
+                    </g>
+                    <g transform="translate(12 23.4)">
+                      <g class="oq-hp-tech-defrost-mist oq-hp-tech-defrost-mist--center">
+                        <circle cx="0" cy="0" r="1.08" />
+                        <circle cx="-1.42" cy="0.42" r="0.66" />
+                        <circle cx="1.38" cy="0.46" r="0.62" />
+                      </g>
+                    </g>
+                    <g transform="translate(18 20.45)">
+                      <g class="oq-hp-tech-defrost-mist oq-hp-tech-defrost-mist--right">
+                        <circle cx="0" cy="0" r="0.92" />
+                        <circle cx="-1.16" cy="0.38" r="0.54" />
+                        <circle cx="1.18" cy="0.34" r="0.58" />
+                      </g>
+                    </g>
+                  </g>
+                </g>
+              `,
+              tooltip: { modifier: "return", icon: "defrost", x: 398, y: 266, width: 118, kicker: "Defrost", detail: "Actief", direction: "left" },
             })}
 
-            <g
-              class="oq-hp-tech-hotspot"
-              data-oq-bind="compressor-freq-trigger"
-              data-oq-tooltip-target="compressor-freq"
-              tabindex="0"
-              aria-label="${escapeHtml(`Compressorfrequentie ${model.compressorFreqText}`)}"
-            >
-              <rect class="oq-hp-tech-hotspot-hit" x="300" y="148" width="52" height="26" rx="12" />
-            </g>
-            ${renderTechTooltip({
-              bind: "compressor-freq",
-              modifier: "component",
-              icon: "fan",
-              x: 366,
-              y: 130,
-              width: 136,
-              kicker: "Frequentie",
-              detail: "Compressor",
-              direction: "left",
-            })}
-
-            <g
-              class="oq-hp-tech-hotspot"
-              data-oq-bind="fourway-trigger"
-              data-oq-tooltip-target="fourway"
-              tabindex="0"
-              aria-label="${escapeHtml(`4-wegklep, ${model.fourWayPositionText}`)}"
-            >
-              <rect class="oq-hp-tech-hotspot-hit" x="252" y="208" width="52" height="52" rx="16" />
-            </g>
-            ${renderTechTooltip({
-              bind: "fourway",
-              modifier: "component",
-              icon: "fourway",
-              x: 308,
-              y: 198,
-              width: 196,
-              kicker: "4-wegklep",
-              detail: model.fourWayPositionText,
-              detailBind: "fourway-detail",
-              direction: "left",
-            })}
-
-            <g
-              class="oq-hp-tech-hotspot"
-              data-oq-bind="eev-trigger"
-              data-oq-tooltip-target="eev"
-              tabindex="0"
-              aria-label="${escapeHtml(`Expansieventiel, ${model.eevPositionText}`)}"
-            >
-              <rect class="oq-hp-tech-hotspot-hit" x="301" y="275" width="50" height="38" rx="12" />
-            </g>
-            ${renderTechTooltip({
-              bind: "eev",
-              modifier: "component",
-              icon: "eev",
-              x: 340,
-              y: 252,
-              width: 202,
-              kicker: "Expansieventiel",
-              detail: model.eevPositionText,
-              detailBind: "eev-detail",
-              direction: "left",
-            })}
+            ${hotspots.map(renderTechHotspotWithTooltip).join("")}
 
             </svg>
           </div>
           <div class="oq-hp-tech-footer">
-            <div class="oq-hp-tech-footer-item">
-              <span>Werkmodus</span>
-              <strong data-oq-bind="footer-mode">${escapeHtml(model.mode)}</strong>
-            </div>
-            <div class="oq-hp-tech-footer-item">
-              <span aria-label="Stroomverbruik">Stroom<br>verbruik</span>
-              <strong data-oq-bind="footer-power">${escapeHtml(model.powerText)}</strong>
-            </div>
-            <div class="oq-hp-tech-footer-item">
-              <span aria-label="${escapeHtml(model.heatLabel)}" data-oq-bind="footer-heat-label">${model.heatLabel === "Koelafgifte" ? "Koel<br>afgifte" : "Warmte<br>afgifte"}</span>
-              <strong data-oq-bind="footer-heat">${escapeHtml(model.heatText)}</strong>
-            </div>
-            <div class="oq-hp-tech-footer-item">
-              <span data-oq-bind="footer-efficiency-label">${escapeHtml(model.efficiencyLabel)}</span>
-              <strong data-oq-bind="footer-efficiency">${escapeHtml(model.efficiencyText)}</strong>
-            </div>
+            ${footerItems.map(renderHeatPumpFooterItem).join("")}
           </div>
         </div>
       </div>
@@ -6874,25 +6475,19 @@
     if (!hasEntity(keys.power)) {
       return "";
     }
-    const mode = formatWorkingMode(getEntityStateText(keys.mode, "Unknown"));
-    const defrostActive = isEntityActive(keys.defrost);
-    const failures = formatFailures(getEntityStateText(keys.failures, "None"));
-    const running = mode === "Verwarmen" || mode === "Koelen" || defrostActive;
-    const schematicModel = buildHeatPumpSchematicModel(title, keys, accent, mode, defrostActive, failures, running);
-    const thermalKey = mode === "Koelen" ? keys.cooling : keys.heat;
+    const runtime = getHeatPumpRuntimeModel(title, keys, accent);
+    const { mode, defrostActive, running, thermalKey } = runtime;
+    const schematicModel = runtime.schematic;
 
     if (state.hpVisualMode === "schematic") {
       return `
         <section class="oq-overview-hp oq-overview-hp--${escapeHtml(accent)} oq-overview-hp--${escapeHtml(emphasis)}" data-oq-hp-panel="${escapeHtml(title)}">
           <div class="oq-overview-hp-head">
             <div class="oq-overview-hp-head-title">
-              <h3>${escapeHtml(title)}</h3>
-              ${layoutAction ? `<button class="oq-overview-hp-card-action" type="button" data-oq-action="select-hp-layout" data-hp-layout="${escapeHtml(layoutAction.layout)}">${renderMagnifyActionIcon(layoutAction.layout === "equal" ? "minus" : "plus")}<span>${escapeHtml(layoutAction.label)}</span></button>` : ""}
+              ${renderHeatPumpPanelTitle(title, layoutAction)}
             </div>
             <div class="oq-overview-hp-head-side">
-              <div class="oq-overview-hp-status">
-                ${renderHpPanelStatusRow(mode, running, schematicModel.warningActive, schematicModel.failureText)}
-              </div>
+              ${renderHeatPumpPanelStatus(mode, running, schematicModel.warningActive, schematicModel.failureText)}
             </div>
           </div>
           ${renderHeatPumpSchematic(schematicModel)}
@@ -6906,14 +6501,14 @@
           <div>
             <h3>${escapeHtml(title)}</h3>
           </div>
-          <div class="oq-overview-hp-status">
-            ${renderHpPanelStatusRow(mode, running, schematicModel.warningActive, schematicModel.failureText)}
-          </div>
+          ${renderHeatPumpPanelStatus(mode, running, schematicModel.warningActive, schematicModel.failureText)}
         </div>
         <div class="oq-overview-hp-stats">
-          ${renderOverviewStatCard(keys.power, "Stroomverbruik", "blue", "elektrisch verbruik")}
-          ${renderOverviewStatCard(thermalKey, schematicModel.heatLabel, "orange", schematicModel.heatDescription)}
-          ${renderOverviewStatCardValue(schematicModel.efficiencyLabel, schematicModel.efficiencyText, "green", "actueel")}
+          ${renderOverviewStatCards([
+            { key: keys.power, label: "Stroomverbruik", tone: "blue", note: "elektrisch verbruik" },
+            { key: thermalKey, label: schematicModel.heatLabel, tone: "orange", note: schematicModel.heatDescription },
+            { label: schematicModel.efficiencyLabel, value: schematicModel.efficiencyText, tone: "green", note: "actueel" },
+          ])}
         </div>
         <div class="oq-overview-hp-meta">
           <div class="oq-overview-hp-meta-chip">
@@ -7007,25 +6602,16 @@
     `;
   }
 
-  function renderHeatPumpControls(heatPumpPanels) {
-    const inner = renderHeatPumpControlsInner(heatPumpPanels);
-    if (!inner) {
-      return "";
-    }
-    return `<div class="oq-overview-hp-tools">${inner}</div>`;
-  }
-
   function patchHeatPumpControls(hpTools, heatPumpPanels) {
     if (!hpTools) {
       return false;
     }
 
     const copy = hpTools.querySelector(".oq-overview-hp-tools-copy");
-    const switches = hpTools.querySelector(".oq-overview-hp-tool-switches");
     const schematicButton = hpTools.querySelector('[data-hp-visual="schematic"]');
     const compactButton = hpTools.querySelector('[data-hp-visual="compact"]');
 
-    if (!copy || !switches || !schematicButton || !compactButton) {
+    if (!copy || !schematicButton || !compactButton) {
       setInnerHtmlIfChanged(hpTools, renderHeatPumpControlsInner(heatPumpPanels));
       return true;
     }
@@ -7043,18 +6629,17 @@
     const strategyLabel = getOverviewStrategyLabel();
     const heatPumpPanels = getHeatPumpPanels();
     const hpLayoutMode = getEffectiveHpLayoutMode(heatPumpPanels);
+    const heatPumpControls = renderHeatPumpControlsInner(heatPumpPanels);
 
     return `
       <section class="oq-helper-panel oq-helper-panel--flush">
         <div class="oq-overview-board oq-overview-board--${escapeHtml(state.overviewTheme)}">
           ${renderOverviewSummaryShell(strategyLabel)}
           <div class="oq-overview-main">
-            ${renderOverviewStrategyPanel()}
-            <section class="oq-overview-temps">
-              ${renderOverviewTempsSection()}
-            </section>
+            ${renderOverviewNarrativePanel(getOverviewStrategySectionModel())}
+            ${renderOverviewTempsPanel()}
           </div>
-          ${renderHeatPumpControls(heatPumpPanels)}
+          ${heatPumpControls ? `<div class="oq-overview-hp-tools">${heatPumpControls}</div>` : ""}
           <div class="oq-overview-hp-grid ${heatPumpPanels.length === 1 ? "oq-overview-hp-grid--single" : ""} ${heatPumpPanels.length > 1 ? `oq-overview-hp-grid--${hpLayoutMode}` : ""}">
             ${heatPumpPanels.map((panel, index) => renderHeatPumpPanel(panel.title, panel.keys, panel.accent, getHeatPumpPanelEmphasis(index, heatPumpPanels, hpLayoutMode), getHeatPumpPanelLayoutAction(index, heatPumpPanels, hpLayoutMode))).join("")}
           </div>
@@ -7080,6 +6665,48 @@
     if (node.innerHTML !== markup) {
       node.innerHTML = markup;
     }
+  }
+
+  function replaceOuterHtmlIfSignatureChanged(node, signature, markup) {
+    if (!node || node.dataset.renderSignature === signature) {
+      return false;
+    }
+    node.outerHTML = markup;
+    return true;
+  }
+
+  function syncAttribute(node, name, value) {
+    if (node && node.getAttribute(name) !== value) {
+      node.setAttribute(name, value);
+    }
+  }
+
+  function syncBoundText(root, bindings) {
+    bindings.forEach(([bind, value]) => {
+      setTextContent(root, `[data-oq-bind="${bind}"]`, value);
+    });
+  }
+
+  function syncBoundAria(root, bindings) {
+    bindings.forEach(([bind, label]) => {
+      syncAttribute(root.querySelector(`[data-oq-bind="${bind}"]`), "aria-label", label);
+    });
+  }
+
+  function syncBoundToggle(root, bind, active, tooltipBind = "") {
+    const node = root.querySelector(`[data-oq-bind="${bind}"]`);
+    if (!node) {
+      return;
+    }
+    node.classList.toggle("is-active", active);
+    syncAttribute(node, "tabindex", active ? "0" : "-1");
+    if (!active && tooltipBind) {
+      hideTechTooltip(root.querySelector(`[data-oq-bind="${tooltipBind}"]`));
+    }
+  }
+
+  function syncBoundFill(root, bind, value) {
+    syncAttribute(root.querySelector(`[data-oq-bind="${bind}"]`), "fill", value);
   }
 
   function setVariantClass(node, prefix, value, variants) {
@@ -7195,18 +6822,25 @@
     });
   }
 
-  function patchHeatPumpPanel(panel, title, keys, accent) {
+  function patchHeatPumpPanel(panel, title, keys, accent, layoutAction = null, runtime = null) {
     if (!panel) {
       return;
     }
 
-    const mode = formatWorkingMode(getEntityStateText(keys.mode, "Unknown"));
-    const defrostActive = isEntityActive(keys.defrost);
-    const failures = formatFailures(getEntityStateText(keys.failures, "None"));
-    const running = mode === "Verwarmen" || mode === "Koelen" || defrostActive;
-    const model = buildHeatPumpSchematicModel(title, keys, accent, mode, defrostActive, failures, running);
-    const headStatus = panel.querySelector(".oq-overview-hp-status");
-    if (headStatus) {
+    const resolvedRuntime = runtime || getHeatPumpRuntimeModel(title, keys, accent);
+    const { mode, running } = resolvedRuntime;
+    const model = resolvedRuntime.schematic;
+    const headTitle = panel.querySelector(".oq-overview-hp-head-title");
+    if (headTitle) {
+      setInnerHtmlIfChanged(headTitle, renderHeatPumpPanelTitle(title, layoutAction));
+    }
+    const headSide = panel.querySelector(".oq-overview-hp-head-side");
+    if (headSide) {
+      let headStatus = headSide.querySelector(".oq-overview-hp-status");
+      if (!headStatus) {
+        setInnerHtmlIfChanged(headSide, renderHeatPumpPanelStatus(mode, running, model.warningActive, model.failureText));
+        headStatus = headSide.querySelector(".oq-overview-hp-status");
+      }
       patchHpPanelStatusRow(headStatus, mode, running, model.warningActive, model.failureText);
     }
 
@@ -7218,129 +6852,76 @@
     if (board.className !== model.boardClass) {
       board.className = model.boardClass;
     }
-    setTextContent(board, '[data-oq-bind="status"]', model.statusText);
-    setTextContent(board, '[data-oq-bind="left-exchanger-title"]', model.leftExchangerTitle);
-    setTextContent(board, '[data-oq-bind="right-exchanger-title"]', model.rightExchangerTitle);
-    setTextContent(board, '[data-oq-bind="compressor-freq"]', model.compressorFreqText);
-    setTextContent(board, '[data-oq-bind="flow-value"]', model.flowText);
-    setTextContent(board, '[data-oq-bind="inner-coil-temp-value"]', model.innerCoilTempText);
-    setTextContent(board, '[data-oq-bind="evaporator-temp-value"]', model.evaporatorCoilTempText);
-    setTextContent(board, '[data-oq-bind="outside-temp-value"]', model.outsideTempText);
-    setTextContent(board, '[data-oq-bind="discharge-pressure-value"]', model.dischargePressureText);
-    setTextContent(board, '[data-oq-bind="discharge-temp-value"]', model.dischargeTempText);
-    setTextContent(board, '[data-oq-bind="suction-pressure-value"]', model.suctionPressureText);
-    setTextContent(board, '[data-oq-bind="suction-temp-value"]', model.suctionTempText);
-    setTextContent(board, '[data-oq-bind="supply-value"]', model.waterOutText);
-    setTextContent(board, '[data-oq-bind="return-value"]', model.waterInText);
-    setTextContent(board, '[data-oq-bind="footer-mode"]', model.mode);
-    setTextContent(board, '[data-oq-bind="footer-power"]', model.powerText);
+    syncBoundText(board, [
+      ["status", model.statusText],
+      ["left-exchanger-title", model.leftExchangerTitle],
+      ["right-exchanger-title", model.rightExchangerTitle],
+      ["compressor-freq", model.compressorFreqText],
+      ["flow-value", model.flowText],
+      ["inner-coil-temp-value", model.innerCoilTempText],
+      ["evaporator-temp-value", model.evaporatorCoilTempText],
+      ["outside-temp-value", model.outsideTempText],
+      ["discharge-pressure-value", model.dischargePressureText],
+      ["discharge-temp-value", model.dischargeTempText],
+      ["suction-pressure-value", model.suctionPressureText],
+      ["suction-temp-value", model.suctionTempText],
+      ["supply-value", model.waterOutText],
+      ["return-value", model.waterInText],
+      ["footer-mode", model.mode],
+      ["footer-power", model.powerText],
+      ["footer-heat", model.heatText],
+      ["footer-efficiency-label", model.efficiencyLabel],
+      ["footer-efficiency", model.efficiencyText],
+      ["fan-speed-value", model.fanRpmText],
+      ["fourway-detail", model.fourWayPositionText],
+      ["eev-detail", model.eevPositionText],
+    ]);
     const footerHeatLabel = board.querySelector('[data-oq-bind="footer-heat-label"]');
     if (footerHeatLabel) {
-      footerHeatLabel.setAttribute("aria-label", model.heatLabel);
+      syncAttribute(footerHeatLabel, "aria-label", model.heatLabel);
       const nextHeatLabelMarkup = model.heatLabel === "Koelafgifte" ? "Koel<br>afgifte" : "Warmte<br>afgifte";
       if (footerHeatLabel.innerHTML !== nextHeatLabelMarkup) {
         footerHeatLabel.innerHTML = nextHeatLabelMarkup;
       }
     }
-    setTextContent(board, '[data-oq-bind="footer-heat"]', model.heatText);
-    setTextContent(board, '[data-oq-bind="footer-efficiency-label"]', model.efficiencyLabel);
-    setTextContent(board, '[data-oq-bind="footer-efficiency"]', model.efficiencyText);
-    setTextContent(board, '[data-oq-bind="fan-speed-value"]', model.fanRpmText);
-    setTextContent(board, '[data-oq-bind="fourway-detail"]', model.fourWayPositionText);
-    setTextContent(board, '[data-oq-bind="eev-detail"]', model.eevPositionText);
-    const bottomHeater = board.querySelector('[data-oq-bind="bottom-heater"]');
-    if (bottomHeater) {
-      bottomHeater.classList.toggle("is-active", model.bottomPlateActive);
-      bottomHeater.setAttribute("tabindex", model.bottomPlateActive ? "0" : "-1");
-      if (!model.bottomPlateActive) {
-        hideTechTooltip(board.querySelector('[data-oq-bind="bottom-heater-tooltip"]'));
-      }
-    }
-    const crankcaseHeater = board.querySelector('[data-oq-bind="crankcase-heater"]');
-    if (crankcaseHeater) {
-      crankcaseHeater.classList.toggle("is-active", model.crankcaseActive);
-      crankcaseHeater.setAttribute("tabindex", model.crankcaseActive ? "0" : "-1");
-      if (!model.crankcaseActive) {
-        hideTechTooltip(board.querySelector('[data-oq-bind="crankcase-heater-tooltip"]'));
-      }
-    }
+    [["bottom-heater", model.bottomPlateActive], ["crankcase-heater", model.crankcaseActive]].forEach(([bind, active]) => {
+      syncBoundToggle(board, bind, active, `${bind}-tooltip`);
+    });
     const defrostBadge = board.querySelector('[data-oq-bind="defrost-badge"]');
     if (defrostBadge) {
-      defrostBadge.setAttribute("tabindex", model.defrostActive ? "0" : "-1");
-      defrostBadge.setAttribute("aria-label", model.defrostActive ? "Defrost actief" : "Defrost uit");
+      syncAttribute(defrostBadge, "tabindex", model.defrostActive ? "0" : "-1");
+      syncAttribute(defrostBadge, "aria-label", model.defrostActive ? "Defrost actief" : "Defrost uit");
       if (!model.defrostActive) {
         hideTechTooltip(board.querySelector('[data-oq-bind="defrost-badge-tooltip"]'));
       }
     }
 
-    setVariantClass(board.querySelector('[data-oq-bind="supply-tooltip"]'), "oq-hp-tech-tooltip--", model.supplyLineTone, ["warm", "supply", "return"]);
-    setVariantClass(board.querySelector('[data-oq-bind="return-tooltip"]'), "oq-hp-tech-tooltip--", model.returnLineTone, ["warm", "supply", "return"]);
-    const supplyReading = board.querySelector('[data-oq-bind="supply-reading"]');
-    if (supplyReading) {
-      supplyReading.setAttribute("aria-label", `Aanvoer temperatuur ${model.waterOutText}`);
-    }
-    const flowReading = board.querySelector('[data-oq-bind="flow-reading"]');
-    if (flowReading) {
-      flowReading.setAttribute("aria-label", `Flow ${model.flowText}`);
-    }
-    const innerCoilTempReading = board.querySelector('[data-oq-bind="inner-coil-temp-reading"]');
-    if (innerCoilTempReading) {
-      innerCoilTempReading.setAttribute("aria-label", `Inner coil temperatuur ${model.innerCoilTempText}`);
-    }
-    const evaporatorTempReading = board.querySelector('[data-oq-bind="evaporator-temp-reading"]');
-    if (evaporatorTempReading) {
-      evaporatorTempReading.setAttribute("aria-label", `Verdampertemperatuur ${model.evaporatorCoilTempText}`);
-    }
-    const outsideTempReading = board.querySelector('[data-oq-bind="outside-temp-reading"]');
-    if (outsideTempReading) {
-      outsideTempReading.setAttribute("aria-label", `Buitentemperatuur ${model.outsideTempText}`);
-    }
-    const compressorFreqTrigger = board.querySelector('[data-oq-bind="compressor-freq-trigger"]');
-    if (compressorFreqTrigger) {
-      compressorFreqTrigger.setAttribute("aria-label", `Compressorfrequentie ${model.compressorFreqText}`);
-    }
-    const fanSpeedReading = board.querySelector('[data-oq-bind="fan-speed-reading"]');
-    if (fanSpeedReading) {
-      fanSpeedReading.setAttribute("aria-label", `Ventilatorsnelheid ${model.fanRpmText}`);
-    }
-    const dischargePressureReading = board.querySelector('[data-oq-bind="discharge-pressure-reading"]');
-    if (dischargePressureReading) {
-      dischargePressureReading.setAttribute("aria-label", `Persdruk ${model.dischargePressureText}`);
-    }
-    const dischargeTempReading = board.querySelector('[data-oq-bind="discharge-temp-reading"]');
-    if (dischargeTempReading) {
-      dischargeTempReading.setAttribute("aria-label", `Perstemperatuur ${model.dischargeTempText}`);
-    }
-    const returnReading = board.querySelector('[data-oq-bind="return-reading"]');
-    if (returnReading) {
-      returnReading.setAttribute("aria-label", `Retour temperatuur ${model.waterInText}`);
-    }
-    const suctionPressureReading = board.querySelector('[data-oq-bind="suction-pressure-reading"]');
-    if (suctionPressureReading) {
-      suctionPressureReading.setAttribute("aria-label", `Zuigdruk ${model.suctionPressureText}`);
-    }
-    const suctionTempReading = board.querySelector('[data-oq-bind="suction-temp-reading"]');
-    if (suctionTempReading) {
-      suctionTempReading.setAttribute("aria-label", `Zuigtemperatuur ${model.suctionTempText}`);
-    }
-    const fourWayTrigger = board.querySelector('[data-oq-bind="fourway-trigger"]');
-    if (fourWayTrigger) {
-      fourWayTrigger.setAttribute("aria-label", `4-wegklep, ${model.fourWayPositionText}`);
-    }
-    const eevTrigger = board.querySelector('[data-oq-bind="eev-trigger"]');
-    if (eevTrigger) {
-      eevTrigger.setAttribute("aria-label", `Expansieventiel, ${model.eevPositionText}`);
-    }
+    [["supply-tooltip", model.supplyLineTone], ["return-tooltip", model.returnLineTone]].forEach(([bind, tone]) => {
+      setVariantClass(board.querySelector(`[data-oq-bind="${bind}"]`), "oq-hp-tech-tooltip--", tone, ["warm", "supply", "return"]);
+    });
+    syncBoundAria(board, [
+      ["supply-reading", `Aanvoer temperatuur ${model.waterOutText}`],
+      ["flow-reading", `Flow ${model.flowText}`],
+      ["inner-coil-temp-reading", `Inner coil temperatuur ${model.innerCoilTempText}`],
+      ["evaporator-temp-reading", `Verdampertemperatuur ${model.evaporatorCoilTempText}`],
+      ["outside-temp-reading", `Buitentemperatuur ${model.outsideTempText}`],
+      ["compressor-freq-trigger", `Compressorfrequentie ${model.compressorFreqText}`],
+      ["fan-speed-reading", `Ventilatorsnelheid ${model.fanRpmText}`],
+      ["discharge-pressure-reading", `Persdruk ${model.dischargePressureText}`],
+      ["discharge-temp-reading", `Perstemperatuur ${model.dischargeTempText}`],
+      ["return-reading", `Retour temperatuur ${model.waterInText}`],
+      ["suction-pressure-reading", `Zuigdruk ${model.suctionPressureText}`],
+      ["suction-temp-reading", `Zuigtemperatuur ${model.suctionTempText}`],
+      ["fourway-trigger", `4-wegklep, ${model.fourWayPositionText}`],
+      ["eev-trigger", `Expansieventiel, ${model.eevPositionText}`],
+    ]);
     setVariantClass(board.querySelector(".oq-hp-tech-pump"), "oq-hp-tech-pump--", model.returnLineTone, ["supply", "return"]);
-    const condWater = board.querySelector('[data-oq-bind="cond-water"]');
-    if (condWater) {
-      const svgIdBase = String(model.title || "hp").toLowerCase().replace(/[^a-z0-9]+/g, "-");
-      const fillId = model.reverseCycle ? `${svgIdBase}-cond-water-cool` : `${svgIdBase}-cond-water-heat`;
-      const fillValue = `url(#${fillId})`;
-      if (condWater.getAttribute("fill") !== fillValue) {
-        condWater.setAttribute("fill", fillValue);
-      }
-    }
+    const svgIdBase = String(model.title || "hp").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    syncBoundFill(
+      board,
+      "cond-water",
+      `url(#${model.reverseCycle ? `${svgIdBase}-cond-water-cool` : `${svgIdBase}-cond-water-heat`})`,
+    );
 
     Object.entries(model.pipes).forEach(([id, pipe]) => {
       updatePipeGroup(board, id.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`), pipe.tone, pipe.d);
@@ -7370,16 +6951,17 @@
     if (summaryShell) {
       const top = summaryShell.querySelector(".oq-overview-top");
       if (top) {
-        setInnerHtmlIfChanged(top, renderOverviewTopCards());
+        setInnerHtmlIfChanged(top, renderOverviewStatCards(getOverviewTopCards()));
       }
 
       const statusPanel = summaryShell.querySelector(".oq-overview-statuspanel");
       if (statusPanel) {
         const controlModeLabel = getEntityStateText("controlModeLabel");
-        const nextStatusPanel = renderOverviewStatusStack(strategyLabel, controlModeLabel);
-        if (statusPanel.outerHTML !== nextStatusPanel) {
-          statusPanel.outerHTML = nextStatusPanel;
-        }
+        replaceOuterHtmlIfSignatureChanged(
+          statusPanel,
+          getRenderSignature(getOverviewStatusCards(strategyLabel, controlModeLabel)),
+          renderOverviewStatusPanel(strategyLabel, controlModeLabel),
+        );
       }
 
       const summarySide = summaryShell.querySelector(".oq-overview-summary-side");
@@ -7393,11 +6975,19 @@
     }
 
     if (system) {
-      system.outerHTML = renderOverviewStrategyPanel();
+      replaceOuterHtmlIfSignatureChanged(
+        system,
+        getRenderSignature(getOverviewStrategySectionModel()),
+        renderOverviewNarrativePanel(getOverviewStrategySectionModel()),
+      );
     }
 
     if (temps) {
-      temps.innerHTML = renderOverviewTempsSection();
+      replaceOuterHtmlIfSignatureChanged(
+        temps,
+        getRenderSignature(getOverviewTempsModel()),
+        renderOverviewTempsPanel(),
+      );
     }
 
     if (!hpTools || !hpGrid) {
@@ -7412,47 +7002,14 @@
     }
 
     const hpLayoutMode = getEffectiveHpLayoutMode(heatPumpPanels);
-    hpGrid.classList.toggle("oq-overview-hp-grid--single", heatPumpPanels.length === 1);
-    hpGrid.classList.toggle("oq-overview-hp-grid--equal", heatPumpPanels.length > 1 && hpLayoutMode === "equal");
-    hpGrid.classList.toggle("oq-overview-hp-grid--focus-hp1", heatPumpPanels.length > 1 && hpLayoutMode === "focus-hp1");
-    hpGrid.classList.toggle("oq-overview-hp-grid--focus-hp2", heatPumpPanels.length > 1 && hpLayoutMode === "focus-hp2");
+    setVariantClass(hpGrid, "oq-overview-hp-grid--", heatPumpPanels.length === 1 ? "single" : hpLayoutMode, ["single", "equal", "focus-hp1", "focus-hp2"]);
     heatPumpPanels.forEach((panel, index) => {
       const panelNode = board.querySelector(`[data-oq-hp-panel="${panel.title}"]`);
       if (panelNode) {
-        panelNode.classList.remove("oq-overview-hp--normal", "oq-overview-hp--focus", "oq-overview-hp--muted");
-        panelNode.classList.add(`oq-overview-hp--${getHeatPumpPanelEmphasis(index, heatPumpPanels, hpLayoutMode)}`);
-        const headSide = panelNode.querySelector(".oq-overview-hp-head-side");
-        const headTitle = panelNode.querySelector(".oq-overview-hp-head-title");
-        if (headSide) {
-          const mode = formatWorkingMode(getEntityStateText(panel.keys.mode, "Unknown"));
-          const defrostActive = isEntityActive(panel.keys.defrost);
-          const failures = formatFailures(getEntityStateText(panel.keys.failures, "None"));
-          const running = mode === "Verwarmen" || mode === "Koelen" || defrostActive;
-          const layoutAction = getHeatPumpPanelLayoutAction(index, heatPumpPanels, hpLayoutMode);
-          if (headTitle) {
-            setInnerHtmlIfChanged(headTitle, `
-              <h3>${escapeHtml(panel.title)}</h3>
-              ${layoutAction ? `<button class="oq-overview-hp-card-action" type="button" data-oq-action="select-hp-layout" data-hp-layout="${escapeHtml(layoutAction.layout)}">${renderMagnifyActionIcon(layoutAction.layout === "equal" ? "minus" : "plus")}<span>${escapeHtml(layoutAction.label)}</span></button>` : ""}
-            `);
-          }
-          let hpStatus = headSide.querySelector(".oq-overview-hp-status");
-          if (!hpStatus) {
-            setInnerHtmlIfChanged(headSide, `
-              <div class="oq-overview-hp-status">
-                ${renderHpPanelStatusRow(mode, running, failures !== "Geen actieve storingen", failures)}
-              </div>
-            `);
-            hpStatus = headSide.querySelector(".oq-overview-hp-status");
-          }
-          patchHpPanelStatusRow(hpStatus, mode, running, failures !== "Geen actieve storingen", failures);
-        }
+        const runtime = getHeatPumpRuntimeModel(panel.title, panel.keys, panel.accent);
+        setVariantClass(panelNode, "oq-overview-hp--", getHeatPumpPanelEmphasis(index, heatPumpPanels, hpLayoutMode), ["normal", "focus", "muted"]);
+        patchHeatPumpPanel(panelNode, panel.title, panel.keys, panel.accent, getHeatPumpPanelLayoutAction(index, heatPumpPanels, hpLayoutMode), runtime);
       }
-      patchHeatPumpPanel(
-        panelNode,
-        panel.title,
-        panel.keys,
-        panel.accent,
-      );
     });
 
     return true;
