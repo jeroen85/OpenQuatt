@@ -1,0 +1,192 @@
+.oq-overview-energy {
+  margin-top: 16px;
+}
+
+.oq-overview-energy-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.oq-overview-energy-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.oq-overview-energy-grid--single {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 920px;
+}
+
+.oq-overview-energy--solo {
+  margin-top: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.oq-overview-energy-column {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  padding: 16px 18px 18px;
+  border-radius: 20px;
+  background: var(--oq-overview-surface);
+  border: 1px solid var(--oq-overview-surface-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.oq-overview-energy-column-copy {
+  display: grid;
+  gap: 0;
+  padding-bottom: 4px;
+  border-bottom: none;
+}
+
+.oq-overview-energy-column-copy h4 {
+  margin: 0;
+  color: var(--oq-overview-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.oq-overview-energy-column--blue {
+  box-shadow: inset 0 6px 0 0 rgba(59, 130, 246, 0.9);
+}
+
+.oq-overview-energy-column--orange {
+  box-shadow: inset 0 6px 0 0 rgba(249, 115, 22, 0.9);
+}
+
+.oq-overview-energy-column--green {
+  box-shadow: inset 0 6px 0 0 rgba(34, 197, 94, 0.9);
+}
+
+.oq-overview-energy-groups {
+  display: grid;
+  gap: 14px;
+}
+
+.oq-overview-energy-category {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--oq-overview-row-border);
+  background: color-mix(in srgb, var(--oq-overview-surface) 90%, transparent);
+}
+
+.oq-overview-energy-category--blue {
+  background: color-mix(in srgb, rgba(59, 130, 246, 0.08) 100%, var(--oq-overview-surface));
+}
+
+.oq-overview-energy-category--orange {
+  background: color-mix(in srgb, rgba(249, 115, 22, 0.08) 100%, var(--oq-overview-surface));
+}
+
+.oq-overview-energy-category-head {
+  display: flex;
+  align-items: center;
+}
+
+.oq-overview-energy-category-head span {
+  display: inline-block;
+  padding-left: 12px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  position: relative;
+}
+
+.oq-overview-energy-category-head span::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  transform: translateY(-50%);
+}
+
+.oq-overview-energy-category--blue .oq-overview-energy-category-head span {
+  color: #1d4ed8;
+}
+
+.oq-overview-energy-category--blue .oq-overview-energy-category-head span::before {
+  background: linear-gradient(180deg, #1d4ed8, #60a5fa);
+}
+
+.oq-overview-energy-category--orange .oq-overview-energy-category-head span {
+  color: #c2410c;
+}
+
+.oq-overview-energy-category--orange .oq-overview-energy-category-head span::before {
+  background: linear-gradient(180deg, #f59e0b, #ef4444);
+}
+
+.oq-helper-shell--dark .oq-overview-energy-category--blue .oq-overview-energy-category-head span {
+  color: #93c5fd;
+}
+
+.oq-helper-shell--dark .oq-overview-energy-category--orange .oq-overview-energy-category-head span {
+  color: #fdba74;
+}
+
+.oq-overview-energy-category-groups {
+  display: grid;
+  gap: 10px;
+}
+
+.oq-overview-energy-group {
+  padding: 12px 0 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--oq-overview-row-border);
+}
+
+.oq-overview-energy-group:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.oq-overview-energy-group h5 {
+  margin: 0 0 10px;
+  color: var(--oq-overview-title);
+  font-size: 1.02rem;
+}
+
+.oq-overview-energy-rows {
+  display: grid;
+  gap: 8px;
+}
+
+.oq-overview-energy-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.oq-overview-energy-row + .oq-overview-energy-row {
+  padding-top: 8px;
+  border-top: 1px solid var(--oq-overview-row-border);
+}
+
+.oq-overview-energy-row span {
+  color: var(--oq-overview-soft);
+  font-size: 0.95rem;
+}
+
+.oq-overview-energy-row strong {
+  color: var(--oq-overview-title);
+  font-size: 0.98rem;
+  text-align: right;
+}

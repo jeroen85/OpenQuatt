@@ -1,3 +1,7 @@
+/* Generated bundle: css/openquatt-app.css */
+/* Source files are in ./js/src and ./css/src. */
+/* Rebuild with: node openquatt/web/build-assets.mjs */
+/* --- css/src/00-base.css --- */
 #oq-helper-root {
   --oq-helper-bg: #f9fafb;
   --oq-helper-card: #ffffff;
@@ -1758,6 +1762,7 @@ body.oq-page-light {
   margin-top: 18px;
 }
 
+/* --- css/src/10-settings.css --- */
 .oq-settings-section {
   padding: 22px;
   border-radius: var(--oq-helper-radius-lg);
@@ -2886,6 +2891,7 @@ body.oq-page-light {
   margin-bottom: 12px;
 }
 
+/* --- css/src/20-overview.css --- */
 .oq-overview-board {
   --oq-overview-bg: linear-gradient(180deg, rgba(30, 40, 56, 0.98), rgba(23, 32, 46, 0.98));
   --oq-overview-border: rgba(124, 141, 165, 0.24);
@@ -3499,6 +3505,30 @@ body.oq-page-light {
   background: linear-gradient(180deg, #0ea5e9, #67e8f9);
 }
 
+.oq-overview-temps-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.oq-overview-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--oq-overview-row-border);
+  color: var(--oq-overview-chip-ink);
+}
+
+.oq-overview-row:last-child {
+  border-bottom: none;
+}
+
+.oq-overview-row strong {
+  color: var(--oq-overview-title);
+}
+
+/* --- css/src/30-energy.css --- */
 .oq-overview-energy {
   margin-top: 16px;
 }
@@ -3692,29 +3722,7 @@ body.oq-page-light {
   text-align: right;
 }
 
-.oq-overview-temps-list {
-  display: grid;
-  gap: 10px;
-  margin-top: 14px;
-}
-
-.oq-overview-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 13px 0;
-  border-bottom: 1px solid var(--oq-overview-row-border);
-  color: var(--oq-overview-chip-ink);
-}
-
-.oq-overview-row:last-child {
-  border-bottom: none;
-}
-
-.oq-overview-row strong {
-  color: var(--oq-overview-title);
-}
-
+/* --- css/src/40-heatpump.css --- */
 .oq-overview-hp-tools {
   display: block;
   margin-top: 18px;
@@ -5137,6 +5145,7 @@ body.oq-page-light {
   will-change: transform;
 }
 
+/* --- css/src/90-responsive.css --- */
 @media (max-width: 980px) {
   .oq-hp-tech-footer {
     grid-template-columns: repeat(2, minmax(0, 1fr));
