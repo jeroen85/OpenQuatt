@@ -5012,9 +5012,13 @@
     return ["hp1WaterIn", "hp2WaterIn"].find((key) => hasEntity(key)) || "";
   }
 
+  function isCoolingControlMode(modeLabel = getEntityStateText("controlModeLabel", "")) {
+    const normalized = String(modeLabel || "").toLowerCase();
+    return normalized.includes("cm5") || normalized.includes("cooling") || normalized.includes("koeling");
+  }
+
   function isCoolingOverviewActive() {
-    const modeLabel = getEntityStateText("controlModeLabel", "").toLowerCase();
-    return modeLabel.includes("cm5") || modeLabel.includes("cooling") || modeLabel.includes("koeling") || isEntityActive("coolingRequestActive");
+    return isCoolingControlMode();
   }
 
   function getOverviewStrategyLabel() {
@@ -5341,7 +5345,7 @@
     return [
       { key: "totalPower", label: "Stroomverbruik", tone: "blue", note: "hele systeem" },
       { key: coolingActive ? "totalCoolingPower" : "totalHeat", label: coolingActive ? "Koelafgifte" : "Warmteafgifte", tone: "orange", note: "thermisch vermogen" },
-      { key: coolingActive ? "totalEer" : "totalCop", label: coolingActive ? "EER" : "COP", tone: "green", note: "rendement" },
+      { key: coolingActive ? "totalEer" : "totalCop", label: coolingActive ? "COP (EER)" : "COP", tone: "green", note: "rendement" },
       { key: "flowSelected", label: "Flow", tone: "sky", note: "watercircuit" },
     ];
   }
@@ -5354,7 +5358,7 @@
     const silentModeOverride = String(getEntityValue("silentModeOverride") || "Schedule");
     const coolingBlocked = !isEntityActive("coolingPermitted");
     const coolingRequestActive = isEntityActive("coolingRequestActive");
-    const coolingModeActive = getEntityStateText("controlModeLabel", "").toLowerCase().includes("cm5");
+    const coolingModeActive = isCoolingControlMode();
 
     let coolingStatus = "Uit";
     let coolingCopy = "Koeling staat uit.";
@@ -6006,7 +6010,7 @@
       ? ((!Number.isNaN(powerValue) && powerValue >= 5.0 && !Number.isNaN(coolingValue)) ? (coolingValue / powerValue) : Number.NaN)
       : getEntityNumericValue(keys.cop);
     const efficiencyText = formatNumericState(efficiencyValue, 1);
-    const efficiencyLabel = mode === "Koelen" ? "EER" : "COP";
+    const efficiencyLabel = mode === "Koelen" ? "COP (EER)" : "COP";
     const heatLabel = mode === "Koelen" ? "Koelafgifte" : "Warmteafgifte";
     const heatDescription = mode === "Koelen" ? "afgegeven koeling" : "afgegeven warmte";
     const fanRpmValue = getEntityNumericValue(keys.fanSpeed);
