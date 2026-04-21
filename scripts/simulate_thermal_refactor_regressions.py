@@ -49,6 +49,7 @@ def ph_low_load_latch(
     on_threshold_w: float,
     off_threshold_w: float,
     heating_request_raw: bool,
+    openquatt_enabled: bool = True,
 ) -> tuple[bool, bool]:
     latch = prev_latch
     if requested_power_w is None:
@@ -58,7 +59,7 @@ def ph_low_load_latch(
             latch = True
         elif latch and requested_power_w <= off_threshold_w:
             latch = False
-    return heating_request_raw and latch, latch
+    return heating_request_raw and latch and openquatt_enabled, latch
 
 
 def ph_reentry_block_active(
@@ -246,6 +247,13 @@ def run_scenarios() -> list[ScenarioResult]:
     add(
         "PH latch turns off below off-threshold",
         (not heating_request_active) and (not latch),
+        f"heating_request_active={heating_request_active}, latch={latch}",
+    )
+
+    heating_request_active, latch = ph_low_load_latch(True, 1500.0, 1300.0, 900.0, True, False)
+    add(
+        "PH latch cannot bypass paused OpenQuatt",
+        (not heating_request_active) and latch,
         f"heating_request_active={heating_request_active}, latch={latch}",
     )
 
