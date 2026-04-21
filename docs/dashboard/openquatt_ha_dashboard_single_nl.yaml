@@ -169,7 +169,7 @@ views:
               </details>
             text_only: true
           - type: tile
-            entity: switch.openquatt_enabled
+            entity: switch.openquatt_openquatt_enabled
             name: OpenQuatt regeling
             vertical: false
             features:
@@ -178,9 +178,9 @@ views:
           - type: tile
             visibility:
               - condition: state
-                entity: switch.openquatt_enabled
+                entity: switch.openquatt_openquatt_enabled
                 state: 'off'
-            entity: datetime.openquatt_resume_at
+            entity: datetime.openquatt_openquatt_resume_at
             name: Hervat automatisch
             icon: mdi:calendar-clock
             vertical: false
