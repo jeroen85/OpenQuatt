@@ -115,10 +115,15 @@ Deze groep is vaak belangrijker dan gebruikers denken.
 
 Belangrijke keuzes:
 
+- `Water Supply Source`
+- `Flow Source`
+- `Outside Temperature Source`
 - `Room Temperature Source`
 - `Room Setpoint Source`
 
 En indirect alles wat bepaalt waar buiten-, kamer- en waterwaarden vandaan komen.
+
+Voor `Outside Temperature Source` is `Auto` meestal de verstandigste keuze. OpenQuatt kiest dan zelf een geldige bron en blijft minder gevoelig voor een buitenmeting die tijdelijk niet betrouwbaar is.
 
 ## Welke meetwaarden wil je meestal zien?
 
