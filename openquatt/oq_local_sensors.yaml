@@ -12,6 +12,7 @@
 
 one_wire:
   - platform: gpio
+    id: oq_local_temp_bus
     pin: ${ds18b20_pin}
 
 sensor:
@@ -24,5 +25,7 @@ sensor:
     state_class: measurement
     accuracy_decimals: 2
     update_interval: 5s
+    one_wire_id: oq_local_temp_bus
+    index: 0
     web_server:
       sorting_group_id: oq_temperatures

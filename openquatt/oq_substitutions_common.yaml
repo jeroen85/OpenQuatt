@@ -142,7 +142,7 @@ oq_cic_restore_mode_default: "RESTORE_DEFAULT_OFF"    # Default CIC polling stat
 # ----------------------------
 cic_compat_uart_tx_pin: "GPIO15"                      # Placeholder TX pin for the secondary CiC Modbus port.
 cic_compat_uart_rx_pin: "GPIO16"                      # Placeholder RX pin for the secondary CiC Modbus port.
-cic_compat_uart_rts_pin: "GPIO4"                      # Placeholder DE/RE pin for the secondary CiC Modbus port.
+cic_compat_uart_rts_pin: "GPIO19"                     # Placeholder DE/RE pin for the secondary CiC Modbus port.
 cic_compat_modbus_address_hp1: "0x01"                 # CiC-facing Modbus address for HP1 compatibility data.
 cic_compat_modbus_address_hp2: "0x02"                 # CiC-facing Modbus address for HP2 compatibility data.
 oq_cic_compat_restore_mode_default: "RESTORE_DEFAULT_OFF" # Default CiC compatibility mode state.

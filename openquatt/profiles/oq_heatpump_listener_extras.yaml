@@ -1,0 +1,76 @@
+# ==============================================================================
+# OpenQuatt - Hardware Profile Extras: Heatpump Listener
+# ==============================================================================
+#
+# Goal:
+#   Expose optional board-specific sensors and I/O for the heatpump-listener PCB.
+#
+# Scope:
+#   - Optional DS18B20 inputs on T1 and T2
+#   - Optional auxiliary relay on GPIO23
+#
+# Notes:
+#   - The existing DS18B20 on `${ds18b20_pin}` remains the functional local
+#     water-supply sensor and is intentionally not duplicated here.
+#   - These entities are disabled by default and intended for ad-hoc expansion.
+#
+# ==============================================================================
+
+one_wire:
+  - platform: gpio
+    id: listener_temp_t1_bus
+    pin: ${listener_temp_t1_pin}
+
+  - platform: gpio
+    id: listener_temp_t2_bus
+    pin: ${listener_temp_t2_pin}
+
+sensor:
+  - platform: dallas_temp
+    id: listener_temp_t1
+    name: "Temperature T1"
+    disabled_by_default: true
+    icon: mdi:thermometer
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 5s
+    entity_category: diagnostic
+    one_wire_id: listener_temp_t1_bus
+    index: 0
+    web_server:
+      sorting_group_id: oq_temperatures
+
+  - platform: dallas_temp
+    id: listener_temp_t2
+    name: "Temperature T2"
+    disabled_by_default: true
+    icon: mdi:thermometer
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 5s
+    entity_category: diagnostic
+    one_wire_id: listener_temp_t2_bus
+    index: 0
+    web_server:
+      sorting_group_id: oq_temperatures
+
+output:
+  - platform: gpio
+    id: listener_aux_relay_out
+    pin: ${listener_aux_relay_pin}
+
+switch:
+  - platform: output
+    id: listener_aux_relay
+    name: "Aux relay"
+    disabled_by_default: true
+    output: listener_aux_relay_out
+    icon: mdi:electric-switch
+    restore_mode: ALWAYS_OFF
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_system_diagnostics

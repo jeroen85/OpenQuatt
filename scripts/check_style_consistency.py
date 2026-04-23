@@ -138,12 +138,14 @@ NESTED_KEY_ORDER_RULES = {
     ),
     ("openquatt_duo_heatpump_listener.yaml", "packages"): (
         "openquatt_base",
+        "oq_heatpump_listener_extras",
     ),
     ("openquatt_duo_waveshare.yaml", "packages"): (
         "openquatt_base",
     ),
     ("openquatt_single_heatpump_listener.yaml", "packages"): (
         "openquatt_base",
+        "oq_heatpump_listener_extras",
     ),
     ("openquatt_single_waveshare.yaml", "packages"): (
         "openquatt_base",
