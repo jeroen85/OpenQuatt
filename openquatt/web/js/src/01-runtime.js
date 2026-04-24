@@ -10,7 +10,7 @@
     interfacePanelOpen: getStoredInterfacePanelOpen(),
     devPanelOpen: getStoredDevPanelOpen(),
     nativeOpen: getStoredSurface() === "native",
-    currentStep: "strategy",
+    currentStep: "generation",
     appView: "",
     overviewTheme: getStoredOverviewTheme(),
     hpVisualMode: getStoredHpVisualMode(),
@@ -31,6 +31,14 @@
     focusedField: "",
     updateModalOpen: false,
     systemModal: "",
+    authStatus: null,
+    authDraftUsername: "",
+    authDraftCurrentPassword: "",
+    authDraftNewPassword: "",
+    authDraftConfirmPassword: "",
+    authBusy: false,
+    authNotice: "",
+    authError: "",
     updateCheckBusy: false,
     updateInstallBusy: false,
     updateInstallTargetVersion: "",
@@ -515,4 +523,3 @@
     const path = window.location.pathname.replace(/\/$/, "");
     return path === "" ? "" : path;
   }
-

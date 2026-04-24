@@ -1,6 +1,7 @@
 (function () {
   const DOMAINS = new Set(["select", "number", "sensor", "text_sensor", "binary_sensor", "button", "time", "datetime", "update", "switch"]);
   const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
+  const OPENQUATT_AUTH_RECOVERY_WINDOW_MS = 600000;
   const entities = new Map();
   const state = {
     scenario: "heating",
@@ -10,6 +11,14 @@
     autoAnimate: true,
     bootedAt: Date.now() - ((2 * 3600) + (13 * 60)) * 1000,
     otaTimers: [],
+    auth: {
+      enabled: false,
+      username: "",
+      password: "",
+      source: "bootstrap-open",
+      csrfToken: "",
+      recoveryUntil: 0,
+    },
   };
 
   const HP2_ENTITIES = [
@@ -121,6 +130,112 @@
   function clearOtaSimulation() {
     state.otaTimers.forEach((timer) => window.clearTimeout(timer));
     state.otaTimers = [];
+  }
+
+  function generateAuthToken() {
+    const bytes = new Uint8Array(12);
+    window.crypto.getRandomValues(bytes);
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  }
+
+  function isAuthRecoveryWindowActive() {
+    return Date.now() < Number(state.auth.recoveryUntil || 0);
+  }
+
+  function refreshAuthToken() {
+    state.auth.csrfToken = generateAuthToken();
+  }
+
+  function getAuthStatusPayload() {
+    return {
+      enabled: Boolean(state.auth.enabled),
+      setup_window_active: isAuthRecoveryWindowActive(),
+      username: String(state.auth.username || ""),
+      source: String(state.auth.source || ""),
+      csrf_token: String(state.auth.csrfToken || ""),
+    };
+  }
+
+  function armAuthRecoveryWindow(durationMs = OPENQUATT_AUTH_RECOVERY_WINDOW_MS) {
+    state.auth.recoveryUntil = Date.now() + Math.max(0, Number(durationMs) || 0);
+    refreshAuthToken();
+  }
+
+  function parseAuthFormBody(init) {
+    const body = init && typeof init === "object" ? init.body : "";
+    if (typeof body === "string") {
+      return new URLSearchParams(body);
+    }
+    if (body instanceof URLSearchParams) {
+      return body;
+    }
+    return new URLSearchParams();
+  }
+
+  function makeAuthResponse(status, payload) {
+    return mockResponse(status, payload);
+  }
+
+  function handleAuthStatus() {
+    return makeAuthResponse(200, getAuthStatusPayload());
+  }
+
+  function handleAuthChange(init) {
+    const params = parseAuthFormBody(init);
+    const status = getAuthStatusPayload();
+    if (params.get("csrf_token") !== status.csrf_token) {
+      return makeAuthResponse(403, { ok: false, error: "forbidden" });
+    }
+
+    const currentPassword = String(params.get("current_password") || "");
+    const newUsername = String(params.get("new_username") || "").trim();
+    const newPassword = String(params.get("new_password") || "");
+
+    if (!state.auth.enabled && !status.setup_window_active) {
+      return makeAuthResponse(403, { ok: false, error: "setup_window_required" });
+    }
+    if (state.auth.enabled && currentPassword !== state.auth.password) {
+      return makeAuthResponse(403, { ok: false, error: "invalid_current_password" });
+    }
+    if (!newUsername || !newPassword) {
+      return makeAuthResponse(400, { ok: false, error: "missing_fields" });
+    }
+
+    state.auth.enabled = true;
+    state.auth.username = newUsername;
+    state.auth.password = newPassword;
+    state.auth.source = "runtime-credentials";
+    state.auth.recoveryUntil = 0;
+    refreshAuthToken();
+    return makeAuthResponse(200, {
+      ok: true,
+      status: getAuthStatusPayload(),
+    });
+  }
+
+  function handleAuthDisable(init) {
+    const params = parseAuthFormBody(init);
+    const status = getAuthStatusPayload();
+    if (params.get("csrf_token") !== status.csrf_token) {
+      return makeAuthResponse(403, { ok: false, error: "forbidden" });
+    }
+    if (!state.auth.enabled) {
+      return makeAuthResponse(409, { ok: false, error: "already_disabled" });
+    }
+    if (String(params.get("current_password") || "") !== state.auth.password) {
+      return makeAuthResponse(403, { ok: false, error: "invalid_current_password" });
+    }
+
+    state.auth.enabled = false;
+    state.auth.username = "";
+    state.auth.password = "";
+    state.auth.source = "runtime-disabled";
+    state.auth.recoveryUntil = 0;
+    refreshAuthToken();
+    return makeAuthResponse(200, {
+      ok: true,
+      status: getAuthStatusPayload(),
+    });
   }
 
   function getMockReleaseUrl(channel) {
@@ -272,6 +387,11 @@
       value: "Flow Setpoint",
       state: "Flow Setpoint",
       option: ["Flow Setpoint", "Manual PWM"],
+    });
+    setEntity("select", "Quatt Hybrid version", {
+      value: "V1.5",
+      state: "V1.5",
+      option: ["V1", "V1.5", "V2"],
     });
     setEntity("text_sensor", "Control Mode (Label)", { state: "CM98" });
     setEntity("text_sensor", "Cooling Block Reason", { state: "Ready", value: "Ready" });
@@ -1214,6 +1334,17 @@
   function installFetchMock() {
     const realFetch = window.fetch ? window.fetch.bind(window) : null;
     window.fetch = async function fetchMock(input, init) {
+      const url = new URL(String(typeof input === "string" ? input : input.url), window.location.href);
+      if (url.pathname === "/auth/status" && (!init || !init.method || String(init.method).toUpperCase() === "GET")) {
+        return handleAuthStatus();
+      }
+      if (url.pathname === "/auth/change" && String(init?.method || "GET").toUpperCase() === "POST") {
+        return handleAuthChange(init || {});
+      }
+      if (url.pathname === "/auth/disable" && String(init?.method || "GET").toUpperCase() === "POST") {
+        return handleAuthDisable(init || {});
+      }
+
       const request = parseMockRequest(input);
       if (!request) {
         if (realFetch) {
@@ -1267,6 +1398,10 @@
     return `
       <section class="oq-helper-hub-block oq-helper-hub-dev" data-oq-dev-controls>
         <p class="oq-helper-hub-kicker">Preview en test</p>
+        <div class="oq-helper-hub-dev-meta">
+          <span class="oq-helper-hub-dev-badge">Login ${state.auth.enabled ? "aan" : "uit"}</span>
+          <span class="oq-helper-hub-dev-badge">${isAuthRecoveryWindowActive() ? "Herstelvenster open" : "Herstelvenster dicht"}</span>
+        </div>
         <div class="oq-helper-hub-dev-grid">
           <label class="oq-helper-hub-dev-row">
             <span class="oq-helper-hub-dev-label">Installatie</span>
@@ -1285,6 +1420,9 @@
               <option value="defrost">Defrost</option>
             </select>
           </label>
+        </div>
+        <div class="oq-helper-hub-dev-actions">
+          <button class="oq-helper-hub-dev-button" type="button" data-oq-dev-control="arm-auth">Login herstelvenster</button>
         </div>
         <div class="oq-helper-hub-dev-actions">
           <button class="oq-helper-hub-dev-button" type="button" data-oq-dev-control="toggle-animate">${state.autoAnimate ? "Pauzeer mockdata" : "Start mockdata"}</button>
@@ -1343,6 +1481,15 @@
         notifyDevControlsChanged();
       };
     }
+
+    const armAuth = controlsRoot.querySelector('[data-oq-dev-control="arm-auth"]');
+    if (armAuth) {
+      armAuth.onclick = () => {
+        armAuthRecoveryWindow();
+        notifyMockUpdated();
+        notifyDevControlsChanged();
+      };
+    }
   }
 
   window.__OQ_DEV_CONTROLS__ = {
@@ -1351,6 +1498,7 @@
   };
 
   seedEntities();
+  refreshAuthToken();
   setInstallationMode(state.installation);
   applyScenario(state.scenario);
   updateSummary();

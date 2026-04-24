@@ -91,6 +91,7 @@ STRICT_TOP_LEVEL_ORDER_RULES = {
         "oq_ot_slave",
         "oq_setup_status",
         "oq_webserver",
+        "oq_web_access",
         "heatpump1",
     ),
     "openquatt/topology/oq_topology_duo.yaml": (
