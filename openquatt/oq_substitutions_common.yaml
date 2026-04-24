@@ -40,6 +40,8 @@ oq_power_soft_trip_s: "300"                           # Time above soft required
 oq_power_recover_s: "60"                              # Time below recover required for cap recovery [s].
 oq_power_cap_max_f: "20"                              # Upper limit of demand-cap factor f.
 oq_power_cap_nan_f: "16"                              # Fail-safe cap factor for invalid power measurement.
+oq_duo_current_limit_v1_a: "16.0"                     # Duo current limit for V1/V1.5 hardware [A].
+oq_duo_current_limit_v2_a: "20.0"                     # Duo current limit for V2 hardware [A].
 oq_cm_prepost_s: "30"                                 # Duration of CM1 pre/postflow window [s].
 oq_cm_min_flow_lph: "250.0"                           # Minimum valid flow for compressor operation [L/h].
 oq_cm_flow_fault_s: "60"                              # Low-flow duration before fault becomes active [s].
@@ -78,7 +80,7 @@ oq_heat_loop_curve_s: "30"                            # Effective heat-control c
 oq_heat_loop_powerhouse_s: "60"                       # Effective heat-control cadence in Power House mode [s].
 oq_cop_min_input_w: "10.0"                            # Minimum electrical input for a valid COP calculation [W].
 oq_hp_min_off_s: "240"                                # Minimum per-HP off-time before any restart [s].
-oq_optimizer_soft_w: "3400.0"                         # Soft limit for electrical HP power in optimizer [W]; peak limit follows oq_power_peak_w.
+oq_optimizer_soft_w: "3400.0"                         # Base soft limit for V1/V1.5 duo electrical HP power in optimizer [W]; V2 scales from the active duo current limit.
 oq_optimizer_penalty_per_w: "5.0"                     # Cost factor above soft limit [cost/W].
 oq_optimizer_topology_power_margin_w: "150.0"         # Required power delta before a single<->duo topology switch counts as a meaningful efficiency gain [W].
 oq_optimizer_topology_heat_advantage_w: "450.0"       # Required heat-match advantage before a less-efficient topology may override the efficiency-first choice [W].

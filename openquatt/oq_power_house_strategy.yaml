@@ -735,10 +735,15 @@ interval:
             if (P_target > cap_total) P_target = cap_total;
             if (P_target < 0.0f) P_target = 0.0f;
 
+            const float duo_current_limit_a =
+                (id(hp_generation).has_state() && id(hp_generation).current_option() == "V2")
+                    ? ${oq_duo_current_limit_v2_a}
+                    : ${oq_duo_current_limit_v1_a};
+            const float duo_current_scale = duo_current_limit_a / ${oq_duo_current_limit_v1_a};
             const int last1 = id(hp1_last_applied_level);
             const int last2 = id(${ph_secondary_last_applied_level_id});
-            const float P_EL_SOFT_W = ${oq_optimizer_soft_w};
-            const float P_EL_PEAK_W = ${oq_power_peak_w};
+            const float P_EL_SOFT_W = ${oq_optimizer_soft_w} * duo_current_scale;
+            const float P_EL_PEAK_W = ${oq_power_peak_w} * duo_current_scale;
             const float thermal_tie_band_w = fmaxf(150.0f, 0.05f * fmaxf(P_target, 1000.0f));
             const float thermal_keep_margin_w = fminf(90.0f, thermal_tie_band_w * 0.5f);
             float topology_power_margin_w = ${oq_optimizer_topology_power_margin_w};

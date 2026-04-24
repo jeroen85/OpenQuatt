@@ -144,7 +144,7 @@ globals:
     initial_value: '0'  # 0,1,2,3,5,98
 
   # ----------------------------
-  # Power limiter (16A guard) - total demand cap
+  # Power limiter (duo current guard) - total demand cap
   # Cap is applied to total filtered demand f (0..20) before HP split.
   - id: oq_power_cap_f
     type: int
@@ -581,21 +581,26 @@ interval:
           }
           // -------------------------------------------------
           // -------------------------------------------------
-          // Power Limiter (16A guard) - simplified safety net
+          // Power Limiter (duo current guard) - simplified safety net
           // - Uses oq_total_power_input (W) = HP1+HP2 electrical
           // - Primary limiting happens in heat-control optimizer (COP-based).
           // - Supervisory is only a safety net for measured overshoot.
           //
-          // Targets:
-          //   Soft: 3400W  (prolonged overshoot -> mild cap)
-          //   Peak: 3650W  (short overshoot allowed; prolonged -> fast cap)
+          // Targets scale from the active duo current limit:
+          //   V1/V1.5 = 16A -> 3400W / 3650W / 3300W
+          //   V2      = 20A -> 4250W / 4562.5W / 4125W
           // -------------------------------------------------
           #if OQ_TOPOLOGY_DUO
           {
             const int dt_s = ${oq_supervisory_loop_s};
-            const float P_SOFT = ${oq_power_soft_w};
-            const float P_PEAK = ${oq_power_peak_w};
-            const float P_RECOVER = ${oq_power_recover_w};
+            const float duo_current_limit_a =
+                (id(hp_generation).has_state() && id(hp_generation).current_option() == "V2")
+                    ? ${oq_duo_current_limit_v2_a}
+                    : ${oq_duo_current_limit_v1_a};
+            const float duo_current_scale = duo_current_limit_a / ${oq_duo_current_limit_v1_a};
+            const float P_SOFT = ${oq_power_soft_w} * duo_current_scale;
+            const float P_PEAK = ${oq_power_peak_w} * duo_current_scale;
+            const float P_RECOVER = ${oq_power_recover_w} * duo_current_scale;
 
             // behavior
             const int PEAK_TRIP_S = ${oq_power_peak_trip_s};
@@ -604,7 +609,7 @@ interval:
 
             float p = id(oq_total_power_input).state;
 
-            // Fail-safe: power not available -> cap total demand to 16
+            // Fail-safe: power not available -> cap total demand to conservative fallback
             if (isnan(p)) {
               id(oq_power_cap_f) = ${oq_power_cap_nan_f};
               id(oq_power_over_soft_s) = 0;
