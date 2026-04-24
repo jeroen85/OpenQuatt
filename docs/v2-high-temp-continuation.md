@@ -64,6 +64,7 @@ First implementation detail:
 
 - the continuation is split into discrete `55 C`, `65 C`, and `70 C` bands
 - each band uses the cold-side ambient subset that best matches the ragged row count
+- the handoff between the main V2 map and the continuation is blended over roughly `54..56 C`
 - if a continuation lookup is incomplete, we fall back to the base `55 C` map instead of failing control logic
 
 This keeps the handoff simple and avoids mixing the two models in the same data structure.

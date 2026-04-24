@@ -341,38 +341,83 @@ static inline bool uses_v2_map() {
   return id(hp_generation).current_option() == "V2";
 }
 
+static inline float smoothstep(float edge0, float edge1, float x) {
+  if (edge0 == edge1) return 1.0f;
+  float t = (x - edge0) / (edge1 - edge0);
+  if (t < 0.0f) t = 0.0f;
+  if (t > 1.0f) t = 1.0f;
+  return t * t * (3.0f - 2.0f * t);
+}
+
+static inline float lerp(float a, float b, float t) {
+  return a + (b - a) * t;
+}
+
 static inline float interp_power_th_w(int level, float Tamb, float Tsup) {
   if (uses_v2_map()) {
-    if (Tsup > 55.0f) {
+    if (Tsup < 54.0f) {
+      return oq_perf_v2::interp_power_th_w(level, Tamb, Tsup);
+    }
+    if (Tsup > 56.0f) {
       float p = oq_perf_v2_high::interp_power_th_w(level, Tamb, Tsup);
       if (!std::isnan(p)) return p;
       return oq_perf_v2::interp_power_th_w(level, Tamb, 55.0f);
     }
-    return oq_perf_v2::interp_power_th_w(level, Tamb, Tsup);
+    float w = smoothstep(54.0f, 56.0f, Tsup);
+    float p_base = oq_perf_v2::interp_power_th_w(level, Tamb, Tsup);
+    float p_high = oq_perf_v2_high::interp_power_th_w(level, Tamb, Tsup);
+    if (std::isnan(p_high)) return p_base;
+    if (std::isnan(p_base)) return p_high;
+    return lerp(p_base, p_high, w);
   }
   return oq_perf_v1::interp_power_th_w(level, Tamb, Tsup);
 }
 
 static inline float interp_cop(int level, float Tamb, float Tsup) {
   if (uses_v2_map()) {
-    if (Tsup > 55.0f) {
+    if (Tsup < 54.0f) {
+      return oq_perf_v2::interp_cop(level, Tamb, Tsup);
+    }
+    if (Tsup > 56.0f) {
       float c = oq_perf_v2_high::interp_cop(level, Tamb, Tsup);
       if (!std::isnan(c)) return c;
       return oq_perf_v2::interp_cop(level, Tamb, 55.0f);
     }
-    return oq_perf_v2::interp_cop(level, Tamb, Tsup);
+    float w = smoothstep(54.0f, 56.0f, Tsup);
+    float c_base = oq_perf_v2::interp_cop(level, Tamb, Tsup);
+    float c_high = oq_perf_v2_high::interp_cop(level, Tamb, Tsup);
+    if (std::isnan(c_high)) return c_base;
+    if (std::isnan(c_base)) return c_high;
+    return lerp(c_base, c_high, w);
   }
   return oq_perf_v1::interp_cop(level, Tamb, Tsup);
 }
 
 static inline float interp_power_el_w(int level, float Tamb, float Tsup, float cop_fallback=3.0f) {
   if (uses_v2_map()) {
-    if (Tsup > 55.0f) {
+    if (Tsup < 54.0f) {
+      return oq_perf_v2::interp_power_el_w(level, Tamb, Tsup, cop_fallback);
+    }
+    if (Tsup > 56.0f) {
       float p = oq_perf_v2_high::interp_power_el_w(level, Tamb, Tsup, cop_fallback);
       if (!std::isnan(p) && p > 0.0f) return p;
       return oq_perf_v2::interp_power_el_w(level, Tamb, 55.0f, cop_fallback);
     }
-    return oq_perf_v2::interp_power_el_w(level, Tamb, Tsup, cop_fallback);
+    float w = smoothstep(54.0f, 56.0f, Tsup);
+    float p_base = oq_perf_v2::interp_power_th_w(level, Tamb, Tsup);
+    float p_high = oq_perf_v2_high::interp_power_th_w(level, Tamb, Tsup);
+    float c_base = oq_perf_v2::interp_cop(level, Tamb, Tsup);
+    float c_high = oq_perf_v2_high::interp_cop(level, Tamb, Tsup);
+    if (std::isnan(p_high) || std::isnan(c_high)) {
+      return oq_perf_v2::interp_power_el_w(level, Tamb, Tsup, cop_fallback);
+    }
+    if (std::isnan(p_base) || std::isnan(c_base)) {
+      return oq_perf_v2_high::interp_power_el_w(level, Tamb, Tsup, cop_fallback);
+    }
+    float p = lerp(p_base, p_high, w);
+    float c = lerp(c_base, c_high, w);
+    if (c <= 0.1f) c = cop_fallback;
+    return p / c;
   }
   return oq_perf_v1::interp_power_el_w(level, Tamb, Tsup, cop_fallback);
 }
