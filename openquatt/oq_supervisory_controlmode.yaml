@@ -586,7 +586,7 @@ interval:
           // - Primary limiting happens in heat-control optimizer (COP-based).
           // - Supervisory is only a safety net for measured overshoot.
           //
-          // Targets scale from the active duo current limit:
+          // Targets scale from the active duo current limit at 230V:
           //   V1/V1.5 = 16A -> 3400W / 3650W / 3300W
           //   V2      = 20A -> 4250W / 4562.5W / 4125W
           // -------------------------------------------------
@@ -597,10 +597,10 @@ interval:
                 (id(hp_generation).has_state() && id(hp_generation).current_option() == "V2")
                     ? ${oq_duo_current_limit_v2_a}
                     : ${oq_duo_current_limit_v1_a};
-            const float duo_current_scale = duo_current_limit_a / ${oq_duo_current_limit_v1_a};
-            const float P_SOFT = ${oq_power_soft_w} * duo_current_scale;
-            const float P_PEAK = ${oq_power_peak_w} * duo_current_scale;
-            const float P_RECOVER = ${oq_power_recover_w} * duo_current_scale;
+            const float mains_voltage_v = ${oq_mains_voltage_v};
+            const float P_SOFT = duo_current_limit_a * mains_voltage_v * (3400.0f / (16.0f * 230.0f));
+            const float P_PEAK = duo_current_limit_a * mains_voltage_v * (3650.0f / (16.0f * 230.0f));
+            const float P_RECOVER = duo_current_limit_a * mains_voltage_v * (3300.0f / (16.0f * 230.0f));
 
             // behavior
             const int PEAK_TRIP_S = ${oq_power_peak_trip_s};
