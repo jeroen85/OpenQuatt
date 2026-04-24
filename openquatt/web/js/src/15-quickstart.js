@@ -1,4 +1,16 @@
-  function renderGenerationWorkspace() {
+  function renderGenerationWorkspace(mode = "wizard") {
+    const pickerMode = mode === "picker";
+    if (pickerMode) {
+      return `
+        <section class="oq-helper-panel">
+          ${renderHpGenerationField()}
+          <div class="oq-helper-actions">
+            <button class="oq-helper-button oq-helper-button--primary" type="button" data-oq-action="close-quickstart-modal">Gereed</button>
+          </div>
+        </section>
+      `;
+    }
+
     return `
       <section class="oq-helper-panel">
         <p class="oq-helper-label">Stap 1</p>
@@ -7,6 +19,49 @@
         ${renderHpGenerationField()}
         ${renderQuickStartStepNav()}
       </section>
+    `;
+  }
+
+  function renderQuickStartModal() {
+    if (!state.quickStartModalOpen || state.loadingEntities || (state.complete && state.quickStartModalMode !== "generation")) {
+      return "";
+    }
+
+    if (state.quickStartModalMode === "generation") {
+      return `
+        <div class="oq-helper-modal-backdrop oq-helper-modal-backdrop--quickstart" data-oq-modal="quickstart-forced">
+          <section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--quickstart oq-helper-modal--generation" role="dialog" aria-modal="true" aria-labelledby="oq-generation-modal-title">
+            <div class="oq-helper-modal-head">
+              <div>
+                <p class="oq-helper-modal-kicker">Installatie</p>
+                <h2 class="oq-helper-modal-title" id="oq-generation-modal-title">Quatt Hybrid-versie aanpassen</h2>
+                <p class="oq-helper-modal-copy">Kies de versie die bij jouw Quatt hoort. Deze keuze bepaalt de basis van de regeling.</p>
+              </div>
+              <button class="oq-helper-modal-close" type="button" data-oq-action="close-quickstart-modal" aria-label="Sluit versie-popup">×</button>
+            </div>
+            ${renderGenerationWorkspace("picker")}
+          </section>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="oq-helper-modal-backdrop oq-helper-modal-backdrop--quickstart" data-oq-modal="quickstart-forced">
+        <section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--quickstart" role="dialog" aria-modal="true" aria-labelledby="oq-quickstart-modal-title">
+          <div class="oq-helper-modal-head">
+            <div>
+              <p class="oq-helper-modal-kicker">Quick Start</p>
+              <h2 class="oq-helper-modal-title" id="oq-quickstart-modal-title">Rond eerst de Quick Start af</h2>
+              <p class="oq-helper-modal-copy">Kies eerst de Quatt Hybrid en loop daarna stap voor stap door de basisinstellingen.</p>
+            </div>
+            <button class="oq-helper-modal-close" type="button" data-oq-action="close-quickstart-modal" aria-label="Sluit Quick Start-popup">×</button>
+          </div>
+          <div class="oq-helper-grid oq-helper-grid--quickstart oq-helper-grid--quickstart-modal">
+            ${renderActiveStep()}
+            ${renderQuickStartSidebar()}
+          </div>
+        </section>
+      </div>
     `;
   }
 

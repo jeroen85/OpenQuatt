@@ -21,7 +21,7 @@
   }
 
   function renderSettingsFieldCard(fieldKey, title, copy, controlMarkup, className = "", footerMarkup = "") {
-    return `<article class="oq-settings-field${className ? ` ${className}` : ""}"><div class="oq-settings-field-head"><h3>${escapeHtml(title)}</h3>${renderSettingsInfoToggle(fieldKey, title, copy)}</div><div class="oq-settings-field-control">${controlMarkup}</div>${footerMarkup}</article>`;
+    return `<article class="oq-settings-field${className ? ` ${className}` : ""}" data-oq-settings-field="${escapeHtml(fieldKey)}"><div class="oq-settings-field-head"><h3>${escapeHtml(title)}</h3>${renderSettingsInfoToggle(fieldKey, title, copy)}</div><div class="oq-settings-field-control">${controlMarkup}</div>${footerMarkup}</article>`;
   }
 
   function renderSettingsStaticField(fieldKey, title, copy, value, className = "") {
@@ -252,6 +252,294 @@
 
   function renderSettingsSection(kicker, title, copy, body) {
     return `<section class="oq-settings-section"><div class="oq-settings-section-head"><p class="oq-helper-label">${escapeHtml(kicker)}</p><h3>${escapeHtml(title)}</h3><p>${escapeHtml(copy)}</p></div>${body}</section>`;
+  }
+
+  function renderSettingsGroupNav() {
+    const activeGroup = SETTINGS_GROUP_IDS.has(state.settingsGroup) ? state.settingsGroup : SETTINGS_GROUPS[0].id;
+    return `
+      <nav class="oq-settings-group-nav" aria-label="Instellingen groepen">
+        ${SETTINGS_GROUPS.map((group) => `
+          <button
+            class="oq-settings-group-button${group.id === activeGroup ? " is-active" : ""}"
+            type="button"
+            data-oq-action="select-settings-group"
+            data-group-id="${escapeHtml(group.id)}"
+            aria-pressed="${group.id === activeGroup ? "true" : "false"}"
+          >
+            <span class="oq-settings-group-button-label">${escapeHtml(group.label)}</span>
+          </button>
+        `).join("")}
+      </nav>
+    `;
+  }
+
+  function renderSettingsGroupContent() {
+    const activeGroup = SETTINGS_GROUP_IDS.has(state.settingsGroup) ? state.settingsGroup : SETTINGS_GROUPS[0].id;
+    const sections = activeGroup === "installation"
+      ? [
+          renderSettingsGenerationSection(),
+          renderSettingsSilentSection(),
+          renderSettingsWaterSection(),
+        ]
+      : activeGroup === "heating"
+        ? [renderSettingsHeatingSection()]
+        : activeGroup === "cooling"
+          ? [renderSettingsCoolingSection()]
+      : activeGroup === "advanced"
+            ? [
+                renderSettingsFlowSection(),
+                renderSettingsCompressorSection(),
+                renderSettingsCiCCompatibilitySection(),
+              ]
+            : [
+                renderSettingsQuickStartSection(),
+                renderSettingsLoginSection(),
+                renderSettingsDiagnosticsSection(),
+              ];
+
+    return `
+      <div class="oq-settings-group-stack">
+        ${sections.filter(Boolean).join("")}
+      </div>
+    `;
+  }
+
+  function patchSettingsDom() {
+    if (!state.root || state.appView !== "settings") {
+      return false;
+    }
+
+    const nav = state.root.querySelector(".oq-settings-group-nav");
+    const stack = state.root.querySelector(".oq-settings-group-stack");
+    if (!nav || !stack) {
+      return false;
+    }
+
+    const activeGroup = SETTINGS_GROUP_IDS.has(state.settingsGroup) ? state.settingsGroup : SETTINGS_GROUPS[0].id;
+    const navButtons = nav.querySelectorAll(".oq-settings-group-button");
+    if (navButtons.length !== SETTINGS_GROUPS.length) {
+      return false;
+    }
+
+    navButtons.forEach((button) => {
+      const groupId = String(button.dataset.groupId || "");
+      const active = groupId === activeGroup;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+
+    stack.querySelectorAll(".oq-settings-info").forEach((info) => {
+      const infoId = String(info.dataset.oqSettingsInfo || "");
+      const open = state.settingsInfoOpen === infoId;
+      info.classList.toggle("is-open", open);
+      const popover = info.querySelector(".oq-settings-info-popover");
+      if (popover) {
+        popover.hidden = !open;
+      }
+      const button = info.querySelector(".oq-settings-info-button");
+      if (button) {
+        button.setAttribute("aria-expanded", open ? "true" : "false");
+      }
+    });
+
+    stack.querySelectorAll("[data-oq-settings-field]").forEach((card) => {
+      const key = String(card.dataset.oqSettingsField || "");
+      if (!key) {
+        return;
+      }
+
+      const staticValue = card.querySelector(".oq-settings-static-value");
+      if (staticValue) {
+        const text = getEntityStateText(key);
+        if (staticValue.textContent !== text) {
+          staticValue.textContent = text;
+        }
+      }
+
+      const select = card.querySelector('select[data-oq-field]');
+      if (select) {
+        const value = String(getEntityValue(key) || "");
+        if (select.value !== value) {
+          select.value = value;
+        }
+      }
+
+      const input = card.querySelector('input[data-oq-field]');
+      if (input) {
+        const value = String(getInputDraftValue(key) || "");
+        if (input.value !== value) {
+          input.value = value;
+        }
+      }
+
+      const sliderValue = card.querySelector(".oq-helper-slider-meta strong");
+      if (sliderValue && input && input.type === "range") {
+        const text = formatValue(key, normalizeNumber(key, getEntityValue(key)));
+        if (sliderValue.textContent !== text) {
+          sliderValue.textContent = text;
+        }
+      }
+    });
+
+    stack.querySelectorAll('[data-select-key]').forEach((button) => {
+      const key = String(button.dataset.selectKey || "");
+      const option = String(button.dataset.selectOption || "");
+      const currentValue = String(getEntityValue(key) || "");
+      const active = option === currentValue;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+      if (key === "strategy") {
+        button.disabled = state.loadingEntities || state.busyAction === "save-strategy";
+      } else if (key === "hpGeneration") {
+        button.disabled = state.loadingEntities || state.busyAction === "save-hpGeneration";
+      } else if (key === "curveControlProfile") {
+        button.disabled = state.loadingEntities || state.busyAction === "save-curveControlProfile";
+      } else if (key === "phResponseProfile") {
+        button.disabled = state.loadingEntities || state.busyAction === "save-phResponseProfile";
+      }
+
+      const shell = button.closest(".oq-settings-choice-card-shell");
+      if (shell) {
+        shell.classList.toggle("is-active", active);
+      }
+    });
+
+    const customProfileCard = stack.querySelector(".oq-settings-choice-card--static.oq-settings-choice-card--custom");
+    if (customProfileCard) {
+      const customActive = String(getEntityValue("phResponseProfile") || "") === "Custom";
+      customProfileCard.classList.toggle("is-active", customActive);
+      const numberInputs = customProfileCard.querySelectorAll("input[data-oq-field]");
+      numberInputs.forEach((input) => {
+        const key = String(input.dataset.oqField || "");
+        const value = String(getInputDraftValue(key) || "");
+        if (input.value !== value) {
+          input.value = value;
+        }
+      });
+    }
+
+    stack.querySelectorAll('[data-control-key]').forEach((button) => {
+      const key = String(button.dataset.controlKey || "");
+      const targetState = String(button.dataset.controlState || "");
+      const current = Boolean(getEntityValue(key));
+      const active = targetState === (current ? "on" : "off");
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+      button.disabled = state.loadingEntities || state.busyAction === `switch-${key}`;
+    });
+
+    const generationStatus = stack.querySelector('button[data-oq-action="open-generation-modal"]')?.closest(".oq-settings-quickstart-status");
+    if (generationStatus) {
+      const valueNode = generationStatus.querySelector(".oq-settings-quickstart-status-value");
+      const copyNode = generationStatus.querySelector(".oq-settings-quickstart-status-copy");
+      const button = generationStatus.querySelector('button[data-oq-action="open-generation-modal"]');
+      const currentLabel = getInstallationLabel();
+      const entity = state.entities.hpGeneration || {};
+      const canEdit = hasEntity("hpGeneration") && Array.isArray(entity.option) && entity.option.length > 0;
+      if (valueNode) {
+        const value = currentLabel || "Onbekend";
+        if (valueNode.textContent !== value) {
+          valueNode.textContent = value;
+        }
+      }
+      if (copyNode) {
+        const copy = "Pas dit aan als je een andere Quatt Hybrid hebt.";
+        if (copyNode.textContent !== copy) {
+          copyNode.textContent = copy;
+        }
+      }
+      if (button) {
+        button.disabled = !canEdit || state.loadingEntities || state.busyAction === "save-hpGeneration";
+      }
+    }
+
+    const quickStartStatus = stack.querySelector('button[data-oq-action="reset"]')?.closest(".oq-settings-quickstart-status");
+    if (quickStartStatus) {
+      const valueNode = quickStartStatus.querySelector(".oq-settings-quickstart-status-value");
+      const copyNode = quickStartStatus.querySelector(".oq-settings-quickstart-status-copy");
+      const button = quickStartStatus.querySelector('button[data-oq-action="reset"]');
+      const statusLabel = state.complete ? "Afgerond" : "Open";
+      const statusCopy = state.complete
+        ? "Quick Start is afgerond. Je kunt de status hier altijd weer openen met een reset."
+        : "Quick Start staat nog open. Gebruik de resetknop om opnieuw te beginnen.";
+      if (valueNode && valueNode.textContent !== statusLabel) {
+        valueNode.textContent = statusLabel;
+      }
+      if (copyNode && copyNode.textContent !== statusCopy) {
+        copyNode.textContent = statusCopy;
+      }
+      if (button) {
+        button.disabled = state.busyAction === "reset";
+      }
+    }
+
+    const loginStatus = stack.querySelector('button[data-oq-action="open-login-modal"]')?.closest(".oq-settings-quickstart-status");
+    if (loginStatus) {
+      const valueNode = loginStatus.querySelector(".oq-settings-quickstart-status-value");
+      const copyNode = loginStatus.querySelector(".oq-settings-quickstart-status-copy");
+      const button = loginStatus.querySelector('button[data-oq-action="open-login-modal"]');
+      const statusLabel = getWebAuthStatusLabel();
+      const statusCopy = getWebAuthStatusDetail();
+      if (valueNode && valueNode.textContent !== statusLabel) {
+        valueNode.textContent = statusLabel;
+      }
+      if (copyNode && copyNode.textContent !== statusCopy) {
+        copyNode.textContent = statusCopy;
+      }
+      if (button) {
+        button.disabled = false;
+      }
+    }
+
+    const systemSummary = stack.querySelector(".oq-settings-system-summary");
+    if (systemSummary) {
+      const rows = systemSummary.querySelectorAll(".oq-settings-system-row");
+      const values = [
+        formatUptimeFromMeta(),
+        getDeviceIpAddress(),
+        getUpdateStatus(),
+        formatDiagnosticsDateTime(),
+        state.entities.espInternalTemp ? formatOverviewStatValue("espInternalTemp") : "—",
+      ];
+
+      rows.forEach((row, index) => {
+        const valueNode = row.querySelector(".oq-settings-system-row-value");
+        if (!valueNode) {
+          return;
+        }
+        if (index < values.length) {
+          const nextValue = values[index];
+          if (valueNode.textContent !== nextValue) {
+            valueNode.textContent = nextValue;
+          }
+        }
+      });
+
+      const updateButton = systemSummary.querySelector('button[data-oq-action="open-update-modal"]');
+      if (updateButton) {
+        updateButton.disabled = false;
+      }
+      const restartButton = systemSummary.querySelector('button[data-oq-action="open-restart-confirm"]');
+      if (restartButton) {
+        const busyRestart = state.busyAction === "restartAction";
+        restartButton.disabled = busyRestart;
+        restartButton.textContent = busyRestart ? "Herstarten..." : "Herstarten";
+      }
+    }
+
+    const curveShell = stack.querySelector(".oq-settings-curve-shell");
+    const currentCurveMode = isCurveMode();
+    if (Boolean(curveShell) !== currentCurveMode) {
+      return false;
+    }
+
+    const customCardExists = Boolean(customProfileCard);
+    const customProfileActive = String(getEntityValue("phResponseProfile") || "") === "Custom";
+    if (customCardExists !== customProfileActive) {
+      return false;
+    }
+
+    return true;
   }
 
   function renderCurveFallbackSuggestionMarkup(helper = false) {
@@ -660,8 +948,8 @@
 
   function renderSettingsHeatPumpLimiterCard(title, keyA, keyB) {
     const fields = [
-      renderSettingsSelectField(keyA, "1e compressorstand uitsluiten", "Sla deze compressorstand over als je die liever niet gebruikt."),
-      renderSettingsSelectField(keyB, "2e compressorstand uitsluiten", "Nog een compressorstand die je eventueel wilt overslaan."),
+      renderSettingsSelectField(keyA, "Stand A", "Kies hier welke compressorstand je wilt uitsluiten."),
+      renderSettingsSelectField(keyB, "Stand B", "Kies hier nog een compressorstand die je wilt overslaan."),
     ]
       .filter(Boolean)
       .join("");
@@ -673,7 +961,9 @@
     return `
       <article class="oq-settings-hp-group">
         <header>
+          <p class="oq-helper-label">Warmtepomp</p>
           <h4>${escapeHtml(title)}</h4>
+          <p>Stel hier de standen in die OpenQuatt niet hoeft te gebruiken.</p>
         </header>
         <div class="oq-settings-hp-group-grid">
           ${fields}
@@ -684,7 +974,7 @@
 
   function renderSettingsFlowSection() {
     return renderSettingsSection(
-      "Flow",
+      "Pomp",
       "Flowregeling",
       "Kies of OpenQuatt de pomp automatisch op flow regelt, of dat je zelf een vaste pompstand instelt.",
       renderFlowSettingsFields(),
@@ -749,17 +1039,66 @@
   }
 
   function renderSettingsGenerationSection() {
-    if (!hasEntity("hpGeneration")) {
+    const currentLabel = getInstallationLabel();
+    const entity = state.entities.hpGeneration || {};
+    const canEdit = hasEntity("hpGeneration") && Array.isArray(entity.option) && entity.option.length > 0;
+
+    if (!currentLabel && !canEdit) {
       return "";
     }
 
     return renderSettingsSection(
-      "Quatt Hybrid",
+      "Basis",
       "Quatt Hybrid-versie",
-      "Kies welke Quatt Hybrid je hebt.",
+      "Kies hier welke Quatt Hybrid je hebt. Deze keuze bepaalt de basis van de regeling.",
       `
-        <div class="oq-settings-grid">
-          ${renderHpGenerationField()}
+        <div class="oq-settings-quickstart-status">
+          <div class="oq-settings-quickstart-status-row">
+            <div>
+              <p class="oq-settings-quickstart-status-label">Huidige versie</p>
+              <strong class="oq-settings-quickstart-status-value">${escapeHtml(currentLabel || "Onbekend")}</strong>
+            </div>
+          <button
+            class="oq-helper-button oq-helper-button--ghost"
+            type="button"
+            data-oq-action="open-generation-modal"
+            ${!canEdit || state.loadingEntities || state.busyAction === "save-hpGeneration" ? "disabled" : ""}
+          >
+            Aanpassen
+          </button>
+          </div>
+        </div>
+      `,
+    );
+  }
+
+  function renderSettingsQuickStartSection() {
+    const statusLabel = state.complete ? "Afgerond" : "Open";
+    const statusCopy = state.complete
+      ? "Quick Start is afgerond. Je kunt de status hier altijd weer openen met een reset."
+      : "Quick Start staat nog open. Gebruik de resetknop om opnieuw te beginnen.";
+
+    return renderSettingsSection(
+      "Setup",
+      "Quick Start",
+      "Bekijk of de Quick Start nog open staat of al is afgerond.",
+      `
+        <div class="oq-settings-quickstart-status">
+          <div class="oq-settings-quickstart-status-row">
+            <div>
+              <p class="oq-settings-quickstart-status-label">Huidige status</p>
+              <strong class="oq-settings-quickstart-status-value">${escapeHtml(statusLabel)}</strong>
+            </div>
+            <button
+              class="oq-helper-button oq-helper-button--ghost"
+              type="button"
+              data-oq-action="reset"
+              ${state.busyAction === "reset" ? "disabled" : ""}
+            >
+              Reset status
+            </button>
+          </div>
+          <p class="oq-settings-quickstart-status-copy">${escapeHtml(statusCopy)}</p>
         </div>
       `,
     );
@@ -809,7 +1148,7 @@
 
   function renderSettingsWaterSection() {
     return renderSettingsSection(
-      "Maximale watertemperatuur",
+      "Beveiliging",
       "Watertemperatuur",
       "Beschermt het systeem tegen te hoge aanvoertemperaturen. OpenQuatt regelt richting deze grens terug en grijpt 5°C erboven hard in.",
       renderWaterSettingsFields(),
@@ -823,8 +1162,8 @@
 
     return renderSettingsSection(
       "Integratie",
-      "CiC Compatibility Mode",
-      "Zet dit aan als je de Quatt app wilt blijven gebruiken terwijl OpenQuatt tussen de warmtepomp en de CiC zit.",
+      "CiC-compatibiliteit",
+      "Zet dit aan als je de Quatt app wilt blijven gebruiken terwijl OpenQuatt tussen de warmtepomp en de CiC zit. Let op: sluit de CiC dan via Modbus aan op de tweede RS485-poort van de OpenQuatt Controller.",
       `
         <div class="oq-settings-grid">
           ${renderSettingsSwitchField(
@@ -839,22 +1178,122 @@
     );
   }
 
+  function renderSettingsLoginSection() {
+    return renderSettingsSection(
+      "Toegang",
+      "Login",
+      "Open hier de login-instellingen als je de toegangsgegevens wilt aanpassen.",
+      `
+        <div class="oq-settings-quickstart-status">
+          <div class="oq-settings-quickstart-status-row">
+            <div>
+              <p class="oq-settings-quickstart-status-label">Huidige status</p>
+              <strong class="oq-settings-quickstart-status-value">${escapeHtml(getWebAuthStatusLabel())}</strong>
+            </div>
+            <button
+              class="oq-helper-button oq-helper-button--ghost"
+              type="button"
+              data-oq-action="open-login-modal"
+            >
+              Aanpassen
+            </button>
+          </div>
+          <p class="oq-settings-quickstart-status-copy">${escapeHtml(getWebAuthStatusDetail())}</p>
+        </div>
+      `,
+    );
+  }
+
+  function renderSettingsDiagnosticsSection() {
+    const updateStatus = getUpdateStatus();
+    const dateTime = formatDiagnosticsDateTime();
+    const busyRestart = state.busyAction === "restartAction";
+
+    return renderSettingsSection(
+      "Diagnostiek",
+      "Systeemstatus",
+      "Snelle statusinformatie voor support, controle en onderhoud.",
+      `
+        <div class="oq-settings-system-summary">
+          <div class="oq-settings-system-row">
+            <span class="oq-settings-system-row-label">Uptime</span>
+            <strong class="oq-settings-system-row-value">${escapeHtml(formatUptimeFromMeta())}</strong>
+          </div>
+          <div class="oq-settings-system-row">
+            <span class="oq-settings-system-row-label">IP-adres</span>
+            <strong class="oq-settings-system-row-value">${escapeHtml(getDeviceIpAddress())}</strong>
+          </div>
+          <div class="oq-settings-system-row oq-settings-system-row--with-action">
+            <div class="oq-settings-system-row-copy">
+              <p class="oq-settings-system-row-label">Updates</p>
+              <strong class="oq-settings-system-row-value">${escapeHtml(updateStatus)}</strong>
+            </div>
+            <button
+              class="oq-helper-button oq-helper-button--ghost"
+              type="button"
+              data-oq-action="open-update-modal"
+            >
+              Openen
+            </button>
+          </div>
+          <div class="oq-settings-system-row">
+            <span class="oq-settings-system-row-label">Datum/tijd</span>
+            <strong class="oq-settings-system-row-value">${escapeHtml(dateTime)}</strong>
+          </div>
+          <div class="oq-settings-system-row">
+            <span class="oq-settings-system-row-label">ESP-temp</span>
+            <strong class="oq-settings-system-row-value">${escapeHtml(state.entities.espInternalTemp ? formatOverviewStatValue("espInternalTemp") : "—")}</strong>
+          </div>
+          <div class="oq-settings-system-row oq-settings-system-row--with-action">
+            <div class="oq-settings-system-row-copy">
+              <p class="oq-settings-system-row-label">Herstart OpenQuatt</p>
+              <strong class="oq-settings-system-row-value">Opnieuw opstarten</strong>
+              <p class="oq-settings-system-row-note">Dit onderbreekt de webinterface kort.</p>
+            </div>
+            <button
+              class="oq-helper-button oq-helper-button--warning"
+              type="button"
+              data-oq-action="open-restart-confirm"
+              ${busyRestart ? "disabled" : ""}
+            >
+              ${busyRestart ? "Herstarten..." : "Herstarten"}
+            </button>
+          </div>
+        </div>
+      `,
+    );
+  }
+
   function renderSettingsCompressorSection() {
     const hpGroups = [
-      renderSettingsHeatPumpLimiterCard("HP1", "hp1ExcludedA", "hp1ExcludedB"),
-      renderSettingsHeatPumpLimiterCard("HP2", "hp2ExcludedA", "hp2ExcludedB"),
+      renderSettingsHeatPumpLimiterCard("Warmtepomp 1", "hp1ExcludedA", "hp1ExcludedB"),
+      renderSettingsHeatPumpLimiterCard("Warmtepomp 2", "hp2ExcludedA", "hp2ExcludedB"),
     ].filter(Boolean).join("");
 
     return renderSettingsSection(
-      "Compressor",
-      "Compressor",
-      "Extra instellingen voor minimale draaitijd en compressorstanden die je liever niet gebruikt.",
+      "Geavanceerd",
+      "Compressorinstellingen",
+      "Stel hier de minimale draaitijd in en bepaal per warmtepomp welke compressorstanden je wilt overslaan.",
       `
-        <div class="oq-settings-grid">
-          ${renderSettingsNumberField("minRuntime", "Minimale draaitijd", "Zo voorkom je dat de warmtepomp te kort achter elkaar start en stopt.")}
+        <div class="oq-settings-subpanel">
+          <div class="oq-settings-subpanel-head">
+            <p class="oq-helper-label">Draaitijd</p>
+            <h4>Minimale draaitijd</h4>
+            <p>Voorkomt dat de warmtepomp te kort achter elkaar start en stopt.</p>
+          </div>
+          <div class="oq-settings-grid">
+            ${renderSettingsNumberField("minRuntime", "Minimale draaitijd", "Hoe lang een compressor minimaal moet blijven lopen voordat hij weer mag stoppen.")}
+          </div>
         </div>
-        <div class="oq-settings-hp-columns${hasEntity("hp2ExcludedA") ? "" : " oq-settings-hp-columns--single"}">
-          ${hpGroups}
+        <div class="oq-settings-subpanel oq-settings-subpanel--nested">
+          <div class="oq-settings-subpanel-head">
+            <p class="oq-helper-label">Uitsluitingen</p>
+            <h4>Compressorstanden uitsluiten</h4>
+            <p>Kies per warmtepomp welke compressorstanden OpenQuatt moet overslaan.</p>
+          </div>
+          <div class="oq-settings-hp-columns${hasEntity("hp2ExcludedA") ? "" : " oq-settings-hp-columns--single"}">
+            ${hpGroups}
+          </div>
         </div>
       `,
     );
@@ -862,7 +1301,7 @@
 
   function renderSettingsSilentSection() {
     return renderSettingsSection(
-      "Stille uren",
+      "Comfort",
       "Stille uren",
       "Kies wanneer het systeem stiller moet werken, en hoe ver het dan nog mag opschalen.",
       renderSilentSettingsGrid(),
@@ -890,7 +1329,7 @@
 
     return renderSettingsSection(
       "Koeling",
-      "Koeling zonder dauwpunt",
+      "Dauwpuntbeveiliging",
       "Standaard blijft koeling zonder dauwpuntbron geblokkeerd. Met deze opt-in mag OpenQuatt een conservatieve fallback gebruiken op basis van buitentemperatuur en de afgelopen nacht.",
       `
         <details class="oq-settings-callout oq-settings-callout--cooling">

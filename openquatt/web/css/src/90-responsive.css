@@ -10,6 +10,10 @@
     grid-template-columns: 1fr;
   }
 
+  .oq-helper-grid--quickstart-modal {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .oq-hp-tech-footer {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -173,6 +177,21 @@ esp-app.oq-native-app.oq-native-app--collapsed {
     grid-template-columns: 1fr;
   }
 
+  .oq-settings-generation-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .oq-settings-installation-summary,
+  .oq-settings-system-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .oq-settings-installation-summary button,
+  .oq-settings-system-row button {
+    width: 100%;
+  }
+
   .oq-helper-hub-switches,
   .oq-helper-hub-actions,
   .oq-helper-hub-dev-grid,
@@ -296,6 +315,10 @@ esp-app.oq-native-app.oq-native-app--collapsed {
     grid-template-columns: 1fr;
   }
 
+  .oq-helper-grid--quickstart-modal {
+    grid-template-columns: 1fr;
+  }
+
   .oq-settings-grid,
   .oq-settings-strategy-grid,
   .oq-settings-choice-grid,
@@ -306,6 +329,11 @@ esp-app.oq-native-app.oq-native-app--collapsed {
   .oq-settings-hp-columns,
   .oq-settings-hp-group-grid {
     grid-template-columns: 1fr;
+  }
+
+  .oq-settings-quickstart-status-row {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .oq-ph-concept-card {

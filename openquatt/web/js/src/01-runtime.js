@@ -11,6 +11,8 @@
     devPanelOpen: getStoredDevPanelOpen(),
     nativeOpen: getStoredSurface() === "native",
     currentStep: "generation",
+    quickStartModalMode: "wizard",
+    settingsGroup: getStoredSettingsGroup(),
     appView: "",
     overviewTheme: getStoredOverviewTheme(),
     hpVisualMode: getStoredHpVisualMode(),
@@ -19,11 +21,11 @@
     controlError: "",
     controlNotice: "",
     complete: false,
+    quickStartModalOpen: true,
     loadingEntities: true,
     entities: {},
     settingsInfoOpen: "",
     settingsInteractionLock: false,
-    quickStartRenderSignature: "",
     settingsRenderSignature: "",
     headerRenderSignature: "",
     drafts: {},
@@ -114,6 +116,24 @@
     }
   }
 
+  function getStoredSettingsGroup() {
+    try {
+      const stored = window.localStorage.getItem("oq-settings-group");
+      return SETTINGS_GROUP_IDS.has(stored) ? stored : SETTINGS_GROUPS[0].id;
+    } catch (_error) {
+      return SETTINGS_GROUPS[0].id;
+    }
+  }
+
+  function setSettingsGroup(groupId) {
+    state.settingsGroup = SETTINGS_GROUP_IDS.has(groupId) ? groupId : SETTINGS_GROUPS[0].id;
+    try {
+      window.localStorage.setItem("oq-settings-group", state.settingsGroup);
+    } catch (_error) {
+      // Ignore storage failures in embedded browsers.
+    }
+  }
+
   function setDevPanelOpen(open) {
     state.devPanelOpen = open === true;
     try {
@@ -159,7 +179,7 @@
   }
 
   function getDefaultAppView() {
-    return state.complete ? "overview" : QUICK_START_VIEW;
+    return "overview";
   }
 
   function hasLoadedEntities() {
@@ -253,6 +273,10 @@
     const mode = options.syncMode || "replace";
     const changed = state.appView !== normalized;
     state.appView = normalized;
+
+    if (normalized === "settings" && !options.preserveSettingsGroup) {
+      setSettingsGroup(SETTINGS_GROUPS[0].id);
+    }
 
     if (changed || options.forceSync) {
       syncUrlAppView(mode);

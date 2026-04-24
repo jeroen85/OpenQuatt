@@ -65,6 +65,19 @@
     }
   }
 
+  function formatDiagnosticsDateTime() {
+    if (hasEntity("timeValid") && !isEntityActive("timeValid")) {
+      return "Geen tijdsync";
+    }
+
+    const datePart = new Intl.DateTimeFormat("nl-NL", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }).format(new Date());
+    return `${datePart} · ${formatDeviceClock()}`;
+  }
+
   function formatDurationFromMinutes(totalMinutes) {
     if (!Number.isFinite(totalMinutes) || totalMinutes < 0) {
       return "—";
@@ -657,13 +670,6 @@
       state.complete ? "complete" : "incomplete",
       state.overviewTheme,
       state.hpVisualMode,
-      getInstallationLabel(),
-      state.authStatus ? `auth:${state.authStatus.enabled ? "on" : "off"}:${state.authStatus.setup_window_active ? "armed" : "locked"}:${state.authStatus.username || ""}:${state.authStatus.source || ""}` : "auth:loading",
-      ...HEADER_ENTITY_KEYS.map((key) => getEntitySignatureFragment(key)),
-      getEntitySignatureFragment("firmwareUpdate"),
-      getEntitySignatureFragment("firmwareUpdateChannel"),
-      getEntitySignatureFragment("firmwareUpdateProgress"),
-      getEntitySignatureFragment("firmwareUpdateStatus"),
     ].join("|");
   }
 
@@ -685,14 +691,10 @@
 
   function getFirmwareVersionChipValue() {
     const version = getDeviceVersionLabel();
-    const update = getUpdateStatus();
-    if (!version || version === "—") {
-      return update;
-    }
-    if (!update || update === "—" || update === "Actueel") {
+    if (version && version !== "—") {
       return version;
     }
-    return `${version} · ${update}`;
+    return getUpdateStatus();
   }
 
   function getEspTemperatureLabel() {
@@ -712,7 +714,10 @@
     if (!authStatus) {
       return "Laden...";
     }
-    return authStatus.enabled ? "Aan" : "Uit";
+    if (authStatus.enabled) {
+      return authStatus.setup_window_active ? "Instelvenster" : "Beveiligd";
+    }
+    return "Onbeveiligd";
   }
 
   function getWebAuthModalTitle() {
@@ -742,7 +747,7 @@
     }
     return authStatus.setup_window_active
       ? "Login uit. Tijdelijk instelvenster is open."
-      : "Login uit. Webtoegang is open op het netwerk.";
+      : "Login uit. Webtoegang is open / onbeveiligd op het netwerk.";
   }
 
   function renderLoginStatusRow(label, value, copy = "") {
@@ -790,19 +795,19 @@
   function getHeaderStatusItems() {
     return [
       ["installation", "Installatie", getInstallationLabel()],
-      ["setup", "Setup", state.complete ? "Afgerond" : "Open"],
       ["uptime", "Uptime", formatUptimeFromMeta()],
       ["connectivity", "Connectiviteit", getConnectivityStatus()],
-      ["espTemp", "ESP-temp", getEspTemperatureLabel()],
       ["time", "Tijd", formatDeviceClock()],
-      ["ip", "IP-adres", getDeviceIpAddress()],
       ["version", "Versie", getFirmwareVersionChipValue(), Boolean(getFirmwareUpdateEntity())],
-      ["login", "Login", getWebAuthStatusLabel(), true],
     ];
   }
 
   function hasFirmwareUpdateAttention() {
     return isFirmwareUpdateAvailable();
+  }
+
+  function hasHeaderStatusBadge(key) {
+    return key === "version" && hasFirmwareUpdateAttention();
   }
 
   function renderHeaderStatusGrid() {
@@ -813,14 +818,15 @@
         ${statusItems.map(([key, label, value, interactive]) => {
           const action = getHeaderStatusAction(key);
           const isInteractive = Boolean(interactive || action);
+          const hasBadge = hasHeaderStatusBadge(key);
           return `
           <${isInteractive ? "button" : "div"}
-            class="oq-helper-status-item${isInteractive ? " oq-helper-status-item--button" : ""}${key === "version" && hasFirmwareUpdateAttention() ? " oq-helper-status-item--attention" : ""}"
+            class="oq-helper-status-item${isInteractive ? " oq-helper-status-item--button" : ""}${hasBadge ? " oq-helper-status-item--attention" : ""}"
             data-oq-header-status="${escapeHtml(key)}"
             ${isInteractive ? `type="button" data-oq-action="${escapeHtml(action)}"` : ""}
           >
             <span class="oq-helper-status-label">${escapeHtml(label)}</span>
-            <strong class="oq-helper-status-value">${escapeHtml(value)}</strong>
+            <strong class="oq-helper-status-value">${hasBadge ? `<span class="oq-helper-status-value-text">${escapeHtml(value)}</span><span class="oq-helper-status-badge" aria-label="Update beschikbaar" title="Update beschikbaar"></span>` : escapeHtml(value)}</strong>
           </${isInteractive ? "button" : "div"}>
         `;
         }).join("")}
@@ -868,8 +874,12 @@
       if (labelNode.textContent !== label) {
         labelNode.textContent = label;
       }
-      if (valueNode.textContent !== value) {
-        valueNode.textContent = value;
+      const hasBadge = hasHeaderStatusBadge(key);
+      const desiredValueMarkup = hasBadge
+        ? `<span class="oq-helper-status-value-text">${escapeHtml(value)}</span><span class="oq-helper-status-badge" aria-label="Update beschikbaar" title="Update beschikbaar"></span>`
+        : escapeHtml(value);
+      if (valueNode.innerHTML !== desiredValueMarkup) {
+        valueNode.innerHTML = desiredValueMarkup;
       }
       if (isInteractive) {
         item.setAttribute("data-oq-action", action);
@@ -877,7 +887,7 @@
         item.removeAttribute("data-oq-action");
       }
       item.classList.toggle("oq-helper-status-item--button", isInteractive);
-      item.classList.toggle("oq-helper-status-item--attention", key === "version" && hasFirmwareUpdateAttention());
+      item.classList.toggle("oq-helper-status-item--attention", hasBadge);
     }
 
     return true;
@@ -1099,9 +1109,9 @@
         </div>
       `
       : `
-        <div class="oq-helper-modal-callout">
-          <strong>Login uit</strong>
-          <span>Houd de herstelknop 5 seconden vast om een login toe te voegen.</span>
+        <div class="oq-helper-modal-callout oq-helper-modal-callout--subtle">
+          <strong>Login toevoegen</strong>
+          <span>Houd de herstelknop 5 seconden vast om het instelvenster te openen.</span>
         </div>
       `;
 
@@ -1119,19 +1129,18 @@
           ${noticeMarkup}
           ${errorMarkup}
           <div class="oq-helper-modal-grid">
-            ${renderLoginStatusRow("Status", getWebAuthStatusLabel(), getWebAuthStatusDetail())}
+            ${renderLoginStatusRow("Beveiligingsstatus", getWebAuthStatusLabel(), getWebAuthStatusDetail())}
             ${renderLoginStatusRow("Gebruiker", authEnabled ? (usernameValue || "Geen naam") : "Geen login", authEnabled ? "Deze naam gebruik je om in te loggen." : "Er staat nog geen login op het device.")}
           </div>
           ${authFormMarkup}
-          <p class="oq-helper-modal-note">${canEdit
-            ? "Je kunt nu een nieuwe gebruikersnaam en wachtwoord opslaan."
-            : "Na 5 seconden herstelknop kun je hier een login toevoegen."}</p>
           <div class="oq-helper-modal-actions">
             <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="close-system-modal" ${state.authBusy ? "disabled" : ""}>Gereed</button>
             ${authEnabled
               ? `<button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="disable-web-auth" ${state.authBusy ? "disabled" : ""}>Uitzetten</button>`
               : ""}
-            <button class="oq-helper-button oq-helper-button--primary" type="button" data-oq-action="save-web-auth" ${state.authBusy || !canEdit ? "disabled" : ""}>${authEnabled ? "Opslaan" : canEdit ? "Login opslaan" : "Wacht op BOOT"}</button>
+            ${canEdit
+              ? `<button class="oq-helper-button oq-helper-button--primary" type="button" data-oq-action="save-web-auth" ${state.authBusy ? "disabled" : ""}>${authEnabled ? "Opslaan" : "Login opslaan"}</button>`
+              : ""}
           </div>
         </section>
       </div>

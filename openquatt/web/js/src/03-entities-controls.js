@@ -385,7 +385,11 @@
       await refreshEntities(keys, "state");
       const authChanged = await refreshAuthStatus();
       const nextHeaderSignature = getHeaderRenderSignature();
-      if (authChanged || nextHeaderSignature !== state.headerRenderSignature) {
+      if (authChanged && state.systemModal === "login") {
+        render();
+        return;
+      }
+      if (nextHeaderSignature !== state.headerRenderSignature) {
         render();
         return;
       }
@@ -394,12 +398,9 @@
         const nextSettingsSignature = getSettingsRenderSignature();
         if (nextSettingsSignature !== state.settingsRenderSignature) {
           render();
+          return;
         }
-        return;
-      }
-      if (state.appView === QUICK_START_VIEW) {
-        const nextQuickStartSignature = getQuickStartRenderSignature();
-        if (nextQuickStartSignature !== state.quickStartRenderSignature) {
+        if (!patchSettingsDom()) {
           render();
         }
         return;
@@ -459,11 +460,8 @@
   function getSettingsRenderSignature() {
     return [
       state.appView,
+      state.settingsGroup,
       state.loadingEntities ? "loading" : "ready",
-      state.controlNotice,
-      state.controlError,
-      state.settingsInfoOpen,
-      ...SETTINGS_KEYS.map(getEntitySignatureFragment),
     ].join("|");
   }
 
@@ -488,23 +486,6 @@
       getEntitySignatureFragment("coolingRequestActive"),
       getEntitySignatureFragment("coolingBlockReason"),
       getEntitySignatureFragment("silentActive"),
-    ].join("|");
-  }
-
-  function getQuickStartRenderSignature() {
-    return [
-      state.appView,
-      state.loadingEntities ? "loading" : "ready",
-      state.currentStep,
-      state.complete ? "complete" : "incomplete",
-      state.controlNotice,
-      state.controlError,
-      state.busyAction,
-      getEntitySignatureFragment("setupComplete"),
-      getEntitySignatureFragment("strategy"),
-      ...FLOW_SETTING_KEYS.map(getEntitySignatureFragment),
-      ...LIMIT_KEYS.map(getEntitySignatureFragment),
-      ...(isCurveMode() ? CURVE_POINTS.map((point) => point.key) : POWER_HOUSE_KEYS).map(getEntitySignatureFragment),
     ].join("|");
   }
 
@@ -628,6 +609,9 @@
         shouldRender = true;
       }
       if (modalBackdrop && event.target === modalBackdrop) {
+        if (modalBackdrop.dataset.oqModal === "quickstart-forced") {
+          return;
+        }
         if (state.updateModalOpen) {
           state.updateModalOpen = false;
           shouldRender = true;
@@ -663,6 +647,12 @@
       setAppView(button.dataset.viewId || "overview", { syncMode: "push" });
       render();
       syncEntities();
+      return;
+    }
+
+    if (action === "select-settings-group") {
+      setSettingsGroup(button.dataset.groupId || SETTINGS_GROUPS[0].id);
+      render();
       return;
     }
 
@@ -741,6 +731,28 @@
       state.updateModalOpen = false;
       state.updateInstallCompleted = false;
       state.updateInstallCompletedVersion = "";
+      render();
+      return;
+    }
+
+    if (action === "close-quickstart-modal") {
+      state.quickStartModalOpen = false;
+      render();
+      return;
+    }
+
+    if (action === "open-quickstart-modal") {
+      state.currentStep = "generation";
+      state.quickStartModalMode = "wizard";
+      state.quickStartModalOpen = true;
+      render();
+      return;
+    }
+
+    if (action === "open-generation-modal") {
+      state.currentStep = "generation";
+      state.quickStartModalMode = "generation";
+      state.quickStartModalOpen = true;
       render();
       return;
     }
@@ -1436,8 +1448,11 @@
       await refreshEntities(["setupComplete"], "state");
       if (action === "reset") {
         state.currentStep = QUICK_STEPS[0].id;
+        state.quickStartModalMode = "wizard";
+        state.quickStartModalOpen = true;
       }
-      setAppView(action === "apply" ? "overview" : QUICK_START_VIEW, { syncMode: "replace" });
+      state.quickStartModalOpen = action !== "apply";
+      setAppView("overview", { syncMode: "replace" });
     } catch (error) {
       state.controlError = `Actie mislukt voor "${entity.name}". ${error.message}`;
     } finally {

@@ -213,7 +213,7 @@
     hp1Heat: { domain: "sensor", name: "HP1 - Heat Power" },
     hp1Cooling: { domain: "sensor", name: "HP1 - Cooling Power" },
     hp1Cop: { domain: "sensor", name: "HP1 - COP" },
-    hp1Compressor: { domain: "sensor", name: "HP1 compressor level" },
+    hp1Compressor: { domain: "sensor", name: "HP1 compressor level", optional: true },
     hp1Freq: { domain: "sensor", name: "HP1 - Compressor frequency" },
     hp1FanSpeed: { domain: "sensor", name: "HP1 - Fan speed" },
     hp1Flow: { domain: "sensor", name: "HP1 - Flow" },
@@ -263,14 +263,20 @@
     reset: { domain: "button", name: "Reset setup state" },
   };
 
-  const QUICK_START_VIEW = "quickstart";
   const APP_VIEWS = [
-    { id: QUICK_START_VIEW, label: "Quick Start" },
     { id: "overview", label: "Overzicht" },
     { id: "energy", label: "Energie" },
     { id: "settings", label: "Instellingen" },
   ];
   const APP_VIEW_IDS = new Set(APP_VIEWS.map((view) => view.id));
+  const SETTINGS_GROUPS = [
+    { id: "installation", label: "Installatie" },
+    { id: "heating", label: "Verwarmen" },
+    { id: "cooling", label: "Koelen" },
+    { id: "advanced", label: "Geavanceerd" },
+    { id: "system", label: "Systeem" },
+  ];
+  const SETTINGS_GROUP_IDS = new Set(SETTINGS_GROUPS.map((group) => group.id));
   const HP_PANEL_CONFIGS = [
     {
       title: "HP1",

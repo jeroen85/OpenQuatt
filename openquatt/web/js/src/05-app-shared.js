@@ -28,6 +28,22 @@
     return parts.filter(Boolean).join(", ") || "Quick Start-instellingen beschikbaar";
   }
 
+  function renderQuickStartLauncher() {
+    if (state.complete) {
+      return "";
+    }
+
+    return `
+      <button
+        class="oq-helper-app-tab oq-helper-app-tab--launch"
+        type="button"
+        data-oq-action="open-quickstart-modal"
+      >
+        <span>Quick Start</span>
+      </button>
+    `;
+  }
+
   function hasEntity(key) {
     const entity = state.entities[key];
     return Boolean(entity && (entity.state !== undefined || entity.value !== undefined));
@@ -87,6 +103,7 @@
   function renderAppNav() {
     return `
       <div class="oq-helper-app-nav">
+        ${renderQuickStartLauncher()}
         ${APP_VIEWS.map((view) => `
           <button
             class="oq-helper-app-tab ${state.appView === view.id ? "is-active" : ""}"
@@ -95,11 +112,6 @@
             data-view-id="${escapeHtml(view.id)}"
           >
             <span>${escapeHtml(view.label)}</span>
-            ${view.id === QUICK_START_VIEW && state.complete ? `
-              <svg class="oq-helper-app-tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z" />
-              </svg>
-            ` : ""}
           </button>
         `).join("")}
       </div>
@@ -134,4 +146,3 @@
       document.body.classList.toggle("oq-page-light", !isDark);
     }
   }
-
