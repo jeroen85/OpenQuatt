@@ -10,6 +10,31 @@
     `;
   }
 
+  function renderQuickStartModal() {
+    if (state.complete || !state.quickStartModalOpen || state.loadingEntities) {
+      return "";
+    }
+
+    return `
+      <div class="oq-helper-modal-backdrop oq-helper-modal-backdrop--quickstart" data-oq-modal="quickstart-forced">
+        <section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--quickstart" role="dialog" aria-modal="true" aria-labelledby="oq-quickstart-modal-title">
+          <div class="oq-helper-modal-head">
+            <div>
+              <p class="oq-helper-modal-kicker">Quick Start</p>
+              <h2 class="oq-helper-modal-title" id="oq-quickstart-modal-title">Rond eerst de Quick Start af</h2>
+              <p class="oq-helper-modal-copy">Kies eerst de Quatt Hybrid en loop daarna stap voor stap door de basisinstellingen.</p>
+            </div>
+            <button class="oq-helper-modal-close" type="button" data-oq-action="close-quickstart-modal" aria-label="Sluit Quick Start-popup">×</button>
+          </div>
+          <div class="oq-helper-grid oq-helper-grid--quickstart oq-helper-grid--quickstart-modal">
+            ${renderActiveStep()}
+            ${renderQuickStartSidebar()}
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
   function renderStrategyWorkspace() {
     return `
       <section class="oq-helper-panel">

@@ -19,11 +19,11 @@
     controlError: "",
     controlNotice: "",
     complete: false,
+    quickStartModalOpen: true,
     loadingEntities: true,
     entities: {},
     settingsInfoOpen: "",
     settingsInteractionLock: false,
-    quickStartRenderSignature: "",
     settingsRenderSignature: "",
     headerRenderSignature: "",
     drafts: {},
@@ -159,7 +159,7 @@
   }
 
   function getDefaultAppView() {
-    return state.complete ? "overview" : QUICK_START_VIEW;
+    return "overview";
   }
 
   function hasLoadedEntities() {

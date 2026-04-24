@@ -765,6 +765,38 @@
     );
   }
 
+  function renderSettingsQuickStartSection() {
+    const statusLabel = state.complete ? "Afgerond" : "Open";
+    const statusCopy = state.complete
+      ? "Quick Start is afgerond. Je kunt de status hier altijd weer openen met een reset."
+      : "Quick Start staat nog open. Gebruik de resetknop om opnieuw te beginnen.";
+
+    return renderSettingsSection(
+      "Quick Start",
+      "Status",
+      "Bekijk hier of de Quick Start nog open staat of al is afgerond.",
+      `
+        <div class="oq-settings-quickstart-status">
+          <div class="oq-settings-quickstart-status-row">
+            <div>
+              <p class="oq-settings-quickstart-status-label">Huidige status</p>
+              <strong class="oq-settings-quickstart-status-value">${escapeHtml(statusLabel)}</strong>
+            </div>
+            <button
+              class="oq-helper-button oq-helper-button--ghost"
+              type="button"
+              data-oq-action="reset"
+              ${state.busyAction === "reset" ? "disabled" : ""}
+            >
+              Reset status
+            </button>
+          </div>
+          <p class="oq-settings-quickstart-status-copy">${escapeHtml(statusCopy)}</p>
+        </div>
+      `,
+    );
+  }
+
   function renderSettingsHeatingSection() {
     const strategyContent = isCurveMode()
       ? `

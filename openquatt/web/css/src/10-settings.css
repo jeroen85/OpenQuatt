@@ -269,6 +269,67 @@
   gap: 12px;
 }
 
+.oq-settings-generation-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+.oq-settings-generation-grid .oq-settings-choice-card {
+  height: 100%;
+}
+
+.oq-settings-generation-grid .oq-settings-choice-media {
+  max-width: 240px;
+}
+
+.oq-settings-generation-field {
+  min-width: 0;
+}
+
+.oq-settings-quickstart-status {
+  display: grid;
+  gap: 14px;
+}
+
+.oq-settings-quickstart-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: var(--oq-helper-radius-lg);
+  border: 1px solid var(--oq-helper-line);
+  background: linear-gradient(180deg, rgba(255, 247, 237, 0.7), rgba(255, 255, 255, 0.94));
+}
+
+.oq-helper-shell--dark .oq-settings-quickstart-status-row {
+  background: linear-gradient(180deg, rgba(66, 32, 14, 0.34), rgba(22, 33, 49, 0.94));
+}
+
+.oq-settings-quickstart-status-label {
+  margin: 0 0 4px;
+  color: var(--oq-helper-faint);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.oq-settings-quickstart-status-value {
+  color: var(--oq-helper-ink);
+  font-size: 1.1rem;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.oq-settings-quickstart-status-copy {
+  margin: 0;
+  color: var(--oq-helper-soft);
+  line-height: 1.55;
+}
+
 .oq-settings-field--span-2 {
   grid-column: 1 / -1;
 }

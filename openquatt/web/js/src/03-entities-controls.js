@@ -397,13 +397,6 @@
         }
         return;
       }
-      if (state.appView === QUICK_START_VIEW) {
-        const nextQuickStartSignature = getQuickStartRenderSignature();
-        if (nextQuickStartSignature !== state.quickStartRenderSignature) {
-          render();
-        }
-        return;
-      }
       if (!patchOverviewDom()) {
         render();
       }
@@ -488,23 +481,6 @@
       getEntitySignatureFragment("coolingRequestActive"),
       getEntitySignatureFragment("coolingBlockReason"),
       getEntitySignatureFragment("silentActive"),
-    ].join("|");
-  }
-
-  function getQuickStartRenderSignature() {
-    return [
-      state.appView,
-      state.loadingEntities ? "loading" : "ready",
-      state.currentStep,
-      state.complete ? "complete" : "incomplete",
-      state.controlNotice,
-      state.controlError,
-      state.busyAction,
-      getEntitySignatureFragment("setupComplete"),
-      getEntitySignatureFragment("strategy"),
-      ...FLOW_SETTING_KEYS.map(getEntitySignatureFragment),
-      ...LIMIT_KEYS.map(getEntitySignatureFragment),
-      ...(isCurveMode() ? CURVE_POINTS.map((point) => point.key) : POWER_HOUSE_KEYS).map(getEntitySignatureFragment),
     ].join("|");
   }
 
@@ -628,6 +604,9 @@
         shouldRender = true;
       }
       if (modalBackdrop && event.target === modalBackdrop) {
+        if (modalBackdrop.dataset.oqModal === "quickstart-forced") {
+          return;
+        }
         if (state.updateModalOpen) {
           state.updateModalOpen = false;
           shouldRender = true;
@@ -741,6 +720,18 @@
       state.updateModalOpen = false;
       state.updateInstallCompleted = false;
       state.updateInstallCompletedVersion = "";
+      render();
+      return;
+    }
+
+    if (action === "close-quickstart-modal") {
+      state.quickStartModalOpen = false;
+      render();
+      return;
+    }
+
+    if (action === "open-quickstart-modal") {
+      state.quickStartModalOpen = true;
       render();
       return;
     }
@@ -1436,8 +1427,10 @@
       await refreshEntities(["setupComplete"], "state");
       if (action === "reset") {
         state.currentStep = QUICK_STEPS[0].id;
+        state.quickStartModalOpen = true;
       }
-      setAppView(action === "apply" ? "overview" : QUICK_START_VIEW, { syncMode: "replace" });
+      state.quickStartModalOpen = action !== "apply";
+      setAppView("overview", { syncMode: "replace" });
     } catch (error) {
       state.controlError = `Actie mislukt voor "${entity.name}". ${error.message}`;
     } finally {

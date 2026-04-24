@@ -263,9 +263,7 @@
     reset: { domain: "button", name: "Reset setup state" },
   };
 
-  const QUICK_START_VIEW = "quickstart";
   const APP_VIEWS = [
-    { id: QUICK_START_VIEW, label: "Quick Start" },
     { id: "overview", label: "Overzicht" },
     { id: "energy", label: "Energie" },
     { id: "settings", label: "Instellingen" },

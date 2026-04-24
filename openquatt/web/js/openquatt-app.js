@@ -267,9 +267,7 @@
     reset: { domain: "button", name: "Reset setup state" },
   };
 
-  const QUICK_START_VIEW = "quickstart";
   const APP_VIEWS = [
-    { id: QUICK_START_VIEW, label: "Quick Start" },
     { id: "overview", label: "Overzicht" },
     { id: "energy", label: "Energie" },
     { id: "settings", label: "Instellingen" },
@@ -603,11 +601,11 @@
     controlError: "",
     controlNotice: "",
     complete: false,
+    quickStartModalOpen: true,
     loadingEntities: true,
     entities: {},
     settingsInfoOpen: "",
     settingsInteractionLock: false,
-    quickStartRenderSignature: "",
     settingsRenderSignature: "",
     headerRenderSignature: "",
     drafts: {},
@@ -743,7 +741,7 @@
   }
 
   function getDefaultAppView() {
-    return state.complete ? "overview" : QUICK_START_VIEW;
+    return "overview";
   }
 
   function hasLoadedEntities() {
@@ -2907,13 +2905,6 @@
         }
         return;
       }
-      if (state.appView === QUICK_START_VIEW) {
-        const nextQuickStartSignature = getQuickStartRenderSignature();
-        if (nextQuickStartSignature !== state.quickStartRenderSignature) {
-          render();
-        }
-        return;
-      }
       if (!patchOverviewDom()) {
         render();
       }
@@ -2998,23 +2989,6 @@
       getEntitySignatureFragment("coolingRequestActive"),
       getEntitySignatureFragment("coolingBlockReason"),
       getEntitySignatureFragment("silentActive"),
-    ].join("|");
-  }
-
-  function getQuickStartRenderSignature() {
-    return [
-      state.appView,
-      state.loadingEntities ? "loading" : "ready",
-      state.currentStep,
-      state.complete ? "complete" : "incomplete",
-      state.controlNotice,
-      state.controlError,
-      state.busyAction,
-      getEntitySignatureFragment("setupComplete"),
-      getEntitySignatureFragment("strategy"),
-      ...FLOW_SETTING_KEYS.map(getEntitySignatureFragment),
-      ...LIMIT_KEYS.map(getEntitySignatureFragment),
-      ...(isCurveMode() ? CURVE_POINTS.map((point) => point.key) : POWER_HOUSE_KEYS).map(getEntitySignatureFragment),
     ].join("|");
   }
 
@@ -3138,6 +3112,9 @@
         shouldRender = true;
       }
       if (modalBackdrop && event.target === modalBackdrop) {
+        if (modalBackdrop.dataset.oqModal === "quickstart-forced") {
+          return;
+        }
         if (state.updateModalOpen) {
           state.updateModalOpen = false;
           shouldRender = true;
@@ -3251,6 +3228,18 @@
       state.updateModalOpen = false;
       state.updateInstallCompleted = false;
       state.updateInstallCompletedVersion = "";
+      render();
+      return;
+    }
+
+    if (action === "close-quickstart-modal") {
+      state.quickStartModalOpen = false;
+      render();
+      return;
+    }
+
+    if (action === "open-quickstart-modal") {
+      state.quickStartModalOpen = true;
       render();
       return;
     }
@@ -3946,8 +3935,10 @@
       await refreshEntities(["setupComplete"], "state");
       if (action === "reset") {
         state.currentStep = QUICK_STEPS[0].id;
+        state.quickStartModalOpen = true;
       }
-      setAppView(action === "apply" ? "overview" : QUICK_START_VIEW, { syncMode: "replace" });
+      state.quickStartModalOpen = action !== "apply";
+      setAppView("overview", { syncMode: "replace" });
     } catch (error) {
       state.controlError = `Actie mislukt voor "${entity.name}". ${error.message}`;
     } finally {
@@ -4070,6 +4061,22 @@
     return parts.filter(Boolean).join(", ") || "Quick Start-instellingen beschikbaar";
   }
 
+  function renderQuickStartLauncher() {
+    if (state.complete) {
+      return "";
+    }
+
+    return `
+      <button
+        class="oq-helper-app-tab oq-helper-app-tab--launch"
+        type="button"
+        data-oq-action="open-quickstart-modal"
+      >
+        <span>Quick Start</span>
+      </button>
+    `;
+  }
+
   function hasEntity(key) {
     const entity = state.entities[key];
     return Boolean(entity && (entity.state !== undefined || entity.value !== undefined));
@@ -4129,6 +4136,7 @@
   function renderAppNav() {
     return `
       <div class="oq-helper-app-nav">
+        ${renderQuickStartLauncher()}
         ${APP_VIEWS.map((view) => `
           <button
             class="oq-helper-app-tab ${state.appView === view.id ? "is-active" : ""}"
@@ -4137,11 +4145,6 @@
             data-view-id="${escapeHtml(view.id)}"
           >
             <span>${escapeHtml(view.label)}</span>
-            ${view.id === QUICK_START_VIEW && state.complete ? `
-              <svg class="oq-helper-app-tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z" />
-              </svg>
-            ` : ""}
           </button>
         `).join("")}
       </div>
@@ -4949,6 +4952,38 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
     );
   }
 
+  function renderSettingsQuickStartSection() {
+    const statusLabel = state.complete ? "Afgerond" : "Open";
+    const statusCopy = state.complete
+      ? "Quick Start is afgerond. Je kunt de status hier altijd weer openen met een reset."
+      : "Quick Start staat nog open. Gebruik de resetknop om opnieuw te beginnen.";
+
+    return renderSettingsSection(
+      "Quick Start",
+      "Status",
+      "Bekijk hier of de Quick Start nog open staat of al is afgerond.",
+      `
+        <div class="oq-settings-quickstart-status">
+          <div class="oq-settings-quickstart-status-row">
+            <div>
+              <p class="oq-settings-quickstart-status-label">Huidige status</p>
+              <strong class="oq-settings-quickstart-status-value">${escapeHtml(statusLabel)}</strong>
+            </div>
+            <button
+              class="oq-helper-button oq-helper-button--ghost"
+              type="button"
+              data-oq-action="reset"
+              ${state.busyAction === "reset" ? "disabled" : ""}
+            >
+              Reset status
+            </button>
+          </div>
+          <p class="oq-settings-quickstart-status-copy">${escapeHtml(statusCopy)}</p>
+        </div>
+      `,
+    );
+  }
+
   function renderSettingsHeatingSection() {
     const strategyContent = isCurveMode()
       ? `
@@ -5227,6 +5262,31 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
         ${renderHpGenerationField()}
         ${renderQuickStartStepNav()}
       </section>
+    `;
+  }
+
+  function renderQuickStartModal() {
+    if (state.complete || !state.quickStartModalOpen || state.loadingEntities) {
+      return "";
+    }
+
+    return `
+      <div class="oq-helper-modal-backdrop oq-helper-modal-backdrop--quickstart" data-oq-modal="quickstart-forced">
+        <section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--quickstart" role="dialog" aria-modal="true" aria-labelledby="oq-quickstart-modal-title">
+          <div class="oq-helper-modal-head">
+            <div>
+              <p class="oq-helper-modal-kicker">Quick Start</p>
+              <h2 class="oq-helper-modal-title" id="oq-quickstart-modal-title">Rond eerst de Quick Start af</h2>
+              <p class="oq-helper-modal-copy">Kies eerst de Quatt Hybrid en loop daarna stap voor stap door de basisinstellingen.</p>
+            </div>
+            <button class="oq-helper-modal-close" type="button" data-oq-action="close-quickstart-modal" aria-label="Sluit Quick Start-popup">×</button>
+          </div>
+          <div class="oq-helper-grid oq-helper-grid--quickstart oq-helper-grid--quickstart-modal">
+            ${renderActiveStep()}
+            ${renderQuickStartSidebar()}
+          </div>
+        </section>
+      </div>
     `;
   }
 
@@ -7511,6 +7571,7 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
         <h2 class="oq-helper-section-title">Regeling aanpassen</h2>
         <p class="oq-helper-section-copy">Hier pas je aan hoe OpenQuatt werkt. Wijzigingen worden direct toegepast.</p>
         <div class="oq-helper-settings-stack">
+          ${renderSettingsQuickStartSection()}
           ${renderSettingsGenerationSection()}
           ${renderSettingsFlowSection()}
           ${renderSettingsHeatingSection()}
@@ -7544,7 +7605,6 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
         ${renderDevPanel()}
         ${renderNativeSurfaceShell()}
       `;
-      state.quickStartRenderSignature = "";
       state.settingsRenderSignature = "";
       state.headerRenderSignature = getHeaderRenderSignature();
       stopMotionLoop();
@@ -7561,14 +7621,7 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
       ? renderOverviewView()
       : state.appView === "energy"
       ? renderEnergyView()
-      : state.appView === "settings"
-        ? renderSettingsView()
-        : `
-          <div class="oq-helper-grid oq-helper-grid--quickstart">
-            ${renderActiveStep()}
-            ${renderQuickStartSidebar()}
-          </div>
-        `;
+      : renderSettingsView();
     const wideFlushCard = state.appView === "overview" || state.appView === "energy";
 
     state.root.innerHTML = `
@@ -7587,14 +7640,14 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
             </div>
             ${renderHeaderStatus()}
           </div>
-          ${renderAppNav()}
-          ${mainContent}
+      ${renderAppNav()}
+      ${mainContent}
         </div>
       </div>
+      ${renderQuickStartModal()}
       ${renderUpdateModal()}
       ${renderSystemModal()}
     `;
-    state.quickStartRenderSignature = state.appView === QUICK_START_VIEW ? getQuickStartRenderSignature() : "";
     state.settingsRenderSignature = state.appView === "settings" ? getSettingsRenderSignature() : "";
     state.headerRenderSignature = getHeaderRenderSignature();
     clearLegacyMotionVariables();
