@@ -22,15 +22,24 @@
     return meta;
   }
 
+  function getHybridGenerationLabel() {
+    const generation = String(getEntityValue("hpGeneration") || "").trim();
+    if (generation) {
+      return generation;
+    }
+    return "";
+  }
+
   function getInstallationLabel() {
     const installation = String(getDeviceMeta().installation || "").toLowerCase();
     if (installation === "single") {
       return "Quatt Single";
     }
+    const generation = getHybridGenerationLabel();
     if (installation === "duo") {
-      return "Quatt Duo";
+      return generation ? `Quatt Duo ${generation}` : "Quatt Duo";
     }
-    return hasEntity("hp2Power") ? "Quatt Duo" : "Quatt Single";
+    return hasEntity("hp2Power") ? (generation ? `Quatt Duo ${generation}` : "Quatt Duo") : "Quatt Single";
   }
 
   function getFirmwareDeviceLabel() {
