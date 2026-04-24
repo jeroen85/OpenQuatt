@@ -60,6 +60,12 @@ Recommended runtime rule:
 - `Tsup <= 55.0 C` -> use the main V2 map
 - `Tsup > 55.0 C` -> use the high-temperature continuation
 
+First implementation detail:
+
+- the continuation is split into discrete `55 C`, `65 C`, and `70 C` bands
+- each band uses the cold-side ambient subset that best matches the ragged row count
+- if a continuation lookup is incomplete, we fall back to the base `55 C` map instead of failing control logic
+
 This keeps the handoff simple and avoids mixing the two models in the same data structure.
 
 If we want to avoid a hard seam in readouts, we can later add a small display-only blend window around `55 C`. That should not be part of the control path on the first iteration.
@@ -115,4 +121,3 @@ If the high-temperature map is missing or incomplete:
 ## Open Decision
 
 The main remaining product decision is whether the continuation should only influence limit/backup behavior, or whether specific high-temperature control paths should eventually use it for active level selection as well.
-

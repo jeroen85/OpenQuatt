@@ -1,8 +1,10 @@
 #pragma once
-// Auto-generated performance maps from hp_performance_data.json and hp_v2_performance_data.json
+// Auto-generated performance maps from hp_performance_data.json, hp_v2_performance_data.json
+// and the V2 high-temperature continuation.
 // V1/V1.5 and V2 performance maps, kept in dedicated namespaces for dispatching.
 // Provides thermisch vermogen (W) en COP als functie van (level, Tamb, Tsup).
 #include <cmath>
+#include "hp_perf_map_v2_high.h"
 
 namespace oq_perf_v1 {
 
@@ -341,6 +343,11 @@ static inline bool uses_v2_map() {
 
 static inline float interp_power_th_w(int level, float Tamb, float Tsup) {
   if (uses_v2_map()) {
+    if (Tsup > 55.0f) {
+      float p = oq_perf_v2_high::interp_power_th_w(level, Tamb, Tsup);
+      if (!std::isnan(p)) return p;
+      return oq_perf_v2::interp_power_th_w(level, Tamb, 55.0f);
+    }
     return oq_perf_v2::interp_power_th_w(level, Tamb, Tsup);
   }
   return oq_perf_v1::interp_power_th_w(level, Tamb, Tsup);
@@ -348,6 +355,11 @@ static inline float interp_power_th_w(int level, float Tamb, float Tsup) {
 
 static inline float interp_cop(int level, float Tamb, float Tsup) {
   if (uses_v2_map()) {
+    if (Tsup > 55.0f) {
+      float c = oq_perf_v2_high::interp_cop(level, Tamb, Tsup);
+      if (!std::isnan(c)) return c;
+      return oq_perf_v2::interp_cop(level, Tamb, 55.0f);
+    }
     return oq_perf_v2::interp_cop(level, Tamb, Tsup);
   }
   return oq_perf_v1::interp_cop(level, Tamb, Tsup);
@@ -355,6 +367,11 @@ static inline float interp_cop(int level, float Tamb, float Tsup) {
 
 static inline float interp_power_el_w(int level, float Tamb, float Tsup, float cop_fallback=3.0f) {
   if (uses_v2_map()) {
+    if (Tsup > 55.0f) {
+      float p = oq_perf_v2_high::interp_power_el_w(level, Tamb, Tsup, cop_fallback);
+      if (!std::isnan(p) && p > 0.0f) return p;
+      return oq_perf_v2::interp_power_el_w(level, Tamb, 55.0f, cop_fallback);
+    }
     return oq_perf_v2::interp_power_el_w(level, Tamb, Tsup, cop_fallback);
   }
   return oq_perf_v1::interp_power_el_w(level, Tamb, Tsup, cop_fallback);
