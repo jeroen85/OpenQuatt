@@ -670,13 +670,6 @@
       state.complete ? "complete" : "incomplete",
       state.overviewTheme,
       state.hpVisualMode,
-      getInstallationLabel(),
-      state.authStatus ? `auth:${state.authStatus.enabled ? "on" : "off"}:${state.authStatus.setup_window_active ? "armed" : "locked"}:${state.authStatus.username || ""}:${state.authStatus.source || ""}` : "auth:loading",
-      ...HEADER_ENTITY_KEYS.map((key) => getEntitySignatureFragment(key)),
-      getEntitySignatureFragment("firmwareUpdate"),
-      getEntitySignatureFragment("firmwareUpdateChannel"),
-      getEntitySignatureFragment("firmwareUpdateProgress"),
-      getEntitySignatureFragment("firmwareUpdateStatus"),
     ].join("|");
   }
 
@@ -881,8 +874,10 @@
       if (labelNode.textContent !== label) {
         labelNode.textContent = label;
       }
-      const badgeLabel = hasBadge ? `<span class="oq-helper-status-value-text">${escapeHtml(value)}</span><span class="oq-helper-status-badge" aria-label="Update beschikbaar" title="Update beschikbaar"></span>` : escapeHtml(value);
-      const desiredValueMarkup = badgeLabel;
+      const hasBadge = hasHeaderStatusBadge(key);
+      const desiredValueMarkup = hasBadge
+        ? `<span class="oq-helper-status-value-text">${escapeHtml(value)}</span><span class="oq-helper-status-badge" aria-label="Update beschikbaar" title="Update beschikbaar"></span>`
+        : escapeHtml(value);
       if (valueNode.innerHTML !== desiredValueMarkup) {
         valueNode.innerHTML = desiredValueMarkup;
       }

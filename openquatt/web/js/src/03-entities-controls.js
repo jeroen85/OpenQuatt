@@ -385,7 +385,11 @@
       await refreshEntities(keys, "state");
       const authChanged = await refreshAuthStatus();
       const nextHeaderSignature = getHeaderRenderSignature();
-      if (authChanged || nextHeaderSignature !== state.headerRenderSignature) {
+      if (authChanged && state.systemModal === "login") {
+        render();
+        return;
+      }
+      if (nextHeaderSignature !== state.headerRenderSignature) {
         render();
         return;
       }
@@ -393,6 +397,10 @@
       if (state.appView === "settings") {
         const nextSettingsSignature = getSettingsRenderSignature();
         if (nextSettingsSignature !== state.settingsRenderSignature) {
+          render();
+          return;
+        }
+        if (!patchSettingsDom()) {
           render();
         }
         return;
@@ -454,10 +462,6 @@
       state.appView,
       state.settingsGroup,
       state.loadingEntities ? "loading" : "ready",
-      state.controlNotice,
-      state.controlError,
-      state.settingsInfoOpen,
-      ...SETTINGS_KEYS.map(getEntitySignatureFragment),
     ].join("|");
   }
 
@@ -1444,6 +1448,7 @@
       await refreshEntities(["setupComplete"], "state");
       if (action === "reset") {
         state.currentStep = QUICK_STEPS[0].id;
+        state.quickStartModalMode = "wizard";
         state.quickStartModalOpen = true;
       }
       state.quickStartModalOpen = action !== "apply";

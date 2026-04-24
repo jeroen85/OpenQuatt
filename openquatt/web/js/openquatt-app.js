@@ -217,7 +217,7 @@
     hp1Heat: { domain: "sensor", name: "HP1 - Heat Power" },
     hp1Cooling: { domain: "sensor", name: "HP1 - Cooling Power" },
     hp1Cop: { domain: "sensor", name: "HP1 - COP" },
-    hp1Compressor: { domain: "sensor", name: "HP1 compressor level" },
+    hp1Compressor: { domain: "sensor", name: "HP1 compressor level", optional: true },
     hp1Freq: { domain: "sensor", name: "HP1 - Compressor frequency" },
     hp1FanSpeed: { domain: "sensor", name: "HP1 - Fan speed" },
     hp1Flow: { domain: "sensor", name: "HP1 - Flow" },
@@ -1807,13 +1807,6 @@
       state.complete ? "complete" : "incomplete",
       state.overviewTheme,
       state.hpVisualMode,
-      getInstallationLabel(),
-      state.authStatus ? `auth:${state.authStatus.enabled ? "on" : "off"}:${state.authStatus.setup_window_active ? "armed" : "locked"}:${state.authStatus.username || ""}:${state.authStatus.source || ""}` : "auth:loading",
-      ...HEADER_ENTITY_KEYS.map((key) => getEntitySignatureFragment(key)),
-      getEntitySignatureFragment("firmwareUpdate"),
-      getEntitySignatureFragment("firmwareUpdateChannel"),
-      getEntitySignatureFragment("firmwareUpdateProgress"),
-      getEntitySignatureFragment("firmwareUpdateStatus"),
     ].join("|");
   }
 
@@ -2018,8 +2011,10 @@
       if (labelNode.textContent !== label) {
         labelNode.textContent = label;
       }
-      const badgeLabel = hasBadge ? `<span class="oq-helper-status-value-text">${escapeHtml(value)}</span><span class="oq-helper-status-badge" aria-label="Update beschikbaar" title="Update beschikbaar"></span>` : escapeHtml(value);
-      const desiredValueMarkup = badgeLabel;
+      const hasBadge = hasHeaderStatusBadge(key);
+      const desiredValueMarkup = hasBadge
+        ? `<span class="oq-helper-status-value-text">${escapeHtml(value)}</span><span class="oq-helper-status-badge" aria-label="Update beschikbaar" title="Update beschikbaar"></span>`
+        : escapeHtml(value);
       if (valueNode.innerHTML !== desiredValueMarkup) {
         valueNode.innerHTML = desiredValueMarkup;
       }
@@ -2935,7 +2930,11 @@
       await refreshEntities(keys, "state");
       const authChanged = await refreshAuthStatus();
       const nextHeaderSignature = getHeaderRenderSignature();
-      if (authChanged || nextHeaderSignature !== state.headerRenderSignature) {
+      if (authChanged && state.systemModal === "login") {
+        render();
+        return;
+      }
+      if (nextHeaderSignature !== state.headerRenderSignature) {
         render();
         return;
       }
@@ -2943,6 +2942,10 @@
       if (state.appView === "settings") {
         const nextSettingsSignature = getSettingsRenderSignature();
         if (nextSettingsSignature !== state.settingsRenderSignature) {
+          render();
+          return;
+        }
+        if (!patchSettingsDom()) {
           render();
         }
         return;
@@ -3004,10 +3007,6 @@
       state.appView,
       state.settingsGroup,
       state.loadingEntities ? "loading" : "ready",
-      state.controlNotice,
-      state.controlError,
-      state.settingsInfoOpen,
-      ...SETTINGS_KEYS.map(getEntitySignatureFragment),
     ].join("|");
   }
 
@@ -3994,6 +3993,7 @@
       await refreshEntities(["setupComplete"], "state");
       if (action === "reset") {
         state.currentStep = QUICK_STEPS[0].id;
+        state.quickStartModalMode = "wizard";
         state.quickStartModalOpen = true;
       }
       state.quickStartModalOpen = action !== "apply";
@@ -4267,7 +4267,7 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
   }
 
   function renderSettingsFieldCard(fieldKey, title, copy, controlMarkup, className = "", footerMarkup = "") {
-    return `<article class="oq-settings-field${className ? ` ${className}` : ""}"><div class="oq-settings-field-head"><h3>${escapeHtml(title)}</h3>${renderSettingsInfoToggle(fieldKey, title, copy)}</div><div class="oq-settings-field-control">${controlMarkup}</div>${footerMarkup}</article>`;
+    return `<article class="oq-settings-field${className ? ` ${className}` : ""}" data-oq-settings-field="${escapeHtml(fieldKey)}"><div class="oq-settings-field-head"><h3>${escapeHtml(title)}</h3>${renderSettingsInfoToggle(fieldKey, title, copy)}</div><div class="oq-settings-field-control">${controlMarkup}</div>${footerMarkup}</article>`;
   }
 
   function renderSettingsStaticField(fieldKey, title, copy, value, className = "") {
@@ -4548,6 +4548,244 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
         ${sections.filter(Boolean).join("")}
       </div>
     `;
+  }
+
+  function patchSettingsDom() {
+    if (!state.root || state.appView !== "settings") {
+      return false;
+    }
+
+    const nav = state.root.querySelector(".oq-settings-group-nav");
+    const stack = state.root.querySelector(".oq-settings-group-stack");
+    if (!nav || !stack) {
+      return false;
+    }
+
+    const activeGroup = SETTINGS_GROUP_IDS.has(state.settingsGroup) ? state.settingsGroup : SETTINGS_GROUPS[0].id;
+    const navButtons = nav.querySelectorAll(".oq-settings-group-button");
+    if (navButtons.length !== SETTINGS_GROUPS.length) {
+      return false;
+    }
+
+    navButtons.forEach((button) => {
+      const groupId = String(button.dataset.groupId || "");
+      const active = groupId === activeGroup;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+
+    stack.querySelectorAll(".oq-settings-info").forEach((info) => {
+      const infoId = String(info.dataset.oqSettingsInfo || "");
+      const open = state.settingsInfoOpen === infoId;
+      info.classList.toggle("is-open", open);
+      const popover = info.querySelector(".oq-settings-info-popover");
+      if (popover) {
+        popover.hidden = !open;
+      }
+      const button = info.querySelector(".oq-settings-info-button");
+      if (button) {
+        button.setAttribute("aria-expanded", open ? "true" : "false");
+      }
+    });
+
+    stack.querySelectorAll("[data-oq-settings-field]").forEach((card) => {
+      const key = String(card.dataset.oqSettingsField || "");
+      if (!key) {
+        return;
+      }
+
+      const staticValue = card.querySelector(".oq-settings-static-value");
+      if (staticValue) {
+        const text = getEntityStateText(key);
+        if (staticValue.textContent !== text) {
+          staticValue.textContent = text;
+        }
+      }
+
+      const select = card.querySelector('select[data-oq-field]');
+      if (select) {
+        const value = String(getEntityValue(key) || "");
+        if (select.value !== value) {
+          select.value = value;
+        }
+      }
+
+      const input = card.querySelector('input[data-oq-field]');
+      if (input) {
+        const value = String(getInputDraftValue(key) || "");
+        if (input.value !== value) {
+          input.value = value;
+        }
+      }
+
+      const sliderValue = card.querySelector(".oq-helper-slider-meta strong");
+      if (sliderValue && input && input.type === "range") {
+        const text = formatValue(key, normalizeNumber(key, getEntityValue(key)));
+        if (sliderValue.textContent !== text) {
+          sliderValue.textContent = text;
+        }
+      }
+    });
+
+    stack.querySelectorAll('[data-select-key]').forEach((button) => {
+      const key = String(button.dataset.selectKey || "");
+      const option = String(button.dataset.selectOption || "");
+      const currentValue = String(getEntityValue(key) || "");
+      const active = option === currentValue;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+      if (key === "strategy") {
+        button.disabled = state.loadingEntities || state.busyAction === "save-strategy";
+      } else if (key === "hpGeneration") {
+        button.disabled = state.loadingEntities || state.busyAction === "save-hpGeneration";
+      } else if (key === "curveControlProfile") {
+        button.disabled = state.loadingEntities || state.busyAction === "save-curveControlProfile";
+      } else if (key === "phResponseProfile") {
+        button.disabled = state.loadingEntities || state.busyAction === "save-phResponseProfile";
+      }
+
+      const shell = button.closest(".oq-settings-choice-card-shell");
+      if (shell) {
+        shell.classList.toggle("is-active", active);
+      }
+    });
+
+    const customProfileCard = stack.querySelector(".oq-settings-choice-card--static.oq-settings-choice-card--custom");
+    if (customProfileCard) {
+      const customActive = String(getEntityValue("phResponseProfile") || "") === "Custom";
+      customProfileCard.classList.toggle("is-active", customActive);
+      const numberInputs = customProfileCard.querySelectorAll("input[data-oq-field]");
+      numberInputs.forEach((input) => {
+        const key = String(input.dataset.oqField || "");
+        const value = String(getInputDraftValue(key) || "");
+        if (input.value !== value) {
+          input.value = value;
+        }
+      });
+    }
+
+    stack.querySelectorAll('[data-control-key]').forEach((button) => {
+      const key = String(button.dataset.controlKey || "");
+      const targetState = String(button.dataset.controlState || "");
+      const current = Boolean(getEntityValue(key));
+      const active = targetState === (current ? "on" : "off");
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+      button.disabled = state.loadingEntities || state.busyAction === `switch-${key}`;
+    });
+
+    const generationStatus = stack.querySelector('button[data-oq-action="open-generation-modal"]')?.closest(".oq-settings-quickstart-status");
+    if (generationStatus) {
+      const valueNode = generationStatus.querySelector(".oq-settings-quickstart-status-value");
+      const copyNode = generationStatus.querySelector(".oq-settings-quickstart-status-copy");
+      const button = generationStatus.querySelector('button[data-oq-action="open-generation-modal"]');
+      const currentLabel = getInstallationLabel();
+      const entity = state.entities.hpGeneration || {};
+      const canEdit = hasEntity("hpGeneration") && Array.isArray(entity.option) && entity.option.length > 0;
+      if (valueNode) {
+        const value = currentLabel || "Onbekend";
+        if (valueNode.textContent !== value) {
+          valueNode.textContent = value;
+        }
+      }
+      if (copyNode) {
+        const copy = "Pas dit aan als je een andere Quatt Hybrid hebt.";
+        if (copyNode.textContent !== copy) {
+          copyNode.textContent = copy;
+        }
+      }
+      if (button) {
+        button.disabled = !canEdit || state.loadingEntities || state.busyAction === "save-hpGeneration";
+      }
+    }
+
+    const quickStartStatus = stack.querySelector('button[data-oq-action="reset"]')?.closest(".oq-settings-quickstart-status");
+    if (quickStartStatus) {
+      const valueNode = quickStartStatus.querySelector(".oq-settings-quickstart-status-value");
+      const copyNode = quickStartStatus.querySelector(".oq-settings-quickstart-status-copy");
+      const button = quickStartStatus.querySelector('button[data-oq-action="reset"]');
+      const statusLabel = state.complete ? "Afgerond" : "Open";
+      const statusCopy = state.complete
+        ? "Quick Start is afgerond. Je kunt de status hier altijd weer openen met een reset."
+        : "Quick Start staat nog open. Gebruik de resetknop om opnieuw te beginnen.";
+      if (valueNode && valueNode.textContent !== statusLabel) {
+        valueNode.textContent = statusLabel;
+      }
+      if (copyNode && copyNode.textContent !== statusCopy) {
+        copyNode.textContent = statusCopy;
+      }
+      if (button) {
+        button.disabled = state.busyAction === "reset";
+      }
+    }
+
+    const loginStatus = stack.querySelector('button[data-oq-action="open-login-modal"]')?.closest(".oq-settings-quickstart-status");
+    if (loginStatus) {
+      const valueNode = loginStatus.querySelector(".oq-settings-quickstart-status-value");
+      const copyNode = loginStatus.querySelector(".oq-settings-quickstart-status-copy");
+      const button = loginStatus.querySelector('button[data-oq-action="open-login-modal"]');
+      const statusLabel = getWebAuthStatusLabel();
+      const statusCopy = getWebAuthStatusDetail();
+      if (valueNode && valueNode.textContent !== statusLabel) {
+        valueNode.textContent = statusLabel;
+      }
+      if (copyNode && copyNode.textContent !== statusCopy) {
+        copyNode.textContent = statusCopy;
+      }
+      if (button) {
+        button.disabled = false;
+      }
+    }
+
+    const systemSummary = stack.querySelector(".oq-settings-system-summary");
+    if (systemSummary) {
+      const rows = systemSummary.querySelectorAll(".oq-settings-system-row");
+      const values = [
+        formatUptimeFromMeta(),
+        getDeviceIpAddress(),
+        getUpdateStatus(),
+        formatDiagnosticsDateTime(),
+        state.entities.espInternalTemp ? formatOverviewStatValue("espInternalTemp") : "—",
+      ];
+
+      rows.forEach((row, index) => {
+        const valueNode = row.querySelector(".oq-settings-system-row-value");
+        if (!valueNode) {
+          return;
+        }
+        if (index < values.length) {
+          const nextValue = values[index];
+          if (valueNode.textContent !== nextValue) {
+            valueNode.textContent = nextValue;
+          }
+        }
+      });
+
+      const updateButton = systemSummary.querySelector('button[data-oq-action="open-update-modal"]');
+      if (updateButton) {
+        updateButton.disabled = false;
+      }
+      const restartButton = systemSummary.querySelector('button[data-oq-action="open-restart-confirm"]');
+      if (restartButton) {
+        const busyRestart = state.busyAction === "restartAction";
+        restartButton.disabled = busyRestart;
+        restartButton.textContent = busyRestart ? "Herstarten..." : "Herstarten";
+      }
+    }
+
+    const curveShell = stack.querySelector(".oq-settings-curve-shell");
+    const currentCurveMode = isCurveMode();
+    if (Boolean(curveShell) !== currentCurveMode) {
+      return false;
+    }
+
+    const customCardExists = Boolean(customProfileCard);
+    const customProfileActive = String(getEntityValue("phResponseProfile") || "") === "Custom";
+    if (customCardExists !== customProfileActive) {
+      return false;
+    }
+
+    return true;
   }
 
   function renderCurveFallbackSuggestionMarkup(helper = false) {
@@ -5075,7 +5313,6 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
             Aanpassen
           </button>
           </div>
-          <p class="oq-settings-quickstart-status-copy">Pas dit aan als je een andere Quatt Hybrid hebt.</p>
         </div>
       `,
     );

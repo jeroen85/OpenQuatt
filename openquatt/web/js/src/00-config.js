@@ -213,7 +213,7 @@
     hp1Heat: { domain: "sensor", name: "HP1 - Heat Power" },
     hp1Cooling: { domain: "sensor", name: "HP1 - Cooling Power" },
     hp1Cop: { domain: "sensor", name: "HP1 - COP" },
-    hp1Compressor: { domain: "sensor", name: "HP1 compressor level" },
+    hp1Compressor: { domain: "sensor", name: "HP1 compressor level", optional: true },
     hp1Freq: { domain: "sensor", name: "HP1 - Compressor frequency" },
     hp1FanSpeed: { domain: "sensor", name: "HP1 - Fan speed" },
     hp1Flow: { domain: "sensor", name: "HP1 - Flow" },
