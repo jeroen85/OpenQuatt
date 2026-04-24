@@ -274,6 +274,10 @@
     const changed = state.appView !== normalized;
     state.appView = normalized;
 
+    if (normalized === "settings" && !options.preserveSettingsGroup) {
+      setSettingsGroup(SETTINGS_GROUPS[0].id);
+    }
+
     if (changed || options.forceSync) {
       syncUrlAppView(mode);
     }
