@@ -2380,6 +2380,28 @@ views:
       - type: grid
         cards:
           - type: heading
+            icon: mdi:factory
+            heading: Quatt Hybrid version
+            heading_style: title
+          - type: markdown
+            content: >-
+              <details>
+
+              <summary><strong>Explanation</strong></summary>
+
+              Choose which Quatt Hybrid you have. OpenQuatt uses this setting
+              to apply the correct model rules and limits.
+
+              </details>
+            text_only: true
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: select.openquatt_quatt_hybrid_version
+                name: Quatt Hybrid version
+      - type: grid
+        cards:
+          - type: heading
             icon: mdi:volume-off
             heading: Silent mode settings
             heading_style: title
