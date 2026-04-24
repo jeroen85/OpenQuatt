@@ -13,8 +13,20 @@
 
   const QUICK_STEPS = [
     {
-      id: "strategy",
+      id: "generation",
       kicker: "Stap 1",
+      title: "Kies je Quatt Hybrid",
+      copy: "Geef hier aan welke Quatt Hybrid je hebt. Dan zet OpenQuatt de juiste regeling klaar.",
+      fields: [
+        {
+          title: "Quatt Hybrid-versie",
+          copy: "Kies de versie die bij jouw Quatt hoort.",
+        },
+      ],
+    },
+    {
+      id: "strategy",
+      kicker: "Stap 2",
       title: "Kies de verwarmingsstrategie",
       copy: "Kies hier hoe OpenQuatt je verwarming regelt. Daarna lopen we samen de belangrijkste instellingen langs.",
       fields: [
@@ -26,7 +38,7 @@
     },
     {
       id: "heating",
-      kicker: "Stap 2",
+      kicker: "Stap 3",
       title: "Werk de regeling uit",
       copy: "Stel nu de gekozen regeling verder in. De inhoud hieronder past zich aan aan je keuze.",
       fields: [
@@ -38,7 +50,7 @@
     },
     {
       id: "flow",
-      kicker: "Stap 3",
+      kicker: "Stap 4",
       title: "Flow en pompregeling",
       copy: "Leg daarna vast hoe de pomp geregeld moet worden. Dit bepaalt of je een flowdoel of een vaste pompwaarde instelt.",
       fields: [
@@ -50,7 +62,7 @@
     },
     {
       id: "water",
-      kicker: "Stap 4",
+      kicker: "Stap 5",
       title: "Watertemperatuur beveiligen",
       copy: "Controleer de normale bovengrens en de tripgrens voor het watercircuit.",
       fields: [
@@ -62,7 +74,7 @@
     },
     {
       id: "silent",
-      kicker: "Stap 5",
+      kicker: "Stap 6",
       title: "Stille uren en niveaus",
       copy: "Stel daarna het stille venster en de compressorlimieten voor dag en nacht in.",
       fields: [
@@ -74,7 +86,7 @@
     },
     {
       id: "confirm",
-      kicker: "Stap 6",
+      kicker: "Stap 7",
       title: "Bevestigen en afronden",
       copy: "Controleer nog één keer je keuzes. Met afronden markeer je Quick Start als voltooid.",
       fields: [
@@ -106,6 +118,7 @@
     releaseChannelText: { domain: "text_sensor", name: "OpenQuatt Release Channel", optional: true },
     wifiSignal: { domain: "sensor", name: "WiFi Signal", optional: true },
     espInternalTemp: { domain: "sensor", name: "ESP Internal Temperature", optional: true },
+    hpGeneration: { domain: "select", name: "Quatt Hybrid version" },
     strategy: { domain: "select", name: "Heating Control Mode" },
     openquattEnabled: { domain: "switch", name: "OpenQuatt Enabled", optional: true },
     manualCoolingEnable: { domain: "switch", name: "Manual Cooling Enable", optional: true },

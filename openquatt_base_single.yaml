@@ -32,6 +32,7 @@ esphome:
   name_add_mac_suffix: false
   includes:
     - ${hp_perf_map_header}
+    - ${hp_perf_map_v2_high_header}
     - ${thermal_request_logic_header}
     - ${heating_curve_logic_header}
   platformio_options:

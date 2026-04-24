@@ -301,3 +301,4 @@ This keeps ESPHome web UI and Home Assistant mapping coherent.
 - Preserve entity IDs unless migration is documented.
 - Keep loop intervals and hysteresis semantics stable unless retuning intentionally.
 - Always run config + compile validation after structural changes.
+- V2 high-temperature continuation is documented separately in [docs/v2-high-temp-continuation.md](./v2-high-temp-continuation.md) and should stay separate from the base rectangular V2 map.

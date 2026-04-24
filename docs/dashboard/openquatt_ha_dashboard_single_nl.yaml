@@ -2202,6 +2202,28 @@ views:
       - type: grid
         cards:
           - type: heading
+            icon: mdi:factory
+            heading: Quatt Hybrid-versie
+            heading_style: title
+          - type: markdown
+            content: >-
+              <details>
+
+              <summary><strong>Uitleg</strong></summary>
+
+              Kies hier welke Quatt Hybrid je hebt. OpenQuatt gebruikt deze
+              keuze om de juiste modelregels en limieten toe te passen.
+
+              </details>
+            text_only: true
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: select.openquatt_quatt_hybrid_version
+                name: Quatt Hybrid-versie
+      - type: grid
+        cards:
+          - type: heading
             icon: mdi:volume-off
             heading: Instellingen stille modus
             heading_style: title

@@ -214,6 +214,18 @@ select:
                   id: oq_firmware_update
 
   - platform: template
+    name: "Quatt Hybrid version"
+    id: hp_generation
+    icon: mdi:factory
+    web_server:
+      sorting_group_id: oq_heating_strategy
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    options: ["V1", "V1.5", "V2"]
+    initial_option: V1.5
+
+  - platform: template
     name: "Debug Level"
     id: debug_level_select
     disabled_by_default: true

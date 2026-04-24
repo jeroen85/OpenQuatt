@@ -1,7 +1,19 @@
-  function renderStrategyWorkspace() {
+  function renderGenerationWorkspace() {
     return `
       <section class="oq-helper-panel">
         <p class="oq-helper-label">Stap 1</p>
+        <h2 class="oq-helper-section-title">Kies je Quatt Hybrid</h2>
+        <p class="oq-helper-section-copy">Geef hier aan welke Quatt Hybrid je hebt. Dan zet OpenQuatt de juiste regeling klaar.</p>
+        ${renderHpGenerationField()}
+        ${renderQuickStartStepNav()}
+      </section>
+    `;
+  }
+
+  function renderStrategyWorkspace() {
+    return `
+      <section class="oq-helper-panel">
+        <p class="oq-helper-label">Stap 2</p>
         <h2 class="oq-helper-section-title">Kies de verwarmingsstrategie</h2>
         <p class="oq-helper-section-copy">Kies hier hoe OpenQuatt je verwarming regelt. Daarna lopen we samen de belangrijkste instellingen langs.</p>
         ${renderHeatingStrategyExplainCards()}
@@ -14,7 +26,7 @@
   function renderFlowWorkspace() {
     return `
       <section class="oq-helper-panel">
-        <p class="oq-helper-label">Stap 3</p>
+        <p class="oq-helper-label">Stap 4</p>
         <h2 class="oq-helper-section-title">Flow en pompregeling</h2>
         <p class="oq-helper-section-copy">Kies hier of OpenQuatt de pomp automatisch regelt, of dat je zelf een vaste pompstand instelt.</p>
         ${renderFlowSettingsFields("oq-settings-grid oq-settings-grid--quickstart")}
@@ -26,7 +38,7 @@
   function renderHeatingWorkspace() {
     return `
       <section class="oq-helper-panel">
-        <p class="oq-helper-label">Stap 2</p>
+        <p class="oq-helper-label">Stap 3</p>
         <h2 class="oq-helper-section-title">${escapeHtml(isCurveMode() ? "Stooklijn instellen" : "Power House instellen")}</h2>
         <p class="oq-helper-section-copy">
           ${escapeHtml(
@@ -55,7 +67,7 @@
   function renderWaterWorkspace() {
     return `
       <section class="oq-helper-panel">
-        <p class="oq-helper-label">Stap 4</p>
+        <p class="oq-helper-label">Stap 5</p>
         <h2 class="oq-helper-section-title">Watertemperatuur beveiligen</h2>
         <p class="oq-helper-section-copy">Hier stel je de veilige bovengrens voor de watertemperatuur in. OpenQuatt regelt richting deze grens terug en grijpt 5°C erboven hard in.</p>
         ${renderWaterSettingsFields("oq-settings-grid oq-settings-grid--quickstart")}
@@ -67,7 +79,7 @@
   function renderSilentWorkspace() {
     return `
       <section class="oq-helper-panel">
-        <p class="oq-helper-label">Stap 5</p>
+        <p class="oq-helper-label">Stap 6</p>
         <h2 class="oq-helper-section-title">Stille uren en niveaus</h2>
         <p class="oq-helper-section-copy">Kies hier wanneer het systeem stiller moet werken, en hoe ver het dan nog mag opschalen.</p>
         ${renderSilentSettingsGrid("oq-settings-grid oq-settings-grid--quickstart")}
@@ -79,7 +91,7 @@
   function renderConfirmWorkspace() {
     return `
       <section class="oq-helper-panel">
-        <p class="oq-helper-label">Stap 6</p>
+        <p class="oq-helper-label">Stap 7</p>
         <h2 class="oq-helper-section-title">Bevestigen en afronden</h2>
         <p class="oq-helper-section-copy">Controleer nog één keer je keuzes. Met afronden markeer je Quick Start als voltooid.</p>
         ${renderConfirmReviewCards()}
@@ -103,6 +115,9 @@
   }
 
   function renderActiveStep() {
+    if (state.currentStep === "generation") {
+      return renderGenerationWorkspace();
+    }
     if (state.currentStep === "flow") {
       return renderFlowWorkspace();
     }
@@ -207,8 +222,12 @@
   }
 
   function renderConfirmReviewCards() {
+    const generationTitle = formatSettingsOptionLabel(getEntityStateText("hpGeneration"));
     const strategyTitle = isCurveMode() ? "Stooklijn" : "Power House";
     const formatReviewOption = (key) => formatSettingsOptionLabel(getEntityStateText(key));
+    const generationLines = [
+      ["Quatt Hybrid-versie", formatReviewOption("hpGeneration")],
+    ];
     const strategyLines = isCurveMode()
       ? [
           ["Regelprofiel", formatReviewOption("curveControlProfile")],
@@ -274,6 +293,7 @@
     return `
       <div class="oq-helper-fields oq-helper-fields--review">
         <div class="oq-helper-review-column">
+          ${renderReviewCard("Quatt Hybrid-versie", generationLines, generationTitle)}
           ${renderReviewCard("Verwarmingsstrategie", strategyLines, strategyTitle)}
           ${renderReviewCard("Watertemperatuur", waterLines)}
         </div>
@@ -284,4 +304,3 @@
       </div>
     `;
   }
-

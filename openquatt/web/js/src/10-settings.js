@@ -72,9 +72,38 @@
     return labels[value] || value;
   }
 
-  function renderSettingsChoiceOption({ key, option, currentValue, busy, copy = "", meta = "" }) {
+  function renderSettingsChoiceOption({ key, option, currentValue, busy, copy = "", meta = "", image = "", imageAlt = "", infoTitle = "", infoCopy = "", infoId = "" }) {
     const active = option === currentValue;
-    return `<button class="oq-settings-choice-card${active ? " is-active" : ""}" type="button" data-oq-action="select-settings-option" data-select-key="${escapeHtml(key)}" data-select-option="${escapeHtml(option)}" aria-pressed="${active ? "true" : "false"}" ${busy ? "disabled" : ""}><span class="oq-settings-choice-title">${escapeHtml(formatSettingsOptionLabel(option))}</span>${meta ? `<div class="oq-settings-choice-meta"><span class="oq-settings-choice-meta-text">${escapeHtml(meta)}</span></div>` : ""}${copy ? `<span class="oq-settings-choice-copy">${escapeHtml(copy)}</span>` : ""}</button>`;
+    const cardBody = `
+      <button
+        class="oq-settings-choice-card${active ? " is-active" : ""}${image ? " oq-settings-choice-card--with-image" : ""}${infoCopy ? " oq-settings-choice-card--has-info" : ""}"
+        type="button"
+        data-oq-action="select-settings-option"
+        data-select-key="${escapeHtml(key)}"
+        data-select-option="${escapeHtml(option)}"
+        aria-pressed="${active ? "true" : "false"}"
+        ${busy ? "disabled" : ""}
+      >
+        <span class="oq-settings-choice-head">
+          <span class="oq-settings-choice-title">${escapeHtml(formatSettingsOptionLabel(option))}</span>
+          ${meta ? `<span class="oq-settings-choice-meta"><span class="oq-settings-choice-meta-text">${escapeHtml(meta)}</span></span>` : ""}
+        </span>
+        ${image ? `<span class="oq-settings-choice-media"><img src="${escapeHtml(image)}" alt="${escapeHtml(imageAlt || formatSettingsOptionLabel(option))}" loading="lazy" decoding="async"></span>` : ""}
+        ${copy ? `<span class="oq-settings-choice-copy">${escapeHtml(copy)}</span>` : ""}
+      </button>
+    `;
+    if (!infoCopy) {
+      return cardBody;
+    }
+
+    const toggleTitle = infoTitle || formatSettingsOptionLabel(option);
+    const toggleId = infoId || `${key}-${option}`;
+    return `
+      <article class="oq-settings-choice-card-shell${active ? " is-active" : ""}${image ? " oq-settings-choice-card-shell--with-image" : ""}">
+        ${cardBody}
+        ${renderSettingsInfoToggle(toggleId, toggleTitle, infoCopy)}
+      </article>
+    `;
   }
 
   function renderSettingsSelectField(key, title, copy, className = "") {
@@ -134,7 +163,13 @@
     const busy = state.loadingEntities || state.busyAction === `save-${key}`;
     const controlMarkup = `
       <div class="oq-settings-choice-grid">
-        ${options.map((option) => renderSettingsChoiceOption({ key, option, currentValue, busy, copy: descriptions[option] || "" })).join("")}
+        ${options.map((option) => {
+          const description = descriptions[option] || "";
+          const optionCopy = typeof description === "string" ? description : (description.copy || "");
+          const optionImage = typeof description === "string" ? "" : (description.image || "");
+          const optionImageAlt = typeof description === "string" ? "" : (description.alt || "");
+          return renderSettingsChoiceOption({ key, option, currentValue, busy, copy: optionCopy, image: optionImage, imageAlt: optionImageAlt });
+        }).join("")}
       </div>
     `;
 
@@ -653,6 +688,80 @@
       "Flowregeling",
       "Kies of OpenQuatt de pomp automatisch op flow regelt, of dat je zelf een vaste pompstand instelt.",
       renderFlowSettingsFields(),
+    );
+  }
+
+  function renderHpGenerationField() {
+    if (!hasEntity("hpGeneration")) {
+      return "";
+    }
+
+    const descriptions = {
+      V1: {
+        copy: "Voor Quatt V1.",
+        image: HP_GENERATION_IMAGE_V1,
+        alt: "Quatt Hybrid V1 en V1.5",
+        infoTitle: "V1",
+        infoCopy: "Model: AMM4\nKenmerken: Flowmeter bij CV-ketel en vorstbeveiligingsklep buiten de buitenunit.",
+      },
+      "V1.5": {
+        copy: "Voor Quatt V1.5.",
+        image: HP_GENERATION_IMAGE_V1,
+        alt: "Quatt Hybrid V1 en V1.5",
+        infoTitle: "V1.5",
+        infoCopy: "Model: AMM4-V1.5\nKenmerken: Flowmeter in de buitenunit geïntegreerd. Onder CV-ketel enkel een kleine clip-on temperatuursensor.",
+      },
+      V2: {
+        copy: "Voor Quatt V2.",
+        image: HP_GENERATION_IMAGE_V2,
+        alt: "Quatt Hybrid V2",
+        infoTitle: "V2",
+        infoCopy: "Model: AMH6 of AMH6-2\nKenmerken: Flowmeter in de buitenunit geïntegreerd. Onder CV-ketel enkel een kleine clip-on temperatuursensor.",
+      },
+    };
+
+    const entity = state.entities.hpGeneration || {};
+    const currentValue = String(getEntityValue("hpGeneration") || "");
+    const options = Array.isArray(entity.option) ? entity.option : [];
+    const busy = state.loadingEntities || state.busyAction === "save-hpGeneration";
+
+    return `
+      <div class="oq-settings-generation-field oq-settings-field--span-2">
+        <div class="oq-settings-generation-grid">
+          ${options.map((option) => {
+            const description = descriptions[option] || {};
+            return renderSettingsChoiceOption({
+              key: "hpGeneration",
+              option,
+              currentValue,
+              busy,
+              copy: description.copy || "",
+              image: description.image || "",
+              imageAlt: description.alt || "",
+              infoTitle: description.infoTitle || "",
+              infoCopy: description.infoCopy || "",
+              infoId: `hp-generation-${String(option).toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+            });
+          }).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderSettingsGenerationSection() {
+    if (!hasEntity("hpGeneration")) {
+      return "";
+    }
+
+    return renderSettingsSection(
+      "Quatt Hybrid",
+      "Quatt Hybrid-versie",
+      "Kies welke Quatt Hybrid je hebt.",
+      `
+        <div class="oq-settings-grid">
+          ${renderHpGenerationField()}
+        </div>
+      `,
     );
   }
 
