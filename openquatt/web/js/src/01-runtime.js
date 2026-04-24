@@ -11,6 +11,8 @@
     devPanelOpen: getStoredDevPanelOpen(),
     nativeOpen: getStoredSurface() === "native",
     currentStep: "generation",
+    quickStartModalMode: "wizard",
+    settingsGroup: getStoredSettingsGroup(),
     appView: "",
     overviewTheme: getStoredOverviewTheme(),
     hpVisualMode: getStoredHpVisualMode(),
@@ -111,6 +113,24 @@
       return window.localStorage.getItem("oq-dev-panel-open") === "true";
     } catch (_error) {
       return false;
+    }
+  }
+
+  function getStoredSettingsGroup() {
+    try {
+      const stored = window.localStorage.getItem("oq-settings-group");
+      return SETTINGS_GROUP_IDS.has(stored) ? stored : SETTINGS_GROUPS[0].id;
+    } catch (_error) {
+      return SETTINGS_GROUPS[0].id;
+    }
+  }
+
+  function setSettingsGroup(groupId) {
+    state.settingsGroup = SETTINGS_GROUP_IDS.has(groupId) ? groupId : SETTINGS_GROUPS[0].id;
+    try {
+      window.localStorage.setItem("oq-settings-group", state.settingsGroup);
+    } catch (_error) {
+      // Ignore storage failures in embedded browsers.
     }
   }
 

@@ -2,19 +2,10 @@
     return `
       <section class="oq-helper-panel">
         <p class="oq-helper-label">Instellingen</p>
-        <h2 class="oq-helper-section-title">Regeling aanpassen</h2>
-        <p class="oq-helper-section-copy">Hier pas je aan hoe OpenQuatt werkt. Wijzigingen worden direct toegepast.</p>
-        <div class="oq-helper-settings-stack">
-          ${renderSettingsQuickStartSection()}
-          ${renderSettingsGenerationSection()}
-          ${renderSettingsFlowSection()}
-          ${renderSettingsHeatingSection()}
-          ${renderSettingsCoolingSection()}
-          ${renderSettingsCiCCompatibilitySection()}
-          ${renderSettingsWaterSection()}
-          ${renderSettingsCompressorSection()}
-          ${renderSettingsSilentSection()}
-        </div>
+        <h2 class="oq-helper-section-title">Kies een onderdeel</h2>
+        <p class="oq-helper-section-copy">Werk installatie, regeling, koeling en systeem apart bij. Wijzigingen worden direct toegepast.</p>
+        ${renderSettingsGroupNav()}
+        ${renderSettingsGroupContent()}
       </section>
     `;
   }
@@ -67,10 +58,10 @@
               <div class="oq-helper-logo-lockup">
                 ${LOGO_MARKUP}
               <div class="oq-helper-brand-copy">
-                  <h1>Regeling, inzicht en tuning</h1>
+                  <h1>OpenQuatt Control</h1>
                 </div>
               </div>
-              <p class="oq-helper-lead">Alles voor je OpenQuatt op één plek: snel instellen, live meekijken en later verder finetunen.</p>
+              <p class="oq-helper-lead">Stel je OpenQuatt in, volg live wat er gebeurt en verfijn de regeling wanneer nodig.</p>
             </div>
             ${renderHeaderStatus()}
           </div>

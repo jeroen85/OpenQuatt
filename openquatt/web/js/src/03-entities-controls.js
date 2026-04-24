@@ -452,6 +452,7 @@
   function getSettingsRenderSignature() {
     return [
       state.appView,
+      state.settingsGroup,
       state.loadingEntities ? "loading" : "ready",
       state.controlNotice,
       state.controlError,
@@ -645,6 +646,12 @@
       return;
     }
 
+    if (action === "select-settings-group") {
+      setSettingsGroup(button.dataset.groupId || SETTINGS_GROUPS[0].id);
+      render();
+      return;
+    }
+
     if (action === "open-update-modal") {
       state.updateModalOpen = true;
       render();
@@ -731,6 +738,16 @@
     }
 
     if (action === "open-quickstart-modal") {
+      state.currentStep = "generation";
+      state.quickStartModalMode = "wizard";
+      state.quickStartModalOpen = true;
+      render();
+      return;
+    }
+
+    if (action === "open-generation-modal") {
+      state.currentStep = "generation";
+      state.quickStartModalMode = "generation";
       state.quickStartModalOpen = true;
       render();
       return;

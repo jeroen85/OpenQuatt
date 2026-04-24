@@ -23,6 +23,69 @@
   line-height: 1.6;
 }
 
+.oq-settings-group-nav {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--oq-helper-line);
+}
+
+.oq-settings-group-button {
+  appearance: none;
+  display: grid;
+  align-content: center;
+  min-height: 54px;
+  padding: 14px 16px;
+  border-radius: var(--oq-helper-radius-lg);
+  border: 1px solid var(--oq-helper-line);
+  background: var(--oq-helper-card);
+  color: var(--oq-helper-soft);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.oq-settings-group-button:hover,
+.oq-settings-group-button:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(234, 88, 12, 0.18);
+}
+
+.oq-settings-group-button.is-active {
+  border-color: rgba(234, 88, 12, 0.26);
+  background: var(--oq-helper-accent-soft);
+  color: var(--oq-helper-accent-deep);
+  box-shadow: inset 0 0 0 1px rgba(234, 88, 12, 0.06);
+}
+
+.oq-helper-shell--dark .oq-settings-group-button {
+  background: rgba(22, 32, 46, 0.94);
+  border-color: rgba(148, 163, 184, 0.18);
+  color: var(--oq-helper-soft);
+}
+
+.oq-helper-shell--dark .oq-settings-group-button.is-active {
+  background: linear-gradient(180deg, rgba(66, 32, 14, 0.34), rgba(22, 33, 49, 0.92));
+  border-color: rgba(249, 115, 22, 0.36);
+  color: #fb923c;
+}
+
+.oq-settings-group-button-label {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.oq-settings-group-stack {
+  display: grid;
+  gap: 18px;
+  margin-top: 18px;
+}
+
 .oq-settings-callout {
   margin-top: 16px;
   padding: 16px 18px;
@@ -328,6 +391,70 @@
   margin: 0;
   color: var(--oq-helper-soft);
   line-height: 1.55;
+}
+
+.oq-settings-installation-summary,
+.oq-settings-system-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: var(--oq-helper-radius-lg);
+  border: 1px solid var(--oq-helper-line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(249, 250, 251, 0.98));
+}
+
+.oq-helper-shell--dark .oq-settings-installation-summary,
+.oq-helper-shell--dark .oq-settings-system-row {
+  background: linear-gradient(180deg, rgba(66, 32, 14, 0.26), rgba(22, 33, 49, 0.94));
+}
+
+.oq-settings-installation-summary-copy,
+.oq-settings-system-row-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.oq-settings-system-summary {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.oq-settings-installation-summary-label,
+.oq-settings-system-row-label {
+  margin: 0;
+  color: var(--oq-helper-faint);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.oq-settings-installation-summary-value,
+.oq-settings-system-row-value {
+  color: var(--oq-helper-ink);
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.oq-settings-installation-summary-note,
+.oq-settings-system-row-note {
+  margin: 0;
+  color: var(--oq-helper-soft);
+  line-height: 1.5;
+}
+
+.oq-settings-system-row--with-action {
+  align-items: flex-start;
+}
+
+.oq-settings-system-row--with-action .oq-settings-system-row-copy {
+  flex: 1;
 }
 
 .oq-settings-field--span-2 {
