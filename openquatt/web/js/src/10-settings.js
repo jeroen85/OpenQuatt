@@ -72,9 +72,9 @@
     return labels[value] || value;
   }
 
-  function renderSettingsChoiceOption({ key, option, currentValue, busy, copy = "", meta = "" }) {
+  function renderSettingsChoiceOption({ key, option, currentValue, busy, copy = "", meta = "", image = "", imageAlt = "" }) {
     const active = option === currentValue;
-    return `<button class="oq-settings-choice-card${active ? " is-active" : ""}" type="button" data-oq-action="select-settings-option" data-select-key="${escapeHtml(key)}" data-select-option="${escapeHtml(option)}" aria-pressed="${active ? "true" : "false"}" ${busy ? "disabled" : ""}><span class="oq-settings-choice-title">${escapeHtml(formatSettingsOptionLabel(option))}</span>${meta ? `<div class="oq-settings-choice-meta"><span class="oq-settings-choice-meta-text">${escapeHtml(meta)}</span></div>` : ""}${copy ? `<span class="oq-settings-choice-copy">${escapeHtml(copy)}</span>` : ""}</button>`;
+    return `<button class="oq-settings-choice-card${active ? " is-active" : ""}${image ? " oq-settings-choice-card--with-image" : ""}" type="button" data-oq-action="select-settings-option" data-select-key="${escapeHtml(key)}" data-select-option="${escapeHtml(option)}" aria-pressed="${active ? "true" : "false"}" ${busy ? "disabled" : ""}>${image ? `<span class="oq-settings-choice-media"><img src="${escapeHtml(image)}" alt="${escapeHtml(imageAlt || formatSettingsOptionLabel(option))}" loading="lazy" decoding="async"></span>` : ""}<span class="oq-settings-choice-title">${escapeHtml(formatSettingsOptionLabel(option))}</span>${meta ? `<div class="oq-settings-choice-meta"><span class="oq-settings-choice-meta-text">${escapeHtml(meta)}</span></div>` : ""}${copy ? `<span class="oq-settings-choice-copy">${escapeHtml(copy)}</span>` : ""}</button>`;
   }
 
   function renderSettingsSelectField(key, title, copy, className = "") {
@@ -134,7 +134,13 @@
     const busy = state.loadingEntities || state.busyAction === `save-${key}`;
     const controlMarkup = `
       <div class="oq-settings-choice-grid">
-        ${options.map((option) => renderSettingsChoiceOption({ key, option, currentValue, busy, copy: descriptions[option] || "" })).join("")}
+        ${options.map((option) => {
+          const description = descriptions[option] || "";
+          const optionCopy = typeof description === "string" ? description : (description.copy || "");
+          const optionImage = typeof description === "string" ? "" : (description.image || "");
+          const optionImageAlt = typeof description === "string" ? "" : (description.alt || "");
+          return renderSettingsChoiceOption({ key, option, currentValue, busy, copy: optionCopy, image: optionImage, imageAlt: optionImageAlt });
+        }).join("")}
       </div>
     `;
 
@@ -653,6 +659,55 @@
       "Flowregeling",
       "Kies of OpenQuatt de pomp automatisch op flow regelt, of dat je zelf een vaste pompstand instelt.",
       renderFlowSettingsFields(),
+    );
+  }
+
+  function renderHpGenerationField() {
+    if (!hasEntity("hpGeneration")) {
+      return "";
+    }
+
+    const descriptions = {
+      V1: {
+        copy: "Voor Quatt V1.",
+        image: HP_GENERATION_IMAGE_V1,
+        alt: "Quatt Hybrid V1 en V1.5",
+      },
+      "V1.5": {
+        copy: "Voor Quatt V1.5.",
+        image: HP_GENERATION_IMAGE_V1,
+        alt: "Quatt Hybrid V1 en V1.5",
+      },
+      V2: {
+        copy: "Voor Quatt V2.",
+        image: HP_GENERATION_IMAGE_V2,
+        alt: "Quatt Hybrid V2",
+      },
+    };
+
+    return renderSettingsOptionCardsField(
+      "hpGeneration",
+      "Quatt Hybrid-versie",
+      "Kies welke Quatt Hybrid je hebt.",
+      descriptions,
+      "oq-settings-field--span-2",
+    );
+  }
+
+  function renderSettingsGenerationSection() {
+    if (!hasEntity("hpGeneration")) {
+      return "";
+    }
+
+    return renderSettingsSection(
+      "Quatt Hybrid",
+      "Quatt Hybrid-versie",
+      "Kies welke Quatt Hybrid je hebt.",
+      `
+        <div class="oq-settings-grid">
+          ${renderHpGenerationField()}
+        </div>
+      `,
     );
   }
 

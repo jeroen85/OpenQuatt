@@ -5,6 +5,7 @@
         <h2 class="oq-helper-section-title">Regeling aanpassen</h2>
         <p class="oq-helper-section-copy">Hier pas je aan hoe OpenQuatt werkt. Wijzigingen worden direct toegepast.</p>
         <div class="oq-helper-settings-stack">
+          ${renderSettingsGenerationSection()}
           ${renderSettingsFlowSection()}
           ${renderSettingsHeatingSection()}
           ${renderSettingsCoolingSection()}

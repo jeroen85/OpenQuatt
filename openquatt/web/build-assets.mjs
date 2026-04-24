@@ -37,6 +37,24 @@ const bundles = [
   },
 ];
 
+async function buildEmbeddedAssetBlock() {
+  const assets = [
+    ["HP_GENERATION_IMAGE_V1", path.join(__dirname, "assets", "quatt-hybrid-v1.webp")],
+    ["HP_GENERATION_IMAGE_V2", path.join(__dirname, "assets", "quatt-hybrid-v2.webp")],
+  ];
+
+  const lines = [
+    "/* --- embedded web assets --- */",
+  ];
+
+  for (const [name, assetPath] of assets) {
+    const bytes = await readFile(assetPath);
+    lines.push(`const ${name} = "data:image/webp;base64,${bytes.toString("base64")}";`);
+  }
+
+  return lines.join("\n");
+}
+
 async function buildBundle(bundle) {
   const parts = await Promise.all(
     bundle.sources.map(async (source) => ({
@@ -51,7 +69,11 @@ async function buildBundle(bundle) {
     "/* Rebuild with: node openquatt/web/build-assets.mjs */",
     "",
   ].join("\n");
-  const body = parts.map(({ source, content }) => `/* --- ${path.relative(__dirname, source)} --- */\n${content.trimEnd()}`).join("\n\n");
+  const bodySegments = parts.map(({ source, content }) => `/* --- ${path.relative(__dirname, source)} --- */\n${content.trimEnd()}`);
+  if (bundle.label === "JS") {
+    bodySegments.splice(5, 0, await buildEmbeddedAssetBlock());
+  }
+  const body = bodySegments.join("\n\n");
   await mkdir(path.dirname(bundle.output), { recursive: true });
   await writeFile(bundle.output, `${header}${body}\n`, "utf8");
   console.log(`${bundle.label} bundle rebuilt: ${path.relative(__dirname, bundle.output)}`);
