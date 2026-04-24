@@ -594,7 +594,7 @@
     interfacePanelOpen: getStoredInterfacePanelOpen(),
     devPanelOpen: getStoredDevPanelOpen(),
     nativeOpen: getStoredSurface() === "native",
-    currentStep: "strategy",
+    currentStep: "generation",
     appView: "",
     overviewTheme: getStoredOverviewTheme(),
     hpVisualMode: getStoredHpVisualMode(),
@@ -615,6 +615,14 @@
     focusedField: "",
     updateModalOpen: false,
     systemModal: "",
+    authStatus: null,
+    authDraftUsername: "",
+    authDraftCurrentPassword: "",
+    authDraftNewPassword: "",
+    authDraftConfirmPassword: "",
+    authBusy: false,
+    authNotice: "",
+    authError: "",
     updateCheckBusy: false,
     updateInstallBusy: false,
     updateInstallTargetVersion: "",
@@ -1752,6 +1760,7 @@
       state.overviewTheme,
       state.hpVisualMode,
       getInstallationLabel(),
+      state.authStatus ? `auth:${state.authStatus.enabled ? "on" : "off"}:${state.authStatus.setup_window_active ? "armed" : "locked"}:${state.authStatus.username || ""}:${state.authStatus.source || ""}` : "auth:loading",
       ...HEADER_ENTITY_KEYS.map((key) => getEntitySignatureFragment(key)),
       getEntitySignatureFragment("firmwareUpdate"),
       getEntitySignatureFragment("firmwareUpdateChannel"),
@@ -1776,6 +1785,18 @@
     return version || "—";
   }
 
+  function getFirmwareVersionChipValue() {
+    const version = getDeviceVersionLabel();
+    const update = getUpdateStatus();
+    if (!version || version === "—") {
+      return update;
+    }
+    if (!update || update === "—" || update === "Actueel") {
+      return version;
+    }
+    return `${version} · ${update}`;
+  }
+
   function getEspTemperatureLabel() {
     const entity = state.entities.espInternalTemp;
     if (!entity) {
@@ -1786,6 +1807,54 @@
       return formatNumericState(numeric, 1, entity.uom || " °C");
     }
     return getEntityStateText("espInternalTemp");
+  }
+
+  function getWebAuthStatusLabel() {
+    const authStatus = state.authStatus;
+    if (!authStatus) {
+      return "Laden...";
+    }
+    return authStatus.enabled ? "Aan" : "Uit";
+  }
+
+  function getWebAuthModalTitle() {
+    return "Login";
+  }
+
+  function getWebAuthModalCopy() {
+    const authStatus = state.authStatus;
+    if (!authStatus) {
+      return "We halen de huidige loginstatus op.";
+    }
+    if (authStatus.enabled) {
+      return "De web-app vraagt nu een login voordat beheer beschikbaar is. Je kunt die hier aanpassen of uitzetten.";
+    }
+    return "De web-app staat open op je netwerk. Houd de herstelknop 5 seconden vast om een login toe te voegen.";
+  }
+
+  function getWebAuthStatusDetail() {
+    const authStatus = state.authStatus;
+    if (!authStatus) {
+      return "Logingegevens laden...";
+    }
+    if (authStatus.enabled) {
+      return authStatus.setup_window_active
+        ? "Login actief. Tijdelijk instelvenster is open."
+        : `Login actief${authStatus.source ? ` via ${authStatus.source}` : ""}.`;
+    }
+    return authStatus.setup_window_active
+      ? "Login uit. Tijdelijk instelvenster is open."
+      : "Login uit. Webtoegang is open op het netwerk.";
+  }
+
+  function renderLoginStatusRow(label, value, copy = "") {
+    return `
+      <div class="oq-helper-modal-row">
+        <span class="oq-helper-modal-label">${escapeHtml(label)}</span>
+        <strong class="oq-helper-modal-value">${escapeHtml(value)}</strong>
+        ${copy ? `<span class="oq-helper-modal-subvalue">${escapeHtml(copy)}</span>` : ""}
+      </div>
+    `;
   }
 
   function getConnectivityModalRows() {
@@ -1808,11 +1877,14 @@
   }
 
   function getHeaderStatusAction(key) {
-    if (key === "update") {
+    if (key === "version") {
       return "open-update-modal";
     }
     if (key === "connectivity") {
       return "open-connectivity-modal";
+    }
+    if (key === "login") {
+      return "open-login-modal";
     }
     return "";
   }
@@ -1826,8 +1898,8 @@
       ["espTemp", "ESP-temp", getEspTemperatureLabel()],
       ["time", "Tijd", formatDeviceClock()],
       ["ip", "IP-adres", getDeviceIpAddress()],
-      ["version", "Versie", getDeviceVersionLabel()],
-      ["update", "Update", getUpdateStatus(), Boolean(getFirmwareUpdateEntity())],
+      ["version", "Versie", getFirmwareVersionChipValue(), Boolean(getFirmwareUpdateEntity())],
+      ["login", "Login", getWebAuthStatusLabel(), true],
     ];
   }
 
@@ -1845,7 +1917,7 @@
           const isInteractive = Boolean(interactive || action);
           return `
           <${isInteractive ? "button" : "div"}
-            class="oq-helper-status-item${isInteractive ? " oq-helper-status-item--button" : ""}${key === "update" && hasFirmwareUpdateAttention() ? " oq-helper-status-item--attention" : ""}"
+            class="oq-helper-status-item${isInteractive ? " oq-helper-status-item--button" : ""}${key === "version" && hasFirmwareUpdateAttention() ? " oq-helper-status-item--attention" : ""}"
             data-oq-header-status="${escapeHtml(key)}"
             ${isInteractive ? `type="button" data-oq-action="${escapeHtml(action)}"` : ""}
           >
@@ -1907,7 +1979,7 @@
         item.removeAttribute("data-oq-action");
       }
       item.classList.toggle("oq-helper-status-item--button", isInteractive);
-      item.classList.toggle("oq-helper-status-item--attention", key === "update" && hasFirmwareUpdateAttention());
+      item.classList.toggle("oq-helper-status-item--attention", key === "version" && hasFirmwareUpdateAttention());
     }
 
     return true;
@@ -2056,6 +2128,118 @@
     `;
   }
 
+  function renderLoginModal() {
+    const authStatus = state.authStatus || {};
+    const authEnabled = authStatus.enabled === true;
+    const setupWindowActive = authStatus.setup_window_active === true;
+    const canEdit = authEnabled || setupWindowActive;
+    const usernameValue = authEnabled ? String(authStatus.username || "").trim() : "";
+    const noticeMarkup = state.authNotice
+      ? `<div class="oq-helper-modal-success oq-helper-modal-success--compact" aria-live="polite"><strong>Opgeslagen</strong><span>${escapeHtml(state.authNotice)}</span></div>`
+      : "";
+    const errorMarkup = state.authError
+      ? `<div class="oq-helper-modal-note oq-helper-modal-note--error" aria-live="assertive">${escapeHtml(state.authError)}</div>`
+      : "";
+    const authFormIntro = canEdit
+      ? `<p class="oq-helper-modal-intro">${authEnabled ? "Pas hier je login aan." : "Vul hier je nieuwe login in."}</p>`
+      : "";
+    const authFormMarkup = canEdit
+      ? `
+        ${authFormIntro}
+        <div class="oq-helper-modal-auth-stack">
+          ${authEnabled
+            ? `
+              <label class="oq-helper-modal-auth-field">
+                <span>Huidig wachtwoord</span>
+                <input
+                  class="oq-helper-input"
+                  type="password"
+                  autocomplete="current-password"
+                  data-oq-auth-field="currentPassword"
+                  value="${escapeHtml(state.authDraftCurrentPassword)}"
+                  ${state.authBusy ? "disabled" : ""}
+                >
+              </label>
+            `
+            : ""}
+          <label class="oq-helper-modal-auth-field">
+            <span>Nieuwe gebruikersnaam</span>
+            <input
+              class="oq-helper-input"
+              type="text"
+              autocomplete="username"
+              maxlength="32"
+              data-oq-auth-field="username"
+              value="${escapeHtml(state.authDraftUsername)}"
+              ${state.authBusy ? "disabled" : ""}
+            >
+          </label>
+          <label class="oq-helper-modal-auth-field">
+            <span>Nieuw wachtwoord</span>
+            <input
+              class="oq-helper-input"
+              type="password"
+              autocomplete="new-password"
+              maxlength="64"
+              data-oq-auth-field="newPassword"
+              value="${escapeHtml(state.authDraftNewPassword)}"
+              ${state.authBusy ? "disabled" : ""}
+            >
+          </label>
+          <label class="oq-helper-modal-auth-field">
+            <span>Herhaal nieuw wachtwoord</span>
+            <input
+              class="oq-helper-input"
+              type="password"
+              autocomplete="new-password"
+              maxlength="64"
+              data-oq-auth-field="confirmPassword"
+              value="${escapeHtml(state.authDraftConfirmPassword)}"
+              ${state.authBusy ? "disabled" : ""}
+            >
+          </label>
+        </div>
+      `
+      : `
+        <div class="oq-helper-modal-callout">
+          <strong>Login uit</strong>
+          <span>Houd de herstelknop 5 seconden vast om een login toe te voegen.</span>
+        </div>
+      `;
+
+    return `
+      <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
+        <section class="oq-helper-modal" role="dialog" aria-modal="true" aria-labelledby="oq-login-modal-title">
+          <div class="oq-helper-modal-head">
+            <div>
+              <p class="oq-helper-modal-kicker">Systeem</p>
+              <h2 class="oq-helper-modal-title" id="oq-login-modal-title">${escapeHtml(getWebAuthModalTitle())}</h2>
+            </div>
+            <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit login-popup">×</button>
+          </div>
+          <p class="oq-helper-modal-copy">${escapeHtml(getWebAuthModalCopy())}</p>
+          ${noticeMarkup}
+          ${errorMarkup}
+          <div class="oq-helper-modal-grid">
+            ${renderLoginStatusRow("Status", getWebAuthStatusLabel(), getWebAuthStatusDetail())}
+            ${renderLoginStatusRow("Gebruiker", authEnabled ? (usernameValue || "Geen naam") : "Geen login", authEnabled ? "Deze naam gebruik je om in te loggen." : "Er staat nog geen login op het device.")}
+          </div>
+          ${authFormMarkup}
+          <p class="oq-helper-modal-note">${canEdit
+            ? "Je kunt nu een nieuwe gebruikersnaam en wachtwoord opslaan."
+            : "Na 5 seconden herstelknop kun je hier een login toevoegen."}</p>
+          <div class="oq-helper-modal-actions">
+            <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="close-system-modal" ${state.authBusy ? "disabled" : ""}>Gereed</button>
+            ${authEnabled
+              ? `<button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="disable-web-auth" ${state.authBusy ? "disabled" : ""}>Uitzetten</button>`
+              : ""}
+            <button class="oq-helper-button oq-helper-button--primary" type="button" data-oq-action="save-web-auth" ${state.authBusy || !canEdit ? "disabled" : ""}>${authEnabled ? "Opslaan" : canEdit ? "Login opslaan" : "Wacht op BOOT"}</button>
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
   function renderUpdateModal() {
     if (!state.updateModalOpen) {
       return "";
@@ -2158,6 +2342,10 @@
   }
 
   function renderSystemModal() {
+    if (state.systemModal === "login") {
+      return renderLoginModal();
+    }
+
     if (state.systemModal === "connectivity") {
       const rows = getConnectivityModalRows();
       return `
@@ -2598,6 +2786,56 @@
     }
   }
 
+  function getAuthStatusSignature(status = state.authStatus || {}) {
+    return [
+      status.enabled ? "on" : "off",
+      status.setup_window_active ? "armed" : "locked",
+      String(status.username || ""),
+      String(status.source || ""),
+      String(status.csrf_token || ""),
+    ].join(":");
+  }
+
+  function syncAuthDraftsFromStatus() {
+    const status = state.authStatus || {};
+    state.authDraftUsername = status.enabled ? String(status.username || "").trim() : "";
+    state.authDraftCurrentPassword = "";
+    state.authDraftNewPassword = "";
+    state.authDraftConfirmPassword = "";
+  }
+
+  async function refreshAuthStatus() {
+    try {
+      const response = await fetch("/auth/status", { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const payload = await response.json();
+      const nextStatus = {
+        enabled: Boolean(payload.enabled),
+        setup_window_active: Boolean(payload.setup_window_active),
+        username: String(payload.username || ""),
+        source: String(payload.source || ""),
+        csrf_token: String(payload.csrf_token || ""),
+      };
+      const previousSignature = getAuthStatusSignature();
+      const nextSignature = getAuthStatusSignature(nextStatus);
+      state.authStatus = nextStatus;
+      if (previousSignature !== nextSignature) {
+        syncAuthDraftsFromStatus();
+      }
+      if (state.systemModal === "login") {
+        state.authError = "";
+      }
+      return previousSignature !== nextSignature;
+    } catch (error) {
+      if (state.systemModal === "login") {
+        state.authError = `Loginstatus kon niet worden geladen. ${error.message}`;
+      }
+      return false;
+    }
+  }
+
   function applyDerivedState() {
     state.complete = hasEntity("setupComplete")
       ? isEntityActive("setupComplete")
@@ -2618,6 +2856,7 @@
     const keys = Object.keys(ENTITY_DEFS).filter((key) => !["apply", "reset"].includes(key));
     try {
       await refreshEntities(keys, "all");
+      await refreshAuthStatus();
     } finally {
       state.loadingEntities = false;
       render();
@@ -2645,8 +2884,9 @@
 
     try {
       await refreshEntities(keys, "state");
+      const authChanged = await refreshAuthStatus();
       const nextHeaderSignature = getHeaderRenderSignature();
-      if (nextHeaderSignature !== state.headerRenderSignature) {
+      if (authChanged || nextHeaderSignature !== state.headerRenderSignature) {
         render();
         return;
       }
@@ -2772,6 +3012,22 @@
   function handleInput(event) {
     const field = event.target.dataset.oqField;
     if (!field) {
+      const authField = event.target.dataset.oqAuthField;
+      if (!authField) {
+        return;
+      }
+
+      state.authNotice = "";
+      state.authError = "";
+      if (authField === "username") {
+        state.authDraftUsername = String(event.target.value || "");
+      } else if (authField === "currentPassword") {
+        state.authDraftCurrentPassword = String(event.target.value || "");
+      } else if (authField === "newPassword") {
+        state.authDraftNewPassword = String(event.target.value || "");
+      } else if (authField === "confirmPassword") {
+        state.authDraftConfirmPassword = String(event.target.value || "");
+      }
       return;
     }
 
@@ -2920,6 +3176,16 @@
       return;
     }
 
+    if (action === "open-login-modal") {
+      state.systemModal = "login";
+      syncAuthDraftsFromStatus();
+      state.authNotice = "";
+      state.authError = "";
+      render();
+      void refreshAuthStatus();
+      return;
+    }
+
     if (action === "open-connectivity-modal") {
       state.systemModal = "connectivity";
       render();
@@ -2982,6 +3248,11 @@
 
     if (action === "close-system-modal") {
       state.systemModal = "";
+      state.authDraftCurrentPassword = "";
+      state.authDraftNewPassword = "";
+      state.authDraftConfirmPassword = "";
+      state.authNotice = "";
+      state.authError = "";
       render();
       return;
     }
@@ -3009,6 +3280,7 @@
       state.controlNotice = "";
       state.settingsInfoOpen = "";
       state.updateModalOpen = false;
+      state.systemModal = "";
       if (state.nativeOpen) {
         void ensureNativeFrontendLoaded();
       }
@@ -3045,7 +3317,7 @@
     }
 
     if (action === "select-step") {
-      state.currentStep = button.dataset.stepId || "strategy";
+      state.currentStep = button.dataset.stepId || "generation";
       render();
       return;
     }
@@ -3109,6 +3381,16 @@
 
     if (action === "install-firmware-update") {
       installFirmwareUpdate();
+      return;
+    }
+
+    if (action === "save-web-auth") {
+      void commitWebAuthChanges();
+      return;
+    }
+
+    if (action === "disable-web-auth") {
+      void commitDisableWebAuth();
       return;
     }
 
@@ -3433,6 +3715,138 @@
       state.controlError = `${entity.name} kon niet worden bijgewerkt. ${error.message}`;
     } finally {
       state.busyAction = "";
+      render();
+    }
+  }
+
+  async function commitWebAuthChanges() {
+    const status = state.authStatus || {};
+    const authEnabled = status.enabled === true;
+    const setupWindowActive = status.setup_window_active === true;
+    const currentPassword = String(state.authDraftCurrentPassword || "");
+    const newUsername = String(state.authDraftUsername || "").trim();
+    const newPassword = String(state.authDraftNewPassword || "");
+    const confirmPassword = String(state.authDraftConfirmPassword || "");
+
+    if (!newUsername || !newPassword) {
+      state.authError = "Vul een gebruikersnaam en wachtwoord in.";
+      render();
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      state.authError = "De twee wachtwoorden zijn niet gelijk.";
+      render();
+      return;
+    }
+    if (authEnabled && !currentPassword) {
+      state.authError = "Vul je huidige wachtwoord in.";
+      render();
+      return;
+    }
+    if (!authEnabled && !setupWindowActive) {
+      state.authError = "Houd de herstelknop 5 seconden vast.";
+      render();
+      return;
+    }
+    if (!status.csrf_token) {
+      state.authError = "Logingegevens laden nog. Probeer het zo opnieuw.";
+      render();
+      return;
+    }
+
+    state.authBusy = true;
+    state.authError = "";
+    state.authNotice = "";
+    render();
+
+    try {
+      const params = new URLSearchParams();
+      params.set("csrf_token", status.csrf_token);
+      params.set("current_password", currentPassword);
+      params.set("new_username", newUsername);
+      params.set("new_password", newPassword);
+
+      const response = await fetch("/auth/change", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body: params.toString(),
+      });
+      const payload = await response.json().catch(() => ({ ok: false, error: "invalid_response" }));
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error || `HTTP ${response.status}`);
+      }
+      await refreshAuthStatus();
+      state.authDraftCurrentPassword = "";
+      state.authDraftNewPassword = "";
+      state.authDraftConfirmPassword = "";
+      state.authDraftUsername = String(state.authStatus?.username || newUsername).trim();
+      state.authNotice = authEnabled
+        ? "Login aangepast."
+        : "Login staat nu aan.";
+      state.authError = "";
+      render();
+    } catch (error) {
+      state.authError = `Opslaan is mislukt. ${error.message}`;
+      render();
+    } finally {
+      state.authBusy = false;
+      render();
+    }
+  }
+
+  async function commitDisableWebAuth() {
+    const status = state.authStatus || {};
+    if (!status.enabled) {
+      state.authNotice = "Login staat al uit.";
+      state.authError = "";
+      render();
+      return;
+    }
+
+    const currentPassword = String(state.authDraftCurrentPassword || "");
+    if (!currentPassword) {
+      state.authError = "Vul je huidige wachtwoord in.";
+      render();
+      return;
+    }
+    if (!status.csrf_token) {
+      state.authError = "Logingegevens laden nog. Probeer het zo opnieuw.";
+      render();
+      return;
+    }
+
+    state.authBusy = true;
+    state.authError = "";
+    state.authNotice = "";
+    render();
+
+    try {
+      const params = new URLSearchParams();
+      params.set("csrf_token", status.csrf_token);
+      params.set("current_password", currentPassword);
+
+      const response = await fetch("/auth/disable", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body: params.toString(),
+      });
+      const payload = await response.json().catch(() => ({ ok: false, error: "invalid_response" }));
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error || `HTTP ${response.status}`);
+      }
+      await refreshAuthStatus();
+      state.authDraftCurrentPassword = "";
+      state.authDraftNewPassword = "";
+      state.authDraftConfirmPassword = "";
+      state.authDraftUsername = "";
+      state.authNotice = "Login staat nu uit.";
+      state.authError = "";
+      render();
+    } catch (error) {
+      state.authError = `Uitzetten is mislukt. ${error.message}`;
+      render();
+    } finally {
+      state.authBusy = false;
       render();
     }
   }

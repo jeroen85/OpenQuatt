@@ -14,3 +14,4 @@ listener_temp_t2_pin: "GPIO5"                         # Optional external temper
 ds18b20_pin: "GPIO27"                                 # Active DS18B20 1-Wire pin.
 oq_boiler_relay_pin: "GPIO22"                         # Active boiler relay output pin.
 listener_aux_relay_pin: "GPIO23"                      # Optional auxiliary relay output.
+web_auth_recovery_pin: "GPIO0"                        # Temporary recovery input, wired to a spare button/jumper for setup.

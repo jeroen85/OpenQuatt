@@ -20,6 +20,10 @@ thermal_request_logic_header: "openquatt/includes/oq_thermal_request_logic.h" # 
 heating_curve_logic_header: "openquatt/includes/oq_heating_curve_logic.h" # Shared C++ helper include for curve runtime state and naming.
 oq_webserver_css_url: ""                            # Optional external CSS for the ESPHome web UI.
 oq_webserver_js_url: ""                               # Custom OpenQuatt app is primary; load ESPHome fallback lazily on demand.
+web_auth_bootstrap_username: "admin"                  # Bootstrap username used to keep web auth support compiled in.
+web_auth_bootstrap_password: "openquatt"              # Bootstrap password used to keep web auth support compiled in.
+web_auth_default_enabled: false                       # Web auth is opt-in by default for new installs.
+web_auth_recovery_pin: "GPIO0"                        # Temporary recovery input pin used to arm the setup window.
 
 # ----------------------------
 # HARDWARE

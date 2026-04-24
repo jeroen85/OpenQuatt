@@ -649,6 +649,7 @@
       state.overviewTheme,
       state.hpVisualMode,
       getInstallationLabel(),
+      state.authStatus ? `auth:${state.authStatus.enabled ? "on" : "off"}:${state.authStatus.setup_window_active ? "armed" : "locked"}:${state.authStatus.username || ""}:${state.authStatus.source || ""}` : "auth:loading",
       ...HEADER_ENTITY_KEYS.map((key) => getEntitySignatureFragment(key)),
       getEntitySignatureFragment("firmwareUpdate"),
       getEntitySignatureFragment("firmwareUpdateChannel"),
@@ -673,6 +674,18 @@
     return version || "—";
   }
 
+  function getFirmwareVersionChipValue() {
+    const version = getDeviceVersionLabel();
+    const update = getUpdateStatus();
+    if (!version || version === "—") {
+      return update;
+    }
+    if (!update || update === "—" || update === "Actueel") {
+      return version;
+    }
+    return `${version} · ${update}`;
+  }
+
   function getEspTemperatureLabel() {
     const entity = state.entities.espInternalTemp;
     if (!entity) {
@@ -683,6 +696,54 @@
       return formatNumericState(numeric, 1, entity.uom || " °C");
     }
     return getEntityStateText("espInternalTemp");
+  }
+
+  function getWebAuthStatusLabel() {
+    const authStatus = state.authStatus;
+    if (!authStatus) {
+      return "Laden...";
+    }
+    return authStatus.enabled ? "Aan" : "Uit";
+  }
+
+  function getWebAuthModalTitle() {
+    return "Login";
+  }
+
+  function getWebAuthModalCopy() {
+    const authStatus = state.authStatus;
+    if (!authStatus) {
+      return "We halen de huidige loginstatus op.";
+    }
+    if (authStatus.enabled) {
+      return "De web-app vraagt nu een login voordat beheer beschikbaar is. Je kunt die hier aanpassen of uitzetten.";
+    }
+    return "De web-app staat open op je netwerk. Houd de herstelknop 5 seconden vast om een login toe te voegen.";
+  }
+
+  function getWebAuthStatusDetail() {
+    const authStatus = state.authStatus;
+    if (!authStatus) {
+      return "Logingegevens laden...";
+    }
+    if (authStatus.enabled) {
+      return authStatus.setup_window_active
+        ? "Login actief. Tijdelijk instelvenster is open."
+        : `Login actief${authStatus.source ? ` via ${authStatus.source}` : ""}.`;
+    }
+    return authStatus.setup_window_active
+      ? "Login uit. Tijdelijk instelvenster is open."
+      : "Login uit. Webtoegang is open op het netwerk.";
+  }
+
+  function renderLoginStatusRow(label, value, copy = "") {
+    return `
+      <div class="oq-helper-modal-row">
+        <span class="oq-helper-modal-label">${escapeHtml(label)}</span>
+        <strong class="oq-helper-modal-value">${escapeHtml(value)}</strong>
+        ${copy ? `<span class="oq-helper-modal-subvalue">${escapeHtml(copy)}</span>` : ""}
+      </div>
+    `;
   }
 
   function getConnectivityModalRows() {
@@ -705,11 +766,14 @@
   }
 
   function getHeaderStatusAction(key) {
-    if (key === "update") {
+    if (key === "version") {
       return "open-update-modal";
     }
     if (key === "connectivity") {
       return "open-connectivity-modal";
+    }
+    if (key === "login") {
+      return "open-login-modal";
     }
     return "";
   }
@@ -723,8 +787,8 @@
       ["espTemp", "ESP-temp", getEspTemperatureLabel()],
       ["time", "Tijd", formatDeviceClock()],
       ["ip", "IP-adres", getDeviceIpAddress()],
-      ["version", "Versie", getDeviceVersionLabel()],
-      ["update", "Update", getUpdateStatus(), Boolean(getFirmwareUpdateEntity())],
+      ["version", "Versie", getFirmwareVersionChipValue(), Boolean(getFirmwareUpdateEntity())],
+      ["login", "Login", getWebAuthStatusLabel(), true],
     ];
   }
 
@@ -742,7 +806,7 @@
           const isInteractive = Boolean(interactive || action);
           return `
           <${isInteractive ? "button" : "div"}
-            class="oq-helper-status-item${isInteractive ? " oq-helper-status-item--button" : ""}${key === "update" && hasFirmwareUpdateAttention() ? " oq-helper-status-item--attention" : ""}"
+            class="oq-helper-status-item${isInteractive ? " oq-helper-status-item--button" : ""}${key === "version" && hasFirmwareUpdateAttention() ? " oq-helper-status-item--attention" : ""}"
             data-oq-header-status="${escapeHtml(key)}"
             ${isInteractive ? `type="button" data-oq-action="${escapeHtml(action)}"` : ""}
           >
@@ -804,7 +868,7 @@
         item.removeAttribute("data-oq-action");
       }
       item.classList.toggle("oq-helper-status-item--button", isInteractive);
-      item.classList.toggle("oq-helper-status-item--attention", key === "update" && hasFirmwareUpdateAttention());
+      item.classList.toggle("oq-helper-status-item--attention", key === "version" && hasFirmwareUpdateAttention());
     }
 
     return true;
@@ -953,6 +1017,118 @@
     `;
   }
 
+  function renderLoginModal() {
+    const authStatus = state.authStatus || {};
+    const authEnabled = authStatus.enabled === true;
+    const setupWindowActive = authStatus.setup_window_active === true;
+    const canEdit = authEnabled || setupWindowActive;
+    const usernameValue = authEnabled ? String(authStatus.username || "").trim() : "";
+    const noticeMarkup = state.authNotice
+      ? `<div class="oq-helper-modal-success oq-helper-modal-success--compact" aria-live="polite"><strong>Opgeslagen</strong><span>${escapeHtml(state.authNotice)}</span></div>`
+      : "";
+    const errorMarkup = state.authError
+      ? `<div class="oq-helper-modal-note oq-helper-modal-note--error" aria-live="assertive">${escapeHtml(state.authError)}</div>`
+      : "";
+    const authFormIntro = canEdit
+      ? `<p class="oq-helper-modal-intro">${authEnabled ? "Pas hier je login aan." : "Vul hier je nieuwe login in."}</p>`
+      : "";
+    const authFormMarkup = canEdit
+      ? `
+        ${authFormIntro}
+        <div class="oq-helper-modal-auth-stack">
+          ${authEnabled
+            ? `
+              <label class="oq-helper-modal-auth-field">
+                <span>Huidig wachtwoord</span>
+                <input
+                  class="oq-helper-input"
+                  type="password"
+                  autocomplete="current-password"
+                  data-oq-auth-field="currentPassword"
+                  value="${escapeHtml(state.authDraftCurrentPassword)}"
+                  ${state.authBusy ? "disabled" : ""}
+                >
+              </label>
+            `
+            : ""}
+          <label class="oq-helper-modal-auth-field">
+            <span>Nieuwe gebruikersnaam</span>
+            <input
+              class="oq-helper-input"
+              type="text"
+              autocomplete="username"
+              maxlength="32"
+              data-oq-auth-field="username"
+              value="${escapeHtml(state.authDraftUsername)}"
+              ${state.authBusy ? "disabled" : ""}
+            >
+          </label>
+          <label class="oq-helper-modal-auth-field">
+            <span>Nieuw wachtwoord</span>
+            <input
+              class="oq-helper-input"
+              type="password"
+              autocomplete="new-password"
+              maxlength="64"
+              data-oq-auth-field="newPassword"
+              value="${escapeHtml(state.authDraftNewPassword)}"
+              ${state.authBusy ? "disabled" : ""}
+            >
+          </label>
+          <label class="oq-helper-modal-auth-field">
+            <span>Herhaal nieuw wachtwoord</span>
+            <input
+              class="oq-helper-input"
+              type="password"
+              autocomplete="new-password"
+              maxlength="64"
+              data-oq-auth-field="confirmPassword"
+              value="${escapeHtml(state.authDraftConfirmPassword)}"
+              ${state.authBusy ? "disabled" : ""}
+            >
+          </label>
+        </div>
+      `
+      : `
+        <div class="oq-helper-modal-callout">
+          <strong>Login uit</strong>
+          <span>Houd de herstelknop 5 seconden vast om een login toe te voegen.</span>
+        </div>
+      `;
+
+    return `
+      <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
+        <section class="oq-helper-modal" role="dialog" aria-modal="true" aria-labelledby="oq-login-modal-title">
+          <div class="oq-helper-modal-head">
+            <div>
+              <p class="oq-helper-modal-kicker">Systeem</p>
+              <h2 class="oq-helper-modal-title" id="oq-login-modal-title">${escapeHtml(getWebAuthModalTitle())}</h2>
+            </div>
+            <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit login-popup">×</button>
+          </div>
+          <p class="oq-helper-modal-copy">${escapeHtml(getWebAuthModalCopy())}</p>
+          ${noticeMarkup}
+          ${errorMarkup}
+          <div class="oq-helper-modal-grid">
+            ${renderLoginStatusRow("Status", getWebAuthStatusLabel(), getWebAuthStatusDetail())}
+            ${renderLoginStatusRow("Gebruiker", authEnabled ? (usernameValue || "Geen naam") : "Geen login", authEnabled ? "Deze naam gebruik je om in te loggen." : "Er staat nog geen login op het device.")}
+          </div>
+          ${authFormMarkup}
+          <p class="oq-helper-modal-note">${canEdit
+            ? "Je kunt nu een nieuwe gebruikersnaam en wachtwoord opslaan."
+            : "Na 5 seconden herstelknop kun je hier een login toevoegen."}</p>
+          <div class="oq-helper-modal-actions">
+            <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="close-system-modal" ${state.authBusy ? "disabled" : ""}>Gereed</button>
+            ${authEnabled
+              ? `<button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="disable-web-auth" ${state.authBusy ? "disabled" : ""}>Uitzetten</button>`
+              : ""}
+            <button class="oq-helper-button oq-helper-button--primary" type="button" data-oq-action="save-web-auth" ${state.authBusy || !canEdit ? "disabled" : ""}>${authEnabled ? "Opslaan" : canEdit ? "Login opslaan" : "Wacht op BOOT"}</button>
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
   function renderUpdateModal() {
     if (!state.updateModalOpen) {
       return "";
@@ -1055,6 +1231,10 @@
   }
 
   function renderSystemModal() {
+    if (state.systemModal === "login") {
+      return renderLoginModal();
+    }
+
     if (state.systemModal === "connectivity") {
       const rows = getConnectivityModalRows();
       return `
