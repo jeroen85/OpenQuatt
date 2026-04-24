@@ -8,6 +8,9 @@
 web_server:
   port: 80
   version: 3
+  auth:
+    username: ${web_auth_bootstrap_username}
+    password: ${web_auth_bootstrap_password}
   css_include: openquatt/web/css/openquatt-app.css
   js_include: openquatt/web/js/openquatt-app.js
   js_url: "${oq_webserver_js_url}"

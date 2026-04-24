@@ -956,6 +956,100 @@ body.oq-page-light {
   color: #94a3b8;
 }
 
+.oq-helper-modal-note--error {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.oq-helper-shell--dark .oq-helper-modal-note--error,
+.oq-helper-modal-backdrop--dark .oq-helper-modal-note--error {
+  color: #fca5a5;
+}
+
+.oq-helper-modal-intro {
+  margin: 0 0 12px;
+  color: var(--oq-helper-soft);
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+.oq-helper-shell--dark .oq-helper-modal-intro,
+.oq-helper-modal-backdrop--dark .oq-helper-modal-intro {
+  color: #cbd5e1;
+}
+
+.oq-helper-modal-callout {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(249, 115, 22, 0.28);
+  border-radius: var(--oq-helper-radius-md);
+  background: rgba(255, 247, 237, 0.88);
+}
+
+.oq-helper-modal-callout strong {
+  color: #9a3412;
+  font-size: 0.94rem;
+}
+
+.oq-helper-modal-callout span {
+  color: #7c2d12;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.oq-helper-shell--dark .oq-helper-modal-callout,
+.oq-helper-modal-backdrop--dark .oq-helper-modal-callout {
+  border-color: rgba(249, 115, 22, 0.34);
+  background: rgba(74, 33, 18, 0.72);
+}
+
+.oq-helper-shell--dark .oq-helper-modal-callout strong,
+.oq-helper-modal-backdrop--dark .oq-helper-modal-callout strong {
+  color: #fdba74;
+}
+
+.oq-helper-shell--dark .oq-helper-modal-callout span,
+.oq-helper-modal-backdrop--dark .oq-helper-modal-callout span {
+  color: #ffedd5;
+}
+
+.oq-helper-modal-auth-stack {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.oq-helper-modal-auth-field {
+  display: grid;
+  gap: 7px;
+}
+
+.oq-helper-modal-auth-field span {
+  color: var(--oq-helper-faint);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.oq-helper-shell--dark .oq-helper-modal-auth-field span,
+.oq-helper-modal-backdrop--dark .oq-helper-modal-auth-field span {
+  color: #94a3b8;
+}
+
+.oq-helper-modal-subvalue {
+  display: block;
+  margin-top: 4px;
+  color: var(--oq-helper-faint);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.oq-helper-shell--dark .oq-helper-modal-subvalue,
+.oq-helper-modal-backdrop--dark .oq-helper-modal-subvalue {
+  color: #94a3b8;
+}
+
 .oq-helper-modal-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2069,6 +2163,35 @@ body.oq-page-light {
   background: var(--oq-helper-card);
   cursor: pointer;
   transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease, background 160ms ease;
+}
+
+.oq-settings-choice-card--with-image {
+  gap: 10px;
+}
+
+.oq-settings-choice-media {
+  display: block;
+  width: 100%;
+  max-width: 280px;
+  margin-inline: auto;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  padding: 6px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.94), rgba(241, 245, 249, 0.98));
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.12);
+}
+
+.oq-helper-shell--dark .oq-settings-choice-media {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(30, 41, 59, 0.94));
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.1);
+}
+
+.oq-settings-choice-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .oq-settings-choice-card:hover,

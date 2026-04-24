@@ -1,0 +1,59 @@
+# ==============================================================================
+# OpenQuatt - Web Access Runtime
+# ==============================================================================
+# Runtime auth store and lightweight web-access diagnostics for the full app.
+# Keeps the web_server auth support compiled in while allowing runtime toggling.
+# ==============================================================================
+
+external_components:
+  - source:
+      type: local
+      path: components
+    components: [openquatt_web_auth]
+
+text_sensor:
+  - platform: template
+    id: oq_web_auth_active_username
+    name: "Web Auth Active Username"
+    icon: mdi:account-key
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_system_diagnostics
+
+  - platform: template
+    id: oq_web_auth_credential_source
+    name: "Web Auth Credential Source"
+    icon: mdi:source-branch
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_system_diagnostics
+
+openquatt_web_auth:
+  id: oq_web_auth_store
+  bootstrap_username: "${web_auth_bootstrap_username}"
+  bootstrap_password: "${web_auth_bootstrap_password}"
+  default_auth_enabled: ${web_auth_default_enabled}
+  active_username: oq_web_auth_active_username
+  credential_source: oq_web_auth_credential_source
+
+binary_sensor:
+  - platform: gpio
+    id: oq_web_auth_recovery_button
+    internal: true
+    pin:
+      number: ${web_auth_recovery_pin}
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+      ignore_strapping_warning: true
+    filters:
+      - delayed_on: 5s
+    on_press:
+      then:
+        - lambda: |-
+            if (id(oq_web_auth_store).start_recovery_window()) {
+              ESP_LOGW("openquatt.web_auth", "Armed login recovery window from temporary recovery pin");
+            } else {
+              ESP_LOGW("openquatt.web_auth", "Failed to arm login recovery window from temporary recovery pin");
+            }

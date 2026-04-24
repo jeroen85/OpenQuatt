@@ -11,3 +11,4 @@ oq_ot_thermostat_in_pin: "GPIO14"                     # OpenTherm thermostat inp
 oq_ot_thermostat_out_pin: "GPIO13"                    # OpenTherm thermostat output on header pin GPIO13.
 ds18b20_pin: "GPIO2"                                  # Active DS18B20 1-Wire pin.
 oq_boiler_relay_pin: "GPIO47"                         # Active boiler relay output pin.
+web_auth_recovery_pin: "GPIO0"                        # Temporary recovery input, wired to a spare button/jumper for setup.
