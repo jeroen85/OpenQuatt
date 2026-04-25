@@ -14,8 +14,8 @@
     return `
       <section class="oq-helper-panel">
         <p class="oq-helper-label">OpenQuatt</p>
-        <h2 class="oq-helper-section-title">Interface laden</h2>
-        <p class="oq-helper-section-copy">We bepalen eerst even of Quick Start al is afgerond, zodat je direct op de juiste plek binnenkomt.</p>
+        <h2 class="oq-helper-section-title">OpenQuatt laden</h2>
+        <p class="oq-helper-section-copy">We halen de actuele gegevens op en zetten de interface klaar.</p>
       </section>
     `;
   }
@@ -44,10 +44,12 @@
       ? renderInitialLoadingView()
       : state.appView === "overview"
       ? renderOverviewView()
+      : state.appView === "trends"
+      ? renderTrendsView()
       : state.appView === "energy"
       ? renderEnergyView()
       : renderSettingsView();
-    const wideFlushCard = state.appView === "overview" || state.appView === "energy";
+    const wideFlushCard = state.appView === "overview" || state.appView === "trends" || state.appView === "energy";
 
     state.root.innerHTML = `
       ${renderDevPanel()}
@@ -78,6 +80,7 @@
     clearLegacyMotionVariables();
     syncTechTooltipLayers();
     refreshMotionTargets();
+    syncOverviewTrendInteractions();
     syncNativeVisibility();
     bindHeaderDevControls();
     syncDocumentTheme();

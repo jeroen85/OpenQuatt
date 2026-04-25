@@ -1114,6 +1114,7 @@
     const summaryShell = board.querySelector(".oq-overview-summary-shell");
     const system = board.querySelector(".oq-overview-system");
     const temps = board.querySelector(".oq-overview-temps");
+    const trends = board.querySelector(".oq-overview-trends");
     const hpTools = board.querySelector(".oq-overview-hp-tools");
     const hpGrid = board.querySelector(".oq-overview-hp-grid");
     const heatPumpPanels = getHeatPumpPanels();
@@ -1160,6 +1161,16 @@
       );
     }
 
+    if (trends && state.appView === "overview") {
+      replaceOuterHtmlIfSignatureChanged(
+        trends,
+        getOverviewTrendRenderSignature(),
+        renderOverviewTrendsPanel(),
+      );
+    }
+
+    syncOverviewTrendInteractions(board);
+
     if (!hpTools || !hpGrid) {
       return false;
     }
@@ -1184,4 +1195,3 @@
 
     return true;
   }
-

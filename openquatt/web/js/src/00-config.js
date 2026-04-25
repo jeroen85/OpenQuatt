@@ -116,6 +116,7 @@
     wifiSsid: { domain: "text_sensor", name: "WiFi SSID", optional: true },
     projectVersionText: { domain: "text_sensor", name: "OpenQuatt Version", optional: true },
     releaseChannelText: { domain: "text_sensor", name: "OpenQuatt Release Channel", optional: true },
+    trendHistory: { domain: "text_sensor", name: "Overview Trend History", optional: true },
     wifiSignal: { domain: "sensor", name: "WiFi Signal", optional: true },
     espInternalTemp: { domain: "sensor", name: "ESP Internal Temperature", optional: true },
     hpGeneration: { domain: "select", name: "Quatt Hybrid version" },
@@ -160,6 +161,7 @@
     boilerHeatPower: { domain: "sensor", name: "Boiler Heat Power", optional: true },
     systemHeatPower: { domain: "sensor", name: "System Heat Power", optional: true },
     flowSelected: { domain: "sensor", name: "Flow average (Selected)" },
+    trendHistoryEnabled: { domain: "switch", name: "Trendopslag", optional: true },
     electricalEnergyDaily: { domain: "sensor", name: "Electrical Energy Daily", optional: true },
     electricalEnergyCumulative: { domain: "sensor", name: "Electrical Energy Cumulative", optional: true },
     heatingElectricalEnergyDaily: { domain: "sensor", name: "Heating Electrical Energy Daily", optional: true },
@@ -265,6 +267,7 @@
 
   const APP_VIEWS = [
     { id: "overview", label: "Overzicht" },
+    { id: "trends", label: "Trends" },
     { id: "energy", label: "Energie" },
     { id: "settings", label: "Instellingen" },
   ];
@@ -568,6 +571,7 @@
     "openquattEnabled",
     "manualCoolingEnable",
     "silentModeOverride",
+    "trendHistoryEnabled",
     ...CIC_COMPATIBILITY_KEYS,
     ...FLOW_SETTING_KEYS,
     ...COOLING_SETTING_KEYS,

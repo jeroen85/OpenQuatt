@@ -293,6 +293,7 @@
               ]
             : [
                 renderSettingsQuickStartSection(),
+                renderSettingsTrendSection(),
                 renderSettingsLoginSection(),
                 renderSettingsDiagnosticsSection(),
               ];
@@ -1099,6 +1100,29 @@
             </button>
           </div>
           <p class="oq-settings-quickstart-status-copy">${escapeHtml(statusCopy)}</p>
+        </div>
+      `,
+    );
+  }
+
+  function renderSettingsTrendSection() {
+    if (!hasEntity("trendHistoryEnabled")) {
+      return "";
+    }
+
+    return renderSettingsSection(
+      "Trends",
+      "Trendopslag",
+      "Sla 24 uur aan trenddata tijdelijk op in het werkgeheugen. Zet dit uit als je de grafieken niet gebruikt.",
+      `
+        <div class="oq-settings-grid">
+          ${renderSettingsSwitchField(
+            "trendHistoryEnabled",
+            "Trendopslag",
+            "Schakel de trendopslag voor de grafieken in of uit.",
+            "OpenQuatt bewaart trenddata tijdelijk in het werkgeheugen en toont de Trends-tab.",
+            "OpenQuatt bewaart geen trenddata en verbergt de Trends-tab."
+          )}
         </div>
       `,
     );
