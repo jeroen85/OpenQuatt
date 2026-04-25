@@ -840,15 +840,29 @@
     };
   }
 
+  function isDevPreviewEnvironment() {
+    return Boolean(
+      (typeof window !== "undefined" && window.__OQ_DEV_CONTROLS__)
+      || (typeof window !== "undefined" && window.__OQ_DEV_META)
+    );
+  }
+
+  function getOverviewTrendDevMockSamples(windowHours = getOverviewTrendWindowHours()) {
+    if (typeof window === "undefined" || !window.__OQ_DEV_TREND_MOCKS__ || typeof window.__OQ_DEV_TREND_MOCKS__.buildTrendPreviewSamples !== "function") {
+      return [];
+    }
+    return window.__OQ_DEV_TREND_MOCKS__.buildTrendPreviewSamples(windowHours);
+  }
+
   function getOverviewTrendSamples() {
     const windowMs = getOverviewTrendWindowMs();
     if (!hasEntity("trendHistory")) {
-      return buildOverviewTrendMockSamples();
+      return isDevPreviewEnvironment() ? getOverviewTrendDevMockSamples() : [];
     }
 
     const raw = String(getEntityStateText("trendHistory", "") || "").trim();
     if (!raw) {
-      return buildOverviewTrendMockSamples();
+      return isDevPreviewEnvironment() ? getOverviewTrendDevMockSamples() : [];
     }
 
     const uptimeMs = getOverviewUptimeMillis();
@@ -863,47 +877,22 @@
       : (Number.isFinite(latestTimestamp) ? latestTimestamp : Number.NaN);
 
     if (!Number.isFinite(endTime)) {
-      return rows.length ? rows.slice(-OVERVIEW_TREND_MAX_POINTS) : buildOverviewTrendMockSamples();
+      return rows.length ? rows.slice(-OVERVIEW_TREND_MAX_POINTS) : getOverviewTrendDevMockSamples(windowHours);
     }
 
     const cutoff = Math.max(0, endTime - windowMs);
     const filtered = rows.filter((sample) => sample.t >= cutoff).slice(-OVERVIEW_TREND_MAX_POINTS);
-    return filtered.length ? filtered : buildOverviewTrendMockSamples();
-  }
-
-  function buildOverviewTrendMockSamples(windowHours = getOverviewTrendWindowHours()) {
-    const windowMs = getOverviewTrendWindowMs(windowHours);
-    const points = Math.max(12, Math.round(windowHours * 12));
-    const startTime = 0;
-    const span = Math.max(points - 1, 1);
-    const samples = [];
-
-    for (let index = 0; index < points; index += 1) {
-      const fraction = index / span;
-      const dayWave = Math.sin((fraction * Math.PI * 2) - 1.1);
-      const detailWave = Math.sin(fraction * Math.PI * 10);
-      const driftWave = Math.cos((fraction * Math.PI * 2) + 0.45);
-
-      samples.push({
-        t: startTime + Math.round(fraction * windowMs),
-        outside: 8.5 + (dayWave * 3.4) + (detailWave * 0.5),
-        supply: 35.5 + (Math.sin((fraction * Math.PI * 2) - 0.35) * 4.8) + (detailWave * 0.9),
-        room: 20.2 + (Math.sin((fraction * Math.PI * 2) - 0.22) * 0.35) + (detailWave * 0.08),
-        roomSetpoint: 20.6 + (Math.cos((fraction * Math.PI * 2) - 0.1) * 0.10),
-        flow: Math.max(0, 760 + (Math.cos((fraction * Math.PI * 2) + 0.1) * 110) + (detailWave * 18)),
-        input: Math.max(280, 1180 + (dayWave * 380) + (detailWave * 150) + (driftWave * 110)),
-        output: Math.max(1000, 4250 + (dayWave * 860) + (detailWave * 260)),
-      });
+    if (filtered.length) {
+      return filtered;
     }
-
-    return samples;
+    return isDevPreviewEnvironment() ? getOverviewTrendDevMockSamples(windowHours) : [];
   }
 
   function getOverviewTrendCardsModel() {
     const windowHours = getOverviewTrendWindowHours();
     const windowText = formatOverviewTrendWindowText(windowHours);
     const samples = getOverviewTrendSamples();
-    const isMockData = !hasEntity("trendHistory") || !String(getEntityStateText("trendHistory", "") || "").trim();
+    const isMockData = isDevPreviewEnvironment() && samples.length === 0;
     return [
       {
         id: "temperatures",
@@ -1284,9 +1273,9 @@
   function renderOverviewTrendsDisabledNotice() {
     return `
       <div class="oq-overview-trends-disabled">
-        <p>Trendopslag staat uit.</p>
-        <strong>Schakel trendopslag in om grafieken en historie te tonen.</strong>
-        <span>Je vindt deze instelling onder Instellingen &rsaquo; Systeem.</span>
+        <p>Trendhistorie</p>
+        <strong>Er is nog geen trendhistorie beschikbaar.</strong>
+        <span>Schakel trendopslag in onder Instellingen &rsaquo; Systeem of wacht tot de controller gegevens heeft opgebouwd.</span>
         <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="select-view" data-view-id="settings">
           Naar instellingen
         </button>
@@ -1313,6 +1302,8 @@
 
   function renderTrendsView() {
     const trendHistoryEnabled = isTrendHistoryEnabled();
+    const trendSamples = getOverviewTrendSamples();
+    const hasTrendSamples = trendSamples.length > 0;
     return `
       <section class="oq-helper-panel oq-helper-panel--flush">
         <div class="oq-overview-board oq-overview-board--${escapeHtml(state.overviewTheme)}">
@@ -1336,7 +1327,7 @@
               </div>
             ` : ""}
           </div>
-          ${trendHistoryEnabled ? renderOverviewTrendsPanel() : renderOverviewTrendsDisabledNotice()}
+          ${trendHistoryEnabled && hasTrendSamples ? renderOverviewTrendsPanel() : renderOverviewTrendsDisabledNotice()}
         </div>
       </section>
     `;

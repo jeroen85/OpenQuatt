@@ -665,6 +665,35 @@
     setText("select", "Preset", preset);
   }
 
+  function buildTrendPreviewSamples(windowHours = 24) {
+    const safeWindowHours = Number.isFinite(Number(windowHours)) && Number(windowHours) > 0 ? Number(windowHours) : 24;
+    const windowMs = safeWindowHours * 60 * 60 * 1000;
+    const points = Math.max(12, Math.round(safeWindowHours * 12));
+    const startTime = 0;
+    const span = Math.max(points - 1, 1);
+    const samples = [];
+
+    for (let index = 0; index < points; index += 1) {
+      const fraction = index / span;
+      const dayWave = Math.sin((fraction * Math.PI * 2) - 1.1);
+      const detailWave = Math.sin(fraction * Math.PI * 10);
+      const driftWave = Math.cos((fraction * Math.PI * 2) + 0.45);
+
+      samples.push({
+        t: startTime + Math.round(fraction * windowMs),
+        outside: 8.5 + (dayWave * 3.4) + (detailWave * 0.5),
+        supply: 35.5 + (Math.sin((fraction * Math.PI * 2) - 0.35) * 4.8) + (detailWave * 0.9),
+        room: 20.2 + (Math.sin((fraction * Math.PI * 2) - 0.22) * 0.35) + (detailWave * 0.08),
+        roomSetpoint: 20.6 + (Math.cos((fraction * Math.PI * 2) - 0.1) * 0.10),
+        flow: Math.max(0, 760 + (Math.cos((fraction * Math.PI * 2) + 0.1) * 110) + (detailWave * 18)),
+        input: Math.max(280, 1180 + (dayWave * 380) + (detailWave * 150) + (driftWave * 110)),
+        output: Math.max(1000, 4250 + (dayWave * 860) + (detailWave * 260)),
+      });
+    }
+
+    return samples;
+  }
+
   function applyPreset(value) {
     if (value === "Quiet") {
       setText("select", "Behavior", "Quiet");
@@ -1498,6 +1527,9 @@
   window.__OQ_DEV_CONTROLS__ = {
     render: renderDevControls,
     bind: bindDevControls,
+  };
+  window.__OQ_DEV_TREND_MOCKS__ = {
+    buildTrendPreviewSamples,
   };
 
   seedEntities();
