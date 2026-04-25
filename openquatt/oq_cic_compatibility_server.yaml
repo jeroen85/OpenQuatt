@@ -28,20 +28,21 @@ modbus_controller:
         value_type: U_WORD
         read_lambda: |-
           id(cic_compatibility_last_request_ms) = millis();
-          if (!id(cic_compatibility_enable).state || id(${cic_compat_hp_id}_compressor_level).state.empty()) return 0;
-          return static_cast<uint16_t>(atoi(id(${cic_compat_hp_id}_compressor_level).state.c_str()));
+          const auto compressor_level = id(${cic_compat_hp_id}_compressor_level).current_option();
+          if (!id(cic_compatibility_enable).state || compressor_level.empty()) return 0;
+          return static_cast<uint16_t>(atoi(compressor_level.c_str()));
       - address: 2006
         value_type: U_WORD
         read_lambda: |-
           id(cic_compatibility_last_request_ms) = millis();
           if (!id(cic_compatibility_enable).state) return 0;
-          return id(${cic_compat_hp_id}_low_noise_mode).state == "On" ? 1 : 0;
+          return id(${cic_compat_hp_id}_low_noise_mode).current_option() == "On" ? 1 : 0;
       - address: 2010
         value_type: U_WORD
         read_lambda: |-
           id(cic_compatibility_last_request_ms) = millis();
           if (!id(cic_compatibility_enable).state) return 0;
-          return id(${cic_compat_hp_id}_set_pump_mode).state == "On" ? 4096 : 0;
+          return id(${cic_compat_hp_id}_set_pump_mode).current_option() == "On" ? 4096 : 0;
       - address: 2015
         value_type: U_WORD
         read_lambda: |-
@@ -53,9 +54,10 @@ modbus_controller:
         value_type: U_WORD
         read_lambda: |-
           id(cic_compatibility_last_request_ms) = millis();
+          const auto working_mode = id(${cic_compat_hp_id}_set_working_mode).current_option();
           if (!id(cic_compatibility_enable).state) return 0;
-          if (id(${cic_compat_hp_id}_set_working_mode).state == "Cooling") return 1;
-          if (id(${cic_compat_hp_id}_set_working_mode).state == "Heating") return 2;
+          if (working_mode == "Cooling") return 1;
+          if (working_mode == "Heating") return 2;
           return 0;
       - address: 2099
         value_type: U_WORD
