@@ -1,3 +1,5 @@
+  const TREND_WINDOW_HOURS_OPTIONS = [24, 12, 6, 3];
+
   const state = {
     mounted: false,
     root: null,
@@ -17,6 +19,7 @@
     overviewTheme: getStoredOverviewTheme(),
     hpVisualMode: getStoredHpVisualMode(),
     hpLayoutMode: getStoredHpLayoutMode(),
+    trendWindowHours: getStoredTrendWindowHours(),
     busyAction: "",
     controlError: "",
     controlNotice: "",
@@ -178,6 +181,24 @@
     }
   }
 
+  function getStoredTrendWindowHours() {
+    try {
+      const stored = Number(window.localStorage.getItem("oq-trend-window-hours"));
+      return TREND_WINDOW_HOURS_OPTIONS.includes(stored) ? stored : TREND_WINDOW_HOURS_OPTIONS[0];
+    } catch (_error) {
+      return TREND_WINDOW_HOURS_OPTIONS[0];
+    }
+  }
+
+  function setTrendWindowHours(hours) {
+    state.trendWindowHours = TREND_WINDOW_HOURS_OPTIONS.includes(hours) ? hours : TREND_WINDOW_HOURS_OPTIONS[0];
+    try {
+      window.localStorage.setItem("oq-trend-window-hours", String(state.trendWindowHours));
+    } catch (_error) {
+      // Ignore storage failures in embedded browsers.
+    }
+  }
+
   function getDefaultAppView() {
     return "overview";
   }
@@ -234,7 +255,13 @@
   }
 
   function normalizeAppView(view) {
-    return APP_VIEW_IDS.has(view) ? view : "";
+    if (!APP_VIEW_IDS.has(view)) {
+      return "";
+    }
+    if (view === "trends" && !isTrendHistoryEnabled()) {
+      return "";
+    }
+    return view;
   }
 
   function getUrlAppView() {

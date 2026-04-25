@@ -25,23 +25,7 @@
       parts.push(`max water ${formatValue("maxWater")}`);
     }
 
-    return parts.filter(Boolean).join(", ") || "Quick Start-instellingen beschikbaar";
-  }
-
-  function renderQuickStartLauncher() {
-    if (state.complete) {
-      return "";
-    }
-
-    return `
-      <button
-        class="oq-helper-app-tab oq-helper-app-tab--launch"
-        type="button"
-        data-oq-action="open-quickstart-modal"
-      >
-        <span>Quick Start</span>
-      </button>
-    `;
+    return parts.filter(Boolean).join(", ") || "Instellingen beschikbaar";
   }
 
   function hasEntity(key) {
@@ -100,11 +84,14 @@
     return raw === "on" || raw === "true" || raw === "1";
   }
 
+  function isTrendHistoryEnabled() {
+    return !hasEntity("trendHistoryEnabled") || isEntityActive("trendHistoryEnabled");
+  }
+
   function renderAppNav() {
     return `
       <div class="oq-helper-app-nav">
-        ${renderQuickStartLauncher()}
-        ${APP_VIEWS.map((view) => `
+        ${APP_VIEWS.filter((view) => view.id !== "trends" || isTrendHistoryEnabled()).map((view) => `
           <button
             class="oq-helper-app-tab ${state.appView === view.id ? "is-active" : ""}"
             type="button"

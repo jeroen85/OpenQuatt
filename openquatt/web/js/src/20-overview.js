@@ -121,6 +121,65 @@
     return `${numeric.toFixed(decimals)}${unit ? ` ${unit}` : ""}`;
   }
 
+  function formatOverviewTrendDurationLabel(totalMinutes) {
+    if (!Number.isFinite(totalMinutes) || totalMinutes < 0) {
+      return "—";
+    }
+    const wholeMinutes = Math.floor(totalMinutes);
+    const days = Math.floor(wholeMinutes / 1440);
+    const hours = Math.floor((wholeMinutes % 1440) / 60);
+    const minutes = wholeMinutes % 60;
+    if (days > 0) {
+      return `${days}d ${hours}u`;
+    }
+    if (hours > 0) {
+      return `${hours}u ${minutes}m`;
+    }
+    return `${minutes}m`;
+  }
+
+  function parseOverviewClockMinutes(rawValue) {
+    const value = String(rawValue || "").trim();
+    const match = value.match(/^(\d{1,2}):(\d{2})$/);
+    if (!match) {
+      return Number.NaN;
+    }
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    if (Number.isNaN(hours) || Number.isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+      return Number.NaN;
+    }
+    return (hours * 60) + minutes;
+  }
+
+  function formatOverviewTrendClockLabel(totalMinutes) {
+    const clockMinutes = parseOverviewClockMinutes(getEntityStateText("timeNowHhmm", ""));
+    if (!Number.isFinite(clockMinutes)) {
+      return "";
+    }
+    const offsetMinutes = Math.round(totalMinutes);
+    const sampleMinutes = ((clockMinutes - offsetMinutes) % 1440 + 1440) % 1440;
+    const hours = Math.floor(sampleMinutes / 60);
+    const minutes = sampleMinutes % 60;
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+  }
+
+  function formatOverviewTrendPointTime(sampleTimestamp, endTime) {
+    const ageMinutes = Math.max(0, (Number(endTime) - Number(sampleTimestamp)) / 60000);
+    const ageLabel = formatOverviewTrendDurationLabel(ageMinutes);
+    const clockLabel = hasEntity("timeValid") && isEntityActive("timeValid") ? formatOverviewTrendClockLabel(ageMinutes) : "";
+    if (clockLabel) {
+      return {
+        value: clockLabel,
+        note: `${ageLabel} geleden`,
+      };
+    }
+    return {
+      value: `${ageLabel} geleden`,
+      note: "Geen tijdsync",
+    };
+  }
+
   function formatSignedPower(value) {
     const numeric = Number(value);
     if (Number.isNaN(numeric)) {
@@ -469,8 +528,8 @@
   function getOverviewTopCards() {
     const coolingActive = isCoolingOverviewActive();
     return [
-      { key: "totalPower", label: "Stroomverbruik", tone: "blue", note: "hele systeem" },
-      { key: coolingActive ? "totalCoolingPower" : "totalHeat", label: coolingActive ? "Koelafgifte" : "Warmteafgifte", tone: "orange", note: "thermisch vermogen" },
+      { key: "totalPower", label: "Elektrisch vermogen", tone: "blue", note: "hele systeem" },
+      { key: coolingActive ? "totalCoolingPower" : "totalHeat", label: coolingActive ? "Koelvermogen" : "Verwarmingsvermogen", tone: "orange", note: "thermisch vermogen" },
       { key: coolingActive ? "totalEer" : "totalCop", label: coolingActive ? "COP (EER)" : "COP", tone: "green", note: "rendement" },
       { key: "flowSelected", label: "Flow", tone: "sky", note: "watercircuit" },
     ];
@@ -697,3 +756,740 @@
     });
   }
 
+  const OVERVIEW_TREND_MAX_POINTS = 288;
+
+  function getOverviewTrendWindowHours() {
+    const hours = Number(state.trendWindowHours || 24);
+    return TREND_WINDOW_HOURS_OPTIONS.includes(hours) ? hours : TREND_WINDOW_HOURS_OPTIONS[0];
+  }
+
+  function getOverviewTrendWindowMs(windowHours = getOverviewTrendWindowHours()) {
+    return Math.max(1, Number(windowHours) || 24) * 60 * 60 * 1000;
+  }
+
+  function formatOverviewTrendWindowLabel(windowHours = getOverviewTrendWindowHours()) {
+    const hours = Number(windowHours) || 24;
+    return `${hours}u`;
+  }
+
+  function formatOverviewTrendWindowText(windowHours = getOverviewTrendWindowHours()) {
+    const hours = Number(windowHours) || 24;
+    return `${hours} uur`;
+  }
+
+  function formatOverviewTrendAxisLabel(totalMinutes) {
+    if (!Number.isFinite(totalMinutes) || totalMinutes < 0) {
+      return "—";
+    }
+    const roundedMinutes = Math.round(totalMinutes);
+    if (roundedMinutes % 60 === 0) {
+      return `${roundedMinutes / 60}u`;
+    }
+    return formatOverviewTrendDurationLabel(roundedMinutes);
+  }
+
+  function getOverviewUptimeMillis() {
+    const entity = state.entities.uptime;
+    if (!entity) {
+      return Number.NaN;
+    }
+
+    const numeric = getEntityNumericValue("uptime");
+    if (!Number.isFinite(numeric)) {
+      return Number.NaN;
+    }
+
+    const unit = String(entity.uom ?? entity.unit_of_measurement ?? "").trim().toLowerCase();
+    if (unit === "d") {
+      return numeric * 24 * 60 * 60 * 1000;
+    }
+    if (unit === "h") {
+      return numeric * 60 * 60 * 1000;
+    }
+    if (unit === "m" || unit === "min") {
+      return numeric * 60 * 1000;
+    }
+    return numeric * 1000;
+  }
+
+  function parseOverviewTrendRow(row) {
+    const parts = String(row || "").trim().split("|");
+    if (parts.length < 5) {
+      return null;
+    }
+
+    const timestamp = Number(parts[0]);
+    if (!Number.isFinite(timestamp)) {
+      return null;
+    }
+
+    const parseValue = (value) => {
+      const numeric = Number(value);
+      return Number.isFinite(numeric) ? numeric : null;
+    };
+
+    return {
+      t: timestamp,
+      outside: parseValue(parts[1]),
+      supply: parseValue(parts[2]),
+      room: parts.length >= 8 ? parseValue(parts[3]) : null,
+      roomSetpoint: parts.length >= 8 ? parseValue(parts[4]) : null,
+      flow: parts.length >= 8 ? parseValue(parts[5]) : null,
+      input: parts.length >= 8 ? parseValue(parts[6]) : parseValue(parts[3]),
+      output: parts.length >= 8 ? parseValue(parts[7]) : parseValue(parts[4]),
+    };
+  }
+
+  function getOverviewTrendSamples() {
+    const windowMs = getOverviewTrendWindowMs();
+    if (!hasEntity("trendHistory")) {
+      return buildOverviewTrendMockSamples();
+    }
+
+    const raw = String(getEntityStateText("trendHistory", "") || "").trim();
+    if (!raw) {
+      return buildOverviewTrendMockSamples();
+    }
+
+    const uptimeMs = getOverviewUptimeMillis();
+    const rows = raw
+      .split(/\r?\n/)
+      .map(parseOverviewTrendRow)
+      .filter(Boolean);
+
+    const latestTimestamp = rows.length ? rows[rows.length - 1].t : Number.NaN;
+    const endTime = Number.isFinite(uptimeMs)
+      ? uptimeMs
+      : (Number.isFinite(latestTimestamp) ? latestTimestamp : Number.NaN);
+
+    if (!Number.isFinite(endTime)) {
+      return rows.length ? rows.slice(-OVERVIEW_TREND_MAX_POINTS) : buildOverviewTrendMockSamples();
+    }
+
+    const cutoff = Math.max(0, endTime - windowMs);
+    const filtered = rows.filter((sample) => sample.t >= cutoff).slice(-OVERVIEW_TREND_MAX_POINTS);
+    return filtered.length ? filtered : buildOverviewTrendMockSamples();
+  }
+
+  function buildOverviewTrendMockSamples(windowHours = getOverviewTrendWindowHours()) {
+    const windowMs = getOverviewTrendWindowMs(windowHours);
+    const points = Math.max(12, Math.round(windowHours * 12));
+    const startTime = 0;
+    const span = Math.max(points - 1, 1);
+    const samples = [];
+
+    for (let index = 0; index < points; index += 1) {
+      const fraction = index / span;
+      const dayWave = Math.sin((fraction * Math.PI * 2) - 1.1);
+      const detailWave = Math.sin(fraction * Math.PI * 10);
+      const driftWave = Math.cos((fraction * Math.PI * 2) + 0.45);
+
+      samples.push({
+        t: startTime + Math.round(fraction * windowMs),
+        outside: 8.5 + (dayWave * 3.4) + (detailWave * 0.5),
+        supply: 35.5 + (Math.sin((fraction * Math.PI * 2) - 0.35) * 4.8) + (detailWave * 0.9),
+        room: 20.2 + (Math.sin((fraction * Math.PI * 2) - 0.22) * 0.35) + (detailWave * 0.08),
+        roomSetpoint: 20.6 + (Math.cos((fraction * Math.PI * 2) - 0.1) * 0.10),
+        flow: Math.max(0, 760 + (Math.cos((fraction * Math.PI * 2) + 0.1) * 110) + (detailWave * 18)),
+        input: Math.max(280, 1180 + (dayWave * 380) + (detailWave * 150) + (driftWave * 110)),
+        output: Math.max(1000, 4250 + (dayWave * 860) + (detailWave * 260)),
+      });
+    }
+
+    return samples;
+  }
+
+  function getOverviewTrendCardsModel() {
+    const windowHours = getOverviewTrendWindowHours();
+    const windowText = formatOverviewTrendWindowText(windowHours);
+    const samples = getOverviewTrendSamples();
+    const isMockData = !hasEntity("trendHistory") || !String(getEntityStateText("trendHistory", "") || "").trim();
+    return [
+      {
+        id: "temperatures",
+        title: "Temperaturen",
+        copy: isMockData ? `Voorbeelddata voor de laatste ${windowText}, totdat de ESP-historie beschikbaar is.` : `Buitentemperatuur en aanvoertemperatuur van de laatste ${windowText}.`,
+        tone: "orange",
+        samples,
+        mock: isMockData,
+        windowHours,
+        series: [
+          { id: "outside", sampleKey: "outside", label: "Buiten", tone: "orange", decimals: 1, unit: " °C" },
+          { id: "supply", sampleKey: "supply", label: "Aanvoer", tone: "blue", decimals: 1, unit: " °C" },
+        ],
+      },
+      {
+        id: "power",
+        title: "Vermogen",
+        copy: isMockData ? `Voorbeelddata voor elektrisch vermogen en verwarmingsvermogen van de laatste ${windowText}.` : `Elektrisch vermogen en verwarmingsvermogen van de laatste ${windowText}.`,
+        tone: "green",
+        samples,
+        mock: isMockData,
+        windowHours,
+        series: [
+          { id: "input", sampleKey: "input", label: "Elektrisch vermogen", tone: "green", decimals: 0, unit: " W" },
+          { id: "output", sampleKey: "output", label: "Verwarmingsvermogen", tone: "sky", decimals: 0, unit: " W" },
+        ],
+      },
+      {
+        id: "rendement",
+        title: "Rendement",
+        copy: isMockData ? `Voorbeelddata voor COP van de laatste ${windowText}.` : `COP van de laatste ${windowText}.`,
+        tone: "slate",
+        samples,
+        mock: isMockData,
+        windowHours,
+        series: [
+          {
+            id: "cop",
+            label: "COP",
+            tone: "slate",
+            decimals: 1,
+            unit: "",
+            derive: (sample) => {
+              const input = Number(sample?.input);
+              const output = Number(sample?.output);
+              if (!Number.isFinite(input) || !Number.isFinite(output) || input <= 0) {
+                return Number.NaN;
+              }
+              return output / input;
+            },
+          },
+        ],
+      },
+      {
+        id: "comfort",
+        title: "Comfort",
+        copy: isMockData ? `Voorbeelddata voor kamertemperatuur en setpoint van de laatste ${windowText}.` : `Kamertemperatuur en setpoint van de laatste ${windowText}.`,
+        tone: "blue",
+        samples,
+        mock: isMockData,
+        windowHours,
+        series: [
+          { id: "roomTemp", sampleKey: "room", label: "Kamertemperatuur", tone: "blue", decimals: 1, unit: " °C" },
+          { id: "roomSetpoint", sampleKey: "roomSetpoint", label: "Kamer setpoint", tone: "orange", decimals: 1, unit: " °C" },
+        ],
+      },
+      {
+        id: "flow",
+        title: "Flow",
+        copy: isMockData ? `Voorbeelddata voor flow van de laatste ${windowText}.` : `Flow van de laatste ${windowText}.`,
+        tone: "sky",
+        samples,
+        mock: isMockData,
+        windowHours,
+        series: [
+          { id: "flow", sampleKey: "flow", label: "Flow", tone: "sky", decimals: 0, unit: " L/h" },
+        ],
+      },
+    ];
+  }
+
+  function getOverviewTrendSeriesValue(series, sample) {
+    if (!series || !sample) {
+      return Number.NaN;
+    }
+    const raw = typeof series.derive === "function"
+      ? series.derive(sample)
+      : sample?.[series.sampleKey];
+    const numeric = Number(raw);
+    return Number.isFinite(numeric) ? numeric : Number.NaN;
+  }
+
+  function getOverviewTrendRange(samples, series) {
+    const values = [];
+    samples.forEach((sample) => {
+      series.forEach((item) => {
+        const numeric = getOverviewTrendSeriesValue(item, sample);
+        if (Number.isFinite(numeric)) {
+          values.push(numeric);
+        }
+      });
+    });
+
+    if (!values.length) {
+      return { min: 0, max: 1 };
+    }
+
+    let min = Math.min(...values);
+    let max = Math.max(...values);
+    if (min === max) {
+      const offset = Math.max(Math.abs(min) * 0.1, 1);
+      min -= offset;
+      max += offset;
+    } else {
+      const pad = Math.max((max - min) * 0.12, 1);
+      min -= pad;
+      max += pad;
+    }
+    return { min, max };
+  }
+
+  function getOverviewTrendChartModel(samples, series, options = {}) {
+    const rawWindowHours = Number(options.windowHours);
+    const windowHours = Number.isFinite(rawWindowHours) ? rawWindowHours : getOverviewTrendWindowHours();
+    const windowMs = getOverviewTrendWindowMs(windowHours);
+    const width = 640;
+    const height = 220;
+    const left = 22;
+    const right = 18;
+    const top = 18;
+    const bottom = 34;
+    const plotWidth = width - left - right;
+    const plotHeight = height - top - bottom;
+    const latest = samples[samples.length - 1];
+    const mockData = Boolean(options.mockData);
+    const uptimeMs = getOverviewUptimeMillis();
+    const endTime = mockData
+      ? windowMs
+      : (Number.isFinite(uptimeMs) ? uptimeMs : (latest ? latest.t : 0));
+    const startTime = mockData ? 0 : Math.max(endTime - windowMs, 0);
+    const span = Math.max(endTime - startTime, 1);
+    const range = getOverviewTrendRange(samples, series);
+
+    const xOf = (timestamp) => left + (((timestamp - startTime) / span) * plotWidth);
+    const yOf = (value) => {
+      if (!Number.isFinite(value)) {
+        return Number.NaN;
+      }
+      const ratio = (value - range.min) / Math.max(range.max - range.min, 1);
+      return top + ((1 - Math.min(1, Math.max(0, ratio))) * plotHeight);
+    };
+
+    const gridXs = [0, 0.5, 1].map((fraction) => left + (plotWidth * fraction));
+    const gridYs = [0.25, 0.5, 0.75].map((fraction) => top + (plotHeight * fraction));
+
+    const points = samples.map((sample) => {
+      const x = xOf(sample.t);
+      const values = series.map((item) => {
+        const numeric = getOverviewTrendSeriesValue(item, sample);
+        if (!Number.isFinite(numeric)) {
+          return null;
+        }
+        return {
+          seriesId: item.id || item.sampleKey || item.label,
+          tone: item.tone,
+          label: item.label,
+          decimals: item.decimals,
+          unit: item.unit,
+          value: numeric,
+          x,
+          y: yOf(numeric),
+        };
+      });
+      return {
+        sample,
+        x,
+        values,
+      };
+    });
+
+    const tracks = series.flatMap((item) => {
+      const segments = [];
+      let current = [];
+      samples.forEach((sample) => {
+        const numeric = getOverviewTrendSeriesValue(item, sample);
+        if (!Number.isFinite(numeric)) {
+          if (current.length) {
+            segments.push(current);
+            current = [];
+          }
+          return;
+        }
+
+        current.push({
+          x: xOf(sample.t),
+          y: yOf(numeric),
+        });
+      });
+      if (current.length) {
+        segments.push(current);
+      }
+
+      return segments.map((segment) => {
+        if (segment.length < 2) {
+          return {
+            tone: item.tone,
+            points: segment,
+            path: "",
+          };
+        }
+
+        return {
+          tone: item.tone,
+          points: segment,
+          path: segment.map((point, pointIndex) => `${pointIndex === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" "),
+        };
+      });
+    });
+
+    return {
+      width,
+      height,
+      left,
+      right,
+      top,
+      bottom,
+      plotWidth,
+      plotHeight,
+      latest,
+      uptimeMs,
+      endTime,
+      startTime,
+      span,
+      windowHours,
+      range,
+      gridXs,
+      gridYs,
+      points,
+      tracks,
+      series,
+    };
+  }
+
+  function getOverviewTrendRenderSignature() {
+    return getRenderSignature({
+      windowHours: getOverviewTrendWindowHours(),
+      samples: getOverviewTrendSamples(),
+    });
+  }
+
+  function getOverviewTrendCardById(cardId) {
+    return getOverviewTrendCardsModel().find((card) => card.id === cardId) || null;
+  }
+
+  function getNearestOverviewTrendPointIndex(model, x) {
+    if (!model || !Array.isArray(model.points) || model.points.length === 0) {
+      return -1;
+    }
+
+    let nearestIndex = 0;
+    let nearestDistance = Math.abs(model.points[0].x - x);
+    model.points.forEach((point, index) => {
+      const distance = Math.abs(point.x - x);
+      if (distance < nearestDistance) {
+        nearestIndex = index;
+        nearestDistance = distance;
+      }
+    });
+    return nearestIndex;
+  }
+
+  function renderOverviewTrendLatestPill(series, sample) {
+    const value = getOverviewTrendSeriesValue(series, sample);
+    return `
+      <div class="oq-overview-trend-pill oq-overview-trend-pill--${escapeHtml(series.tone)}">
+        <span>${escapeHtml(series.label)}</span>
+        <strong>${escapeHtml(formatNumericState(value, series.decimals, series.unit))}</strong>
+      </div>
+    `;
+  }
+
+  function renderOverviewTrendChart(samples, series, mockData = false, windowHours = getOverviewTrendWindowHours()) {
+    const model = getOverviewTrendChartModel(samples, series, { mockData, windowHours });
+    const windowLabel = formatOverviewTrendWindowLabel(windowHours);
+    const midpointLabel = formatOverviewTrendAxisLabel((windowHours * 60) / 2);
+    const seriesPaths = model.tracks.flatMap((track) => {
+      if (track.points.length < 2) {
+        const point = track.points[0];
+        if (!point) {
+          return [];
+        }
+        return `
+          <circle
+            cx="${point.x.toFixed(1)}"
+            cy="${point.y.toFixed(1)}"
+            r="3.8"
+            class="oq-overview-trend-dot oq-overview-trend-dot--${escapeHtml(track.tone)}"
+          ></circle>
+        `;
+      }
+
+      return `
+        <path d="${track.path}" class="oq-overview-trend-line oq-overview-trend-line--${escapeHtml(track.tone)}"></path>
+        <circle
+          cx="${track.points[track.points.length - 1].x.toFixed(1)}"
+          cy="${track.points[track.points.length - 1].y.toFixed(1)}"
+          r="3.8"
+          class="oq-overview-trend-dot oq-overview-trend-dot--${escapeHtml(track.tone)}"
+        ></circle>
+      `;
+    }).join("");
+
+    return `
+      <svg class="oq-overview-trend-chart" viewBox="0 0 ${model.width} ${model.height}" role="img" aria-label="Trendgrafiek van de laatste ${windowHours} uur">
+        <rect x="0" y="0" width="${model.width}" height="${model.height}" rx="20" class="oq-overview-trend-chart-bg"></rect>
+        ${model.gridXs.map((x) => `<line x1="${x.toFixed(1)}" y1="${model.top}" x2="${x.toFixed(1)}" y2="${model.height - model.bottom}" class="oq-overview-trend-grid oq-overview-trend-grid--vertical"></line>`).join("")}
+        ${model.gridYs.map((y) => `<line x1="${model.left}" y1="${y.toFixed(1)}" x2="${model.width - model.right}" y2="${y.toFixed(1)}" class="oq-overview-trend-grid oq-overview-trend-grid--horizontal"></line>`).join("")}
+        ${seriesPaths}
+        <g class="oq-overview-trend-hover-layer" data-oq-trend-hover-layer hidden>
+          <line x1="${model.left}" y1="${model.top}" x2="${model.left}" y2="${model.height - model.bottom}" class="oq-overview-trend-hover-line"></line>
+          ${series.map((item) => `
+            <circle
+              r="4.5"
+              class="oq-overview-trend-hover-dot oq-overview-trend-hover-dot--${escapeHtml(item.tone)}"
+              data-oq-trend-hover-dot="${escapeHtml(item.id || item.sampleKey || item.label)}"
+            ></circle>
+          `).join("")}
+        </g>
+        <line x1="${model.left}" y1="${model.height - model.bottom}" x2="${model.width - model.right}" y2="${model.height - model.bottom}" class="oq-overview-trend-axis"></line>
+        <text x="${model.left}" y="${model.height - 12}" class="oq-overview-trend-axis-label" text-anchor="start">${escapeHtml(windowLabel)}</text>
+        <text x="${model.left + (model.plotWidth / 2)}" y="${model.height - 12}" class="oq-overview-trend-axis-label" text-anchor="middle">${escapeHtml(midpointLabel)}</text>
+        <text x="${model.width - model.right}" y="${model.height - 12}" class="oq-overview-trend-axis-label" text-anchor="end">nu</text>
+      </svg>
+    `;
+  }
+
+  function renderOverviewTrendCard(card) {
+    const latest = card.samples[card.samples.length - 1] || null;
+    const windowText = formatOverviewTrendWindowText(card.windowHours);
+    return `
+      <article class="oq-overview-trendcard oq-overview-trendcard--${escapeHtml(card.tone)}" data-oq-trend-card="${escapeHtml(card.id)}" data-render-signature="${escapeHtml(getRenderSignature(card))}">
+        <div class="oq-overview-trendcard-head">
+          <div class="oq-overview-trendcard-copy">
+            <p class="oq-overview-trendcard-kicker">${escapeHtml(windowText)}</p>
+            <h4>${escapeHtml(card.title)}</h4>
+            <p>${escapeHtml(card.copy)}</p>
+          </div>
+          <div class="oq-overview-trendcard-latest">
+            ${card.mock ? `<span class="oq-overview-trendcard-badge">Voorbeelddata</span>` : ""}
+            ${card.series.map((series) => renderOverviewTrendLatestPill(series, latest)).join("")}
+          </div>
+        </div>
+        ${renderOverviewTrendChart(card.samples, card.series, card.mock, card.windowHours)}
+        <div class="oq-overview-trend-hover" data-oq-trend-hover hidden>
+          <div class="oq-overview-trend-hover-head">
+            <span class="oq-overview-trend-hover-kicker">Punt</span>
+            <strong data-oq-trend-hover-time>—</strong>
+            <span class="oq-overview-trend-hover-note" data-oq-trend-hover-note></span>
+          </div>
+          <div class="oq-overview-trend-hover-values" data-oq-trend-hover-values></div>
+        </div>
+      </article>
+    `;
+  }
+
+  function renderOverviewTrendsPanel() {
+    const cards = getOverviewTrendCardsModel();
+    return `
+      <section class="oq-overview-trends" aria-label="Trends" data-render-signature="${escapeHtml(getOverviewTrendRenderSignature())}">
+        ${renderOverviewSectionHead("Grafieken")}
+        <div class="oq-overview-trends-grid">
+          ${cards.map(renderOverviewTrendCard).join("")}
+        </div>
+      </section>
+    `;
+  }
+
+  function renderOverviewTrendsDisabledNotice() {
+    return `
+      <div class="oq-overview-trends-disabled">
+        <p>Trendopslag staat uit.</p>
+        <strong>Schakel trendopslag in om grafieken en historie te tonen.</strong>
+        <span>Je vindt deze instelling onder Instellingen &rsaquo; Systeem.</span>
+        <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="select-view" data-view-id="settings">
+          Naar instellingen
+        </button>
+      </div>
+    `;
+  }
+
+  function renderTrendWindowSwitcher() {
+    const windowHours = getOverviewTrendWindowHours();
+    return `
+      <div class="oq-overview-trends-windowbar" role="group" aria-label="Kies trendvenster">
+        ${TREND_WINDOW_HOURS_OPTIONS.map((hours) => `
+          <button
+            class="oq-overview-controlpanel-segment${windowHours === hours ? " is-selected" : ""}"
+            type="button"
+            data-oq-action="select-trend-window"
+            data-trend-hours="${hours}"
+            aria-pressed="${windowHours === hours ? "true" : "false"}"
+          >${hours}u</button>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  function renderTrendsView() {
+    const trendHistoryEnabled = isTrendHistoryEnabled();
+    return `
+      <section class="oq-helper-panel oq-helper-panel--flush">
+        <div class="oq-overview-board oq-overview-board--${escapeHtml(state.overviewTheme)}">
+          <div class="oq-overview-system-copy">
+            <h3>Trendoverzicht</h3>
+            <p>Bekijk temperatuur, vermogen, rendement, comfort en flow voor 24, 12, 6 of 3 uur.</p>
+          </div>
+          <div class="oq-overview-trends-toolbar">
+            <div class="oq-overview-trends-note">
+              <span>Opmerking</span>
+              <strong>Max. 24 uur in werkgeheugen</strong>
+              <p>De OpenQuatt Controller bewaart trenddata tijdelijk in het werkgeheugen. Na een herstart verdwijnt die historie.</p>
+            </div>
+            ${trendHistoryEnabled ? `
+              <div class="oq-overview-trends-window">
+                <span>Venster</span>
+                ${renderTrendWindowSwitcher()}
+              </div>
+            ` : ""}
+          </div>
+          ${trendHistoryEnabled ? renderOverviewTrendsPanel() : renderOverviewTrendsDisabledNotice()}
+        </div>
+      </section>
+    `;
+  }
+
+  function patchTrendsDom() {
+    if (!state.root || state.appView !== "trends") {
+      return false;
+    }
+
+    const board = state.root.querySelector(".oq-overview-board");
+    if (!board) {
+      return false;
+    }
+
+    const trends = board.querySelector(".oq-overview-trends");
+    if (!trends) {
+      return false;
+    }
+
+    replaceOuterHtmlIfSignatureChanged(
+      trends,
+      getOverviewTrendRenderSignature(),
+      renderOverviewTrendsPanel(),
+    );
+    syncOverviewTrendInteractions(board);
+    return true;
+  }
+
+  function updateOverviewTrendHoverCard(card, model, pointIndex) {
+    if (!card || !model || !Array.isArray(model.points) || model.points.length === 0) {
+      return;
+    }
+
+    const index = Math.max(0, Math.min(model.points.length - 1, pointIndex));
+    const point = model.points[index];
+    if (!point) {
+      return;
+    }
+
+    const chart = card.querySelector(".oq-overview-trend-chart");
+    const hoverLayer = card.querySelector("[data-oq-trend-hover-layer]");
+    const hoverPanel = card.querySelector("[data-oq-trend-hover]");
+    const hoverTime = card.querySelector("[data-oq-trend-hover-time]");
+    const hoverNote = card.querySelector("[data-oq-trend-hover-note]");
+    const hoverValues = card.querySelector("[data-oq-trend-hover-values]");
+
+    if (!chart || !hoverLayer || !hoverPanel || !hoverTime || !hoverNote || !hoverValues) {
+      return;
+    }
+
+    const timeLabel = formatOverviewTrendPointTime(point.sample.t, model.endTime);
+    hoverPanel.hidden = false;
+    hoverLayer.removeAttribute("hidden");
+    hoverTime.textContent = timeLabel.value;
+    hoverNote.textContent = timeLabel.note;
+
+    const hoverLine = hoverLayer.querySelector(".oq-overview-trend-hover-line");
+    if (hoverLine) {
+      hoverLine.setAttribute("x1", point.x.toFixed(1));
+      hoverLine.setAttribute("x2", point.x.toFixed(1));
+    }
+
+    const rows = [];
+    model.series.forEach((series) => {
+      const value = getOverviewTrendSeriesValue(series, point.sample);
+      const seriesId = series.id || series.sampleKey || series.label;
+      const dot = hoverLayer.querySelector(`[data-oq-trend-hover-dot="${seriesId}"]`);
+      if (!Number.isFinite(value)) {
+        if (dot) {
+          dot.setAttribute("display", "none");
+        }
+        return;
+      }
+      const trackValue = point.values.find((item) => item.seriesId === seriesId);
+      if (dot && trackValue) {
+        dot.removeAttribute("display");
+        dot.setAttribute("cx", trackValue.x.toFixed(1));
+        dot.setAttribute("cy", trackValue.y.toFixed(1));
+      }
+      rows.push(`
+        <div class="oq-overview-trend-hover-row oq-overview-trend-hover-row--${escapeHtml(series.tone)}">
+          <span>${escapeHtml(series.label)}</span>
+          <strong>${escapeHtml(formatNumericState(value, series.decimals, series.unit))}</strong>
+        </div>
+      `);
+    });
+
+    hoverValues.innerHTML = rows.join("");
+    card.dataset.oqTrendHoverIndex = String(index);
+  }
+
+  function clearOverviewTrendHoverCard(card) {
+    if (!card) {
+      return;
+    }
+    const hoverPanel = card.querySelector("[data-oq-trend-hover]");
+    const hoverLayer = card.querySelector("[data-oq-trend-hover-layer]");
+    if (hoverPanel) {
+      hoverPanel.hidden = true;
+    }
+    if (hoverLayer) {
+      hoverLayer.setAttribute("hidden", "");
+    }
+    delete card.dataset.oqTrendHoverIndex;
+  }
+
+  function syncOverviewTrendInteractions(root = state.root) {
+    if (!root) {
+      return;
+    }
+
+    const cards = root.querySelectorAll("[data-oq-trend-card]");
+    cards.forEach((card) => {
+      const signature = card.dataset.renderSignature || "";
+      if (card.__oqTrendBoundSignature === signature) {
+        return;
+      }
+      card.__oqTrendBoundSignature = signature;
+
+      const chart = card.querySelector(".oq-overview-trend-chart");
+      if (!chart) {
+        return;
+      }
+
+      const cardModel = getOverviewTrendCardById(card.dataset.oqTrendCard);
+      if (!cardModel) {
+        return;
+      }
+      const model = getOverviewTrendChartModel(cardModel.samples, cardModel.series, { mockData: cardModel.mock });
+
+      card.__oqTrendModel = model;
+
+      const handleMove = (event) => {
+        const rect = chart.getBoundingClientRect();
+        if (!rect.width || !rect.height) {
+          return;
+        }
+        const clientX = Number(event.clientX);
+        if (!Number.isFinite(clientX)) {
+          updateOverviewTrendHoverCard(card, model, model.points.length - 1);
+          return;
+        }
+        const localX = Math.min(rect.width, Math.max(0, clientX - rect.left));
+        const svgX = (localX / rect.width) * model.width;
+        const pointIndex = getNearestOverviewTrendPointIndex(model, svgX);
+        updateOverviewTrendHoverCard(card, model, pointIndex);
+      };
+
+      const handleLeave = () => clearOverviewTrendHoverCard(card);
+
+      chart.addEventListener("pointermove", handleMove);
+      chart.addEventListener("pointerenter", handleMove);
+      chart.addEventListener("pointerleave", handleLeave);
+      chart.addEventListener("focus", handleMove);
+      chart.addEventListener("blur", handleLeave);
+      chart.addEventListener("touchstart", handleMove, { passive: true });
+    });
+  }

@@ -172,6 +172,22 @@ globals:
     type: int
     restore_value: false
     initial_value: '0'
+  - id: oq_overview_trend_rows
+    type: std::string
+    restore_value: false
+    initial_value: '""'
+  - id: oq_trend_history_enabled
+    type: bool
+    restore_value: true
+    initial_value: 'true'
+  - id: oq_overview_trend_row_count
+    type: uint16_t
+    restore_value: false
+    initial_value: '0'
+  - id: oq_overview_trend_last_bucket
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
 
 # ==============================================================================
 # DIAGNOSTIC ENTITIES
@@ -199,6 +215,7 @@ select:
         - if:
             condition:
               lambda: |-
+                // Prevent duplicate update checks when the channel changes repeatedly.
                 constexpr uint32_t fw_check_cooldown_ms = 1000UL;
                 const uint32_t now_ms = (uint32_t) millis();
                 const uint32_t last_request_ms = id(oq_fw_check_last_request_ms);
@@ -317,6 +334,28 @@ button:
           then:
             - update.check:
                 id: oq_firmware_update
+
+switch:
+  - platform: template
+    id: oq_trend_history_enabled_switch
+    name: Trendopslag
+    icon: mdi:chart-line
+    entity_category: config
+    optimistic: true
+    lambda: |-
+      return id(oq_trend_history_enabled);
+    turn_on_action:
+      - lambda: |-
+          id(oq_trend_history_enabled) = true;
+    turn_off_action:
+      - lambda: |-
+          id(oq_trend_history_enabled) = false;
+          id(oq_overview_trend_rows).clear();
+          id(oq_overview_trend_row_count) = 0;
+          id(oq_overview_trend_last_bucket) = 0;
+          id(oq_overview_trend_history).publish_state("");
+    web_server:
+      sorting_group_id: oq_system_diagnostics
 
 binary_sensor:
   - platform: status
@@ -453,6 +492,18 @@ text_sensor:
     entity_category: diagnostic
     web_server:
       sorting_group_id: oq_system_diagnostics
+
+  - platform: template
+    id: oq_overview_trend_history
+    name: "Overview Trend History"
+    icon: mdi:chart-line
+    entity_category: diagnostic
+    disabled_by_default: true
+    update_interval: 5min
+    lambda: |-
+      return id(oq_overview_trend_rows);
+    web_server:
+      sorting_group_id: oq_overview
   - platform: template
     id: uptime_readable_text
     name: Uptime readable
@@ -497,3 +548,89 @@ update:
     entity_category: diagnostic
     web_server:
       sorting_group_id: oq_system_diagnostics
+
+# ==============================================================================
+# OVERVIEW TRENDS
+# ==============================================================================
+interval:
+  - interval: 5min
+    startup_delay: 45s
+    then:
+      - lambda: |-
+          // Sample the live telemetry every 5 minutes and keep the last 24 hours.
+          if (!id(oq_trend_history_enabled)) {
+            return;
+          }
+          constexpr uint32_t trend_bucket_ms = 5UL * 60UL * 1000UL;
+          constexpr uint16_t trend_capacity = 288;
+
+          const uint32_t now_ms = (uint32_t) millis();
+          const uint32_t bucket = now_ms / trend_bucket_ms;
+          if (id(oq_overview_trend_last_bucket) == bucket) {
+            return;
+          }
+
+          const float outside_c = id(outside_temp_selected).has_state() ? id(outside_temp_selected).state : NAN;
+          const float room_c = id(room_temp_selected).has_state() ? id(room_temp_selected).state : NAN;
+          const float room_sp_c = id(room_setpoint_selected).has_state() ? id(room_setpoint_selected).state : NAN;
+          const float supply_c = id(water_supply_temp_selected).has_state() ? id(water_supply_temp_selected).state : NAN;
+          const float flow_lph = id(flow_rate_selected).has_state() ? id(flow_rate_selected).state : NAN;
+          const float input_w = id(oq_total_power_input).has_state() ? id(oq_total_power_input).state : NAN;
+
+          float output_w = NAN;
+          bool cooling_mode = false;
+          if (id(oq_control_mode_label).has_state()) {
+            std::string mode_label = id(oq_control_mode_label).state;
+            for (char &ch : mode_label) {
+              ch = static_cast<char>(tolower(static_cast<unsigned char>(ch)));
+            }
+            cooling_mode = mode_label.find("koel") != std::string::npos || mode_label.find("cool") != std::string::npos;
+          }
+          if (cooling_mode) {
+            output_w = id(oq_total_cooling_power).has_state() ? id(oq_total_cooling_power).state : NAN;
+          } else {
+            output_w = id(oq_total_heat_power).has_state() ? id(oq_total_heat_power).state : NAN;
+          }
+
+          if (isnan(outside_c) && isnan(room_c) && isnan(room_sp_c) && isnan(supply_c) && isnan(flow_lph) && isnan(input_w) && isnan(output_w)) {
+            return;
+          }
+
+          auto &rows = id(oq_overview_trend_rows);
+          if (rows.capacity() < 24576) {
+            rows.reserve(24576);
+          }
+
+          char row[128];
+          snprintf(
+            row,
+            sizeof(row),
+            "%lu|%.2f|%.2f|%.2f|%.2f|%.0f|%.0f|%.0f",
+            (unsigned long) now_ms,
+            outside_c,
+            supply_c,
+            room_c,
+            room_sp_c,
+            flow_lph,
+            input_w,
+            output_w
+          );
+
+          if (!rows.empty()) {
+            rows.push_back('\n');
+          }
+          rows += row;
+
+          if (id(oq_overview_trend_row_count) >= trend_capacity) {
+            const size_t cut = rows.find('\n');
+            if (cut != std::string::npos) {
+              rows.erase(0, cut + 1);
+            } else {
+              rows.clear();
+              id(oq_overview_trend_row_count) = 0;
+            }
+          } else {
+            id(oq_overview_trend_row_count)++;
+          }
+
+          id(oq_overview_trend_last_bucket) = bucket;

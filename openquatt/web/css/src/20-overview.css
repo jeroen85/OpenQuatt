@@ -634,3 +634,438 @@
   color: var(--oq-overview-title);
 }
 
+.oq-overview-trends {
+  margin-top: 16px;
+  padding: 20px;
+  border-radius: 24px;
+  background: var(--oq-overview-panel-bg);
+  border: 1px solid var(--oq-overview-panel-border);
+  box-shadow: var(--oq-overview-shell-shadow);
+}
+
+.oq-overview-trends-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  margin-top: 14px;
+}
+
+.oq-overview-trends-note,
+.oq-overview-trends-window {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: var(--oq-overview-lane-bg);
+  border: 1px solid var(--oq-overview-lane-border);
+  box-shadow: var(--oq-overview-lane-shadow);
+}
+
+.oq-overview-trends-note span,
+.oq-overview-trends-window span {
+  color: var(--oq-overview-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.oq-overview-trends-note strong {
+  color: var(--oq-overview-title);
+  font-size: 0.98rem;
+  line-height: 1.15;
+}
+
+.oq-overview-trends-note p {
+  margin: 0;
+  color: var(--oq-overview-soft);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.oq-overview-trends-window {
+  justify-items: start;
+}
+
+.oq-overview-trends-disabled {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 18px 16px;
+  border-radius: 18px;
+  background: var(--oq-overview-lane-bg);
+  border: 1px solid var(--oq-overview-lane-border);
+  box-shadow: var(--oq-overview-lane-shadow);
+}
+
+.oq-overview-trends-disabled p {
+  margin: 0;
+  color: var(--oq-overview-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.oq-overview-trends-disabled strong {
+  color: var(--oq-overview-title);
+  font-size: 0.98rem;
+  line-height: 1.2;
+}
+
+.oq-overview-trends-disabled span {
+  color: var(--oq-overview-soft);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.oq-overview-trends-windowbar {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.oq-overview-trends-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.oq-overview-trendcard {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 20px;
+  background: var(--oq-overview-lane-bg);
+  border: 1px solid var(--oq-overview-lane-border);
+  box-shadow: var(--oq-overview-lane-shadow);
+  overflow: hidden;
+}
+
+.oq-overview-trendcard::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+}
+
+.oq-overview-trendcard--orange::before {
+  background: linear-gradient(180deg, #f59e0b, #ef4444);
+}
+
+.oq-overview-trendcard--green::before {
+  background: linear-gradient(180deg, #22c55e, #16a34a);
+}
+
+.oq-overview-trendcard--slate::before {
+  background: linear-gradient(180deg, #94a3b8, #475569);
+}
+
+.oq-overview-trendcard-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.oq-overview-trendcard-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.oq-overview-trendcard-kicker {
+  margin: 0;
+  color: var(--oq-overview-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.oq-overview-trendcard-copy h4 {
+  margin: 0;
+  color: var(--oq-overview-title);
+  font-size: 1rem;
+  line-height: 1.1;
+}
+
+.oq-overview-trendcard-copy p {
+  margin: 0;
+  color: var(--oq-overview-soft);
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.oq-overview-trendcard-latest {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.oq-overview-trendcard-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(249, 115, 22, 0.22);
+  background: rgba(249, 115, 22, 0.08);
+  color: #b45309;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.oq-overview-trend-pill {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 82px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  border: 1px solid var(--oq-overview-chip-border);
+  background: var(--oq-overview-chip-bg);
+}
+
+.oq-overview-trend-pill span {
+  color: var(--oq-overview-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.oq-overview-trend-pill strong {
+  color: var(--oq-overview-title);
+  font-size: 0.88rem;
+  line-height: 1.1;
+}
+
+.oq-overview-trend-pill--orange {
+  border-color: rgba(249, 115, 22, 0.24);
+}
+
+.oq-overview-trend-pill--green {
+  border-color: rgba(34, 197, 94, 0.24);
+}
+
+.oq-overview-trend-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.oq-overview-trend-hover-layer {
+  pointer-events: none;
+}
+
+.oq-overview-trend-hover-layer[hidden] {
+  display: none;
+}
+
+.oq-overview-trend-chart-bg {
+  fill: var(--oq-overview-lane-bg);
+  stroke: var(--oq-overview-row-border);
+}
+
+.oq-overview-trend-grid {
+  stroke: rgba(148, 163, 184, 0.28);
+  stroke-width: 1;
+  stroke-dasharray: 4 5;
+}
+
+.oq-overview-trend-axis {
+  stroke: rgba(148, 163, 184, 0.45);
+  stroke-width: 1.25;
+}
+
+.oq-overview-trend-axis-label {
+  fill: var(--oq-overview-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.oq-overview-trend-line {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.oq-overview-trend-line--orange {
+  stroke: #f97316;
+}
+
+.oq-overview-trend-line--green {
+  stroke: #16a34a;
+}
+
+.oq-overview-trend-line--blue {
+  stroke: #3b82f6;
+}
+
+.oq-overview-trend-line--sky {
+  stroke: #0ea5e9;
+}
+
+.oq-overview-trend-line--slate {
+  stroke: #64748b;
+}
+
+.oq-overview-trend-dot {
+  stroke: #ffffff;
+  stroke-width: 1.5;
+}
+
+.oq-overview-trend-dot--orange {
+  fill: #f97316;
+}
+
+.oq-overview-trend-dot--green {
+  fill: #16a34a;
+}
+
+.oq-overview-trend-dot--blue {
+  fill: #3b82f6;
+}
+
+.oq-overview-trend-dot--sky {
+  fill: #0ea5e9;
+}
+
+.oq-overview-trend-dot--slate {
+  fill: #64748b;
+}
+
+.oq-overview-trend-hover {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 1;
+  display: grid;
+  gap: 8px;
+  min-width: 164px;
+  max-width: min(260px, calc(100% - 32px));
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 18px 30px rgba(15, 23, 42, 0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.oq-overview-trend-hover[hidden] {
+  display: none;
+}
+
+.oq-overview-trend-hover-head {
+  display: grid;
+  gap: 2px;
+}
+
+.oq-overview-trend-hover-kicker {
+  color: var(--oq-overview-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.oq-overview-trend-hover-head strong {
+  color: var(--oq-overview-title);
+  font-size: 0.94rem;
+  line-height: 1.15;
+}
+
+.oq-overview-trend-hover-note {
+  color: var(--oq-overview-soft);
+  font-size: 0.76rem;
+  line-height: 1.25;
+}
+
+.oq-overview-trend-hover-values {
+  display: grid;
+  gap: 6px;
+}
+
+.oq-overview-trend-hover-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.oq-overview-trend-hover-row span {
+  color: var(--oq-overview-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.oq-overview-trend-hover-row strong {
+  color: var(--oq-overview-title);
+  font-size: 0.92rem;
+  line-height: 1.1;
+}
+
+.oq-overview-trend-hover-row--orange strong {
+  color: #c2410c;
+}
+
+.oq-overview-trend-hover-row--green strong {
+  color: #15803d;
+}
+
+.oq-overview-trend-hover-row--blue strong {
+  color: #2563eb;
+}
+
+.oq-overview-trend-hover-row--sky strong {
+  color: #0284c7;
+}
+
+.oq-overview-trend-hover-row--slate strong {
+  color: #475569;
+}
+
+.oq-overview-trend-hover-line {
+  stroke: rgba(15, 23, 42, 0.34);
+  stroke-width: 1.15;
+  stroke-dasharray: 4 4;
+}
+
+.oq-overview-trend-hover-dot {
+  stroke: #fff;
+  stroke-width: 2;
+}
+
+.oq-overview-trend-hover-dot--orange {
+  fill: #f97316;
+}
+
+.oq-overview-trend-hover-dot--green {
+  fill: #16a34a;
+}
+
+.oq-overview-trend-hover-dot--blue {
+  fill: #3b82f6;
+}
+
+.oq-overview-trend-hover-dot--sky {
+  fill: #0ea5e9;
+}
+
+.oq-overview-trends-windowbar .oq-overview-controlpanel-segment {
+  min-height: 36px;
+  padding: 0 12px;
+}

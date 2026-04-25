@@ -341,6 +341,9 @@
       : false;
     state.stage = state.complete ? "Gereed" : "Quick Start";
     state.summary = renderAppSummary();
+    if (state.appView === "trends" && !isTrendHistoryEnabled()) {
+      setAppView(getDefaultAppView(), { syncMode: "replace", forceSync: true });
+    }
     if (!state.appView) {
       setAppView(getUrlAppView() || getDefaultAppView(), { syncMode: "replace", forceSync: true });
     }
@@ -367,7 +370,7 @@
       return;
     }
 
-    const keys = state.appView === "overview"
+    const keys = state.appView === "overview" || state.appView === "trends"
       ? [...OVERVIEW_KEYS, ...HEADER_ENTITY_KEYS, "setupComplete", ...FIRMWARE_ENTITY_KEYS]
       : state.appView === "settings"
         ? ["setupComplete", ...FIRMWARE_ENTITY_KEYS, ...HEADER_ENTITY_KEYS, ...SETTINGS_KEYS]
@@ -401,6 +404,12 @@
           return;
         }
         if (!patchSettingsDom()) {
+          render();
+        }
+        return;
+      }
+      if (state.appView === "trends") {
+        if (!patchTrendsDom()) {
           render();
         }
         return;
@@ -644,9 +653,18 @@
     }
 
     if (action === "select-view") {
+      if ((button.dataset.viewId || "") === "trends" && !isTrendHistoryEnabled()) {
+        return;
+      }
       setAppView(button.dataset.viewId || "overview", { syncMode: "push" });
       render();
       syncEntities();
+      return;
+    }
+
+    if (action === "select-trend-window") {
+      setTrendWindowHours(Number(button.dataset.trendHours || 24));
+      render();
       return;
     }
 

@@ -378,6 +378,7 @@
     setEntity("switch", "OpenQuatt Enabled", { value: true, state: true });
     setEntity("switch", "Manual Cooling Enable", { value: false, state: false });
     setEntity("switch", "CiC Compatibility Mode", { value: false, state: false });
+    setEntity("switch", "Trendopslag", { value: true, state: true });
     setEntity("select", "Silent Mode Override", {
       value: "Schedule",
       state: "Schedule",
@@ -1217,6 +1218,8 @@
     entity.state = Boolean(enabled);
     if (name === "OpenQuatt Enabled" && enabled && getEntity("datetime", "OpenQuatt resume at")) {
       setText("datetime", "OpenQuatt resume at", OPENQUATT_RESUME_CLEAR_VALUE);
+    } else if (name === "Trendopslag" && !enabled && getEntity("text_sensor", "Overview Trend History")) {
+      setText("text_sensor", "Overview Trend History", "");
     }
     applyScenario(state.scenario);
     updateSummary();
