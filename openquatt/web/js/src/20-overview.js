@@ -908,7 +908,7 @@
       {
         id: "temperatures",
         title: "Temperaturen",
-        copy: isMockData ? `Voorbeelddata voor de laatste ${windowText}, totdat de ESP-historie beschikbaar is.` : `Buitentemperatuur en aanvoertemperatuur van de laatste ${windowText}.`,
+        copy: `Buiten- en aanvoertemperatuur van de laatste ${windowText}.`,
         tone: "orange",
         samples,
         mock: isMockData,
@@ -921,7 +921,7 @@
       {
         id: "power",
         title: "Vermogen",
-        copy: isMockData ? `Voorbeelddata voor elektrisch vermogen en verwarmingsvermogen van de laatste ${windowText}.` : `Elektrisch vermogen en verwarmingsvermogen van de laatste ${windowText}.`,
+        copy: `Elektrisch vermogen en verwarmingsvermogen van de laatste ${windowText}.`,
         tone: "green",
         samples,
         mock: isMockData,
@@ -934,7 +934,7 @@
       {
         id: "rendement",
         title: "Rendement",
-        copy: isMockData ? `Voorbeelddata voor COP van de laatste ${windowText}.` : `COP van de laatste ${windowText}.`,
+        copy: `COP van de laatste ${windowText}.`,
         tone: "slate",
         samples,
         mock: isMockData,
@@ -960,7 +960,7 @@
       {
         id: "comfort",
         title: "Comfort",
-        copy: isMockData ? `Voorbeelddata voor kamertemperatuur en setpoint van de laatste ${windowText}.` : `Kamertemperatuur en setpoint van de laatste ${windowText}.`,
+        copy: `Kamertemperatuur en setpoint van de laatste ${windowText}.`,
         tone: "blue",
         samples,
         mock: isMockData,
@@ -973,7 +973,7 @@
       {
         id: "flow",
         title: "Flow",
-        copy: isMockData ? `Voorbeelddata voor flow van de laatste ${windowText}.` : `Flow van de laatste ${windowText}.`,
+        copy: `Flow van de laatste ${windowText}.`,
         tone: "sky",
         samples,
         mock: isMockData,
@@ -1251,9 +1251,10 @@
             <h4>${escapeHtml(card.title)}</h4>
             <p>${escapeHtml(card.copy)}</p>
           </div>
-          <div class="oq-overview-trendcard-latest">
-            ${card.mock ? `<span class="oq-overview-trendcard-badge">Voorbeelddata</span>` : ""}
-            ${card.series.map((series) => renderOverviewTrendLatestPill(series, latest)).join("")}
+          <div class="oq-overview-trendcard-meta">
+            <div class="oq-overview-trendcard-latest">
+              ${card.series.map((series) => renderOverviewTrendLatestPill(series, latest)).join("")}
+            </div>
           </div>
         </div>
         ${renderOverviewTrendChart(card.samples, card.series, card.mock, card.windowHours)}
@@ -1273,7 +1274,6 @@
     const cards = getOverviewTrendCardsModel();
     return `
       <section class="oq-overview-trends" aria-label="Trends" data-render-signature="${escapeHtml(getOverviewTrendRenderSignature())}">
-        ${renderOverviewSectionHead("Grafieken")}
         <div class="oq-overview-trends-grid">
           ${cards.map(renderOverviewTrendCard).join("")}
         </div>
@@ -1316,9 +1316,12 @@
     return `
       <section class="oq-helper-panel oq-helper-panel--flush">
         <div class="oq-overview-board oq-overview-board--${escapeHtml(state.overviewTheme)}">
-          <div class="oq-overview-system-copy">
-            <h3>Trendoverzicht</h3>
-            <p>Bekijk temperatuur, vermogen, rendement, comfort en flow voor 24, 12, 6 of 3 uur.</p>
+          <div class="oq-overview-head oq-overview-trends-head">
+            <div>
+              <p class="oq-helper-label">Trends</p>
+              <h2 class="oq-helper-section-title">Grafieken</h2>
+              <p class="oq-helper-section-copy">Bekijk temperatuur, vermogen, rendement, comfort en flow over 24, 12, 6 of 3 uur.</p>
+            </div>
           </div>
           <div class="oq-overview-trends-toolbar">
             <div class="oq-overview-trends-note">

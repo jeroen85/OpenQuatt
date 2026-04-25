@@ -643,11 +643,15 @@
   box-shadow: var(--oq-overview-shell-shadow);
 }
 
+.oq-overview-trends-head {
+  margin: 0;
+}
+
 .oq-overview-trends-toolbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
   gap: 12px;
-  align-items: start;
+  align-items: stretch;
   margin-top: 14px;
 }
 
@@ -660,6 +664,7 @@
   background: var(--oq-overview-lane-bg);
   border: 1px solid var(--oq-overview-lane-border);
   box-shadow: var(--oq-overview-lane-shadow);
+  align-content: start;
 }
 
 .oq-overview-trends-note span,
@@ -746,35 +751,22 @@
 }
 
 .oq-overview-trendcard::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 5px;
-}
-
-.oq-overview-trendcard--orange::before {
-  background: linear-gradient(180deg, #f59e0b, #ef4444);
-}
-
-.oq-overview-trendcard--green::before {
-  background: linear-gradient(180deg, #22c55e, #16a34a);
-}
-
-.oq-overview-trendcard--slate::before {
-  background: linear-gradient(180deg, #94a3b8, #475569);
+  content: none;
 }
 
 .oq-overview-trendcard-head {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 300px);
   gap: 14px;
-  align-items: flex-start;
+  align-items: start;
 }
 
 .oq-overview-trendcard-copy {
   min-width: 0;
   display: grid;
   gap: 4px;
+  align-content: start;
+  min-height: 88px;
 }
 
 .oq-overview-trendcard-kicker {
@@ -789,15 +781,29 @@
 .oq-overview-trendcard-copy h4 {
   margin: 0;
   color: var(--oq-overview-title);
-  font-size: 1rem;
-  line-height: 1.1;
+  font-size: 0.96rem;
+  line-height: 1.06;
 }
 
 .oq-overview-trendcard-copy p {
   margin: 0;
   color: var(--oq-overview-soft);
-  font-size: 0.84rem;
+  font-size: 0.81rem;
   line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.7em;
+}
+
+.oq-overview-trendcard-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-content: flex-start;
+  gap: 8px;
+  min-width: 0;
 }
 
 .oq-overview-trendcard-latest {
@@ -805,22 +811,6 @@
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
-  flex: 0 0 auto;
-}
-
-.oq-overview-trendcard-badge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 24px;
-  padding: 0 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(249, 115, 22, 0.22);
-  background: rgba(249, 115, 22, 0.08);
-  color: #b45309;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .oq-overview-trend-pill {
@@ -832,6 +822,7 @@
   border-radius: 14px;
   border: 1px solid var(--oq-overview-chip-border);
   background: var(--oq-overview-chip-bg);
+  align-content: start;
 }
 
 .oq-overview-trend-pill span {
@@ -840,6 +831,11 @@
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 1.1em;
 }
 
 .oq-overview-trend-pill strong {
