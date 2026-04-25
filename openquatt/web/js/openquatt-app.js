@@ -7177,6 +7177,7 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
     const latest = samples[samples.length - 1];
     const mockData = Boolean(options.mockData);
     const uptimeMs = getOverviewUptimeMillis();
+    const sparseLiveData = !mockData && samples.length > 0 && samples.length < 4;
     const endTime = mockData
       ? windowMs
       : (Number.isFinite(uptimeMs) ? uptimeMs : (latest ? latest.t : 0));
@@ -7184,7 +7185,9 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
     const span = Math.max(endTime - startTime, 1);
     const range = getOverviewTrendRange(samples, series);
 
-    const xOf = (timestamp) => left + (((timestamp - startTime) / span) * plotWidth);
+    const xOf = sparseLiveData
+      ? (_timestamp, index = 0) => left + ((index / Math.max(samples.length - 1, 1)) * plotWidth)
+      : (timestamp) => left + (((timestamp - startTime) / span) * plotWidth);
     const yOf = (value) => {
       if (!Number.isFinite(value)) {
         return Number.NaN;
@@ -7196,8 +7199,8 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
     const gridXs = [0, 0.5, 1].map((fraction) => left + (plotWidth * fraction));
     const gridYs = [0.25, 0.5, 0.75].map((fraction) => top + (plotHeight * fraction));
 
-    const points = samples.map((sample) => {
-      const x = xOf(sample.t);
+    const points = samples.map((sample, sampleIndex) => {
+      const x = sparseLiveData ? xOf(sample.t, sampleIndex) : xOf(sample.t);
       const values = series.map((item) => {
         const numeric = getOverviewTrendSeriesValue(item, sample);
         if (!Number.isFinite(numeric)) {
@@ -7224,7 +7227,7 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
     const tracks = series.flatMap((item) => {
       const segments = [];
       let current = [];
-      samples.forEach((sample) => {
+      samples.forEach((sample, sampleIndex) => {
         const numeric = getOverviewTrendSeriesValue(item, sample);
         if (!Number.isFinite(numeric)) {
           if (current.length) {
@@ -7235,7 +7238,7 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
         }
 
         current.push({
-          x: xOf(sample.t),
+          x: sparseLiveData ? xOf(sample.t, sampleIndex) : xOf(sample.t),
           y: yOf(numeric),
         });
       });
