@@ -23,7 +23,7 @@
   }
 
   function renderQuickStartModal() {
-    if (!state.quickStartModalOpen || state.loadingEntities || (state.complete && state.quickStartModalMode !== "generation")) {
+    if (!state.quickStartModalOpen || state.loadingEntities || state.complete === null || (state.complete && state.quickStartModalMode !== "generation")) {
       return "";
     }
 
@@ -194,7 +194,7 @@
   function getQuickStepStatus(index) {
     const currentIndex = getCurrentQuickStepIndex();
     const isSelected = index === currentIndex;
-    const isDone = state.complete || index < currentIndex;
+    const isDone = state.complete === true || index < currentIndex;
     return {
       tone: isSelected ? "current" : isDone ? "done" : "upcoming",
       label: isSelected ? "Actief" : isDone ? "Gereed" : "Volgend",

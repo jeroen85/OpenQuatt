@@ -459,10 +459,12 @@
       const valueNode = quickStartStatus.querySelector(".oq-settings-quickstart-status-value");
       const copyNode = quickStartStatus.querySelector(".oq-settings-quickstart-status-copy");
       const button = quickStartStatus.querySelector('button[data-oq-action="reset"]');
-      const statusLabel = state.complete ? "Afgerond" : "Open";
-      const statusCopy = state.complete
+      const statusLabel = state.complete === true ? "Afgerond" : state.complete === false ? "Open" : "Laden...";
+      const statusCopy = state.complete === true
         ? "Quick Start is afgerond. Je kunt de status hier altijd weer openen met een reset."
-        : "Quick Start staat nog open. Gebruik de resetknop om opnieuw te beginnen.";
+        : state.complete === false
+          ? "Quick Start staat nog open. Gebruik de resetknop om opnieuw te beginnen."
+          : "De status van Quick Start wordt nog geladen.";
       if (valueNode && valueNode.textContent !== statusLabel) {
         valueNode.textContent = statusLabel;
       }
@@ -1074,10 +1076,12 @@
   }
 
   function renderSettingsQuickStartSection() {
-    const statusLabel = state.complete ? "Afgerond" : "Open";
-    const statusCopy = state.complete
+    const statusLabel = state.complete === true ? "Afgerond" : state.complete === false ? "Open" : "Laden...";
+    const statusCopy = state.complete === true
       ? "Quick Start is afgerond. Je kunt de status hier altijd weer openen met een reset."
-      : "Quick Start staat nog open. Gebruik de resetknop om opnieuw te beginnen.";
+      : state.complete === false
+        ? "Quick Start staat nog open. Gebruik de resetknop om opnieuw te beginnen."
+        : "De status van Quick Start wordt nog geladen.";
 
     return renderSettingsSection(
       "Setup",

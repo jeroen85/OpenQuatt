@@ -2916,10 +2916,8 @@
   }
 
   function applyDerivedState() {
-    state.complete = hasEntity("setupComplete")
-      ? isEntityActive("setupComplete")
-      : false;
-    state.stage = state.complete ? "Gereed" : "Quick Start";
+    state.complete = getSetupCompleteState();
+    state.stage = state.complete === true ? "Gereed" : state.complete === false ? "Quick Start" : "Laden...";
     state.summary = renderAppSummary();
     if (state.appView === "trends" && !isTrendHistoryEnabled()) {
       setAppView(getDefaultAppView(), { syncMode: "replace", forceSync: true });
@@ -4233,6 +4231,25 @@
     return !hasEntity("trendHistoryEnabled") || isEntityActive("trendHistoryEnabled");
   }
 
+  function getSetupCompleteState() {
+    const entity = state.entities.setupComplete;
+    if (!entity) {
+      return null;
+    }
+
+    const raw = String(entity.state ?? entity.value ?? "").trim().toLowerCase();
+    if (!raw || raw === "unknown" || raw === "unavailable") {
+      return null;
+    }
+    if (raw === "on" || raw === "true" || raw === "1") {
+      return true;
+    }
+    if (raw === "off" || raw === "false" || raw === "0") {
+      return false;
+    }
+    return null;
+  }
+
   function renderAppNav() {
     return `
       <div class="oq-helper-app-nav">
@@ -4745,10 +4762,12 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
       const valueNode = quickStartStatus.querySelector(".oq-settings-quickstart-status-value");
       const copyNode = quickStartStatus.querySelector(".oq-settings-quickstart-status-copy");
       const button = quickStartStatus.querySelector('button[data-oq-action="reset"]');
-      const statusLabel = state.complete ? "Afgerond" : "Open";
-      const statusCopy = state.complete
+      const statusLabel = state.complete === true ? "Afgerond" : state.complete === false ? "Open" : "Laden...";
+      const statusCopy = state.complete === true
         ? "Quick Start is afgerond. Je kunt de status hier altijd weer openen met een reset."
-        : "Quick Start staat nog open. Gebruik de resetknop om opnieuw te beginnen.";
+        : state.complete === false
+          ? "Quick Start staat nog open. Gebruik de resetknop om opnieuw te beginnen."
+          : "De status van Quick Start wordt nog geladen.";
       if (valueNode && valueNode.textContent !== statusLabel) {
         valueNode.textContent = statusLabel;
       }
@@ -5360,10 +5379,12 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
   }
 
   function renderSettingsQuickStartSection() {
-    const statusLabel = state.complete ? "Afgerond" : "Open";
-    const statusCopy = state.complete
+    const statusLabel = state.complete === true ? "Afgerond" : state.complete === false ? "Open" : "Laden...";
+    const statusCopy = state.complete === true
       ? "Quick Start is afgerond. Je kunt de status hier altijd weer openen met een reset."
-      : "Quick Start staat nog open. Gebruik de resetknop om opnieuw te beginnen.";
+      : state.complete === false
+        ? "Quick Start staat nog open. Gebruik de resetknop om opnieuw te beginnen."
+        : "De status van Quick Start wordt nog geladen.";
 
     return renderSettingsSection(
       "Setup",
@@ -5808,7 +5829,7 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
   }
 
   function renderQuickStartModal() {
-    if (!state.quickStartModalOpen || state.loadingEntities || (state.complete && state.quickStartModalMode !== "generation")) {
+    if (!state.quickStartModalOpen || state.loadingEntities || state.complete === null || (state.complete && state.quickStartModalMode !== "generation")) {
       return "";
     }
 
@@ -5979,7 +6000,7 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
   function getQuickStepStatus(index) {
     const currentIndex = getCurrentQuickStepIndex();
     const isSelected = index === currentIndex;
-    const isDone = state.complete || index < currentIndex;
+    const isDone = state.complete === true || index < currentIndex;
     return {
       tone: isSelected ? "current" : isDone ? "done" : "upcoming",
       label: isSelected ? "Actief" : isDone ? "Gereed" : "Volgend",
@@ -7177,17 +7198,14 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
     const latest = samples[samples.length - 1];
     const mockData = Boolean(options.mockData);
     const uptimeMs = getOverviewUptimeMillis();
-    const sparseLiveData = !mockData && samples.length > 0 && samples.length < 4;
     const endTime = mockData
       ? windowMs
       : (Number.isFinite(uptimeMs) ? uptimeMs : (latest ? latest.t : 0));
-    const startTime = mockData ? 0 : Math.max(endTime - windowMs, 0);
+    const startTime = mockData ? 0 : (endTime - windowMs);
     const span = Math.max(endTime - startTime, 1);
     const range = getOverviewTrendRange(samples, series);
 
-    const xOf = sparseLiveData
-      ? (_timestamp, index = 0) => left + ((index / Math.max(samples.length - 1, 1)) * plotWidth)
-      : (timestamp) => left + (((timestamp - startTime) / span) * plotWidth);
+    const xOf = (timestamp) => left + (((timestamp - startTime) / span) * plotWidth);
     const yOf = (value) => {
       if (!Number.isFinite(value)) {
         return Number.NaN;
@@ -7199,8 +7217,8 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
     const gridXs = [0, 0.5, 1].map((fraction) => left + (plotWidth * fraction));
     const gridYs = [0.25, 0.5, 0.75].map((fraction) => top + (plotHeight * fraction));
 
-    const points = samples.map((sample, sampleIndex) => {
-      const x = sparseLiveData ? xOf(sample.t, sampleIndex) : xOf(sample.t);
+    const points = samples.map((sample) => {
+      const x = xOf(sample.t);
       const values = series.map((item) => {
         const numeric = getOverviewTrendSeriesValue(item, sample);
         if (!Number.isFinite(numeric)) {
@@ -7227,7 +7245,7 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
     const tracks = series.flatMap((item) => {
       const segments = [];
       let current = [];
-      samples.forEach((sample, sampleIndex) => {
+      samples.forEach((sample) => {
         const numeric = getOverviewTrendSeriesValue(item, sample);
         if (!Number.isFinite(numeric)) {
           if (current.length) {
@@ -7238,7 +7256,7 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
         }
 
         current.push({
-          x: sparseLiveData ? xOf(sample.t, sampleIndex) : xOf(sample.t),
+          x: xOf(sample.t),
           y: yOf(numeric),
         });
       });
@@ -7400,7 +7418,7 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
         ${renderOverviewTrendChart(card.samples, card.series, card.mock, card.windowHours)}
         <div class="oq-overview-trend-hover" data-oq-trend-hover hidden>
           <div class="oq-overview-trend-hover-head">
-            <span class="oq-overview-trend-hover-kicker">Punt</span>
+            <span class="oq-overview-trend-hover-kicker">Meting</span>
             <strong data-oq-trend-hover-time>—</strong>
             <span class="oq-overview-trend-hover-note" data-oq-trend-hover-note></span>
           </div>

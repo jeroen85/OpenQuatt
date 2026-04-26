@@ -88,6 +88,25 @@
     return !hasEntity("trendHistoryEnabled") || isEntityActive("trendHistoryEnabled");
   }
 
+  function getSetupCompleteState() {
+    const entity = state.entities.setupComplete;
+    if (!entity) {
+      return null;
+    }
+
+    const raw = String(entity.state ?? entity.value ?? "").trim().toLowerCase();
+    if (!raw || raw === "unknown" || raw === "unavailable") {
+      return null;
+    }
+    if (raw === "on" || raw === "true" || raw === "1") {
+      return true;
+    }
+    if (raw === "off" || raw === "false" || raw === "0") {
+      return false;
+    }
+    return null;
+  }
+
   function renderAppNav() {
     return `
       <div class="oq-helper-app-nav">

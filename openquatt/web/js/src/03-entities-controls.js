@@ -336,10 +336,8 @@
   }
 
   function applyDerivedState() {
-    state.complete = hasEntity("setupComplete")
-      ? isEntityActive("setupComplete")
-      : false;
-    state.stage = state.complete ? "Gereed" : "Quick Start";
+    state.complete = getSetupCompleteState();
+    state.stage = state.complete === true ? "Gereed" : state.complete === false ? "Quick Start" : "Laden...";
     state.summary = renderAppSummary();
     if (state.appView === "trends" && !isTrendHistoryEnabled()) {
       setAppView(getDefaultAppView(), { syncMode: "replace", forceSync: true });

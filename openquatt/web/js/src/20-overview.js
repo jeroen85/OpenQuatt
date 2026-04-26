@@ -1029,17 +1029,14 @@
     const latest = samples[samples.length - 1];
     const mockData = Boolean(options.mockData);
     const uptimeMs = getOverviewUptimeMillis();
-    const sparseLiveData = !mockData && samples.length > 0 && samples.length < 4;
     const endTime = mockData
       ? windowMs
       : (Number.isFinite(uptimeMs) ? uptimeMs : (latest ? latest.t : 0));
-    const startTime = mockData ? 0 : Math.max(endTime - windowMs, 0);
+    const startTime = mockData ? 0 : (endTime - windowMs);
     const span = Math.max(endTime - startTime, 1);
     const range = getOverviewTrendRange(samples, series);
 
-    const xOf = sparseLiveData
-      ? (_timestamp, index = 0) => left + ((index / Math.max(samples.length - 1, 1)) * plotWidth)
-      : (timestamp) => left + (((timestamp - startTime) / span) * plotWidth);
+    const xOf = (timestamp) => left + (((timestamp - startTime) / span) * plotWidth);
     const yOf = (value) => {
       if (!Number.isFinite(value)) {
         return Number.NaN;
@@ -1051,8 +1048,8 @@
     const gridXs = [0, 0.5, 1].map((fraction) => left + (plotWidth * fraction));
     const gridYs = [0.25, 0.5, 0.75].map((fraction) => top + (plotHeight * fraction));
 
-    const points = samples.map((sample, sampleIndex) => {
-      const x = sparseLiveData ? xOf(sample.t, sampleIndex) : xOf(sample.t);
+    const points = samples.map((sample) => {
+      const x = xOf(sample.t);
       const values = series.map((item) => {
         const numeric = getOverviewTrendSeriesValue(item, sample);
         if (!Number.isFinite(numeric)) {
@@ -1079,7 +1076,7 @@
     const tracks = series.flatMap((item) => {
       const segments = [];
       let current = [];
-      samples.forEach((sample, sampleIndex) => {
+      samples.forEach((sample) => {
         const numeric = getOverviewTrendSeriesValue(item, sample);
         if (!Number.isFinite(numeric)) {
           if (current.length) {
@@ -1090,7 +1087,7 @@
         }
 
         current.push({
-          x: sparseLiveData ? xOf(sample.t, sampleIndex) : xOf(sample.t),
+          x: xOf(sample.t),
           y: yOf(numeric),
         });
       });
@@ -1252,7 +1249,7 @@
         ${renderOverviewTrendChart(card.samples, card.series, card.mock, card.windowHours)}
         <div class="oq-overview-trend-hover" data-oq-trend-hover hidden>
           <div class="oq-overview-trend-hover-head">
-            <span class="oq-overview-trend-hover-kicker">Punt</span>
+            <span class="oq-overview-trend-hover-kicker">Meting</span>
             <strong data-oq-trend-hover-time>—</strong>
             <span class="oq-overview-trend-hover-note" data-oq-trend-hover-note></span>
           </div>
