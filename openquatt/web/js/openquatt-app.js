@@ -7625,6 +7625,27 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
     `;
   }
 
+  function renderTrendsInfoToggle() {
+    const infoId = "overview-trends-history";
+    const open = state.settingsInfoOpen === infoId;
+    const copy = "Standaard bewaren we trenddata 7 dagen in het werkgeheugen. Met flashopslag blijft historie ook na herstart of OTA beschikbaar, tot 30 dagen terug.";
+    return `
+      <div class="oq-settings-info oq-overview-trends-info${open ? " is-open" : ""}" data-oq-settings-info="${escapeHtml(infoId)}">
+        <button
+          class="oq-settings-info-button"
+          type="button"
+          data-oq-action="toggle-settings-info"
+          data-info-id="${escapeHtml(infoId)}"
+          aria-label="${escapeHtml("Uitleg bij Trendoverzicht")}"
+          aria-expanded="${open ? "true" : "false"}"
+        >i</button>
+        <div class="oq-settings-info-popover" ${open ? "" : "hidden"}>
+          <p>${escapeHtml(copy)}</p>
+        </div>
+      </div>
+    `;
+  }
+
   function renderTrendsView() {
     const trendHistoryEnabled = isTrendHistoryEnabled();
     const trendSamples = getOverviewTrendSamples();
@@ -7632,25 +7653,23 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
     return `
       <section class="oq-helper-panel oq-helper-panel--flush">
         <div class="oq-overview-board oq-overview-board--${escapeHtml(state.overviewTheme)}">
+          <div class="oq-overview-trends-info-wrap">
+            ${renderTrendsInfoToggle()}
+          </div>
           <div class="oq-overview-head oq-overview-trends-head">
             <div>
               <p class="oq-helper-label">Trends</p>
               <h2 class="oq-helper-section-title">Trendoverzicht</h2>
-              <p class="oq-helper-section-copy">Bekijk temperatuur, vermogen, rendement, comfort en flow over 3 uur tot 30 dagen.</p>
+              <p class="oq-helper-section-copy">Bekijk temperatuur, vermogen, rendement, comfort en flow tot 30 dagen terug.</p>
             </div>
-          </div>
-          <div class="oq-overview-trends-toolbar">
-            <div class="oq-overview-trends-note">
-              <span>Opmerking</span>
-              <strong>7 dagen in werkgeheugen, optioneel 30 dagen in flash</strong>
-              <p>De OpenQuatt Controller bewaart trenddata standaard tijdelijk in het werkgeheugen. Met flashopslag blijft historie ook na herstart of OTA beschikbaar.</p>
+            <div class="oq-overview-trends-meta">
+              ${trendHistoryEnabled ? `
+                <div class="oq-overview-trends-window">
+                  <span>Venster</span>
+                  ${renderTrendWindowSwitcher()}
+                </div>
+              ` : ""}
             </div>
-            ${trendHistoryEnabled ? `
-              <div class="oq-overview-trends-window">
-                <span>Venster</span>
-                ${renderTrendWindowSwitcher()}
-              </div>
-            ` : ""}
           </div>
           ${trendHistoryEnabled && hasTrendSamples ? renderOverviewTrendsPanel() : renderOverviewTrendsDisabledNotice()}
         </div>

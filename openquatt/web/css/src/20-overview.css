@@ -28,6 +28,7 @@
   border: 1px solid var(--oq-overview-border);
   box-shadow: var(--oq-overview-shadow);
   color: var(--oq-overview-ink);
+  position: relative;
 }
 
 .oq-overview-board--light {
@@ -641,33 +642,46 @@
   background: var(--oq-overview-panel-bg);
   border: 1px solid var(--oq-overview-panel-border);
   box-shadow: var(--oq-overview-shell-shadow);
+  position: relative;
 }
 
 .oq-overview-trends-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
   margin: 0;
 }
 
-.oq-overview-trends-toolbar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
-  gap: 12px;
-  align-items: stretch;
-  margin-top: 14px;
+.oq-overview-trends-info-wrap {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 3;
 }
 
-.oq-overview-trends-note,
+.oq-overview-trends-meta {
+  display: grid;
+  gap: 12px;
+  justify-items: end;
+  align-content: start;
+  width: max-content;
+  max-width: 100%;
+}
+
 .oq-overview-trends-window {
   display: grid;
   gap: 6px;
-  padding: 14px 16px;
+  padding: 12px 14px;
   border-radius: 18px;
   background: var(--oq-overview-lane-bg);
   border: 1px solid var(--oq-overview-lane-border);
   box-shadow: var(--oq-overview-lane-shadow);
   align-content: start;
+  width: fit-content;
+  max-width: 100%;
 }
 
-.oq-overview-trends-note span,
 .oq-overview-trends-window span {
   color: var(--oq-overview-muted);
   font-size: 0.72rem;
@@ -676,21 +690,45 @@
   text-transform: uppercase;
 }
 
-.oq-overview-trends-note strong {
-  color: var(--oq-overview-title);
-  font-size: 0.98rem;
-  line-height: 1.15;
-}
-
-.oq-overview-trends-note p {
-  margin: 0;
-  color: var(--oq-overview-soft);
-  font-size: 0.84rem;
-  line-height: 1.4;
-}
-
 .oq-overview-trends-window {
   justify-items: start;
+}
+
+.oq-overview-trends-info {
+  position: relative;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.oq-overview-trends-info .oq-settings-info-popover {
+  right: 0;
+  left: auto;
+}
+
+@media (max-width: 980px) {
+  .oq-overview-trends-head {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .oq-overview-trends-info-wrap {
+    top: 14px;
+    right: 14px;
+  }
+
+  .oq-overview-trends-meta {
+    width: 100%;
+    justify-items: end;
+  }
+
+  .oq-overview-trends-window {
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  .oq-overview-trends-info {
+    justify-self: end;
+  }
 }
 
 .oq-overview-trends-disabled {
