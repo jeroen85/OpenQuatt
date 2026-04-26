@@ -7356,6 +7356,7 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
       : (Number.isFinite(state.trendHistoryNowMs) ? state.trendHistoryNowMs : (latest ? latest.t : 0));
     const startTime = mockData ? 0 : (endTime - windowMs);
     const span = Math.max(endTime - startTime, 1);
+    const uptimeMs = span;
     const range = getOverviewTrendRange(samples, series);
 
     const xOf = (timestamp) => left + (((timestamp - startTime) / span) * plotWidth);
