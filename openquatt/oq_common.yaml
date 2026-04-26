@@ -274,7 +274,10 @@ script:
           }
 
           id(oq_overview_trend_last_bucket) = bucket;
-          id(oq_overview_trend_history).publish_state(id(oq_overview_trend_rows));
+
+openquatt_trends:
+  id: oq_trends_endpoint
+  history: oq_overview_trend_rows
 
 # ==============================================================================
 # DIAGNOSTIC ENTITIES
@@ -441,7 +444,6 @@ switch:
           id(oq_overview_trend_rows).clear();
           id(oq_overview_trend_row_count) = 0;
           id(oq_overview_trend_last_bucket) = 0;
-          id(oq_overview_trend_history).publish_state("");
     web_server:
       sorting_group_id: oq_system_diagnostics
 
@@ -581,18 +583,6 @@ text_sensor:
     web_server:
       sorting_group_id: oq_system_diagnostics
 
-  - platform: template
-    id: oq_overview_trend_history
-    name: "Overview Trend History"
-    icon: mdi:chart-line
-    entity_category: diagnostic
-    internal: true
-    disabled_by_default: true
-    update_interval: 5min
-    lambda: |-
-      return id(oq_overview_trend_rows);
-    web_server:
-      sorting_group_id: oq_overview
   - platform: template
     id: uptime_readable_text
     name: Uptime readable

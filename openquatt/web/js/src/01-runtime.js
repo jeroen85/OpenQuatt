@@ -20,6 +20,8 @@
     hpVisualMode: getStoredHpVisualMode(),
     hpLayoutMode: getStoredHpLayoutMode(),
     trendWindowHours: getStoredTrendWindowHours(),
+    trendHistoryRaw: "",
+    trendHistoryError: "",
     busyAction: "",
     controlError: "",
     controlNotice: "",

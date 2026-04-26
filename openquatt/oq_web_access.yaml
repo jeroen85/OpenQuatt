@@ -9,7 +9,7 @@ external_components:
   - source:
       type: local
       path: components
-    components: [openquatt_web_auth]
+    components: [openquatt_web_auth, openquatt_trends]
 
 text_sensor:
   - platform: template

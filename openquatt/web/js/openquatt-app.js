@@ -120,7 +120,6 @@
     wifiSsid: { domain: "text_sensor", name: "WiFi SSID", optional: true },
     projectVersionText: { domain: "text_sensor", name: "OpenQuatt Version", optional: true },
     releaseChannelText: { domain: "text_sensor", name: "OpenQuatt Release Channel", optional: true },
-    trendHistory: { domain: "text_sensor", name: "Overview Trend History", optional: true },
     wifiSignal: { domain: "sensor", name: "WiFi Signal", optional: true },
     espInternalTemp: { domain: "sensor", name: "ESP Internal Temperature", optional: true },
     hpGeneration: { domain: "select", name: "Quatt Hybrid version" },
@@ -614,6 +613,8 @@
     hpVisualMode: getStoredHpVisualMode(),
     hpLayoutMode: getStoredHpLayoutMode(),
     trendWindowHours: getStoredTrendWindowHours(),
+    trendHistoryRaw: "",
+    trendHistoryError: "",
     busyAction: "",
     controlError: "",
     controlNotice: "",
@@ -2915,6 +2916,43 @@
     }
   }
 
+  function isDevPreviewEnvironmentForFetches() {
+    return Boolean(
+      (typeof window !== "undefined" && window.__OQ_DEV_CONTROLS__)
+      || (typeof window !== "undefined" && window.__OQ_DEV_META)
+    );
+  }
+
+  async function refreshTrendHistoryData() {
+    if (!isTrendHistoryEnabled()) {
+      const changed = Boolean(state.trendHistoryRaw || state.trendHistoryError);
+      state.trendHistoryRaw = "";
+      state.trendHistoryError = "";
+      return changed;
+    }
+    if (isDevPreviewEnvironmentForFetches()) {
+      return false;
+    }
+
+    try {
+      const response = await fetch(`${getBasePath()}/trends/history`, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const raw = await response.text();
+      const changed = raw !== state.trendHistoryRaw || state.trendHistoryError !== "";
+      state.trendHistoryRaw = raw;
+      state.trendHistoryError = "";
+      return changed;
+    } catch (error) {
+      const nextError = `Trendhistorie kon niet worden geladen. ${error.message}`;
+      const changed = state.trendHistoryError !== nextError;
+      state.trendHistoryError = nextError;
+      state.trendHistoryRaw = "";
+      return changed;
+    }
+  }
+
   function applyDerivedState() {
     state.complete = getSetupCompleteState();
     state.stage = state.complete === true ? "Gereed" : state.complete === false ? "Quick Start" : "Laden...";
@@ -2936,6 +2974,9 @@
     const keys = Object.keys(ENTITY_DEFS).filter((key) => !["apply", "reset"].includes(key));
     try {
       await refreshEntities(keys, "all");
+      if (state.appView === "trends") {
+        await refreshTrendHistoryData();
+      }
       await refreshAuthStatus();
     } finally {
       state.loadingEntities = false;
@@ -2964,8 +3005,13 @@
 
     try {
       await refreshEntities(keys, "state");
+      const trendChanged = state.appView === "trends" ? await refreshTrendHistoryData() : false;
       const authChanged = await refreshAuthStatus();
       const nextHeaderSignature = getHeaderRenderSignature();
+      if (trendChanged && state.appView === "trends" && !state.root?.querySelector(".oq-overview-trends")) {
+        render();
+        return;
+      }
       if (authChanged && state.systemModal === "login") {
         render();
         return;
@@ -7025,11 +7071,7 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
 
   function getOverviewTrendSamples() {
     const windowMs = getOverviewTrendWindowMs();
-    if (!hasEntity("trendHistory")) {
-      return isDevPreviewEnvironment() ? getOverviewTrendDevMockSamples() : [];
-    }
-
-    const raw = String(getEntityStateText("trendHistory", "") || "").trim();
+    const raw = String(state.trendHistoryRaw || "").trim();
     if (!raw) {
       return isDevPreviewEnvironment() ? getOverviewTrendDevMockSamples() : [];
     }
@@ -7046,7 +7088,7 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
       : (Number.isFinite(latestTimestamp) ? latestTimestamp : Number.NaN);
 
     if (!Number.isFinite(endTime)) {
-      return rows.length ? rows.slice(-OVERVIEW_TREND_MAX_POINTS) : getOverviewTrendDevMockSamples(windowHours);
+      return rows.length ? rows.slice(-OVERVIEW_TREND_MAX_POINTS) : getOverviewTrendDevMockSamples();
     }
 
     const cutoff = Math.max(0, endTime - windowMs);

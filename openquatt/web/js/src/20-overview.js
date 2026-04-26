@@ -856,11 +856,7 @@
 
   function getOverviewTrendSamples() {
     const windowMs = getOverviewTrendWindowMs();
-    if (!hasEntity("trendHistory")) {
-      return isDevPreviewEnvironment() ? getOverviewTrendDevMockSamples() : [];
-    }
-
-    const raw = String(getEntityStateText("trendHistory", "") || "").trim();
+    const raw = String(state.trendHistoryRaw || "").trim();
     if (!raw) {
       return isDevPreviewEnvironment() ? getOverviewTrendDevMockSamples() : [];
     }
@@ -877,7 +873,7 @@
       : (Number.isFinite(latestTimestamp) ? latestTimestamp : Number.NaN);
 
     if (!Number.isFinite(endTime)) {
-      return rows.length ? rows.slice(-OVERVIEW_TREND_MAX_POINTS) : getOverviewTrendDevMockSamples(windowHours);
+      return rows.length ? rows.slice(-OVERVIEW_TREND_MAX_POINTS) : getOverviewTrendDevMockSamples();
     }
 
     const cutoff = Math.max(0, endTime - windowMs);
