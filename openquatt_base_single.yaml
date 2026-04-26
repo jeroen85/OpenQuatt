@@ -36,6 +36,7 @@ esphome:
     - ${thermal_request_logic_header}
     - ${heating_curve_logic_header}
   platformio_options:
+    board_build.partitions: ../../../openquatt/partitions/openquatt_8mb_trends.csv
     build_flags:
       # Hard-pinned for Single entrypoints to prevent accidental topology drift.
       - -DOQ_TOPOLOGY_DUO=0

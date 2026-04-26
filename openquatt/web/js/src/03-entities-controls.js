@@ -347,6 +347,8 @@
       const changed = Boolean(state.trendHistoryRaw || state.trendHistoryError);
       state.trendHistoryRaw = "";
       state.trendHistoryError = "";
+      state.trendHistorySignature = "";
+      state.trendHistoryNowMs = Number.NaN;
       return changed;
     }
     if (isDevPreviewEnvironmentForFetches()) {
@@ -354,20 +356,39 @@
     }
 
     try {
-      const response = await fetch(`${getBasePath()}/trends/history`, { cache: "no-store" });
+      const windowHours = Number(state.trendWindowHours || DEFAULT_TREND_WINDOW_HOURS);
+      const response = await fetch(`${getBasePath()}/trends/history?hours=${encodeURIComponent(String(windowHours))}`, { cache: "no-store" });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
       const raw = await response.text();
-      const changed = raw !== state.trendHistoryRaw || state.trendHistoryError !== "";
-      state.trendHistoryRaw = raw;
+      const lines = raw.split(/\r?\n/);
+      let nowMs = Number.NaN;
+      let body = raw;
+      if (lines.length && lines[0].startsWith("@now|")) {
+        nowMs = Number(lines[0].slice(5));
+        body = lines.slice(1).join("\n");
+      }
+      const signature = `${windowHours}|${body.length}|${body.slice(0, 120)}|${body.slice(-120)}`;
+      const currentNowValid = Number.isFinite(state.trendHistoryNowMs);
+      const nextNowValid = Number.isFinite(nowMs);
+      const nowChanged = nextNowValid
+        ? !currentNowValid || state.trendHistoryNowMs !== nowMs
+        : currentNowValid;
+      const changed = body !== state.trendHistoryRaw || state.trendHistoryError !== "" ||
+        state.trendHistorySignature !== signature || nowChanged;
+      state.trendHistoryRaw = body;
       state.trendHistoryError = "";
+      state.trendHistorySignature = signature;
+      state.trendHistoryNowMs = Number.isFinite(nowMs) ? nowMs : Number.NaN;
       return changed;
     } catch (error) {
       const nextError = `Trendhistorie kon niet worden geladen. ${error.message}`;
       const changed = state.trendHistoryError !== nextError;
       state.trendHistoryError = nextError;
       state.trendHistoryRaw = "";
+      state.trendHistorySignature = "";
+      state.trendHistoryNowMs = Number.NaN;
       return changed;
     }
   }
@@ -393,7 +414,7 @@
     const keys = Object.keys(ENTITY_DEFS).filter((key) => !["apply", "reset"].includes(key));
     try {
       await refreshEntities(keys, "all");
-      if (state.appView === "trends") {
+      if (state.appView === "overview" || state.appView === "trends") {
         await refreshTrendHistoryData();
       }
       await refreshAuthStatus();
@@ -424,7 +445,9 @@
 
     try {
       await refreshEntities(keys, "state");
-      const trendChanged = state.appView === "trends" ? await refreshTrendHistoryData() : false;
+      const trendChanged = state.appView === "overview" || state.appView === "trends"
+        ? await refreshTrendHistoryData()
+        : false;
       const authChanged = await refreshAuthStatus();
       const nextHeaderSignature = getHeaderRenderSignature();
       if (trendChanged && state.appView === "trends" && !state.root?.querySelector(".oq-overview-trends")) {
@@ -708,6 +731,11 @@
     if (action === "select-trend-window") {
       setTrendWindowHours(Number(button.dataset.trendHours || 24));
       render();
+      void refreshTrendHistoryData().then((changed) => {
+        if (changed) {
+          render();
+        }
+      });
       return;
     }
 
@@ -733,6 +761,14 @@
       state.authError = "";
       render();
       void refreshAuthStatus();
+      return;
+    }
+
+    if (action === "flush-trend-history") {
+      void triggerNamedButton("trendHistoryFlush", {
+        successNotice: "Trendhistorie is opgeslagen in flash.",
+        errorPrefix: "Trendhistorie kon niet worden opgeslagen",
+      });
       return;
     }
 

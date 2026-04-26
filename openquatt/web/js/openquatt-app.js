@@ -165,6 +165,8 @@
     systemHeatPower: { domain: "sensor", name: "System Heat Power", optional: true },
     flowSelected: { domain: "sensor", name: "Flow average (Selected)" },
     trendHistoryEnabled: { domain: "switch", name: "Trendopslag", optional: true },
+    trendHistoryFlashEnabled: { domain: "switch", name: "Trendhistorie opslaan in flash", optional: true },
+    trendHistoryFlush: { domain: "button", name: "Trendhistorie nu opslaan", optional: true },
     electricalEnergyDaily: { domain: "sensor", name: "Electrical Energy Daily", optional: true },
     electricalEnergyCumulative: { domain: "sensor", name: "Electrical Energy Cumulative", optional: true },
     heatingElectricalEnergyDaily: { domain: "sensor", name: "Heating Electrical Energy Daily", optional: true },
@@ -575,6 +577,7 @@
     "manualCoolingEnable",
     "silentModeOverride",
     "trendHistoryEnabled",
+    "trendHistoryFlashEnabled",
     ...CIC_COMPATIBILITY_KEYS,
     ...FLOW_SETTING_KEYS,
     ...COOLING_SETTING_KEYS,
@@ -591,7 +594,8 @@
   const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
 
 /* --- js/src/01-runtime.js --- */
-  const TREND_WINDOW_HOURS_OPTIONS = [24, 12, 6, 3];
+  const DEFAULT_TREND_WINDOW_HOURS = 24;
+  const TREND_WINDOW_HOURS_OPTIONS = [3, 12, 24, 72, 168, 336, 720];
 
   const state = {
     mounted: false,
@@ -615,6 +619,8 @@
     trendWindowHours: getStoredTrendWindowHours(),
     trendHistoryRaw: "",
     trendHistoryError: "",
+    trendHistorySignature: "",
+    trendHistoryNowMs: Number.NaN,
     busyAction: "",
     controlError: "",
     controlNotice: "",
@@ -779,14 +785,14 @@
   function getStoredTrendWindowHours() {
     try {
       const stored = Number(window.localStorage.getItem("oq-trend-window-hours"));
-      return TREND_WINDOW_HOURS_OPTIONS.includes(stored) ? stored : TREND_WINDOW_HOURS_OPTIONS[0];
+      return TREND_WINDOW_HOURS_OPTIONS.includes(stored) ? stored : DEFAULT_TREND_WINDOW_HOURS;
     } catch (_error) {
-      return TREND_WINDOW_HOURS_OPTIONS[0];
+      return DEFAULT_TREND_WINDOW_HOURS;
     }
   }
 
   function setTrendWindowHours(hours) {
-    state.trendWindowHours = TREND_WINDOW_HOURS_OPTIONS.includes(hours) ? hours : TREND_WINDOW_HOURS_OPTIONS[0];
+    state.trendWindowHours = TREND_WINDOW_HOURS_OPTIONS.includes(hours) ? hours : DEFAULT_TREND_WINDOW_HOURS;
     try {
       window.localStorage.setItem("oq-trend-window-hours", String(state.trendWindowHours));
     } catch (_error) {
@@ -2928,6 +2934,8 @@
       const changed = Boolean(state.trendHistoryRaw || state.trendHistoryError);
       state.trendHistoryRaw = "";
       state.trendHistoryError = "";
+      state.trendHistorySignature = "";
+      state.trendHistoryNowMs = Number.NaN;
       return changed;
     }
     if (isDevPreviewEnvironmentForFetches()) {
@@ -2935,20 +2943,39 @@
     }
 
     try {
-      const response = await fetch(`${getBasePath()}/trends/history`, { cache: "no-store" });
+      const windowHours = Number(state.trendWindowHours || DEFAULT_TREND_WINDOW_HOURS);
+      const response = await fetch(`${getBasePath()}/trends/history?hours=${encodeURIComponent(String(windowHours))}`, { cache: "no-store" });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
       const raw = await response.text();
-      const changed = raw !== state.trendHistoryRaw || state.trendHistoryError !== "";
-      state.trendHistoryRaw = raw;
+      const lines = raw.split(/\r?\n/);
+      let nowMs = Number.NaN;
+      let body = raw;
+      if (lines.length && lines[0].startsWith("@now|")) {
+        nowMs = Number(lines[0].slice(5));
+        body = lines.slice(1).join("\n");
+      }
+      const signature = `${windowHours}|${body.length}|${body.slice(0, 120)}|${body.slice(-120)}`;
+      const currentNowValid = Number.isFinite(state.trendHistoryNowMs);
+      const nextNowValid = Number.isFinite(nowMs);
+      const nowChanged = nextNowValid
+        ? !currentNowValid || state.trendHistoryNowMs !== nowMs
+        : currentNowValid;
+      const changed = body !== state.trendHistoryRaw || state.trendHistoryError !== "" ||
+        state.trendHistorySignature !== signature || nowChanged;
+      state.trendHistoryRaw = body;
       state.trendHistoryError = "";
+      state.trendHistorySignature = signature;
+      state.trendHistoryNowMs = Number.isFinite(nowMs) ? nowMs : Number.NaN;
       return changed;
     } catch (error) {
       const nextError = `Trendhistorie kon niet worden geladen. ${error.message}`;
       const changed = state.trendHistoryError !== nextError;
       state.trendHistoryError = nextError;
       state.trendHistoryRaw = "";
+      state.trendHistorySignature = "";
+      state.trendHistoryNowMs = Number.NaN;
       return changed;
     }
   }
@@ -2974,7 +3001,7 @@
     const keys = Object.keys(ENTITY_DEFS).filter((key) => !["apply", "reset"].includes(key));
     try {
       await refreshEntities(keys, "all");
-      if (state.appView === "trends") {
+      if (state.appView === "overview" || state.appView === "trends") {
         await refreshTrendHistoryData();
       }
       await refreshAuthStatus();
@@ -3005,7 +3032,9 @@
 
     try {
       await refreshEntities(keys, "state");
-      const trendChanged = state.appView === "trends" ? await refreshTrendHistoryData() : false;
+      const trendChanged = state.appView === "overview" || state.appView === "trends"
+        ? await refreshTrendHistoryData()
+        : false;
       const authChanged = await refreshAuthStatus();
       const nextHeaderSignature = getHeaderRenderSignature();
       if (trendChanged && state.appView === "trends" && !state.root?.querySelector(".oq-overview-trends")) {
@@ -3289,6 +3318,11 @@
     if (action === "select-trend-window") {
       setTrendWindowHours(Number(button.dataset.trendHours || 24));
       render();
+      void refreshTrendHistoryData().then((changed) => {
+        if (changed) {
+          render();
+        }
+      });
       return;
     }
 
@@ -3314,6 +3348,14 @@
       state.authError = "";
       render();
       void refreshAuthStatus();
+      return;
+    }
+
+    if (action === "flush-trend-history") {
+      void triggerNamedButton("trendHistoryFlush", {
+        successNotice: "Trendhistorie is opgeslagen in flash.",
+        errorPrefix: "Trendhistorie kon niet worden opgeslagen",
+      });
       return;
     }
 
@@ -4501,6 +4543,32 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
     );
   }
 
+  function renderSettingsButtonField(key, title, copy, buttonLabel, action, className = "", options = {}) {
+    const busy = state.loadingEntities || state.busyAction === key;
+    const disabled = options.disabled === true;
+    const buttonClass = options.buttonClass || "oq-helper-button oq-helper-button--ghost";
+    const note = options.note || "";
+    return renderSettingsFieldCard(
+      key,
+      title,
+      copy,
+      `
+        <div class="oq-settings-action-field">
+          <button
+            class="${buttonClass}"
+            type="button"
+            data-oq-action="${escapeHtml(action)}"
+            ${busy || disabled ? "disabled" : ""}
+          >
+            ${escapeHtml(buttonLabel)}
+          </button>
+          ${note ? `<p class="oq-settings-action-note">${escapeHtml(note)}</p>` : ""}
+        </div>
+      `,
+      className,
+    );
+  }
+
   function renderSettingsOptionCardsField(key, title, copy, descriptions, className = "") {
     if (!hasEntity(key)) {
       return "";
@@ -5466,15 +5534,36 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
     return renderSettingsSection(
       "Trends",
       "Trendopslag",
-      "Sla 24 uur aan trenddata tijdelijk op in het werkgeheugen. Zet dit uit als je de grafieken niet gebruikt.",
+      "Bewaar de laatste 7 dagen in werkgeheugen en optioneel tot 30 dagen in flash.",
       `
         <div class="oq-settings-grid">
           ${renderSettingsSwitchField(
             "trendHistoryEnabled",
             "Trendopslag",
             "Schakel de trendopslag voor de grafieken in of uit.",
-            "OpenQuatt bewaart trenddata tijdelijk in het werkgeheugen en toont de Trends-tab.",
+            "OpenQuatt bewaart live trenddata in het werkgeheugen zodat je de grafieken kunt blijven gebruiken.",
             "OpenQuatt bewaart geen trenddata en verbergt de Trends-tab."
+          )}
+          ${renderSettingsSwitchField(
+            "trendHistoryFlashEnabled",
+            "Trendhistorie opslaan in flash",
+            "Bewaart trenddata ook na herstart of OTA.",
+            "Trendhistorie wordt bewaard in flash zodat je later verder kunt terugkijken.",
+            "Trendhistorie blijft alleen in het werkgeheugen en is na herstart weg."
+          )}
+          ${renderSettingsButtonField(
+            "trendHistoryFlush",
+            "Trendhistorie nu opslaan",
+            "Schrijf de huidige trendbuffer direct weg naar flash.",
+            "Nu opslaan",
+            "flush-trend-history",
+            "",
+            {
+              disabled: !isEntityActive("trendHistoryFlashEnabled"),
+              note: isEntityActive("trendHistoryFlashEnabled")
+                ? "Handig voor een OTA of een geplande herstart."
+                : "Schakel flashopslag eerst in om de huidige historie te bewaren.",
+            }
           )}
         </div>
       `,
@@ -5616,10 +5705,6 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
           <div class="oq-settings-system-row">
             <span class="oq-settings-system-row-label">Datum/tijd</span>
             <strong class="oq-settings-system-row-value">${escapeHtml(dateTime)}</strong>
-          </div>
-          <div class="oq-settings-system-row">
-            <span class="oq-settings-system-row-label">ESP-temp</span>
-            <strong class="oq-settings-system-row-value">${escapeHtml(state.entities.espInternalTemp ? formatOverviewStatValue("espInternalTemp") : "—")}</strong>
           </div>
           <div class="oq-settings-system-row oq-settings-system-row--with-action">
             <div class="oq-settings-system-row-copy">
@@ -6971,11 +7056,11 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
     });
   }
 
-  const OVERVIEW_TREND_MAX_POINTS = 288;
+  const OVERVIEW_TREND_MAX_POINTS = 360;
 
   function getOverviewTrendWindowHours() {
     const hours = Number(state.trendWindowHours || 24);
-    return TREND_WINDOW_HOURS_OPTIONS.includes(hours) ? hours : TREND_WINDOW_HOURS_OPTIONS[0];
+    return TREND_WINDOW_HOURS_OPTIONS.includes(hours) ? hours : DEFAULT_TREND_WINDOW_HOURS;
   }
 
   function getOverviewTrendWindowMs(windowHours = getOverviewTrendWindowHours()) {
@@ -6984,11 +7069,18 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
 
   function formatOverviewTrendWindowLabel(windowHours = getOverviewTrendWindowHours()) {
     const hours = Number(windowHours) || 24;
+    if (hours >= 72 && hours % 24 === 0) {
+      return `${hours / 24}d`;
+    }
     return `${hours}u`;
   }
 
   function formatOverviewTrendWindowText(windowHours = getOverviewTrendWindowHours()) {
     const hours = Number(windowHours) || 24;
+    if (hours >= 72 && hours % 24 === 0) {
+      const days = hours / 24;
+      return `${days} ${days === 1 ? "dag" : "dagen"}`;
+    }
     return `${hours} uur`;
   }
 
@@ -7076,15 +7168,14 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
       return isDevPreviewEnvironment() ? getOverviewTrendDevMockSamples() : [];
     }
 
-    const uptimeMs = getOverviewUptimeMillis();
     const rows = raw
       .split(/\r?\n/)
       .map(parseOverviewTrendRow)
       .filter(Boolean);
 
     const latestTimestamp = rows.length ? rows[rows.length - 1].t : Number.NaN;
-    const endTime = Number.isFinite(uptimeMs)
-      ? uptimeMs
+    const endTime = Number.isFinite(state.trendHistoryNowMs)
+      ? state.trendHistoryNowMs
       : (Number.isFinite(latestTimestamp) ? latestTimestamp : Number.NaN);
 
     if (!Number.isFinite(endTime)) {
@@ -7185,6 +7276,27 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
     ];
   }
 
+  function getOverviewTrendCardSignature(card) {
+    const latest = card.samples[card.samples.length - 1] || null;
+    return getRenderSignature({
+      id: card.id,
+      windowHours: card.windowHours,
+      sampleCount: card.samples.length,
+      firstTimestamp: card.samples[0]?.t || 0,
+      lastTimestamp: latest?.t || 0,
+      trendSignature: state.trendHistorySignature || "",
+      latestValues: latest ? [
+        latest.outside,
+        latest.supply,
+        latest.room,
+        latest.roomSetpoint,
+        latest.flow,
+        latest.input,
+        latest.output,
+      ] : [],
+    });
+  }
+
   function getOverviewTrendSeriesValue(series, sample) {
     if (!series || !sample) {
       return Number.NaN;
@@ -7239,12 +7351,12 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
     const plotHeight = height - top - bottom;
     const latest = samples[samples.length - 1];
     const mockData = Boolean(options.mockData);
-    const uptimeMs = getOverviewUptimeMillis();
     const endTime = mockData
       ? windowMs
-      : (Number.isFinite(uptimeMs) ? uptimeMs : (latest ? latest.t : 0));
+      : (Number.isFinite(state.trendHistoryNowMs) ? state.trendHistoryNowMs : (latest ? latest.t : 0));
     const startTime = mockData ? 0 : (endTime - windowMs);
     const span = Math.max(endTime - startTime, 1);
+    const uptimeMs = span;
     const range = getOverviewTrendRange(samples, series);
 
     const xOf = (timestamp) => left + (((timestamp - startTime) / span) * plotWidth);
@@ -7350,7 +7462,8 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
   function getOverviewTrendRenderSignature() {
     return getRenderSignature({
       windowHours: getOverviewTrendWindowHours(),
-      samples: getOverviewTrendSamples(),
+      trendSignature: state.trendHistorySignature || "",
+      trendNowMs: Number.isFinite(state.trendHistoryNowMs) ? state.trendHistoryNowMs : 0,
     });
   }
 
@@ -7388,6 +7501,7 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
   function renderOverviewTrendChart(samples, series, mockData = false, windowHours = getOverviewTrendWindowHours()) {
     const model = getOverviewTrendChartModel(samples, series, { mockData, windowHours });
     const windowLabel = formatOverviewTrendWindowLabel(windowHours);
+    const windowText = formatOverviewTrendWindowText(windowHours);
     const midpointLabel = formatOverviewTrendAxisLabel((windowHours * 60) / 2);
     const seriesPaths = model.tracks.flatMap((track) => {
       if (track.points.length < 2) {
@@ -7417,7 +7531,7 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
     }).join("");
 
     return `
-      <svg class="oq-overview-trend-chart" viewBox="0 0 ${model.width} ${model.height}" role="img" aria-label="Trendgrafiek van de laatste ${windowHours} uur">
+      <svg class="oq-overview-trend-chart" viewBox="0 0 ${model.width} ${model.height}" role="img" aria-label="Trendgrafiek van de laatste ${windowText}">
         <rect x="0" y="0" width="${model.width}" height="${model.height}" rx="20" class="oq-overview-trend-chart-bg"></rect>
         ${model.gridXs.map((x) => `<line x1="${x.toFixed(1)}" y1="${model.top}" x2="${x.toFixed(1)}" y2="${model.height - model.bottom}" class="oq-overview-trend-grid oq-overview-trend-grid--vertical"></line>`).join("")}
         ${model.gridYs.map((y) => `<line x1="${model.left}" y1="${y.toFixed(1)}" x2="${model.width - model.right}" y2="${y.toFixed(1)}" class="oq-overview-trend-grid oq-overview-trend-grid--horizontal"></line>`).join("")}
@@ -7444,7 +7558,7 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
     const latest = card.samples[card.samples.length - 1] || null;
     const windowText = formatOverviewTrendWindowText(card.windowHours);
     return `
-      <article class="oq-overview-trendcard oq-overview-trendcard--${escapeHtml(card.tone)}" data-oq-trend-card="${escapeHtml(card.id)}" data-render-signature="${escapeHtml(getRenderSignature(card))}">
+      <article class="oq-overview-trendcard oq-overview-trendcard--${escapeHtml(card.tone)}" data-oq-trend-card="${escapeHtml(card.id)}" data-render-signature="${escapeHtml(getOverviewTrendCardSignature(card))}">
         <div class="oq-overview-trendcard-head">
           <div class="oq-overview-trendcard-copy">
             <p class="oq-overview-trendcard-kicker">${escapeHtml(windowText)}</p>
@@ -7505,8 +7619,29 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
             data-oq-action="select-trend-window"
             data-trend-hours="${hours}"
             aria-pressed="${windowHours === hours ? "true" : "false"}"
-          >${hours}u</button>
+          >${escapeHtml(formatOverviewTrendWindowLabel(hours))}</button>
         `).join("")}
+      </div>
+    `;
+  }
+
+  function renderTrendsInfoToggle() {
+    const infoId = "overview-trends-history";
+    const open = state.settingsInfoOpen === infoId;
+    const copy = "Standaard bewaren we trenddata 7 dagen in het werkgeheugen. Met flashopslag blijft historie ook na herstart of OTA beschikbaar, tot 30 dagen terug.";
+    return `
+      <div class="oq-settings-info oq-overview-trends-info${open ? " is-open" : ""}" data-oq-settings-info="${escapeHtml(infoId)}">
+        <button
+          class="oq-settings-info-button"
+          type="button"
+          data-oq-action="toggle-settings-info"
+          data-info-id="${escapeHtml(infoId)}"
+          aria-label="${escapeHtml("Uitleg bij Trendoverzicht")}"
+          aria-expanded="${open ? "true" : "false"}"
+        >i</button>
+        <div class="oq-settings-info-popover" ${open ? "" : "hidden"}>
+          <p>${escapeHtml(copy)}</p>
+        </div>
       </div>
     `;
   }
@@ -7518,25 +7653,23 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
     return `
       <section class="oq-helper-panel oq-helper-panel--flush">
         <div class="oq-overview-board oq-overview-board--${escapeHtml(state.overviewTheme)}">
+          <div class="oq-overview-trends-info-wrap">
+            ${renderTrendsInfoToggle()}
+          </div>
           <div class="oq-overview-head oq-overview-trends-head">
             <div>
               <p class="oq-helper-label">Trends</p>
-              <h2 class="oq-helper-section-title">Grafieken</h2>
-              <p class="oq-helper-section-copy">Bekijk temperatuur, vermogen, rendement, comfort en flow over 24, 12, 6 of 3 uur.</p>
+              <h2 class="oq-helper-section-title">Trendoverzicht</h2>
+              <p class="oq-helper-section-copy">Bekijk temperatuur, vermogen, rendement, comfort en flow tot 30 dagen terug.</p>
             </div>
-          </div>
-          <div class="oq-overview-trends-toolbar">
-            <div class="oq-overview-trends-note">
-              <span>Opmerking</span>
-              <strong>Max. 24 uur in werkgeheugen</strong>
-              <p>De OpenQuatt Controller bewaart trenddata tijdelijk in het werkgeheugen. Na een herstart verdwijnt die historie.</p>
+            <div class="oq-overview-trends-meta">
+              ${trendHistoryEnabled ? `
+                <div class="oq-overview-trends-window">
+                  <span>Venster</span>
+                  ${renderTrendWindowSwitcher()}
+                </div>
+              ` : ""}
             </div>
-            ${trendHistoryEnabled ? `
-              <div class="oq-overview-trends-window">
-                <span>Venster</span>
-                ${renderTrendWindowSwitcher()}
-              </div>
-            ` : ""}
           </div>
           ${trendHistoryEnabled && hasTrendSamples ? renderOverviewTrendsPanel() : renderOverviewTrendsDisabledNotice()}
         </div>

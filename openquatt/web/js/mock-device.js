@@ -360,6 +360,7 @@
     syncUptimeEntity();
     setEntity("sensor", "Firmware Update Progress", { value: 0, uom: "%" });
     setEntity("text_sensor", "Firmware Update Status", { state: "Idle", value: "Idle" });
+    setEntity("button", "Trendhistorie nu opslaan", { state: "" });
     setEntity("update", "Firmware Update", {
       state: "available",
       value: "available",
@@ -379,6 +380,7 @@
     setEntity("switch", "Manual Cooling Enable", { value: false, state: false });
     setEntity("switch", "CiC Compatibility Mode", { value: false, state: false });
     setEntity("switch", "Trendopslag", { value: true, state: true });
+    setEntity("switch", "Trendhistorie opslaan in flash", { value: true, state: true });
     setEntity("select", "Silent Mode Override", {
       value: "Schedule",
       state: "Schedule",
