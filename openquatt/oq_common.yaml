@@ -176,10 +176,6 @@ globals:
     type: std::string
     restore_value: false
     initial_value: '""'
-  - id: oq_trend_history_enabled
-    type: bool
-    restore_value: true
-    initial_value: 'true'
   - id: oq_overview_trend_row_count
     type: uint16_t
     restore_value: false
@@ -198,7 +194,7 @@ script:
     then:
       - lambda: |-
           // Sample the live telemetry and keep the last 24 hours in RAM.
-          if (!id(oq_trend_history_enabled)) {
+          if (!id(oq_trend_history_enabled_switch).state) {
             return;
           }
           constexpr uint32_t trend_sample_ms = 5UL * 60UL * 1000UL;
@@ -432,15 +428,11 @@ switch:
     icon: mdi:chart-line
     entity_category: config
     optimistic: true
-    lambda: |-
-      return id(oq_trend_history_enabled);
+    restore_mode: RESTORE_DEFAULT_ON
     turn_on_action:
-      - lambda: |-
-          id(oq_trend_history_enabled) = true;
       - script.execute: oq_capture_overview_trend_sample
     turn_off_action:
       - lambda: |-
-          id(oq_trend_history_enabled) = false;
           id(oq_overview_trend_rows).clear();
           id(oq_overview_trend_row_count) = 0;
           id(oq_overview_trend_last_sample_ms) = 0;
