@@ -152,6 +152,32 @@
     );
   }
 
+  function renderSettingsButtonField(key, title, copy, buttonLabel, action, className = "", options = {}) {
+    const busy = state.loadingEntities || state.busyAction === key;
+    const disabled = options.disabled === true;
+    const buttonClass = options.buttonClass || "oq-helper-button oq-helper-button--ghost";
+    const note = options.note || "";
+    return renderSettingsFieldCard(
+      key,
+      title,
+      copy,
+      `
+        <div class="oq-settings-action-field">
+          <button
+            class="${buttonClass}"
+            type="button"
+            data-oq-action="${escapeHtml(action)}"
+            ${busy || disabled ? "disabled" : ""}
+          >
+            ${escapeHtml(buttonLabel)}
+          </button>
+          ${note ? `<p class="oq-settings-action-note">${escapeHtml(note)}</p>` : ""}
+        </div>
+      `,
+      className,
+    );
+  }
+
   function renderSettingsOptionCardsField(key, title, copy, descriptions, className = "") {
     if (!hasEntity(key)) {
       return "";
@@ -1117,15 +1143,36 @@
     return renderSettingsSection(
       "Trends",
       "Trendopslag",
-      "Sla 24 uur aan trenddata tijdelijk op in het werkgeheugen. Zet dit uit als je de grafieken niet gebruikt.",
+      "Bewaar de laatste 7 dagen in werkgeheugen en optioneel tot 30 dagen in flash.",
       `
         <div class="oq-settings-grid">
           ${renderSettingsSwitchField(
             "trendHistoryEnabled",
             "Trendopslag",
             "Schakel de trendopslag voor de grafieken in of uit.",
-            "OpenQuatt bewaart trenddata tijdelijk in het werkgeheugen en toont de Trends-tab.",
+            "OpenQuatt bewaart live trenddata in het werkgeheugen zodat je de grafieken kunt blijven gebruiken.",
             "OpenQuatt bewaart geen trenddata en verbergt de Trends-tab."
+          )}
+          ${renderSettingsSwitchField(
+            "trendHistoryFlashEnabled",
+            "Trendhistorie opslaan in flash",
+            "Bewaart trenddata ook na herstart of OTA.",
+            "Trendhistorie wordt bewaard in flash zodat je later verder kunt terugkijken.",
+            "Trendhistorie blijft alleen in het werkgeheugen en is na herstart weg."
+          )}
+          ${renderSettingsButtonField(
+            "trendHistoryFlush",
+            "Trendhistorie nu opslaan",
+            "Schrijf de huidige trendbuffer direct weg naar flash.",
+            "Nu opslaan",
+            "flush-trend-history",
+            "",
+            {
+              disabled: !isEntityActive("trendHistoryFlashEnabled"),
+              note: isEntityActive("trendHistoryFlashEnabled")
+                ? "Handig voor een OTA of een geplande herstart."
+                : "Schakel flashopslag eerst in om de huidige historie te bewaren.",
+            }
           )}
         </div>
       `,
@@ -1267,10 +1314,6 @@
           <div class="oq-settings-system-row">
             <span class="oq-settings-system-row-label">Datum/tijd</span>
             <strong class="oq-settings-system-row-value">${escapeHtml(dateTime)}</strong>
-          </div>
-          <div class="oq-settings-system-row">
-            <span class="oq-settings-system-row-label">ESP-temp</span>
-            <strong class="oq-settings-system-row-value">${escapeHtml(state.entities.espInternalTemp ? formatOverviewStatValue("espInternalTemp") : "—")}</strong>
           </div>
           <div class="oq-settings-system-row oq-settings-system-row--with-action">
             <div class="oq-settings-system-row-copy">

@@ -172,18 +172,6 @@ globals:
     type: int
     restore_value: false
     initial_value: '0'
-  - id: oq_overview_trend_rows
-    type: std::string
-    restore_value: false
-    initial_value: '""'
-  - id: oq_overview_trend_row_count
-    type: uint16_t
-    restore_value: false
-    initial_value: '0'
-  - id: oq_overview_trend_last_sample_ms
-    type: uint32_t
-    restore_value: false
-    initial_value: '0'
 
 # ==============================================================================
 # OVERVIEW TRENDS
@@ -193,19 +181,10 @@ script:
     mode: single
     then:
       - lambda: |-
-          // Sample the live telemetry and keep the last 24 hours in RAM.
+          // Verzamel een compacte trendregel en sla alleen echte meetwaarden op.
           if (!id(oq_trend_history_enabled_switch).state) {
             return;
           }
-          constexpr uint32_t trend_sample_ms = 5UL * 60UL * 1000UL;
-          constexpr uint16_t trend_capacity = 288;
-
-          const uint32_t now_ms = (uint32_t) millis();
-          const uint32_t last_sample_ms = id(oq_overview_trend_last_sample_ms);
-          if (last_sample_ms != 0 && (uint32_t) (now_ms - last_sample_ms) < trend_sample_ms) {
-            return;
-          }
-
           const float outside_c = id(outside_temp_selected).has_state() ? id(outside_temp_selected).state : NAN;
           const float room_c = id(room_temp_selected).has_state() ? id(room_temp_selected).state : NAN;
           const float room_sp_c = id(room_setpoint_selected).has_state() ? id(room_setpoint_selected).state : NAN;
@@ -232,48 +211,13 @@ script:
             return;
           }
 
-          auto &rows = id(oq_overview_trend_rows);
-          if (rows.capacity() < 24576) {
-            rows.reserve(24576);
-          }
-
-          char row[128];
-          snprintf(
-            row,
-            sizeof(row),
-            "%lu|%.2f|%.2f|%.2f|%.2f|%.0f|%.0f|%.0f",
-            (unsigned long) now_ms,
-            outside_c,
-            supply_c,
-            room_c,
-            room_sp_c,
-            flow_lph,
-            input_w,
-            output_w
-          );
-
-          if (!rows.empty()) {
-            rows.push_back('\n');
-          }
-          rows += row;
-
-          if (id(oq_overview_trend_row_count) >= trend_capacity) {
-            const size_t cut = rows.find('\n');
-            if (cut != std::string::npos) {
-              rows.erase(0, cut + 1);
-            } else {
-              rows.clear();
-              id(oq_overview_trend_row_count) = 0;
-            }
-          } else {
-            id(oq_overview_trend_row_count)++;
-          }
-
-          id(oq_overview_trend_last_sample_ms) = now_ms;
+          id(oq_trends_endpoint).capture_sample(outside_c, supply_c, room_c, room_sp_c, flow_lph, input_w, output_w);
 
 openquatt_trends:
   id: oq_trends_endpoint
-  history: oq_overview_trend_rows
+  capture_switch: oq_trend_history_enabled_switch
+  flash_switch: oq_trend_history_flash_switch
+  clock: oq_time
 
 # ==============================================================================
 # DIAGNOSTIC ENTITIES
@@ -397,6 +341,17 @@ button:
       sorting_group_id: oq_system_diagnostics
 
   - platform: template
+    id: oq_trend_history_flush_button
+    name: Trendhistorie nu opslaan
+    icon: mdi:content-save
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_system_diagnostics
+    on_press:
+      - lambda: |-
+          id(oq_trends_endpoint).force_flush();
+
+  - platform: template
     id: oq_check_firmware_updates
     name: Check Firmware Updates
     icon: mdi:update
@@ -433,9 +388,23 @@ switch:
       - script.execute: oq_capture_overview_trend_sample
     turn_off_action:
       - lambda: |-
-          id(oq_overview_trend_rows).clear();
-          id(oq_overview_trend_row_count) = 0;
-          id(oq_overview_trend_last_sample_ms) = 0;
+          id(oq_trends_endpoint).clear_history();
+    web_server:
+      sorting_group_id: oq_system_diagnostics
+
+  - platform: template
+    id: oq_trend_history_flash_switch
+    name: Trendhistorie opslaan in flash
+    icon: mdi:database
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    turn_on_action:
+      - lambda: |-
+          id(oq_trends_endpoint).set_flash_enabled(true);
+    turn_off_action:
+      - lambda: |-
+          id(oq_trends_endpoint).set_flash_enabled(false);
     web_server:
       sorting_group_id: oq_system_diagnostics
 

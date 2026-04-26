@@ -756,11 +756,11 @@
     });
   }
 
-  const OVERVIEW_TREND_MAX_POINTS = 288;
+  const OVERVIEW_TREND_MAX_POINTS = 360;
 
   function getOverviewTrendWindowHours() {
     const hours = Number(state.trendWindowHours || 24);
-    return TREND_WINDOW_HOURS_OPTIONS.includes(hours) ? hours : TREND_WINDOW_HOURS_OPTIONS[0];
+    return TREND_WINDOW_HOURS_OPTIONS.includes(hours) ? hours : DEFAULT_TREND_WINDOW_HOURS;
   }
 
   function getOverviewTrendWindowMs(windowHours = getOverviewTrendWindowHours()) {
@@ -769,11 +769,18 @@
 
   function formatOverviewTrendWindowLabel(windowHours = getOverviewTrendWindowHours()) {
     const hours = Number(windowHours) || 24;
+    if (hours >= 72 && hours % 24 === 0) {
+      return `${hours / 24}d`;
+    }
     return `${hours}u`;
   }
 
   function formatOverviewTrendWindowText(windowHours = getOverviewTrendWindowHours()) {
     const hours = Number(windowHours) || 24;
+    if (hours >= 72 && hours % 24 === 0) {
+      const days = hours / 24;
+      return `${days} ${days === 1 ? "dag" : "dagen"}`;
+    }
     return `${hours} uur`;
   }
 
@@ -861,15 +868,14 @@
       return isDevPreviewEnvironment() ? getOverviewTrendDevMockSamples() : [];
     }
 
-    const uptimeMs = getOverviewUptimeMillis();
     const rows = raw
       .split(/\r?\n/)
       .map(parseOverviewTrendRow)
       .filter(Boolean);
 
     const latestTimestamp = rows.length ? rows[rows.length - 1].t : Number.NaN;
-    const endTime = Number.isFinite(uptimeMs)
-      ? uptimeMs
+    const endTime = Number.isFinite(state.trendHistoryNowMs)
+      ? state.trendHistoryNowMs
       : (Number.isFinite(latestTimestamp) ? latestTimestamp : Number.NaN);
 
     if (!Number.isFinite(endTime)) {
@@ -970,6 +976,27 @@
     ];
   }
 
+  function getOverviewTrendCardSignature(card) {
+    const latest = card.samples[card.samples.length - 1] || null;
+    return getRenderSignature({
+      id: card.id,
+      windowHours: card.windowHours,
+      sampleCount: card.samples.length,
+      firstTimestamp: card.samples[0]?.t || 0,
+      lastTimestamp: latest?.t || 0,
+      trendSignature: state.trendHistorySignature || "",
+      latestValues: latest ? [
+        latest.outside,
+        latest.supply,
+        latest.room,
+        latest.roomSetpoint,
+        latest.flow,
+        latest.input,
+        latest.output,
+      ] : [],
+    });
+  }
+
   function getOverviewTrendSeriesValue(series, sample) {
     if (!series || !sample) {
       return Number.NaN;
@@ -1024,10 +1051,9 @@
     const plotHeight = height - top - bottom;
     const latest = samples[samples.length - 1];
     const mockData = Boolean(options.mockData);
-    const uptimeMs = getOverviewUptimeMillis();
     const endTime = mockData
       ? windowMs
-      : (Number.isFinite(uptimeMs) ? uptimeMs : (latest ? latest.t : 0));
+      : (Number.isFinite(state.trendHistoryNowMs) ? state.trendHistoryNowMs : (latest ? latest.t : 0));
     const startTime = mockData ? 0 : (endTime - windowMs);
     const span = Math.max(endTime - startTime, 1);
     const range = getOverviewTrendRange(samples, series);
@@ -1135,7 +1161,8 @@
   function getOverviewTrendRenderSignature() {
     return getRenderSignature({
       windowHours: getOverviewTrendWindowHours(),
-      samples: getOverviewTrendSamples(),
+      trendSignature: state.trendHistorySignature || "",
+      trendNowMs: Number.isFinite(state.trendHistoryNowMs) ? state.trendHistoryNowMs : 0,
     });
   }
 
@@ -1173,6 +1200,7 @@
   function renderOverviewTrendChart(samples, series, mockData = false, windowHours = getOverviewTrendWindowHours()) {
     const model = getOverviewTrendChartModel(samples, series, { mockData, windowHours });
     const windowLabel = formatOverviewTrendWindowLabel(windowHours);
+    const windowText = formatOverviewTrendWindowText(windowHours);
     const midpointLabel = formatOverviewTrendAxisLabel((windowHours * 60) / 2);
     const seriesPaths = model.tracks.flatMap((track) => {
       if (track.points.length < 2) {
@@ -1202,7 +1230,7 @@
     }).join("");
 
     return `
-      <svg class="oq-overview-trend-chart" viewBox="0 0 ${model.width} ${model.height}" role="img" aria-label="Trendgrafiek van de laatste ${windowHours} uur">
+      <svg class="oq-overview-trend-chart" viewBox="0 0 ${model.width} ${model.height}" role="img" aria-label="Trendgrafiek van de laatste ${windowText}">
         <rect x="0" y="0" width="${model.width}" height="${model.height}" rx="20" class="oq-overview-trend-chart-bg"></rect>
         ${model.gridXs.map((x) => `<line x1="${x.toFixed(1)}" y1="${model.top}" x2="${x.toFixed(1)}" y2="${model.height - model.bottom}" class="oq-overview-trend-grid oq-overview-trend-grid--vertical"></line>`).join("")}
         ${model.gridYs.map((y) => `<line x1="${model.left}" y1="${y.toFixed(1)}" x2="${model.width - model.right}" y2="${y.toFixed(1)}" class="oq-overview-trend-grid oq-overview-trend-grid--horizontal"></line>`).join("")}
@@ -1229,7 +1257,7 @@
     const latest = card.samples[card.samples.length - 1] || null;
     const windowText = formatOverviewTrendWindowText(card.windowHours);
     return `
-      <article class="oq-overview-trendcard oq-overview-trendcard--${escapeHtml(card.tone)}" data-oq-trend-card="${escapeHtml(card.id)}" data-render-signature="${escapeHtml(getRenderSignature(card))}">
+      <article class="oq-overview-trendcard oq-overview-trendcard--${escapeHtml(card.tone)}" data-oq-trend-card="${escapeHtml(card.id)}" data-render-signature="${escapeHtml(getOverviewTrendCardSignature(card))}">
         <div class="oq-overview-trendcard-head">
           <div class="oq-overview-trendcard-copy">
             <p class="oq-overview-trendcard-kicker">${escapeHtml(windowText)}</p>
@@ -1290,7 +1318,7 @@
             data-oq-action="select-trend-window"
             data-trend-hours="${hours}"
             aria-pressed="${windowHours === hours ? "true" : "false"}"
-          >${hours}u</button>
+          >${escapeHtml(formatOverviewTrendWindowLabel(hours))}</button>
         `).join("")}
       </div>
     `;
@@ -1306,15 +1334,15 @@
           <div class="oq-overview-head oq-overview-trends-head">
             <div>
               <p class="oq-helper-label">Trends</p>
-              <h2 class="oq-helper-section-title">Grafieken</h2>
-              <p class="oq-helper-section-copy">Bekijk temperatuur, vermogen, rendement, comfort en flow over 24, 12, 6 of 3 uur.</p>
+              <h2 class="oq-helper-section-title">Trendoverzicht</h2>
+              <p class="oq-helper-section-copy">Bekijk temperatuur, vermogen, rendement, comfort en flow over 3 uur tot 30 dagen.</p>
             </div>
           </div>
           <div class="oq-overview-trends-toolbar">
             <div class="oq-overview-trends-note">
               <span>Opmerking</span>
-              <strong>Max. 24 uur in werkgeheugen</strong>
-              <p>De OpenQuatt Controller bewaart trenddata tijdelijk in het werkgeheugen. Na een herstart verdwijnt die historie.</p>
+              <strong>7 dagen in werkgeheugen, optioneel 30 dagen in flash</strong>
+              <p>De OpenQuatt Controller bewaart trenddata standaard tijdelijk in het werkgeheugen. Met flashopslag blijft historie ook na herstart of OTA beschikbaar.</p>
             </div>
             ${trendHistoryEnabled ? `
               <div class="oq-overview-trends-window">

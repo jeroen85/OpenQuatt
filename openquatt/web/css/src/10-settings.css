@@ -457,6 +457,19 @@
   flex: 1;
 }
 
+.oq-settings-action-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.oq-settings-action-note {
+  margin: 0;
+  color: var(--oq-helper-soft);
+  line-height: 1.5;
+}
+
 .oq-settings-field--span-2 {
   grid-column: 1 / -1;
 }
