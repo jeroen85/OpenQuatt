@@ -586,6 +586,7 @@ text_sensor:
     name: "Overview Trend History"
     icon: mdi:chart-line
     entity_category: diagnostic
+    internal: true
     disabled_by_default: true
     update_interval: 5min
     lambda: |-
