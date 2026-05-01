@@ -300,7 +300,7 @@ bool OpenQuattWebAuth::apply_storage_(const AuthStorage &storage, const char *so
 
   web_server_base::global_web_server_base->set_auth_username(storage.username);
   web_server_base::global_web_server_base->set_auth_password(storage.password);
-  this->publish_state_(source);
+  this->publish_state_();
 
   return true;
 }
@@ -316,7 +316,7 @@ bool OpenQuattWebAuth::suspend_auth_runtime_(const char *source) {
 
   web_server_base::global_web_server_base->set_auth_username("");
   web_server_base::global_web_server_base->set_auth_password("");
-  this->publish_state_(source);
+  this->publish_state_();
   return true;
 }
 
@@ -400,14 +400,7 @@ bool OpenQuattWebAuth::restore_suspended_auth_if_needed_() {
   return this->apply_storage_(this->suspended_storage_, "stored");
 }
 
-void OpenQuattWebAuth::publish_state_(const char *source) {
-  if (this->active_username_text_sensor_ != nullptr) {
-    this->active_username_text_sensor_->publish_state(this->active_username_);
-  }
-  if (this->credential_source_text_sensor_ != nullptr) {
-    this->credential_source_text_sensor_->publish_state(source != nullptr ? source : "");
-  }
-}
+void OpenQuattWebAuth::publish_state_() {}
 
 void OpenQuattWebAuth::register_http_handlers_() {
   if (this->handlers_registered_) {

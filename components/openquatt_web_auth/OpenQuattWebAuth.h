@@ -2,7 +2,6 @@
 
 #include <string>
 
-#include "esphome/components/text_sensor/text_sensor.h"
 #include "esphome/components/web_server_base/web_server_base.h"
 #include "esphome/core/component.h"
 #include "esphome/core/preferences.h"
@@ -15,12 +14,6 @@ class OpenQuattWebAuth : public Component {
   void set_bootstrap_username(const std::string &bootstrap_username) { this->bootstrap_username_ = bootstrap_username; }
   void set_bootstrap_password(const std::string &bootstrap_password) { this->bootstrap_password_ = bootstrap_password; }
   void set_default_auth_enabled(bool default_auth_enabled) { this->default_auth_enabled_ = default_auth_enabled; }
-  void set_active_username_text_sensor(text_sensor::TextSensor *text_sensor) {
-    this->active_username_text_sensor_ = text_sensor;
-  }
-  void set_credential_source_text_sensor(text_sensor::TextSensor *text_sensor) {
-    this->credential_source_text_sensor_ = text_sensor;
-  }
 
   void setup() override;
   void loop() override;
@@ -55,7 +48,7 @@ class OpenQuattWebAuth : public Component {
   bool apply_storage_(const AuthStorage &storage, const char *source);
   bool build_storage_(const std::string &username, const std::string &password, AuthStorage *storage);
   bool is_valid_storage_(const AuthStorage &storage) const;
-  void publish_state_(const char *source);
+  void publish_state_();
   void register_http_handlers_();
   bool suspend_auth_runtime_(const char *source);
   void clear_setup_window_();
@@ -70,8 +63,6 @@ class OpenQuattWebAuth : public Component {
   std::string csrf_token_;
   bool default_auth_enabled_{true};
   ESPPreferenceObject pref_;
-  text_sensor::TextSensor *active_username_text_sensor_{nullptr};
-  text_sensor::TextSensor *credential_source_text_sensor_{nullptr};
   bool handlers_registered_{false};
   uint32_t setup_window_until_ms_{0};
   AuthStorage suspended_storage_{};
