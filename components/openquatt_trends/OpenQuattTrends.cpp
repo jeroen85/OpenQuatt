@@ -240,8 +240,6 @@ void OpenQuattTrends::rebase_ram_history_(uint64_t offset_ms) {
       this->flash_builder_.samples[i].timestamp_ms += offset_ms;
     }
   }
-
-  this->flash_latest_timestamp_ms_ += offset_ms;
 }
 
 void OpenQuattTrends::sync_time_state_() {
@@ -619,11 +617,13 @@ void OpenQuattTrends::capture_sample(float outside_c, float supply_c, float room
     return;
   }
 
-  const uint64_t now_ms = this->current_time_ms_();
-  if (this->last_capture_ms_ != 0 && static_cast<uint64_t>(now_ms - this->last_capture_ms_) < SAMPLE_INTERVAL_MS) {
+  const uint32_t now_monotonic_ms = static_cast<uint32_t>(millis());
+  if (this->last_capture_ms_ != 0 &&
+      static_cast<uint32_t>(now_monotonic_ms - static_cast<uint32_t>(this->last_capture_ms_)) < SAMPLE_INTERVAL_MS) {
     return;
   }
 
+  const uint64_t now_ms = this->current_time_ms_();
   const TrendValues values = this->pack_values_(outside_c, supply_c, room_c, room_setpoint_c, flow_lph, input_w, output_w);
   const bool any_valid = values.outside_c_x10 != INT16_MIN || values.supply_c_x10 != INT16_MIN ||
                          values.room_c_x10 != INT16_MIN || values.room_setpoint_c_x10 != INT16_MIN ||
@@ -634,7 +634,7 @@ void OpenQuattTrends::capture_sample(float outside_c, float supply_c, float room
 
   const TrendSample sample = this->make_sample_(now_ms, values);
   this->push_ram_sample_(sample);
-  this->last_capture_ms_ = static_cast<uint32_t>(millis());
+  this->last_capture_ms_ = now_monotonic_ms;
 
   if (this->flash_enabled_) {
     this->append_sample_to_flash_(sample);
@@ -860,6 +860,9 @@ void OpenQuattTrends::write_samples_for_history_(AsyncResponseStream *stream, ui
 
   if (this->flash_enabled_ && this->flash_archive_scanned_) {
     for (const auto &info : this->flash_blocks_) {
+      if (info.end_timestamp_ms < cutoff_ms) {
+        continue;
+      }
       std::vector<TrendSample> block_samples;
       if (!this->read_flash_block_(info, &block_samples)) {
         continue;

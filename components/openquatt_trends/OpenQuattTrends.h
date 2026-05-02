@@ -164,7 +164,7 @@ class OpenQuattTrends : public Component {
   bool flash_dirty_{false};
 
   uint32_t next_flash_sequence_{0};
-  uint64_t last_capture_ms_{0};
+  uint32_t last_capture_ms_{0};
   uint32_t last_flash_flush_ms_{0};
   uint64_t flash_latest_timestamp_ms_{0};
 
