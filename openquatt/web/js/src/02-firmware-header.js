@@ -579,6 +579,76 @@
     return new Promise((resolve) => window.setTimeout(resolve, ms));
   }
 
+  function beginDeviceReconnect(mode = "reconnect", error = "") {
+    if (!state.deviceReconnectMode) {
+      state.deviceReconnectStartedAt = Date.now();
+    }
+    state.deviceReconnectMode = mode;
+    state.deviceReconnectLastError = error ? String(error) : state.deviceReconnectLastError;
+    state.systemModal = "";
+    state.updateModalOpen = false;
+    state.controlError = "";
+  }
+
+  function clearDeviceReconnect() {
+    if (!state.deviceReconnectMode && !state.entitySyncFailureCount) {
+      return;
+    }
+    state.deviceReconnectMode = "";
+    state.deviceReconnectStartedAt = 0;
+    state.deviceReconnectLastError = "";
+    state.entitySyncFailureCount = 0;
+  }
+
+  function getDeviceReconnectTitle() {
+    if (state.deviceReconnectMode === "ota") {
+      return "OpenQuatt wordt bijgewerkt";
+    }
+    if (state.deviceReconnectMode === "restart") {
+      return "OpenQuatt herstart";
+    }
+    return "Verbinding herstellen";
+  }
+
+  function getDeviceReconnectCopy() {
+    if (state.deviceReconnectMode === "ota") {
+      return "De controller installeert de update en start daarna opnieuw op. Deze melding verdwijnt zodra de web-app weer gegevens ontvangt.";
+    }
+    if (state.deviceReconnectMode === "restart") {
+      return "De controller start opnieuw op. De web-app probeert automatisch opnieuw verbinding te maken.";
+    }
+    return "De web-app krijgt tijdelijk geen gegevens van de controller. We proberen automatisch opnieuw te verbinden.";
+  }
+
+  function renderDeviceReconnectModal() {
+    if (!state.deviceReconnectMode) {
+      return "";
+    }
+    const startedAt = Number(state.deviceReconnectStartedAt || 0);
+    const elapsedSeconds = startedAt > 0 ? Math.max(0, Math.round((Date.now() - startedAt) / 1000)) : 0;
+    const elapsedCopy = elapsedSeconds > 0 ? `${elapsedSeconds}s bezig` : "Net gestart";
+    return `
+      <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="reconnect">
+        <section class="oq-helper-modal oq-helper-modal--reconnect" role="status" aria-live="polite" aria-labelledby="oq-reconnect-modal-title">
+          <div class="oq-helper-modal-head">
+            <div>
+              <p class="oq-helper-modal-kicker">Systeem</p>
+              <h2 class="oq-helper-modal-title" id="oq-reconnect-modal-title">${escapeHtml(getDeviceReconnectTitle())}</h2>
+            </div>
+          </div>
+          <p class="oq-helper-modal-copy">${escapeHtml(getDeviceReconnectCopy())}</p>
+          <div class="oq-helper-reconnect-status">
+            <span class="oq-helper-reconnect-spinner" aria-hidden="true"></span>
+            <div>
+              <strong>Wachten op gegevens</strong>
+              <span>${escapeHtml(elapsedCopy)}</span>
+            </div>
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
   function primeFirmwareUpdateState(channel = getFirmwareChannelLabel()) {
     const entity = getFirmwareUpdateEntity() || {};
     const current = getFirmwareCurrentVersion(entity);
@@ -615,6 +685,9 @@
       await wait(attempt === 0 ? 700 : 1000);
       try {
         await refreshEntities(FIRMWARE_MODAL_KEYS, "all");
+        if (getFirmwareProgressPhase() === "rebooting") {
+          beginDeviceReconnect("ota");
+        }
         render();
 
         if (

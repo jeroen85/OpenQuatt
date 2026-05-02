@@ -74,6 +74,7 @@
       ${renderQuickStartModal()}
       ${renderUpdateModal()}
       ${renderSystemModal()}
+      ${renderDeviceReconnectModal()}
     `;
     state.settingsRenderSignature = state.appView === "settings" ? getSettingsRenderSignature() : "";
     state.headerRenderSignature = getHeaderRenderSignature();

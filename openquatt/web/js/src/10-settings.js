@@ -594,21 +594,23 @@
     const systemSummary = stack.querySelector(".oq-settings-system-summary");
     if (systemSummary) {
       const rows = systemSummary.querySelectorAll(".oq-settings-system-row");
-      const values = [
-        formatUptimeFromMeta(),
-        getDeviceIpAddress(),
-        getUpdateStatus(),
-        formatDiagnosticsDateTime(),
-        state.entities.espInternalTemp ? formatOverviewStatValue("espInternalTemp") : "—",
-      ];
+      const values = {
+        uptime: formatUptimeFromMeta(),
+        ip: getDeviceIpAddress(),
+        updates: getUpdateStatus(),
+        datetime: formatDiagnosticsDateTime(),
+        espTemp: getEspTemperatureLabel(),
+        restart: "Opnieuw opstarten",
+      };
 
-      rows.forEach((row, index) => {
+      rows.forEach((row) => {
         const valueNode = row.querySelector(".oq-settings-system-row-value");
+        const key = row.dataset.oqDiagnosticsRow || "";
         if (!valueNode) {
           return;
         }
-        if (index < values.length) {
-          const nextValue = values[index];
+        if (Object.prototype.hasOwnProperty.call(values, key)) {
+          const nextValue = values[key];
           if (valueNode.textContent !== nextValue) {
             valueNode.textContent = nextValue;
           }
@@ -1362,15 +1364,15 @@
       "Snelle statusinformatie voor support, controle en onderhoud.",
       `
         <div class="oq-settings-system-summary">
-          <div class="oq-settings-system-row">
+          <div class="oq-settings-system-row" data-oq-diagnostics-row="uptime">
             <span class="oq-settings-system-row-label">Uptime</span>
             <strong class="oq-settings-system-row-value">${escapeHtml(formatUptimeFromMeta())}</strong>
           </div>
-          <div class="oq-settings-system-row">
+          <div class="oq-settings-system-row" data-oq-diagnostics-row="ip">
             <span class="oq-settings-system-row-label">IP-adres</span>
             <strong class="oq-settings-system-row-value">${escapeHtml(getDeviceIpAddress())}</strong>
           </div>
-          <div class="oq-settings-system-row oq-settings-system-row--with-action">
+          <div class="oq-settings-system-row oq-settings-system-row--with-action" data-oq-diagnostics-row="updates">
             <div class="oq-settings-system-row-copy">
               <p class="oq-settings-system-row-label">Updates</p>
               <strong class="oq-settings-system-row-value">${escapeHtml(updateStatus)}</strong>
@@ -1383,11 +1385,15 @@
               Openen
             </button>
           </div>
-          <div class="oq-settings-system-row">
+          <div class="oq-settings-system-row" data-oq-diagnostics-row="datetime">
             <span class="oq-settings-system-row-label">Datum/tijd</span>
             <strong class="oq-settings-system-row-value">${escapeHtml(dateTime)}</strong>
           </div>
-          <div class="oq-settings-system-row oq-settings-system-row--with-action">
+          <div class="oq-settings-system-row" data-oq-diagnostics-row="espTemp">
+            <span class="oq-settings-system-row-label">ESP-temp</span>
+            <strong class="oq-settings-system-row-value">${escapeHtml(getEspTemperatureLabel())}</strong>
+          </div>
+          <div class="oq-settings-system-row oq-settings-system-row--with-action" data-oq-diagnostics-row="restart">
             <div class="oq-settings-system-row-copy">
               <p class="oq-settings-system-row-label">Herstart OpenQuatt</p>
               <strong class="oq-settings-system-row-value">Opnieuw opstarten</strong>

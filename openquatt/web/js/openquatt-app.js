@@ -633,6 +633,11 @@
     trendHistoryError: "",
     trendHistorySignature: "",
     trendHistoryNowMs: Number.NaN,
+    deviceReconnectMode: "",
+    deviceReconnectStartedAt: 0,
+    deviceReconnectLastError: "",
+    entitySyncFailureCount: 0,
+    lastEntitySyncAt: 0,
     busyAction: "",
     controlError: "",
     controlNotice: "",
@@ -1800,6 +1805,76 @@
     return new Promise((resolve) => window.setTimeout(resolve, ms));
   }
 
+  function beginDeviceReconnect(mode = "reconnect", error = "") {
+    if (!state.deviceReconnectMode) {
+      state.deviceReconnectStartedAt = Date.now();
+    }
+    state.deviceReconnectMode = mode;
+    state.deviceReconnectLastError = error ? String(error) : state.deviceReconnectLastError;
+    state.systemModal = "";
+    state.updateModalOpen = false;
+    state.controlError = "";
+  }
+
+  function clearDeviceReconnect() {
+    if (!state.deviceReconnectMode && !state.entitySyncFailureCount) {
+      return;
+    }
+    state.deviceReconnectMode = "";
+    state.deviceReconnectStartedAt = 0;
+    state.deviceReconnectLastError = "";
+    state.entitySyncFailureCount = 0;
+  }
+
+  function getDeviceReconnectTitle() {
+    if (state.deviceReconnectMode === "ota") {
+      return "OpenQuatt wordt bijgewerkt";
+    }
+    if (state.deviceReconnectMode === "restart") {
+      return "OpenQuatt herstart";
+    }
+    return "Verbinding herstellen";
+  }
+
+  function getDeviceReconnectCopy() {
+    if (state.deviceReconnectMode === "ota") {
+      return "De controller installeert de update en start daarna opnieuw op. Deze melding verdwijnt zodra de web-app weer gegevens ontvangt.";
+    }
+    if (state.deviceReconnectMode === "restart") {
+      return "De controller start opnieuw op. De web-app probeert automatisch opnieuw verbinding te maken.";
+    }
+    return "De web-app krijgt tijdelijk geen gegevens van de controller. We proberen automatisch opnieuw te verbinden.";
+  }
+
+  function renderDeviceReconnectModal() {
+    if (!state.deviceReconnectMode) {
+      return "";
+    }
+    const startedAt = Number(state.deviceReconnectStartedAt || 0);
+    const elapsedSeconds = startedAt > 0 ? Math.max(0, Math.round((Date.now() - startedAt) / 1000)) : 0;
+    const elapsedCopy = elapsedSeconds > 0 ? `${elapsedSeconds}s bezig` : "Net gestart";
+    return `
+      <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="reconnect">
+        <section class="oq-helper-modal oq-helper-modal--reconnect" role="status" aria-live="polite" aria-labelledby="oq-reconnect-modal-title">
+          <div class="oq-helper-modal-head">
+            <div>
+              <p class="oq-helper-modal-kicker">Systeem</p>
+              <h2 class="oq-helper-modal-title" id="oq-reconnect-modal-title">${escapeHtml(getDeviceReconnectTitle())}</h2>
+            </div>
+          </div>
+          <p class="oq-helper-modal-copy">${escapeHtml(getDeviceReconnectCopy())}</p>
+          <div class="oq-helper-reconnect-status">
+            <span class="oq-helper-reconnect-spinner" aria-hidden="true"></span>
+            <div>
+              <strong>Wachten op gegevens</strong>
+              <span>${escapeHtml(elapsedCopy)}</span>
+            </div>
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
   function primeFirmwareUpdateState(channel = getFirmwareChannelLabel()) {
     const entity = getFirmwareUpdateEntity() || {};
     const current = getFirmwareCurrentVersion(entity);
@@ -1836,6 +1911,9 @@
       await wait(attempt === 0 ? 700 : 1000);
       try {
         await refreshEntities(FIRMWARE_MODAL_KEYS, "all");
+        if (getFirmwareProgressPhase() === "rebooting") {
+          beginDeviceReconnect("ota");
+        }
         render();
 
         if (
@@ -2880,6 +2958,45 @@
     return response.json();
   }
 
+  function isLikelyDeviceConnectionError(message) {
+    const normalized = String(message || "").toLowerCase();
+    return normalized.includes("failed to fetch")
+      || normalized.includes("load failed")
+      || normalized.includes("networkerror")
+      || normalized.includes("network request failed")
+      || normalized.includes("connection refused")
+      || normalized.includes("connection reset")
+      || normalized.includes("err_connection")
+      || normalized.includes("timeout");
+  }
+
+  function noteEntityRefreshSuccess() {
+    state.lastEntitySyncAt = Date.now();
+    clearDeviceReconnect();
+  }
+
+  function noteEntityRefreshFailure(message) {
+    if (!isLikelyDeviceConnectionError(message)) {
+      state.entitySyncFailureCount = 0;
+      clearDeviceReconnect();
+      return;
+    }
+    state.entitySyncFailureCount = Number(state.entitySyncFailureCount || 0) + 1;
+    state.deviceReconnectLastError = String(message || "");
+    if (
+      state.deviceReconnectMode
+      || state.busyAction === "restartAction"
+      || state.updateInstallBusy
+      || state.updateInstallPhaseHint
+      || state.entitySyncFailureCount >= 2
+    ) {
+      beginDeviceReconnect(
+        state.updateInstallBusy || state.updateInstallPhaseHint ? "ota" : state.busyAction === "restartAction" ? "restart" : "reconnect",
+        message,
+      );
+    }
+  }
+
   async function refreshEntities(keys, detail = "state") {
     const results = [];
     for (let index = 0; index < keys.length; index += ENTITY_REFRESH_CONCURRENCY) {
@@ -2908,8 +3025,14 @@
 
     applyDerivedState();
     if (firstError) {
-      state.controlError = `Niet alle helpervelden konden worden ververst. ${firstError}`;
+      noteEntityRefreshFailure(firstError);
+      if (state.deviceReconnectMode) {
+        state.controlError = "";
+      } else {
+        state.controlError = `Niet alle helpervelden konden worden ververst. ${firstError}`;
+      }
     } else if (!state.busyAction) {
+      noteEntityRefreshSuccess();
       state.controlError = "";
     }
   }
@@ -3076,12 +3199,18 @@
           ];
 
     try {
+      const reconnectModeBefore = state.deviceReconnectMode;
       await refreshEntities(keys, "state");
+      const reconnectChanged = reconnectModeBefore !== state.deviceReconnectMode;
       const trendChanged = state.appView === "overview" || state.appView === "trends"
         ? await refreshTrendHistoryData()
         : false;
       const authChanged = await refreshAuthStatus();
       const nextHeaderSignature = getHeaderRenderSignature();
+      if (reconnectChanged) {
+        render();
+        return;
+      }
       if (trendChanged && state.appView === "trends" && !state.root?.querySelector(".oq-overview-trends")) {
         render();
         return;
@@ -3504,6 +3633,7 @@
       void triggerNamedButton("restartAction", {
         successNotice: "OpenQuatt wordt opnieuw opgestart. Wacht even tot de webinterface weer terugkomt.",
         errorPrefix: "Herstart mislukt",
+        reconnectMode: "restart",
       });
       return;
     }
@@ -4212,6 +4342,9 @@
       }
       state.systemModal = "";
       state.controlNotice = options.successNotice || `${entity.name} gestart.`;
+      if (options.reconnectMode) {
+        beginDeviceReconnect(options.reconnectMode);
+      }
       if (Array.isArray(options.refreshKeys) && options.refreshKeys.length) {
         await refreshEntities(options.refreshKeys, "state");
       }
@@ -5033,21 +5166,23 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
     const systemSummary = stack.querySelector(".oq-settings-system-summary");
     if (systemSummary) {
       const rows = systemSummary.querySelectorAll(".oq-settings-system-row");
-      const values = [
-        formatUptimeFromMeta(),
-        getDeviceIpAddress(),
-        getUpdateStatus(),
-        formatDiagnosticsDateTime(),
-        state.entities.espInternalTemp ? formatOverviewStatValue("espInternalTemp") : "—",
-      ];
+      const values = {
+        uptime: formatUptimeFromMeta(),
+        ip: getDeviceIpAddress(),
+        updates: getUpdateStatus(),
+        datetime: formatDiagnosticsDateTime(),
+        espTemp: getEspTemperatureLabel(),
+        restart: "Opnieuw opstarten",
+      };
 
-      rows.forEach((row, index) => {
+      rows.forEach((row) => {
         const valueNode = row.querySelector(".oq-settings-system-row-value");
+        const key = row.dataset.oqDiagnosticsRow || "";
         if (!valueNode) {
           return;
         }
-        if (index < values.length) {
-          const nextValue = values[index];
+        if (Object.prototype.hasOwnProperty.call(values, key)) {
+          const nextValue = values[key];
           if (valueNode.textContent !== nextValue) {
             valueNode.textContent = nextValue;
           }
@@ -5801,15 +5936,15 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
       "Snelle statusinformatie voor support, controle en onderhoud.",
       `
         <div class="oq-settings-system-summary">
-          <div class="oq-settings-system-row">
+          <div class="oq-settings-system-row" data-oq-diagnostics-row="uptime">
             <span class="oq-settings-system-row-label">Uptime</span>
             <strong class="oq-settings-system-row-value">${escapeHtml(formatUptimeFromMeta())}</strong>
           </div>
-          <div class="oq-settings-system-row">
+          <div class="oq-settings-system-row" data-oq-diagnostics-row="ip">
             <span class="oq-settings-system-row-label">IP-adres</span>
             <strong class="oq-settings-system-row-value">${escapeHtml(getDeviceIpAddress())}</strong>
           </div>
-          <div class="oq-settings-system-row oq-settings-system-row--with-action">
+          <div class="oq-settings-system-row oq-settings-system-row--with-action" data-oq-diagnostics-row="updates">
             <div class="oq-settings-system-row-copy">
               <p class="oq-settings-system-row-label">Updates</p>
               <strong class="oq-settings-system-row-value">${escapeHtml(updateStatus)}</strong>
@@ -5822,11 +5957,15 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
               Openen
             </button>
           </div>
-          <div class="oq-settings-system-row">
+          <div class="oq-settings-system-row" data-oq-diagnostics-row="datetime">
             <span class="oq-settings-system-row-label">Datum/tijd</span>
             <strong class="oq-settings-system-row-value">${escapeHtml(dateTime)}</strong>
           </div>
-          <div class="oq-settings-system-row oq-settings-system-row--with-action">
+          <div class="oq-settings-system-row" data-oq-diagnostics-row="espTemp">
+            <span class="oq-settings-system-row-label">ESP-temp</span>
+            <strong class="oq-settings-system-row-value">${escapeHtml(getEspTemperatureLabel())}</strong>
+          </div>
+          <div class="oq-settings-system-row oq-settings-system-row--with-action" data-oq-diagnostics-row="restart">
             <div class="oq-settings-system-row-copy">
               <p class="oq-settings-system-row-label">Herstart OpenQuatt</p>
               <strong class="oq-settings-system-row-value">Opnieuw opstarten</strong>
@@ -9332,6 +9471,7 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
       ${renderQuickStartModal()}
       ${renderUpdateModal()}
       ${renderSystemModal()}
+      ${renderDeviceReconnectModal()}
     `;
     state.settingsRenderSignature = state.appView === "settings" ? getSettingsRenderSignature() : "";
     state.headerRenderSignature = getHeaderRenderSignature();

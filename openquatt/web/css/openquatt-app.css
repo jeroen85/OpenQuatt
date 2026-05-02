@@ -802,6 +802,10 @@ body.oq-page-light {
   width: min(100%, 1120px);
 }
 
+.oq-helper-modal--reconnect {
+  width: min(100%, 560px);
+}
+
 .oq-helper-modal--quickstart {
   width: min(100%, 1360px);
   max-height: calc(100svh - 48px);
@@ -931,6 +935,54 @@ body.oq-page-light {
   background: linear-gradient(90deg, #f97316 0%, #fb923c 45%, #fdba74 100%);
   box-shadow: 0 0 18px rgba(249, 115, 22, 0.28);
   transition: width 220ms ease;
+}
+
+.oq-helper-reconnect-status {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--oq-helper-line);
+  border-radius: var(--oq-helper-radius-lg);
+  background: linear-gradient(180deg, rgba(255, 247, 237, 0.76), rgba(255, 255, 255, 0.96));
+}
+
+.oq-helper-shell--dark .oq-helper-reconnect-status,
+.oq-helper-modal-backdrop--dark .oq-helper-reconnect-status {
+  background: linear-gradient(180deg, rgba(66, 32, 14, 0.28), rgba(22, 33, 49, 0.94));
+}
+
+.oq-helper-reconnect-spinner {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 3px solid rgba(234, 88, 12, 0.22);
+  border-top-color: #f97316;
+  animation: oq-reconnect-spin 0.9s linear infinite;
+  flex: 0 0 auto;
+}
+
+.oq-helper-reconnect-status strong,
+.oq-helper-reconnect-status span {
+  display: block;
+}
+
+.oq-helper-reconnect-status strong {
+  color: var(--oq-helper-ink);
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.oq-helper-reconnect-status span {
+  margin-top: 3px;
+  color: var(--oq-helper-soft);
+  line-height: 1.4;
+}
+
+@keyframes oq-reconnect-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .oq-helper-modal-success {

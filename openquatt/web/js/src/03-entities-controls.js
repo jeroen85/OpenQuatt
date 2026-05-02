@@ -251,6 +251,45 @@
     return response.json();
   }
 
+  function isLikelyDeviceConnectionError(message) {
+    const normalized = String(message || "").toLowerCase();
+    return normalized.includes("failed to fetch")
+      || normalized.includes("load failed")
+      || normalized.includes("networkerror")
+      || normalized.includes("network request failed")
+      || normalized.includes("connection refused")
+      || normalized.includes("connection reset")
+      || normalized.includes("err_connection")
+      || normalized.includes("timeout");
+  }
+
+  function noteEntityRefreshSuccess() {
+    state.lastEntitySyncAt = Date.now();
+    clearDeviceReconnect();
+  }
+
+  function noteEntityRefreshFailure(message) {
+    if (!isLikelyDeviceConnectionError(message)) {
+      state.entitySyncFailureCount = 0;
+      clearDeviceReconnect();
+      return;
+    }
+    state.entitySyncFailureCount = Number(state.entitySyncFailureCount || 0) + 1;
+    state.deviceReconnectLastError = String(message || "");
+    if (
+      state.deviceReconnectMode
+      || state.busyAction === "restartAction"
+      || state.updateInstallBusy
+      || state.updateInstallPhaseHint
+      || state.entitySyncFailureCount >= 2
+    ) {
+      beginDeviceReconnect(
+        state.updateInstallBusy || state.updateInstallPhaseHint ? "ota" : state.busyAction === "restartAction" ? "restart" : "reconnect",
+        message,
+      );
+    }
+  }
+
   async function refreshEntities(keys, detail = "state") {
     const results = [];
     for (let index = 0; index < keys.length; index += ENTITY_REFRESH_CONCURRENCY) {
@@ -279,8 +318,14 @@
 
     applyDerivedState();
     if (firstError) {
-      state.controlError = `Niet alle helpervelden konden worden ververst. ${firstError}`;
+      noteEntityRefreshFailure(firstError);
+      if (state.deviceReconnectMode) {
+        state.controlError = "";
+      } else {
+        state.controlError = `Niet alle helpervelden konden worden ververst. ${firstError}`;
+      }
     } else if (!state.busyAction) {
+      noteEntityRefreshSuccess();
       state.controlError = "";
     }
   }
@@ -447,12 +492,18 @@
           ];
 
     try {
+      const reconnectModeBefore = state.deviceReconnectMode;
       await refreshEntities(keys, "state");
+      const reconnectChanged = reconnectModeBefore !== state.deviceReconnectMode;
       const trendChanged = state.appView === "overview" || state.appView === "trends"
         ? await refreshTrendHistoryData()
         : false;
       const authChanged = await refreshAuthStatus();
       const nextHeaderSignature = getHeaderRenderSignature();
+      if (reconnectChanged) {
+        render();
+        return;
+      }
       if (trendChanged && state.appView === "trends" && !state.root?.querySelector(".oq-overview-trends")) {
         render();
         return;
@@ -875,6 +926,7 @@
       void triggerNamedButton("restartAction", {
         successNotice: "OpenQuatt wordt opnieuw opgestart. Wacht even tot de webinterface weer terugkomt.",
         errorPrefix: "Herstart mislukt",
+        reconnectMode: "restart",
       });
       return;
     }
@@ -1583,6 +1635,9 @@
       }
       state.systemModal = "";
       state.controlNotice = options.successNotice || `${entity.name} gestart.`;
+      if (options.reconnectMode) {
+        beginDeviceReconnect(options.reconnectMode);
+      }
       if (Array.isArray(options.refreshKeys) && options.refreshKeys.length) {
         await refreshEntities(options.refreshKeys, "state");
       }
