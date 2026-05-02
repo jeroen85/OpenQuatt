@@ -1425,8 +1425,8 @@
     const warningText = topologyMismatch || installationMismatch
       ? "De backup lijkt van een andere installatie te komen. Je kunt nog steeds doorzetten, maar controleer de secties even goed."
       : summary.requiredMissing
-        ? "Ontbrekende verplichte velden houden hun firmware-default. Optionele velden zonder waarde worden overgeslagen."
-        : "Optionele velden zonder waarde worden overgeslagen.";
+        ? "Ontbrekende velden houden hun firmware-default."
+        : "Velden zonder waarde worden overgeslagen.";
 
     return `
       <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
@@ -1456,26 +1456,25 @@
               <span class="oq-helper-modal-subvalue">Schema v${escapeHtml(String(draft.schema_version || 1))}</span>
             </div>
             <div class="oq-helper-modal-row">
-              <span class="oq-helper-modal-label">Herstelbaar</span>
-              <strong class="oq-helper-modal-value">${escapeHtml(`${summary.requiredPresent}/${summary.requiredTotal}`)}</strong>
-              <span class="oq-helper-modal-subvalue">${escapeHtml(`${summary.optionalMissing} optioneel · ${summary.unknown} onbekend`)} </span>
+              <span class="oq-helper-modal-label">Backupinstellingen</span>
+              <strong class="oq-helper-modal-value">${escapeHtml(`${summary.total} instellingen`)}</strong>
+              <span class="oq-helper-modal-subvalue">${escapeHtml(summary.differenceCount ? `${summary.differenceCount} ${summary.differenceCount === 1 ? "verschil" : "verschillen"} · ${summary.currentPresent} op toestel · ${summary.unknown} onbekend` : `Alles komt overeen · ${summary.currentPresent} op toestel · ${summary.unknown} onbekend`)}</span>
             </div>
           </div>
           <div class="oq-settings-backup-modal-sections">
             ${summary.sectionSummaries.map((section) => `
-              <details class="oq-settings-backup-modal-section"${section.requiredMissing || section.optionalMissing || section.rows.some((row) => row.status !== "same") ? " open" : ""}>
+              <details class="oq-settings-backup-modal-section"${section.differenceCount ? " open" : ""}>
                 <summary class="oq-settings-backup-modal-section-head">
                   <span class="oq-settings-backup-modal-section-head-copy">
                     <strong>${escapeHtml(section.label)}</strong>
-                    <em>${escapeHtml(`${section.total} ${section.total === 1 ? "veld" : "velden"}`)}</em>
+                    <em>${escapeHtml(`${section.total} ${section.total === 1 ? "instelling" : "instellingen"}`)}</em>
                   </span>
                   <span class="oq-settings-backup-modal-section-head-meta">
-                    <span class="oq-settings-backup-modal-section-pill oq-settings-backup-modal-section-pill--required">${escapeHtml(`${section.present}/${section.requiredTotal} verplicht`)}</span>
-                    ${section.optionalTotal ? `<span class="oq-settings-backup-modal-section-pill oq-settings-backup-modal-section-pill--optional">${escapeHtml(`${section.optionalPresent}/${section.optionalTotal} optioneel`)}</span>` : ""}
+                    <span class="oq-settings-backup-modal-section-pill oq-settings-backup-modal-section-pill--required">${escapeHtml(section.differenceCount ? `${section.differenceCount} ${section.differenceCount === 1 ? "verschil" : "verschillen"}` : "Alles gelijk")}</span>
                   </span>
                 </summary>
                 <div class="oq-settings-backup-modal-section-body">
-                  <p>${escapeHtml(section.requiredMissing ? `${section.requiredMissing} verplichte veld(en) komen uit dit bestand niet terug.` : "Alle verplichte velden zijn aanwezig.")}${section.optionalTotal ? ` ${escapeHtml(`${section.optionalPresent}/${section.optionalTotal} optionele velden zijn aanwezig in de backup.`)}` : ""}</p>
+                  <p>${escapeHtml(section.differenceCount ? `${section.differenceCount} instelling${section.differenceCount === 1 ? "" : "en"} wijkt af of ontbreekt.` : "Alle instellingen komen overeen.")}</p>
                   <div class="oq-settings-backup-compare-list">
                     ${section.rows.map((row) => `
                       <div class="oq-settings-backup-compare oq-settings-backup-compare--${escapeHtml(row.status)}">

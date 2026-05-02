@@ -524,7 +524,7 @@
         return "Niet op toestel";
       case "optional-missing":
       case "optional-unavailable":
-        return "Optioneel";
+        return "Ontbreekt";
       default:
         return "Onbekend";
     }
@@ -540,6 +540,8 @@
     let optionalMissing = 0;
     let unknown = 0;
     let requiredTotal = 0;
+    let differenceCount = 0;
+    let currentPresent = 0;
     const sectionSummaries = SETTINGS_BACKUP_SECTIONS.map((section) => {
       const values = settings[section.id] && typeof settings[section.id] === "object" ? settings[section.id] : {};
       let sectionRequiredPresent = 0;
@@ -547,6 +549,8 @@
       let sectionOptionalPresent = 0;
       let sectionOptionalMissing = 0;
       let sectionOptionalTotal = 0;
+      let sectionDifferenceCount = 0;
+      let sectionCurrentPresent = 0;
       const rows = section.keys.map((key) => {
         const entity = ENTITY_DEFS[key];
         const optional = Boolean(entity?.optional);
@@ -567,6 +571,14 @@
           status = optional ? "optional-unavailable" : "current-missing";
         } else if (JSON.stringify(currentValue) !== JSON.stringify(backupValue)) {
           status = "different";
+        }
+        if (currentExists) {
+          sectionCurrentPresent += 1;
+          currentPresent += 1;
+        }
+        if (status !== "same") {
+          sectionDifferenceCount += 1;
+          differenceCount += 1;
         }
 
         if (optional) {
@@ -602,12 +614,14 @@
         id: section.id,
         label: section.label,
         present: sectionRequiredPresent,
+        currentPresent: sectionCurrentPresent,
         requiredTotal: section.keys.filter((key) => !ENTITY_DEFS[key]?.optional).length,
         optionalTotal: sectionOptionalTotal,
         optionalPresent: sectionOptionalPresent,
         optionalMissing: sectionOptionalMissing,
         requiredMissing: sectionRequiredMissing,
         total: section.keys.length,
+        differenceCount: sectionDifferenceCount,
         rows,
       };
     });
@@ -636,6 +650,8 @@
       optionalPresent,
       optionalMissing,
       unknown,
+      differenceCount,
+      currentPresent,
       requiredTotal,
       total: SETTINGS_BACKUP_KEYS.length,
     };
