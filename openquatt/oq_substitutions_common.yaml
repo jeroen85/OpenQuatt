@@ -65,6 +65,7 @@ oq_cm2_min_run_s: "120"                               # Minimum dwell time in CM
 oq_cm0_sticky_wait_s: "86400"                         # Wait time in CM0 before sticky-pump run starts [s].
 oq_cm0_sticky_run_s: "60"                             # Duration of sticky-pump run in CM0 [s].
 oq_cm0_pump_stop_ipwm: "1000.0"                       # iPWM setpoint that forces pump off in CM0.
+oq_sticky_pwm: "850"                                  # Fixed iPWM fallback used during CM0 sticky circulation.
 
 # ----------------------------
 # HEATING STRATEGY

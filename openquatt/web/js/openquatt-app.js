@@ -153,7 +153,6 @@ const LOGO_MARKUP = `
     openquattResumeAt: { domain: "datetime", name: "OpenQuatt resume at", optional: true },
     maxWater: { domain: "number", name: "Maximum water temperature" },
     minRuntime: { domain: "number", name: "Minimum runtime" },
-    stickyIpwm: { domain: "number", name: "Sticky pump iPWM", optional: true },
     totalPower: { domain: "sensor", name: "Total Power Input" },
     heatingPowerInput: { domain: "sensor", name: "Heating Power Input", optional: true },
     coolingPowerInput: { domain: "sensor", name: "Cooling Power Input", optional: true },
@@ -629,7 +628,6 @@ const LOGO_MARKUP = `
         "silentMax",
         "maxWater",
         "minRuntime",
-        "stickyIpwm",
       ],
     },
     {
