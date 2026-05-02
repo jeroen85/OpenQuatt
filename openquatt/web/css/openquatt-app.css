@@ -2657,9 +2657,7 @@ body.oq-page-light {
 }
 
 .oq-settings-backup-modal-section {
-  display: grid;
-  gap: 8px;
-  padding: 14px 16px;
+  overflow: clip;
   border-radius: 16px;
   border: 1px solid var(--oq-helper-line);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(249, 250, 251, 0.98));
@@ -2669,31 +2667,163 @@ body.oq-page-light {
   background: linear-gradient(180deg, rgba(66, 32, 14, 0.22), rgba(22, 33, 49, 0.94));
 }
 
-.oq-settings-backup-modal-section-head {
+.oq-settings-backup-modal-section > summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  padding: 14px 16px;
+  list-style: none;
+  cursor: pointer;
   color: var(--oq-helper-ink);
 }
 
-.oq-settings-backup-modal-section-head strong {
+.oq-settings-backup-modal-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+.oq-settings-backup-modal-section > summary::after {
+  content: "⌄";
+  flex: 0 0 auto;
+  color: var(--oq-helper-faint);
+  font-size: 1rem;
+  font-weight: 700;
+  transform: translateY(-1px);
+  transition: transform 0.18s ease, color 0.18s ease;
+}
+
+.oq-settings-backup-modal-section[open] > summary::after {
+  transform: translateY(0) rotate(180deg);
+}
+
+.oq-settings-backup-modal-section > summary strong {
   min-width: 0;
   font-size: 0.98rem;
   line-height: 1.25;
 }
 
-.oq-settings-backup-modal-section-head span {
+.oq-settings-backup-modal-section > summary span {
   flex: 0 0 auto;
   color: var(--oq-helper-faint);
   font-size: 0.84rem;
   font-weight: 700;
 }
 
-.oq-settings-backup-modal-section p {
+.oq-settings-backup-modal-section > summary em {
+  flex: 0 0 auto;
+  color: var(--oq-helper-soft);
+  font-size: 0.8rem;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.oq-settings-backup-modal-section-body {
+  display: grid;
+  gap: 10px;
+  padding: 0 16px 14px;
+}
+
+.oq-settings-backup-modal-section-body > p {
   margin: 0;
   color: var(--oq-helper-soft);
   line-height: 1.55;
+}
+
+.oq-settings-backup-compare-list {
+  display: grid;
+  gap: 8px;
+}
+
+.oq-settings-backup-compare {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(229, 231, 235, 0.92);
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.oq-helper-shell--dark .oq-settings-backup-compare {
+  border-color: rgba(71, 85, 105, 0.48);
+  background: rgba(24, 35, 49, 0.72);
+}
+
+.oq-settings-backup-compare-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.oq-settings-backup-compare-head strong {
+  min-width: 0;
+  font-size: 0.94rem;
+  line-height: 1.3;
+}
+
+.oq-settings-backup-compare-head span {
+  flex: 0 0 auto;
+  color: var(--oq-helper-faint);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.oq-settings-backup-compare-values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.oq-settings-backup-compare-value {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--oq-helper-line);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.oq-helper-shell--dark .oq-settings-backup-compare-value {
+  background: rgba(13, 18, 28, 0.72);
+}
+
+.oq-settings-backup-compare-value span {
+  color: var(--oq-helper-faint);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.oq-settings-backup-compare-value strong {
+  min-width: 0;
+  color: var(--oq-helper-ink);
+  font-size: 0.92rem;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.oq-helper-shell--dark .oq-settings-backup-compare-value strong {
+  color: #f8fafc;
+}
+
+.oq-settings-backup-compare--same {
+  box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.08);
+}
+
+.oq-settings-backup-compare--different {
+  box-shadow: inset 0 0 0 1px rgba(234, 88, 12, 0.12);
+}
+
+.oq-settings-backup-compare--missing,
+.oq-settings-backup-compare--current-missing {
+  box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.12);
+}
+
+.oq-settings-backup-compare--optional-missing,
+.oq-settings-backup-compare--optional-unavailable {
+  opacity: 0.9;
 }
 
 .oq-settings-choice-card--static {
@@ -6535,7 +6665,7 @@ esp-app.oq-native-app.oq-native-app--collapsed {
     grid-template-columns: 1fr;
   }
 
-  .oq-settings-backup-modal-section-head {
+  .oq-settings-backup-modal-section > summary {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -6547,6 +6677,10 @@ esp-app.oq-native-app.oq-native-app--collapsed {
   .oq-settings-backup-modal-section,
   .oq-settings-backup-stat {
     min-width: 0;
+  }
+
+  .oq-settings-backup-compare-values {
+    grid-template-columns: 1fr;
   }
 
   .oq-settings-installation-summary button,

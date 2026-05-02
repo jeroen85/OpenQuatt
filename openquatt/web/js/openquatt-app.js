@@ -3264,31 +3264,137 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     window.setTimeout(() => URL.revokeObjectURL(url), 0);
   }
 
+  function getSettingsBackupFieldLabel(key) {
+    const entity = ENTITY_DEFS[key];
+    if (entity?.name) {
+      return entity.name;
+    }
+    return key
+      .replaceAll(/([a-z])([A-Z])/g, "$1 $2")
+      .replaceAll(/_/g, " ")
+      .trim();
+  }
+
+  function formatSettingsBackupFieldValue(key, value) {
+    if (value === undefined || value === null || value === "") {
+      return "—";
+    }
+
+    const entity = ENTITY_DEFS[key];
+    if (!entity) {
+      return String(value).trim() || "—";
+    }
+
+    if (entity.domain === "number") {
+      return formatValue(key, value);
+    }
+    if (entity.domain === "time") {
+      return normalizeTimeValue(value)?.slice(0, 5) || "—";
+    }
+    if (entity.domain === "datetime") {
+      return normalizeDateTimeValue(value) || "—";
+    }
+    if (entity.domain === "switch" || entity.domain === "binary_sensor") {
+      return value ? "Aan" : "Uit";
+    }
+
+    const text = String(value).trim();
+    return text || "—";
+  }
+
+  function getSettingsBackupFieldStatusLabel(status) {
+    switch (status) {
+      case "same":
+        return "Gelijk";
+      case "different":
+        return "Wijkt af";
+      case "missing":
+        return "Ontbreekt in backup";
+      case "current-missing":
+        return "Niet op toestel";
+      case "optional-missing":
+      case "optional-unavailable":
+        return "Optioneel";
+      default:
+        return "Onbekend";
+    }
+  }
+
   function getSettingsBackupSelectionSummary(snapshot) {
     const settings = snapshot?.settings && typeof snapshot.settings === "object" ? snapshot.settings : {};
     const source = snapshot?.source && typeof snapshot.source === "object" ? snapshot.source : {};
     const backupKeySet = SETTINGS_BACKUP_KEY_SET;
-    let present = 0;
-    let missing = 0;
+    let requiredPresent = 0;
+    let requiredMissing = 0;
+    let optionalPresent = 0;
+    let optionalMissing = 0;
     let unknown = 0;
+    let requiredTotal = 0;
     const sectionSummaries = SETTINGS_BACKUP_SECTIONS.map((section) => {
       const values = settings[section.id] && typeof settings[section.id] === "object" ? settings[section.id] : {};
-      let sectionPresent = 0;
-      let sectionMissing = 0;
-      section.keys.forEach((key) => {
-        if (Object.prototype.hasOwnProperty.call(values, key)) {
-          sectionPresent += 1;
-        } else {
-          sectionMissing += 1;
+      let sectionRequiredPresent = 0;
+      let sectionRequiredMissing = 0;
+      let sectionOptionalPresent = 0;
+      let sectionOptionalMissing = 0;
+      const rows = section.keys.map((key) => {
+        const entity = ENTITY_DEFS[key];
+        const optional = Boolean(entity?.optional);
+        const hasBackupValue = Object.prototype.hasOwnProperty.call(values, key);
+        const backupValue = hasBackupValue ? values[key] : undefined;
+        const currentValue = getSettingsBackupValue(key);
+        const currentExists = hasEntity(key);
+        const backupDisplay = hasBackupValue ? formatSettingsBackupFieldValue(key, backupValue) : (optional ? "Niet op dit toestel" : "Ontbreekt in backup");
+        const currentDisplay = currentExists
+          ? formatSettingsBackupFieldValue(key, currentValue)
+          : (optional ? "Niet beschikbaar op dit toestel" : "Ontbreekt op dit toestel");
+        let status = "same";
+        if (!hasBackupValue && optional) {
+          status = "optional-missing";
+        } else if (!hasBackupValue) {
+          status = "missing";
+        } else if (!currentExists) {
+          status = optional ? "optional-unavailable" : "current-missing";
+        } else if (JSON.stringify(currentValue) !== JSON.stringify(backupValue)) {
+          status = "different";
         }
+
+        if (optional) {
+          if (hasBackupValue) {
+            sectionOptionalPresent += 1;
+            optionalPresent += 1;
+          } else {
+            sectionOptionalMissing += 1;
+            optionalMissing += 1;
+          }
+        } else if (hasBackupValue) {
+          sectionRequiredPresent += 1;
+          requiredPresent += 1;
+        } else {
+          sectionRequiredMissing += 1;
+          requiredMissing += 1;
+        }
+
+        return {
+          key,
+          label: getSettingsBackupFieldLabel(key),
+          optional,
+          hasBackupValue,
+          backupDisplay,
+          currentDisplay,
+          status,
+          statusLabel: getSettingsBackupFieldStatusLabel(status),
+        };
       });
-      present += sectionPresent;
-      missing += sectionMissing;
+      requiredTotal += section.keys.filter((key) => !ENTITY_DEFS[key]?.optional).length;
       return {
         id: section.id,
         label: section.label,
-        present: sectionPresent,
-        missing: sectionMissing,
+        present: sectionRequiredPresent,
+        requiredTotal: section.keys.filter((key) => !ENTITY_DEFS[key]?.optional).length,
+        optionalPresent: sectionOptionalPresent,
+        optionalMissing: sectionOptionalMissing,
+        requiredMissing: sectionRequiredMissing,
+        rows,
       };
     });
 
@@ -3310,9 +3416,12 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     return {
       source,
       sectionSummaries,
-      present,
-      missing,
+      requiredPresent,
+      requiredMissing,
+      optionalPresent,
+      optionalMissing,
       unknown,
+      requiredTotal,
       total: SETTINGS_BACKUP_KEYS.length,
     };
   }
@@ -6485,8 +6594,10 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
     const topologyMismatch = sourceTopology !== "Onbekend" && sourceTopology !== (hasEntity("hp2Power") ? "duo" : "single");
     const installationMismatch = sourceInstallation !== "Onbekend" && sourceInstallation !== currentInstallation;
     const warningText = topologyMismatch || installationMismatch
-      ? "De backup lijkt van een andere installatie te komen. Je kunt nog steeds doorzetten, maar controleer de samenvatting even goed."
-      : "Ontbrekende velden houden hun firmware-default. Onbekende velden uit een backup worden overgeslagen.";
+      ? "De backup lijkt van een andere installatie te komen. Je kunt nog steeds doorzetten, maar controleer de secties even goed."
+      : summary.requiredMissing
+        ? "Ontbrekende verplichte velden houden hun firmware-default. Optionele velden zonder waarde worden overgeslagen."
+        : "Optionele velden zonder waarde worden overgeslagen.";
 
     return `
       <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
@@ -6498,7 +6609,7 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
             </div>
             <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit backup-popup">×</button>
           </div>
-          <p class="oq-helper-modal-copy">Deze backup zet alleen de instellingen terug die OpenQuatt in de web-app beheert. Live-sensoren, diagnostiek en onbekende velden blijven ongemoeid.</p>
+          <p class="oq-helper-modal-copy">Deze backup zet alleen de instellingen terug die OpenQuatt in de web-app beheert. Klap een sectie open om backup- en huidige waarden naast elkaar te vergelijken.</p>
           <div class="oq-helper-modal-grid oq-settings-backup-modal-grid">
             <div class="oq-helper-modal-row">
               <span class="oq-helper-modal-label">Backup van</span>
@@ -6516,23 +6627,46 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
               <span class="oq-helper-modal-subvalue">Schema v${escapeHtml(String(draft.schema_version || 1))}</span>
             </div>
             <div class="oq-helper-modal-row">
-              <span class="oq-helper-modal-label">Gevonden waarden</span>
-              <strong class="oq-helper-modal-value">${escapeHtml(`${summary.present}/${summary.total}`)}</strong>
-              <span class="oq-helper-modal-subvalue">${escapeHtml(`${summary.missing} ontbreken · ${summary.unknown} onbekend`)} </span>
+              <span class="oq-helper-modal-label">Herstelbaar</span>
+              <strong class="oq-helper-modal-value">${escapeHtml(`${summary.requiredPresent}/${summary.requiredTotal}`)}</strong>
+              <span class="oq-helper-modal-subvalue">${escapeHtml(`${summary.optionalMissing} optioneel · ${summary.unknown} onbekend`)} </span>
             </div>
           </div>
           <div class="oq-settings-backup-modal-sections">
             ${summary.sectionSummaries.map((section) => `
-              <div class="oq-settings-backup-modal-section">
-                <div class="oq-settings-backup-modal-section-head">
+              <details class="oq-settings-backup-modal-section"${section.requiredMissing || section.optionalMissing || section.rows.some((row) => row.status !== "same") ? " open" : ""}>
+                <summary class="oq-settings-backup-modal-section-head">
                   <strong>${escapeHtml(section.label)}</strong>
-                  <span>${escapeHtml(`${section.present}/${section.present + section.missing}`)}</span>
+                  <span>${escapeHtml(`${section.present}/${section.requiredTotal}`)}</span>
+                  ${section.optionalMissing ? `<em>${escapeHtml(`${section.optionalMissing} optioneel`)}</em>` : ""}
+                </summary>
+                <div class="oq-settings-backup-modal-section-body">
+                  <p>${escapeHtml(section.requiredMissing ? `${section.requiredMissing} verplichte veld(en) komen uit dit bestand niet terug.` : section.optionalMissing ? `${section.optionalMissing} optioneel veld ontbreekt op dit toestel.` : "Alle verplichte velden zijn aanwezig.")}</p>
+                  <div class="oq-settings-backup-compare-list">
+                    ${section.rows.map((row) => `
+                      <div class="oq-settings-backup-compare oq-settings-backup-compare--${escapeHtml(row.status)}">
+                        <div class="oq-settings-backup-compare-head">
+                          <strong>${escapeHtml(row.label)}</strong>
+                          <span>${escapeHtml(row.statusLabel)}</span>
+                        </div>
+                        <div class="oq-settings-backup-compare-values">
+                          <div class="oq-settings-backup-compare-value">
+                            <span>Backup</span>
+                            <strong>${escapeHtml(row.backupDisplay)}</strong>
+                          </div>
+                          <div class="oq-settings-backup-compare-value">
+                            <span>Nu</span>
+                            <strong>${escapeHtml(row.currentDisplay)}</strong>
+                          </div>
+                        </div>
+                      </div>
+                    `).join("")}
+                  </div>
                 </div>
-                <p>${escapeHtml(section.missing ? `${section.missing} veld(en) komen uit dit bestand niet terug.` : "Alle velden in deze sectie zijn aanwezig.")}</p>
-              </div>
+              </details>
             `).join("")}
           </div>
-          <p class="oq-settings-action-note${summary.unknown || installationMismatch ? " oq-settings-action-note--warning" : ""}">${escapeHtml(warningText)}</p>
+          <p class="oq-settings-action-note${summary.unknown || summary.requiredMissing || installationMismatch ? " oq-settings-action-note--warning" : ""}">${escapeHtml(warningText)}</p>
           ${state.settingsBackupError ? `<p class="oq-settings-backup-error">${escapeHtml(state.settingsBackupError)}</p>` : ""}
           <div class="oq-helper-modal-actions">
             <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="close-system-modal" ${state.settingsBackupBusy ? "disabled" : ""}>Annuleren</button>

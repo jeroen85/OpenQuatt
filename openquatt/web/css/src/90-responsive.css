@@ -196,7 +196,7 @@ esp-app.oq-native-app.oq-native-app--collapsed {
     grid-template-columns: 1fr;
   }
 
-  .oq-settings-backup-modal-section-head {
+  .oq-settings-backup-modal-section > summary {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -208,6 +208,10 @@ esp-app.oq-native-app.oq-native-app--collapsed {
   .oq-settings-backup-modal-section,
   .oq-settings-backup-stat {
     min-width: 0;
+  }
+
+  .oq-settings-backup-compare-values {
+    grid-template-columns: 1fr;
   }
 
   .oq-settings-installation-summary button,

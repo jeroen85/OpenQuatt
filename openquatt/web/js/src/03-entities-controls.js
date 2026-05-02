@@ -474,31 +474,137 @@
     window.setTimeout(() => URL.revokeObjectURL(url), 0);
   }
 
+  function getSettingsBackupFieldLabel(key) {
+    const entity = ENTITY_DEFS[key];
+    if (entity?.name) {
+      return entity.name;
+    }
+    return key
+      .replaceAll(/([a-z])([A-Z])/g, "$1 $2")
+      .replaceAll(/_/g, " ")
+      .trim();
+  }
+
+  function formatSettingsBackupFieldValue(key, value) {
+    if (value === undefined || value === null || value === "") {
+      return "—";
+    }
+
+    const entity = ENTITY_DEFS[key];
+    if (!entity) {
+      return String(value).trim() || "—";
+    }
+
+    if (entity.domain === "number") {
+      return formatValue(key, value);
+    }
+    if (entity.domain === "time") {
+      return normalizeTimeValue(value)?.slice(0, 5) || "—";
+    }
+    if (entity.domain === "datetime") {
+      return normalizeDateTimeValue(value) || "—";
+    }
+    if (entity.domain === "switch" || entity.domain === "binary_sensor") {
+      return value ? "Aan" : "Uit";
+    }
+
+    const text = String(value).trim();
+    return text || "—";
+  }
+
+  function getSettingsBackupFieldStatusLabel(status) {
+    switch (status) {
+      case "same":
+        return "Gelijk";
+      case "different":
+        return "Wijkt af";
+      case "missing":
+        return "Ontbreekt in backup";
+      case "current-missing":
+        return "Niet op toestel";
+      case "optional-missing":
+      case "optional-unavailable":
+        return "Optioneel";
+      default:
+        return "Onbekend";
+    }
+  }
+
   function getSettingsBackupSelectionSummary(snapshot) {
     const settings = snapshot?.settings && typeof snapshot.settings === "object" ? snapshot.settings : {};
     const source = snapshot?.source && typeof snapshot.source === "object" ? snapshot.source : {};
     const backupKeySet = SETTINGS_BACKUP_KEY_SET;
-    let present = 0;
-    let missing = 0;
+    let requiredPresent = 0;
+    let requiredMissing = 0;
+    let optionalPresent = 0;
+    let optionalMissing = 0;
     let unknown = 0;
+    let requiredTotal = 0;
     const sectionSummaries = SETTINGS_BACKUP_SECTIONS.map((section) => {
       const values = settings[section.id] && typeof settings[section.id] === "object" ? settings[section.id] : {};
-      let sectionPresent = 0;
-      let sectionMissing = 0;
-      section.keys.forEach((key) => {
-        if (Object.prototype.hasOwnProperty.call(values, key)) {
-          sectionPresent += 1;
-        } else {
-          sectionMissing += 1;
+      let sectionRequiredPresent = 0;
+      let sectionRequiredMissing = 0;
+      let sectionOptionalPresent = 0;
+      let sectionOptionalMissing = 0;
+      const rows = section.keys.map((key) => {
+        const entity = ENTITY_DEFS[key];
+        const optional = Boolean(entity?.optional);
+        const hasBackupValue = Object.prototype.hasOwnProperty.call(values, key);
+        const backupValue = hasBackupValue ? values[key] : undefined;
+        const currentValue = getSettingsBackupValue(key);
+        const currentExists = hasEntity(key);
+        const backupDisplay = hasBackupValue ? formatSettingsBackupFieldValue(key, backupValue) : (optional ? "Niet op dit toestel" : "Ontbreekt in backup");
+        const currentDisplay = currentExists
+          ? formatSettingsBackupFieldValue(key, currentValue)
+          : (optional ? "Niet beschikbaar op dit toestel" : "Ontbreekt op dit toestel");
+        let status = "same";
+        if (!hasBackupValue && optional) {
+          status = "optional-missing";
+        } else if (!hasBackupValue) {
+          status = "missing";
+        } else if (!currentExists) {
+          status = optional ? "optional-unavailable" : "current-missing";
+        } else if (JSON.stringify(currentValue) !== JSON.stringify(backupValue)) {
+          status = "different";
         }
+
+        if (optional) {
+          if (hasBackupValue) {
+            sectionOptionalPresent += 1;
+            optionalPresent += 1;
+          } else {
+            sectionOptionalMissing += 1;
+            optionalMissing += 1;
+          }
+        } else if (hasBackupValue) {
+          sectionRequiredPresent += 1;
+          requiredPresent += 1;
+        } else {
+          sectionRequiredMissing += 1;
+          requiredMissing += 1;
+        }
+
+        return {
+          key,
+          label: getSettingsBackupFieldLabel(key),
+          optional,
+          hasBackupValue,
+          backupDisplay,
+          currentDisplay,
+          status,
+          statusLabel: getSettingsBackupFieldStatusLabel(status),
+        };
       });
-      present += sectionPresent;
-      missing += sectionMissing;
+      requiredTotal += section.keys.filter((key) => !ENTITY_DEFS[key]?.optional).length;
       return {
         id: section.id,
         label: section.label,
-        present: sectionPresent,
-        missing: sectionMissing,
+        present: sectionRequiredPresent,
+        requiredTotal: section.keys.filter((key) => !ENTITY_DEFS[key]?.optional).length,
+        optionalPresent: sectionOptionalPresent,
+        optionalMissing: sectionOptionalMissing,
+        requiredMissing: sectionRequiredMissing,
+        rows,
       };
     });
 
@@ -520,9 +626,12 @@
     return {
       source,
       sectionSummaries,
-      present,
-      missing,
+      requiredPresent,
+      requiredMissing,
+      optionalPresent,
+      optionalMissing,
       unknown,
+      requiredTotal,
       total: SETTINGS_BACKUP_KEYS.length,
     };
   }
