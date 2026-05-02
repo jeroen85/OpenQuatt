@@ -1465,12 +1465,17 @@
             ${summary.sectionSummaries.map((section) => `
               <details class="oq-settings-backup-modal-section"${section.requiredMissing || section.optionalMissing || section.rows.some((row) => row.status !== "same") ? " open" : ""}>
                 <summary class="oq-settings-backup-modal-section-head">
-                  <strong>${escapeHtml(section.label)}</strong>
-                  <span>${escapeHtml(`${section.present}/${section.requiredTotal}`)}</span>
-                  ${section.optionalMissing ? `<em>${escapeHtml(`${section.optionalMissing} optioneel`)}</em>` : ""}
+                  <span class="oq-settings-backup-modal-section-head-copy">
+                    <strong>${escapeHtml(section.label)}</strong>
+                    <em>${escapeHtml(`${section.total} ${section.total === 1 ? "veld" : "velden"}`)}</em>
+                  </span>
+                  <span class="oq-settings-backup-modal-section-head-meta">
+                    <span class="oq-settings-backup-modal-section-pill oq-settings-backup-modal-section-pill--required">${escapeHtml(`${section.present}/${section.requiredTotal} verplicht`)}</span>
+                    ${section.optionalTotal ? `<span class="oq-settings-backup-modal-section-pill oq-settings-backup-modal-section-pill--optional">${escapeHtml(`${section.optionalPresent}/${section.optionalTotal} optioneel`)}</span>` : ""}
+                  </span>
                 </summary>
                 <div class="oq-settings-backup-modal-section-body">
-                  <p>${escapeHtml(section.requiredMissing ? `${section.requiredMissing} verplichte veld(en) komen uit dit bestand niet terug.` : section.optionalMissing ? `${section.optionalMissing} optioneel veld ontbreekt op dit toestel.` : "Alle verplichte velden zijn aanwezig.")}</p>
+                  <p>${escapeHtml(section.requiredMissing ? `${section.requiredMissing} verplichte veld(en) komen uit dit bestand niet terug.` : "Alle verplichte velden zijn aanwezig.")}${section.optionalTotal ? ` ${escapeHtml(`${section.optionalPresent}/${section.optionalTotal} optionele velden zijn aanwezig in de backup.`)}` : ""}</p>
                   <div class="oq-settings-backup-compare-list">
                     ${section.rows.map((row) => `
                       <div class="oq-settings-backup-compare oq-settings-backup-compare--${escapeHtml(row.status)}">
@@ -1479,11 +1484,11 @@
                           <span>${escapeHtml(row.statusLabel)}</span>
                         </div>
                         <div class="oq-settings-backup-compare-values">
-                          <div class="oq-settings-backup-compare-value">
+                          <div class="oq-settings-backup-compare-value" data-change="${escapeHtml(row.status)}">
                             <span>Backup</span>
                             <strong>${escapeHtml(row.backupDisplay)}</strong>
                           </div>
-                          <div class="oq-settings-backup-compare-value">
+                          <div class="oq-settings-backup-compare-value" data-change="${escapeHtml(row.status)}">
                             <span>Nu</span>
                             <strong>${escapeHtml(row.currentDisplay)}</strong>
                           </div>

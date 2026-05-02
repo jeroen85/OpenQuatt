@@ -2668,13 +2668,15 @@ body.oq-page-light {
 }
 
 .oq-settings-backup-modal-section > summary {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   padding: 14px 16px;
+  padding-right: 42px;
   list-style: none;
   cursor: pointer;
+  position: relative;
   color: var(--oq-helper-ink);
 }
 
@@ -2684,37 +2686,65 @@ body.oq-page-light {
 
 .oq-settings-backup-modal-section > summary::after {
   content: "⌄";
-  flex: 0 0 auto;
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  transform: translateY(-52%);
   color: var(--oq-helper-faint);
   font-size: 1rem;
   font-weight: 700;
-  transform: translateY(-1px);
   transition: transform 0.18s ease, color 0.18s ease;
 }
 
 .oq-settings-backup-modal-section[open] > summary::after {
-  transform: translateY(0) rotate(180deg);
+  transform: translateY(-48%) rotate(180deg);
 }
 
-.oq-settings-backup-modal-section > summary strong {
+.oq-settings-backup-modal-section-head-copy {
   min-width: 0;
-  font-size: 0.98rem;
-  line-height: 1.25;
+  display: grid;
+  gap: 2px;
 }
 
-.oq-settings-backup-modal-section > summary span {
-  flex: 0 0 auto;
-  color: var(--oq-helper-faint);
-  font-size: 0.84rem;
-  font-weight: 700;
+.oq-settings-backup-modal-section-head-copy strong {
+  font-size: 1rem;
 }
 
-.oq-settings-backup-modal-section > summary em {
-  flex: 0 0 auto;
+.oq-settings-backup-modal-section-head-copy em {
   color: var(--oq-helper-soft);
-  font-size: 0.8rem;
+  font-size: 0.76rem;
   font-style: normal;
   font-weight: 600;
+}
+
+.oq-settings-backup-modal-section-head-meta {
+  min-width: 0;
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.oq-settings-backup-modal-section-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.oq-settings-backup-modal-section-pill--required {
+  color: var(--oq-helper-ink);
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.oq-settings-backup-modal-section-pill--optional {
+  color: var(--oq-helper-soft);
+  background: rgba(148, 163, 184, 0.14);
 }
 
 .oq-settings-backup-modal-section-body {
@@ -2749,9 +2779,9 @@ body.oq-page-light {
 }
 
 .oq-settings-backup-compare-head {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 10px;
 }
 
@@ -2802,6 +2832,16 @@ body.oq-page-light {
   font-size: 0.92rem;
   line-height: 1.35;
   word-break: break-word;
+}
+
+.oq-settings-backup-compare-value[data-change="same"] {
+  border-color: rgba(34, 197, 94, 0.08);
+}
+
+.oq-settings-backup-compare-value[data-change="different"],
+.oq-settings-backup-compare-value[data-change="missing"],
+.oq-settings-backup-compare-value[data-change="current-missing"] {
+  border-color: rgba(234, 88, 12, 0.16);
 }
 
 .oq-helper-shell--dark .oq-settings-backup-compare-value strong {
@@ -6666,8 +6706,8 @@ esp-app.oq-native-app.oq-native-app--collapsed {
   }
 
   .oq-settings-backup-modal-section > summary {
-    align-items: flex-start;
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    justify-items: start;
   }
 
   .oq-settings-backup-modal-grid {
@@ -6677,6 +6717,10 @@ esp-app.oq-native-app.oq-native-app--collapsed {
   .oq-settings-backup-modal-section,
   .oq-settings-backup-stat {
     min-width: 0;
+  }
+
+  .oq-settings-backup-modal-section-head-meta {
+    justify-content: flex-start;
   }
 
   .oq-settings-backup-compare-values {

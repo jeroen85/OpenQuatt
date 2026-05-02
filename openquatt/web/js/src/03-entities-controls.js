@@ -546,6 +546,7 @@
       let sectionRequiredMissing = 0;
       let sectionOptionalPresent = 0;
       let sectionOptionalMissing = 0;
+      let sectionOptionalTotal = 0;
       const rows = section.keys.map((key) => {
         const entity = ENTITY_DEFS[key];
         const optional = Boolean(entity?.optional);
@@ -569,6 +570,7 @@
         }
 
         if (optional) {
+          sectionOptionalTotal += 1;
           if (hasBackupValue) {
             sectionOptionalPresent += 1;
             optionalPresent += 1;
@@ -601,9 +603,11 @@
         label: section.label,
         present: sectionRequiredPresent,
         requiredTotal: section.keys.filter((key) => !ENTITY_DEFS[key]?.optional).length,
+        optionalTotal: sectionOptionalTotal,
         optionalPresent: sectionOptionalPresent,
         optionalMissing: sectionOptionalMissing,
         requiredMissing: sectionRequiredMissing,
+        total: section.keys.length,
         rows,
       };
     });
@@ -628,6 +632,7 @@
       sectionSummaries,
       requiredPresent,
       requiredMissing,
+      requiredAvailable: requiredTotal,
       optionalPresent,
       optionalMissing,
       unknown,

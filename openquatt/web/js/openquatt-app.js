@@ -3336,6 +3336,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       let sectionRequiredMissing = 0;
       let sectionOptionalPresent = 0;
       let sectionOptionalMissing = 0;
+      let sectionOptionalTotal = 0;
       const rows = section.keys.map((key) => {
         const entity = ENTITY_DEFS[key];
         const optional = Boolean(entity?.optional);
@@ -3359,6 +3360,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
         }
 
         if (optional) {
+          sectionOptionalTotal += 1;
           if (hasBackupValue) {
             sectionOptionalPresent += 1;
             optionalPresent += 1;
@@ -3391,9 +3393,11 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
         label: section.label,
         present: sectionRequiredPresent,
         requiredTotal: section.keys.filter((key) => !ENTITY_DEFS[key]?.optional).length,
+        optionalTotal: sectionOptionalTotal,
         optionalPresent: sectionOptionalPresent,
         optionalMissing: sectionOptionalMissing,
         requiredMissing: sectionRequiredMissing,
+        total: section.keys.length,
         rows,
       };
     });
@@ -3418,6 +3422,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       sectionSummaries,
       requiredPresent,
       requiredMissing,
+      requiredAvailable: requiredTotal,
       optionalPresent,
       optionalMissing,
       unknown,
@@ -6636,12 +6641,17 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
             ${summary.sectionSummaries.map((section) => `
               <details class="oq-settings-backup-modal-section"${section.requiredMissing || section.optionalMissing || section.rows.some((row) => row.status !== "same") ? " open" : ""}>
                 <summary class="oq-settings-backup-modal-section-head">
-                  <strong>${escapeHtml(section.label)}</strong>
-                  <span>${escapeHtml(`${section.present}/${section.requiredTotal}`)}</span>
-                  ${section.optionalMissing ? `<em>${escapeHtml(`${section.optionalMissing} optioneel`)}</em>` : ""}
+                  <span class="oq-settings-backup-modal-section-head-copy">
+                    <strong>${escapeHtml(section.label)}</strong>
+                    <em>${escapeHtml(`${section.total} ${section.total === 1 ? "veld" : "velden"}`)}</em>
+                  </span>
+                  <span class="oq-settings-backup-modal-section-head-meta">
+                    <span class="oq-settings-backup-modal-section-pill oq-settings-backup-modal-section-pill--required">${escapeHtml(`${section.present}/${section.requiredTotal} verplicht`)}</span>
+                    ${section.optionalTotal ? `<span class="oq-settings-backup-modal-section-pill oq-settings-backup-modal-section-pill--optional">${escapeHtml(`${section.optionalPresent}/${section.optionalTotal} optioneel`)}</span>` : ""}
+                  </span>
                 </summary>
                 <div class="oq-settings-backup-modal-section-body">
-                  <p>${escapeHtml(section.requiredMissing ? `${section.requiredMissing} verplichte veld(en) komen uit dit bestand niet terug.` : section.optionalMissing ? `${section.optionalMissing} optioneel veld ontbreekt op dit toestel.` : "Alle verplichte velden zijn aanwezig.")}</p>
+                  <p>${escapeHtml(section.requiredMissing ? `${section.requiredMissing} verplichte veld(en) komen uit dit bestand niet terug.` : "Alle verplichte velden zijn aanwezig.")}${section.optionalTotal ? ` ${escapeHtml(`${section.optionalPresent}/${section.optionalTotal} optionele velden zijn aanwezig in de backup.`)}` : ""}</p>
                   <div class="oq-settings-backup-compare-list">
                     ${section.rows.map((row) => `
                       <div class="oq-settings-backup-compare oq-settings-backup-compare--${escapeHtml(row.status)}">
@@ -6650,11 +6660,11 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
                           <span>${escapeHtml(row.statusLabel)}</span>
                         </div>
                         <div class="oq-settings-backup-compare-values">
-                          <div class="oq-settings-backup-compare-value">
+                          <div class="oq-settings-backup-compare-value" data-change="${escapeHtml(row.status)}">
                             <span>Backup</span>
                             <strong>${escapeHtml(row.backupDisplay)}</strong>
                           </div>
-                          <div class="oq-settings-backup-compare-value">
+                          <div class="oq-settings-backup-compare-value" data-change="${escapeHtml(row.status)}">
                             <span>Nu</span>
                             <strong>${escapeHtml(row.currentDisplay)}</strong>
                           </div>
