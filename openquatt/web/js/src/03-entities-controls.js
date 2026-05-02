@@ -380,6 +380,394 @@
     }
   }
 
+  function clearSettingsBackupDraft() {
+    state.settingsBackupDraft = null;
+    state.settingsBackupError = "";
+    state.settingsBackupBusy = false;
+  }
+
+  function getSettingsBackupSourceMeta() {
+    return {
+      device: getFirmwareDeviceLabel(),
+      installation: getInstallationLabel(),
+      topology: hasEntity("hp2Power") ? "duo" : "single",
+      firmware_version: getFirmwareCurrentVersion(),
+      firmware_channel: String(getEntityValue("firmwareUpdateChannel") || getEntityValue("releaseChannelText") || "").trim(),
+    };
+  }
+
+  function getSettingsBackupValue(key) {
+    const entity = ENTITY_DEFS[key];
+    if (!entity) {
+      return undefined;
+    }
+
+    if (key === "setupComplete") {
+      return getSetupCompleteState();
+    }
+
+    const value = getEntityValue(key);
+    if (value === "" || value === null || value === undefined) {
+      return undefined;
+    }
+
+    if (entity.domain === "switch" || entity.domain === "binary_sensor") {
+      return isEntityActive(key);
+    }
+    if (entity.domain === "number") {
+      const numeric = parseLooseNumber(value);
+      return Number.isNaN(numeric) ? undefined : numeric;
+    }
+    if (entity.domain === "time") {
+      const normalized = normalizeTimeValue(value);
+      return normalized || undefined;
+    }
+    if (entity.domain === "datetime") {
+      const normalized = normalizeDateTimeValue(value);
+      return normalized || undefined;
+    }
+
+    const text = String(value || "").trim();
+    return text || undefined;
+  }
+
+  function buildSettingsBackupSnapshot() {
+    const settings = {};
+    SETTINGS_BACKUP_SECTIONS.forEach((section) => {
+      const values = {};
+      section.keys.forEach((key) => {
+        const value = getSettingsBackupValue(key);
+        if (value !== undefined) {
+          values[key] = value;
+        }
+      });
+      settings[section.id] = values;
+    });
+
+    return {
+      schema_version: SETTINGS_BACKUP_SCHEMA_VERSION,
+      exported_at: new Date().toISOString(),
+      source: getSettingsBackupSourceMeta(),
+      settings,
+    };
+  }
+
+  function getSettingsBackupFilename(snapshot = buildSettingsBackupSnapshot()) {
+    const stamp = String(snapshot.exported_at || new Date().toISOString())
+      .replace(/[:.]/g, "-")
+      .replace(/T/, "_")
+      .replace(/Z$/, "Z");
+    const installation = String(snapshot.source?.installation || "OpenQuatt").replace(/\s+/g, "-").toLowerCase();
+    return `${installation}-settings-backup-${stamp}.json`;
+  }
+
+  function downloadJsonFile(filename, payload) {
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.rel = "noreferrer";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
+  function getSettingsBackupSelectionSummary(snapshot) {
+    const settings = snapshot?.settings && typeof snapshot.settings === "object" ? snapshot.settings : {};
+    const source = snapshot?.source && typeof snapshot.source === "object" ? snapshot.source : {};
+    const backupKeySet = SETTINGS_BACKUP_KEY_SET;
+    let present = 0;
+    let missing = 0;
+    let unknown = 0;
+    const sectionSummaries = SETTINGS_BACKUP_SECTIONS.map((section) => {
+      const values = settings[section.id] && typeof settings[section.id] === "object" ? settings[section.id] : {};
+      let sectionPresent = 0;
+      let sectionMissing = 0;
+      section.keys.forEach((key) => {
+        if (Object.prototype.hasOwnProperty.call(values, key)) {
+          sectionPresent += 1;
+        } else {
+          sectionMissing += 1;
+        }
+      });
+      present += sectionPresent;
+      missing += sectionMissing;
+      return {
+        id: section.id,
+        label: section.label,
+        present: sectionPresent,
+        missing: sectionMissing,
+      };
+    });
+
+    Object.entries(settings).forEach(([sectionId, values]) => {
+      if (!SETTINGS_BACKUP_SECTIONS.some((section) => section.id === sectionId)) {
+        unknown += 1;
+        return;
+      }
+      if (!values || typeof values !== "object") {
+        return;
+      }
+      Object.keys(values).forEach((key) => {
+        if (!backupKeySet.has(key)) {
+          unknown += 1;
+        }
+      });
+    });
+
+    return {
+      source,
+      sectionSummaries,
+      present,
+      missing,
+      unknown,
+      total: SETTINGS_BACKUP_KEYS.length,
+    };
+  }
+
+  function parseSettingsBackupPayload(rawText, fileName = "") {
+    const parsed = JSON.parse(rawText);
+    if (!parsed || typeof parsed !== "object") {
+      throw new Error("Backupbestand bevat geen JSON-object.");
+    }
+
+    const schemaVersion = Number(parsed.schema_version ?? parsed.schemaVersion ?? 0);
+    if (!Number.isInteger(schemaVersion) || schemaVersion < SETTINGS_BACKUP_SCHEMA_VERSION) {
+      throw new Error("Onbekende backupversie.");
+    }
+
+    const settings = parsed.settings && typeof parsed.settings === "object" ? parsed.settings : {};
+    const snapshot = {
+      schema_version: schemaVersion,
+      exported_at: String(parsed.exported_at || ""),
+      source: parsed.source && typeof parsed.source === "object" ? parsed.source : {},
+      settings,
+      file_name: fileName || "",
+    };
+    snapshot.summary = getSettingsBackupSelectionSummary(snapshot);
+    return snapshot;
+  }
+
+  async function prepareSettingsBackupSnapshot() {
+    state.settingsBackupBusy = true;
+    state.controlError = "";
+    state.controlNotice = "";
+    render();
+
+    try {
+      await refreshEntities(SETTINGS_BACKUP_KEYS, "all");
+      return buildSettingsBackupSnapshot();
+    } finally {
+      state.settingsBackupBusy = false;
+      render();
+    }
+  }
+
+  async function exportSettingsBackup() {
+    if (state.settingsBackupBusy) {
+      return;
+    }
+
+    try {
+      const snapshot = await prepareSettingsBackupSnapshot();
+      downloadJsonFile(getSettingsBackupFilename(snapshot), snapshot);
+      state.controlNotice = "Settings-backup gedownload.";
+      render();
+    } catch (error) {
+      state.controlError = `Backup exporteren mislukt. ${error.message}`;
+      render();
+    }
+  }
+
+  function openSettingsBackupImportPicker() {
+    if (!state.root || state.settingsBackupBusy) {
+      return;
+    }
+
+    const input = state.root.querySelector('[data-oq-backup-file-input]');
+    if (input) {
+      input.click();
+    }
+  }
+
+  async function handleSettingsBackupFileSelection(file) {
+    if (!file || state.settingsBackupBusy) {
+      return;
+    }
+
+    state.settingsBackupBusy = true;
+    state.settingsBackupDraft = null;
+    state.settingsBackupError = "";
+    state.controlError = "";
+    state.controlNotice = "";
+    render();
+
+    try {
+      const rawText = await file.text();
+      const snapshot = parseSettingsBackupPayload(rawText, file.name || "");
+      state.settingsBackupDraft = snapshot;
+      state.systemModal = "settings-backup-restore";
+    } catch (error) {
+      state.settingsBackupDraft = null;
+      state.settingsBackupError = `Backupbestand kon niet worden gelezen. ${error.message}`;
+    } finally {
+      state.settingsBackupBusy = false;
+      render();
+    }
+  }
+
+  async function setEntityBackupValue(key, value) {
+    const entity = ENTITY_DEFS[key];
+    if (!entity) {
+      throw new Error(`Onbekend veld ${key}.`);
+    }
+
+    if (entity.domain === "select") {
+      const option = String(value || "").trim();
+      const response = await fetch(
+        `${buildEntityPath(entity.domain, entity.name, "set")}?option=${encodeURIComponent(option)}`,
+        { method: "POST" }
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return option;
+    }
+
+    if (entity.domain === "number") {
+      const normalized = normalizeNumber(key, value);
+      const response = await fetch(
+        `${buildEntityPath(entity.domain, entity.name, "set")}?value=${encodeURIComponent(normalized)}`,
+        { method: "POST" }
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return normalized;
+    }
+
+    if (entity.domain === "time") {
+      const normalized = normalizeTimeValue(value);
+      const response = await fetch(
+        `${buildEntityPath(entity.domain, entity.name, "set")}?value=${encodeURIComponent(normalized)}`,
+        { method: "POST" }
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return normalized;
+    }
+
+    if (entity.domain === "datetime") {
+      const normalized = normalizeDateTimeValue(value);
+      const response = await fetch(
+        `${buildEntityPath(entity.domain, entity.name, "set")}?value=${encodeURIComponent(normalized)}`,
+        { method: "POST" }
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return normalized;
+    }
+
+    if (entity.domain === "switch" || entity.domain === "binary_sensor") {
+      const enabled = Boolean(value);
+      const action = enabled ? "turn_on" : "turn_off";
+      const response = await fetch(buildEntityPath(entity.domain, entity.name, action), { method: "POST" });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return enabled;
+    }
+
+    throw new Error(`${entity.name} kan niet worden hersteld.`);
+  }
+
+  async function restoreSettingsBackup() {
+    const draft = state.settingsBackupDraft;
+    if (!draft || state.settingsBackupBusy) {
+      return;
+    }
+
+    state.settingsBackupBusy = true;
+    state.settingsBackupError = "";
+    state.controlError = "";
+    state.controlNotice = "";
+    render();
+
+    const applied = [];
+    const skipped = [];
+    let shouldCompleteSetup = false;
+
+    try {
+      await refreshEntities(SETTINGS_BACKUP_KEYS, "all");
+
+      for (const section of SETTINGS_BACKUP_SECTIONS) {
+        const sectionValues = draft.settings?.[section.id] && typeof draft.settings[section.id] === "object"
+          ? draft.settings[section.id]
+          : {};
+
+        for (const key of section.keys) {
+          if (!Object.prototype.hasOwnProperty.call(sectionValues, key)) {
+            skipped.push(key);
+            continue;
+          }
+
+          const value = sectionValues[key];
+          if (key === "setupComplete") {
+            shouldCompleteSetup = value === true;
+            continue;
+          }
+
+          if (key === "openquattEnabled") {
+            continue;
+          }
+
+          const entity = ENTITY_DEFS[key];
+          if (!entity || !hasEntity(key)) {
+            skipped.push(key);
+            continue;
+          }
+
+          try {
+            await setEntityBackupValue(key, value);
+            applied.push(key);
+          } catch (error) {
+            skipped.push(key);
+          }
+        }
+      }
+
+      const openquattEnabledValue = draft.settings?.operation?.openquattEnabled;
+      if (Object.prototype.hasOwnProperty.call(draft.settings?.operation || {}, "openquattEnabled") && hasEntity("openquattEnabled")) {
+        await setEntityBackupValue("openquattEnabled", openquattEnabledValue);
+        applied.push("openquattEnabled");
+      }
+
+      if (shouldCompleteSetup && ENTITY_DEFS.apply) {
+        const response = await fetch(buildEntityPath("button", "Complete setup", "press"), { method: "POST" });
+        if (!response.ok) {
+          throw new Error(`Setup bevestigen mislukt (HTTP ${response.status}).`);
+        }
+        applied.push("setupComplete");
+      } else if (Object.prototype.hasOwnProperty.call(draft.settings?.installation || {}, "setupComplete")) {
+        skipped.push("setupComplete");
+      }
+
+      state.systemModal = "";
+      clearSettingsBackupDraft();
+      state.controlNotice = `Backup hersteld (${applied.length} toegepast${skipped.length ? `, ${skipped.length} overgeslagen` : ""}).`;
+      await syncEntities();
+    } catch (error) {
+      state.settingsBackupError = `Backup herstellen mislukt. ${error.message}`;
+    } finally {
+      state.settingsBackupBusy = false;
+      render();
+    }
+  }
+
   function isDevPreviewEnvironmentForFetches() {
     return Boolean(
       (typeof window !== "undefined" && window.__OQ_DEV_CONTROLS__)
@@ -659,6 +1047,13 @@
   }
 
   function handleChange(event) {
+    if (event.target.dataset.oqBackupFileInput) {
+      const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
+      event.target.value = "";
+      void handleSettingsBackupFileSelection(file);
+      return;
+    }
+
     const field = event.target.dataset.oqField;
     if (!field) {
       return;
@@ -746,6 +1141,7 @@
           shouldRender = true;
         }
         if (state.systemModal) {
+          clearSettingsBackupDraft();
           state.systemModal = "";
           shouldRender = true;
         }
@@ -841,6 +1237,16 @@
       return;
     }
 
+    if (action === "download-settings-backup") {
+      void exportSettingsBackup();
+      return;
+    }
+
+    if (action === "open-settings-backup-import") {
+      openSettingsBackupImportPicker();
+      return;
+    }
+
     if (action === "open-silent-settings-modal") {
       state.systemModal = "silent-settings";
       render();
@@ -918,6 +1324,7 @@
       state.authDraftConfirmPassword = "";
       state.authNotice = "";
       state.authError = "";
+      clearSettingsBackupDraft();
       render();
       return;
     }

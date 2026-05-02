@@ -595,6 +595,82 @@
     ...COMPRESSOR_SETTING_KEYS,
     ...SILENT_SETTING_KEYS,
   ];
+  const SETTINGS_BACKUP_SECTIONS = [
+    {
+      id: "installation",
+      label: "Installatie",
+      keys: ["setupComplete", "hpGeneration", "firmwareUpdateChannel"],
+    },
+    {
+      id: "operation",
+      label: "Bediening",
+      keys: [
+        "strategy",
+        "openquattEnabled",
+        "manualCoolingEnable",
+        "cicCompatibilityMode",
+        "trendHistoryEnabled",
+        "trendHistoryFlashEnabled",
+        "silentModeOverride",
+        "openquattResumeAt",
+      ],
+    },
+    {
+      id: "limits",
+      label: "Limieten",
+      keys: [
+        "silentStartTime",
+        "silentEndTime",
+        "dayMax",
+        "silentMax",
+        "maxWater",
+        "minRuntime",
+        "stickyIpwm",
+      ],
+    },
+    {
+      id: "heatingCurve",
+      label: "Stooklijn",
+      keys: [
+        "curveControlProfile",
+        "curveFallbackSupply",
+        ...CURVE_POINTS.map((point) => point.key),
+      ],
+    },
+    {
+      id: "powerHouse",
+      label: "Power House",
+      keys: [
+        "housePower",
+        "houseColdTemp",
+        "houseOutdoorMax",
+        "phResponseProfile",
+        "phKp",
+        "phComfortBelow",
+        "phComfortAbove",
+        "phDemandRiseTime",
+        "phDemandFallTime",
+      ],
+    },
+    {
+      id: "flow",
+      label: "Flow",
+      keys: ["flowControlMode", "flowSetpoint", "manualIpwm"],
+    },
+    {
+      id: "cooling",
+      label: "Koeling",
+      keys: ["coolingWithoutDewPointMode"],
+    },
+    {
+      id: "compressor",
+      label: "Compressor",
+      keys: ["hp1ExcludedA", "hp1ExcludedB", "hp2ExcludedA", "hp2ExcludedB"],
+    },
+  ];
+  const SETTINGS_BACKUP_SCHEMA_VERSION = 1;
+  const SETTINGS_BACKUP_KEYS = [...new Set(SETTINGS_BACKUP_SECTIONS.flatMap((section) => section.keys))];
+  const SETTINGS_BACKUP_KEY_SET = new Set(SETTINGS_BACKUP_KEYS);
   const POLL_INTERVAL_MS = 4000;
   const FLOW_DASH_CYCLE_PX = 22;
   const FLOW_OFFSET_PX_PER_SEC = FLOW_DASH_CYCLE_PX / 1.7;

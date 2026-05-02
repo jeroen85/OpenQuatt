@@ -2391,6 +2391,72 @@ body.oq-page-light {
   margin-top: 16px;
 }
 
+.oq-settings-backup-shell {
+  display: grid;
+  gap: 14px;
+}
+
+.oq-settings-backup-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.oq-settings-backup-stat {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--oq-helper-line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(249, 250, 251, 0.98));
+}
+
+.oq-helper-shell--dark .oq-settings-backup-stat {
+  background: linear-gradient(180deg, rgba(66, 32, 14, 0.24), rgba(22, 33, 49, 0.94));
+}
+
+.oq-settings-backup-stat-label {
+  color: var(--oq-helper-faint);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.oq-settings-backup-stat-value {
+  color: var(--oq-helper-ink);
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.oq-settings-backup-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.oq-settings-backup-actions .oq-helper-button {
+  width: 100%;
+}
+
+.oq-settings-backup-input {
+  display: none;
+}
+
+.oq-settings-backup-error {
+  margin: 0;
+  color: #b45309;
+  font-weight: 600;
+  line-height: 1.55;
+}
+
+.oq-helper-shell--dark .oq-settings-backup-error {
+  color: #fdba74;
+}
+
 .oq-settings-installation-summary-label,
 .oq-settings-system-row-label {
   margin: 0;
@@ -2436,6 +2502,14 @@ body.oq-page-light {
   margin: 0;
   color: var(--oq-helper-soft);
   line-height: 1.5;
+}
+
+.oq-settings-action-note--warning {
+  color: var(--oq-helper-accent-deep);
+}
+
+.oq-helper-shell--dark .oq-settings-action-note--warning {
+  color: #fdba74;
 }
 
 .oq-settings-field--span-2 {
@@ -2565,6 +2639,55 @@ body.oq-page-light {
 
 .oq-settings-choice-card--custom .oq-settings-choice-copy {
   font-size: inherit;
+  line-height: 1.55;
+}
+
+.oq-settings-backup-modal-grid {
+  align-items: start;
+}
+
+.oq-settings-backup-modal-sections {
+  display: grid;
+  gap: 12px;
+}
+
+.oq-settings-backup-modal-section {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--oq-helper-line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(249, 250, 251, 0.98));
+}
+
+.oq-helper-shell--dark .oq-settings-backup-modal-section {
+  background: linear-gradient(180deg, rgba(66, 32, 14, 0.22), rgba(22, 33, 49, 0.94));
+}
+
+.oq-settings-backup-modal-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--oq-helper-ink);
+}
+
+.oq-settings-backup-modal-section-head strong {
+  min-width: 0;
+  font-size: 0.98rem;
+  line-height: 1.25;
+}
+
+.oq-settings-backup-modal-section-head span {
+  flex: 0 0 auto;
+  color: var(--oq-helper-faint);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.oq-settings-backup-modal-section p {
+  margin: 0;
+  color: var(--oq-helper-soft);
   line-height: 1.55;
 }
 
@@ -6396,6 +6519,20 @@ esp-app.oq-native-app.oq-native-app--collapsed {
   .oq-settings-system-row {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .oq-settings-backup-summary,
+  .oq-settings-backup-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .oq-settings-backup-modal-section-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .oq-settings-backup-modal-grid {
+    grid-template-columns: 1fr;
   }
 
   .oq-settings-installation-summary button,

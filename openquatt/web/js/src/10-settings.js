@@ -392,6 +392,7 @@
                 renderSettingsQuickStartSection(),
                 renderSettingsTrendSection(),
                 renderSettingsLoginSection(),
+                renderSettingsBackupSection(),
                 renderSettingsDiagnosticsSection(),
               ];
 
@@ -1351,6 +1352,133 @@
         </div>
       `,
     );
+  }
+
+  function renderSettingsBackupSection() {
+    const busy = state.settingsBackupBusy;
+    const totalFields = SETTINGS_BACKUP_KEYS.length;
+    const sectionCount = SETTINGS_BACKUP_SECTIONS.length;
+
+    return renderSettingsSection(
+      "Beheer",
+      "Backup en restore",
+      "Sla een JSON-backup op van de instellingen die OpenQuatt in deze web-app beheert, en zet die later weer terug na een factory-bin update.",
+      `
+        <div class="oq-settings-backup-shell">
+          <div class="oq-settings-backup-summary">
+            <div class="oq-settings-backup-stat">
+              <span class="oq-settings-backup-stat-label">Instellingen</span>
+              <strong class="oq-settings-backup-stat-value">${escapeHtml(String(totalFields))}</strong>
+            </div>
+            <div class="oq-settings-backup-stat">
+              <span class="oq-settings-backup-stat-label">Secties</span>
+              <strong class="oq-settings-backup-stat-value">${escapeHtml(String(sectionCount))}</strong>
+            </div>
+          </div>
+          <div class="oq-settings-backup-actions">
+            <button
+              class="oq-helper-button oq-helper-button--primary"
+              type="button"
+              data-oq-action="download-settings-backup"
+              ${busy ? "disabled" : ""}
+            >
+              ${busy ? "Bezig..." : "Backup downloaden"}
+            </button>
+            <button
+              class="oq-helper-button oq-helper-button--ghost"
+              type="button"
+              data-oq-action="open-settings-backup-import"
+              ${busy ? "disabled" : ""}
+            >
+              Backup herstellen
+            </button>
+          </div>
+          <input
+            class="oq-settings-backup-input"
+            type="file"
+            accept=".json,application/json"
+            data-oq-backup-file-input="true"
+            hidden
+          >
+          <p class="oq-settings-action-note">Ontbrekende velden houden hun firmware-default. Onbekende velden uit een backup worden overgeslagen.</p>
+          ${state.settingsBackupError ? `<p class="oq-settings-backup-error">${escapeHtml(state.settingsBackupError)}</p>` : ""}
+        </div>
+      `,
+    );
+  }
+
+  function renderSettingsBackupRestoreModal() {
+    const draft = state.settingsBackupDraft;
+    if (!draft) {
+      return "";
+    }
+
+    const summary = draft.summary || getSettingsBackupSelectionSummary(draft);
+    const sourceInstallation = String(draft.source?.installation || draft.source?.device || "Onbekend");
+    const currentInstallation = getInstallationLabel();
+    const sourceVersion = String(draft.source?.firmware_version || "Onbekend");
+    const sourceChannel = String(draft.source?.firmware_channel || "").trim() || "Onbekend";
+    const sourceTopology = String(draft.source?.topology || "").trim() || "Onbekend";
+    const currentVersion = getFirmwareCurrentVersion();
+    const topologyMismatch = sourceTopology !== "Onbekend" && sourceTopology !== (hasEntity("hp2Power") ? "duo" : "single");
+    const installationMismatch = sourceInstallation !== "Onbekend" && sourceInstallation !== currentInstallation;
+    const warningText = topologyMismatch || installationMismatch
+      ? "De backup lijkt van een andere installatie te komen. Je kunt nog steeds doorzetten, maar controleer de samenvatting even goed."
+      : "Ontbrekende velden houden hun firmware-default. Onbekende velden uit een backup worden overgeslagen.";
+
+    return `
+      <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
+        <section class="oq-helper-modal oq-helper-modal--wide" role="dialog" aria-modal="true" aria-labelledby="oq-backup-modal-title">
+          <div class="oq-helper-modal-head">
+            <div>
+              <p class="oq-helper-modal-kicker">Beheer</p>
+              <h2 class="oq-helper-modal-title" id="oq-backup-modal-title">Backup herstellen</h2>
+            </div>
+            <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit backup-popup">×</button>
+          </div>
+          <p class="oq-helper-modal-copy">Deze backup zet alleen de instellingen terug die OpenQuatt in de web-app beheert. Live-sensoren, diagnostiek en onbekende velden blijven ongemoeid.</p>
+          <div class="oq-helper-modal-grid oq-settings-backup-modal-grid">
+            <div class="oq-helper-modal-row">
+              <span class="oq-helper-modal-label">Backup van</span>
+              <strong class="oq-helper-modal-value">${escapeHtml(sourceInstallation)}</strong>
+              <span class="oq-helper-modal-subvalue">Topo: ${escapeHtml(sourceTopology)} · Firmware: ${escapeHtml(sourceVersion)}</span>
+            </div>
+            <div class="oq-helper-modal-row">
+              <span class="oq-helper-modal-label">Huidige installatie</span>
+              <strong class="oq-helper-modal-value">${escapeHtml(currentInstallation)}</strong>
+              <span class="oq-helper-modal-subvalue">Topo: ${escapeHtml(hasEntity("hp2Power") ? "duo" : "single")} · Firmware: ${escapeHtml(currentVersion || "Onbekend")}</span>
+            </div>
+            <div class="oq-helper-modal-row">
+              <span class="oq-helper-modal-label">Backupkanaal</span>
+              <strong class="oq-helper-modal-value">${escapeHtml(sourceChannel)}</strong>
+              <span class="oq-helper-modal-subvalue">Schema v${escapeHtml(String(draft.schema_version || 1))}</span>
+            </div>
+            <div class="oq-helper-modal-row">
+              <span class="oq-helper-modal-label">Gevonden waarden</span>
+              <strong class="oq-helper-modal-value">${escapeHtml(`${summary.present}/${summary.total}`)}</strong>
+              <span class="oq-helper-modal-subvalue">${escapeHtml(`${summary.missing} ontbreken · ${summary.unknown} onbekend`)} </span>
+            </div>
+          </div>
+          <div class="oq-settings-backup-modal-sections">
+            ${summary.sectionSummaries.map((section) => `
+              <div class="oq-settings-backup-modal-section">
+                <div class="oq-settings-backup-modal-section-head">
+                  <strong>${escapeHtml(section.label)}</strong>
+                  <span>${escapeHtml(`${section.present}/${section.present + section.missing}`)}</span>
+                </div>
+                <p>${escapeHtml(section.missing ? `${section.missing} veld(en) komen uit dit bestand niet terug.` : "Alle velden in deze sectie zijn aanwezig.")}</p>
+              </div>
+            `).join("")}
+          </div>
+          <p class="oq-settings-action-note${summary.unknown || installationMismatch ? " oq-settings-action-note--warning" : ""}">${escapeHtml(warningText)}</p>
+          ${state.settingsBackupError ? `<p class="oq-settings-backup-error">${escapeHtml(state.settingsBackupError)}</p>` : ""}
+          <div class="oq-helper-modal-actions">
+            <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="close-system-modal" ${state.settingsBackupBusy ? "disabled" : ""}>Annuleren</button>
+            <button class="oq-helper-button oq-helper-button--primary" type="button" data-oq-action="confirm-settings-backup-restore" ${state.settingsBackupBusy ? "disabled" : ""}>${state.settingsBackupBusy ? "Herstellen..." : "Herstellen"}</button>
+          </div>
+        </section>
+      </div>
+    `;
   }
 
   function renderSettingsDiagnosticsSection() {

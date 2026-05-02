@@ -1355,6 +1355,10 @@
       `;
     }
 
+    if (state.systemModal === "settings-backup-restore") {
+      return renderSettingsBackupRestoreModal();
+    }
+
     if (state.systemModal === "restart-confirm") {
       const busy = state.busyAction === "restartAction";
       return `

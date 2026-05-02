@@ -187,6 +187,20 @@ esp-app.oq-native-app.oq-native-app--collapsed {
     align-items: stretch;
   }
 
+  .oq-settings-backup-summary,
+  .oq-settings-backup-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .oq-settings-backup-modal-section-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .oq-settings-backup-modal-grid {
+    grid-template-columns: 1fr;
+  }
+
   .oq-settings-installation-summary button,
   .oq-settings-system-row button {
     width: 100%;
