@@ -356,7 +356,10 @@
     }
 
     try {
-      const windowHours = Number(state.trendWindowHours || DEFAULT_TREND_WINDOW_HOURS);
+      const windowHours = normalizeTrendWindowHours(state.trendWindowHours || DEFAULT_TREND_WINDOW_HOURS);
+      if (windowHours !== state.trendWindowHours) {
+        setTrendWindowHours(windowHours);
+      }
       const response = await fetch(`${getBasePath()}/trends/history?hours=${encodeURIComponent(String(windowHours))}`, { cache: "no-store" });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
@@ -729,6 +732,9 @@
     }
 
     if (action === "select-trend-window") {
+      if (button.disabled) {
+        return;
+      }
       setTrendWindowHours(Number(button.dataset.trendHours || 24));
       render();
       void refreshTrendHistoryData().then((changed) => {

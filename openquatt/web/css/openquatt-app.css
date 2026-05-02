@@ -4411,6 +4411,21 @@ body.oq-page-light {
   padding: 0 12px;
 }
 
+.oq-overview-trends-windowbar .oq-overview-controlpanel-segment.is-disabled,
+.oq-overview-trends-windowbar .oq-overview-controlpanel-segment:disabled {
+  opacity: 0.42;
+  color: #7b879c;
+  border-color: #d7dfec;
+  background: #f6f8fc;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.oq-overview-trends-windowbar .oq-overview-controlpanel-segment.is-disabled:hover,
+.oq-overview-trends-windowbar .oq-overview-controlpanel-segment:disabled:hover {
+  transform: none;
+}
+
 /* --- css/src/30-energy.css --- */
 .oq-overview-energy {
   margin-top: 16px;

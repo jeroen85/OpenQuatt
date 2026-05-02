@@ -759,8 +759,11 @@
   const OVERVIEW_TREND_MAX_POINTS = 360;
 
   function getOverviewTrendWindowHours() {
-    const hours = Number(state.trendWindowHours || 24);
-    return TREND_WINDOW_HOURS_OPTIONS.includes(hours) ? hours : DEFAULT_TREND_WINDOW_HOURS;
+    const normalized = normalizeTrendWindowHours(state.trendWindowHours || DEFAULT_TREND_WINDOW_HOURS);
+    if (normalized !== state.trendWindowHours) {
+      setTrendWindowHours(normalized);
+    }
+    return normalized;
   }
 
   function getOverviewTrendWindowMs(windowHours = getOverviewTrendWindowHours()) {
@@ -1310,16 +1313,27 @@
 
   function renderTrendWindowSwitcher() {
     const windowHours = getOverviewTrendWindowHours();
+    const flashHistoryEnabled = isTrendHistoryFlashEnabled();
     return `
       <div class="oq-overview-trends-windowbar" role="group" aria-label="Kies trendvenster">
         ${TREND_WINDOW_HOURS_OPTIONS.map((hours) => `
+          ${(() => {
+            const requiresFlashHistory = hours > 168;
+            const disabled = requiresFlashHistory && !flashHistoryEnabled;
+            const title = disabled ? "Beschikbaar zodra trendhistorie opslaan in flash actief is." : "";
+            return `
           <button
-            class="oq-overview-controlpanel-segment${windowHours === hours ? " is-selected" : ""}"
+            class="oq-overview-controlpanel-segment${windowHours === hours ? " is-selected" : ""}${disabled ? " is-disabled" : ""}"
             type="button"
             data-oq-action="select-trend-window"
             data-trend-hours="${hours}"
             aria-pressed="${windowHours === hours ? "true" : "false"}"
+            aria-disabled="${disabled ? "true" : "false"}"
+            ${disabled ? "disabled" : ""}
+            ${title ? `title="${escapeHtml(title)}"` : ""}
           >${escapeHtml(formatOverviewTrendWindowLabel(hours))}</button>
+        `;
+          })()}
         `).join("")}
       </div>
     `;
