@@ -834,7 +834,9 @@ void OpenQuattTrends::write_sample_line_(AsyncResponseStream *stream, const Tren
 void OpenQuattTrends::write_samples_for_history_(AsyncResponseStream *stream, uint32_t window_hours) {
   const uint64_t cutoff_ms = this->get_window_cutoff_ms_(window_hours);
   const uint32_t stride = this->get_window_stride_(window_hours);
-  const uint64_t flash_latest = this->get_latest_archive_timestamp_ms_();
+  const uint64_t flash_latest = this->flash_enabled_ && this->flash_archive_scanned_
+                                   ? this->get_latest_archive_timestamp_ms_()
+                                   : 0ULL;
   const uint64_t ram_cutoff = flash_latest > 0 ? std::max(cutoff_ms, flash_latest + 1ULL) : cutoff_ms;
 
   uint64_t window_index = 0;
