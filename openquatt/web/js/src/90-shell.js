@@ -1,4 +1,4 @@
-  function renderSettingsView() {
+function renderSettingsView() {
     return `
       <section class="oq-helper-panel">
         <p class="oq-helper-label">Instellingen</p>
@@ -97,5 +97,4 @@
       .replaceAll("'", "&#39;");
   }
 
-  boot();
-}());
+boot();

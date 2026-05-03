@@ -808,6 +808,11 @@ body.oq-page-light {
   overflow: auto;
 }
 
+.oq-helper-modal--scrollable {
+  max-height: calc(100svh - 48px);
+  overflow: auto;
+}
+
 .oq-helper-modal-backdrop--quickstart {
   align-items: flex-start;
   padding-top: 24px;

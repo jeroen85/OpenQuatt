@@ -173,6 +173,10 @@ esp-app.oq-native-app.oq-native-app--collapsed {
     padding: 18px;
   }
 
+  .oq-helper-modal--scrollable {
+    max-height: calc(100svh - 24px);
+  }
+
   .oq-helper-modal-grid {
     grid-template-columns: 1fr;
   }
@@ -185,6 +189,33 @@ esp-app.oq-native-app.oq-native-app--collapsed {
   .oq-settings-system-row {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .oq-settings-backup-summary,
+  .oq-settings-backup-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .oq-settings-backup-modal-section > summary {
+    grid-template-columns: 1fr;
+    justify-items: start;
+  }
+
+  .oq-settings-backup-modal-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .oq-settings-backup-modal-section,
+  .oq-settings-backup-stat {
+    min-width: 0;
+  }
+
+  .oq-settings-backup-modal-section-head-meta {
+    justify-content: flex-start;
+  }
+
+  .oq-settings-backup-compare-values {
+    grid-template-columns: 1fr;
   }
 
   .oq-settings-installation-summary button,

@@ -242,23 +242,8 @@ switch:
 # ----------------------------
 # TUNING
 # ----------------------------
+# Sticky pump iPWM is a fixed compile-time fallback for CM0 sticky circulation.
 number:
-  - platform: template
-    id: oq_sticky_pwm
-    name: "Sticky pump iPWM"
-    disabled_by_default: true
-    unit_of_measurement: "iPWM"
-    mode: slider
-    icon: mdi:pump
-    optimistic: true
-    min_value: 50
-    max_value: 850
-    step: 1
-    restore_value: true
-    initial_value: 850
-    entity_category: config
-    web_server:
-      sorting_group_id: oq_tuning_flow
   - platform: template
     id: oq_silent_max_level
     name: "Silent max level"
@@ -1395,7 +1380,8 @@ interval:
 
             if (strcmp(desired_cm, "CM0") == 0) {
               const float stop_pwm = ${oq_cm0_pump_stop_ipwm};
-              const float target_pwm = sticky_active ? (float) id(oq_sticky_pwm).state : stop_pwm;
+              const float sticky_pwm = ${oq_sticky_pwm};
+              const float target_pwm = sticky_active ? sticky_pwm : stop_pwm;
               set_number_value(id(hp1_pump_speed), target_pwm, 1.0f);
               #if OQ_TOPOLOGY_DUO
               set_number_value(id(${supervisory_secondary_pump_speed_id}), target_pwm, 1.0f);

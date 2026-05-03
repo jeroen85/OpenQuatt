@@ -380,6 +380,524 @@
     }
   }
 
+  function clearSettingsBackupDraft() {
+    state.settingsBackupDraft = null;
+    state.settingsBackupError = "";
+    state.settingsBackupBusy = false;
+  }
+
+  function getSettingsBackupSourceMeta() {
+    return {
+      device: getFirmwareDeviceLabel(),
+      installation: getInstallationLabel(),
+      topology: hasEntity("hp2Power") ? "duo" : "single",
+      firmware_version: getFirmwareCurrentVersion(),
+      firmware_channel: String(getEntityValue("firmwareUpdateChannel") || getEntityValue("releaseChannelText") || "").trim(),
+    };
+  }
+
+  function getSettingsBackupValue(key) {
+    const entity = ENTITY_DEFS[key];
+    if (!entity) {
+      return undefined;
+    }
+
+    if (key === "setupComplete") {
+      return getSetupCompleteState();
+    }
+
+    const value = getEntityValue(key);
+    if (value === "" || value === null || value === undefined) {
+      return undefined;
+    }
+
+    if (entity.domain === "switch" || entity.domain === "binary_sensor") {
+      return isEntityActive(key);
+    }
+    if (entity.domain === "number") {
+      const numeric = parseLooseNumber(value);
+      return Number.isNaN(numeric) ? undefined : numeric;
+    }
+    if (entity.domain === "time") {
+      const normalized = normalizeTimeValue(value);
+      return normalized || undefined;
+    }
+    if (entity.domain === "datetime") {
+      const normalized = normalizeDateTimeValue(value);
+      return normalized || undefined;
+    }
+
+    const text = String(value || "").trim();
+    return text || undefined;
+  }
+
+  function buildSettingsBackupSnapshot() {
+    const settings = {};
+    SETTINGS_BACKUP_SECTIONS.forEach((section) => {
+      const values = {};
+      section.keys.forEach((key) => {
+        const value = getSettingsBackupValue(key);
+        if (value !== undefined) {
+          values[key] = value;
+        }
+      });
+      settings[section.id] = values;
+    });
+
+    return {
+      schema_version: SETTINGS_BACKUP_SCHEMA_VERSION,
+      exported_at: new Date().toISOString(),
+      source: getSettingsBackupSourceMeta(),
+      settings,
+    };
+  }
+
+  function getSettingsBackupFilename(snapshot = buildSettingsBackupSnapshot()) {
+    const stamp = String(snapshot.exported_at || new Date().toISOString())
+      .replace(/[:.]/g, "-")
+      .replace(/T/, "_")
+      .replace(/Z$/, "Z");
+    const installation = String(snapshot.source?.installation || "OpenQuatt").replace(/\s+/g, "-").toLowerCase();
+    return `${installation}-settings-backup-${stamp}.json`;
+  }
+
+  function downloadJsonFile(filename, payload) {
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.rel = "noreferrer";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
+  function getSettingsBackupFieldLabel(key) {
+    const entity = ENTITY_DEFS[key];
+    if (entity?.name) {
+      return entity.name;
+    }
+    return key
+      .replaceAll(/([a-z])([A-Z])/g, "$1 $2")
+      .replaceAll(/_/g, " ")
+      .trim();
+  }
+
+  function formatSettingsBackupFieldValue(key, value) {
+    if (value === undefined || value === null || value === "") {
+      return "—";
+    }
+
+    const entity = ENTITY_DEFS[key];
+    if (!entity) {
+      return String(value).trim() || "—";
+    }
+
+    if (entity.domain === "number") {
+      return formatValue(key, value);
+    }
+    if (entity.domain === "time") {
+      return normalizeTimeValue(value)?.slice(0, 5) || "—";
+    }
+    if (entity.domain === "datetime") {
+      return normalizeDateTimeValue(value) || "—";
+    }
+    if (entity.domain === "switch" || entity.domain === "binary_sensor") {
+      return value ? "Aan" : "Uit";
+    }
+
+    const text = String(value).trim();
+    return text || "—";
+  }
+
+  function getSettingsBackupFieldStatusLabel(status) {
+    switch (status) {
+      case "same":
+        return "Gelijk";
+      case "different":
+        return "Wijkt af";
+      case "missing":
+        return "Ontbreekt in backup";
+      case "current-missing":
+        return "Niet op huidige installatie";
+      case "optional-missing":
+      case "optional-unavailable":
+        return "Ontbreekt";
+      default:
+        return "Onbekend";
+    }
+  }
+
+  function getSettingsBackupSelectionSummary(snapshot) {
+    const settings = snapshot?.settings && typeof snapshot.settings === "object" ? snapshot.settings : {};
+    const source = snapshot?.source && typeof snapshot.source === "object" ? snapshot.source : {};
+    const backupKeySet = SETTINGS_BACKUP_KEY_SET;
+    let requiredPresent = 0;
+    let requiredMissing = 0;
+    let optionalPresent = 0;
+    let optionalMissing = 0;
+    let unknown = 0;
+    let requiredTotal = 0;
+    let differenceCount = 0;
+    let currentPresent = 0;
+    const sectionSummaries = SETTINGS_BACKUP_SECTIONS.map((section) => {
+      const values = settings[section.id] && typeof settings[section.id] === "object" ? settings[section.id] : {};
+      let sectionRequiredPresent = 0;
+      let sectionRequiredMissing = 0;
+      let sectionOptionalPresent = 0;
+      let sectionOptionalMissing = 0;
+      let sectionOptionalTotal = 0;
+      let sectionDifferenceCount = 0;
+      let sectionCurrentPresent = 0;
+      const rows = section.keys.map((key) => {
+        const entity = ENTITY_DEFS[key];
+        const optional = Boolean(entity?.optional);
+        const hasBackupValue = Object.prototype.hasOwnProperty.call(values, key);
+        const backupValue = hasBackupValue ? values[key] : undefined;
+        const currentValue = getSettingsBackupValue(key);
+        const currentExists = hasEntity(key);
+        const backupDisplay = hasBackupValue ? formatSettingsBackupFieldValue(key, backupValue) : (optional ? "Niet op huidige installatie" : "Ontbreekt in backup");
+        const currentDisplay = currentExists
+          ? formatSettingsBackupFieldValue(key, currentValue)
+          : (optional ? "Niet beschikbaar op huidige installatie" : "Ontbreekt op huidige installatie");
+        let status = "same";
+        if (!hasBackupValue && optional) {
+          status = "optional-missing";
+        } else if (!hasBackupValue) {
+          status = "missing";
+        } else if (!currentExists) {
+          status = optional ? "optional-unavailable" : "current-missing";
+        } else if (JSON.stringify(currentValue) !== JSON.stringify(backupValue)) {
+          status = "different";
+        }
+        if (currentExists) {
+          sectionCurrentPresent += 1;
+          currentPresent += 1;
+        }
+        if (status !== "same") {
+          sectionDifferenceCount += 1;
+          differenceCount += 1;
+        }
+
+        if (optional) {
+          sectionOptionalTotal += 1;
+          if (hasBackupValue) {
+            sectionOptionalPresent += 1;
+            optionalPresent += 1;
+          } else {
+            sectionOptionalMissing += 1;
+            optionalMissing += 1;
+          }
+        } else if (hasBackupValue) {
+          sectionRequiredPresent += 1;
+          requiredPresent += 1;
+        } else {
+          sectionRequiredMissing += 1;
+          requiredMissing += 1;
+        }
+
+        return {
+          key,
+          label: getSettingsBackupFieldLabel(key),
+          optional,
+          hasBackupValue,
+          backupDisplay,
+          currentDisplay,
+          status,
+          statusLabel: getSettingsBackupFieldStatusLabel(status),
+        };
+      });
+      requiredTotal += section.keys.filter((key) => !ENTITY_DEFS[key]?.optional).length;
+      return {
+        id: section.id,
+        label: section.label,
+        present: sectionRequiredPresent,
+        currentPresent: sectionCurrentPresent,
+        requiredTotal: section.keys.filter((key) => !ENTITY_DEFS[key]?.optional).length,
+        optionalTotal: sectionOptionalTotal,
+        optionalPresent: sectionOptionalPresent,
+        optionalMissing: sectionOptionalMissing,
+        requiredMissing: sectionRequiredMissing,
+        total: section.keys.length,
+        differenceCount: sectionDifferenceCount,
+        rows,
+      };
+    });
+
+    Object.entries(settings).forEach(([sectionId, values]) => {
+      if (!SETTINGS_BACKUP_SECTIONS.some((section) => section.id === sectionId)) {
+        unknown += 1;
+        return;
+      }
+      if (!values || typeof values !== "object") {
+        return;
+      }
+      Object.keys(values).forEach((key) => {
+        if (!backupKeySet.has(key)) {
+          unknown += 1;
+        }
+      });
+    });
+
+    return {
+      source,
+      sectionSummaries,
+      requiredPresent,
+      requiredMissing,
+      requiredAvailable: requiredTotal,
+      optionalPresent,
+      optionalMissing,
+      unknown,
+      differenceCount,
+      currentPresent,
+      requiredTotal,
+      total: SETTINGS_BACKUP_KEYS.length,
+    };
+  }
+
+  function parseSettingsBackupPayload(rawText, fileName = "") {
+    const parsed = JSON.parse(rawText);
+    if (!parsed || typeof parsed !== "object") {
+      throw new Error("Backupbestand bevat geen JSON-object.");
+    }
+
+    const schemaVersion = Number(parsed.schema_version ?? parsed.schemaVersion ?? 0);
+    if (!Number.isInteger(schemaVersion) || schemaVersion < SETTINGS_BACKUP_SCHEMA_VERSION) {
+      throw new Error("Onbekende backupversie.");
+    }
+
+    const settings = parsed.settings && typeof parsed.settings === "object" ? parsed.settings : {};
+    const snapshot = {
+      schema_version: schemaVersion,
+      exported_at: String(parsed.exported_at || ""),
+      source: parsed.source && typeof parsed.source === "object" ? parsed.source : {},
+      settings,
+      file_name: fileName || "",
+    };
+    snapshot.summary = getSettingsBackupSelectionSummary(snapshot);
+    return snapshot;
+  }
+
+  async function prepareSettingsBackupSnapshot() {
+    state.settingsBackupBusy = true;
+    state.controlError = "";
+    state.controlNotice = "";
+    render();
+
+    try {
+      await refreshEntities(SETTINGS_BACKUP_KEYS, "all");
+      return buildSettingsBackupSnapshot();
+    } finally {
+      state.settingsBackupBusy = false;
+      render();
+    }
+  }
+
+  async function exportSettingsBackup() {
+    if (state.settingsBackupBusy) {
+      return;
+    }
+
+    try {
+      const snapshot = await prepareSettingsBackupSnapshot();
+      downloadJsonFile(getSettingsBackupFilename(snapshot), snapshot);
+      state.controlNotice = "Settings-backup gedownload.";
+      render();
+    } catch (error) {
+      state.controlError = `Backup exporteren mislukt. ${error.message}`;
+      render();
+    }
+  }
+
+  function openSettingsBackupImportPicker() {
+    if (!state.root || state.settingsBackupBusy) {
+      return;
+    }
+
+    const input = state.root.querySelector('[data-oq-backup-file-input]');
+    if (input) {
+      input.click();
+    }
+  }
+
+  async function handleSettingsBackupFileSelection(file) {
+    if (!file || state.settingsBackupBusy) {
+      return;
+    }
+
+    state.settingsBackupBusy = true;
+    state.settingsBackupDraft = null;
+    state.settingsBackupError = "";
+    state.controlError = "";
+    state.controlNotice = "";
+    render();
+
+    try {
+      const rawText = await file.text();
+      const snapshot = parseSettingsBackupPayload(rawText, file.name || "");
+      state.settingsBackupDraft = snapshot;
+      state.systemModal = "settings-backup-restore";
+    } catch (error) {
+      state.settingsBackupDraft = null;
+      state.settingsBackupError = `Backupbestand kon niet worden gelezen. ${error.message}`;
+    } finally {
+      state.settingsBackupBusy = false;
+      render();
+    }
+  }
+
+  async function setEntityBackupValue(key, value) {
+    const entity = ENTITY_DEFS[key];
+    if (!entity) {
+      throw new Error(`Onbekend veld ${key}.`);
+    }
+
+    if (entity.domain === "select") {
+      const option = String(value || "").trim();
+      const response = await fetch(
+        `${buildEntityPath(entity.domain, entity.name, "set")}?option=${encodeURIComponent(option)}`,
+        { method: "POST" }
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return option;
+    }
+
+    if (entity.domain === "number") {
+      const normalized = normalizeNumber(key, value);
+      const response = await fetch(
+        `${buildEntityPath(entity.domain, entity.name, "set")}?value=${encodeURIComponent(normalized)}`,
+        { method: "POST" }
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return normalized;
+    }
+
+    if (entity.domain === "time") {
+      const normalized = normalizeTimeValue(value);
+      const response = await fetch(
+        `${buildEntityPath(entity.domain, entity.name, "set")}?value=${encodeURIComponent(normalized)}`,
+        { method: "POST" }
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return normalized;
+    }
+
+    if (entity.domain === "datetime") {
+      const normalized = normalizeDateTimeValue(value);
+      const response = await fetch(
+        `${buildEntityPath(entity.domain, entity.name, "set")}?value=${encodeURIComponent(normalized)}`,
+        { method: "POST" }
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return normalized;
+    }
+
+    if (entity.domain === "switch" || entity.domain === "binary_sensor") {
+      const enabled = Boolean(value);
+      const action = enabled ? "turn_on" : "turn_off";
+      const response = await fetch(buildEntityPath(entity.domain, entity.name, action), { method: "POST" });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return enabled;
+    }
+
+    throw new Error(`${entity.name} kan niet worden hersteld.`);
+  }
+
+  async function restoreSettingsBackup() {
+    const draft = state.settingsBackupDraft;
+    if (!draft || state.settingsBackupBusy) {
+      return;
+    }
+
+    state.settingsBackupBusy = true;
+    state.settingsBackupError = "";
+    state.controlError = "";
+    state.controlNotice = "";
+    render();
+
+    const applied = [];
+    const skipped = [];
+    let shouldCompleteSetup = false;
+
+    try {
+      await refreshEntities(SETTINGS_BACKUP_KEYS, "all");
+
+      for (const section of SETTINGS_BACKUP_SECTIONS) {
+        const sectionValues = draft.settings?.[section.id] && typeof draft.settings[section.id] === "object"
+          ? draft.settings[section.id]
+          : {};
+
+        for (const key of section.keys) {
+          if (!Object.prototype.hasOwnProperty.call(sectionValues, key)) {
+            skipped.push(key);
+            continue;
+          }
+
+          const value = sectionValues[key];
+          if (key === "setupComplete") {
+            shouldCompleteSetup = value === true;
+            continue;
+          }
+
+          if (key === "openquattEnabled") {
+            continue;
+          }
+
+          const entity = ENTITY_DEFS[key];
+          if (!entity || !hasEntity(key)) {
+            skipped.push(key);
+            continue;
+          }
+
+          try {
+            await setEntityBackupValue(key, value);
+            applied.push(key);
+          } catch (error) {
+            skipped.push(key);
+          }
+        }
+      }
+
+      const openquattEnabledValue = draft.settings?.operation?.openquattEnabled;
+      if (Object.prototype.hasOwnProperty.call(draft.settings?.operation || {}, "openquattEnabled") && hasEntity("openquattEnabled")) {
+        await setEntityBackupValue("openquattEnabled", openquattEnabledValue);
+        applied.push("openquattEnabled");
+      }
+
+      if (shouldCompleteSetup && ENTITY_DEFS.apply) {
+        const response = await fetch(buildEntityPath("button", "Complete setup", "press"), { method: "POST" });
+        if (!response.ok) {
+          throw new Error(`Setup bevestigen mislukt (HTTP ${response.status}).`);
+        }
+        applied.push("setupComplete");
+      } else if (Object.prototype.hasOwnProperty.call(draft.settings?.installation || {}, "setupComplete")) {
+        skipped.push("setupComplete");
+      }
+
+      state.systemModal = "settings-backup-success";
+      clearSettingsBackupDraft();
+      state.controlNotice = `Backup hersteld (${applied.length} toegepast${skipped.length ? `, ${skipped.length} overgeslagen` : ""}).`;
+      await syncEntities();
+    } catch (error) {
+      state.settingsBackupError = `Backup herstellen mislukt. ${error.message}`;
+    } finally {
+      state.settingsBackupBusy = false;
+      render();
+    }
+  }
+
   function isDevPreviewEnvironmentForFetches() {
     return Boolean(
       (typeof window !== "undefined" && window.__OQ_DEV_CONTROLS__)
@@ -659,6 +1177,13 @@
   }
 
   function handleChange(event) {
+    if (event.target.dataset.oqBackupFileInput) {
+      const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
+      event.target.value = "";
+      void handleSettingsBackupFileSelection(file);
+      return;
+    }
+
     const field = event.target.dataset.oqField;
     if (!field) {
       return;
@@ -746,6 +1271,7 @@
           shouldRender = true;
         }
         if (state.systemModal) {
+          clearSettingsBackupDraft();
           state.systemModal = "";
           shouldRender = true;
         }
@@ -841,6 +1367,17 @@
       return;
     }
 
+    if (action === "download-settings-backup") {
+      void exportSettingsBackup();
+      return;
+    }
+
+    if (action === "open-settings-backup-import") {
+      state.systemModal = "settings-backup-import";
+      render();
+      return;
+    }
+
     if (action === "open-silent-settings-modal") {
       state.systemModal = "silent-settings";
       render();
@@ -918,7 +1455,13 @@
       state.authDraftConfirmPassword = "";
       state.authNotice = "";
       state.authError = "";
+      clearSettingsBackupDraft();
       render();
+      return;
+    }
+
+    if (action === "confirm-settings-backup-restore") {
+      void restoreSettingsBackup();
       return;
     }
 
