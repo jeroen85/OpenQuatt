@@ -1337,6 +1337,11 @@
       return;
     }
 
+    if (action === "open-webserver-log-modal") {
+      openWebServerLogsModal();
+      return;
+    }
+
     if (action === "open-login-modal") {
       state.systemModal = "login";
       syncAuthDraftsFromStatus();
@@ -1457,6 +1462,11 @@
       state.authError = "";
       clearSettingsBackupDraft();
       render();
+      return;
+    }
+
+    if (action === "clear-webserver-log-output") {
+      clearWebServerLogOutput();
       return;
     }
 

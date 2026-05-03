@@ -15,6 +15,7 @@ const bundles = [
       path.join(__dirname, "js", "src", "02-firmware-header.js"),
       path.join(__dirname, "js", "src", "03-entities-controls.js"),
       path.join(__dirname, "js", "src", "05-app-shared.js"),
+      path.join(__dirname, "js", "src", "06-webserver-logs.js"),
       path.join(__dirname, "js", "src", "10-settings.js"),
       path.join(__dirname, "js", "src", "15-quickstart.js"),
       path.join(__dirname, "js", "src", "20-overview.js"),

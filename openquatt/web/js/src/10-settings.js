@@ -1565,6 +1565,19 @@
               Openen
             </button>
           </div>
+          <div class="oq-settings-system-row oq-settings-system-row--with-action" data-oq-diagnostics-row="webserverLog">
+            <div class="oq-settings-system-row-copy">
+              <p class="oq-settings-system-row-label">Logboek</p>
+              <strong class="oq-settings-system-row-value">${escapeHtml(getWebServerLogStatusLabel())}</strong>
+            </div>
+            <button
+              class="oq-helper-button oq-helper-button--ghost"
+              type="button"
+              data-oq-action="open-webserver-log-modal"
+            >
+              Openen
+            </button>
+          </div>
           <div class="oq-settings-system-row" data-oq-diagnostics-row="datetime">
             <span class="oq-settings-system-row-label">Datum/tijd</span>
             <strong class="oq-settings-system-row-value">${escapeHtml(dateTime)}</strong>

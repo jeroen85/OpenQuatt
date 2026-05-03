@@ -34,6 +34,7 @@ function renderSettingsView() {
       state.headerRenderSignature = getHeaderRenderSignature();
       stopMotionLoop();
       syncNativeVisibility();
+      syncWebServerLogStream();
       bindHeaderDevControls();
       syncDocumentTheme();
       syncDocumentTitle();
@@ -80,6 +81,7 @@ function renderSettingsView() {
     state.headerRenderSignature = getHeaderRenderSignature();
     clearLegacyMotionVariables();
     syncTechTooltipLayers();
+    syncWebServerLogStream();
     refreshMotionTargets();
     syncOverviewTrendInteractions();
     syncNativeVisibility();

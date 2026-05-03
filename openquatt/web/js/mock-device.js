@@ -634,6 +634,15 @@
       updateAvailable,
       updateLabel: updateAvailable ? "Beschikbaar" : "Actueel",
     };
+    window.__OQ_DEV_WEBSERVER_LOGS__ = [
+      "[I][main:41] OpenQuatt web_server gestart",
+      "[I][wifi:28] Verbonden met lokaal netwerk",
+      "[D][web_server:91] Event stream beschikbaar op /events",
+      "[I][control:77] Regeling actief",
+      "[W][heatpump:203] Defrost actief, compressor tijdelijk uit",
+      "[I][automation:118] Hervatmoment gepland",
+      "[D][logger:65] Debuglog opgebouwd voor preview",
+    ];
   }
 
   function notifyMockUpdated() {

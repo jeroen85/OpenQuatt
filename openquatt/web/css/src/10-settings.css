@@ -537,6 +537,107 @@
   flex: 1;
 }
 
+.oq-webserver-log-modal .oq-helper-modal-copy code,
+.oq-webserver-log-modal .oq-helper-modal-note code {
+  padding: 0 0.35em;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.14);
+  color: inherit;
+}
+
+.oq-webserver-log-panel {
+  margin-top: 16px;
+  max-height: min(58svh, 560px);
+  overflow: auto;
+  padding: 12px 14px;
+  border: 1px solid var(--oq-helper-line);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(249, 250, 251, 0.98));
+}
+
+.oq-helper-shell--dark .oq-webserver-log-panel {
+  background: linear-gradient(180deg, rgba(18, 27, 41, 0.9), rgba(13, 19, 31, 0.96));
+}
+
+.oq-webserver-log-output {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+  justify-content: flex-start;
+  font-family: "SFMono-Regular", "Consolas", "Liberation Mono", "Menlo", monospace;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.oq-webserver-log-empty {
+  margin: 0;
+  color: var(--oq-helper-soft);
+  line-height: 1.55;
+}
+
+.oq-webserver-log-entry {
+  margin: 0;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.oq-webserver-log-entry span {
+  display: block;
+  white-space: pre-wrap;
+}
+
+.oq-webserver-log-entry--plain {
+  color: var(--oq-helper-soft);
+}
+
+.oq-webserver-log-entry--error {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.oq-webserver-log-entry--warning {
+  color: #b45309;
+  font-weight: 600;
+}
+
+.oq-webserver-log-entry--info {
+  color: #0f766e;
+}
+
+.oq-webserver-log-entry--debug {
+  color: #1d4ed8;
+}
+
+.oq-webserver-log-entry--verbose {
+  color: var(--oq-helper-faint);
+}
+
+.oq-helper-shell--dark .oq-webserver-log-empty,
+.oq-helper-shell--dark .oq-webserver-log-entry--plain {
+  color: #cbd5e1;
+}
+
+.oq-helper-shell--dark .oq-webserver-log-entry--error {
+  color: #fca5a5;
+}
+
+.oq-helper-shell--dark .oq-webserver-log-entry--warning {
+  color: #fdba74;
+}
+
+.oq-helper-shell--dark .oq-webserver-log-entry--info {
+  color: #5eead4;
+}
+
+.oq-helper-shell--dark .oq-webserver-log-entry--debug {
+  color: #93c5fd;
+}
+
+.oq-helper-shell--dark .oq-webserver-log-entry--verbose {
+  color: #94a3b8;
+}
+
 .oq-settings-action-field {
   display: flex;
   flex-direction: column;

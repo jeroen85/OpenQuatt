@@ -1428,6 +1428,10 @@
       `;
     }
 
+    if (state.systemModal === "webserver-logs") {
+      return renderWebServerLogsModal();
+    }
+
     if (state.systemModal === "openquatt-pause") {
       const enabled = isEntityActive("openquattEnabled");
       const busy = state.busyAction === "openquatt-regulation";
