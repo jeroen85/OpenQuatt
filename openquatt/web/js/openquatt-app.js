@@ -4252,6 +4252,11 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       return;
     }
 
+    if (action === "confirm-settings-backup-restore") {
+      void restoreSettingsBackup();
+      return;
+    }
+
     if (action === "confirm-restart") {
       void triggerNamedButton("restartAction", {
         successNotice: "OpenQuatt wordt opnieuw opgestart. Wacht even tot de webinterface weer terugkomt.",

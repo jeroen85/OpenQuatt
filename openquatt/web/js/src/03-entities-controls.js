@@ -1460,6 +1460,11 @@
       return;
     }
 
+    if (action === "confirm-settings-backup-restore") {
+      void restoreSettingsBackup();
+      return;
+    }
+
     if (action === "confirm-restart") {
       void triggerNamedButton("restartAction", {
         successNotice: "OpenQuatt wordt opnieuw opgestart. Wacht even tot de webinterface weer terugkomt.",
