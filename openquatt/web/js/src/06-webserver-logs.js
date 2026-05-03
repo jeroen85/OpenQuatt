@@ -48,12 +48,9 @@ function getWebServerLogStatusLabel() {
 }
 
 function openWebServerLogsModal() {
-  state.webServerLogEntries = isWebServerLogDemoMode()
-    ? getWebServerLogDemoEntries().map((entry) => createWebServerLogEntry(entry))
-    : [];
-  state.webServerLogError = "";
-  state.webServerLogConnected = false;
-  state.webServerLogEnabled = isWebServerLogDemoMode() ? true : null;
+  if (isWebServerLogDemoMode() && state.webServerLogEntries.length === 0) {
+    state.webServerLogEntries = getWebServerLogDemoEntries().map((entry) => createWebServerLogEntry(entry));
+  }
   state.systemModal = "webserver-logs";
   render();
 }
@@ -72,7 +69,7 @@ function syncWebServerLogStream() {
     return;
   }
 
-  const shouldConnect = state.mounted && state.systemModal === "webserver-logs" && !state.nativeOpen;
+  const shouldConnect = state.mounted && !state.nativeOpen;
   if (!shouldConnect) {
     closeWebServerLogStream();
     return;
@@ -137,7 +134,7 @@ function closeWebServerLogStream() {
 }
 
 function handleWebServerLogOpen() {
-  if (!state.webServerLogSource || state.systemModal !== "webserver-logs" || state.nativeOpen) {
+  if (!state.webServerLogSource || state.nativeOpen) {
     return;
   }
 
@@ -148,7 +145,7 @@ function handleWebServerLogOpen() {
 }
 
 function handleWebServerLogPing() {
-  if (!state.webServerLogSource || state.systemModal !== "webserver-logs" || state.nativeOpen) {
+  if (!state.webServerLogSource || state.nativeOpen) {
     return;
   }
 
@@ -365,7 +362,7 @@ function renderWebServerLogStatusBanner() {
     return `
       <div class="oq-helper-modal-success oq-helper-modal-success--compact">
         <strong>Voorbeeldlog</strong>
-        <span>De lokale preview toont voorbeeldregels. Op de echte firmware streamt de modal live via <code>/events</code>.</span>
+        <span>De lokale preview toont voorbeeldregels. Op de echte firmware loopt de stream al mee terwijl de app open is via <code>/events</code>.</span>
       </div>
     `;
   }
@@ -403,7 +400,7 @@ function renderWebServerLogsModal() {
             <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit logboek">&times;</button>
         </div>
         <p class="oq-helper-modal-copy">${demoMode
-          ? "Hier zie je voorbeeldregels voor de lokale preview. Op de echte firmware loopt dit live via <code>/events</code>."
+          ? "Hier zie je voorbeeldregels voor de lokale preview. Op de echte firmware loopt de logstream al mee zolang de app open is via <code>/events</code>."
           : "Hier zie je de live debuglog van de ESPHome web_server v3 via <code>/events</code>. De kleuren volgen de originele logseverity."
         }</p>
         ${renderWebServerLogStatusBanner()}
