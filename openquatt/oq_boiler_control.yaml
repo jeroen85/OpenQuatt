@@ -114,12 +114,33 @@ interval:
           const bool in_cm3 = (id(oq_control_mode_code) == 3);
           const float supply_c = id(water_supply_temp_selected).state;
           const bool has_valid_supply_temp = !isnan(supply_c);
+          std::string boiler_block_reason;
+          if (!in_cm3) {
+            boiler_block_reason = "Control Mode is not CM3";
+          } else if (!has_valid_supply_temp) {
+            boiler_block_reason = "water supply temperature unavailable";
+          } else if (id(oq_boot_startup_inhibit_active)) {
+            boiler_block_reason = "startup inhibit active";
+          } else if (id(oq_water_temp_boiler_inhibit_active)) {
+            boiler_block_reason = "water temperature boiler inhibit active";
+          } else if (id(oq_water_temp_hard_trip_active)) {
+            boiler_block_reason = "water temperature hard trip active";
+          }
           const bool boiler_allowed =
-              in_cm3 &&
-              has_valid_supply_temp &&
-              !id(oq_boot_startup_inhibit_active) &&
-              !id(oq_water_temp_boiler_inhibit_active) &&
-              !id(oq_water_temp_hard_trip_active);
+              boiler_block_reason.empty();
+          static bool last_boiler_allowed = false;
+          static std::string last_boiler_block_reason = "";
+          if (boiler_allowed != last_boiler_allowed || boiler_block_reason != last_boiler_block_reason) {
+            if (boiler_allowed) {
+              ESP_LOGI("quatt.boiler", "Boiler enabled: CM3 and safety guards clear");
+            } else if (id(oq_water_temp_hard_trip_active)) {
+              ESP_LOGW("quatt.boiler", "Boiler blocked: %s", boiler_block_reason.c_str());
+            } else {
+              ESP_LOGI("quatt.boiler", "Boiler blocked: %s", boiler_block_reason.c_str());
+            }
+            last_boiler_allowed = boiler_allowed;
+            last_boiler_block_reason = boiler_block_reason;
+          }
 
           if (boiler_allowed) {
             if (!id(boiler_relay).state) id(boiler_relay).turn_on();

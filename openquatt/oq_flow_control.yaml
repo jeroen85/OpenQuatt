@@ -387,7 +387,7 @@ interval:
             int start_pwm = (int) id(oq_flow_last_good_pwm);
             if (start_pwm < 50 || start_pwm > 850) start_pwm = fallback;
 
-            ESP_LOGD("flow", "AUTO start(%s): iPWM=%d (last_good=%d fallback=%d, hold %ds, fixed iPWM)",
+            ESP_LOGI("flow", "AUTO start(%s): iPWM=%d (last_good=%d fallback=%d, hold %ds, fixed iPWM)",
                      tag, start_pwm, (int)id(oq_flow_last_good_pwm), fallback, STARTUP_HOLD_S);
 
             id(oq_flow_last_pwm) = start_pwm;
@@ -411,7 +411,7 @@ interval:
             if (pi_failsafe) {
               constexpr int kFailsafeIpwm = 850;
               pwm_local = kFailsafeIpwm;
-              ESP_LOGW("flow", "Flow PI failsafe: sp=%0.1f pv=%0.1f -> forcing iPWM=%d", sp_target, pv, kFailsafeIpwm);
+              ESP_LOGW("flow", "Flow PI failsafe engaged: sp=%0.1f pv=%0.1f -> forcing iPWM=%d", sp_target, pv, kFailsafeIpwm);
               id(oq_flow_i) = 0.0f;
               last_pi_e = 0.0f;
               stable_cnt = 0;
@@ -618,7 +618,7 @@ interval:
           }
           if (mode_txt != last_mode) {
             id(oq_flow_mode).publish_state(mode_txt.c_str());
-            ESP_LOGD("flow", "Flow mode=%s (cm=%s manual=%d failsafe=%d hold=%d pwm=%d)",
+            ESP_LOGI("flow", "Flow mode changed: %s (cm=%s manual=%d failsafe=%d hold=%d pwm=%d)",
                      mode_txt.c_str(), id(oq_control_mode).state.c_str(), (int)want_manual, (int)pi_failsafe, startup_hold, pwm);
             last_mode = mode_txt;
           }

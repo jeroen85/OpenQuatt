@@ -42,12 +42,12 @@ modbus_controller:
       then:
         - lambda: |-
             id(${hp_id}_is_online) = false;
-        - logger.log: "${prefix}Modbus OFFLINE"
+            ESP_LOGW("quatt", "%sModbus OFFLINE", "${prefix}");
     on_online:
       then:
         - lambda: |-
             id(${hp_id}_is_online) = true;
-        - logger.log: "${prefix}Modbus ONLINE"
+            ESP_LOGI("quatt", "%sModbus ONLINE", "${prefix}");
 
 # ----------------------------
 # GLOBALS

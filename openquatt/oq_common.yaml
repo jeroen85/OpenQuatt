@@ -251,7 +251,7 @@ select:
                 const uint32_t last_request_ms = id(oq_fw_check_last_request_ms);
                 if (last_request_ms > 0 && now_ms >= last_request_ms &&
                     (now_ms - last_request_ms) < fw_check_cooldown_ms) {
-                  ESP_LOGW("oq_fw", "Skip firmware update check: cooldown active after a recent request.");
+                  ESP_LOGI("oq_fw", "Firmware update check skipped: cooldown active after a recent request.");
                   return false;
                 }
                 id(oq_fw_check_last_request_ms) = now_ms;
@@ -295,6 +295,7 @@ select:
               (x == "CONFIG")  ? 4 :
                                  5;  // DEBUG
 
+            ESP_LOGI("oq_fw", "Runtime logger level updated to %s", x.c_str());
             esphome::logger::global_logger->set_log_level(lvl);
 
   - platform: template
@@ -322,6 +323,7 @@ select:
 
             auto *logger = esphome::logger::global_logger;
 
+            ESP_LOGI("oq_fw", "Runtime Modbus logger levels updated to %s", x.c_str());
             logger->set_log_level("modbus", lvl);
             logger->set_log_level("modbus_controller", lvl);
 
@@ -367,7 +369,7 @@ button:
               const uint32_t last_request_ms = id(oq_fw_check_last_request_ms);
               if (last_request_ms > 0 && now_ms >= last_request_ms &&
                   (now_ms - last_request_ms) < fw_check_cooldown_ms) {
-                ESP_LOGW("oq_fw", "Skip firmware update check: cooldown active after a recent request.");
+                ESP_LOGI("oq_fw", "Firmware update check skipped: cooldown active after a recent request.");
                 return false;
               }
               id(oq_fw_check_last_request_ms) = now_ms;

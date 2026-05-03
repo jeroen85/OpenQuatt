@@ -1039,11 +1039,19 @@ interval:
           // 4) CM selection with CM1 timer (pre/postflow) + flow interlock
           // -------------------------------------------------
           const char* cur_cm = id(oq_control_mode).state.c_str();
+          std::string cm_transition_reason = "control decision updated";
           auto resolve_desired_cm = [&]() -> int {
             // Helper: start CM1 window
             auto start_cm1 = [&](int next_after)->void {
               id(oq_cm1_until_ms) = now_ms + prepost_ms;
               id(oq_cm1_next_after) = next_after; // 0=CM0, 2=CM2, 5=CM5, 98=CM98
+              cm_transition_reason =
+                  (next_after == 2) ? "pre/postflow hold for heating" :
+                  (next_after == 5) ? "pre/postflow hold for cooling" :
+                  (next_after == 98) ? "pre/postflow hold for frost" :
+                  "postflow hold for standby";
+              ESP_LOGI("supervisory", "CM1 hold started: next_after=%d, heating_req=%d, cooling_req=%d",
+                       next_after, (int) heating_req, (int) cooling_req);
             };
 
             // Determine base target (without CM1 timer)
@@ -1078,6 +1086,8 @@ interval:
             if (override_mode == 3) {
               const uint32_t MAX_MS = (uint32_t)(${oq_cm98_diag_max_s}UL * 1000UL);
               if (id(oq_override_cm98_since_ms) != 0 && (uint32_t)(now_ms - id(oq_override_cm98_since_ms)) >= MAX_MS) {
+                ESP_LOGI("supervisory", "CM98 diagnostic override expired after %u s; returning to Auto.",
+                         (unsigned int) ${oq_cm98_diag_max_s});
                 auto call = id(oq_cm_override).make_call();
                 call.set_option("Auto");
                 call.perform();
@@ -1094,9 +1104,16 @@ interval:
               id(oq_cm1_next_after) = 0;
               id(oq_cm3_need_since_ms) = 0;
               id(oq_cm3_demote_since_ms) = 0;
-              if (override_mode == 1) desired_local = 0;       // CM0
-              else if (override_mode == 2) desired_local = 1;  // CM1
-              else if (override_mode == 3) desired_local = 98; // CM98
+              if (override_mode == 1) {
+                desired_local = 0;       // CM0
+                cm_transition_reason = "supervisory override: Force CM0";
+              } else if (override_mode == 2) {
+                desired_local = 1;  // CM1
+                cm_transition_reason = "supervisory override: Force CM1";
+              } else if (override_mode == 3) {
+                desired_local = 98; // CM98
+                cm_transition_reason = "supervisory override: Force CM98";
+              }
             } else {
               // Snapshot CM1 timer state (before we touch globals)
               const bool cm1_timer_active  = (id(oq_cm1_until_ms) != 0);
@@ -1107,6 +1124,7 @@ interval:
               // 1) If we're in CM1 and timer is still running -> stay CM1
               if (cm1_timer_running && strcmp(cur_cm, "CM1") == 0) {
                 desired_local = 1;
+                cm_transition_reason = "CM1 hold timer active";
 
                   // 2) If we're in CM1 and timer just expired -> advance to next_after
                   } else if (cm1_timer_expired && strcmp(cur_cm, "CM1") == 0) {
@@ -1134,7 +1152,12 @@ interval:
                       desired_local = (base_target == 5) ? 5 : ((base_target == 2) ? 2 : (base_target == 98 ? 98 : 0));
                     }
 
-                    ESP_LOGI("supervisory", "CM1 expired: next_after=%d, heating_req=%d, cooling_req=%d, base_target=%d -> desired=%d",
+                    cm_transition_reason =
+                        (desired_local == 2) ? "CM1 hold expired -> heating" :
+                        (desired_local == 5) ? "CM1 hold expired -> cooling" :
+                        (desired_local == 98) ? "CM1 hold expired -> frost" :
+                        "CM1 hold expired -> standby";
+                    ESP_LOGI("supervisory", "CM1 hold expired: next_after=%d, heating_req=%d, cooling_req=%d, base_target=%d -> desired=%d",
                              cm1_next_after, (int) heating_req, (int) cooling_req, base_target, desired_local);
 
                 // Clear CM1 window only AFTER we have used next_after
@@ -1151,12 +1174,15 @@ interval:
                   if (base_target == 5) {
                     if (strcmp(cur_cm, "CM5") == 0) {
                       desired_local = 5;
+                      cm_transition_reason = "cooling already active";
                     } else {
                       start_cm1(5);
                       desired_local = 1;
+                      cm_transition_reason = "cooling request waiting for CM1 hold";
                     }
                   } else {
                     desired_local = 1; // flow interlock holding state
+                    cm_transition_reason = "cooling request held by flow interlock";
                   }
                 } else if (heating_req) {
                   if (base_target == 2) {
@@ -1164,19 +1190,24 @@ interval:
                     // should not force an artificial CM1 detour that drops compressor requests.
                     if (strcmp(cur_cm, "CM2") == 0 || strcmp(cur_cm, "CM3") == 0) {
                       desired_local = 2;
+                      cm_transition_reason = "heating already active";
                     } else {
                       start_cm1(2);
                       desired_local = 1;
+                      cm_transition_reason = "heating request waiting for CM1 hold";
                     }
                   } else {
                     desired_local = 1; // flow interlock holding state
+                    cm_transition_reason = "heating request held by flow interlock";
                   }
                 } else {
                   if (strcmp(cur_cm, "CM2") == 0 || strcmp(cur_cm, "CM5") == 0) {
                     start_cm1(0); // postflow to CM0
                     desired_local = 1;
+                    cm_transition_reason = "postflow before standby";
                   } else {
                     desired_local = (base_target == 98) ? 98 : 0;
+                    cm_transition_reason = (desired_local == 98) ? "frost protection" : "no thermal demand";
                   }
                 }
               }
@@ -1212,7 +1243,10 @@ interval:
                   if (now_ms - id(oq_cm_last_change_ms) >= MIN_CM2_MS) {
                     if (need_on) {
                       if (id(oq_cm3_need_since_ms) == 0) id(oq_cm3_need_since_ms) = now_ms;
-                      if (now_ms - id(oq_cm3_need_since_ms) >= T_ON_MS) desired_local = 3;
+                      if (now_ms - id(oq_cm3_need_since_ms) >= T_ON_MS) {
+                        desired_local = 3;
+                        cm_transition_reason = "power-house deficit promoted to CM3";
+                      }
                     } else {
                       id(oq_cm3_need_since_ms) = 0;
                     }
@@ -1221,7 +1255,10 @@ interval:
                   if (now_ms - id(oq_cm_last_change_ms) >= MIN_CM3_MS) {
                     if (ok_off) {
                       if (id(oq_cm3_demote_since_ms) == 0) id(oq_cm3_demote_since_ms) = now_ms;
-                      if (now_ms - id(oq_cm3_demote_since_ms) >= T_OFF_MS) desired_local = 2;
+                      if (now_ms - id(oq_cm3_demote_since_ms) >= T_OFF_MS) {
+                        desired_local = 2;
+                        cm_transition_reason = "power-house deficit cleared, demoting to CM2";
+                      }
                     } else {
                       id(oq_cm3_demote_since_ms) = 0;
                     }
@@ -1235,6 +1272,7 @@ interval:
                 id(oq_cm3_demote_since_ms) = 0;
                 if (cm_now == 3 && heating_req && base_target == 2) {
                   desired_local = 2;
+                  cm_transition_reason = "Power House assist disabled, returning to CM2";
                 }
               }
             }
@@ -1247,7 +1285,12 @@ interval:
           // 5) Publish CM (writes-only-on-change)
           // -------------------------------------------------
           if (id(oq_control_mode).state != desired_cm) {
+            const std::string previous_cm = id(oq_control_mode).state;
             id(oq_control_mode).publish_state(desired_cm);
+            ESP_LOGI("supervisory", "ControlMode transition: %s -> %s (%s)",
+                     previous_cm.empty() ? "(unset)" : previous_cm.c_str(),
+                     desired_cm,
+                     cm_transition_reason.c_str());
             // DEBUG-RUNTIME: anchor CM dwell timers on actual mode transitions.
             id(oq_cm_last_change_ms) = now_ms;
             if (desired == 2) {

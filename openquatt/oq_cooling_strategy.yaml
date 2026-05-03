@@ -432,6 +432,40 @@ interval:
             return hp_has_any_allowed_level(is_hp1) && !hp_restart_blocked(is_hp1);
           };
 
+          auto hp_restart_remaining_s = [&](bool is_hp1)->uint32_t {
+            int min_off_s = (int) ${oq_hp_min_off_s};
+            if (min_off_s <= 0) return 0;
+            const uint32_t last_stop_ms = is_hp1 ? id(hp1_last_stop_ms) : id(${cc_secondary_last_stop_ms_id});
+            if (last_stop_ms == 0 || now_ms <= last_stop_ms) return 0;
+            const uint32_t min_off_ms = (uint32_t) min_off_s * 1000UL;
+            const uint32_t elapsed_off_ms = now_ms - last_stop_ms;
+            if (elapsed_off_ms >= min_off_ms) return 0;
+            return (min_off_ms - elapsed_off_ms + 999UL) / 1000UL;
+          };
+
+          static bool last_hp1_restart_blocked = false;
+          static bool last_hp2_restart_blocked = false;
+          const bool hp1_restart_blocked_now = hp_restart_blocked(true);
+          const bool hp2_restart_blocked_now = hp_restart_blocked(false);
+          if (hp1_restart_blocked_now != last_hp1_restart_blocked) {
+            if (hp1_restart_blocked_now) {
+              ESP_LOGI("quatt.cool", "HP1 cooling start blocked: minimum off-time remaining %u s",
+                       (unsigned int) hp_restart_remaining_s(true));
+            } else {
+              ESP_LOGI("quatt.cool", "HP1 cooling start block cleared");
+            }
+            last_hp1_restart_blocked = hp1_restart_blocked_now;
+          }
+          if (hp2_restart_blocked_now != last_hp2_restart_blocked) {
+            if (hp2_restart_blocked_now) {
+              ESP_LOGI("quatt.cool", "HP2 cooling start blocked: minimum off-time remaining %u s",
+                       (unsigned int) hp_restart_remaining_s(false));
+            } else {
+              ESP_LOGI("quatt.cool", "HP2 cooling start block cleared");
+            }
+            last_hp2_restart_blocked = hp2_restart_blocked_now;
+          }
+
           auto hp_last_activity_ms = [&](bool is_hp1)->uint32_t {
             const uint32_t last_start_ms =
                 is_hp1 ? id(hp1_last_start_ms) : id(${cc_secondary_last_start_ms_id});
@@ -443,9 +477,9 @@ interval:
           int hp1_req = 0;
           int hp2_req = 0;
           int owner = 0;
+          const bool demand_active = (f > 0);
 
           #if OQ_TOPOLOGY_DUO
-          const bool demand_active = (f > 0);
           const bool prev_hp1_on = (id(hp1_last_applied_level) > 0);
           const bool prev_hp2_on = (id(${cc_secondary_last_applied_level_id}) > 0);
           const bool hp1_can_start_cooling = hp_can_take_cooling_start(true);
@@ -479,6 +513,17 @@ interval:
             }
           }
 
+          static bool last_cooling_start_blocked = false;
+          const bool cooling_start_blocked = demand_active && owner == 0 && !hp1_can_start_cooling && !hp2_can_start_cooling;
+          if (cooling_start_blocked != last_cooling_start_blocked) {
+            if (cooling_start_blocked) {
+              ESP_LOGI("quatt.cool", "Cooling request blocked: both HPs are still in minimum off-time or unavailable");
+            } else {
+              ESP_LOGI("quatt.cool", "Cooling request block cleared");
+            }
+            last_cooling_start_blocked = cooling_start_blocked;
+          }
+
           oq_request::reset_dual_runtime_state(
               id(oq_dual_hp_enabled),
               id(oq_dual_hp_enable_hold_elapsed_accum_min),
@@ -499,6 +544,16 @@ interval:
               id(oq_duo_request_hold_until_ms),
               1);
           owner = (f > 0) ? 1 : 0;
+          static bool last_cooling_start_blocked = false;
+          const bool cooling_start_blocked = demand_active && !hp_can_take_cooling_start(true);
+          if (cooling_start_blocked != last_cooling_start_blocked) {
+            if (cooling_start_blocked) {
+              ESP_LOGI("quatt.cool", "Cooling request blocked: HP1 is still in minimum off-time or unavailable");
+            } else {
+              ESP_LOGI("quatt.cool", "Cooling request block cleared");
+            }
+            last_cooling_start_blocked = cooling_start_blocked;
+          }
           hp1_req = f;
           hp2_req = 0;
           #endif

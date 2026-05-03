@@ -199,6 +199,21 @@ interval:
             return true;
           };
 
+          auto log_hp_block_change = [&](bool is_hp1, const std::string &reason)->void {
+            static std::string last_hp1_block_reason = "";
+            static std::string last_hp2_block_reason = "";
+            std::string &last = is_hp1 ? last_hp1_block_reason : last_hp2_block_reason;
+            const char *hp = is_hp1 ? "HP1" : "HP2";
+            if (reason != last) {
+              if (reason.empty()) {
+                ESP_LOGI("quatt.act", "%s compressor block cleared", hp);
+              } else {
+                ESP_LOGI("quatt.act", "%s compressor block: %s", hp, reason.c_str());
+              }
+              last = reason;
+            }
+          };
+
           auto set_mode = [&](bool is_hp1, bool active) {
             const char* opt = (active && request_thermal_active) ? request_thermal_mode_opt : oq_request::request_mode_option(0);
             if (is_hp1) {
@@ -241,10 +256,16 @@ interval:
 
           auto apply_level = [&](bool is_hp1, int req_level)->int {
             req_level = std::max(min_level, std::min(max_level, req_level));
+            const int requested_level = req_level;
             const int prev_applied = is_hp1 ? id(hp1_last_applied_level) : id(${ta_secondary_last_applied_level_id});
             const int retained_level = defrost_stop_hold_level(is_hp1);
+            std::string block_reason;
 
             if (req_level == 0 && retained_level > 0) {
+              char reason_buf[96];
+              snprintf(reason_buf, sizeof(reason_buf), "defrost hold at level %d", retained_level);
+              block_reason = reason_buf;
+              log_hp_block_change(is_hp1, reason_buf);
               apply_active_mode_hold(is_hp1, retained_level);
               publish_optimizer_reason("defrost_protect_hold");
               return retained_level;
@@ -260,6 +281,15 @@ interval:
                 const uint32_t elapsed_off_ms = now_ms - last_stop_ms;
                 const uint32_t min_off_ms = (uint32_t) min_off_s * 1000UL;
                 if (elapsed_off_ms < min_off_ms) req_level = 0;
+                if (req_level == 0) {
+                  const uint32_t remaining_s = (min_off_ms > elapsed_off_ms) ? ((min_off_ms - elapsed_off_ms + 999UL) / 1000UL) : 0;
+                  char reason_buf[144];
+                  snprintf(reason_buf, sizeof(reason_buf),
+                           "minimum off-time remaining %u s after stop (requested %d)",
+                           (unsigned int) remaining_s, requested_level);
+                  block_reason = reason_buf;
+                  log_hp_block_change(is_hp1, reason_buf);
+                }
               }
             }
 
@@ -281,6 +311,27 @@ interval:
             // control cycle on mode-transition latency.
             if (req_level > 0 && !mode_is_active_thermal(is_hp1) && !mode_target_is_active_thermal(is_hp1)) {
               applied = 0;
+              block_reason = "waiting for thermal mode confirmation";
+              log_hp_block_change(is_hp1, "waiting for thermal mode confirmation");
+            }
+
+            if (applied == 0 && req_level > 0) {
+              if (block_reason.empty() && req_level > cap) {
+                char reason_buf[128];
+                snprintf(reason_buf, sizeof(reason_buf), "silent/day cap limited request to 0 (cap=%d, requested=%d)", cap, requested_level);
+                block_reason = reason_buf;
+                log_hp_block_change(is_hp1, reason_buf);
+              } else if (block_reason.empty() && !oq_request::level_allowed_for_excluded_levels(excluded_levels(is_hp1), requested_level)) {
+                char reason_buf[128];
+                snprintf(reason_buf, sizeof(reason_buf), "excluded compressor levels blocked request %d", requested_level);
+                block_reason = reason_buf;
+                log_hp_block_change(is_hp1, reason_buf);
+              } else if (block_reason.empty() && retained_level == 0) {
+                block_reason = "actuator gating held request at 0";
+                log_hp_block_change(is_hp1, "actuator gating held request at 0");
+              }
+            } else if (block_reason.empty()) {
+              log_hp_block_change(is_hp1, "");
             }
 
             if (applied == 0 && retained_level > 0) {

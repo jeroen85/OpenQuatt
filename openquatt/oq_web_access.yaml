@@ -34,7 +34,7 @@ binary_sensor:
       then:
         - lambda: |-
             if (id(oq_web_auth_store).start_recovery_window()) {
-              ESP_LOGW("openquatt.web_auth", "Armed login recovery window from temporary recovery pin");
+              ESP_LOGI("openquatt.web_auth", "Login recovery window armed from temporary recovery pin");
             } else {
               ESP_LOGW("openquatt.web_auth", "Failed to arm login recovery window from temporary recovery pin");
             }

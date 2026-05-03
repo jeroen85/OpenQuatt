@@ -22,7 +22,7 @@ button:
           id(oq_heatpump_cooling_energy_cumulative).reset();
           id(oq_boiler_thermal_energy_cumulative).reset();
           id(oq_system_thermal_energy_cumulative).reset();
-          ESP_LOGW("quatt", "Cumulative energy counters reset.");
+          ESP_LOGI("quatt", "Cumulative energy counters reset by user action.");
 
 sensor:
   # Electrical input energy (daily, kWh).

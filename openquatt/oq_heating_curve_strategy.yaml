@@ -463,6 +463,11 @@ output:
               oil_return_active ||
               (id(oq_curve_oil_return_hold_until_ms) > 0 &&
                now_ms < id(oq_curve_oil_return_hold_until_ms));
+          static bool last_oil_return_mask_active = false;
+          if (oil_return_mask_active != last_oil_return_mask_active) {
+            ESP_LOGI("quatt.heatcurve", "Oil return hold %s", oil_return_mask_active ? "active" : "cleared");
+            last_oil_return_mask_active = oil_return_mask_active;
+          }
           bool heat_request_active = id(oq_curve_heat_request_active);
           const bool above_stop_band = pv >= (spw + stop_delta_c);
           const bool low_pid_for_off = d <= off_pid_max_f;
@@ -512,9 +517,34 @@ output:
               off_since_ms = 0;
             }
           }
+          static bool last_restart_inhibit_active = false;
+          if (restart_inhibit_active != last_restart_inhibit_active) {
+            if (restart_inhibit_active) {
+              const uint32_t off_age_ms = (off_since_ms > 0 && now_ms > off_since_ms) ? (now_ms - off_since_ms) : 0;
+              const uint32_t off_age_s = off_age_ms / 1000UL;
+              const uint32_t off_min_s = off_reentry_min_ms / 1000UL;
+              ESP_LOGI("quatt.heatcurve", "Restart inhibit active: off-time hold (%u/%u s)",
+                       (unsigned int) off_age_s, (unsigned int) off_min_s);
+            } else {
+              ESP_LOGI("quatt.heatcurve", "Restart inhibit cleared");
+            }
+            last_restart_inhibit_active = restart_inhibit_active;
+          }
           if (heat_request_active) {
             restart_inhibit_active = false;
             off_since_ms = 0;
+          }
+
+          static bool last_heat_request_active = false;
+          if (heat_request_active != last_heat_request_active) {
+            if (heat_request_active) {
+              ESP_LOGI("quatt.heatcurve", "Heat request resumed: %s",
+                       room_requests_heat ? "room demand" : "restart band reached");
+            } else {
+              ESP_LOGI("quatt.heatcurve", "Heat request stopped: %s",
+                       low_load_release_condition ? "low-load release" : (normal_stop_condition ? "normal stop" : "oil return hold"));
+            }
+            last_heat_request_active = heat_request_active;
           }
 
           if (!heat_request_active) {

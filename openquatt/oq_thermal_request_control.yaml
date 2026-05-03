@@ -219,6 +219,10 @@ globals:
     type: bool
     restore_value: false
     initial_value: 'false'
+  - id: oq_boot_startup_inhibit_cleared_logged
+    type: bool
+    restore_value: false
+    initial_value: 'false'
 
 # ----------------------------
 # TUNING INPUTS
@@ -314,13 +318,13 @@ button:
           id(hp2_last_real_heat_start_ms) = 0;
           id(hp1_prev_heating_mode_active) = false;
           id(hp2_prev_heating_mode_active) = false;
-          ESP_LOGW("quatt", "Runtime counters reset (HP1+HP2).");
+          ESP_LOGI("quatt", "Runtime counters reset at boot (HP1+HP2).");
           #else
           id(hp1_minutes) = 0;
           id(hp1_runtime_accum_ms) = 0;
           id(hp1_last_real_heat_start_ms) = 0;
           id(hp1_prev_heating_mode_active) = false;
-          ESP_LOGW("quatt", "Runtime counters reset (HP1).");
+          ESP_LOGI("quatt", "Runtime counters reset at boot (HP1).");
           #endif
 
 # ----------------------------
@@ -655,14 +659,22 @@ interval:
             id(oq_boot_startup_inhibit_until_ms) = now_ms + inhibit_ms;
             id(oq_boot_startup_inhibit_active) = (inhibit_ms > 0);
             if (!id(oq_boot_startup_inhibit_logged) && inhibit_ms > 0) {
-              ESP_LOGW("quatt", "Startup inhibit armed for %us after reboot; compressors and boiler remain blocked.", (unsigned int) ${oq_hp_min_off_s});
+              ESP_LOGI("quatt", "Startup inhibit armed for %us after reboot; compressors and boiler remain blocked.", (unsigned int) ${oq_hp_min_off_s});
               id(oq_boot_startup_inhibit_logged) = true;
+              id(oq_boot_startup_inhibit_cleared_logged) = false;
             }
           }
           const bool startup_inhibit_active =
               id(oq_boot_startup_inhibit_until_ms) > 0 &&
               now_ms < id(oq_boot_startup_inhibit_until_ms);
           id(oq_boot_startup_inhibit_active) = startup_inhibit_active;
+          if (!startup_inhibit_active &&
+              id(oq_boot_startup_inhibit_until_ms) > 0 &&
+              id(oq_boot_startup_inhibit_logged) &&
+              !id(oq_boot_startup_inhibit_cleared_logged)) {
+            ESP_LOGI("quatt", "Startup inhibit cleared after reboot; compressors and boiler may resume.");
+            id(oq_boot_startup_inhibit_cleared_logged) = true;
+          }
 
           // On mode switch, execute immediately on this tick instead of waiting for previous cadence window.
           if (id(oq_heat_last_mode_code) != control_flavor_code) {
@@ -804,6 +816,7 @@ interval:
             const std::string s(reason);
             if (s != last_optimizer_reason) {
               id(oq_duo_optimizer_reason).publish_state(s.c_str());
+              ESP_LOGI("quatt.req", "Optimizer reason: %s", s.c_str());
               last_optimizer_reason = s;
             }
             #else
@@ -827,6 +840,14 @@ interval:
             const std::string s = reason ? std::string(reason) : std::string("inactive");
             if (s != last_request_reason) {
               id(oq_request_reason).publish_state(s.c_str());
+              ESP_LOGI("quatt.req", "Request reason: %s (mode=%d strategy=%d owner=%d topology=%d hp1=%d hp2=%d)",
+                       s.c_str(),
+                       published.mode_code,
+                       published.strategy_code,
+                       published.owner_hp,
+                       published.topology_code,
+                       published.hp1_level,
+                       published.hp2_level);
               last_request_reason = s;
             }
           };
@@ -1278,9 +1299,24 @@ interval:
                 (id(hp1_last_real_heat_start_ms) > 0) &&
                 (now_ms > id(hp1_last_real_heat_start_ms)) &&
                 ((uint32_t)(now_ms - id(hp1_last_real_heat_start_ms)) < min_rt_ms);
-            if (hp1_req == 0 && !cooling_floor_trip && hp1_min_runtime_active &&
-                (id(hp1_last_applied_level) > 0 || hp1_measured_thermal)) {
+            const bool hp1_min_runtime_hold =
+                (hp1_req == 0 && !cooling_floor_trip && hp1_min_runtime_active &&
+                 (id(hp1_last_applied_level) > 0 || hp1_measured_thermal));
+            if (hp1_min_runtime_hold) {
               hp1_req = pick_allowed(1, true);
+            }
+            static bool last_hp1_min_runtime_hold = false;
+            if (hp1_min_runtime_hold != last_hp1_min_runtime_hold) {
+              if (hp1_min_runtime_hold) {
+                const uint32_t elapsed_ms = (now_ms > id(hp1_last_real_heat_start_ms))
+                    ? (now_ms - id(hp1_last_real_heat_start_ms)) : 0;
+                const uint32_t remaining_s =
+                    (min_rt_ms > elapsed_ms) ? ((min_rt_ms - elapsed_ms + 999UL) / 1000UL) : 0;
+                ESP_LOGI("quatt.req", "HP1 minimum runtime hold active: keeping level 1 for %u s", (unsigned int) remaining_s);
+              } else {
+                ESP_LOGI("quatt.req", "HP1 minimum runtime hold cleared");
+              }
+              last_hp1_min_runtime_hold = hp1_min_runtime_hold;
             }
 
             #if OQ_TOPOLOGY_DUO
@@ -1288,9 +1324,24 @@ interval:
                 (id(hp2_last_real_heat_start_ms) > 0) &&
                 (now_ms > id(hp2_last_real_heat_start_ms)) &&
                 ((uint32_t)(now_ms - id(hp2_last_real_heat_start_ms)) < min_rt_ms);
-            if (hp2_req == 0 && !cooling_floor_trip && hp2_min_runtime_active &&
-                (id(${hc_secondary_last_applied_level_id}) > 0 || hp2_measured_thermal)) {
+            const bool hp2_min_runtime_hold =
+                (hp2_req == 0 && !cooling_floor_trip && hp2_min_runtime_active &&
+                 (id(${hc_secondary_last_applied_level_id}) > 0 || hp2_measured_thermal));
+            if (hp2_min_runtime_hold) {
               hp2_req = pick_allowed(1, false);
+            }
+            static bool last_hp2_min_runtime_hold = false;
+            if (hp2_min_runtime_hold != last_hp2_min_runtime_hold) {
+              if (hp2_min_runtime_hold) {
+                const uint32_t elapsed_ms = (now_ms > id(hp2_last_real_heat_start_ms))
+                    ? (now_ms - id(hp2_last_real_heat_start_ms)) : 0;
+                const uint32_t remaining_s =
+                    (min_rt_ms > elapsed_ms) ? ((min_rt_ms - elapsed_ms + 999UL) / 1000UL) : 0;
+                ESP_LOGI("quatt.req", "HP2 minimum runtime hold active: keeping level 1 for %u s", (unsigned int) remaining_s);
+              } else {
+                ESP_LOGI("quatt.req", "HP2 minimum runtime hold cleared");
+              }
+              last_hp2_min_runtime_hold = hp2_min_runtime_hold;
             }
             #else
             hp2_req = 0;
