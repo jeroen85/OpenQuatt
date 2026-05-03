@@ -1458,7 +1458,7 @@
             <div class="oq-helper-modal-row">
               <span class="oq-helper-modal-label">Backupinstellingen</span>
               <strong class="oq-helper-modal-value">${escapeHtml(`${summary.total} instellingen`)}</strong>
-              <span class="oq-helper-modal-subvalue">${escapeHtml(summary.differenceCount ? `${summary.differenceCount} ${summary.differenceCount === 1 ? "verschil" : "verschillen"} · ${summary.currentPresent} op toestel · ${summary.unknown} onbekend` : `Alles komt overeen · ${summary.currentPresent} op toestel · ${summary.unknown} onbekend`)}</span>
+              <span class="oq-helper-modal-subvalue">${escapeHtml(summary.differenceCount ? `${summary.differenceCount} ${summary.differenceCount === 1 ? "verschil" : "verschillen"} · ${summary.currentPresent} op huidige installatie · ${summary.unknown} onbekend` : `Alles komt overeen · ${summary.currentPresent} op huidige installatie · ${summary.unknown} onbekend`)}</span>
             </div>
           </div>
           <div class="oq-settings-backup-modal-sections">

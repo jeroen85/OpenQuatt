@@ -521,7 +521,7 @@
       case "missing":
         return "Ontbreekt in backup";
       case "current-missing":
-        return "Niet op toestel";
+        return "Niet op huidige installatie";
       case "optional-missing":
       case "optional-unavailable":
         return "Ontbreekt";
@@ -558,10 +558,10 @@
         const backupValue = hasBackupValue ? values[key] : undefined;
         const currentValue = getSettingsBackupValue(key);
         const currentExists = hasEntity(key);
-        const backupDisplay = hasBackupValue ? formatSettingsBackupFieldValue(key, backupValue) : (optional ? "Niet op dit toestel" : "Ontbreekt in backup");
+        const backupDisplay = hasBackupValue ? formatSettingsBackupFieldValue(key, backupValue) : (optional ? "Niet op huidige installatie" : "Ontbreekt in backup");
         const currentDisplay = currentExists
           ? formatSettingsBackupFieldValue(key, currentValue)
-          : (optional ? "Niet beschikbaar op dit toestel" : "Ontbreekt op dit toestel");
+          : (optional ? "Niet beschikbaar op huidige installatie" : "Ontbreekt op huidige installatie");
         let status = "same";
         if (!hasBackupValue && optional) {
           status = "optional-missing";

@@ -3309,7 +3309,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       case "missing":
         return "Ontbreekt in backup";
       case "current-missing":
-        return "Niet op toestel";
+        return "Niet op huidige installatie";
       case "optional-missing":
       case "optional-unavailable":
         return "Ontbreekt";
@@ -3346,10 +3346,10 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
         const backupValue = hasBackupValue ? values[key] : undefined;
         const currentValue = getSettingsBackupValue(key);
         const currentExists = hasEntity(key);
-        const backupDisplay = hasBackupValue ? formatSettingsBackupFieldValue(key, backupValue) : (optional ? "Niet op dit toestel" : "Ontbreekt in backup");
+        const backupDisplay = hasBackupValue ? formatSettingsBackupFieldValue(key, backupValue) : (optional ? "Niet op huidige installatie" : "Ontbreekt in backup");
         const currentDisplay = currentExists
           ? formatSettingsBackupFieldValue(key, currentValue)
-          : (optional ? "Niet beschikbaar op dit toestel" : "Ontbreekt op dit toestel");
+          : (optional ? "Niet beschikbaar op huidige installatie" : "Ontbreekt op huidige installatie");
         let status = "same";
         if (!hasBackupValue && optional) {
           status = "optional-missing";
@@ -6648,7 +6648,7 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
             <div class="oq-helper-modal-row">
               <span class="oq-helper-modal-label">Backupinstellingen</span>
               <strong class="oq-helper-modal-value">${escapeHtml(`${summary.total} instellingen`)}</strong>
-              <span class="oq-helper-modal-subvalue">${escapeHtml(summary.differenceCount ? `${summary.differenceCount} ${summary.differenceCount === 1 ? "verschil" : "verschillen"} · ${summary.currentPresent} op toestel · ${summary.unknown} onbekend` : `Alles komt overeen · ${summary.currentPresent} op toestel · ${summary.unknown} onbekend`)}</span>
+              <span class="oq-helper-modal-subvalue">${escapeHtml(summary.differenceCount ? `${summary.differenceCount} ${summary.differenceCount === 1 ? "verschil" : "verschillen"} · ${summary.currentPresent} op huidige installatie · ${summary.unknown} onbekend` : `Alles komt overeen · ${summary.currentPresent} op huidige installatie · ${summary.unknown} onbekend`)}</span>
             </div>
           </div>
           <div class="oq-settings-backup-modal-sections">
