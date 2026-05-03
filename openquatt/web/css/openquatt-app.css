@@ -2550,14 +2550,31 @@ body.oq-page-light {
 }
 
 .oq-webserver-log-entry {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+  padding: 0.18rem 0.1rem;
   margin: 0;
   white-space: normal;
   word-break: break-word;
 }
 
-.oq-webserver-log-entry span {
+.oq-webserver-log-entry-time {
+  color: var(--oq-helper-faint);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.oq-webserver-log-entry-text {
   display: block;
   white-space: pre-wrap;
+}
+
+.oq-webserver-log-entry span {
+  display: block;
 }
 
 .oq-webserver-log-entry--plain {
@@ -2589,6 +2606,10 @@ body.oq-page-light {
 .oq-helper-shell--dark .oq-webserver-log-empty,
 .oq-helper-shell--dark .oq-webserver-log-entry--plain {
   color: #cbd5e1;
+}
+
+.oq-helper-shell--dark .oq-webserver-log-entry-time {
+  color: #94a3b8;
 }
 
 .oq-helper-shell--dark .oq-webserver-log-entry--error {

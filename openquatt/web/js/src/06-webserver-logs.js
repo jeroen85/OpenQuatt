@@ -38,18 +38,47 @@ function getWebServerLogStatusLabel() {
   if (isWebServerLogDemoMode()) {
     return "Voorbeeld";
   }
-  if (state.webServerLogConnected) {
-    return "Live";
-  }
   if (state.webServerLogEnabled === false) {
     return "Niet beschikbaar";
   }
   return "Beschikbaar";
 }
 
+function formatWebServerLogDateTime(value) {
+  const date = value instanceof Date ? value : new Date(Number(value) || Date.now());
+  try {
+    const timePart = new Intl.DateTimeFormat("nl-NL", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    }).format(date);
+    return timePart;
+  } catch (_error) {
+    return date.toLocaleTimeString("nl-NL", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  }
+}
+
+function getDemoLogReceivedAt(index, total) {
+  const spacingMs = 90 * 1000;
+  const offset = Math.max(0, total - index - 1) * spacingMs;
+  return Date.now() - offset;
+}
+
+function seedWebServerLogDemoEntries() {
+  const entries = getWebServerLogDemoEntries();
+  const total = entries.length;
+  return entries.map((entry, index) => createWebServerLogEntry(entry, {
+    receivedAt: getDemoLogReceivedAt(index, total),
+  }));
+}
+
 function openWebServerLogsModal() {
   if (isWebServerLogDemoMode() && state.webServerLogEntries.length === 0) {
-    state.webServerLogEntries = getWebServerLogDemoEntries().map((entry) => createWebServerLogEntry(entry));
+    state.webServerLogEntries = seedWebServerLogDemoEntries();
   }
   state.systemModal = "webserver-logs";
   render();
@@ -284,12 +313,14 @@ function getWebServerLogTone(value) {
   return "verbose";
 }
 
-function createWebServerLogEntry(raw) {
+function createWebServerLogEntry(raw, options = {}) {
   const text = stripAnsiSequences(raw).trimEnd();
+  const receivedAt = Number(options.receivedAt);
   return {
     raw,
     text,
     tone: getWebServerLogTone(raw),
+    receivedAt: Number.isFinite(receivedAt) ? receivedAt : Date.now(),
   };
 }
 
@@ -340,9 +371,19 @@ function appendWebServerLogEntriesToDom(entries, output) {
 }
 
 function renderWebServerLogEntry(entry) {
+  const timestamp = formatWebServerLogDateTime(entry.receivedAt);
+  const fullTimestamp = new Date(Number(entry.receivedAt) || Date.now()).toLocaleString("nl-NL", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
   return `
     <div class="oq-webserver-log-entry oq-webserver-log-entry--${escapeHtml(entry.tone)}">
-      <span>${escapeHtml(entry.text || entry.raw || " ")}</span>
+      <time class="oq-webserver-log-entry-time" datetime="${escapeHtml(new Date(Number(entry.receivedAt) || Date.now()).toISOString())}" title="${escapeHtml(fullTimestamp)}">${escapeHtml(timestamp)}</time>
+      <span class="oq-webserver-log-entry-text">${escapeHtml(entry.text || entry.raw || " ")}</span>
     </div>
   `;
 }
@@ -362,7 +403,7 @@ function renderWebServerLogStatusBanner() {
     return `
       <div class="oq-helper-modal-success oq-helper-modal-success--compact">
         <strong>Voorbeeldlog</strong>
-        <span>De lokale preview toont voorbeeldregels. Op de echte firmware loopt de stream al mee terwijl de app open is via <code>/events</code>.</span>
+        <span>De lokale preview vult deze lijst met voorbeeldmeldingen en bewaart ze zolang de app open is.</span>
       </div>
     `;
   }
@@ -371,20 +412,16 @@ function renderWebServerLogStatusBanner() {
     return `<p class="oq-helper-modal-note oq-helper-modal-note--error">${escapeHtml(state.webServerLogError)}</p>`;
   }
 
-  if (state.webServerLogConnected) {
+  if (state.webServerLogConnected || state.webServerLogSource) {
     return `
       <div class="oq-helper-modal-success oq-helper-modal-success--compact">
-        <strong>Live verbinding</strong>
-        <span>ESPHome web_server v3 streamt logregels via <code>/events</code>.</span>
+        <strong>Recente meldingen</strong>
+        <span>Laatste meldingen blijven zichtbaar terwijl OpenQuatt open is.</span>
       </div>
     `;
   }
 
-  if (state.webServerLogSource) {
-    return `<p class="oq-helper-modal-note">Verbinding maken met de live logstream via <code>/events</code>...</p>`;
-  }
-
-  return `<p class="oq-helper-modal-note">Open de log om een live stream via <code>/events</code> te starten.</p>`;
+  return `<p class="oq-helper-modal-note">Open de log om recente meldingen te bekijken.</p>`;
 }
 
 function renderWebServerLogsModal() {
@@ -395,13 +432,13 @@ function renderWebServerLogsModal() {
         <div class="oq-helper-modal-head">
           <div>
             <p class="oq-helper-modal-kicker">Diagnostiek</p>
-            <h2 class="oq-helper-modal-title" id="oq-webserver-log-modal-title">ESPHome debuglog</h2>
+            <h2 class="oq-helper-modal-title" id="oq-webserver-log-modal-title">OpenQuatt log</h2>
           </div>
             <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit logboek">&times;</button>
         </div>
         <p class="oq-helper-modal-copy">${demoMode
-          ? "Hier zie je voorbeeldregels voor de lokale preview. Op de echte firmware loopt de logstream al mee zolang de app open is via <code>/events</code>."
-          : "Hier zie je de live debuglog van de ESPHome web_server v3 via <code>/events</code>. De kleuren volgen de originele logseverity."
+          ? "Hier zie je voorbeeldmeldingen uit de lokale preview."
+          : "Hier zie je recente meldingen van OpenQuatt. Handig als je wilt terugzoeken wat er net gebeurde."
         }</p>
         ${renderWebServerLogStatusBanner()}
         <div class="oq-webserver-log-panel" data-oq-webserver-log-scroller>
