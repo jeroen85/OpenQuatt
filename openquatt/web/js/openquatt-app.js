@@ -6657,10 +6657,7 @@ const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,UklGRgoWAABXRUJQVlA4WAoAA
                 <summary class="oq-settings-backup-modal-section-head">
                   <span class="oq-settings-backup-modal-section-head-copy">
                     <strong>${escapeHtml(section.label)}</strong>
-                    <em>${escapeHtml(`${section.total} ${section.total === 1 ? "instelling" : "instellingen"}`)}</em>
-                  </span>
-                  <span class="oq-settings-backup-modal-section-head-meta">
-                    <span class="oq-settings-backup-modal-section-pill oq-settings-backup-modal-section-pill--required">${escapeHtml(section.differenceCount ? `${section.differenceCount} ${section.differenceCount === 1 ? "verschil" : "verschillen"}` : "Alles gelijk")}</span>
+                    <em>${escapeHtml(`${section.total} ${section.total === 1 ? "instelling" : "instellingen"} · ${section.differenceCount ? `${section.differenceCount} ${section.differenceCount === 1 ? "verschil" : "verschillen"}` : "Alles gelijk"}`)}</em>
                   </span>
                 </summary>
                 <div class="oq-settings-backup-modal-section-body">

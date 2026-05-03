@@ -698,9 +698,9 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  padding-right: 42px;
+  gap: 8px;
+  padding: 12px 16px;
+  padding-right: 34px;
   list-style: none;
   cursor: pointer;
   position: relative;
@@ -744,40 +744,10 @@
   font-weight: 600;
 }
 
-.oq-settings-backup-modal-section-head-meta {
-  min-width: 0;
-  display: inline-flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 6px;
-}
-
-.oq-settings-backup-modal-section-pill {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.oq-settings-backup-modal-section-pill--required {
-  color: var(--oq-helper-ink);
-  background: rgba(37, 99, 235, 0.08);
-}
-
-.oq-settings-backup-modal-section-pill--optional {
-  color: var(--oq-helper-soft);
-  background: rgba(148, 163, 184, 0.14);
-}
-
 .oq-settings-backup-modal-section-body {
   display: grid;
   gap: 10px;
-  padding: 0 16px 14px;
+  padding: 0 16px 12px;
 }
 
 .oq-settings-backup-modal-section-body > p {
