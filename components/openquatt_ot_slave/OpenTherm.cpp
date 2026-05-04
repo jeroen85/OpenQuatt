@@ -7,6 +7,7 @@ Copyright 2018, Ihor Melnyk
 #include "esphome/core/log.h"
 #include "esp_err.h"
 #include "esp_private/esp_clk.h"
+#include "esp_timer.h"
 static const char * TAG = "OpenThermV2";
 using namespace esphome;
 
@@ -598,9 +599,21 @@ bool OpenTherm::sendResponse(unsigned long request)
 bool OpenTherm::process()
 {
 #if OQ_OT_RMT_SUPPORTED
+	const uint64_t process_start_us = static_cast<uint64_t>(esp_timer_get_time());
+	size_t processed_frames = 0;
 	RxFrame frame{};
 	while (pop_rx_frame_(frame)) {
 		process_rmt_frame_(frame);
+		++processed_frames;
+		if (status == OpenThermStatus::RESPONSE_READY || status == OpenThermStatus::RESPONSE_INVALID) {
+			break;
+		}
+		if (processed_frames >= PROCESS_MAX_RX_FRAMES) {
+			break;
+		}
+		if ((static_cast<uint64_t>(esp_timer_get_time()) - process_start_us) >= PROCESS_BUDGET_US) {
+			break;
+		}
 	}
 
 	if (edge_overflow_) {

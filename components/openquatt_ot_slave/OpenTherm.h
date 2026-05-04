@@ -210,6 +210,9 @@ public:
 	float getFloat(const unsigned long response) const;	
 
 private:
+	static constexpr uint8_t PROCESS_MAX_RX_FRAMES = 2;
+	static constexpr uint32_t PROCESS_BUDGET_US = 250;
+
 	const int inPin;
 	const int outPin;
 	const bool isSlave;
