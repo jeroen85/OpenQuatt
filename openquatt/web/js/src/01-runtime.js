@@ -332,7 +332,7 @@
   function getUrlSettingsGroup() {
     try {
       const url = new URL(window.location.href);
-      const group = String(url.searchParams.get("group") || "");
+      const group = String(url.searchParams.get("section") || url.searchParams.get("group") || "");
       return SETTINGS_GROUP_IDS.has(group) ? group : "";
     } catch (_error) {
       return "";
@@ -346,8 +346,10 @@
       url.searchParams.set("view", normalized);
       if (normalized === "settings") {
         const group = SETTINGS_GROUP_IDS.has(state.settingsGroup) ? state.settingsGroup : SETTINGS_GROUPS[0].id;
-        url.searchParams.set("group", group);
+        url.searchParams.set("section", group);
+        url.searchParams.delete("group");
       } else {
+        url.searchParams.delete("section");
         url.searchParams.delete("group");
       }
       if (url.hash && normalizeAppView(url.hash.replace(/^#/, ""))) {
@@ -355,7 +357,7 @@
       }
 
       const method = mode === "push" ? "pushState" : "replaceState";
-      window.history[method]({ oqView: normalized, oqSettingsGroup: normalized === "settings" ? state.settingsGroup : "" }, "", url.toString());
+      window.history[method]({ oqView: normalized, oqSettingsSection: normalized === "settings" ? state.settingsGroup : "" }, "", url.toString());
     } catch (_error) {
       // Ignore history failures in embedded browsers.
     }
