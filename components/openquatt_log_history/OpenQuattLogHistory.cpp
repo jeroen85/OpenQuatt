@@ -248,7 +248,7 @@ void OpenQuattLogHistory::write_json_entry_(AsyncResponseStream *stream, const L
   size_t message_len = entry.raw_len;
   split_log_fields_(entry.raw, &tag_start, &tag_len, &message_start, &message_len);
 
-  stream->print('{');
+  stream->write('{');
   stream->print("\"ts\":");
   stream->printf("%" PRIu64, static_cast<uint64_t>(entry.timestamp_ms));
   stream->print(",\"seq\":");
@@ -261,7 +261,7 @@ void OpenQuattLogHistory::write_json_entry_(AsyncResponseStream *stream, const L
   write_json_string_(stream, message_start, message_len);
   stream->print(",\"raw\":");
   write_json_string_(stream, entry.raw, entry.raw_len);
-  stream->print('}');
+  stream->write('}');
 }
 
 void OpenQuattLogHistory::push_entry_(const LogEntry &entry) {

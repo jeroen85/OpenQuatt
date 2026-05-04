@@ -40,6 +40,7 @@
     webServerLogHistoryLoading: false,
     webServerLogHistoryError: "",
     webServerLogHistoryRequestToken: 0,
+    webServerLogHistoryLoaded: false,
     webServerLogRecentTail: [],
     webServerLogRecentAnchorAt: 0,
     webServerLogEntries: [],

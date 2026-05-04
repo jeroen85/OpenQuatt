@@ -723,6 +723,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     webServerLogHistoryLoading: false,
     webServerLogHistoryError: "",
     webServerLogHistoryRequestToken: 0,
+    webServerLogHistoryLoaded: false,
     webServerLogRecentTail: [],
     webServerLogRecentAnchorAt: 0,
     webServerLogEntries: [],
@@ -4498,6 +4499,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
         state.controlNotice = "Releasekanaal bijgewerkt.";
       } else if (key === "webServerLogHistoryEnabled") {
         if (enabled) {
+          state.webServerLogHistoryLoaded = false;
           void refreshWebServerLogHistory();
         } else {
           clearWebServerLogOutput();
@@ -5360,17 +5362,17 @@ function getWebServerLogHistoryStatusLabel() {
     return "Niet beschikbaar";
   }
   if (isWebServerLogDemoMode()) {
-    return isWebServerLogHistoryEnabled() ? "Voorbeeld aan" : "Voorbeeld uit";
+    return isWebServerLogHistoryEnabled() ? "Voorbeeld buffer aan" : "Voorbeeld buffer uit";
   }
-  return isWebServerLogHistoryEnabled() ? "Aan" : "Uit";
+  return isWebServerLogHistoryEnabled() ? "Buffer aan" : "Buffer uit";
 }
 
 function getWebServerLogHistoryInfoCopy() {
   if (!isWebServerLogHistoryEnabled()) {
-    return "Recente logs worden niet opgeslagen; live /events blijft wel lopen.";
+    return "Geen tijdelijke buffer in RAM. De viewer toont alleen live /events.";
   }
 
-  return "Ongeveer 250 regels in RAM, ongeveer 32 tot 40 kB.";
+  return "Slaat de laatste firmwarelogs tijdelijk op in RAM. De viewer leest die buffer bij openen en blijft daarna live /events volgen.";
 }
 
 function getWebServerLogEntryKey(entry) {
@@ -5506,6 +5508,7 @@ async function refreshWebServerLogHistory() {
     }
 
     const recentEntries = normalizeRecentWebServerLogPayload(payload);
+    state.webServerLogHistoryLoaded = true;
     if (recentEntries.length > 0) {
       mergeWebServerLogEntries(recentEntries, { prepend: true });
       state.webServerLogRecentTail = recentEntries.slice(-4).map((entry) => String(entry.raw ?? entry.text ?? ""));
@@ -5594,7 +5597,9 @@ function openWebServerLogsModal() {
   state.systemModal = "webserver-logs";
   render();
   scrollWebServerLogToBottom();
-  void refreshWebServerLogHistory();
+  if (!state.webServerLogHistoryLoaded || state.webServerLogEntries.length === 0) {
+    void refreshWebServerLogHistory();
+  }
 }
 
 function clearWebServerLogOutput() {
@@ -5602,6 +5607,7 @@ function clearWebServerLogOutput() {
   state.webServerLogError = "";
   state.webServerLogHistoryError = "";
   state.webServerLogHistoryLoading = false;
+  state.webServerLogHistoryLoaded = false;
   state.webServerLogHistoryRequestToken += 1;
   state.webServerLogRecentTail = [];
   state.webServerLogRecentAnchorAt = 0;
@@ -5938,11 +5944,11 @@ function renderWebServerLogHistoryControls() {
           aria-pressed="${enabled ? "true" : "false"}"
           ${busy ? "disabled" : ""}
         >
-          <span class="oq-settings-choice-title">${escapeHtml(enabled ? "Aan" : "Uit")}</span>
+          <span class="oq-settings-choice-title">${escapeHtml(label)}</span>
           <span class="oq-settings-choice-copy">${escapeHtml(copy)}</span>
         </button>
       </div>
-      <p class="oq-helper-modal-note">${escapeHtml(`Status: ${label}`)}</p>
+      <p class="oq-helper-modal-note">Tijdelijke RAM-buffer voor recente logs.</p>
     </div>
   `;
 }

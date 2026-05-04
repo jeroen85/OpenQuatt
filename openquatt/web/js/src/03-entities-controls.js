@@ -1680,6 +1680,7 @@
         state.controlNotice = "Releasekanaal bijgewerkt.";
       } else if (key === "webServerLogHistoryEnabled") {
         if (enabled) {
+          state.webServerLogHistoryLoaded = false;
           void refreshWebServerLogHistory();
         } else {
           clearWebServerLogOutput();
