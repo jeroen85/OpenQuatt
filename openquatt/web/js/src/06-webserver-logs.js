@@ -72,18 +72,18 @@ function formatWebServerLogDateTime(value) {
   const numeric = Number(value) || 0;
   if (numeric > 946684800000) {
     const date = value instanceof Date ? value : new Date(numeric);
+    const options = {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    };
     try {
-      return new Intl.DateTimeFormat("nl-NL", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      }).format(date);
+      return new Intl.DateTimeFormat("nl-NL", options).format(date);
     } catch (_error) {
-      return date.toLocaleTimeString("nl-NL", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      });
+      return date.toLocaleString("nl-NL", options);
     }
   }
 
