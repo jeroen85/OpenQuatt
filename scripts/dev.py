@@ -41,9 +41,13 @@ STAGE_EXCLUDE_DIRS = {
 STAGE_EXCLUDE_FILES = ("*.pyc", "*.pyo")
 
 EFUSE_DUPLICATE_SOURCE = '"src/esp_efuse_fields.c"'
-EFUSE_PATCH_MARKER = (
+EFUSE_DUPLICATE_UTILITY_SOURCE = '"src/esp_efuse_utility.c"'
+EFUSE_PATCH_MARKER_PREFIX = (
     "# OpenQuatt validate patch: target-specific sources.cmake already provides "
-    "esp_efuse_fields.c.\n"
+)
+EFUSE_PATCH_MARKER = (
+    EFUSE_PATCH_MARKER_PREFIX
+    + "esp_efuse_fields.c; esp_efuse_utility.c stays in the main efuse CMakeLists.\n"
 )
 
 
@@ -245,44 +249,74 @@ def framework_espidf_package_dirs(pio_core_dir: Path) -> list[Path]:
     return dirs
 
 
-def patch_framework_espidf_efuse(package_dir: Path) -> bool:
+def patch_framework_espidf_efuse_main_cmake(package_dir: Path) -> bool:
     cmake_path = package_dir / "components" / "efuse" / "CMakeLists.txt"
     if not cmake_path.is_file():
         return False
 
     text = cmake_path.read_text(encoding="utf-8")
-    if EFUSE_PATCH_MARKER in text:
-        return False
-    if EFUSE_DUPLICATE_SOURCE not in text:
+    if EFUSE_PATCH_MARKER_PREFIX not in text and EFUSE_DUPLICATE_SOURCE not in text:
         return False
 
-    old = (
-        'list(APPEND srcs "src/esp_efuse_api.c"\n'
-        '                 "src/esp_efuse_fields.c"\n'
-        '                 "src/esp_efuse_utility.c"\n'
-        '                 "src/efuse_controller/keys/${type}/esp_efuse_api_key.c")'
-    )
-    new = (
-        EFUSE_PATCH_MARKER
-        +
-        'list(APPEND srcs "src/esp_efuse_api.c"\n'
-        '                 "src/esp_efuse_utility.c"\n'
-        '                 "src/efuse_controller/keys/${type}/esp_efuse_api_key.c")'
-    )
-    if old not in text:
-        raise SystemExit(
-            "framework-espidf efuse workaround could not be applied because the expected "
-            f"source block was not found in {cmake_path}"
+    updated = text
+    if EFUSE_DUPLICATE_SOURCE in updated:
+        updated = updated.replace('                 "src/esp_efuse_fields.c"\n', "", 1)
+
+    if EFUSE_DUPLICATE_UTILITY_SOURCE not in updated:
+        updated = updated.replace(
+            'list(APPEND srcs "src/esp_efuse_api.c"\n',
+            'list(APPEND srcs "src/esp_efuse_api.c"\n'
+            '                 "src/esp_efuse_utility.c"\n',
+            1,
         )
 
-    cmake_path.write_text(text.replace(old, new, 1), encoding="utf-8")
+    if updated == text:
+        return False
+
+    if EFUSE_PATCH_MARKER_PREFIX not in updated:
+        old = (
+            'list(APPEND srcs "src/esp_efuse_api.c"\n'
+            '                 "src/esp_efuse_fields.c"\n'
+            '                 "src/esp_efuse_utility.c"\n'
+            '                 "src/efuse_controller/keys/${type}/esp_efuse_api_key.c")'
+        )
+        new = (
+            EFUSE_PATCH_MARKER
+            +
+            'list(APPEND srcs "src/esp_efuse_api.c"\n'
+            '                 "src/esp_efuse_utility.c"\n'
+            '                 "src/efuse_controller/keys/${type}/esp_efuse_api_key.c")'
+        )
+        if old in text:
+            updated = text.replace(old, new, 1)
+
+    cmake_path.write_text(updated, encoding="utf-8")
     return True
+
+
+def patch_framework_espidf_efuse_sources(package_dir: Path) -> bool:
+    patched = False
+    for sources_path in package_dir.glob("*/sources.cmake"):
+        if not sources_path.is_file():
+            continue
+
+        text = sources_path.read_text(encoding="utf-8")
+        if EFUSE_DUPLICATE_UTILITY_SOURCE not in text:
+            continue
+
+        updated = text.replace('                    "esp_efuse_utility.c"\n', "", 1)
+        if updated != text:
+            sources_path.write_text(updated, encoding="utf-8")
+            patched = True
+    return patched
 
 
 def apply_framework_espidf_efuse_workaround(pio_core_dir: Path) -> list[Path]:
     patched: list[Path] = []
     for package_dir in framework_espidf_package_dirs(pio_core_dir):
-        if patch_framework_espidf_efuse(package_dir):
+        main_patched = patch_framework_espidf_efuse_main_cmake(package_dir)
+        sources_patched = patch_framework_espidf_efuse_sources(package_dir)
+        if main_patched or sources_patched:
             patched.append(package_dir)
     return patched
 
@@ -293,7 +327,7 @@ def has_framework_espidf_efuse_workaround(pio_core_dir: Path) -> bool:
         if not cmake_path.is_file():
             continue
         text = cmake_path.read_text(encoding="utf-8")
-        if EFUSE_PATCH_MARKER in text:
+        if EFUSE_PATCH_MARKER_PREFIX in text and 'src/esp_efuse_utility.c' in text:
             return True
     return False
 

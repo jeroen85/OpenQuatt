@@ -1470,6 +1470,11 @@
       return;
     }
 
+    if (action === "copy-webserver-log-output") {
+      void copyWebServerLogOutput();
+      return;
+    }
+
     if (action === "confirm-settings-backup-restore") {
       void restoreSettingsBackup();
       return;
@@ -1678,6 +1683,16 @@
         render();
         await pollFirmwareUpdateState();
         state.controlNotice = "Releasekanaal bijgewerkt.";
+      } else if (key === "webServerLogHistoryEnabled") {
+        if (enabled) {
+          state.webServerLogHistoryLoaded = false;
+          void refreshWebServerLogHistory();
+        } else {
+          clearWebServerLogOutput();
+        }
+        if (state.systemModal === "webserver-logs") {
+          render();
+        }
       } else if (state.appView === "settings") {
         await refreshEntities(getSettingsRefreshKeys(), "state");
       } else {

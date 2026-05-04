@@ -24,6 +24,8 @@
     trendFlashOldestAt: Date.now() - Math.round(18.4 * 24 * 60 * 60 * 1000),
     trendFlashNewestAt: Date.now() - (2 * 60 * 1000),
     trendFlashLastFlushAt: Date.now() - (12 * 60 * 1000),
+    logHistoryEnabled: true,
+    logHistoryEntries: [],
   };
 
   const HP2_ENTITIES = [
@@ -126,6 +128,30 @@
     }
     entity.value = Boolean(value);
     entity.state = Boolean(value);
+  }
+
+  function parseDemoLogEntry(raw, index, total) {
+    const normalized = String(raw || "").trim();
+    const match = normalized.match(/^\[([A-Z]+)\]\[(.+?)\](?:: \[(.+?)\])?:\s*(.*)$/);
+    const level = match ? String(match[1] || "I").slice(0, 2) : "I";
+    const header = match ? String(match[2] || "") : "";
+    const body = match ? String(match[4] || normalized) : normalized;
+    const tag = header.includes(":") ? header.slice(0, header.indexOf(":")) : header;
+    const spacingMs = 45 * 1000;
+    const offset = Math.max(0, total - index - 1) * spacingMs;
+    return {
+      seq: index + 1,
+      ts: Date.now() - offset,
+      level,
+      tag,
+      message: body,
+      raw: normalized,
+    };
+  }
+
+  function seedLogHistoryEntries() {
+    const source = Array.isArray(window.__OQ_DEV_WEBSERVER_LOGS__) ? window.__OQ_DEV_WEBSERVER_LOGS__ : [];
+    state.logHistoryEntries = source.map((entry, index) => parseDemoLogEntry(entry, index, source.length));
   }
 
   function isSwitchEnabled(name) {
@@ -393,6 +419,7 @@
     setEntity("switch", "CiC Compatibility Mode", { value: false, state: false });
     setEntity("switch", "Trendopslag", { value: true, state: true });
     setEntity("switch", "Trendhistorie opslaan in flash", { value: true, state: true });
+    setEntity("switch", "RAM log history", { value: true, state: true });
     setEntity("select", "Silent Mode Override", {
       value: "Schedule",
       state: "Schedule",
@@ -643,6 +670,9 @@
       "[I][automation:118] Hervatmoment gepland",
       "[D][logger:65] Debuglog opgebouwd voor preview",
     ];
+    if (!state.logHistoryEntries.length) {
+      seedLogHistoryEntries();
+    }
   }
 
   function notifyMockUpdated() {
@@ -1318,6 +1348,9 @@
     if (name === "OpenQuatt Enabled" && enabled && getEntity("datetime", "OpenQuatt resume at")) {
       setText("datetime", "OpenQuatt resume at", OPENQUATT_RESUME_CLEAR_VALUE);
     }
+    if (name === "RAM log history") {
+      state.logHistoryEnabled = Boolean(enabled);
+    }
     applyScenario(state.scenario);
     updateSummary();
     notifyMockUpdated();
@@ -1448,6 +1481,12 @@
       }
       if (url.pathname === "/auth/disable" && String(init?.method || "GET").toUpperCase() === "POST") {
         return handleAuthDisable(init || {});
+      }
+      if (url.pathname === "/openquatt/logs/recent" && String(init?.method || "GET").toUpperCase() === "GET") {
+        return mockResponse(200, {
+          enabled: Boolean(state.logHistoryEnabled),
+          entries: clone(state.logHistoryEntries),
+        });
       }
 
       const request = parseMockRequest(input);

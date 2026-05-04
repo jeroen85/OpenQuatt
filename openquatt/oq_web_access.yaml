@@ -9,13 +9,35 @@ external_components:
   - source:
       type: local
       path: components
-    components: [openquatt_web_auth, openquatt_trends]
+    components: [openquatt_web_auth, openquatt_trends, openquatt_log_history]
 
 openquatt_web_auth:
   id: oq_web_auth_store
   bootstrap_username: "${web_auth_bootstrap_username}"
   bootstrap_password: "${web_auth_bootstrap_password}"
   default_auth_enabled: ${web_auth_default_enabled}
+
+openquatt_log_history:
+  id: oq_log_history
+  enabled_switch: oq_ram_log_history_switch
+  clock: oq_time
+
+switch:
+  - platform: template
+    id: oq_ram_log_history_switch
+    name: RAM log history
+    icon: mdi:memory
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    turn_on_action:
+      - lambda: |-
+          id(oq_log_history).set_enabled(true);
+    turn_off_action:
+      - lambda: |-
+          id(oq_log_history).set_enabled(false);
+    web_server:
+      sorting_group_id: oq_system_diagnostics
 
 binary_sensor:
   - platform: gpio

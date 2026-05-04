@@ -164,6 +164,7 @@ const LOGO_MARKUP = `
     flowSelected: { domain: "sensor", name: "Flow average (Selected)" },
     trendHistoryEnabled: { domain: "switch", name: "Trendopslag", optional: true },
     trendHistoryFlashEnabled: { domain: "switch", name: "Trendhistorie opslaan in flash", optional: true },
+    webServerLogHistoryEnabled: { domain: "switch", name: "RAM log history", optional: true },
     trendHistoryFlush: { domain: "button", name: "Trendhistorie nu opslaan", optional: true },
     trendHistoryFlashAvailable: { domain: "text_sensor", name: "Trendhistorie beschikbaar", optional: true },
     trendHistoryFlashOldest: { domain: "text_sensor", name: "Trendhistorie oudste punt", optional: true },
@@ -581,6 +582,7 @@ const LOGO_MARKUP = `
     "silentModeOverride",
     "trendHistoryEnabled",
     "trendHistoryFlashEnabled",
+    "webServerLogHistoryEnabled",
     "trendHistoryFlashAvailable",
     "trendHistoryFlashOldest",
     "trendHistoryFlashNewest",
@@ -612,6 +614,7 @@ const LOGO_MARKUP = `
         "cicCompatibilityMode",
         "trendHistoryEnabled",
         "trendHistoryFlashEnabled",
+        "webServerLogHistoryEnabled",
         "silentModeOverride",
         "openquattResumeAt",
       ],
@@ -717,6 +720,14 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     webServerLogConnected: false,
     webServerLogEnabled: null,
     webServerLogError: "",
+    webServerLogHistoryLoading: false,
+    webServerLogHistoryError: "",
+    webServerLogHistoryRequestToken: 0,
+    webServerLogHistoryLoaded: false,
+    webServerLogCopyMessage: "",
+    webServerLogCopyError: "",
+    webServerLogRecentTail: [],
+    webServerLogRecentAnchorAt: 0,
     webServerLogEntries: [],
     complete: false,
     quickStartModalOpen: true,
@@ -817,12 +828,15 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     }
   }
 
-  function setSettingsGroup(groupId) {
+  function setSettingsGroup(groupId, options = {}) {
     state.settingsGroup = SETTINGS_GROUP_IDS.has(groupId) ? groupId : SETTINGS_GROUPS[0].id;
     try {
       window.localStorage.setItem("oq-settings-group", state.settingsGroup);
     } catch (_error) {
       // Ignore storage failures in embedded browsers.
+    }
+    if (options.syncUrl !== false && state.appView === "settings") {
+      syncUrlAppView(options.syncMode || "replace");
     }
   }
 
@@ -998,17 +1012,35 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     }
   }
 
+  function getUrlSettingsGroup() {
+    try {
+      const url = new URL(window.location.href);
+      const group = String(url.searchParams.get("section") || "");
+      return SETTINGS_GROUP_IDS.has(group) ? group : "";
+    } catch (_error) {
+      return "";
+    }
+  }
+
   function syncUrlAppView(mode = "replace") {
     try {
       const url = new URL(window.location.href);
       const normalized = normalizeAppView(state.appView) || getDefaultAppView();
       url.searchParams.set("view", normalized);
+      if (normalized === "settings") {
+        const group = SETTINGS_GROUP_IDS.has(state.settingsGroup) ? state.settingsGroup : SETTINGS_GROUPS[0].id;
+        url.searchParams.set("section", group);
+        url.searchParams.delete("group");
+      } else {
+        url.searchParams.delete("section");
+        url.searchParams.delete("group");
+      }
       if (url.hash && normalizeAppView(url.hash.replace(/^#/, ""))) {
         url.hash = "";
       }
 
       const method = mode === "push" ? "pushState" : "replaceState";
-      window.history[method]({ oqView: normalized }, "", url.toString());
+      window.history[method]({ oqView: normalized, oqSettingsSection: normalized === "settings" ? state.settingsGroup : "" }, "", url.toString());
     } catch (_error) {
       // Ignore history failures in embedded browsers.
     }
@@ -1020,10 +1052,6 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     const changed = state.appView !== normalized;
     state.appView = normalized;
 
-    if (normalized === "settings" && !options.preserveSettingsGroup) {
-      setSettingsGroup(SETTINGS_GROUPS[0].id);
-    }
-
     if (changed || options.forceSync) {
       syncUrlAppView(mode);
     }
@@ -1031,11 +1059,20 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
 
   function handlePopState() {
     const nextView = getUrlAppView() || getDefaultAppView();
-    if (nextView === state.appView) {
+    const nextSettingsGroup = nextView === "settings" ? (getUrlSettingsGroup() || state.settingsGroup) : "";
+    if (nextView === state.appView && (nextView !== "settings" || nextSettingsGroup === state.settingsGroup)) {
       return;
     }
 
     state.appView = nextView;
+    if (nextView === "settings" && nextSettingsGroup) {
+      state.settingsGroup = nextSettingsGroup;
+      try {
+        window.localStorage.setItem("oq-settings-group", state.settingsGroup);
+      } catch (_error) {
+        // Ignore storage failures in embedded browsers.
+      }
+    }
     render();
     void syncEntities();
   }
@@ -1132,6 +1169,10 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     root.addEventListener("pointerdown", handlePointerDown);
     state.root = root;
     const initialUrlView = getUrlAppView();
+    const initialUrlSettingsGroup = initialUrlView === "settings" ? getUrlSettingsGroup() : "";
+    if (initialUrlSettingsGroup) {
+      setSettingsGroup(initialUrlSettingsGroup, { syncUrl: false });
+    }
     if (initialUrlView) {
       setAppView(initialUrlView, { syncMode: "replace", forceSync: true });
     }
@@ -4280,6 +4321,11 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       return;
     }
 
+    if (action === "copy-webserver-log-output") {
+      void copyWebServerLogOutput();
+      return;
+    }
+
     if (action === "confirm-settings-backup-restore") {
       void restoreSettingsBackup();
       return;
@@ -4488,6 +4534,16 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
         render();
         await pollFirmwareUpdateState();
         state.controlNotice = "Releasekanaal bijgewerkt.";
+      } else if (key === "webServerLogHistoryEnabled") {
+        if (enabled) {
+          state.webServerLogHistoryLoaded = false;
+          void refreshWebServerLogHistory();
+        } else {
+          clearWebServerLogOutput();
+        }
+        if (state.systemModal === "webserver-logs") {
+          render();
+        }
       } else if (state.appView === "settings") {
         await refreshEntities(getSettingsRefreshKeys(), "state");
       } else {
@@ -5226,7 +5282,7 @@ const HP_GENERATION_IMAGE_V1 = "data:image/webp;base64,UklGRkYTAABXRUJQVlA4WAoAA
 const HP_GENERATION_IMAGE_V2 = "data:image/webp;base64,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";
 
 /* --- js/src/06-webserver-logs.js --- */
-const WEB_SERVER_LOG_MAX_ENTRIES = 240;
+const WEB_SERVER_LOG_MAX_ENTRIES = 250;
 
 function getWebServerLogDemoEntries() {
   if (typeof window === "undefined") {
@@ -5259,6 +5315,22 @@ function getWebServerLogUrl() {
   return `${getBasePath()}/events`;
 }
 
+function getWebServerLogHistoryUrl() {
+  return `${getBasePath()}/openquatt/logs/recent`;
+}
+
+function isWebServerLogHistoryEnabled() {
+  const entity = state.entities?.webServerLogHistoryEnabled;
+  if (!entity) {
+    return true;
+  }
+  if (typeof entity.value === "boolean") {
+    return entity.value;
+  }
+  const raw = String(entity.state ?? entity.value ?? "").toLowerCase();
+  return raw === "on" || raw === "true" || raw === "1";
+}
+
 function getWebServerLogStatusLabel() {
   if (state.nativeOpen) {
     return "Niet beschikbaar";
@@ -5272,22 +5344,156 @@ function getWebServerLogStatusLabel() {
   return "Beschikbaar";
 }
 
+function formatWebServerLogDuration(value) {
+  const totalSeconds = Math.max(0, Math.floor(Number(value) / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
 function formatWebServerLogDateTime(value) {
-  const date = value instanceof Date ? value : new Date(Number(value) || Date.now());
-  try {
-    const timePart = new Intl.DateTimeFormat("nl-NL", {
+  const numeric = Number(value) || 0;
+  if (numeric > 946684800000) {
+    const date = value instanceof Date ? value : new Date(numeric);
+    const options = {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
-    }).format(date);
-    return timePart;
-  } catch (_error) {
-    return date.toLocaleTimeString("nl-NL", {
+    };
+    try {
+      return new Intl.DateTimeFormat("nl-NL", options).format(date);
+    } catch (_error) {
+      return date.toLocaleString("nl-NL", options);
+    }
+  }
+
+  return formatWebServerLogDuration(numeric);
+}
+
+function getWebServerLogTimeTooltip(value) {
+  const numeric = Number(value) || 0;
+  if (numeric > 946684800000) {
+    return new Date(numeric).toLocaleString("nl-NL", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
     });
   }
+
+  const totalSeconds = Math.max(0, Math.floor(numeric / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `Sinds opstart: ${hours}u ${minutes}m ${seconds}s`;
+}
+
+function getWebServerLogHistoryStatusLabel() {
+  if (state.nativeOpen) {
+    return "Niet beschikbaar";
+  }
+  if (isWebServerLogDemoMode()) {
+    return isWebServerLogHistoryEnabled() ? "Voorbeeld buffer aan" : "Voorbeeld buffer uit";
+  }
+  return isWebServerLogHistoryEnabled() ? "Buffer aan" : "Buffer uit";
+}
+
+function getWebServerLogHistoryInfoCopy() {
+  if (!isWebServerLogHistoryEnabled()) {
+    return "Geen tijdelijke buffer in RAM. De viewer toont alleen live /events.";
+  }
+
+  return "Slaat de laatste firmwarelogs tijdelijk op in RAM. De viewer leest die buffer bij openen en blijft daarna live /events volgen.";
+}
+
+function getWebServerLogEntryKey(entry) {
+  if (!entry || typeof entry !== "object") {
+    return "";
+  }
+  if (Number.isFinite(Number(entry.seq))) {
+    return `seq:${Number(entry.seq)}`;
+  }
+  const raw = String(entry.raw ?? entry.text ?? "").trim();
+  const receivedAt = Number(entry.receivedAt ?? entry.ts ?? 0);
+  return raw ? `raw:${raw}:${Math.round(receivedAt / 1000)}` : "";
+}
+
+function isDuplicateWebServerLogEntry(candidate, existingEntry = null) {
+  if (!candidate || !existingEntry) {
+    return false;
+  }
+
+  const candidateSeq = Number(candidate.seq);
+  const existingSeq = Number(existingEntry.seq);
+  if (Number.isFinite(candidateSeq) && Number.isFinite(existingSeq) && candidateSeq === existingSeq) {
+    return true;
+  }
+
+  const candidateRaw = String(candidate.raw ?? candidate.text ?? "").trim();
+  const existingRaw = String(existingEntry.raw ?? existingEntry.text ?? "").trim();
+  if (!candidateRaw || candidateRaw !== existingRaw) {
+    return false;
+  }
+
+  const candidateReceivedAt = Number(candidate.receivedAt ?? candidate.ts ?? 0);
+  const existingReceivedAt = Number(existingEntry.receivedAt ?? existingEntry.ts ?? 0);
+  return Math.abs(candidateReceivedAt - existingReceivedAt) <= 2000;
+}
+
+function compareWebServerLogEntries(left, right) {
+  const leftTime = Number(left.receivedAt ?? left.ts ?? 0);
+  const rightTime = Number(right.receivedAt ?? right.ts ?? 0);
+  if (leftTime !== rightTime) {
+    return leftTime - rightTime;
+  }
+
+  const leftSeq = Number(left.seq ?? 0);
+  const rightSeq = Number(right.seq ?? 0);
+  if (leftSeq !== rightSeq) {
+    return leftSeq - rightSeq;
+  }
+
+  return String(left.raw ?? "").localeCompare(String(right.raw ?? ""));
+}
+
+function mergeWebServerLogEntries(entries, { prepend = false } = {}) {
+  if (!Array.isArray(entries) || entries.length === 0) {
+    return;
+  }
+
+  const merged = prepend
+    ? [...entries, ...state.webServerLogEntries]
+    : [...state.webServerLogEntries, ...entries];
+  merged.sort(compareWebServerLogEntries);
+
+  const deduped = [];
+  for (const entry of merged) {
+    const previous = deduped[deduped.length - 1] || null;
+    if (!isDuplicateWebServerLogEntry(entry, previous)) {
+      deduped.push(entry);
+    }
+  }
+
+  state.webServerLogEntries = deduped.slice(-WEB_SERVER_LOG_MAX_ENTRIES);
+}
+
+function createWebServerLogEntry(raw, options = {}) {
+  const text = stripAnsiSequences(raw).trimEnd();
+  const receivedAt = Number(options.receivedAt);
+  const seq = Number(options.seq);
+  return {
+    raw,
+    text,
+    tone: getWebServerLogTone(raw),
+    receivedAt: Number.isFinite(receivedAt) ? receivedAt : Date.now(),
+    seq: Number.isFinite(seq) ? seq : undefined,
+  };
 }
 
 function getDemoLogReceivedAt(index, total) {
@@ -5301,20 +5507,151 @@ function seedWebServerLogDemoEntries() {
   const total = entries.length;
   return entries.map((entry, index) => createWebServerLogEntry(entry, {
     receivedAt: getDemoLogReceivedAt(index, total),
+    seq: index + 1,
   }));
+}
+
+function scrollWebServerLogToBottom() {
+  const scroller = getWebServerLogScrollerElement();
+  if (!scroller) {
+    return;
+  }
+  scroller.scrollTop = scroller.scrollHeight;
+}
+
+async function refreshWebServerLogHistory() {
+  if (state.nativeOpen || typeof window.fetch !== "function") {
+    return;
+  }
+
+  const requestToken = Number(state.webServerLogHistoryRequestToken || 0) + 1;
+  state.webServerLogHistoryRequestToken = requestToken;
+  state.webServerLogHistoryLoading = true;
+  state.webServerLogHistoryError = "";
+
+  try {
+    const response = await window.fetch(getWebServerLogHistoryUrl(), {
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const payload = await response.json();
+    if (state.systemModal !== "webserver-logs" || state.webServerLogHistoryRequestToken !== requestToken) {
+      return;
+    }
+
+    const recentEntries = normalizeRecentWebServerLogPayload(payload);
+    state.webServerLogHistoryLoaded = true;
+    if (recentEntries.length > 0) {
+      mergeWebServerLogEntries(recentEntries, { prepend: true });
+      state.webServerLogRecentTail = recentEntries.slice(-4).map((entry) => String(entry.raw ?? entry.text ?? ""));
+      state.webServerLogRecentAnchorAt = Date.now();
+    }
+  } catch (error) {
+    if (state.systemModal === "webserver-logs" && state.webServerLogHistoryRequestToken === requestToken) {
+      state.webServerLogHistoryError = error instanceof Error ? error.message : "Recente logs konden niet worden opgehaald.";
+    }
+  } finally {
+    if (state.webServerLogHistoryRequestToken === requestToken) {
+      state.webServerLogHistoryLoading = false;
+    }
+    if (state.systemModal === "webserver-logs" && state.webServerLogHistoryRequestToken === requestToken) {
+      render();
+      window.requestAnimationFrame(() => {
+        if (state.systemModal === "webserver-logs" && state.webServerLogHistoryRequestToken === requestToken) {
+          scrollWebServerLogToBottom();
+        }
+      });
+    }
+  }
+}
+
+function normalizeRecentWebServerLogEntry(entry, fallbackSeq = 0) {
+  if (!entry || typeof entry !== "object") {
+    return null;
+  }
+
+  const raw = String(entry.raw ?? "").trim() || String(entry.message ?? "").trim();
+  if (!raw) {
+    return null;
+  }
+
+  return createWebServerLogEntry(raw, {
+    receivedAt: Number(entry.ts ?? entry.timestamp_ms ?? entry.receivedAt ?? Date.now()),
+    seq: Number(entry.seq ?? fallbackSeq),
+  });
+}
+
+function normalizeRecentWebServerLogPayload(payload) {
+  if (!payload || typeof payload !== "object") {
+    return [];
+  }
+
+  if (payload.enabled === false) {
+    return [];
+  }
+
+  const entries = Array.isArray(payload.entries) ? payload.entries : [];
+  return entries
+    .map((entry, index) => normalizeRecentWebServerLogEntry(entry, index + 1))
+    .filter((entry) => entry !== null);
+}
+
+function shouldIgnoreLiveWebServerLogEntry(entry) {
+  if (!entry || !Array.isArray(state.webServerLogRecentTail) || state.webServerLogRecentTail.length === 0) {
+    return false;
+  }
+
+  const recentAgeMs = Date.now() - Number(state.webServerLogRecentAnchorAt || 0);
+  if (recentAgeMs > 2500) {
+    return false;
+  }
+
+  const raw = String(entry.raw ?? entry.text ?? "").trim();
+  if (!raw) {
+    return false;
+  }
+
+  return state.webServerLogRecentTail.includes(raw);
+}
+
+function hasWebServerLogEntry(candidate, entries = state.webServerLogEntries) {
+  if (!candidate || !Array.isArray(entries) || entries.length === 0) {
+    return false;
+  }
+
+  return entries.some((existing) => isDuplicateWebServerLogEntry(candidate, existing));
 }
 
 function openWebServerLogsModal() {
   if (isWebServerLogDemoMode() && state.webServerLogEntries.length === 0) {
     state.webServerLogEntries = seedWebServerLogDemoEntries();
   }
+  state.webServerLogCopyMessage = "";
+  state.webServerLogCopyError = "";
   state.systemModal = "webserver-logs";
   render();
+  scrollWebServerLogToBottom();
+  if (!state.webServerLogHistoryLoaded || state.webServerLogEntries.length === 0) {
+    void refreshWebServerLogHistory();
+  }
 }
 
 function clearWebServerLogOutput() {
   state.webServerLogEntries = [];
   state.webServerLogError = "";
+  state.webServerLogHistoryError = "";
+  state.webServerLogHistoryLoading = false;
+  state.webServerLogHistoryLoaded = false;
+  state.webServerLogCopyMessage = "";
+  state.webServerLogCopyError = "";
+  state.webServerLogHistoryRequestToken += 1;
+  state.webServerLogRecentTail = [];
+  state.webServerLogRecentAnchorAt = 0;
   if (state.systemModal === "webserver-logs") {
     render();
   }
@@ -5442,16 +5779,19 @@ function handleWebServerLogMessage(event) {
   }
 
   const entries = lines.map((line) => createWebServerLogEntry(line));
-  for (const entry of entries) {
-    state.webServerLogEntries.push(entry);
+  const filteredEntries = entries.filter((entry) => !shouldIgnoreLiveWebServerLogEntry(entry) && !hasWebServerLogEntry(entry));
+  if (filteredEntries.length === 0) {
+    return;
   }
+
+  mergeWebServerLogEntries(filteredEntries);
 
   const output = getWebServerLogOutputElement();
   const scroller = getWebServerLogScrollerElement();
   const stickToBottom = isWebServerLogScrollerNearBottom(scroller);
 
   trimWebServerLogEntries(output);
-  appendWebServerLogEntriesToDom(entries, output);
+  appendWebServerLogEntriesToDom(filteredEntries, output);
 
   state.webServerLogEnabled = true;
   if (scroller && stickToBottom) {
@@ -5541,17 +5881,6 @@ function getWebServerLogTone(value) {
   return "verbose";
 }
 
-function createWebServerLogEntry(raw, options = {}) {
-  const text = stripAnsiSequences(raw).trimEnd();
-  const receivedAt = Number(options.receivedAt);
-  return {
-    raw,
-    text,
-    tone: getWebServerLogTone(raw),
-    receivedAt: Number.isFinite(receivedAt) ? receivedAt : Date.now(),
-  };
-}
-
 function trimWebServerLogEntries(output) {
   while (state.webServerLogEntries.length > WEB_SERVER_LOG_MAX_ENTRIES) {
     state.webServerLogEntries.shift();
@@ -5600,14 +5929,7 @@ function appendWebServerLogEntriesToDom(entries, output) {
 
 function renderWebServerLogEntry(entry) {
   const timestamp = formatWebServerLogDateTime(entry.receivedAt);
-  const fullTimestamp = new Date(Number(entry.receivedAt) || Date.now()).toLocaleString("nl-NL", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
+  const fullTimestamp = getWebServerLogTimeTooltip(entry.receivedAt);
   return `
     <div class="oq-webserver-log-entry oq-webserver-log-entry--${escapeHtml(entry.tone)}">
       <time class="oq-webserver-log-entry-time" datetime="${escapeHtml(new Date(Number(entry.receivedAt) || Date.now()).toISOString())}" title="${escapeHtml(fullTimestamp)}">${escapeHtml(timestamp)}</time>
@@ -5627,11 +5949,132 @@ function renderWebServerLogEntries(entries = state.webServerLogEntries) {
 }
 
 function renderWebServerLogStatusBanner() {
+  const rows = [];
+  if (state.webServerLogHistoryLoading) {
+    rows.push(`<p class="oq-helper-modal-note">Recente firmwarelogs worden opgehaald...</p>`);
+  }
+  if (state.webServerLogCopyMessage) {
+    rows.push(`
+      <div class="oq-helper-modal-success oq-helper-modal-success--compact" aria-live="polite">
+        <strong>Kopiëren</strong>
+        <span>${escapeHtml(state.webServerLogCopyMessage)}</span>
+      </div>
+    `);
+  }
+  if (state.webServerLogCopyError) {
+    rows.push(`<p class="oq-helper-modal-note oq-helper-modal-note--error">${escapeHtml(state.webServerLogCopyError)}</p>`);
+  }
+  if (state.webServerLogHistoryError) {
+    rows.push(`<p class="oq-helper-modal-note oq-helper-modal-note--error">${escapeHtml(state.webServerLogHistoryError)}</p>`);
+  }
   if (state.webServerLogError) {
-    return `<p class="oq-helper-modal-note oq-helper-modal-note--error">${escapeHtml(state.webServerLogError)}</p>`;
+    rows.push(`<p class="oq-helper-modal-note oq-helper-modal-note--error">${escapeHtml(state.webServerLogError)}</p>`);
   }
 
-  return "";
+  if (!rows.length) {
+    return "";
+  }
+
+  return rows.join("");
+}
+
+function renderWebServerLogHistoryControls() {
+  const enabled = isWebServerLogHistoryEnabled();
+  const busy = state.loadingEntities || state.busyAction === "switch-webServerLogHistoryEnabled";
+  const label = getWebServerLogHistoryStatusLabel();
+  const copy = getWebServerLogHistoryInfoCopy();
+
+  return `
+    <div class="oq-webserver-log-history-shell">
+      <div class="oq-settings-system-row oq-settings-system-row--with-action" data-oq-diagnostics-row="webserverLogHistory">
+        <div class="oq-settings-system-row-copy">
+          <p class="oq-settings-system-row-label">RAM log history</p>
+          <strong class="oq-settings-system-row-value">${escapeHtml(label)}</strong>
+          <p class="oq-settings-system-row-note">${escapeHtml(copy)}</p>
+        </div>
+        <button
+          class="oq-helper-button oq-helper-button--ghost"
+          type="button"
+          data-oq-action="toggle-overview-control"
+          data-control-key="webServerLogHistoryEnabled"
+          data-control-state="${enabled ? "off" : "on"}"
+          aria-pressed="${enabled ? "true" : "false"}"
+          ${busy ? "disabled" : ""}
+        >
+          ${enabled ? "Uitschakelen" : "Inschakelen"}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function buildWebServerLogCopyText() {
+  return state.webServerLogEntries
+    .map((entry) => {
+      const line = String(entry.raw ?? entry.text ?? "").trimEnd();
+      if (!line.trim()) {
+        return "";
+      }
+      return `${formatWebServerLogDateTime(entry.receivedAt)} ${line}`;
+    })
+    .filter((entry) => entry.trim() !== "")
+    .join("\n");
+}
+
+async function writeTextToClipboard(text) {
+  if (!text) {
+    return false;
+  }
+
+  if (window.navigator?.clipboard?.writeText && window.isSecureContext) {
+    await window.navigator.clipboard.writeText(text);
+    return true;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.top = "-1000px";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+
+  let success = false;
+  try {
+    success = document.execCommand("copy");
+  } finally {
+    document.body.removeChild(textarea);
+  }
+
+  return success;
+}
+
+async function copyWebServerLogOutput() {
+  const text = buildWebServerLogCopyText();
+  state.webServerLogCopyMessage = "";
+  state.webServerLogCopyError = "";
+
+  if (!text) {
+    state.webServerLogCopyError = "Er zijn nog geen logregels om te kopiëren.";
+    render();
+    return;
+  }
+
+  try {
+    const copied = await writeTextToClipboard(text);
+    if (!copied) {
+      throw new Error("Kopiëren naar het klembord is niet gelukt.");
+    }
+    state.webServerLogCopyMessage = `${state.webServerLogEntries.length} logregel${state.webServerLogEntries.length === 1 ? "" : "s"} gekopieerd.`;
+  } catch (error) {
+    state.webServerLogCopyError = error instanceof Error ? error.message : "Kopiëren naar het klembord is niet gelukt.";
+  }
+
+  if (state.systemModal === "webserver-logs") {
+    render();
+  }
 }
 
 function renderWebServerLogsModal() {
@@ -5650,6 +6093,7 @@ function renderWebServerLogsModal() {
           ? "Hier zie je voorbeeldmeldingen uit de lokale preview."
           : "Hier zie je recente meldingen van OpenQuatt. Handig als je wilt terugzoeken wat er net gebeurde."
         }</p>
+        ${renderWebServerLogHistoryControls()}
         ${renderWebServerLogStatusBanner()}
         <div class="oq-webserver-log-panel" data-oq-webserver-log-scroller>
           <div class="oq-webserver-log-output" data-oq-webserver-log-output data-web-server-log-empty="${state.webServerLogEntries.length === 0 ? "true" : "false"}">
@@ -5657,6 +6101,7 @@ function renderWebServerLogsModal() {
           </div>
         </div>
         <div class="oq-helper-modal-actions">
+          <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="copy-webserver-log-output" ${state.webServerLogEntries.length === 0 ? "disabled" : ""}>Kopieer log</button>
           <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="clear-webserver-log-output">Legen</button>
           <button class="oq-helper-button oq-helper-button--primary" type="button" data-oq-action="close-system-modal">Gereed</button>
         </div>

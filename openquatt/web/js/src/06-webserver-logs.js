@@ -1,4 +1,4 @@
-const WEB_SERVER_LOG_MAX_ENTRIES = 240;
+const WEB_SERVER_LOG_MAX_ENTRIES = 250;
 
 function getWebServerLogDemoEntries() {
   if (typeof window === "undefined") {
@@ -31,6 +31,22 @@ function getWebServerLogUrl() {
   return `${getBasePath()}/events`;
 }
 
+function getWebServerLogHistoryUrl() {
+  return `${getBasePath()}/openquatt/logs/recent`;
+}
+
+function isWebServerLogHistoryEnabled() {
+  const entity = state.entities?.webServerLogHistoryEnabled;
+  if (!entity) {
+    return true;
+  }
+  if (typeof entity.value === "boolean") {
+    return entity.value;
+  }
+  const raw = String(entity.state ?? entity.value ?? "").toLowerCase();
+  return raw === "on" || raw === "true" || raw === "1";
+}
+
 function getWebServerLogStatusLabel() {
   if (state.nativeOpen) {
     return "Niet beschikbaar";
@@ -44,22 +60,156 @@ function getWebServerLogStatusLabel() {
   return "Beschikbaar";
 }
 
+function formatWebServerLogDuration(value) {
+  const totalSeconds = Math.max(0, Math.floor(Number(value) / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
 function formatWebServerLogDateTime(value) {
-  const date = value instanceof Date ? value : new Date(Number(value) || Date.now());
-  try {
-    const timePart = new Intl.DateTimeFormat("nl-NL", {
+  const numeric = Number(value) || 0;
+  if (numeric > 946684800000) {
+    const date = value instanceof Date ? value : new Date(numeric);
+    const options = {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
-    }).format(date);
-    return timePart;
-  } catch (_error) {
-    return date.toLocaleTimeString("nl-NL", {
+    };
+    try {
+      return new Intl.DateTimeFormat("nl-NL", options).format(date);
+    } catch (_error) {
+      return date.toLocaleString("nl-NL", options);
+    }
+  }
+
+  return formatWebServerLogDuration(numeric);
+}
+
+function getWebServerLogTimeTooltip(value) {
+  const numeric = Number(value) || 0;
+  if (numeric > 946684800000) {
+    return new Date(numeric).toLocaleString("nl-NL", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
     });
   }
+
+  const totalSeconds = Math.max(0, Math.floor(numeric / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `Sinds opstart: ${hours}u ${minutes}m ${seconds}s`;
+}
+
+function getWebServerLogHistoryStatusLabel() {
+  if (state.nativeOpen) {
+    return "Niet beschikbaar";
+  }
+  if (isWebServerLogDemoMode()) {
+    return isWebServerLogHistoryEnabled() ? "Voorbeeld buffer aan" : "Voorbeeld buffer uit";
+  }
+  return isWebServerLogHistoryEnabled() ? "Buffer aan" : "Buffer uit";
+}
+
+function getWebServerLogHistoryInfoCopy() {
+  if (!isWebServerLogHistoryEnabled()) {
+    return "Geen tijdelijke buffer in RAM. De viewer toont alleen live /events.";
+  }
+
+  return "Slaat de laatste firmwarelogs tijdelijk op in RAM. De viewer leest die buffer bij openen en blijft daarna live /events volgen.";
+}
+
+function getWebServerLogEntryKey(entry) {
+  if (!entry || typeof entry !== "object") {
+    return "";
+  }
+  if (Number.isFinite(Number(entry.seq))) {
+    return `seq:${Number(entry.seq)}`;
+  }
+  const raw = String(entry.raw ?? entry.text ?? "").trim();
+  const receivedAt = Number(entry.receivedAt ?? entry.ts ?? 0);
+  return raw ? `raw:${raw}:${Math.round(receivedAt / 1000)}` : "";
+}
+
+function isDuplicateWebServerLogEntry(candidate, existingEntry = null) {
+  if (!candidate || !existingEntry) {
+    return false;
+  }
+
+  const candidateSeq = Number(candidate.seq);
+  const existingSeq = Number(existingEntry.seq);
+  if (Number.isFinite(candidateSeq) && Number.isFinite(existingSeq) && candidateSeq === existingSeq) {
+    return true;
+  }
+
+  const candidateRaw = String(candidate.raw ?? candidate.text ?? "").trim();
+  const existingRaw = String(existingEntry.raw ?? existingEntry.text ?? "").trim();
+  if (!candidateRaw || candidateRaw !== existingRaw) {
+    return false;
+  }
+
+  const candidateReceivedAt = Number(candidate.receivedAt ?? candidate.ts ?? 0);
+  const existingReceivedAt = Number(existingEntry.receivedAt ?? existingEntry.ts ?? 0);
+  return Math.abs(candidateReceivedAt - existingReceivedAt) <= 2000;
+}
+
+function compareWebServerLogEntries(left, right) {
+  const leftTime = Number(left.receivedAt ?? left.ts ?? 0);
+  const rightTime = Number(right.receivedAt ?? right.ts ?? 0);
+  if (leftTime !== rightTime) {
+    return leftTime - rightTime;
+  }
+
+  const leftSeq = Number(left.seq ?? 0);
+  const rightSeq = Number(right.seq ?? 0);
+  if (leftSeq !== rightSeq) {
+    return leftSeq - rightSeq;
+  }
+
+  return String(left.raw ?? "").localeCompare(String(right.raw ?? ""));
+}
+
+function mergeWebServerLogEntries(entries, { prepend = false } = {}) {
+  if (!Array.isArray(entries) || entries.length === 0) {
+    return;
+  }
+
+  const merged = prepend
+    ? [...entries, ...state.webServerLogEntries]
+    : [...state.webServerLogEntries, ...entries];
+  merged.sort(compareWebServerLogEntries);
+
+  const deduped = [];
+  for (const entry of merged) {
+    const previous = deduped[deduped.length - 1] || null;
+    if (!isDuplicateWebServerLogEntry(entry, previous)) {
+      deduped.push(entry);
+    }
+  }
+
+  state.webServerLogEntries = deduped.slice(-WEB_SERVER_LOG_MAX_ENTRIES);
+}
+
+function createWebServerLogEntry(raw, options = {}) {
+  const text = stripAnsiSequences(raw).trimEnd();
+  const receivedAt = Number(options.receivedAt);
+  const seq = Number(options.seq);
+  return {
+    raw,
+    text,
+    tone: getWebServerLogTone(raw),
+    receivedAt: Number.isFinite(receivedAt) ? receivedAt : Date.now(),
+    seq: Number.isFinite(seq) ? seq : undefined,
+  };
 }
 
 function getDemoLogReceivedAt(index, total) {
@@ -73,20 +223,151 @@ function seedWebServerLogDemoEntries() {
   const total = entries.length;
   return entries.map((entry, index) => createWebServerLogEntry(entry, {
     receivedAt: getDemoLogReceivedAt(index, total),
+    seq: index + 1,
   }));
+}
+
+function scrollWebServerLogToBottom() {
+  const scroller = getWebServerLogScrollerElement();
+  if (!scroller) {
+    return;
+  }
+  scroller.scrollTop = scroller.scrollHeight;
+}
+
+async function refreshWebServerLogHistory() {
+  if (state.nativeOpen || typeof window.fetch !== "function") {
+    return;
+  }
+
+  const requestToken = Number(state.webServerLogHistoryRequestToken || 0) + 1;
+  state.webServerLogHistoryRequestToken = requestToken;
+  state.webServerLogHistoryLoading = true;
+  state.webServerLogHistoryError = "";
+
+  try {
+    const response = await window.fetch(getWebServerLogHistoryUrl(), {
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const payload = await response.json();
+    if (state.systemModal !== "webserver-logs" || state.webServerLogHistoryRequestToken !== requestToken) {
+      return;
+    }
+
+    const recentEntries = normalizeRecentWebServerLogPayload(payload);
+    state.webServerLogHistoryLoaded = true;
+    if (recentEntries.length > 0) {
+      mergeWebServerLogEntries(recentEntries, { prepend: true });
+      state.webServerLogRecentTail = recentEntries.slice(-4).map((entry) => String(entry.raw ?? entry.text ?? ""));
+      state.webServerLogRecentAnchorAt = Date.now();
+    }
+  } catch (error) {
+    if (state.systemModal === "webserver-logs" && state.webServerLogHistoryRequestToken === requestToken) {
+      state.webServerLogHistoryError = error instanceof Error ? error.message : "Recente logs konden niet worden opgehaald.";
+    }
+  } finally {
+    if (state.webServerLogHistoryRequestToken === requestToken) {
+      state.webServerLogHistoryLoading = false;
+    }
+    if (state.systemModal === "webserver-logs" && state.webServerLogHistoryRequestToken === requestToken) {
+      render();
+      window.requestAnimationFrame(() => {
+        if (state.systemModal === "webserver-logs" && state.webServerLogHistoryRequestToken === requestToken) {
+          scrollWebServerLogToBottom();
+        }
+      });
+    }
+  }
+}
+
+function normalizeRecentWebServerLogEntry(entry, fallbackSeq = 0) {
+  if (!entry || typeof entry !== "object") {
+    return null;
+  }
+
+  const raw = String(entry.raw ?? "").trim() || String(entry.message ?? "").trim();
+  if (!raw) {
+    return null;
+  }
+
+  return createWebServerLogEntry(raw, {
+    receivedAt: Number(entry.ts ?? entry.timestamp_ms ?? entry.receivedAt ?? Date.now()),
+    seq: Number(entry.seq ?? fallbackSeq),
+  });
+}
+
+function normalizeRecentWebServerLogPayload(payload) {
+  if (!payload || typeof payload !== "object") {
+    return [];
+  }
+
+  if (payload.enabled === false) {
+    return [];
+  }
+
+  const entries = Array.isArray(payload.entries) ? payload.entries : [];
+  return entries
+    .map((entry, index) => normalizeRecentWebServerLogEntry(entry, index + 1))
+    .filter((entry) => entry !== null);
+}
+
+function shouldIgnoreLiveWebServerLogEntry(entry) {
+  if (!entry || !Array.isArray(state.webServerLogRecentTail) || state.webServerLogRecentTail.length === 0) {
+    return false;
+  }
+
+  const recentAgeMs = Date.now() - Number(state.webServerLogRecentAnchorAt || 0);
+  if (recentAgeMs > 2500) {
+    return false;
+  }
+
+  const raw = String(entry.raw ?? entry.text ?? "").trim();
+  if (!raw) {
+    return false;
+  }
+
+  return state.webServerLogRecentTail.includes(raw);
+}
+
+function hasWebServerLogEntry(candidate, entries = state.webServerLogEntries) {
+  if (!candidate || !Array.isArray(entries) || entries.length === 0) {
+    return false;
+  }
+
+  return entries.some((existing) => isDuplicateWebServerLogEntry(candidate, existing));
 }
 
 function openWebServerLogsModal() {
   if (isWebServerLogDemoMode() && state.webServerLogEntries.length === 0) {
     state.webServerLogEntries = seedWebServerLogDemoEntries();
   }
+  state.webServerLogCopyMessage = "";
+  state.webServerLogCopyError = "";
   state.systemModal = "webserver-logs";
   render();
+  scrollWebServerLogToBottom();
+  if (!state.webServerLogHistoryLoaded || state.webServerLogEntries.length === 0) {
+    void refreshWebServerLogHistory();
+  }
 }
 
 function clearWebServerLogOutput() {
   state.webServerLogEntries = [];
   state.webServerLogError = "";
+  state.webServerLogHistoryError = "";
+  state.webServerLogHistoryLoading = false;
+  state.webServerLogHistoryLoaded = false;
+  state.webServerLogCopyMessage = "";
+  state.webServerLogCopyError = "";
+  state.webServerLogHistoryRequestToken += 1;
+  state.webServerLogRecentTail = [];
+  state.webServerLogRecentAnchorAt = 0;
   if (state.systemModal === "webserver-logs") {
     render();
   }
@@ -214,16 +495,19 @@ function handleWebServerLogMessage(event) {
   }
 
   const entries = lines.map((line) => createWebServerLogEntry(line));
-  for (const entry of entries) {
-    state.webServerLogEntries.push(entry);
+  const filteredEntries = entries.filter((entry) => !shouldIgnoreLiveWebServerLogEntry(entry) && !hasWebServerLogEntry(entry));
+  if (filteredEntries.length === 0) {
+    return;
   }
+
+  mergeWebServerLogEntries(filteredEntries);
 
   const output = getWebServerLogOutputElement();
   const scroller = getWebServerLogScrollerElement();
   const stickToBottom = isWebServerLogScrollerNearBottom(scroller);
 
   trimWebServerLogEntries(output);
-  appendWebServerLogEntriesToDom(entries, output);
+  appendWebServerLogEntriesToDom(filteredEntries, output);
 
   state.webServerLogEnabled = true;
   if (scroller && stickToBottom) {
@@ -313,17 +597,6 @@ function getWebServerLogTone(value) {
   return "verbose";
 }
 
-function createWebServerLogEntry(raw, options = {}) {
-  const text = stripAnsiSequences(raw).trimEnd();
-  const receivedAt = Number(options.receivedAt);
-  return {
-    raw,
-    text,
-    tone: getWebServerLogTone(raw),
-    receivedAt: Number.isFinite(receivedAt) ? receivedAt : Date.now(),
-  };
-}
-
 function trimWebServerLogEntries(output) {
   while (state.webServerLogEntries.length > WEB_SERVER_LOG_MAX_ENTRIES) {
     state.webServerLogEntries.shift();
@@ -372,14 +645,7 @@ function appendWebServerLogEntriesToDom(entries, output) {
 
 function renderWebServerLogEntry(entry) {
   const timestamp = formatWebServerLogDateTime(entry.receivedAt);
-  const fullTimestamp = new Date(Number(entry.receivedAt) || Date.now()).toLocaleString("nl-NL", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
+  const fullTimestamp = getWebServerLogTimeTooltip(entry.receivedAt);
   return `
     <div class="oq-webserver-log-entry oq-webserver-log-entry--${escapeHtml(entry.tone)}">
       <time class="oq-webserver-log-entry-time" datetime="${escapeHtml(new Date(Number(entry.receivedAt) || Date.now()).toISOString())}" title="${escapeHtml(fullTimestamp)}">${escapeHtml(timestamp)}</time>
@@ -399,11 +665,132 @@ function renderWebServerLogEntries(entries = state.webServerLogEntries) {
 }
 
 function renderWebServerLogStatusBanner() {
+  const rows = [];
+  if (state.webServerLogHistoryLoading) {
+    rows.push(`<p class="oq-helper-modal-note">Recente firmwarelogs worden opgehaald...</p>`);
+  }
+  if (state.webServerLogCopyMessage) {
+    rows.push(`
+      <div class="oq-helper-modal-success oq-helper-modal-success--compact" aria-live="polite">
+        <strong>Kopiëren</strong>
+        <span>${escapeHtml(state.webServerLogCopyMessage)}</span>
+      </div>
+    `);
+  }
+  if (state.webServerLogCopyError) {
+    rows.push(`<p class="oq-helper-modal-note oq-helper-modal-note--error">${escapeHtml(state.webServerLogCopyError)}</p>`);
+  }
+  if (state.webServerLogHistoryError) {
+    rows.push(`<p class="oq-helper-modal-note oq-helper-modal-note--error">${escapeHtml(state.webServerLogHistoryError)}</p>`);
+  }
   if (state.webServerLogError) {
-    return `<p class="oq-helper-modal-note oq-helper-modal-note--error">${escapeHtml(state.webServerLogError)}</p>`;
+    rows.push(`<p class="oq-helper-modal-note oq-helper-modal-note--error">${escapeHtml(state.webServerLogError)}</p>`);
   }
 
-  return "";
+  if (!rows.length) {
+    return "";
+  }
+
+  return rows.join("");
+}
+
+function renderWebServerLogHistoryControls() {
+  const enabled = isWebServerLogHistoryEnabled();
+  const busy = state.loadingEntities || state.busyAction === "switch-webServerLogHistoryEnabled";
+  const label = getWebServerLogHistoryStatusLabel();
+  const copy = getWebServerLogHistoryInfoCopy();
+
+  return `
+    <div class="oq-webserver-log-history-shell">
+      <div class="oq-settings-system-row oq-settings-system-row--with-action" data-oq-diagnostics-row="webserverLogHistory">
+        <div class="oq-settings-system-row-copy">
+          <p class="oq-settings-system-row-label">RAM log history</p>
+          <strong class="oq-settings-system-row-value">${escapeHtml(label)}</strong>
+          <p class="oq-settings-system-row-note">${escapeHtml(copy)}</p>
+        </div>
+        <button
+          class="oq-helper-button oq-helper-button--ghost"
+          type="button"
+          data-oq-action="toggle-overview-control"
+          data-control-key="webServerLogHistoryEnabled"
+          data-control-state="${enabled ? "off" : "on"}"
+          aria-pressed="${enabled ? "true" : "false"}"
+          ${busy ? "disabled" : ""}
+        >
+          ${enabled ? "Uitschakelen" : "Inschakelen"}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function buildWebServerLogCopyText() {
+  return state.webServerLogEntries
+    .map((entry) => {
+      const line = String(entry.raw ?? entry.text ?? "").trimEnd();
+      if (!line.trim()) {
+        return "";
+      }
+      return `${formatWebServerLogDateTime(entry.receivedAt)} ${line}`;
+    })
+    .filter((entry) => entry.trim() !== "")
+    .join("\n");
+}
+
+async function writeTextToClipboard(text) {
+  if (!text) {
+    return false;
+  }
+
+  if (window.navigator?.clipboard?.writeText && window.isSecureContext) {
+    await window.navigator.clipboard.writeText(text);
+    return true;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.top = "-1000px";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+
+  let success = false;
+  try {
+    success = document.execCommand("copy");
+  } finally {
+    document.body.removeChild(textarea);
+  }
+
+  return success;
+}
+
+async function copyWebServerLogOutput() {
+  const text = buildWebServerLogCopyText();
+  state.webServerLogCopyMessage = "";
+  state.webServerLogCopyError = "";
+
+  if (!text) {
+    state.webServerLogCopyError = "Er zijn nog geen logregels om te kopiëren.";
+    render();
+    return;
+  }
+
+  try {
+    const copied = await writeTextToClipboard(text);
+    if (!copied) {
+      throw new Error("Kopiëren naar het klembord is niet gelukt.");
+    }
+    state.webServerLogCopyMessage = `${state.webServerLogEntries.length} logregel${state.webServerLogEntries.length === 1 ? "" : "s"} gekopieerd.`;
+  } catch (error) {
+    state.webServerLogCopyError = error instanceof Error ? error.message : "Kopiëren naar het klembord is niet gelukt.";
+  }
+
+  if (state.systemModal === "webserver-logs") {
+    render();
+  }
 }
 
 function renderWebServerLogsModal() {
@@ -422,6 +809,7 @@ function renderWebServerLogsModal() {
           ? "Hier zie je voorbeeldmeldingen uit de lokale preview."
           : "Hier zie je recente meldingen van OpenQuatt. Handig als je wilt terugzoeken wat er net gebeurde."
         }</p>
+        ${renderWebServerLogHistoryControls()}
         ${renderWebServerLogStatusBanner()}
         <div class="oq-webserver-log-panel" data-oq-webserver-log-scroller>
           <div class="oq-webserver-log-output" data-oq-webserver-log-output data-web-server-log-empty="${state.webServerLogEntries.length === 0 ? "true" : "false"}">
@@ -429,6 +817,7 @@ function renderWebServerLogsModal() {
           </div>
         </div>
         <div class="oq-helper-modal-actions">
+          <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="copy-webserver-log-output" ${state.webServerLogEntries.length === 0 ? "disabled" : ""}>Kopieer log</button>
           <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="clear-webserver-log-output">Legen</button>
           <button class="oq-helper-button oq-helper-button--primary" type="button" data-oq-action="close-system-modal">Gereed</button>
         </div>
