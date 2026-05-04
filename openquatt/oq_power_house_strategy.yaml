@@ -287,7 +287,7 @@ sensor:
     device_class: power
     state_class: measurement
     accuracy_decimals: 0
-    update_interval: 5s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     web_server:
       sorting_group_id: oq_power_house
     lambda: |-
@@ -312,7 +312,7 @@ sensor:
     device_class: power
     state_class: measurement
     accuracy_decimals: 0
-    update_interval: 5s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     web_server:
       sorting_group_id: oq_power_house
     lambda: |-
