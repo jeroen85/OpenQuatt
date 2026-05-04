@@ -227,7 +227,7 @@ sensor:
     name: "Strategy active code"
     icon: mdi:counter
     accuracy_decimals: 0
-    update_interval: 5s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     entity_category: diagnostic
     disabled_by_default: true
     web_server:
@@ -240,7 +240,7 @@ sensor:
     name: "Strategy phase code"
     icon: mdi:counter
     accuracy_decimals: 0
-    update_interval: 5s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     entity_category: diagnostic
     disabled_by_default: true
     web_server:
@@ -255,7 +255,7 @@ sensor:
     unit_of_measurement: "W"
     state_class: measurement
     accuracy_decimals: 0
-    update_interval: 5s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     entity_category: diagnostic
     disabled_by_default: true
     web_server:
@@ -271,7 +271,7 @@ sensor:
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 1
-    update_interval: 5s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     entity_category: diagnostic
     disabled_by_default: true
     web_server:
@@ -284,7 +284,7 @@ sensor:
     name: "Strategy water limit factor"
     icon: mdi:water-percent-alert
     accuracy_decimals: 2
-    update_interval: 5s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     entity_category: diagnostic
     disabled_by_default: true
     web_server:

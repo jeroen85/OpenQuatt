@@ -188,3 +188,4 @@ oq_modbus_command_throttle_ms: "300"                 # Minimum spacing between M
 oq_modbus_max_cmd_retries: "1"                       # Retries per Modbus command; keep low to avoid long blocking on bad links.
 oq_skip_10s: "1"                                      # 1 skip; effective polling every 10s.
 oq_skip_30s: "5"                                      # 5 skips; effective polling every 30s.
+oq_diagnostic_update_interval_s: "30"                 # Slow diagnostic-only template entities to reduce API publish bursts.

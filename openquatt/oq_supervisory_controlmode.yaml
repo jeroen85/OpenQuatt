@@ -491,7 +491,7 @@ text_sensor:
     id: oq_low_load_dyn_status
     name: "Low-load dynamic thresholds"
     icon: mdi:chart-bell-curve
-    update_interval: 5s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     entity_category: diagnostic
     disabled_by_default: true
     web_server:

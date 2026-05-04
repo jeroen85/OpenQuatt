@@ -326,7 +326,7 @@ sensor:
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 3
-    update_interval: 5s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     entity_category: diagnostic
     disabled_by_default: true
     web_server:
@@ -342,7 +342,7 @@ sensor:
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 2
-    update_interval: 5s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     entity_category: diagnostic
     disabled_by_default: true
     web_server:
