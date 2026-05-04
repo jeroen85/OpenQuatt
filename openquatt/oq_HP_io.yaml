@@ -135,7 +135,7 @@ select:
       "8": 8
       "9": 9
       "10": 10
-    skip_updates: ${oq_skip_10s}
+    skip_updates: ${oq_skip_30s}
     web_server:
       sorting_group_id: oq_${hp_id}
 
@@ -151,7 +151,7 @@ select:
     optionsmap:
       "Off": 0
       "On": 1
-    skip_updates: ${oq_skip_10s}
+    skip_updates: ${oq_skip_30s}
     web_server:
       sorting_group_id: oq_${hp_id}
 
@@ -167,7 +167,7 @@ select:
     optionsmap:
       "Off": 0
       "On": 4096
-    skip_updates: ${oq_skip_10s}
+    skip_updates: ${oq_skip_30s}
     web_server:
       sorting_group_id: oq_${hp_id}
 
@@ -233,7 +233,7 @@ number:
     min_value: 0
     max_value: 1000
     mode: slider
-    skip_updates: ${oq_skip_10s}
+    skip_updates: ${oq_skip_30s}
     web_server:
       sorting_group_id: oq_${hp_id}
 
