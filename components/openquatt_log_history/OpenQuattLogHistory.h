@@ -30,12 +30,12 @@ class OpenQuattLogHistory : public Component {
 
  protected:
   static constexpr size_t ENTRY_CAPACITY = 250;
-  static constexpr size_t RAW_MAX_LEN = 128;
+  static constexpr size_t RAW_MAX_LEN = 96;
 
   struct LogEntry {
-    uint32_t seq{0};
-    uint64_t timestamp_ms{0};
-    uint16_t raw_len{0};
+    uint16_t seq{0};
+    uint32_t timestamp_s{0};
+    uint8_t raw_len{0};
     uint8_t level{0};
     char raw[RAW_MAX_LEN]{};
   };
@@ -54,7 +54,7 @@ class OpenQuattLogHistory : public Component {
   uint64_t current_time_ms_() const;
   uint64_t current_epoch_offset_ms_() const;
   void sync_time_state_();
-  void rebase_history_(uint64_t offset_ms);
+  void rebase_history_(uint32_t offset_s);
 
   void on_log_(uint8_t level, const char *tag, const char *message, size_t message_len);
   void push_entry_(const LogEntry &entry);

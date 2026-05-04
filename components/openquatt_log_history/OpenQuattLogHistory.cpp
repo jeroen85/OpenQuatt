@@ -343,14 +343,14 @@ void OpenQuattLogHistory::push_entry_(const LogEntry &entry) {
   }
 }
 
-void OpenQuattLogHistory::rebase_history_(uint64_t offset_ms) {
-  if (offset_ms == 0) {
+void OpenQuattLogHistory::rebase_history_(uint32_t offset_s) {
+  if (offset_s == 0) {
     return;
   }
 
   for (size_t index = 0; index < this->count_; ++index) {
     const size_t entry_index = (this->head_ + index) % ENTRY_CAPACITY;
-    this->entries_[entry_index].timestamp_ms += offset_ms;
+    this->entries_[entry_index].timestamp_s += offset_s;
   }
 }
 
@@ -359,7 +359,7 @@ void OpenQuattLogHistory::sync_time_state_() {
   if (valid && !this->time_rebased_) {
     const uint64_t offset_ms = this->current_epoch_offset_ms_();
     if (offset_ms > 0) {
-      this->rebase_history_(offset_ms);
+      this->rebase_history_(static_cast<uint32_t>(offset_ms / 1000ULL));
     }
     this->time_rebased_ = true;
   }
@@ -371,11 +371,11 @@ void OpenQuattLogHistory::on_log_(uint8_t level, const char *tag, const char *me
   }
 
   LogEntry entry{};
-  entry.seq = this->next_seq_++;
-  entry.timestamp_ms = this->current_time_ms_();
+  entry.seq = static_cast<uint16_t>(this->next_seq_++);
+  entry.timestamp_s = static_cast<uint32_t>(this->current_time_ms_() / 1000ULL);
   entry.level = normalize_level_(level);
   copy_sanitized_log_line_(message, message_len, entry.raw, sizeof(entry.raw));
-  entry.raw_len = static_cast<uint16_t>(std::strlen(entry.raw));
+  entry.raw_len = static_cast<uint8_t>(std::strlen(entry.raw));
 
   if (entry.raw_len == 0) {
     return;
@@ -450,7 +450,7 @@ void OpenQuattLogHistory::write_recent_logs(httpd_req_t *req) const {
     if (!writer.write_char('{')) {
       return false;
     }
-    if (!writer.write_literal("\"ts\":") || !writer.write_uint64(static_cast<uint64_t>(entry.timestamp_ms)) ||
+    if (!writer.write_literal("\"ts\":") || !writer.write_uint64(static_cast<uint64_t>(entry.timestamp_s) * 1000ULL) ||
         !writer.write_literal(",\"seq\":") || !writer.write_uint32(static_cast<uint32_t>(entry.seq)) ||
         !writer.write_literal(",\"level\":") || !writer.write_json_string(level, std::strlen(level)) ||
         !writer.write_literal(",\"tag\":") || !writer.write_json_string(tag_start, tag_len) ||
