@@ -7,8 +7,8 @@
 
 namespace esphome::openquatt_common {
 
-/// Simple PSRAM-backed buffer for large, long-lived OpenQuatt history arrays.
-/// Allocates from external RAM only and frees with free().
+/// Large OpenQuatt history buffer that prefers PSRAM but falls back to internal RAM
+/// when PSRAM is not available on the target hardware.
 template<typename T> class PsramBuffer {
  public:
   PsramBuffer() = default;
@@ -23,10 +23,17 @@ template<typename T> class PsramBuffer {
       return true;
     }
 
-    RAMAllocator<T> allocator(RAMAllocator<T>::ALLOC_EXTERNAL);
-    this->data_ = allocator.allocate(count);
+    RAMAllocator<T> external_allocator(RAMAllocator<T>::ALLOC_EXTERNAL);
+    this->data_ = external_allocator.allocate(count);
     if (this->data_ == nullptr) {
-      return false;
+      RAMAllocator<T> internal_allocator(RAMAllocator<T>::ALLOC_INTERNAL);
+      this->data_ = internal_allocator.allocate(count);
+      this->external_ = false;
+      if (this->data_ == nullptr) {
+        return false;
+      }
+    } else {
+      this->external_ = true;
     }
 
     this->size_ = count;
@@ -39,11 +46,13 @@ template<typename T> class PsramBuffer {
       this->data_ = nullptr;
     }
     this->size_ = 0;
+    this->external_ = false;
   }
 
   T *data() { return this->data_; }
   const T *data() const { return this->data_; }
   size_t size() const { return this->size_; }
+  bool is_external() const { return this->external_; }
   explicit operator bool() const { return this->data_ != nullptr; }
 
   T &operator[](size_t index) { return this->data_[index]; }
@@ -52,6 +61,7 @@ template<typename T> class PsramBuffer {
  private:
   T *data_{nullptr};
   size_t size_{0};
+  bool external_{false};
 };
 
 }  // namespace esphome::openquatt_common
