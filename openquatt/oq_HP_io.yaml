@@ -296,7 +296,8 @@ sensor:
           min_value: 0
           max_value: 16
           ignore_out_of_range: true
-    skip_updates: ${oq_skip_30s}
+    skip_updates: ${oq_skip_10s}
+    force_new_range: true
     web_server:
       sorting_group_id: oq_${hp_id}
 
@@ -359,7 +360,7 @@ sensor:
           min_value: 0
           max_value: 1000
           ignore_out_of_range: true
-    skip_updates: ${oq_skip_30s}
+    skip_updates: ${oq_skip_10s}
     force_new_range: true
     web_server:
       sorting_group_id: oq_${hp_id}
@@ -381,7 +382,7 @@ sensor:
           min_value: 0
           max_value: 1000
           ignore_out_of_range: true
-    skip_updates: ${oq_skip_30s}
+    skip_updates: ${oq_skip_10s}
     web_server:
       sorting_group_id: oq_${hp_id}
 
@@ -1141,7 +1142,7 @@ text_sensor:
     id: ${hp_id}_active_failures_list
     name: "${prefix}Active Failures List"
     entity_category: diagnostic
-    update_interval: 5s
+    update_interval: 30s
     web_server:
       sorting_group_id: oq_hp_diagnostics
     icon: mdi:alert-circle-outline
