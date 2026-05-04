@@ -133,7 +133,7 @@ text_sensor:
     id: heating_strategy_status
     name: "Heating Strategy"
     icon: mdi:state-machine
-    update_interval: 5s
+    update_interval: 30s
     web_server:
       sorting_group_id: oq_overview
     lambda: |-

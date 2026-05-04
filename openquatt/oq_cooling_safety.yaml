@@ -277,7 +277,7 @@ text_sensor:
     name: "Cooling Block Reason"
     icon: mdi:information-outline
     entity_category: diagnostic
-    update_interval: 5s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     lambda: |-
       // Report the first blocking condition in operator-friendly terms.
       if (!id(cooling_room_count_selected).has_state() || isnan(id(cooling_room_count_selected).state)) {

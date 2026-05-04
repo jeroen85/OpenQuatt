@@ -207,7 +207,7 @@ text_sensor:
     id: oq_room_temperature_effective_source
     name: "Room Temperature Effective Source"
     icon: mdi:source-branch
-    update_interval: 5s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     lambda: |-
       if (!id(room_temp_source).has_state()) return {"Unknown"};
       return {id(room_temp_source).current_option().c_str()};
@@ -219,7 +219,7 @@ text_sensor:
     id: oq_room_setpoint_effective_source
     name: "Room Setpoint Effective Source"
     icon: mdi:source-branch
-    update_interval: 5s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     lambda: |-
       if (!id(room_setpoint_source).has_state()) return {"Unknown"};
       return {id(room_setpoint_source).current_option().c_str()};
@@ -232,7 +232,7 @@ text_sensor:
     name: "Cooling Enable Effective Source"
     icon: mdi:source-branch
     entity_category: diagnostic
-    update_interval: 5s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     lambda: |-
       // Report which raw source is currently granting cooling enable.
       if (!id(cooling_enable_source).has_state()) return {"Unknown"};
