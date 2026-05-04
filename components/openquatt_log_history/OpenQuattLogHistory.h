@@ -4,6 +4,8 @@
 #include <cstddef>
 #include <cstdint>
 
+#include <esp_http_server.h>
+
 #include "esphome/components/switch/switch.h"
 #include "esphome/components/time/real_time_clock.h"
 #include "esphome/components/web_server_base/web_server_base.h"
@@ -24,7 +26,7 @@ class OpenQuattLogHistory : public Component {
 
   void set_enabled(bool enabled);
   void clear_history();
-  void write_recent_logs(AsyncResponseStream *stream) const;
+  void write_recent_logs(httpd_req_t *req) const;
 
  protected:
   static constexpr size_t ENTRY_CAPACITY = 250;
@@ -61,8 +63,6 @@ class OpenQuattLogHistory : public Component {
   static void copy_sanitized_log_line_(const char *message, size_t message_len, char *out, size_t out_size);
   static void split_log_fields_(const char *raw, const char **tag_start, size_t *tag_len, const char **message_start,
                                 size_t *message_len);
-  static void write_json_string_(AsyncResponseStream *stream, const char *value, size_t len);
-  static void write_json_entry_(AsyncResponseStream *stream, const LogEntry &entry);
 };
 
 }  // namespace openquatt_log_history

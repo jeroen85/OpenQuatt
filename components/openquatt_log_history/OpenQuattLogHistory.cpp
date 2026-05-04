@@ -15,6 +15,137 @@ static const char *const TAG = "openquatt.log_history";
 
 namespace {
 
+class ChunkedJsonWriter {
+ public:
+  explicit ChunkedJsonWriter(httpd_req_t *req) : req_(req) {}
+
+  bool write_char(char c) { return this->write_bytes_(&c, 1); }
+
+  bool write_literal(const char *text) {
+    if (text == nullptr) {
+      return true;
+    }
+    return this->write_bytes_(text, std::strlen(text));
+  }
+
+  bool write_uint64(uint64_t value) {
+    char buffer[32];
+    const int len = std::snprintf(buffer, sizeof(buffer), "%" PRIu64, value);
+    return len >= 0 && this->write_bytes_(buffer, static_cast<size_t>(len));
+  }
+
+  bool write_uint32(uint32_t value) {
+    char buffer[24];
+    const int len = std::snprintf(buffer, sizeof(buffer), "%" PRIu32, value);
+    return len >= 0 && this->write_bytes_(buffer, static_cast<size_t>(len));
+  }
+
+  bool write_json_string(const char *value, size_t len) {
+    if (!this->write_char('"')) {
+      return false;
+    }
+    for (size_t index = 0; index < len; ++index) {
+      const unsigned char c = static_cast<unsigned char>(value[index]);
+      switch (c) {
+        case '\\':
+          if (!this->write_literal("\\\\")) {
+            return false;
+          }
+          break;
+        case '"':
+          if (!this->write_literal("\\\"")) {
+            return false;
+          }
+          break;
+        case '\b':
+          if (!this->write_literal("\\b")) {
+            return false;
+          }
+          break;
+        case '\f':
+          if (!this->write_literal("\\f")) {
+            return false;
+          }
+          break;
+        case '\n':
+          if (!this->write_literal("\\n")) {
+            return false;
+          }
+          break;
+        case '\r':
+          if (!this->write_literal("\\r")) {
+            return false;
+          }
+          break;
+        case '\t':
+          if (!this->write_literal("\\t")) {
+            return false;
+          }
+          break;
+        default:
+          if (c < 0x20) {
+            char buffer[7];
+            const int written = std::snprintf(buffer, sizeof(buffer), "\\u%04X", c);
+            if (written < 0 || !this->write_bytes_(buffer, static_cast<size_t>(written))) {
+              return false;
+            }
+          } else {
+            if (!this->write_char(static_cast<char>(c))) {
+              return false;
+            }
+          }
+          break;
+      }
+    }
+    return this->write_char('"');
+  }
+
+  bool flush() {
+    if (this->used_ == 0) {
+      return true;
+    }
+    if (httpd_resp_send_chunk(this->req_, this->buffer_, static_cast<ssize_t>(this->used_)) != ESP_OK) {
+      return false;
+    }
+    this->used_ = 0;
+    return true;
+  }
+
+ private:
+  static constexpr size_t BUFFER_SIZE = 512;
+
+  bool write_bytes_(const char *data, size_t len) {
+    if (data == nullptr || len == 0) {
+      return true;
+    }
+
+    size_t remaining = len;
+    const char *cursor = data;
+    while (remaining > 0) {
+      if (this->used_ == BUFFER_SIZE && !this->flush()) {
+        return false;
+      }
+
+      const size_t space = BUFFER_SIZE - this->used_;
+      const size_t to_copy = std::min(space, remaining);
+      std::memcpy(this->buffer_ + this->used_, cursor, to_copy);
+      this->used_ += to_copy;
+      cursor += to_copy;
+      remaining -= to_copy;
+
+      if (this->used_ == BUFFER_SIZE && !this->flush()) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  httpd_req_t *req_;
+  char buffer_[BUFFER_SIZE]{};
+  size_t used_{0};
+};
+
 class OpenQuattLogHistoryRequestHandler : public AsyncWebHandler {
  public:
   explicit OpenQuattLogHistoryRequestHandler(OpenQuattLogHistory *parent) : parent_(parent) {}
@@ -35,10 +166,11 @@ class OpenQuattLogHistoryRequestHandler : public AsyncWebHandler {
       return;
     }
 
-    auto *stream = request->beginResponseStream("application/json; charset=utf-8");
-    stream->addHeader("Cache-Control", "no-store");
-    this->parent_->write_recent_logs(stream);
-    request->send(stream);
+    httpd_req_t *req = *request;
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_type(req, "application/json; charset=utf-8");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+    this->parent_->write_recent_logs(req);
   }
 
  protected:
@@ -197,73 +329,6 @@ void OpenQuattLogHistory::split_log_fields_(const char *raw, const char **tag_st
   }
 }
 
-void OpenQuattLogHistory::write_json_string_(AsyncResponseStream *stream, const char *value, size_t len) {
-  if (stream == nullptr) {
-    return;
-  }
-
-  stream->write('"');
-  for (size_t index = 0; index < len; ++index) {
-    const unsigned char c = static_cast<unsigned char>(value[index]);
-    switch (c) {
-      case '\\':
-        stream->print("\\\\");
-        break;
-      case '"':
-        stream->print("\\\"");
-        break;
-      case '\b':
-        stream->print("\\b");
-        break;
-      case '\f':
-        stream->print("\\f");
-        break;
-      case '\n':
-        stream->print("\\n");
-        break;
-      case '\r':
-        stream->print("\\r");
-        break;
-      case '\t':
-        stream->print("\\t");
-        break;
-      default:
-        if (c < 0x20) {
-          char buffer[7];
-          std::snprintf(buffer, sizeof(buffer), "\\u%04X", c);
-          stream->print(buffer);
-        } else {
-          stream->write(c);
-        }
-        break;
-    }
-  }
-  stream->write('"');
-}
-
-void OpenQuattLogHistory::write_json_entry_(AsyncResponseStream *stream, const LogEntry &entry) {
-  const char *tag_start = "";
-  size_t tag_len = 0;
-  const char *message_start = entry.raw;
-  size_t message_len = entry.raw_len;
-  split_log_fields_(entry.raw, &tag_start, &tag_len, &message_start, &message_len);
-
-  stream->write('{');
-  stream->print("\"ts\":");
-  stream->printf("%" PRIu64, static_cast<uint64_t>(entry.timestamp_ms));
-  stream->print(",\"seq\":");
-  stream->printf("%" PRIu32, static_cast<uint32_t>(entry.seq));
-  stream->print(",\"level\":");
-  write_json_string_(stream, level_to_string_(entry.level), std::strlen(level_to_string_(entry.level)));
-  stream->print(",\"tag\":");
-  write_json_string_(stream, tag_start, tag_len);
-  stream->print(",\"message\":");
-  write_json_string_(stream, message_start, message_len);
-  stream->print(",\"raw\":");
-  write_json_string_(stream, entry.raw, entry.raw_len);
-  stream->write('}');
-}
-
 void OpenQuattLogHistory::push_entry_(const LogEntry &entry) {
   if (ENTRY_CAPACITY == 0) {
     return;
@@ -361,24 +426,70 @@ void OpenQuattLogHistory::dump_config() {
   ESP_LOGCONFIG(TAG, "  Entries: %u / %u", static_cast<unsigned>(this->count_), static_cast<unsigned>(ENTRY_CAPACITY));
 }
 
-void OpenQuattLogHistory::write_recent_logs(AsyncResponseStream *stream) const {
-  if (stream == nullptr) {
+void OpenQuattLogHistory::write_recent_logs(httpd_req_t *req) const {
+  if (req == nullptr) {
     return;
   }
 
-  stream->print("{\"enabled\":");
-  stream->print(this->enabled_ ? "true" : "false");
-  stream->print(",\"entries\":[");
+  ChunkedJsonWriter writer(req);
+  if (!writer.write_literal("{\"enabled\":") || !writer.write_literal(this->enabled_ ? "true" : "false") ||
+      !writer.write_literal(",\"entries\":[")) {
+    ESP_LOGW(TAG, "Failed to start recent log response");
+    return;
+  }
+
+  auto write_json_entry = [&](const LogEntry &entry) -> bool {
+    const char *tag_start = "";
+    size_t tag_len = 0;
+    const char *message_start = entry.raw;
+    size_t message_len = entry.raw_len;
+    split_log_fields_(entry.raw, &tag_start, &tag_len, &message_start, &message_len);
+
+    const char *level = level_to_string_(entry.level);
+
+    if (!writer.write_char('{')) {
+      return false;
+    }
+    if (!writer.write_literal("\"ts\":") || !writer.write_uint64(static_cast<uint64_t>(entry.timestamp_ms)) ||
+        !writer.write_literal(",\"seq\":") || !writer.write_uint32(static_cast<uint32_t>(entry.seq)) ||
+        !writer.write_literal(",\"level\":") || !writer.write_json_string(level, std::strlen(level)) ||
+        !writer.write_literal(",\"tag\":") || !writer.write_json_string(tag_start, tag_len) ||
+        !writer.write_literal(",\"message\":") || !writer.write_json_string(message_start, message_len) ||
+        !writer.write_literal(",\"raw\":") || !writer.write_json_string(entry.raw, entry.raw_len) ||
+        !writer.write_char('}')) {
+      return false;
+    }
+
+    return true;
+  };
 
   for (size_t index = 0; index < this->count_; ++index) {
     if (index > 0) {
-      stream->write(',');
+      if (!writer.write_char(',')) {
+        ESP_LOGW(TAG, "Failed to stream recent log separator");
+        return;
+      }
     }
     const size_t entry_index = (this->head_ + index) % ENTRY_CAPACITY;
-    write_json_entry_(stream, this->entries_[entry_index]);
+    if (!write_json_entry(this->entries_[entry_index])) {
+      ESP_LOGW(TAG, "Failed to stream recent log entry");
+      return;
+    }
   }
 
-  stream->print("]}");
+  if (!writer.write_literal("]}")) {
+    ESP_LOGW(TAG, "Failed to finish recent log response");
+    return;
+  }
+
+  if (!writer.flush()) {
+    ESP_LOGW(TAG, "Failed to flush recent log response");
+    return;
+  }
+
+  if (httpd_resp_send_chunk(req, nullptr, 0) != ESP_OK) {
+    ESP_LOGW(TAG, "Failed to terminate recent log response");
+  }
 }
 
 }  // namespace openquatt_log_history
