@@ -187,5 +187,7 @@ ha_cooling_room_6_humidity_entity_id: "sensor.openquatt_ext_cooling_room_6_humid
 oq_modbus_update_interval_s: "5"                    # Base Modbus controller polling interval [s].
 oq_modbus_command_throttle_ms: "300"                 # Minimum spacing between Modbus commands [ms].
 oq_modbus_max_cmd_retries: "1"                       # Retries per Modbus command; keep low to avoid long blocking on bad links.
+oq_modbus_update_interval_hp1_s: "5"                 # HP1 Modbus polling cadence [s].
+oq_modbus_update_interval_hp2_s: "7"                 # HP2 Modbus polling cadence [s]; offset from HP1 to de-sync bursts.
 oq_skip_10s: "1"                                      # 1 skip; effective polling every 10s.
 oq_skip_30s: "5"                                      # 5 skips; effective polling every 30s.

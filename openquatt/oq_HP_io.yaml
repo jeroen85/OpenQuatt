@@ -274,7 +274,7 @@ sensor:
           min_value: 0
           max_value: 300
           ignore_out_of_range: true
-    #skip_updates: 0
+    skip_updates: ${oq_skip_30s}
     web_server:
       sorting_group_id: oq_${hp_id}
 
@@ -295,7 +295,7 @@ sensor:
           min_value: 0
           max_value: 16
           ignore_out_of_range: true
-    #skip_updates: 0
+    skip_updates: ${oq_skip_30s}
     web_server:
       sorting_group_id: oq_${hp_id}
 
@@ -378,7 +378,7 @@ sensor:
           min_value: 0
           max_value: 1000
           ignore_out_of_range: true
-    #skip_updates: 0
+    skip_updates: ${oq_skip_30s}
     web_server:
       sorting_group_id: oq_${hp_id}
 
@@ -421,6 +421,7 @@ sensor:
           min_value: -30
           max_value: 100
           ignore_out_of_range: true
+    skip_updates: ${oq_skip_10s}
     on_value:
       then:
         - lambda: |-
@@ -636,6 +637,7 @@ sensor:
           min_value: -10
           max_value: 100
           ignore_out_of_range: true
+    skip_updates: ${oq_skip_10s}
     web_server:
       sorting_group_id: oq_${hp_id}
 
@@ -658,6 +660,7 @@ sensor:
           min_value: -10
           max_value: 100
           ignore_out_of_range: true
+    skip_updates: ${oq_skip_10s}
     web_server:
       sorting_group_id: oq_${hp_id}
 
@@ -698,7 +701,7 @@ sensor:
     accuracy_decimals: 2
     filters:
       - multiply: 0.1
-    #skip_updates: 0
+    skip_updates: ${oq_skip_30s}
     web_server:
       sorting_group_id: oq_${hp_id}
 

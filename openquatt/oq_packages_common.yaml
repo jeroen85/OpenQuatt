@@ -160,3 +160,4 @@ heatpump1: !include
     hp_id: "hp1"
     prefix: "HP1 - "
     device_address: 0x01
+    oq_modbus_update_interval_s: "${oq_modbus_update_interval_hp1_s}"
