@@ -3,8 +3,8 @@
 #include <array>
 #include <cstdint>
 #include <string>
-#include <vector>
 
+#include <esp_http_server.h>
 #include "esp_partition.h"
 #include "esphome/components/switch/switch.h"
 #include "esphome/components/time/real_time_clock.h"
@@ -13,6 +13,8 @@
 
 namespace esphome {
 namespace openquatt_trends {
+
+class ChunkedTextWriter;
 
 class OpenQuattTrends : public Component {
  public:
@@ -31,7 +33,7 @@ class OpenQuattTrends : public Component {
   void set_flash_enabled(bool enabled);
   bool force_flush();
   void clear_history();
-  void write_history(AsyncResponseStream *stream, uint32_t window_hours);
+  void write_history(httpd_req_t *req, uint32_t window_hours);
   std::string get_flash_available_label() const;
   std::string get_flash_oldest_point_label() const;
   std::string get_flash_newest_point_label() const;
@@ -127,8 +129,7 @@ class OpenQuattTrends : public Component {
   void rebase_ram_history_(uint64_t offset_ms);
 
   void push_ram_sample_(const TrendSample &sample);
-  std::vector<TrendSample> collect_ram_samples_() const;
-  void replace_ram_samples_(const std::vector<TrendSample> &samples);
+  bool get_ram_sample_at_(size_t ordered_index, TrendSample *sample) const;
 
   bool scan_flash_archive_();
   bool clear_flash_archive_();
@@ -136,15 +137,17 @@ class OpenQuattTrends : public Component {
   bool append_sample_to_flash_(const TrendSample &sample);
   bool flush_flash_builder_(bool force);
   bool write_flash_block_(const FlashBlockBuilder &builder);
-  bool read_flash_block_(const FlashBlockInfo &info, std::vector<TrendSample> *samples) const;
+  bool read_flash_block_(uint32_t slot_index, uint32_t expected_sequence, FlashBlockInfo *info,
+                         std::array<TrendSample, FLASH_SAMPLES_PER_BLOCK> *samples) const;
   void reset_flash_builder_();
 
-  void write_sample_line_(AsyncResponseStream *stream, const TrendSample &sample) const;
-  void write_samples_for_history_(AsyncResponseStream *stream, uint32_t window_hours);
+  bool write_sample_line_(ChunkedTextWriter *writer, const TrendSample &sample) const;
+  void write_samples_for_history_(ChunkedTextWriter *writer, uint32_t window_hours);
   uint64_t get_window_cutoff_ms_(uint32_t window_hours) const;
   uint32_t get_window_stride_(uint32_t window_hours) const;
   uint64_t get_latest_archive_timestamp_ms_() const;
   void update_flash_metadata_(uint64_t latest_timestamp_ms);
+  void reset_flash_metadata_();
   uint64_t get_flash_oldest_timestamp_ms_() const;
   uint64_t get_flash_newest_timestamp_ms_() const;
   uint64_t get_flash_last_flush_timestamp_ms_() const;
@@ -167,12 +170,14 @@ class OpenQuattTrends : public Component {
   uint32_t last_capture_ms_{0};
   uint32_t last_flash_flush_ms_{0};
   uint64_t flash_latest_timestamp_ms_{0};
+  uint64_t flash_oldest_timestamp_ms_{0};
+  uint64_t flash_last_flush_timestamp_ms_{0};
+  uint16_t flash_valid_block_count_{0};
 
   std::array<TrendSample, RAM_CAPACITY> ram_history_{};
   size_t ram_head_{0};
   size_t ram_count_{0};
 
-  std::vector<FlashBlockInfo> flash_blocks_{};
   FlashBlockBuilder flash_builder_{};
 };
 
