@@ -149,6 +149,10 @@ void OpenQuattTrends::setup() {
     return;
   }
 
+  if (!this->ram_history_.allocate(RAM_CAPACITY)) {
+    ESP_LOGE(TAG, "Failed to allocate trend history buffer in PSRAM");
+  }
+
   this->flash_partition_ = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, "openquatt_data");
   if (this->flash_partition_ == nullptr) {
     ESP_LOGW(TAG, "Trend flash partition 'openquatt_data' not found");
@@ -193,6 +197,7 @@ void OpenQuattTrends::dump_config() {
   ESP_LOGCONFIG(TAG, "  Clock: %s", this->clock_ == nullptr ? "<missing>" : "configured");
   ESP_LOGCONFIG(TAG, "  Flash partition: %s", this->flash_partition_ == nullptr ? "<missing>" : "configured");
   ESP_LOGCONFIG(TAG, "  RAM samples: %u / %u", static_cast<unsigned>(this->ram_count_), static_cast<unsigned>(RAM_CAPACITY));
+  ESP_LOGCONFIG(TAG, "  PSRAM buffer: %s", this->ram_history_ ? "allocated" : "missing");
   ESP_LOGCONFIG(TAG, "  Flash enabled: %s", YESNO(this->flash_enabled_));
   ESP_LOGCONFIG(TAG, "  Flash archive scanned: %s", YESNO(this->flash_archive_scanned_));
 }
@@ -200,7 +205,7 @@ void OpenQuattTrends::dump_config() {
 float OpenQuattTrends::get_setup_priority() const { return setup_priority::WIFI; }
 
 bool OpenQuattTrends::capture_enabled_() const {
-  return this->capture_switch_ != nullptr && this->capture_switch_->state;
+  return this->ram_history_ && this->capture_switch_ != nullptr && this->capture_switch_->state;
 }
 
 bool OpenQuattTrends::flash_switch_enabled_() const {
@@ -289,6 +294,9 @@ void OpenQuattTrends::rebase_ram_history_(uint64_t offset_ms) {
   if (offset_ms == 0) {
     return;
   }
+  if (!this->ram_history_) {
+    return;
+  }
 
   for (size_t i = 0; i < this->ram_count_; ++i) {
     const size_t index = (this->ram_head_ + i) % RAM_CAPACITY;
@@ -319,7 +327,7 @@ void OpenQuattTrends::sync_time_state_() {
 }
 
 void OpenQuattTrends::load_archive_if_needed_() {
-  if (!this->flash_enabled_ || this->flash_partition_ == nullptr || !this->time_is_valid_()) {
+  if (!this->ram_history_ || !this->flash_enabled_ || this->flash_partition_ == nullptr || !this->time_is_valid_()) {
     return;
   }
 
@@ -337,6 +345,9 @@ void OpenQuattTrends::load_archive_if_needed_() {
 }
 
 void OpenQuattTrends::push_ram_sample_(const TrendSample &sample) {
+  if (!this->ram_history_) {
+    return;
+  }
   if (RAM_CAPACITY == 0) {
     return;
   }
@@ -351,7 +362,7 @@ void OpenQuattTrends::push_ram_sample_(const TrendSample &sample) {
 }
 
 bool OpenQuattTrends::get_ram_sample_at_(size_t ordered_index, TrendSample *sample) const {
-  if (sample == nullptr || ordered_index >= this->ram_count_) {
+  if (sample == nullptr || !this->ram_history_ || ordered_index >= this->ram_count_) {
     return false;
   }
   const size_t index = (this->ram_head_ + ordered_index) % RAM_CAPACITY;
@@ -397,6 +408,9 @@ bool OpenQuattTrends::scan_flash_archive_() {
 }
 
 bool OpenQuattTrends::merge_flash_history_into_ram_() {
+  if (!this->ram_history_) {
+    return false;
+  }
   if (!this->flash_archive_scanned_) {
     if (!this->scan_flash_archive_()) {
       return false;

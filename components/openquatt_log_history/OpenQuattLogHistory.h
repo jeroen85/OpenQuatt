@@ -6,6 +6,7 @@
 
 #include <esp_http_server.h>
 
+#include "../openquatt_common/PsramBuffer.h"
 #include "esphome/components/switch/switch.h"
 #include "esphome/components/time/real_time_clock.h"
 #include "esphome/components/web_server_base/web_server_base.h"
@@ -44,7 +45,7 @@ class OpenQuattLogHistory : public Component {
   bool time_rebased_{false};
   switch_::Switch *enabled_switch_{nullptr};
   time::RealTimeClock *clock_{nullptr};
-  std::array<LogEntry, ENTRY_CAPACITY> entries_{};
+  openquatt_common::PsramBuffer<LogEntry> entries_{};
   size_t head_{0};
   size_t count_{0};
   uint32_t next_seq_{1};

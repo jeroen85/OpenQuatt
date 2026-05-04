@@ -181,7 +181,7 @@ class OpenQuattLogHistoryRequestHandler : public AsyncWebHandler {
 
 float OpenQuattLogHistory::get_setup_priority() const { return setup_priority::WIFI; }
 
-bool OpenQuattLogHistory::capture_enabled_() const { return this->enabled_; }
+bool OpenQuattLogHistory::capture_enabled_() const { return this->enabled_ && this->entries_; }
 
 bool OpenQuattLogHistory::time_is_valid_() const { return this->clock_ != nullptr && this->clock_->now().is_valid(); }
 
@@ -330,6 +330,9 @@ void OpenQuattLogHistory::split_log_fields_(const char *raw, const char **tag_st
 }
 
 void OpenQuattLogHistory::push_entry_(const LogEntry &entry) {
+  if (!this->entries_) {
+    return;
+  }
   if (ENTRY_CAPACITY == 0) {
     return;
   }
@@ -407,6 +410,10 @@ void OpenQuattLogHistory::setup() {
     this->enabled_ = this->enabled_switch_->state;
   }
 
+  if (!this->entries_.allocate(ENTRY_CAPACITY)) {
+    ESP_LOGE(TAG, "Failed to allocate log history buffer in PSRAM");
+  }
+
   logger::global_logger->add_log_callback(this, [](void *self, uint8_t level, const char *tag, const char *message,
                                                    size_t message_len) {
     static_cast<OpenQuattLogHistory *>(self)->on_log_(level, tag, message, message_len);
@@ -424,6 +431,7 @@ void OpenQuattLogHistory::dump_config() {
   ESP_LOGCONFIG(TAG, "  Clock: %s", this->clock_ == nullptr ? "<missing>" : "configured");
   ESP_LOGCONFIG(TAG, "  Enabled: %s", YESNO(this->enabled_));
   ESP_LOGCONFIG(TAG, "  Entries: %u / %u", static_cast<unsigned>(this->count_), static_cast<unsigned>(ENTRY_CAPACITY));
+  ESP_LOGCONFIG(TAG, "  PSRAM buffer: %s", this->entries_ ? "allocated" : "missing");
 }
 
 void OpenQuattLogHistory::write_recent_logs(httpd_req_t *req) const {

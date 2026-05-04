@@ -6,6 +6,7 @@
 
 #include <esp_http_server.h>
 #include "esp_partition.h"
+#include "../openquatt_common/PsramBuffer.h"
 #include "esphome/components/switch/switch.h"
 #include "esphome/components/time/real_time_clock.h"
 #include "esphome/components/web_server_base/web_server_base.h"
@@ -174,7 +175,7 @@ class OpenQuattTrends : public Component {
   uint64_t flash_last_flush_timestamp_ms_{0};
   uint16_t flash_valid_block_count_{0};
 
-  std::array<TrendSample, RAM_CAPACITY> ram_history_{};
+  openquatt_common::PsramBuffer<TrendSample> ram_history_{};
   size_t ram_head_{0};
   size_t ram_count_{0};
 
