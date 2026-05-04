@@ -332,7 +332,7 @@
   function getUrlSettingsGroup() {
     try {
       const url = new URL(window.location.href);
-      const group = String(url.searchParams.get("section") || url.searchParams.get("group") || "");
+      const group = String(url.searchParams.get("section") || "");
       return SETTINGS_GROUP_IDS.has(group) ? group : "";
     } catch (_error) {
       return "";
