@@ -552,6 +552,30 @@ sensor:
 
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
+    name: "${prefix}Firmware EEPROM"
+    disabled_by_default: true
+    icon: mdi:memory
+    register_type: holding
+    register_count: 4  # 2123 - 2127
+    address: 2123
+    skip_updates: ${oq_skip_30s}
+    web_server:
+      sorting_group_id: oq_${hp_id}
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    name: "${prefix}Control board item number"
+    disabled_by_default: true
+    icon: mdi:identifier
+    register_type: holding
+    register_count: 4  # 2127 - 2131
+    address: 2127
+    skip_updates: ${oq_skip_30s}
+    web_server:
+      sorting_group_id: oq_${hp_id}
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
     id: ${hp_id}_condensing_temp
     name: "${prefix}Condensing temperature"
     icon: mdi:thermometer
