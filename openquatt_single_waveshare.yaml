@@ -9,4 +9,5 @@ esphome:
   build_path: build/openquatt_single_waveshare
 
 packages:
+  oq_waveshare_psram: !include openquatt/profiles/oq_psram_waveshare.yaml
   openquatt_base: !include openquatt_base_single.yaml
