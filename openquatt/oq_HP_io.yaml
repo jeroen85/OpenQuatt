@@ -33,7 +33,7 @@ modbus_controller:
   - id: ${hp_id}
     address: ${device_address}
     modbus_id: mod_bus
-    update_interval: ${oq_modbus_update_interval_s}s
+    update_interval: never
     command_throttle: ${oq_modbus_command_throttle_ms}ms
     max_cmd_retries: ${oq_modbus_max_cmd_retries}
     offline_skip_updates: 5
@@ -275,6 +275,7 @@ sensor:
           max_value: 300
           ignore_out_of_range: true
     skip_updates: ${oq_skip_30s}
+    force_new_range: true
     web_server:
       sorting_group_id: oq_${hp_id}
 
@@ -317,6 +318,7 @@ sensor:
           max_value: 100
           ignore_out_of_range: true
     skip_updates: ${oq_skip_10s}
+    force_new_range: true
     web_server:
       sorting_group_id: oq_${hp_id}
 
@@ -358,6 +360,7 @@ sensor:
           max_value: 1000
           ignore_out_of_range: true
     skip_updates: ${oq_skip_30s}
+    force_new_range: true
     web_server:
       sorting_group_id: oq_${hp_id}
 
@@ -450,6 +453,7 @@ sensor:
           max_value: 100
           ignore_out_of_range: true
     skip_updates: ${oq_skip_30s}
+    force_new_range: true
     web_server:
       sorting_group_id: oq_${hp_id}
 
@@ -638,6 +642,7 @@ sensor:
           max_value: 100
           ignore_out_of_range: true
     skip_updates: ${oq_skip_10s}
+    force_new_range: true
     web_server:
       sorting_group_id: oq_${hp_id}
 
@@ -684,6 +689,7 @@ sensor:
           max_value: 100
           ignore_out_of_range: true
     skip_updates: ${oq_skip_30s}
+    force_new_range: true
     web_server:
       sorting_group_id: oq_${hp_id}
 
@@ -694,7 +700,6 @@ sensor:
     icon: mdi:pump
     register_type: holding
     address: 2137
-    # force_new_range: true
     unit_of_measurement: "W"
     device_class: "power"
     state_class: "measurement"
@@ -719,6 +724,7 @@ sensor:
     accuracy_decimals: 2
     filters:
       - multiply: 0.618
+    force_new_range: true
     on_value:
       then:
         - lambda: |-
@@ -867,6 +873,7 @@ sensor:
     address: 2119
     value_type: U_WORD
     skip_updates: ${oq_skip_30s}
+    force_new_range: true
     internal: true
 
   - platform: modbus_controller
@@ -999,6 +1006,7 @@ binary_sensor:
     register_type: holding
     address: 2118
     #skip_updates: 0
+    force_new_range: true
     on_state:
       then:
         - lambda: |-
@@ -1226,3 +1234,9 @@ text_sensor:
     update_interval: never
     web_server:
       sorting_group_id: oq_hp_diagnostics
+
+interval:
+  - interval: ${oq_modbus_update_interval_s}s
+    startup_delay: ${oq_modbus_startup_delay_ms}ms
+    then:
+      - component.update: ${hp_id}
