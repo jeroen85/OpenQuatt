@@ -495,7 +495,7 @@ sensor:
     unit_of_measurement: "step"
     state_class: measurement
     accuracy_decimals: 0
-    update_interval: 5s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     web_server:
       sorting_group_id: oq_heating_strategy
     lambda: |-
@@ -508,7 +508,7 @@ sensor:
     unit_of_measurement: "step"
     state_class: measurement
     accuracy_decimals: 0
-    update_interval: 5s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     web_server:
       sorting_group_id: oq_heating_strategy
     lambda: |-
@@ -521,7 +521,7 @@ sensor:
     unit_of_measurement: "lvl"
     state_class: measurement
     accuracy_decimals: 0
-    update_interval: 5s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     web_server:
       sorting_group_id: oq_heating_strategy
     lambda: |-
@@ -538,7 +538,7 @@ sensor:
     unit_of_measurement: "lvl"
     state_class: measurement
     accuracy_decimals: 0
-    update_interval: 5s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     web_server:
       sorting_group_id: oq_heating_strategy
     lambda: |-
@@ -563,7 +563,7 @@ sensor:
     device_class: power
     state_class: measurement
     accuracy_decimals: 0
-    update_interval: 5s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     web_server:
       sorting_group_id: oq_heating_strategy
     lambda: |-
@@ -577,7 +577,7 @@ sensor:
     device_class: power
     state_class: measurement
     accuracy_decimals: 0
-    update_interval: 5s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     web_server:
       sorting_group_id: oq_heating_strategy
     lambda: |-
