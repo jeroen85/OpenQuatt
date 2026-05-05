@@ -3,12 +3,14 @@
 # ==============================================================================
 #
 # Purpose:
-#   - User can configure up to 6 cooling-room source entities in Home Assistant.
-#   - This package publishes stable proxy sensors consumed by OpenQuatt ESPHome:
-#       sensor.openquatt_ext_cooling_room_count
-#       sensor.openquatt_ext_cooling_room_<n>_dew_point_direct
-#       sensor.openquatt_ext_cooling_room_<n>_temperature
-#       sensor.openquatt_ext_cooling_room_<n>_humidity
+#   - Users can configure up to 6 cooling-room source groups in Home Assistant.
+#   - Per room, users may provide either:
+#       1) a direct dew point entity, or
+#       2) a temperature + humidity entity pair.
+#   - Home Assistant calculates the highest valid dew point and publishes one
+#     stable aggregate proxy consumed by OpenQuatt ESPHome:
+#       sensor.openquatt_ext_cooling_dew_point
+#       binary_sensor.openquatt_ext_cooling_dew_point_valid
 #
 # Install (Home Assistant):
 #   1) Enable packages in configuration.yaml:
@@ -20,7 +22,8 @@
 #
 # Notes:
 #   - Trigger interval is 15s to support dynamic entity_id references.
-#   - Invalid or empty source values become Unavailable.
+#   - Invalid or empty source values publish 0; companion *_valid exposes
+#     whether the aggregate can be used by OpenQuatt.
 #   - Optional attribute syntax is supported:
 #       entity_id|attribute_name
 #     Whitespace around "|" is ignored.
@@ -141,6 +144,7 @@ template:
         unique_id: openquatt_ha_dynamic_cooling_package_active
         state: "on"
         icon: mdi:check-circle
+
   - trigger:
       - platform: state
         entity_id:
@@ -166,745 +170,310 @@ template:
       - platform: time_pattern
         seconds: "/15"
     sensor:
-      - name: OpenQuatt Ext Cooling Room Count
-        unique_id: openquatt_ext_cooling_room_count
-        icon: mdi:counter
-        state: "{{ states('input_number.openquatt_cooling_room_count') | float(0) | round(0) }}"
-
-      - name: OpenQuatt Ext Cooling Room 1 Dew Point Direct
-        unique_id: openquatt_ext_cooling_room_1_dew_point_direct
+      - name: OpenQuatt Ext Cooling Dew Point
+        unique_id: openquatt_ext_cooling_dew_point
         unit_of_measurement: "°C"
         device_class: temperature
         state_class: measurement
         icon: mdi:water-thermometer
-        availability: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_1_dew_point') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val is not none }}
         state: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_1_dew_point') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val if val is not none else 0 }}
+          {% set count = states('input_number.openquatt_cooling_room_count') | int(0) %}
+          {% set ns = namespace(values=[]) %}
+          {% for room in range(1, 7) %}
+            {% if room <= count %}
+              {% set direct_selector = states('input_text.openquatt_source_cooling_room_' ~ room ~ '_dew_point') | trim %}
+              {% set direct_entity, direct_attr = (direct_selector.split('|', 1) + [''])[:2] %}
+              {% set direct_entity = direct_entity | trim %}
+              {% set direct_attr = direct_attr | trim %}
+              {% set direct_raw = state_attr(direct_entity, direct_attr) if direct_attr else states(direct_entity) %}
+              {% set direct = direct_raw if direct_raw is number else direct_raw | trim | replace(',', '.') | float(none) if direct_raw is string else none %}
+              {% if direct is not none %}
+                {% set ns.values = ns.values + [direct] %}
+              {% else %}
+                {% set temp_selector = states('input_text.openquatt_source_cooling_room_' ~ room ~ '_temperature') | trim %}
+                {% set temp_entity, temp_attr = (temp_selector.split('|', 1) + [''])[:2] %}
+                {% set temp_entity = temp_entity | trim %}
+                {% set temp_attr = temp_attr | trim %}
+                {% set temp_raw = state_attr(temp_entity, temp_attr) if temp_attr else states(temp_entity) %}
+                {% set temp = temp_raw if temp_raw is number else temp_raw | trim | replace(',', '.') | float(none) if temp_raw is string else none %}
+                {% set humidity_selector = states('input_text.openquatt_source_cooling_room_' ~ room ~ '_humidity') | trim %}
+                {% set humidity_entity, humidity_attr = (humidity_selector.split('|', 1) + [''])[:2] %}
+                {% set humidity_entity = humidity_entity | trim %}
+                {% set humidity_attr = humidity_attr | trim %}
+                {% set humidity_raw = state_attr(humidity_entity, humidity_attr) if humidity_attr else states(humidity_entity) %}
+                {% set humidity = humidity_raw if humidity_raw is number else humidity_raw | trim | replace(',', '.') | float(none) if humidity_raw is string else none %}
+                {% if temp is not none and humidity is not none and humidity > 0 and humidity <= 100 %}
+                  {% set gamma = log(humidity / 100) + ((17.62 * temp) / (243.12 + temp)) %}
+                  {% set dew_point = (243.12 * gamma) / (17.62 - gamma) %}
+                  {% set ns.values = ns.values + [dew_point] %}
+                {% endif %}
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.values | max | round(2) if ns.values | count > 0 else 0 }}
 
-      - name: OpenQuatt Ext Cooling Room 1 Temperature
-        unique_id: openquatt_ext_cooling_room_1_temperature
-        unit_of_measurement: "°C"
-        device_class: temperature
-        state_class: measurement
-        icon: mdi:home-thermometer
-        availability: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_1_temperature') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val is not none }}
-        state: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_1_temperature') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val if val is not none else 0 }}
-
-      - name: OpenQuatt Ext Cooling Room 1 Humidity
-        unique_id: openquatt_ext_cooling_room_1_humidity
-        unit_of_measurement: "%"
-        device_class: humidity
-        state_class: measurement
-        icon: mdi:water-percent
-        availability: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_1_humidity') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val is not none }}
-        state: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_1_humidity') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val if val is not none else 0 }}
-
-      - name: OpenQuatt Ext Cooling Room 2 Dew Point Direct
-        unique_id: openquatt_ext_cooling_room_2_dew_point_direct
+      - name: OpenQuatt HA Cooling Room 1 Dew Point Effective
+        unique_id: openquatt_ha_cooling_room_1_dew_point_effective
         unit_of_measurement: "°C"
         device_class: temperature
         state_class: measurement
         icon: mdi:water-thermometer
-        availability: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_2_dew_point') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val is not none }}
         state: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_2_dew_point') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
+          {% set room = 1 %}
+          {% set count = states('input_number.openquatt_cooling_room_count') | int(0) %}
+          {% set direct_selector = states('input_text.openquatt_source_cooling_room_1_dew_point') | trim %}
+          {% set direct_entity, direct_attr = (direct_selector.split('|', 1) + [''])[:2] %}
+          {% set direct_entity = direct_entity | trim %}
+          {% set direct_attr = direct_attr | trim %}
+          {% set direct_raw = state_attr(direct_entity, direct_attr) if direct_attr else states(direct_entity) %}
+          {% set direct = direct_raw if direct_raw is number else direct_raw | trim | replace(',', '.') | float(none) if direct_raw is string else none %}
+          {% if room <= count and direct is not none %}
+            {{ direct | round(2) }}
           {% else %}
-            {% set attr_val = none %}
+            {% set temp_selector = states('input_text.openquatt_source_cooling_room_1_temperature') | trim %}
+            {% set temp_entity, temp_attr = (temp_selector.split('|', 1) + [''])[:2] %}
+            {% set temp_entity = temp_entity | trim %}
+            {% set temp_attr = temp_attr | trim %}
+            {% set temp_raw = state_attr(temp_entity, temp_attr) if temp_attr else states(temp_entity) %}
+            {% set temp = temp_raw if temp_raw is number else temp_raw | trim | replace(',', '.') | float(none) if temp_raw is string else none %}
+            {% set humidity_selector = states('input_text.openquatt_source_cooling_room_1_humidity') | trim %}
+            {% set humidity_entity, humidity_attr = (humidity_selector.split('|', 1) + [''])[:2] %}
+            {% set humidity_entity = humidity_entity | trim %}
+            {% set humidity_attr = humidity_attr | trim %}
+            {% set humidity_raw = state_attr(humidity_entity, humidity_attr) if humidity_attr else states(humidity_entity) %}
+            {% set humidity = humidity_raw if humidity_raw is number else humidity_raw | trim | replace(',', '.') | float(none) if humidity_raw is string else none %}
+            {% if room <= count and temp is not none and humidity is not none and humidity > 0 and humidity <= 100 %}
+              {% set gamma = log(humidity / 100) + ((17.62 * temp) / (243.12 + temp)) %}
+              {{ ((243.12 * gamma) / (17.62 - gamma)) | round(2) }}
+            {% else %}
+              {{ 0 }}
+            {% endif %}
           {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val if val is not none else 0 }}
 
-      - name: OpenQuatt Ext Cooling Room 2 Temperature
-        unique_id: openquatt_ext_cooling_room_2_temperature
-        unit_of_measurement: "°C"
-        device_class: temperature
-        state_class: measurement
-        icon: mdi:home-thermometer
-        availability: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_2_temperature') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val is not none }}
-        state: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_2_temperature') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val if val is not none else 0 }}
-
-      - name: OpenQuatt Ext Cooling Room 2 Humidity
-        unique_id: openquatt_ext_cooling_room_2_humidity
-        unit_of_measurement: "%"
-        device_class: humidity
-        state_class: measurement
-        icon: mdi:water-percent
-        availability: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_2_humidity') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val is not none }}
-        state: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_2_humidity') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val if val is not none else 0 }}
-
-      - name: OpenQuatt Ext Cooling Room 3 Dew Point Direct
-        unique_id: openquatt_ext_cooling_room_3_dew_point_direct
+      - name: OpenQuatt HA Cooling Room 2 Dew Point Effective
+        unique_id: openquatt_ha_cooling_room_2_dew_point_effective
         unit_of_measurement: "°C"
         device_class: temperature
         state_class: measurement
         icon: mdi:water-thermometer
-        availability: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_3_dew_point') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val is not none }}
         state: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_3_dew_point') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
+          {% set room = 2 %}
+          {% set count = states('input_number.openquatt_cooling_room_count') | int(0) %}
+          {% set direct_selector = states('input_text.openquatt_source_cooling_room_2_dew_point') | trim %}
+          {% set direct_entity, direct_attr = (direct_selector.split('|', 1) + [''])[:2] %}
+          {% set direct_entity = direct_entity | trim %}
+          {% set direct_attr = direct_attr | trim %}
+          {% set direct_raw = state_attr(direct_entity, direct_attr) if direct_attr else states(direct_entity) %}
+          {% set direct = direct_raw if direct_raw is number else direct_raw | trim | replace(',', '.') | float(none) if direct_raw is string else none %}
+          {% if room <= count and direct is not none %}
+            {{ direct | round(2) }}
           {% else %}
-            {% set attr_val = none %}
+            {% set temp_selector = states('input_text.openquatt_source_cooling_room_2_temperature') | trim %}
+            {% set temp_entity, temp_attr = (temp_selector.split('|', 1) + [''])[:2] %}
+            {% set temp_entity = temp_entity | trim %}
+            {% set temp_attr = temp_attr | trim %}
+            {% set temp_raw = state_attr(temp_entity, temp_attr) if temp_attr else states(temp_entity) %}
+            {% set temp = temp_raw if temp_raw is number else temp_raw | trim | replace(',', '.') | float(none) if temp_raw is string else none %}
+            {% set humidity_selector = states('input_text.openquatt_source_cooling_room_2_humidity') | trim %}
+            {% set humidity_entity, humidity_attr = (humidity_selector.split('|', 1) + [''])[:2] %}
+            {% set humidity_entity = humidity_entity | trim %}
+            {% set humidity_attr = humidity_attr | trim %}
+            {% set humidity_raw = state_attr(humidity_entity, humidity_attr) if humidity_attr else states(humidity_entity) %}
+            {% set humidity = humidity_raw if humidity_raw is number else humidity_raw | trim | replace(',', '.') | float(none) if humidity_raw is string else none %}
+            {% if room <= count and temp is not none and humidity is not none and humidity > 0 and humidity <= 100 %}
+              {% set gamma = log(humidity / 100) + ((17.62 * temp) / (243.12 + temp)) %}
+              {{ ((243.12 * gamma) / (17.62 - gamma)) | round(2) }}
+            {% else %}
+              {{ 0 }}
+            {% endif %}
           {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val if val is not none else 0 }}
 
-      - name: OpenQuatt Ext Cooling Room 3 Temperature
-        unique_id: openquatt_ext_cooling_room_3_temperature
-        unit_of_measurement: "°C"
-        device_class: temperature
-        state_class: measurement
-        icon: mdi:home-thermometer
-        availability: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_3_temperature') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val is not none }}
-        state: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_3_temperature') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val if val is not none else 0 }}
-
-      - name: OpenQuatt Ext Cooling Room 3 Humidity
-        unique_id: openquatt_ext_cooling_room_3_humidity
-        unit_of_measurement: "%"
-        device_class: humidity
-        state_class: measurement
-        icon: mdi:water-percent
-        availability: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_3_humidity') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val is not none }}
-        state: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_3_humidity') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val if val is not none else 0 }}
-
-      - name: OpenQuatt Ext Cooling Room 4 Dew Point Direct
-        unique_id: openquatt_ext_cooling_room_4_dew_point_direct
+      - name: OpenQuatt HA Cooling Room 3 Dew Point Effective
+        unique_id: openquatt_ha_cooling_room_3_dew_point_effective
         unit_of_measurement: "°C"
         device_class: temperature
         state_class: measurement
         icon: mdi:water-thermometer
-        availability: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_4_dew_point') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val is not none }}
         state: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_4_dew_point') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
+          {% set room = 3 %}
+          {% set count = states('input_number.openquatt_cooling_room_count') | int(0) %}
+          {% set direct_selector = states('input_text.openquatt_source_cooling_room_3_dew_point') | trim %}
+          {% set direct_entity, direct_attr = (direct_selector.split('|', 1) + [''])[:2] %}
+          {% set direct_entity = direct_entity | trim %}
+          {% set direct_attr = direct_attr | trim %}
+          {% set direct_raw = state_attr(direct_entity, direct_attr) if direct_attr else states(direct_entity) %}
+          {% set direct = direct_raw if direct_raw is number else direct_raw | trim | replace(',', '.') | float(none) if direct_raw is string else none %}
+          {% if room <= count and direct is not none %}
+            {{ direct | round(2) }}
           {% else %}
-            {% set attr_val = none %}
+            {% set temp_selector = states('input_text.openquatt_source_cooling_room_3_temperature') | trim %}
+            {% set temp_entity, temp_attr = (temp_selector.split('|', 1) + [''])[:2] %}
+            {% set temp_entity = temp_entity | trim %}
+            {% set temp_attr = temp_attr | trim %}
+            {% set temp_raw = state_attr(temp_entity, temp_attr) if temp_attr else states(temp_entity) %}
+            {% set temp = temp_raw if temp_raw is number else temp_raw | trim | replace(',', '.') | float(none) if temp_raw is string else none %}
+            {% set humidity_selector = states('input_text.openquatt_source_cooling_room_3_humidity') | trim %}
+            {% set humidity_entity, humidity_attr = (humidity_selector.split('|', 1) + [''])[:2] %}
+            {% set humidity_entity = humidity_entity | trim %}
+            {% set humidity_attr = humidity_attr | trim %}
+            {% set humidity_raw = state_attr(humidity_entity, humidity_attr) if humidity_attr else states(humidity_entity) %}
+            {% set humidity = humidity_raw if humidity_raw is number else humidity_raw | trim | replace(',', '.') | float(none) if humidity_raw is string else none %}
+            {% if room <= count and temp is not none and humidity is not none and humidity > 0 and humidity <= 100 %}
+              {% set gamma = log(humidity / 100) + ((17.62 * temp) / (243.12 + temp)) %}
+              {{ ((243.12 * gamma) / (17.62 - gamma)) | round(2) }}
+            {% else %}
+              {{ 0 }}
+            {% endif %}
           {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val if val is not none else 0 }}
 
-      - name: OpenQuatt Ext Cooling Room 4 Temperature
-        unique_id: openquatt_ext_cooling_room_4_temperature
-        unit_of_measurement: "°C"
-        device_class: temperature
-        state_class: measurement
-        icon: mdi:home-thermometer
-        availability: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_4_temperature') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val is not none }}
-        state: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_4_temperature') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val if val is not none else 0 }}
-
-      - name: OpenQuatt Ext Cooling Room 4 Humidity
-        unique_id: openquatt_ext_cooling_room_4_humidity
-        unit_of_measurement: "%"
-        device_class: humidity
-        state_class: measurement
-        icon: mdi:water-percent
-        availability: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_4_humidity') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val is not none }}
-        state: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_4_humidity') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val if val is not none else 0 }}
-
-      - name: OpenQuatt Ext Cooling Room 5 Dew Point Direct
-        unique_id: openquatt_ext_cooling_room_5_dew_point_direct
+      - name: OpenQuatt HA Cooling Room 4 Dew Point Effective
+        unique_id: openquatt_ha_cooling_room_4_dew_point_effective
         unit_of_measurement: "°C"
         device_class: temperature
         state_class: measurement
         icon: mdi:water-thermometer
-        availability: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_5_dew_point') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val is not none }}
         state: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_5_dew_point') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
+          {% set room = 4 %}
+          {% set count = states('input_number.openquatt_cooling_room_count') | int(0) %}
+          {% set direct_selector = states('input_text.openquatt_source_cooling_room_4_dew_point') | trim %}
+          {% set direct_entity, direct_attr = (direct_selector.split('|', 1) + [''])[:2] %}
+          {% set direct_entity = direct_entity | trim %}
+          {% set direct_attr = direct_attr | trim %}
+          {% set direct_raw = state_attr(direct_entity, direct_attr) if direct_attr else states(direct_entity) %}
+          {% set direct = direct_raw if direct_raw is number else direct_raw | trim | replace(',', '.') | float(none) if direct_raw is string else none %}
+          {% if room <= count and direct is not none %}
+            {{ direct | round(2) }}
           {% else %}
-            {% set attr_val = none %}
+            {% set temp_selector = states('input_text.openquatt_source_cooling_room_4_temperature') | trim %}
+            {% set temp_entity, temp_attr = (temp_selector.split('|', 1) + [''])[:2] %}
+            {% set temp_entity = temp_entity | trim %}
+            {% set temp_attr = temp_attr | trim %}
+            {% set temp_raw = state_attr(temp_entity, temp_attr) if temp_attr else states(temp_entity) %}
+            {% set temp = temp_raw if temp_raw is number else temp_raw | trim | replace(',', '.') | float(none) if temp_raw is string else none %}
+            {% set humidity_selector = states('input_text.openquatt_source_cooling_room_4_humidity') | trim %}
+            {% set humidity_entity, humidity_attr = (humidity_selector.split('|', 1) + [''])[:2] %}
+            {% set humidity_entity = humidity_entity | trim %}
+            {% set humidity_attr = humidity_attr | trim %}
+            {% set humidity_raw = state_attr(humidity_entity, humidity_attr) if humidity_attr else states(humidity_entity) %}
+            {% set humidity = humidity_raw if humidity_raw is number else humidity_raw | trim | replace(',', '.') | float(none) if humidity_raw is string else none %}
+            {% if room <= count and temp is not none and humidity is not none and humidity > 0 and humidity <= 100 %}
+              {% set gamma = log(humidity / 100) + ((17.62 * temp) / (243.12 + temp)) %}
+              {{ ((243.12 * gamma) / (17.62 - gamma)) | round(2) }}
+            {% else %}
+              {{ 0 }}
+            {% endif %}
           {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val if val is not none else 0 }}
 
-      - name: OpenQuatt Ext Cooling Room 5 Temperature
-        unique_id: openquatt_ext_cooling_room_5_temperature
-        unit_of_measurement: "°C"
-        device_class: temperature
-        state_class: measurement
-        icon: mdi:home-thermometer
-        availability: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_5_temperature') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val is not none }}
-        state: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_5_temperature') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val if val is not none else 0 }}
-
-      - name: OpenQuatt Ext Cooling Room 5 Humidity
-        unique_id: openquatt_ext_cooling_room_5_humidity
-        unit_of_measurement: "%"
-        device_class: humidity
-        state_class: measurement
-        icon: mdi:water-percent
-        availability: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_5_humidity') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val is not none }}
-        state: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_5_humidity') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val if val is not none else 0 }}
-
-      - name: OpenQuatt Ext Cooling Room 6 Dew Point Direct
-        unique_id: openquatt_ext_cooling_room_6_dew_point_direct
+      - name: OpenQuatt HA Cooling Room 5 Dew Point Effective
+        unique_id: openquatt_ha_cooling_room_5_dew_point_effective
         unit_of_measurement: "°C"
         device_class: temperature
         state_class: measurement
         icon: mdi:water-thermometer
-        availability: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_6_dew_point') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val is not none }}
         state: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_6_dew_point') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
+          {% set room = 5 %}
+          {% set count = states('input_number.openquatt_cooling_room_count') | int(0) %}
+          {% set direct_selector = states('input_text.openquatt_source_cooling_room_5_dew_point') | trim %}
+          {% set direct_entity, direct_attr = (direct_selector.split('|', 1) + [''])[:2] %}
+          {% set direct_entity = direct_entity | trim %}
+          {% set direct_attr = direct_attr | trim %}
+          {% set direct_raw = state_attr(direct_entity, direct_attr) if direct_attr else states(direct_entity) %}
+          {% set direct = direct_raw if direct_raw is number else direct_raw | trim | replace(',', '.') | float(none) if direct_raw is string else none %}
+          {% if room <= count and direct is not none %}
+            {{ direct | round(2) }}
           {% else %}
-            {% set attr_val = none %}
+            {% set temp_selector = states('input_text.openquatt_source_cooling_room_5_temperature') | trim %}
+            {% set temp_entity, temp_attr = (temp_selector.split('|', 1) + [''])[:2] %}
+            {% set temp_entity = temp_entity | trim %}
+            {% set temp_attr = temp_attr | trim %}
+            {% set temp_raw = state_attr(temp_entity, temp_attr) if temp_attr else states(temp_entity) %}
+            {% set temp = temp_raw if temp_raw is number else temp_raw | trim | replace(',', '.') | float(none) if temp_raw is string else none %}
+            {% set humidity_selector = states('input_text.openquatt_source_cooling_room_5_humidity') | trim %}
+            {% set humidity_entity, humidity_attr = (humidity_selector.split('|', 1) + [''])[:2] %}
+            {% set humidity_entity = humidity_entity | trim %}
+            {% set humidity_attr = humidity_attr | trim %}
+            {% set humidity_raw = state_attr(humidity_entity, humidity_attr) if humidity_attr else states(humidity_entity) %}
+            {% set humidity = humidity_raw if humidity_raw is number else humidity_raw | trim | replace(',', '.') | float(none) if humidity_raw is string else none %}
+            {% if room <= count and temp is not none and humidity is not none and humidity > 0 and humidity <= 100 %}
+              {% set gamma = log(humidity / 100) + ((17.62 * temp) / (243.12 + temp)) %}
+              {{ ((243.12 * gamma) / (17.62 - gamma)) | round(2) }}
+            {% else %}
+              {{ 0 }}
+            {% endif %}
           {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val if val is not none else 0 }}
 
-      - name: OpenQuatt Ext Cooling Room 6 Temperature
-        unique_id: openquatt_ext_cooling_room_6_temperature
+      - name: OpenQuatt HA Cooling Room 6 Dew Point Effective
+        unique_id: openquatt_ha_cooling_room_6_dew_point_effective
         unit_of_measurement: "°C"
         device_class: temperature
         state_class: measurement
-        icon: mdi:home-thermometer
-        availability: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_6_temperature') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val is not none }}
+        icon: mdi:water-thermometer
         state: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_6_temperature') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
+          {% set room = 6 %}
+          {% set count = states('input_number.openquatt_cooling_room_count') | int(0) %}
+          {% set direct_selector = states('input_text.openquatt_source_cooling_room_6_dew_point') | trim %}
+          {% set direct_entity, direct_attr = (direct_selector.split('|', 1) + [''])[:2] %}
+          {% set direct_entity = direct_entity | trim %}
+          {% set direct_attr = direct_attr | trim %}
+          {% set direct_raw = state_attr(direct_entity, direct_attr) if direct_attr else states(direct_entity) %}
+          {% set direct = direct_raw if direct_raw is number else direct_raw | trim | replace(',', '.') | float(none) if direct_raw is string else none %}
+          {% if room <= count and direct is not none %}
+            {{ direct | round(2) }}
           {% else %}
-            {% set attr_val = none %}
+            {% set temp_selector = states('input_text.openquatt_source_cooling_room_6_temperature') | trim %}
+            {% set temp_entity, temp_attr = (temp_selector.split('|', 1) + [''])[:2] %}
+            {% set temp_entity = temp_entity | trim %}
+            {% set temp_attr = temp_attr | trim %}
+            {% set temp_raw = state_attr(temp_entity, temp_attr) if temp_attr else states(temp_entity) %}
+            {% set temp = temp_raw if temp_raw is number else temp_raw | trim | replace(',', '.') | float(none) if temp_raw is string else none %}
+            {% set humidity_selector = states('input_text.openquatt_source_cooling_room_6_humidity') | trim %}
+            {% set humidity_entity, humidity_attr = (humidity_selector.split('|', 1) + [''])[:2] %}
+            {% set humidity_entity = humidity_entity | trim %}
+            {% set humidity_attr = humidity_attr | trim %}
+            {% set humidity_raw = state_attr(humidity_entity, humidity_attr) if humidity_attr else states(humidity_entity) %}
+            {% set humidity = humidity_raw if humidity_raw is number else humidity_raw | trim | replace(',', '.') | float(none) if humidity_raw is string else none %}
+            {% if room <= count and temp is not none and humidity is not none and humidity > 0 and humidity <= 100 %}
+              {% set gamma = log(humidity / 100) + ((17.62 * temp) / (243.12 + temp)) %}
+              {{ ((243.12 * gamma) / (17.62 - gamma)) | round(2) }}
+            {% else %}
+              {{ 0 }}
+            {% endif %}
           {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val if val is not none else 0 }}
 
-      - name: OpenQuatt Ext Cooling Room 6 Humidity
-        unique_id: openquatt_ext_cooling_room_6_humidity
-        unit_of_measurement: "%"
-        device_class: humidity
-        state_class: measurement
-        icon: mdi:water-percent
-        availability: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_6_humidity') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val is not none }}
+    binary_sensor:
+      - name: OpenQuatt Ext Cooling Dew Point Valid
+        unique_id: openquatt_ext_cooling_dew_point_valid
+        icon: mdi:water-check
         state: >-
-          {% set selector = states('input_text.openquatt_source_cooling_room_6_humidity') | trim %}
-          {% set parts = selector.split('|', 1) %}
-          {% set entity = parts[0] | trim if (parts | length > 0) else '' %}
-          {% set attr_name = parts[1] | trim if (parts | length > 1) else '' %}
-          {% set state_raw = states(entity) | trim if entity else '' %}
-          {% set state_val = state_raw | replace(',', '.') | float(none) if state_raw else none %}
-          {% set attr_raw = state_attr(entity, attr_name) if entity and attr_name else none %}
-          {% if attr_raw is number %}
-            {% set attr_val = attr_raw %}
-          {% elif attr_raw is string %}
-            {% set attr_val = attr_raw | trim | replace(',', '.') | float(none) %}
-          {% else %}
-            {% set attr_val = none %}
-          {% endif %}
-          {% set val = attr_val if attr_name else state_val %}
-          {{ val if val is not none else 0 }}
+          {% set count = states('input_number.openquatt_cooling_room_count') | int(0) %}
+          {% set ns = namespace(valid=false) %}
+          {% for room in range(1, 7) %}
+            {% if room <= count %}
+              {% set direct_selector = states('input_text.openquatt_source_cooling_room_' ~ room ~ '_dew_point') | trim %}
+              {% set direct_entity, direct_attr = (direct_selector.split('|', 1) + [''])[:2] %}
+              {% set direct_entity = direct_entity | trim %}
+              {% set direct_attr = direct_attr | trim %}
+              {% set direct_raw = state_attr(direct_entity, direct_attr) if direct_attr else states(direct_entity) %}
+              {% set direct = direct_raw if direct_raw is number else direct_raw | trim | replace(',', '.') | float(none) if direct_raw is string else none %}
+              {% if direct is not none %}
+                {% set ns.valid = true %}
+              {% else %}
+                {% set temp_selector = states('input_text.openquatt_source_cooling_room_' ~ room ~ '_temperature') | trim %}
+                {% set temp_entity, temp_attr = (temp_selector.split('|', 1) + [''])[:2] %}
+                {% set temp_entity = temp_entity | trim %}
+                {% set temp_attr = temp_attr | trim %}
+                {% set temp_raw = state_attr(temp_entity, temp_attr) if temp_attr else states(temp_entity) %}
+                {% set temp = temp_raw if temp_raw is number else temp_raw | trim | replace(',', '.') | float(none) if temp_raw is string else none %}
+                {% set humidity_selector = states('input_text.openquatt_source_cooling_room_' ~ room ~ '_humidity') | trim %}
+                {% set humidity_entity, humidity_attr = (humidity_selector.split('|', 1) + [''])[:2] %}
+                {% set humidity_entity = humidity_entity | trim %}
+                {% set humidity_attr = humidity_attr | trim %}
+                {% set humidity_raw = state_attr(humidity_entity, humidity_attr) if humidity_attr else states(humidity_entity) %}
+                {% set humidity = humidity_raw if humidity_raw is number else humidity_raw | trim | replace(',', '.') | float(none) if humidity_raw is string else none %}
+                {% if temp is not none and humidity is not none and humidity > 0 and humidity <= 100 %}
+                  {% set ns.valid = true %}
+                {% endif %}
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.valid }}

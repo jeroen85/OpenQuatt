@@ -3,14 +3,13 @@
 # ==============================================================================
 #
 # Goal:
-#   Build the first cooling safety layer from HA-provided room dew point, temp,
-#   and humidity inputs.
+#   Build the cooling safety layer from one HA-provided aggregate dew point.
 #
 # Scope:
-#   - Calculate per-room dew point with ESPHome 2026.3 `dew_point`
-#   - Select the effective dew point per room (direct wins over calculated)
-#   - Derive the global selected dew point, valid-room count, and minimum safe
-#     supply temperature
+#   - Home Assistant calculates the highest valid dew point across configured
+#     cooling rooms.
+#   - ESPHome only consumes the aggregate dew point and validity flag.
+#   - Derive the minimum safe supply temperature and fallback guardrails.
 #
 # ==============================================================================
 
@@ -37,32 +36,6 @@ globals:
     restore_value: true
     initial_value: '-1'
 
-  - id: oq_cooling_room_count_selected_last_valid
-    type: float
-    restore_value: false
-    initial_value: '0.0'
-  - id: oq_cooling_room_count_selected_last_valid_ms
-    type: uint32_t
-    restore_value: false
-    initial_value: '0'
-  - id: oq_cooling_room_count_selected_hold_active
-    type: bool
-    restore_value: false
-    initial_value: 'false'
-
-  - id: oq_cooling_valid_room_count_last_valid
-    type: float
-    restore_value: false
-    initial_value: '0.0'
-  - id: oq_cooling_valid_room_count_last_valid_ms
-    type: uint32_t
-    restore_value: false
-    initial_value: '0'
-  - id: oq_cooling_valid_room_count_hold_active
-    type: bool
-    restore_value: false
-    initial_value: 'false'
-
   - id: oq_cooling_dew_point_selected_last_valid_c
     type: float
     restore_value: false
@@ -80,7 +53,7 @@ number:
   - platform: template
     id: cooling_safety_margin
     name: "Cooling Safety Margin"
-    icon: mdi:shield-thermometer
+    icon: mdi:shield-check
     unit_of_measurement: "°C"
     min_value: 0.0
     max_value: 4.0
@@ -157,12 +130,12 @@ binary_sensor:
     icon: mdi:water-alert
     device_class: running
     lambda: |-
-      const bool no_rooms_configured =
-          !id(cooling_room_count_selected).has_state() || isnan(id(cooling_room_count_selected).state) ||
-          id(cooling_room_count_selected).state < 1.0f;
+      const bool dew_point_configured =
+          id(cooling_dew_point_valid_ha).has_state() && id(cooling_dew_point_valid_ha).state &&
+          id(cooling_dew_point_ha).has_state() && !isnan(id(cooling_dew_point_ha).state);
       const bool fallback_floor_ok =
           id(cooling_fallback_min_supply_temp).has_state() && !isnan(id(cooling_fallback_min_supply_temp).state);
-      return no_rooms_configured &&
+      return !dew_point_configured &&
              id(cooling_without_dew_point_enabled).state &&
              fallback_floor_ok;
     web_server:
@@ -174,24 +147,14 @@ binary_sensor:
     internal: true
     lambda: |-
       // Core cooling preconditions that are independent from the live flow interlock.
-      const bool rooms_configured =
-          id(cooling_room_count_selected).has_state() && !isnan(id(cooling_room_count_selected).state) &&
-          id(cooling_room_count_selected).state >= 1.0f;
-      const bool valid_rooms =
-          id(cooling_valid_room_count).has_state() && !isnan(id(cooling_valid_room_count).state) &&
-          id(cooling_valid_room_count).state >= 1.0f;
       const bool dew_point_ok =
           id(cooling_dew_point_available).state &&
           id(cooling_dew_point_selected).has_state() && !isnan(id(cooling_dew_point_selected).state) &&
           id(minimum_safe_supply_temp).has_state() && !isnan(id(minimum_safe_supply_temp).state);
       const bool fallback_ok =
-          !rooms_configured &&
           id(cooling_without_dew_point_enabled).state &&
           id(cooling_fallback_min_supply_temp).has_state() && !isnan(id(cooling_fallback_min_supply_temp).state);
-      if (rooms_configured) {
-        return valid_rooms && dew_point_ok;
-      }
-      return fallback_ok;
+      return dew_point_ok || fallback_ok;
 
   - platform: template
     id: cooling_request_active
@@ -259,10 +222,7 @@ text_sensor:
     entity_category: diagnostic
     update_interval: 10s
     lambda: |-
-      const bool rooms_configured =
-          id(cooling_room_count_selected).has_state() && !isnan(id(cooling_room_count_selected).state) &&
-          id(cooling_room_count_selected).state >= 1.0f;
-      if (rooms_configured) {
+      if (id(cooling_dew_point_available).state) {
         return {"Dew point"};
       }
       if (id(cooling_without_dew_point_enabled).state) {
@@ -280,10 +240,7 @@ text_sensor:
     update_interval: 5s
     lambda: |-
       // Report the first blocking condition in operator-friendly terms.
-      if (!id(cooling_room_count_selected).has_state() || isnan(id(cooling_room_count_selected).state)) {
-        return {"Cooling room count unavailable"};
-      }
-      if (id(cooling_room_count_selected).state < 1.0f) {
+      if (!id(cooling_dew_point_available).state) {
         if (!id(cooling_without_dew_point_enabled).state) {
           return {"No dew point source"};
         }
@@ -313,10 +270,6 @@ text_sensor:
         }
         return {"Fallback active"};
       }
-      if (!id(cooling_valid_room_count).has_state() || isnan(id(cooling_valid_room_count).state) ||
-          id(cooling_valid_room_count).state < 1.0f) {
-        return {"No valid dew point input"};
-      }
       if (!id(cooling_permitted_core).has_state() || !id(cooling_permitted_core).state) {
         return {"Safe supply floor unavailable"};
       }
@@ -331,127 +284,10 @@ text_sensor:
       sorting_group_id: oq_cooling
 
 sensor:
-  - platform: dew_point
-    id: cooling_room_1_dew_point_calc
-    name: "Cooling Room 1 Dew Point (Calculated)"
-    internal: true
-    temperature: cooling_room_1_temp_ha
-    humidity: cooling_room_1_humidity_ha
-    icon: mdi:water-thermometer
-    unit_of_measurement: "°C"
-    device_class: temperature
-    state_class: measurement
-    accuracy_decimals: 2
-    web_server:
-      sorting_group_id: oq_cooling
-
-  - platform: dew_point
-    id: cooling_room_2_dew_point_calc
-    name: "Cooling Room 2 Dew Point (Calculated)"
-    internal: true
-    temperature: cooling_room_2_temp_ha
-    humidity: cooling_room_2_humidity_ha
-    icon: mdi:water-thermometer
-    unit_of_measurement: "°C"
-    device_class: temperature
-    state_class: measurement
-    accuracy_decimals: 2
-    web_server:
-      sorting_group_id: oq_cooling
-
-  - platform: dew_point
-    id: cooling_room_3_dew_point_calc
-    name: "Cooling Room 3 Dew Point (Calculated)"
-    internal: true
-    temperature: cooling_room_3_temp_ha
-    humidity: cooling_room_3_humidity_ha
-    icon: mdi:water-thermometer
-    unit_of_measurement: "°C"
-    device_class: temperature
-    state_class: measurement
-    accuracy_decimals: 2
-    web_server:
-      sorting_group_id: oq_cooling
-
-  - platform: dew_point
-    id: cooling_room_4_dew_point_calc
-    name: "Cooling Room 4 Dew Point (Calculated)"
-    internal: true
-    temperature: cooling_room_4_temp_ha
-    humidity: cooling_room_4_humidity_ha
-    icon: mdi:water-thermometer
-    unit_of_measurement: "°C"
-    device_class: temperature
-    state_class: measurement
-    accuracy_decimals: 2
-    web_server:
-      sorting_group_id: oq_cooling
-
-  - platform: dew_point
-    id: cooling_room_5_dew_point_calc
-    name: "Cooling Room 5 Dew Point (Calculated)"
-    internal: true
-    temperature: cooling_room_5_temp_ha
-    humidity: cooling_room_5_humidity_ha
-    icon: mdi:water-thermometer
-    unit_of_measurement: "°C"
-    device_class: temperature
-    state_class: measurement
-    accuracy_decimals: 2
-    web_server:
-      sorting_group_id: oq_cooling
-
-  - platform: dew_point
-    id: cooling_room_6_dew_point_calc
-    name: "Cooling Room 6 Dew Point (Calculated)"
-    internal: true
-    temperature: cooling_room_6_temp_ha
-    humidity: cooling_room_6_humidity_ha
-    icon: mdi:water-thermometer
-    unit_of_measurement: "°C"
-    device_class: temperature
-    state_class: measurement
-    accuracy_decimals: 2
-    web_server:
-      sorting_group_id: oq_cooling
-
-  - platform: template
-    id: cooling_room_count_selected
-    name: "Cooling Room Count (Selected)"
-    icon: mdi:counter
-    accuracy_decimals: 0
-    update_interval: 10s
-    lambda: |-
-      // Hold the configured room count briefly through HA reload gaps.
-      const uint32_t hold_ms = (uint32_t)(${oq_selected_input_stale_hold_s}UL * 1000UL);
-      const uint32_t now_ms = (uint32_t) millis();
-
-      if (id(cooling_room_count_ha).has_state() && !isnan(id(cooling_room_count_ha).state)) {
-        int count = (int) lroundf(id(cooling_room_count_ha).state);
-        if (count < 0) count = 0;
-        if (count > 6) count = 6;
-        id(oq_cooling_room_count_selected_last_valid) = (float) count;
-        id(oq_cooling_room_count_selected_last_valid_ms) = now_ms;
-        id(oq_cooling_room_count_selected_hold_active) = false;
-        return (float) count;
-      }
-
-      id(oq_cooling_room_count_selected_hold_active) = false;
-      if (hold_ms > 0 &&
-          id(oq_cooling_room_count_selected_last_valid_ms) > 0 &&
-          (uint32_t)(now_ms - id(oq_cooling_room_count_selected_last_valid_ms)) < hold_ms) {
-        id(oq_cooling_room_count_selected_hold_active) = true;
-        return id(oq_cooling_room_count_selected_last_valid);
-      }
-
-      return 0.0f;
-    web_server:
-      sorting_group_id: oq_cooling
-
   - platform: template
     id: cooling_safety_margin_selected
     name: "Cooling Safety Margin (Selected)"
-    icon: mdi:shield-thermometer
+    icon: mdi:shield-check
     unit_of_measurement: "°C"
     accuracy_decimals: 1
     update_interval: 10s
@@ -460,180 +296,6 @@ sensor:
       if (margin_c < 0.0f) margin_c = 0.0f;
       if (margin_c > 4.0f) margin_c = 4.0f;
       return margin_c;
-    web_server:
-      sorting_group_id: oq_cooling
-
-  - platform: template
-    id: cooling_room_1_dew_point_effective
-    name: "Cooling Room 1 Dew Point (Effective)"
-    icon: mdi:water-thermometer
-    unit_of_measurement: "°C"
-    device_class: temperature
-    state_class: measurement
-    accuracy_decimals: 2
-    update_interval: 10s
-    lambda: |-
-      // Prefer a direct dew point input; fall back to the local ESPHome calculation.
-      if (id(cooling_room_1_dew_point_direct_ha).has_state() && !isnan(id(cooling_room_1_dew_point_direct_ha).state)) {
-        return id(cooling_room_1_dew_point_direct_ha).state;
-      }
-      if (id(cooling_room_1_dew_point_calc).has_state() && !isnan(id(cooling_room_1_dew_point_calc).state)) {
-        return id(cooling_room_1_dew_point_calc).state;
-      }
-      return NAN;
-    web_server:
-      sorting_group_id: oq_cooling
-
-  - platform: template
-    id: cooling_room_2_dew_point_effective
-    name: "Cooling Room 2 Dew Point (Effective)"
-    icon: mdi:water-thermometer
-    unit_of_measurement: "°C"
-    device_class: temperature
-    state_class: measurement
-    accuracy_decimals: 2
-    update_interval: 10s
-    lambda: |-
-      // Prefer a direct dew point input; fall back to the local ESPHome calculation.
-      if (id(cooling_room_2_dew_point_direct_ha).has_state() && !isnan(id(cooling_room_2_dew_point_direct_ha).state)) {
-        return id(cooling_room_2_dew_point_direct_ha).state;
-      }
-      if (id(cooling_room_2_dew_point_calc).has_state() && !isnan(id(cooling_room_2_dew_point_calc).state)) {
-        return id(cooling_room_2_dew_point_calc).state;
-      }
-      return NAN;
-    web_server:
-      sorting_group_id: oq_cooling
-
-  - platform: template
-    id: cooling_room_3_dew_point_effective
-    name: "Cooling Room 3 Dew Point (Effective)"
-    icon: mdi:water-thermometer
-    unit_of_measurement: "°C"
-    device_class: temperature
-    state_class: measurement
-    accuracy_decimals: 2
-    update_interval: 10s
-    lambda: |-
-      // Prefer a direct dew point input; fall back to the local ESPHome calculation.
-      if (id(cooling_room_3_dew_point_direct_ha).has_state() && !isnan(id(cooling_room_3_dew_point_direct_ha).state)) {
-        return id(cooling_room_3_dew_point_direct_ha).state;
-      }
-      if (id(cooling_room_3_dew_point_calc).has_state() && !isnan(id(cooling_room_3_dew_point_calc).state)) {
-        return id(cooling_room_3_dew_point_calc).state;
-      }
-      return NAN;
-    web_server:
-      sorting_group_id: oq_cooling
-
-  - platform: template
-    id: cooling_room_4_dew_point_effective
-    name: "Cooling Room 4 Dew Point (Effective)"
-    icon: mdi:water-thermometer
-    unit_of_measurement: "°C"
-    device_class: temperature
-    state_class: measurement
-    accuracy_decimals: 2
-    update_interval: 10s
-    lambda: |-
-      // Prefer a direct dew point input; fall back to the local ESPHome calculation.
-      if (id(cooling_room_4_dew_point_direct_ha).has_state() && !isnan(id(cooling_room_4_dew_point_direct_ha).state)) {
-        return id(cooling_room_4_dew_point_direct_ha).state;
-      }
-      if (id(cooling_room_4_dew_point_calc).has_state() && !isnan(id(cooling_room_4_dew_point_calc).state)) {
-        return id(cooling_room_4_dew_point_calc).state;
-      }
-      return NAN;
-    web_server:
-      sorting_group_id: oq_cooling
-
-  - platform: template
-    id: cooling_room_5_dew_point_effective
-    name: "Cooling Room 5 Dew Point (Effective)"
-    icon: mdi:water-thermometer
-    unit_of_measurement: "°C"
-    device_class: temperature
-    state_class: measurement
-    accuracy_decimals: 2
-    update_interval: 10s
-    lambda: |-
-      // Prefer a direct dew point input; fall back to the local ESPHome calculation.
-      if (id(cooling_room_5_dew_point_direct_ha).has_state() && !isnan(id(cooling_room_5_dew_point_direct_ha).state)) {
-        return id(cooling_room_5_dew_point_direct_ha).state;
-      }
-      if (id(cooling_room_5_dew_point_calc).has_state() && !isnan(id(cooling_room_5_dew_point_calc).state)) {
-        return id(cooling_room_5_dew_point_calc).state;
-      }
-      return NAN;
-    web_server:
-      sorting_group_id: oq_cooling
-
-  - platform: template
-    id: cooling_room_6_dew_point_effective
-    name: "Cooling Room 6 Dew Point (Effective)"
-    icon: mdi:water-thermometer
-    unit_of_measurement: "°C"
-    device_class: temperature
-    state_class: measurement
-    accuracy_decimals: 2
-    update_interval: 10s
-    lambda: |-
-      // Prefer a direct dew point input; fall back to the local ESPHome calculation.
-      if (id(cooling_room_6_dew_point_direct_ha).has_state() && !isnan(id(cooling_room_6_dew_point_direct_ha).state)) {
-        return id(cooling_room_6_dew_point_direct_ha).state;
-      }
-      if (id(cooling_room_6_dew_point_calc).has_state() && !isnan(id(cooling_room_6_dew_point_calc).state)) {
-        return id(cooling_room_6_dew_point_calc).state;
-      }
-      return NAN;
-    web_server:
-      sorting_group_id: oq_cooling
-
-  - platform: template
-    id: cooling_valid_room_count
-    name: "Cooling Valid Room Count"
-    icon: mdi:counter
-    accuracy_decimals: 0
-    update_interval: 10s
-    lambda: |-
-      // Count how many configured cooling rooms provide a usable dew point.
-      // When all HA-backed room signals briefly disappear, keep the last valid
-      // count for a short grace period so cooling safety does not chatter.
-      const uint32_t hold_ms = (uint32_t)(${oq_selected_input_stale_hold_s}UL * 1000UL);
-      const uint32_t now_ms = (uint32_t) millis();
-      int configured_count = (int) lroundf(id(cooling_room_count_selected).state);
-      if (configured_count < 0) configured_count = 0;
-      if (configured_count > 6) configured_count = 6;
-
-      int valid_count = 0;
-      auto count_valid = [&](sensor::Sensor *candidate) {
-        if (candidate != nullptr && candidate->has_state() && !isnan(candidate->state)) valid_count += 1;
-      };
-
-      if (configured_count >= 1) count_valid(id(cooling_room_1_dew_point_effective));
-      if (configured_count >= 2) count_valid(id(cooling_room_2_dew_point_effective));
-      if (configured_count >= 3) count_valid(id(cooling_room_3_dew_point_effective));
-      if (configured_count >= 4) count_valid(id(cooling_room_4_dew_point_effective));
-      if (configured_count >= 5) count_valid(id(cooling_room_5_dew_point_effective));
-      if (configured_count >= 6) count_valid(id(cooling_room_6_dew_point_effective));
-
-      const bool signal_valid = (configured_count == 0) || (valid_count > 0);
-      if (signal_valid) {
-        id(oq_cooling_valid_room_count_last_valid) = (float) valid_count;
-        id(oq_cooling_valid_room_count_last_valid_ms) = now_ms;
-        id(oq_cooling_valid_room_count_hold_active) = false;
-        return (float) valid_count;
-      }
-
-      id(oq_cooling_valid_room_count_hold_active) = false;
-      if (hold_ms > 0 &&
-          id(oq_cooling_valid_room_count_last_valid_ms) > 0 &&
-          (uint32_t)(now_ms - id(oq_cooling_valid_room_count_last_valid_ms)) < hold_ms) {
-        id(oq_cooling_valid_room_count_hold_active) = true;
-        return id(oq_cooling_valid_room_count_last_valid);
-      }
-
-      return 0.0f;
     web_server:
       sorting_group_id: oq_cooling
 
@@ -647,38 +309,20 @@ sensor:
     accuracy_decimals: 2
     update_interval: 10s
     lambda: |-
-      // Use the highest valid dew point among the configured cooling rooms.
-      // Hold the last valid aggregate briefly through HA reload gaps.
+      // Hold the last valid HA aggregate briefly through HA reload gaps.
       const uint32_t hold_ms = (uint32_t)(${oq_selected_input_stale_hold_s}UL * 1000UL);
       const uint32_t now_ms = (uint32_t) millis();
-      int configured_count = (int) lroundf(id(cooling_room_count_selected).state);
-      if (configured_count < 0) configured_count = 0;
-      if (configured_count > 6) configured_count = 6;
 
-      float selected_c = NAN;
-      auto consider = [&](sensor::Sensor *candidate) {
-        if (candidate == nullptr || !candidate->has_state() || isnan(candidate->state)) return;
-        if (isnan(selected_c)) selected_c = candidate->state;
-        else selected_c = fmaxf(selected_c, candidate->state);
-      };
-
-      if (configured_count >= 1) consider(id(cooling_room_1_dew_point_effective));
-      if (configured_count >= 2) consider(id(cooling_room_2_dew_point_effective));
-      if (configured_count >= 3) consider(id(cooling_room_3_dew_point_effective));
-      if (configured_count >= 4) consider(id(cooling_room_4_dew_point_effective));
-      if (configured_count >= 5) consider(id(cooling_room_5_dew_point_effective));
-      if (configured_count >= 6) consider(id(cooling_room_6_dew_point_effective));
-
-      if (!isnan(selected_c)) {
-        id(oq_cooling_dew_point_selected_last_valid_c) = selected_c;
+      if (id(cooling_dew_point_valid_ha).has_state() && id(cooling_dew_point_valid_ha).state &&
+          id(cooling_dew_point_ha).has_state() && !isnan(id(cooling_dew_point_ha).state)) {
+        id(oq_cooling_dew_point_selected_last_valid_c) = id(cooling_dew_point_ha).state;
         id(oq_cooling_dew_point_selected_last_valid_ms) = now_ms;
         id(oq_cooling_dew_point_selected_hold_active) = false;
-        return selected_c;
+        return id(cooling_dew_point_ha).state;
       }
 
       id(oq_cooling_dew_point_selected_hold_active) = false;
-      if (configured_count > 0 &&
-          hold_ms > 0 &&
+      if (hold_ms > 0 &&
           id(oq_cooling_dew_point_selected_last_valid_ms) > 0 &&
           (uint32_t)(now_ms - id(oq_cooling_dew_point_selected_last_valid_ms)) < hold_ms &&
           !isnan(id(oq_cooling_dew_point_selected_last_valid_c))) {
@@ -693,7 +337,7 @@ sensor:
   - platform: template
     id: minimum_safe_supply_temp
     name: "Cooling Minimum Safe Supply Temp"
-    icon: mdi:shield-thermometer
+    icon: mdi:water-thermometer
     unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement
@@ -767,7 +411,7 @@ sensor:
   - platform: template
     id: cooling_effective_min_supply_temp
     name: "Cooling Effective Minimum Supply Temp"
-    icon: mdi:shield-thermometer
+    icon: mdi:water-thermometer
     unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement

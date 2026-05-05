@@ -1199,10 +1199,6 @@ views:
           - type: entities
             show_header_toggle: false
             entities:
-              - entity: sensor.openquatt_cooling_room_count_selected
-                name: Cooling room count
-              - entity: sensor.openquatt_cooling_valid_room_count
-                name: Cooling valid room count
               - entity: binary_sensor.openquatt_cooling_dew_point_available
                 name: Cooling dew point available
               - entity: sensor.openquatt_cooling_dew_point_selected
@@ -1211,12 +1207,6 @@ views:
                 name: Cooling safety margin
               - entity: sensor.openquatt_cooling_minimum_safe_supply_temp
                 name: Cooling minimum safe supply temp
-              - entity: sensor.openquatt_cooling_effective_min_supply_temp
-                name: Cooling effective minimum supply temp
-              - entity: sensor.openquatt_cooling_fallback_min_supply_temp
-                name: Cooling fallback minimum supply temp
-              - entity: sensor.openquatt_cooling_fallback_night_min_outdoor_temp
-                name: Cooling fallback night minimum outdoor temp
       - type: grid
         cards:
           - type: heading
@@ -1899,7 +1889,7 @@ views:
                     name: Cooling room 1 temperature entity
                   - entity: input_text.openquatt_source_cooling_room_1_humidity
                     name: Cooling room 1 humidity entity
-                  - entity: sensor.openquatt_cooling_room_1_dew_point_effective
+                  - entity: sensor.openquatt_ha_cooling_room_1_dew_point_effective
                     name: Effective dew point
             visibility:
               - condition: numeric_state
@@ -1923,7 +1913,7 @@ views:
                     name: Cooling room 2 temperature entity
                   - entity: input_text.openquatt_source_cooling_room_2_humidity
                     name: Cooling room 2 humidity entity
-                  - entity: sensor.openquatt_cooling_room_2_dew_point_effective
+                  - entity: sensor.openquatt_ha_cooling_room_2_dew_point_effective
                     name: Effective dew point
             visibility:
               - condition: numeric_state
@@ -1947,7 +1937,7 @@ views:
                     name: Cooling room 3 temperature entity
                   - entity: input_text.openquatt_source_cooling_room_3_humidity
                     name: Cooling room 3 humidity entity
-                  - entity: sensor.openquatt_cooling_room_3_dew_point_effective
+                  - entity: sensor.openquatt_ha_cooling_room_3_dew_point_effective
                     name: Effective dew point
             visibility:
               - condition: numeric_state
@@ -1971,7 +1961,7 @@ views:
                     name: Cooling room 4 temperature entity
                   - entity: input_text.openquatt_source_cooling_room_4_humidity
                     name: Cooling room 4 humidity entity
-                  - entity: sensor.openquatt_cooling_room_4_dew_point_effective
+                  - entity: sensor.openquatt_ha_cooling_room_4_dew_point_effective
                     name: Effective dew point
             visibility:
               - condition: numeric_state
@@ -1995,7 +1985,7 @@ views:
                     name: Cooling room 5 temperature entity
                   - entity: input_text.openquatt_source_cooling_room_5_humidity
                     name: Cooling room 5 humidity entity
-                  - entity: sensor.openquatt_cooling_room_5_dew_point_effective
+                  - entity: sensor.openquatt_ha_cooling_room_5_dew_point_effective
                     name: Effective dew point
             visibility:
               - condition: numeric_state
@@ -2019,7 +2009,7 @@ views:
                     name: Cooling room 6 temperature entity
                   - entity: input_text.openquatt_source_cooling_room_6_humidity
                     name: Cooling room 6 humidity entity
-                  - entity: sensor.openquatt_cooling_room_6_dew_point_effective
+                  - entity: sensor.openquatt_ha_cooling_room_6_dew_point_effective
                     name: Effective dew point
             visibility:
               - condition: numeric_state

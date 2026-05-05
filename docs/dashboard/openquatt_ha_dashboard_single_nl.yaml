@@ -1262,10 +1262,6 @@ views:
           - type: entities
             show_header_toggle: false
             entities:
-              - entity: sensor.openquatt_cooling_room_count_selected
-                name: Aantal koelruimtes
-              - entity: sensor.openquatt_cooling_valid_room_count
-                name: Geldige koelruimtes
               - entity: binary_sensor.openquatt_cooling_dew_point_available
                 name: Dauwpunt beschikbaar
               - entity: sensor.openquatt_cooling_dew_point_selected
@@ -1274,12 +1270,6 @@ views:
                 name: Dauwpunt veiligheidsmarge
               - entity: sensor.openquatt_cooling_minimum_safe_supply_temp
                 name: Minimale veilige aanvoer
-              - entity: sensor.openquatt_cooling_effective_min_supply_temp
-                name: Actieve minimale aanvoer
-              - entity: sensor.openquatt_cooling_fallback_min_supply_temp
-                name: Fallback minimale aanvoer
-              - entity: sensor.openquatt_cooling_fallback_night_min_outdoor_temp
-                name: Nachtminimum buitentemperatuur
       - type: grid
         cards:
           - type: heading
@@ -1976,7 +1966,7 @@ views:
                     name: Cooling room 1 temperatuurentity
                   - entity: input_text.openquatt_source_cooling_room_1_humidity
                     name: Cooling room 1 luchtvochtigheidentity
-                  - entity: sensor.openquatt_cooling_room_1_dew_point_effective
+                  - entity: sensor.openquatt_ha_cooling_room_1_dew_point_effective
                     name: Actief dauwpunt
             visibility:
               - condition: numeric_state
@@ -2000,7 +1990,7 @@ views:
                     name: Cooling room 2 temperatuurentity
                   - entity: input_text.openquatt_source_cooling_room_2_humidity
                     name: Cooling room 2 luchtvochtigheidentity
-                  - entity: sensor.openquatt_cooling_room_2_dew_point_effective
+                  - entity: sensor.openquatt_ha_cooling_room_2_dew_point_effective
                     name: Actief dauwpunt
             visibility:
               - condition: numeric_state
@@ -2024,7 +2014,7 @@ views:
                     name: Cooling room 3 temperatuurentity
                   - entity: input_text.openquatt_source_cooling_room_3_humidity
                     name: Cooling room 3 luchtvochtigheidentity
-                  - entity: sensor.openquatt_cooling_room_3_dew_point_effective
+                  - entity: sensor.openquatt_ha_cooling_room_3_dew_point_effective
                     name: Actief dauwpunt
             visibility:
               - condition: numeric_state
@@ -2048,7 +2038,7 @@ views:
                     name: Cooling room 4 temperatuurentity
                   - entity: input_text.openquatt_source_cooling_room_4_humidity
                     name: Cooling room 4 luchtvochtigheidentity
-                  - entity: sensor.openquatt_cooling_room_4_dew_point_effective
+                  - entity: sensor.openquatt_ha_cooling_room_4_dew_point_effective
                     name: Actief dauwpunt
             visibility:
               - condition: numeric_state
@@ -2072,7 +2062,7 @@ views:
                     name: Cooling room 5 temperatuurentity
                   - entity: input_text.openquatt_source_cooling_room_5_humidity
                     name: Cooling room 5 luchtvochtigheidentity
-                  - entity: sensor.openquatt_cooling_room_5_dew_point_effective
+                  - entity: sensor.openquatt_ha_cooling_room_5_dew_point_effective
                     name: Actief dauwpunt
             visibility:
               - condition: numeric_state
@@ -2096,7 +2086,7 @@ views:
                     name: Cooling room 6 temperatuurentity
                   - entity: input_text.openquatt_source_cooling_room_6_humidity
                     name: Cooling room 6 luchtvochtigheidentity
-                  - entity: sensor.openquatt_cooling_room_6_dew_point_effective
+                  - entity: sensor.openquatt_ha_cooling_room_6_dew_point_effective
                     name: Actief dauwpunt
             visibility:
               - condition: numeric_state
