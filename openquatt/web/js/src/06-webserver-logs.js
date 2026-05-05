@@ -379,7 +379,7 @@ function syncWebServerLogStream() {
     return;
   }
 
-  const shouldConnect = state.mounted && !state.nativeOpen;
+  const shouldConnect = state.mounted && !state.nativeOpen && state.systemModal === "webserver-logs";
   if (!shouldConnect) {
     closeWebServerLogStream();
     return;
