@@ -1270,12 +1270,6 @@ views:
                 name: Dauwpunt veiligheidsmarge
               - entity: sensor.openquatt_cooling_minimum_safe_supply_temp
                 name: Minimale veilige aanvoer
-              - entity: sensor.openquatt_cooling_effective_min_supply_temp
-                name: Actieve minimale aanvoer
-              - entity: sensor.openquatt_cooling_fallback_min_supply_temp
-                name: Fallback minimale aanvoer
-              - entity: sensor.openquatt_cooling_fallback_night_min_outdoor_temp
-                name: Nachtminimum buitentemperatuur
       - type: grid
         cards:
           - type: heading

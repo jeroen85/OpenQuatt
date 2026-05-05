@@ -1207,12 +1207,6 @@ views:
                 name: Cooling safety margin
               - entity: sensor.openquatt_cooling_minimum_safe_supply_temp
                 name: Cooling minimum safe supply temp
-              - entity: sensor.openquatt_cooling_effective_min_supply_temp
-                name: Cooling effective minimum supply temp
-              - entity: sensor.openquatt_cooling_fallback_min_supply_temp
-                name: Cooling fallback minimum supply temp
-              - entity: sensor.openquatt_cooling_fallback_night_min_outdoor_temp
-                name: Cooling fallback night minimum outdoor temp
       - type: grid
         cards:
           - type: heading
