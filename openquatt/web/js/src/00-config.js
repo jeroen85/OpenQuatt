@@ -6,7 +6,7 @@ const LOGO_MARKUP = `
     dev: "https://github.com/jeroen85/OpenQuatt/releases/tag/dev-latest",
   };
   const OFFICIAL_ESPHOME_UI_URL = "https://oi.esphome.io/v3/www.js";
-  const ENTITY_REFRESH_CONCURRENCY = 4;
+  const ENTITY_REFRESH_CONCURRENCY = 2;
   const TREND_HISTORY_REFRESH_INTERVAL_MS = 60000;
   const STRATEGY_OPTION_POWER_HOUSE = "Power House";
   const STRATEGY_OPTION_CURVE = "Water Temperature Control (heating curve)";
@@ -504,6 +504,41 @@ const LOGO_MARKUP = `
     "hp2Eev",
     "hp2FourWay",
   ];
+  const FAST_OVERVIEW_KEYS = [
+    "strategy",
+    "openquattEnabled",
+    "controlModeLabel",
+    "flowMode",
+    "flowSelected",
+    "roomTemp",
+    "roomSetpoint",
+    "supplyTemp",
+    "curveSupplyTarget",
+    "silentActive",
+    "stickyActive",
+    "totalPower",
+    "heatingPowerInput",
+    "coolingPowerInput",
+    "totalHeat",
+    "totalCoolingPower",
+    "totalCop",
+    "totalEer",
+    "strategyRequestedPower",
+    "phouseReq",
+    "hpCapacity",
+    "boilerHeatPower",
+    "systemHeatPower",
+    "hp1Power",
+    "hp1Heat",
+    "hp1Compressor",
+    "hp1Mode",
+    "hp1Flow",
+    "hp2Power",
+    "hp2Heat",
+    "hp2Compressor",
+    "hp2Mode",
+    "hp2Flow",
+  ];
   const OVERVIEW_ENERGY_COLUMN_CONFIGS = [
     {
       label: "Nu",
@@ -671,7 +706,12 @@ const LOGO_MARKUP = `
   const SETTINGS_BACKUP_SCHEMA_VERSION = 1;
   const SETTINGS_BACKUP_KEYS = [...new Set(SETTINGS_BACKUP_SECTIONS.flatMap((section) => section.keys))];
   const SETTINGS_BACKUP_KEY_SET = new Set(SETTINGS_BACKUP_KEYS);
-  const POLL_INTERVAL_MS = 4000;
+  const FAST_POLL_INTERVAL_MS = 5000;
+  const BULK_POLL_INTERVAL_MS = 10000;
+  const STATIC_POLL_INTERVAL_MS = 60000;
+  const HIDDEN_POLL_INTERVAL_MS = 30000;
+  const POLL_JITTER_MIN_MS = 250;
+  const POLL_JITTER_MAX_MS = 750;
   const FLOW_DASH_CYCLE_PX = 22;
   const FLOW_OFFSET_PX_PER_SEC = FLOW_DASH_CYCLE_PX / 1.7;
   const FAN_ROTATION_DEG_PER_SEC = 360 / 3.2;

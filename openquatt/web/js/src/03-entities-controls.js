@@ -1009,30 +1009,63 @@
     }
   }
 
-  async function syncEntities() {
+  async function syncEntities(options = {}) {
     if (state.nativeOpen || state.loadingEntities || state.focusedField || state.draggingCurveKey || state.busyAction || state.settingsInteractionLock) {
       return;
     }
+    if (state.entitySyncInFlight) {
+      return;
+    }
 
-    const keys = state.appView === "overview" || state.appView === "trends"
-      ? [...OVERVIEW_KEYS, ...HEADER_ENTITY_KEYS, "setupComplete", ...FIRMWARE_ENTITY_KEYS]
-      : state.appView === "settings"
-        ? ["setupComplete", ...FIRMWARE_ENTITY_KEYS, ...HEADER_ENTITY_KEYS, ...SETTINGS_KEYS]
-        : [
-            "setupComplete",
-            ...FIRMWARE_ENTITY_KEYS,
-            ...HEADER_ENTITY_KEYS,
-            "strategy",
-            ...LIMIT_KEYS,
-            ...FLOW_SETTING_KEYS,
-            ...(isCurveMode() ? CURVE_POINTS.map((point) => point.key) : POWER_HOUSE_KEYS),
-          ];
+    const now = Date.now();
+    if (document.hidden && (now - Number(state.lastEntitySyncAttemptAt || 0)) < HIDDEN_POLL_INTERVAL_MS) {
+      return;
+    }
 
+    const appView = state.appView;
+    const isOverviewLike = appView === "overview" || appView === "trends";
+    const isBulkDue = options.forceBulk === true || (now - Number(state.lastBulkEntitySyncAt || 0)) >= BULK_POLL_INTERVAL_MS;
+    const isStaticDue = (now - Number(state.lastStaticEntitySyncAt || 0)) >= STATIC_POLL_INTERVAL_MS;
+    const staticKeys = isStaticDue || state.updateInstallBusy || state.updateInstallPhaseHint
+      ? FIRMWARE_ENTITY_KEYS
+      : [];
+    const keys = isOverviewLike
+      ? [
+          ...(isBulkDue ? OVERVIEW_KEYS : FAST_OVERVIEW_KEYS),
+          ...HEADER_ENTITY_KEYS,
+          "setupComplete",
+          ...staticKeys,
+        ]
+      : appView === "settings"
+        ? isBulkDue
+          ? ["setupComplete", ...staticKeys, ...HEADER_ENTITY_KEYS, ...SETTINGS_KEYS]
+          : ["setupComplete", ...HEADER_ENTITY_KEYS, ...staticKeys]
+        : isBulkDue
+          ? [
+              "setupComplete",
+              ...staticKeys,
+              ...HEADER_ENTITY_KEYS,
+              "strategy",
+              ...LIMIT_KEYS,
+              ...FLOW_SETTING_KEYS,
+              ...(isCurveMode() ? CURVE_POINTS.map((point) => point.key) : POWER_HOUSE_KEYS),
+            ]
+          : ["setupComplete", ...HEADER_ENTITY_KEYS, "strategy", ...staticKeys];
+
+    state.entitySyncInFlight = true;
+    state.lastEntitySyncAttemptAt = now;
     try {
       const reconnectModeBefore = state.deviceReconnectMode;
-      await refreshEntities(keys, "state");
+      await refreshEntities([...new Set(keys)], "state");
+      state.lastFastEntitySyncAt = Date.now();
+      if (isBulkDue) {
+        state.lastBulkEntitySyncAt = state.lastFastEntitySyncAt;
+      }
+      if (staticKeys.length) {
+        state.lastStaticEntitySyncAt = state.lastFastEntitySyncAt;
+      }
       const reconnectChanged = reconnectModeBefore !== state.deviceReconnectMode;
-      const trendChanged = state.appView === "overview" || state.appView === "trends"
+      const trendChanged = isOverviewLike
         ? await refreshTrendHistoryData()
         : false;
       const authChanged = await refreshAuthStatus();
@@ -1077,6 +1110,8 @@
     } catch (error) {
       state.controlError = `Helperstatus kon niet worden geladen. ${error.message}`;
       render();
+    } finally {
+      state.entitySyncInFlight = false;
     }
   }
 
@@ -1323,7 +1358,7 @@
       }
       setAppView(button.dataset.viewId || "overview", { syncMode: "push" });
       render();
-      syncEntities();
+      syncEntities({ forceBulk: true });
       return;
     }
 

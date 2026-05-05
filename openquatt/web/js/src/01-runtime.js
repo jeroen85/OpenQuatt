@@ -8,6 +8,11 @@
     nativeFrontendLoaded: false,
     nativeFrontendLoading: false,
     pollTimer: null,
+    entitySyncInFlight: false,
+    lastEntitySyncAttemptAt: 0,
+    lastFastEntitySyncAt: 0,
+    lastBulkEntitySyncAt: 0,
+    lastStaticEntitySyncAt: 0,
     summary: "",
     stage: "Laden...",
     interfacePanelOpen: getStoredInterfacePanelOpen(),
@@ -268,18 +273,47 @@
     clearLegacyMotionVariables();
   }
 
-  function startEntityPolling() {
-    if (!state.pollTimer) {
-      state.pollTimer = window.setInterval(syncEntities, POLL_INTERVAL_MS);
+  function getEntityPollJitterMs() {
+    return POLL_JITTER_MIN_MS + Math.floor(Math.random() * (POLL_JITTER_MAX_MS - POLL_JITTER_MIN_MS + 1));
+  }
+
+  function getEntityPollDelayMs() {
+    const base = document.hidden ? HIDDEN_POLL_INTERVAL_MS : FAST_POLL_INTERVAL_MS;
+    return base + getEntityPollJitterMs();
+  }
+
+  function scheduleEntityPolling(delayMs = getEntityPollDelayMs()) {
+    if (state.pollTimer || state.nativeOpen) {
+      return;
     }
+    state.pollTimer = window.setTimeout(async () => {
+      state.pollTimer = null;
+      await syncEntities();
+      scheduleEntityPolling();
+    }, delayMs);
+  }
+
+  function startEntityPolling() {
+    scheduleEntityPolling();
   }
 
   function stopEntityPolling() {
     if (!state.pollTimer) {
       return;
     }
-    window.clearInterval(state.pollTimer);
+    window.clearTimeout(state.pollTimer);
     state.pollTimer = null;
+  }
+
+  function handleVisibilityChange() {
+    if (state.nativeOpen) {
+      return;
+    }
+    stopEntityPolling();
+    startEntityPolling();
+    if (!document.hidden) {
+      void syncEntities();
+    }
   }
 
   function syncSurfaceRuntime(options = {}) {
@@ -303,7 +337,7 @@
       void primeEntities();
       return;
     }
-    void syncEntities();
+    void syncEntities({ forceBulk: true });
   }
 
   function normalizeAppView(view) {
@@ -393,7 +427,7 @@
       }
     }
     render();
-    void syncEntities();
+    void syncEntities({ forceBulk: true });
   }
 
   function syncNativeVisibility() {
@@ -417,6 +451,7 @@
     window.addEventListener("popstate", handlePopState);
     window.addEventListener("oq-mock-updated", handleMockUpdated);
     window.addEventListener("oq-dev-controls-changed", handleDevControlsChanged);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
   }
 
   function handleMockUpdated() {

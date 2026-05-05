@@ -10,7 +10,7 @@ const LOGO_MARKUP = `
     dev: "https://github.com/jeroen85/OpenQuatt/releases/tag/dev-latest",
   };
   const OFFICIAL_ESPHOME_UI_URL = "https://oi.esphome.io/v3/www.js";
-  const ENTITY_REFRESH_CONCURRENCY = 4;
+  const ENTITY_REFRESH_CONCURRENCY = 2;
   const TREND_HISTORY_REFRESH_INTERVAL_MS = 60000;
   const STRATEGY_OPTION_POWER_HOUSE = "Power House";
   const STRATEGY_OPTION_CURVE = "Water Temperature Control (heating curve)";
@@ -508,6 +508,41 @@ const LOGO_MARKUP = `
     "hp2Eev",
     "hp2FourWay",
   ];
+  const FAST_OVERVIEW_KEYS = [
+    "strategy",
+    "openquattEnabled",
+    "controlModeLabel",
+    "flowMode",
+    "flowSelected",
+    "roomTemp",
+    "roomSetpoint",
+    "supplyTemp",
+    "curveSupplyTarget",
+    "silentActive",
+    "stickyActive",
+    "totalPower",
+    "heatingPowerInput",
+    "coolingPowerInput",
+    "totalHeat",
+    "totalCoolingPower",
+    "totalCop",
+    "totalEer",
+    "strategyRequestedPower",
+    "phouseReq",
+    "hpCapacity",
+    "boilerHeatPower",
+    "systemHeatPower",
+    "hp1Power",
+    "hp1Heat",
+    "hp1Compressor",
+    "hp1Mode",
+    "hp1Flow",
+    "hp2Power",
+    "hp2Heat",
+    "hp2Compressor",
+    "hp2Mode",
+    "hp2Flow",
+  ];
   const OVERVIEW_ENERGY_COLUMN_CONFIGS = [
     {
       label: "Nu",
@@ -675,7 +710,12 @@ const LOGO_MARKUP = `
   const SETTINGS_BACKUP_SCHEMA_VERSION = 1;
   const SETTINGS_BACKUP_KEYS = [...new Set(SETTINGS_BACKUP_SECTIONS.flatMap((section) => section.keys))];
   const SETTINGS_BACKUP_KEY_SET = new Set(SETTINGS_BACKUP_KEYS);
-  const POLL_INTERVAL_MS = 4000;
+  const FAST_POLL_INTERVAL_MS = 5000;
+  const BULK_POLL_INTERVAL_MS = 10000;
+  const STATIC_POLL_INTERVAL_MS = 60000;
+  const HIDDEN_POLL_INTERVAL_MS = 30000;
+  const POLL_JITTER_MIN_MS = 250;
+  const POLL_JITTER_MAX_MS = 750;
   const FLOW_DASH_CYCLE_PX = 22;
   const FLOW_OFFSET_PX_PER_SEC = FLOW_DASH_CYCLE_PX / 1.7;
   const FAN_ROTATION_DEG_PER_SEC = 360 / 3.2;
@@ -692,6 +732,11 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     nativeFrontendLoaded: false,
     nativeFrontendLoading: false,
     pollTimer: null,
+    entitySyncInFlight: false,
+    lastEntitySyncAttemptAt: 0,
+    lastFastEntitySyncAt: 0,
+    lastBulkEntitySyncAt: 0,
+    lastStaticEntitySyncAt: 0,
     summary: "",
     stage: "Laden...",
     interfacePanelOpen: getStoredInterfacePanelOpen(),
@@ -952,18 +997,47 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     clearLegacyMotionVariables();
   }
 
-  function startEntityPolling() {
-    if (!state.pollTimer) {
-      state.pollTimer = window.setInterval(syncEntities, POLL_INTERVAL_MS);
+  function getEntityPollJitterMs() {
+    return POLL_JITTER_MIN_MS + Math.floor(Math.random() * (POLL_JITTER_MAX_MS - POLL_JITTER_MIN_MS + 1));
+  }
+
+  function getEntityPollDelayMs() {
+    const base = document.hidden ? HIDDEN_POLL_INTERVAL_MS : FAST_POLL_INTERVAL_MS;
+    return base + getEntityPollJitterMs();
+  }
+
+  function scheduleEntityPolling(delayMs = getEntityPollDelayMs()) {
+    if (state.pollTimer || state.nativeOpen) {
+      return;
     }
+    state.pollTimer = window.setTimeout(async () => {
+      state.pollTimer = null;
+      await syncEntities();
+      scheduleEntityPolling();
+    }, delayMs);
+  }
+
+  function startEntityPolling() {
+    scheduleEntityPolling();
   }
 
   function stopEntityPolling() {
     if (!state.pollTimer) {
       return;
     }
-    window.clearInterval(state.pollTimer);
+    window.clearTimeout(state.pollTimer);
     state.pollTimer = null;
+  }
+
+  function handleVisibilityChange() {
+    if (state.nativeOpen) {
+      return;
+    }
+    stopEntityPolling();
+    startEntityPolling();
+    if (!document.hidden) {
+      void syncEntities();
+    }
   }
 
   function syncSurfaceRuntime(options = {}) {
@@ -987,7 +1061,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       void primeEntities();
       return;
     }
-    void syncEntities();
+    void syncEntities({ forceBulk: true });
   }
 
   function normalizeAppView(view) {
@@ -1077,7 +1151,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       }
     }
     render();
-    void syncEntities();
+    void syncEntities({ forceBulk: true });
   }
 
   function syncNativeVisibility() {
@@ -1101,6 +1175,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     window.addEventListener("popstate", handlePopState);
     window.addEventListener("oq-mock-updated", handleMockUpdated);
     window.addEventListener("oq-dev-controls-changed", handleDevControlsChanged);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
   }
 
   function handleMockUpdated() {
@@ -3863,30 +3938,63 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     }
   }
 
-  async function syncEntities() {
+  async function syncEntities(options = {}) {
     if (state.nativeOpen || state.loadingEntities || state.focusedField || state.draggingCurveKey || state.busyAction || state.settingsInteractionLock) {
       return;
     }
+    if (state.entitySyncInFlight) {
+      return;
+    }
 
-    const keys = state.appView === "overview" || state.appView === "trends"
-      ? [...OVERVIEW_KEYS, ...HEADER_ENTITY_KEYS, "setupComplete", ...FIRMWARE_ENTITY_KEYS]
-      : state.appView === "settings"
-        ? ["setupComplete", ...FIRMWARE_ENTITY_KEYS, ...HEADER_ENTITY_KEYS, ...SETTINGS_KEYS]
-        : [
-            "setupComplete",
-            ...FIRMWARE_ENTITY_KEYS,
-            ...HEADER_ENTITY_KEYS,
-            "strategy",
-            ...LIMIT_KEYS,
-            ...FLOW_SETTING_KEYS,
-            ...(isCurveMode() ? CURVE_POINTS.map((point) => point.key) : POWER_HOUSE_KEYS),
-          ];
+    const now = Date.now();
+    if (document.hidden && (now - Number(state.lastEntitySyncAttemptAt || 0)) < HIDDEN_POLL_INTERVAL_MS) {
+      return;
+    }
 
+    const appView = state.appView;
+    const isOverviewLike = appView === "overview" || appView === "trends";
+    const isBulkDue = options.forceBulk === true || (now - Number(state.lastBulkEntitySyncAt || 0)) >= BULK_POLL_INTERVAL_MS;
+    const isStaticDue = (now - Number(state.lastStaticEntitySyncAt || 0)) >= STATIC_POLL_INTERVAL_MS;
+    const staticKeys = isStaticDue || state.updateInstallBusy || state.updateInstallPhaseHint
+      ? FIRMWARE_ENTITY_KEYS
+      : [];
+    const keys = isOverviewLike
+      ? [
+          ...(isBulkDue ? OVERVIEW_KEYS : FAST_OVERVIEW_KEYS),
+          ...HEADER_ENTITY_KEYS,
+          "setupComplete",
+          ...staticKeys,
+        ]
+      : appView === "settings"
+        ? isBulkDue
+          ? ["setupComplete", ...staticKeys, ...HEADER_ENTITY_KEYS, ...SETTINGS_KEYS]
+          : ["setupComplete", ...HEADER_ENTITY_KEYS, ...staticKeys]
+        : isBulkDue
+          ? [
+              "setupComplete",
+              ...staticKeys,
+              ...HEADER_ENTITY_KEYS,
+              "strategy",
+              ...LIMIT_KEYS,
+              ...FLOW_SETTING_KEYS,
+              ...(isCurveMode() ? CURVE_POINTS.map((point) => point.key) : POWER_HOUSE_KEYS),
+            ]
+          : ["setupComplete", ...HEADER_ENTITY_KEYS, "strategy", ...staticKeys];
+
+    state.entitySyncInFlight = true;
+    state.lastEntitySyncAttemptAt = now;
     try {
       const reconnectModeBefore = state.deviceReconnectMode;
-      await refreshEntities(keys, "state");
+      await refreshEntities([...new Set(keys)], "state");
+      state.lastFastEntitySyncAt = Date.now();
+      if (isBulkDue) {
+        state.lastBulkEntitySyncAt = state.lastFastEntitySyncAt;
+      }
+      if (staticKeys.length) {
+        state.lastStaticEntitySyncAt = state.lastFastEntitySyncAt;
+      }
       const reconnectChanged = reconnectModeBefore !== state.deviceReconnectMode;
-      const trendChanged = state.appView === "overview" || state.appView === "trends"
+      const trendChanged = isOverviewLike
         ? await refreshTrendHistoryData()
         : false;
       const authChanged = await refreshAuthStatus();
@@ -3931,6 +4039,8 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     } catch (error) {
       state.controlError = `Helperstatus kon niet worden geladen. ${error.message}`;
       render();
+    } finally {
+      state.entitySyncInFlight = false;
     }
   }
 
@@ -4177,7 +4287,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       }
       setAppView(button.dataset.viewId || "overview", { syncMode: "push" });
       render();
-      syncEntities();
+      syncEntities({ forceBulk: true });
       return;
     }
 
