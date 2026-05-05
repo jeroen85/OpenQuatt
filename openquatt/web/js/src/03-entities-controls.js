@@ -204,6 +204,59 @@
     return Number.isFinite(raw) && raw > 0 ? raw : 0;
   }
 
+  const INITIAL_OVERVIEW_READY_KEYS = [
+    "strategy",
+    "controlModeLabel",
+    "totalPower",
+    "flowSelected",
+    "totalHeat",
+    "totalCoolingPower",
+  ];
+  const INITIAL_OVERVIEW_TEXT_KEYS = ["strategy", "controlModeLabel"];
+  const INITIAL_OVERVIEW_NUMERIC_KEYS = ["totalPower", "flowSelected"];
+  const INITIAL_OVERVIEW_THERMAL_KEYS = ["totalHeat", "totalCoolingPower"];
+  const INITIAL_OVERVIEW_READY_TIMEOUT_MS = 2000;
+  const INITIAL_OVERVIEW_READY_POLL_MS = 250;
+
+  function hasUsableEntityValue(key) {
+    const value = String(getEntityValue(key) ?? "").trim().toLowerCase();
+    return value !== "" && value !== "unknown" && value !== "unavailable" && value !== "nan";
+  }
+
+  function hasUsableNumericEntityValue(key) {
+    return hasUsableEntityValue(key) && Number.isFinite(parseLooseNumber(getEntityValue(key)));
+  }
+
+  function isInitialOverviewView() {
+    return state.appView === "overview" || state.appView === "trends" || state.appView === "energy";
+  }
+
+  function isInitialOverviewReady() {
+    if (!isInitialOverviewView()) {
+      return true;
+    }
+
+    return INITIAL_OVERVIEW_TEXT_KEYS.every(hasUsableEntityValue)
+      && INITIAL_OVERVIEW_NUMERIC_KEYS.every(hasUsableNumericEntityValue)
+      && INITIAL_OVERVIEW_THERMAL_KEYS.some(hasUsableNumericEntityValue);
+  }
+
+  async function waitForInitialOverviewReady() {
+    if (isInitialOverviewReady()) {
+      return;
+    }
+
+    const deadline = Date.now() + INITIAL_OVERVIEW_READY_TIMEOUT_MS;
+    while (!state.nativeOpen && !isInitialOverviewReady() && Date.now() < deadline) {
+      await new Promise((resolve) => window.setTimeout(resolve, INITIAL_OVERVIEW_READY_POLL_MS));
+      try {
+        await refreshEntities(INITIAL_OVERVIEW_READY_KEYS, "state");
+      } catch (_error) {
+        return;
+      }
+    }
+  }
+
   function formatValue(key, value = getEntityValue(key)) {
     if (value === "" || value === null || Number.isNaN(Number(value))) {
       return "—";
@@ -1064,6 +1117,7 @@
     const deferredKeys = getDeferredPrimeKeys(initialKeys);
     try {
       await refreshEntities(initialKeys, "all");
+      await waitForInitialOverviewReady();
       state.loadingEntities = false;
       render();
       window.setTimeout(() => {
