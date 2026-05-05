@@ -149,11 +149,8 @@ template:
           {% set entity = entity | trim %}
           {% set attr = attr | trim %}
           {% set raw = state_attr(entity, attr) if attr else states(entity) %}
-          {% if not attr %}
-            {% set raw_num = raw | replace(',', '.') | float(none) if raw is string else (raw if raw is number else none) %}
-            {% if raw_num is none %}
-              {% set raw = state_attr(entity, 'temperature') %}
-            {% endif %}
+          {% if not attr and (raw is not number and (raw is not string or (raw | trim | replace(',', '.') | float(none)) is none)) %}
+            {% set raw = state_attr(entity, 'temperature') %}
           {% endif %}
           {% if raw is number %}
             {{ raw }}
@@ -184,11 +181,8 @@ template:
           {% set entity = entity | trim %}
           {% set attr = attr | trim %}
           {% set raw = state_attr(entity, attr) if attr else states(entity) %}
-          {% if not attr %}
-            {% set raw_num = raw | replace(',', '.') | float(none) if raw is string else (raw if raw is number else none) %}
-            {% if raw_num is none %}
-              {% set raw = state_attr(entity, 'current_temperature') %}
-            {% endif %}
+          {% if not attr and (raw is not number and (raw is not string or (raw | trim | replace(',', '.') | float(none)) is none)) %}
+            {% set raw = state_attr(entity, 'current_temperature') %}
           {% endif %}
           {% if raw is number %}
             {{ raw }}
