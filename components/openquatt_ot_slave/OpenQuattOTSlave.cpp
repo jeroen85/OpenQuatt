@@ -152,7 +152,7 @@ namespace esphome {
 			}
 
 			if ((now_ms - m_otStartNotBeforeMs) >= OT_STARTUP_FORCE_MS) {
-				ESP_LOGW(TAG, "Starting OpenTherm after settle timeout");
+				ESP_LOGI(TAG, "Starting OpenTherm after settle timeout; line will be monitored normally");
 				start_opentherm_();
 				return;
 			}
