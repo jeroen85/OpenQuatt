@@ -322,3 +322,210 @@ binary_sensor:
     device_class: cold
     web_server:
       sorting_group_id: oq_ha_inputs
+
+  - platform: homeassistant
+    id: outside_temp_valid_ha
+    name: "HA - Outside Temperature Valid"
+    entity_id: ${ha_outside_temp_valid_entity_id}
+    internal: true
+    icon: mdi:check-decagram
+    web_server:
+      sorting_group_id: oq_ha_inputs
+
+  - platform: homeassistant
+    id: water_supply_temp_valid_ha
+    name: "HA - Water Supply Temperature Valid"
+    entity_id: ${ha_water_supply_temp_valid_entity_id}
+    internal: true
+    icon: mdi:check-decagram
+    web_server:
+      sorting_group_id: oq_ha_inputs
+
+  - platform: homeassistant
+    id: room_setpoint_valid_ha
+    name: "HA - Room Setpoint Valid"
+    entity_id: ${ha_room_setpoint_valid_entity_id}
+    internal: true
+    icon: mdi:check-decagram
+    web_server:
+      sorting_group_id: oq_ha_inputs
+
+  - platform: homeassistant
+    id: room_temp_valid_ha
+    name: "HA - Room Temperature Valid"
+    entity_id: ${ha_room_temp_valid_entity_id}
+    internal: true
+    icon: mdi:check-decagram
+    web_server:
+      sorting_group_id: oq_ha_inputs
+
+  - platform: homeassistant
+    id: cooling_enable_valid_ha
+    name: "HA - Cooling Enable Valid"
+    entity_id: ${ha_cooling_enable_valid_entity_id}
+    internal: true
+    icon: mdi:check-decagram
+    web_server:
+      sorting_group_id: oq_ha_inputs
+
+  - platform: homeassistant
+    id: cooling_room_1_dew_point_valid_ha
+    name: "HA - Cooling Room 1 Dew Point Valid"
+    entity_id: ${ha_cooling_room_1_dew_point_valid_entity_id}
+    internal: true
+    icon: mdi:check-decagram
+    web_server:
+      sorting_group_id: oq_ha_inputs
+
+  - platform: homeassistant
+    id: cooling_room_1_temp_valid_ha
+    name: "HA - Cooling Room 1 Temperature Valid"
+    entity_id: ${ha_cooling_room_1_temp_valid_entity_id}
+    internal: true
+    icon: mdi:check-decagram
+    web_server:
+      sorting_group_id: oq_ha_inputs
+
+  - platform: homeassistant
+    id: cooling_room_1_humidity_valid_ha
+    name: "HA - Cooling Room 1 Humidity Valid"
+    entity_id: ${ha_cooling_room_1_humidity_valid_entity_id}
+    internal: true
+    icon: mdi:check-decagram
+    web_server:
+      sorting_group_id: oq_ha_inputs
+
+  - platform: homeassistant
+    id: cooling_room_2_dew_point_valid_ha
+    name: "HA - Cooling Room 2 Dew Point Valid"
+    entity_id: ${ha_cooling_room_2_dew_point_valid_entity_id}
+    internal: true
+    icon: mdi:check-decagram
+    web_server:
+      sorting_group_id: oq_ha_inputs
+
+  - platform: homeassistant
+    id: cooling_room_2_temp_valid_ha
+    name: "HA - Cooling Room 2 Temperature Valid"
+    entity_id: ${ha_cooling_room_2_temp_valid_entity_id}
+    internal: true
+    icon: mdi:check-decagram
+    web_server:
+      sorting_group_id: oq_ha_inputs
+
+  - platform: homeassistant
+    id: cooling_room_2_humidity_valid_ha
+    name: "HA - Cooling Room 2 Humidity Valid"
+    entity_id: ${ha_cooling_room_2_humidity_valid_entity_id}
+    internal: true
+    icon: mdi:check-decagram
+    web_server:
+      sorting_group_id: oq_ha_inputs
+
+  - platform: homeassistant
+    id: cooling_room_3_dew_point_valid_ha
+    name: "HA - Cooling Room 3 Dew Point Valid"
+    entity_id: ${ha_cooling_room_3_dew_point_valid_entity_id}
+    internal: true
+    icon: mdi:check-decagram
+    web_server:
+      sorting_group_id: oq_ha_inputs
+
+  - platform: homeassistant
+    id: cooling_room_3_temp_valid_ha
+    name: "HA - Cooling Room 3 Temperature Valid"
+    entity_id: ${ha_cooling_room_3_temp_valid_entity_id}
+    internal: true
+    icon: mdi:check-decagram
+    web_server:
+      sorting_group_id: oq_ha_inputs
+
+  - platform: homeassistant
+    id: cooling_room_3_humidity_valid_ha
+    name: "HA - Cooling Room 3 Humidity Valid"
+    entity_id: ${ha_cooling_room_3_humidity_valid_entity_id}
+    internal: true
+    icon: mdi:check-decagram
+    web_server:
+      sorting_group_id: oq_ha_inputs
+
+  - platform: homeassistant
+    id: cooling_room_4_dew_point_valid_ha
+    name: "HA - Cooling Room 4 Dew Point Valid"
+    entity_id: ${ha_cooling_room_4_dew_point_valid_entity_id}
+    internal: true
+    icon: mdi:check-decagram
+    web_server:
+      sorting_group_id: oq_ha_inputs
+
+  - platform: homeassistant
+    id: cooling_room_4_temp_valid_ha
+    name: "HA - Cooling Room 4 Temperature Valid"
+    entity_id: ${ha_cooling_room_4_temp_valid_entity_id}
+    internal: true
+    icon: mdi:check-decagram
+    web_server:
+      sorting_group_id: oq_ha_inputs
+
+  - platform: homeassistant
+    id: cooling_room_4_humidity_valid_ha
+    name: "HA - Cooling Room 4 Humidity Valid"
+    entity_id: ${ha_cooling_room_4_humidity_valid_entity_id}
+    internal: true
+    icon: mdi:check-decagram
+    web_server:
+      sorting_group_id: oq_ha_inputs
+
+  - platform: homeassistant
+    id: cooling_room_5_dew_point_valid_ha
+    name: "HA - Cooling Room 5 Dew Point Valid"
+    entity_id: ${ha_cooling_room_5_dew_point_valid_entity_id}
+    internal: true
+    icon: mdi:check-decagram
+    web_server:
+      sorting_group_id: oq_ha_inputs
+
+  - platform: homeassistant
+    id: cooling_room_5_temp_valid_ha
+    name: "HA - Cooling Room 5 Temperature Valid"
+    entity_id: ${ha_cooling_room_5_temp_valid_entity_id}
+    internal: true
+    icon: mdi:check-decagram
+    web_server:
+      sorting_group_id: oq_ha_inputs
+
+  - platform: homeassistant
+    id: cooling_room_5_humidity_valid_ha
+    name: "HA - Cooling Room 5 Humidity Valid"
+    entity_id: ${ha_cooling_room_5_humidity_valid_entity_id}
+    internal: true
+    icon: mdi:check-decagram
+    web_server:
+      sorting_group_id: oq_ha_inputs
+
+  - platform: homeassistant
+    id: cooling_room_6_dew_point_valid_ha
+    name: "HA - Cooling Room 6 Dew Point Valid"
+    entity_id: ${ha_cooling_room_6_dew_point_valid_entity_id}
+    internal: true
+    icon: mdi:check-decagram
+    web_server:
+      sorting_group_id: oq_ha_inputs
+
+  - platform: homeassistant
+    id: cooling_room_6_temp_valid_ha
+    name: "HA - Cooling Room 6 Temperature Valid"
+    entity_id: ${ha_cooling_room_6_temp_valid_entity_id}
+    internal: true
+    icon: mdi:check-decagram
+    web_server:
+      sorting_group_id: oq_ha_inputs
+
+  - platform: homeassistant
+    id: cooling_room_6_humidity_valid_ha
+    name: "HA - Cooling Room 6 Humidity Valid"
+    entity_id: ${ha_cooling_room_6_humidity_valid_entity_id}
+    internal: true
+    icon: mdi:check-decagram
+    web_server:
+      sorting_group_id: oq_ha_inputs

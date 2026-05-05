@@ -335,8 +335,8 @@ sensor:
     id: cooling_room_1_dew_point_calc
     name: "Cooling Room 1 Dew Point (Calculated)"
     internal: true
-    temperature: cooling_room_1_temp_ha
-    humidity: cooling_room_1_humidity_ha
+    temperature: cooling_room_1_temp_input
+    humidity: cooling_room_1_humidity_input
     icon: mdi:water-thermometer
     unit_of_measurement: "°C"
     device_class: temperature
@@ -349,8 +349,8 @@ sensor:
     id: cooling_room_2_dew_point_calc
     name: "Cooling Room 2 Dew Point (Calculated)"
     internal: true
-    temperature: cooling_room_2_temp_ha
-    humidity: cooling_room_2_humidity_ha
+    temperature: cooling_room_2_temp_input
+    humidity: cooling_room_2_humidity_input
     icon: mdi:water-thermometer
     unit_of_measurement: "°C"
     device_class: temperature
@@ -363,8 +363,8 @@ sensor:
     id: cooling_room_3_dew_point_calc
     name: "Cooling Room 3 Dew Point (Calculated)"
     internal: true
-    temperature: cooling_room_3_temp_ha
-    humidity: cooling_room_3_humidity_ha
+    temperature: cooling_room_3_temp_input
+    humidity: cooling_room_3_humidity_input
     icon: mdi:water-thermometer
     unit_of_measurement: "°C"
     device_class: temperature
@@ -377,8 +377,8 @@ sensor:
     id: cooling_room_4_dew_point_calc
     name: "Cooling Room 4 Dew Point (Calculated)"
     internal: true
-    temperature: cooling_room_4_temp_ha
-    humidity: cooling_room_4_humidity_ha
+    temperature: cooling_room_4_temp_input
+    humidity: cooling_room_4_humidity_input
     icon: mdi:water-thermometer
     unit_of_measurement: "°C"
     device_class: temperature
@@ -391,8 +391,8 @@ sensor:
     id: cooling_room_5_dew_point_calc
     name: "Cooling Room 5 Dew Point (Calculated)"
     internal: true
-    temperature: cooling_room_5_temp_ha
-    humidity: cooling_room_5_humidity_ha
+    temperature: cooling_room_5_temp_input
+    humidity: cooling_room_5_humidity_input
     icon: mdi:water-thermometer
     unit_of_measurement: "°C"
     device_class: temperature
@@ -405,8 +405,8 @@ sensor:
     id: cooling_room_6_dew_point_calc
     name: "Cooling Room 6 Dew Point (Calculated)"
     internal: true
-    temperature: cooling_room_6_temp_ha
-    humidity: cooling_room_6_humidity_ha
+    temperature: cooling_room_6_temp_input
+    humidity: cooling_room_6_humidity_input
     icon: mdi:water-thermometer
     unit_of_measurement: "°C"
     device_class: temperature
@@ -414,6 +414,138 @@ sensor:
     accuracy_decimals: 2
     web_server:
       sorting_group_id: oq_cooling
+
+  - platform: template
+    id: cooling_room_1_temp_input
+    internal: true
+    update_interval: 10s
+    lambda: |-
+      if (id(cooling_room_1_temp_valid_ha).has_state() && id(cooling_room_1_temp_valid_ha).state &&
+          id(cooling_room_1_temp_ha).has_state() && !isnan(id(cooling_room_1_temp_ha).state)) {
+        return id(cooling_room_1_temp_ha).state;
+      }
+      return NAN;
+
+  - platform: template
+    id: cooling_room_1_humidity_input
+    internal: true
+    update_interval: 10s
+    lambda: |-
+      if (id(cooling_room_1_humidity_valid_ha).has_state() && id(cooling_room_1_humidity_valid_ha).state &&
+          id(cooling_room_1_humidity_ha).has_state() && !isnan(id(cooling_room_1_humidity_ha).state)) {
+        return id(cooling_room_1_humidity_ha).state;
+      }
+      return NAN;
+
+  - platform: template
+    id: cooling_room_2_temp_input
+    internal: true
+    update_interval: 10s
+    lambda: |-
+      if (id(cooling_room_2_temp_valid_ha).has_state() && id(cooling_room_2_temp_valid_ha).state &&
+          id(cooling_room_2_temp_ha).has_state() && !isnan(id(cooling_room_2_temp_ha).state)) {
+        return id(cooling_room_2_temp_ha).state;
+      }
+      return NAN;
+
+  - platform: template
+    id: cooling_room_2_humidity_input
+    internal: true
+    update_interval: 10s
+    lambda: |-
+      if (id(cooling_room_2_humidity_valid_ha).has_state() && id(cooling_room_2_humidity_valid_ha).state &&
+          id(cooling_room_2_humidity_ha).has_state() && !isnan(id(cooling_room_2_humidity_ha).state)) {
+        return id(cooling_room_2_humidity_ha).state;
+      }
+      return NAN;
+
+  - platform: template
+    id: cooling_room_3_temp_input
+    internal: true
+    update_interval: 10s
+    lambda: |-
+      if (id(cooling_room_3_temp_valid_ha).has_state() && id(cooling_room_3_temp_valid_ha).state &&
+          id(cooling_room_3_temp_ha).has_state() && !isnan(id(cooling_room_3_temp_ha).state)) {
+        return id(cooling_room_3_temp_ha).state;
+      }
+      return NAN;
+
+  - platform: template
+    id: cooling_room_3_humidity_input
+    internal: true
+    update_interval: 10s
+    lambda: |-
+      if (id(cooling_room_3_humidity_valid_ha).has_state() && id(cooling_room_3_humidity_valid_ha).state &&
+          id(cooling_room_3_humidity_ha).has_state() && !isnan(id(cooling_room_3_humidity_ha).state)) {
+        return id(cooling_room_3_humidity_ha).state;
+      }
+      return NAN;
+
+  - platform: template
+    id: cooling_room_4_temp_input
+    internal: true
+    update_interval: 10s
+    lambda: |-
+      if (id(cooling_room_4_temp_valid_ha).has_state() && id(cooling_room_4_temp_valid_ha).state &&
+          id(cooling_room_4_temp_ha).has_state() && !isnan(id(cooling_room_4_temp_ha).state)) {
+        return id(cooling_room_4_temp_ha).state;
+      }
+      return NAN;
+
+  - platform: template
+    id: cooling_room_4_humidity_input
+    internal: true
+    update_interval: 10s
+    lambda: |-
+      if (id(cooling_room_4_humidity_valid_ha).has_state() && id(cooling_room_4_humidity_valid_ha).state &&
+          id(cooling_room_4_humidity_ha).has_state() && !isnan(id(cooling_room_4_humidity_ha).state)) {
+        return id(cooling_room_4_humidity_ha).state;
+      }
+      return NAN;
+
+  - platform: template
+    id: cooling_room_5_temp_input
+    internal: true
+    update_interval: 10s
+    lambda: |-
+      if (id(cooling_room_5_temp_valid_ha).has_state() && id(cooling_room_5_temp_valid_ha).state &&
+          id(cooling_room_5_temp_ha).has_state() && !isnan(id(cooling_room_5_temp_ha).state)) {
+        return id(cooling_room_5_temp_ha).state;
+      }
+      return NAN;
+
+  - platform: template
+    id: cooling_room_5_humidity_input
+    internal: true
+    update_interval: 10s
+    lambda: |-
+      if (id(cooling_room_5_humidity_valid_ha).has_state() && id(cooling_room_5_humidity_valid_ha).state &&
+          id(cooling_room_5_humidity_ha).has_state() && !isnan(id(cooling_room_5_humidity_ha).state)) {
+        return id(cooling_room_5_humidity_ha).state;
+      }
+      return NAN;
+
+  - platform: template
+    id: cooling_room_6_temp_input
+    internal: true
+    update_interval: 10s
+    lambda: |-
+      if (id(cooling_room_6_temp_valid_ha).has_state() && id(cooling_room_6_temp_valid_ha).state &&
+          id(cooling_room_6_temp_ha).has_state() && !isnan(id(cooling_room_6_temp_ha).state)) {
+        return id(cooling_room_6_temp_ha).state;
+      }
+      return NAN;
+
+  - platform: template
+    id: cooling_room_6_humidity_input
+    internal: true
+    update_interval: 10s
+    lambda: |-
+      if (id(cooling_room_6_humidity_valid_ha).has_state() && id(cooling_room_6_humidity_valid_ha).state &&
+          id(cooling_room_6_humidity_ha).has_state() && !isnan(id(cooling_room_6_humidity_ha).state)) {
+        return id(cooling_room_6_humidity_ha).state;
+      }
+      return NAN;
 
   - platform: template
     id: cooling_room_count_selected
@@ -474,7 +606,8 @@ sensor:
     update_interval: 10s
     lambda: |-
       // Prefer a direct dew point input; fall back to the local ESPHome calculation.
-      if (id(cooling_room_1_dew_point_direct_ha).has_state() && !isnan(id(cooling_room_1_dew_point_direct_ha).state)) {
+      if (id(cooling_room_1_dew_point_valid_ha).has_state() && id(cooling_room_1_dew_point_valid_ha).state &&
+          id(cooling_room_1_dew_point_direct_ha).has_state() && !isnan(id(cooling_room_1_dew_point_direct_ha).state)) {
         return id(cooling_room_1_dew_point_direct_ha).state;
       }
       if (id(cooling_room_1_dew_point_calc).has_state() && !isnan(id(cooling_room_1_dew_point_calc).state)) {
@@ -495,7 +628,8 @@ sensor:
     update_interval: 10s
     lambda: |-
       // Prefer a direct dew point input; fall back to the local ESPHome calculation.
-      if (id(cooling_room_2_dew_point_direct_ha).has_state() && !isnan(id(cooling_room_2_dew_point_direct_ha).state)) {
+      if (id(cooling_room_2_dew_point_valid_ha).has_state() && id(cooling_room_2_dew_point_valid_ha).state &&
+          id(cooling_room_2_dew_point_direct_ha).has_state() && !isnan(id(cooling_room_2_dew_point_direct_ha).state)) {
         return id(cooling_room_2_dew_point_direct_ha).state;
       }
       if (id(cooling_room_2_dew_point_calc).has_state() && !isnan(id(cooling_room_2_dew_point_calc).state)) {
@@ -516,7 +650,8 @@ sensor:
     update_interval: 10s
     lambda: |-
       // Prefer a direct dew point input; fall back to the local ESPHome calculation.
-      if (id(cooling_room_3_dew_point_direct_ha).has_state() && !isnan(id(cooling_room_3_dew_point_direct_ha).state)) {
+      if (id(cooling_room_3_dew_point_valid_ha).has_state() && id(cooling_room_3_dew_point_valid_ha).state &&
+          id(cooling_room_3_dew_point_direct_ha).has_state() && !isnan(id(cooling_room_3_dew_point_direct_ha).state)) {
         return id(cooling_room_3_dew_point_direct_ha).state;
       }
       if (id(cooling_room_3_dew_point_calc).has_state() && !isnan(id(cooling_room_3_dew_point_calc).state)) {
@@ -537,7 +672,8 @@ sensor:
     update_interval: 10s
     lambda: |-
       // Prefer a direct dew point input; fall back to the local ESPHome calculation.
-      if (id(cooling_room_4_dew_point_direct_ha).has_state() && !isnan(id(cooling_room_4_dew_point_direct_ha).state)) {
+      if (id(cooling_room_4_dew_point_valid_ha).has_state() && id(cooling_room_4_dew_point_valid_ha).state &&
+          id(cooling_room_4_dew_point_direct_ha).has_state() && !isnan(id(cooling_room_4_dew_point_direct_ha).state)) {
         return id(cooling_room_4_dew_point_direct_ha).state;
       }
       if (id(cooling_room_4_dew_point_calc).has_state() && !isnan(id(cooling_room_4_dew_point_calc).state)) {
@@ -558,7 +694,8 @@ sensor:
     update_interval: 10s
     lambda: |-
       // Prefer a direct dew point input; fall back to the local ESPHome calculation.
-      if (id(cooling_room_5_dew_point_direct_ha).has_state() && !isnan(id(cooling_room_5_dew_point_direct_ha).state)) {
+      if (id(cooling_room_5_dew_point_valid_ha).has_state() && id(cooling_room_5_dew_point_valid_ha).state &&
+          id(cooling_room_5_dew_point_direct_ha).has_state() && !isnan(id(cooling_room_5_dew_point_direct_ha).state)) {
         return id(cooling_room_5_dew_point_direct_ha).state;
       }
       if (id(cooling_room_5_dew_point_calc).has_state() && !isnan(id(cooling_room_5_dew_point_calc).state)) {
@@ -579,7 +716,8 @@ sensor:
     update_interval: 10s
     lambda: |-
       // Prefer a direct dew point input; fall back to the local ESPHome calculation.
-      if (id(cooling_room_6_dew_point_direct_ha).has_state() && !isnan(id(cooling_room_6_dew_point_direct_ha).state)) {
+      if (id(cooling_room_6_dew_point_valid_ha).has_state() && id(cooling_room_6_dew_point_valid_ha).state &&
+          id(cooling_room_6_dew_point_direct_ha).has_state() && !isnan(id(cooling_room_6_dew_point_direct_ha).state)) {
         return id(cooling_room_6_dew_point_direct_ha).state;
       }
       if (id(cooling_room_6_dew_point_calc).has_state() && !isnan(id(cooling_room_6_dew_point_calc).state)) {

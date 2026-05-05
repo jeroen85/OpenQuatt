@@ -193,7 +193,7 @@ binary_sensor:
       if (!id(cooling_enable_source).has_state()) return false;
       const auto source = id(cooling_enable_source).current_option();
       const bool cic_enabled = id(cic_cooling_enabled).has_state() && id(cic_cooling_enabled).state;
-      const bool ha_enabled = id(cooling_enable_ha).has_state() && id(cooling_enable_ha).state;
+      const bool ha_enabled = id(cooling_enable_valid_ha).state && id(cooling_enable_ha).has_state() && id(cooling_enable_ha).state;
       const bool manual_enabled = id(oq_manual_cooling_enable).state;
       if (source == "CIC") return cic_enabled || manual_enabled;
       if (source == "HA input") return ha_enabled || manual_enabled;
@@ -239,7 +239,7 @@ text_sensor:
 
       const auto source = id(cooling_enable_source).current_option();
       const bool cic_enabled = id(cic_cooling_enabled).has_state() && id(cic_cooling_enabled).state;
-      const bool ha_enabled = id(cooling_enable_ha).has_state() && id(cooling_enable_ha).state;
+      const bool ha_enabled = id(cooling_enable_valid_ha).state && id(cooling_enable_ha).has_state() && id(cooling_enable_ha).state;
       const bool manual_enabled = id(oq_manual_cooling_enable).state;
 
       auto with_manual = [&](const std::string &base) -> std::string {
@@ -311,7 +311,7 @@ sensor:
         if (id(water_supply_temp_cic).has_state()) selected_c = id(water_supply_temp_cic).state;
       }
       if (source == "HA input") {
-        if (id(water_supply_temp_ha).has_state()) selected_c = id(water_supply_temp_ha).state;
+        if (id(water_supply_temp_valid_ha).state && id(water_supply_temp_ha).has_state()) selected_c = id(water_supply_temp_ha).state;
       }
       if (source == "Local") {
         if (id(water_supply_temp_esp).has_state()) selected_c = id(water_supply_temp_esp).state;
@@ -396,7 +396,7 @@ sensor:
       const uint32_t now_ms = (uint32_t) millis();
       const uint32_t hold_ms = (uint32_t)(${oq_selected_input_stale_hold_s}UL * 1000UL);
       const bool hp_valid = id(outside_temp_hp_avg).has_state() && !isnan(id(outside_temp_hp_avg).state);
-      const bool ha_valid = id(outside_temp_ha).has_state() && !isnan(id(outside_temp_ha).state);
+      const bool ha_valid = id(outside_temp_valid_ha).state && id(outside_temp_ha).has_state() && !isnan(id(outside_temp_ha).state);
       const bool hold_enabled = source == "HA input";
 
       float selected_c = NAN;
@@ -457,7 +457,7 @@ sensor:
 
       float selected_c = NAN;
       if (source == "HA input") {
-        if (id(thermostat_room_temp_ha).has_state()) selected_c = id(thermostat_room_temp_ha).state;
+        if (id(room_temp_valid_ha).state && id(thermostat_room_temp_ha).has_state()) selected_c = id(thermostat_room_temp_ha).state;
       }
       if (source == "OT thermostat") {
         if (id(ot_thermostat_room_temp).has_state()) selected_c = id(ot_thermostat_room_temp).state;
@@ -507,7 +507,7 @@ sensor:
 
       float selected_c = NAN;
       if (source == "HA input") {
-        if (id(thermostat_setpoint_ha).has_state()) selected_c = id(thermostat_setpoint_ha).state;
+        if (id(room_setpoint_valid_ha).state && id(thermostat_setpoint_ha).has_state()) selected_c = id(thermostat_setpoint_ha).state;
       }
       if (source == "OT thermostat") {
         if (id(ot_thermostat_room_setpoint).has_state()) selected_c = id(ot_thermostat_room_setpoint).state;
