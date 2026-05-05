@@ -50,6 +50,7 @@ Gebruik je deze repo vanuit de Codex-desktopapp op Windows, dan is het handiger 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\wsl_dev.ps1 status
 powershell -ExecutionPolicy Bypass -File .\scripts\wsl_dev.ps1 validate --jobs 2
+powershell -ExecutionPolicy Bypass -File .\scripts\codex_dev.ps1 validate-config
 ```
 
 Beschikbare subcommands:
@@ -64,8 +65,18 @@ Beschikbare subcommands:
 - `branch`
 - `git ...`
 - `python ...`
+- `esphome ...`
 
-Deze wrapper laat alle WSL-werkzaamheden via een consistente command-prefix lopen. In Codex betekent dat doorgaans minder losse toestemmingsprompts nadat die prefix eenmaal is goedgekeurd.
+Voor terugkerende Codex-taken is er daarnaast `scripts\codex_dev.ps1`. Die wrapper gebruikt bewust smalle taken in plaats van vrije shell-commando's:
+
+- `status`
+- `validate-config`
+- `compile-waveshare-duo`
+- `ota-local-waveshare-duo -Device 192.168.x.x`
+- `ota-ci-duo-waveshare -RunId <github-run-id> -Device 192.168.x.x`
+- `push-dev`
+
+Deze wrappers laten WSL-, ESPHome- en OTA-werkzaamheden via consistente command-prefixes lopen. In Codex betekent dat doorgaans minder losse toestemmingsprompts nadat zo'n prefix eenmaal is goedgekeurd.
 
 ## Hoofdworkflow
 
