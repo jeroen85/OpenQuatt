@@ -6031,10 +6031,22 @@ async function refreshWebServerLogHistory() {
       state.webServerLogHistoryLoading = false;
     }
     if (state.systemModal === "webserver-logs" && state.webServerLogHistoryRequestToken === requestToken) {
+      const scroller = getWebServerLogScrollerElement();
+      const stickToBottom = isWebServerLogScrollerNearBottom(scroller);
+      const previousDistanceFromBottom = scroller ? scroller.scrollHeight - scroller.scrollTop : 0;
       render();
       window.requestAnimationFrame(() => {
         if (state.systemModal === "webserver-logs" && state.webServerLogHistoryRequestToken === requestToken) {
-          scrollWebServerLogToBottom();
+          const nextScroller = getWebServerLogScrollerElement();
+          if (!nextScroller) {
+            return;
+          }
+          if (stickToBottom) {
+            nextScroller.scrollTop = nextScroller.scrollHeight;
+            return;
+          }
+          const targetScrollTop = nextScroller.scrollHeight - previousDistanceFromBottom;
+          nextScroller.scrollTop = Math.max(0, targetScrollTop);
         }
       });
     }
