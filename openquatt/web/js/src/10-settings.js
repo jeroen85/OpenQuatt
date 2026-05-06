@@ -1459,8 +1459,8 @@
     const currentVersion = getFirmwareCurrentVersion();
     const currentTopology = typeof getInstallationTopology === "function"
       ? getInstallationTopology()
-      : (hasEntity("hp2Power") ? "duo" : "single");
-    const topologyMismatch = sourceTopology !== "Onbekend" && sourceTopology !== currentTopology;
+      : "";
+    const topologyMismatch = sourceTopology !== "Onbekend" && currentTopology && sourceTopology !== currentTopology;
     const installationMismatch = sourceInstallation !== "Onbekend" && sourceInstallation !== currentInstallation;
     const warningText = topologyMismatch || installationMismatch
       ? "De backup lijkt van een andere installatie te komen. Je kunt nog steeds doorzetten, maar controleer de secties even goed."

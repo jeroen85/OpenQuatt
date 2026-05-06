@@ -32,7 +32,7 @@
 
   function rememberInstallationTopology(topology) {
     const normalized = String(topology || "").trim().toLowerCase();
-    if (normalized && typeof state !== "undefined" && state && typeof state === "object") {
+    if ((normalized === "single" || normalized === "duo") && typeof state !== "undefined" && state && typeof state === "object") {
       state.lastKnownInstallationTopology = normalized;
     }
     return normalized;
@@ -40,39 +40,38 @@
 
   function getCachedInstallationTopology() {
     if (typeof state !== "undefined" && state && typeof state === "object") {
-      return String(state.lastKnownInstallationTopology || "").trim().toLowerCase();
+      const cached = String(state.lastKnownInstallationTopology || "").trim().toLowerCase();
+      if (cached === "single" || cached === "duo") {
+        return cached;
+      }
     }
     return "";
   }
 
   function getInstallationTopology() {
+    const entityTopology = String(getEntityValue("installationTopology") || "").trim().toLowerCase();
+    if (entityTopology === "single" || entityTopology === "duo") {
+      return rememberInstallationTopology(entityTopology);
+    }
+
     const metaTopology = String(getDeviceMeta().installation || "").trim().toLowerCase();
     if (metaTopology === "single" || metaTopology === "duo") {
       return rememberInstallationTopology(metaTopology);
     }
 
-    if (hasEntity("hp2Power")) {
-      return rememberInstallationTopology("duo");
-    }
-
-    const cachedTopology = getCachedInstallationTopology();
-    if (cachedTopology === "single" || cachedTopology === "duo") {
-      return cachedTopology;
-    }
-
-    return "single";
+    return getCachedInstallationTopology();
   }
 
   function getInstallationLabel() {
     const installation = getInstallationTopology();
+    const generation = getHybridGenerationLabel();
     if (installation === "single") {
-      return "Quatt Single";
+      return generation ? `Quatt Single ${generation}` : "Quatt Single";
     }
     if (installation === "duo") {
-      const generation = getHybridGenerationLabel();
       return generation ? `Quatt Duo ${generation}` : "Quatt Duo";
     }
-    return "Quatt Single";
+    return generation ? `Quatt Hybrid ${generation}` : "Quatt Hybrid";
   }
 
   function getFirmwareDeviceLabel() {
@@ -774,8 +773,10 @@
       state.complete ? "complete" : "incomplete",
       state.overviewTheme,
       state.hpVisualMode,
+      getEntitySignatureFragment("installationTopology"),
       getEntitySignatureFragment("hpGeneration"),
-      getEntitySignatureFragment("hp2Power"),
+      getEntitySignatureFragment("projectVersionText"),
+      getEntitySignatureFragment("releaseChannelText"),
     ].join("|");
   }
 

@@ -115,6 +115,7 @@ const LOGO_MARKUP = `
     wifiSsid: { domain: "text_sensor", name: "WiFi SSID", optional: true },
     projectVersionText: { domain: "text_sensor", name: "OpenQuatt Version", optional: true },
     releaseChannelText: { domain: "text_sensor", name: "OpenQuatt Release Channel", optional: true },
+    installationTopology: { domain: "text_sensor", name: "OpenQuatt Installation Topology", optional: true },
     wifiSignal: { domain: "sensor", name: "WiFi Signal", optional: true },
     espInternalTemp: { domain: "sensor", name: "ESP Internal Temperature", optional: true },
     hpGeneration: { domain: "select", name: "Quatt Hybrid version" },
@@ -392,6 +393,7 @@ const LOGO_MARKUP = `
     "ipAddress",
     "wifiSsid",
     "wifiSignal",
+    "installationTopology",
     "hpGeneration",
     "projectVersionText",
     "releaseChannelText",
@@ -616,6 +618,7 @@ const LOGO_MARKUP = `
   ];
   const SETTINGS_KEYS = [
     "strategy",
+    "installationTopology",
     "hpGeneration",
     "openquattEnabled",
     "manualCoolingEnable",
@@ -642,7 +645,7 @@ const LOGO_MARKUP = `
     {
       id: "installation",
       label: "Installatie",
-      keys: ["setupComplete", "hpGeneration", "firmwareUpdateChannel"],
+      keys: ["setupComplete", "installationTopology", "hpGeneration", "firmwareUpdateChannel"],
     },
     {
       id: "operation",
