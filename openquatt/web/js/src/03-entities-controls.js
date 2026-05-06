@@ -207,16 +207,41 @@
   const INITIAL_OVERVIEW_READY_KEYS = [
     "strategy",
     "controlModeLabel",
+    "openquattEnabled",
+    "hpGeneration",
     "totalPower",
     "flowSelected",
+    "totalCop",
+    "manualCoolingEnable",
+    "silentModeOverride",
     "totalHeat",
     "totalCoolingPower",
   ];
-  const INITIAL_OVERVIEW_TEXT_KEYS = ["strategy", "controlModeLabel"];
-  const INITIAL_OVERVIEW_NUMERIC_KEYS = ["totalPower", "flowSelected"];
+  const INITIAL_OVERVIEW_TEXT_KEYS = ["strategy", "controlModeLabel", "hpGeneration"];
+  const INITIAL_OVERVIEW_NUMERIC_KEYS = ["totalPower", "flowSelected", "totalCop"];
   const INITIAL_OVERVIEW_THERMAL_KEYS = ["totalHeat", "totalCoolingPower"];
   const INITIAL_OVERVIEW_READY_TIMEOUT_MS = 2000;
   const INITIAL_OVERVIEW_READY_POLL_MS = 250;
+  const INITIAL_SETTINGS_READY_KEYS = [
+    "hpGeneration",
+    "openquattEnabled",
+    "flowControlMode",
+    "silentStartTime",
+    "silentEndTime",
+    "maxWater",
+    "minRuntime",
+  ];
+  const INITIAL_SETTINGS_READY_TIMEOUT_MS = 3500;
+  const INITIAL_SETTINGS_READY_POLL_MS = 250;
+  const INITIAL_CORE_UI_KEYS = [
+    "hpGeneration",
+    "openquattEnabled",
+    "flowControlMode",
+    "silentStartTime",
+    "silentEndTime",
+    "maxWater",
+    "minRuntime",
+  ];
 
   function hasUsableEntityValue(key) {
     const value = String(getEntityValue(key) ?? "").trim().toLowerCase();
@@ -241,6 +266,18 @@
       && INITIAL_OVERVIEW_THERMAL_KEYS.some(hasUsableNumericEntityValue);
   }
 
+  function isInitialSettingsView() {
+    return state.appView === "settings";
+  }
+
+  function isInitialSettingsReady() {
+    if (!isInitialSettingsView()) {
+      return true;
+    }
+
+    return INITIAL_SETTINGS_READY_KEYS.every(hasUsableEntityValue);
+  }
+
   async function waitForInitialOverviewReady() {
     if (isInitialOverviewReady()) {
       return;
@@ -251,6 +288,22 @@
       await new Promise((resolve) => window.setTimeout(resolve, INITIAL_OVERVIEW_READY_POLL_MS));
       try {
         await refreshEntities(INITIAL_OVERVIEW_READY_KEYS, "state");
+      } catch (_error) {
+        return;
+      }
+    }
+  }
+
+  async function waitForInitialSettingsReady() {
+    if (isInitialSettingsReady()) {
+      return;
+    }
+
+    const deadline = Date.now() + INITIAL_SETTINGS_READY_TIMEOUT_MS;
+    while (!state.nativeOpen && !isInitialSettingsReady() && Date.now() < deadline) {
+      await new Promise((resolve) => window.setTimeout(resolve, INITIAL_SETTINGS_READY_POLL_MS));
+      try {
+        await refreshEntities(INITIAL_SETTINGS_READY_KEYS, "all");
       } catch (_error) {
         return;
       }
@@ -367,8 +420,6 @@
           ...(state.entities[key] || {}),
           ...payload,
         };
-      } else if (ENTITY_DEFS[key]?.optional) {
-        delete state.entities[key];
       } else if (!ENTITY_DEFS[key]?.optional && !firstError) {
         firstError = result.reason.message || String(result.reason);
       }
@@ -448,7 +499,7 @@
     return {
       device: getFirmwareDeviceLabel(),
       installation: getInstallationLabel(),
-      topology: hasEntity("hp2Power") ? "duo" : "single",
+      topology: typeof getInstallationTopology === "function" ? getInstallationTopology() : (hasEntity("hp2Power") ? "duo" : "single"),
       firmware_version: getFirmwareCurrentVersion(),
       firmware_channel: String(getEntityValue("firmwareUpdateChannel") || getEntityValue("releaseChannelText") || "").trim(),
     };
@@ -1049,7 +1100,7 @@
   }
 
   function getInitialPrimeKeys() {
-    const base = ["setupComplete", "strategy", ...HEADER_ENTITY_KEYS];
+    const base = ["setupComplete", "strategy", ...HEADER_ENTITY_KEYS, ...INITIAL_CORE_UI_KEYS];
     if (state.appView === "settings") {
       return [...new Set([...base, ...getSettingsRefreshKeys()])];
     }
@@ -1117,15 +1168,13 @@
     const deferredKeys = getDeferredPrimeKeys(initialKeys);
     try {
       await refreshEntities(initialKeys, "all");
-      await waitForInitialOverviewReady();
-      state.loadingEntities = false;
-      render();
-      window.setTimeout(() => {
-        void primeDeferredEntities(deferredKeys);
-      }, 0);
-      window.setTimeout(() => {
-        void primeSupplementaryData();
-      }, 0);
+      if (state.appView === "settings") {
+        await waitForInitialSettingsReady();
+      } else {
+        await waitForInitialOverviewReady();
+      }
+      await primeDeferredEntities(deferredKeys);
+      await primeSupplementaryData();
     } finally {
       state.loadingEntities = false;
       render();
@@ -1160,9 +1209,7 @@
           ...staticKeys,
         ]
       : appView === "settings"
-        ? isBulkDue
-          ? ["setupComplete", ...staticKeys, ...HEADER_ENTITY_KEYS, ...SETTINGS_KEYS]
-          : ["setupComplete", ...HEADER_ENTITY_KEYS, ...staticKeys]
+        ? ["setupComplete", ...staticKeys, ...HEADER_ENTITY_KEYS, ...SETTINGS_KEYS]
         : isBulkDue
           ? [
               "setupComplete",
@@ -1179,7 +1226,7 @@
     state.lastEntitySyncAttemptAt = now;
     try {
       const reconnectModeBefore = state.deviceReconnectMode;
-      await refreshEntities([...new Set(keys)], "state");
+      await refreshEntities([...new Set(keys)], appView === "settings" ? "all" : "state");
       state.lastFastEntitySyncAt = Date.now();
       if (isBulkDue) {
         state.lastBulkEntitySyncAt = state.lastFastEntitySyncAt;
@@ -1286,6 +1333,8 @@
       state.appView,
       state.settingsGroup,
       state.loadingEntities ? "loading" : "ready",
+      getEntitySignatureFragment("setupComplete"),
+      ...SETTINGS_KEYS.map((key) => getEntitySignatureFragment(key)),
     ].join("|");
   }
 
@@ -1871,7 +1920,7 @@
           render();
         }
       } else if (state.appView === "settings") {
-        await refreshEntities(getSettingsRefreshKeys(), "state");
+        await refreshEntities(getSettingsRefreshKeys(), "all");
       } else {
         await refreshEntities(["setupComplete", "strategy", "openquattEnabled", "manualCoolingEnable", "silentModeOverride", ...FLOW_SETTING_KEYS, ...LIMIT_KEYS], "state");
       }
@@ -1913,7 +1962,7 @@
       if (state.appView === "overview") {
         await refreshEntities([...OVERVIEW_KEYS, ...HEADER_ENTITY_KEYS, "setupComplete", ...FIRMWARE_ENTITY_KEYS], "state");
       } else if (state.appView === "settings") {
-        await refreshEntities(getSettingsRefreshKeys(), "state");
+        await refreshEntities(getSettingsRefreshKeys(), "all");
       } else {
         await refreshEntities(["setupComplete", "strategy", "openquattEnabled", "manualCoolingEnable", "silentModeOverride", ...FLOW_SETTING_KEYS, ...LIMIT_KEYS], "state");
       }

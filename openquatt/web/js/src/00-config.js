@@ -392,6 +392,7 @@ const LOGO_MARKUP = `
     "ipAddress",
     "wifiSsid",
     "wifiSignal",
+    "hpGeneration",
     "projectVersionText",
     "releaseChannelText",
     "espInternalTemp",
@@ -615,6 +616,7 @@ const LOGO_MARKUP = `
   ];
   const SETTINGS_KEYS = [
     "strategy",
+    "hpGeneration",
     "openquattEnabled",
     "manualCoolingEnable",
     "silentModeOverride",

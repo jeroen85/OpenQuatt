@@ -177,13 +177,23 @@
     `;
   }
 
+  function getSelectEntityOptions(entity = {}) {
+    if (Array.isArray(entity.option)) {
+      return entity.option;
+    }
+    if (Array.isArray(entity.options)) {
+      return entity.options;
+    }
+    return [];
+  }
+
   function renderSettingsSelectField(key, title, copy, className = "") {
     if (!hasEntity(key)) {
       return "";
     }
     const entity = state.entities[key] || {};
     const value = String(getEntityValue(key) || "");
-    const options = Array.isArray(entity.option) ? entity.option : [];
+    const options = getSelectEntityOptions(entity);
     return renderSettingsFieldCard(key, title, copy, `<label class="oq-settings-control oq-settings-control--select"><select class="oq-helper-select" data-oq-field="${escapeHtml(key)}" ${state.loadingEntities ? "disabled" : ""}>${options.map((option) => `<option value="${escapeHtml(option)}" ${option === value ? "selected" : ""}>${escapeHtml(formatSettingsOptionLabel(option))}</option>`).join("")}</select><span class="oq-settings-select-caret" aria-hidden="true"></span></label>`, className);
   }
 
@@ -256,7 +266,7 @@
 
     const entity = state.entities[key] || {};
     const currentValue = String(getEntityValue(key) || "");
-    const options = Array.isArray(entity.option) ? entity.option : [];
+    const options = getSelectEntityOptions(entity);
     const busy = state.loadingEntities || state.busyAction === `save-${key}`;
     const controlMarkup = `
       <div class="oq-settings-choice-grid">
@@ -534,7 +544,7 @@
       const button = generationStatus.querySelector('button[data-oq-action="open-generation-modal"]');
       const currentLabel = getInstallationLabel();
       const entity = state.entities.hpGeneration || {};
-      const canEdit = hasEntity("hpGeneration") && Array.isArray(entity.option) && entity.option.length > 0;
+      const canEdit = hasEntity("hpGeneration") && getSelectEntityOptions(entity).length > 0;
       if (valueNode) {
         const value = currentLabel || "Onbekend";
         if (valueNode.textContent !== value) {
@@ -1115,7 +1125,7 @@
 
     const entity = state.entities.hpGeneration || {};
     const currentValue = String(getEntityValue("hpGeneration") || "");
-    const options = Array.isArray(entity.option) ? entity.option : [];
+    const options = getSelectEntityOptions(entity);
     const busy = state.loadingEntities || state.busyAction === "save-hpGeneration";
 
     return `
@@ -1144,7 +1154,7 @@
   function renderSettingsGenerationSection() {
     const currentLabel = getInstallationLabel();
     const entity = state.entities.hpGeneration || {};
-    const canEdit = hasEntity("hpGeneration") && Array.isArray(entity.option) && entity.option.length > 0;
+    const canEdit = hasEntity("hpGeneration") && getSelectEntityOptions(entity).length > 0;
 
     if (!currentLabel && !canEdit) {
       return "";
@@ -1447,7 +1457,10 @@
     const sourceChannel = String(draft.source?.firmware_channel || "").trim() || "Onbekend";
     const sourceTopology = String(draft.source?.topology || "").trim() || "Onbekend";
     const currentVersion = getFirmwareCurrentVersion();
-    const topologyMismatch = sourceTopology !== "Onbekend" && sourceTopology !== (hasEntity("hp2Power") ? "duo" : "single");
+    const currentTopology = typeof getInstallationTopology === "function"
+      ? getInstallationTopology()
+      : (hasEntity("hp2Power") ? "duo" : "single");
+    const topologyMismatch = sourceTopology !== "Onbekend" && sourceTopology !== currentTopology;
     const installationMismatch = sourceInstallation !== "Onbekend" && sourceInstallation !== currentInstallation;
     const warningText = topologyMismatch || installationMismatch
       ? "De backup lijkt van een andere installatie te komen. Je kunt nog steeds doorzetten, maar controleer de secties even goed."
@@ -1475,7 +1488,7 @@
             <div class="oq-helper-modal-row">
               <span class="oq-helper-modal-label">Huidige installatie</span>
               <strong class="oq-helper-modal-value">${escapeHtml(currentInstallation)}</strong>
-              <span class="oq-helper-modal-subvalue">Topo: ${escapeHtml(hasEntity("hp2Power") ? "duo" : "single")} · Firmware: ${escapeHtml(currentVersion || "Onbekend")}</span>
+              <span class="oq-helper-modal-subvalue">Topo: ${escapeHtml(currentTopology)} · Firmware: ${escapeHtml(currentVersion || "Onbekend")}</span>
             </div>
             <div class="oq-helper-modal-row">
               <span class="oq-helper-modal-label">Backupkanaal</span>

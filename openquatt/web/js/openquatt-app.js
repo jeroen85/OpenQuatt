@@ -396,6 +396,7 @@ const LOGO_MARKUP = `
     "ipAddress",
     "wifiSsid",
     "wifiSignal",
+    "hpGeneration",
     "projectVersionText",
     "releaseChannelText",
     "espInternalTemp",
@@ -619,6 +620,7 @@ const LOGO_MARKUP = `
   ];
   const SETTINGS_KEYS = [
     "strategy",
+    "hpGeneration",
     "openquattEnabled",
     "manualCoolingEnable",
     "silentModeOverride",
@@ -1452,16 +1454,49 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     return "";
   }
 
+  function rememberInstallationTopology(topology) {
+    const normalized = String(topology || "").trim().toLowerCase();
+    if (normalized && typeof state !== "undefined" && state && typeof state === "object") {
+      state.lastKnownInstallationTopology = normalized;
+    }
+    return normalized;
+  }
+
+  function getCachedInstallationTopology() {
+    if (typeof state !== "undefined" && state && typeof state === "object") {
+      return String(state.lastKnownInstallationTopology || "").trim().toLowerCase();
+    }
+    return "";
+  }
+
+  function getInstallationTopology() {
+    const metaTopology = String(getDeviceMeta().installation || "").trim().toLowerCase();
+    if (metaTopology === "single" || metaTopology === "duo") {
+      return rememberInstallationTopology(metaTopology);
+    }
+
+    if (hasEntity("hp2Power")) {
+      return rememberInstallationTopology("duo");
+    }
+
+    const cachedTopology = getCachedInstallationTopology();
+    if (cachedTopology === "single" || cachedTopology === "duo") {
+      return cachedTopology;
+    }
+
+    return "single";
+  }
+
   function getInstallationLabel() {
-    const installation = String(getDeviceMeta().installation || "").toLowerCase();
+    const installation = getInstallationTopology();
     if (installation === "single") {
       return "Quatt Single";
     }
-    const generation = getHybridGenerationLabel();
     if (installation === "duo") {
+      const generation = getHybridGenerationLabel();
       return generation ? `Quatt Duo ${generation}` : "Quatt Duo";
     }
-    return hasEntity("hp2Power") ? (generation ? `Quatt Duo ${generation}` : "Quatt Duo") : "Quatt Single";
+    return "Quatt Single";
   }
 
   function getFirmwareDeviceLabel() {
@@ -2163,6 +2198,8 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       state.complete ? "complete" : "incomplete",
       state.overviewTheme,
       state.hpVisualMode,
+      getEntitySignatureFragment("hpGeneration"),
+      getEntitySignatureFragment("hp2Power"),
     ].join("|");
   }
 
@@ -3142,16 +3179,41 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
   const INITIAL_OVERVIEW_READY_KEYS = [
     "strategy",
     "controlModeLabel",
+    "openquattEnabled",
+    "hpGeneration",
     "totalPower",
     "flowSelected",
+    "totalCop",
+    "manualCoolingEnable",
+    "silentModeOverride",
     "totalHeat",
     "totalCoolingPower",
   ];
-  const INITIAL_OVERVIEW_TEXT_KEYS = ["strategy", "controlModeLabel"];
-  const INITIAL_OVERVIEW_NUMERIC_KEYS = ["totalPower", "flowSelected"];
+  const INITIAL_OVERVIEW_TEXT_KEYS = ["strategy", "controlModeLabel", "hpGeneration"];
+  const INITIAL_OVERVIEW_NUMERIC_KEYS = ["totalPower", "flowSelected", "totalCop"];
   const INITIAL_OVERVIEW_THERMAL_KEYS = ["totalHeat", "totalCoolingPower"];
   const INITIAL_OVERVIEW_READY_TIMEOUT_MS = 2000;
   const INITIAL_OVERVIEW_READY_POLL_MS = 250;
+  const INITIAL_SETTINGS_READY_KEYS = [
+    "hpGeneration",
+    "openquattEnabled",
+    "flowControlMode",
+    "silentStartTime",
+    "silentEndTime",
+    "maxWater",
+    "minRuntime",
+  ];
+  const INITIAL_SETTINGS_READY_TIMEOUT_MS = 3500;
+  const INITIAL_SETTINGS_READY_POLL_MS = 250;
+  const INITIAL_CORE_UI_KEYS = [
+    "hpGeneration",
+    "openquattEnabled",
+    "flowControlMode",
+    "silentStartTime",
+    "silentEndTime",
+    "maxWater",
+    "minRuntime",
+  ];
 
   function hasUsableEntityValue(key) {
     const value = String(getEntityValue(key) ?? "").trim().toLowerCase();
@@ -3176,6 +3238,18 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       && INITIAL_OVERVIEW_THERMAL_KEYS.some(hasUsableNumericEntityValue);
   }
 
+  function isInitialSettingsView() {
+    return state.appView === "settings";
+  }
+
+  function isInitialSettingsReady() {
+    if (!isInitialSettingsView()) {
+      return true;
+    }
+
+    return INITIAL_SETTINGS_READY_KEYS.every(hasUsableEntityValue);
+  }
+
   async function waitForInitialOverviewReady() {
     if (isInitialOverviewReady()) {
       return;
@@ -3186,6 +3260,22 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       await new Promise((resolve) => window.setTimeout(resolve, INITIAL_OVERVIEW_READY_POLL_MS));
       try {
         await refreshEntities(INITIAL_OVERVIEW_READY_KEYS, "state");
+      } catch (_error) {
+        return;
+      }
+    }
+  }
+
+  async function waitForInitialSettingsReady() {
+    if (isInitialSettingsReady()) {
+      return;
+    }
+
+    const deadline = Date.now() + INITIAL_SETTINGS_READY_TIMEOUT_MS;
+    while (!state.nativeOpen && !isInitialSettingsReady() && Date.now() < deadline) {
+      await new Promise((resolve) => window.setTimeout(resolve, INITIAL_SETTINGS_READY_POLL_MS));
+      try {
+        await refreshEntities(INITIAL_SETTINGS_READY_KEYS, "all");
       } catch (_error) {
         return;
       }
@@ -3302,8 +3392,6 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
           ...(state.entities[key] || {}),
           ...payload,
         };
-      } else if (ENTITY_DEFS[key]?.optional) {
-        delete state.entities[key];
       } else if (!ENTITY_DEFS[key]?.optional && !firstError) {
         firstError = result.reason.message || String(result.reason);
       }
@@ -3383,7 +3471,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     return {
       device: getFirmwareDeviceLabel(),
       installation: getInstallationLabel(),
-      topology: hasEntity("hp2Power") ? "duo" : "single",
+      topology: typeof getInstallationTopology === "function" ? getInstallationTopology() : (hasEntity("hp2Power") ? "duo" : "single"),
       firmware_version: getFirmwareCurrentVersion(),
       firmware_channel: String(getEntityValue("firmwareUpdateChannel") || getEntityValue("releaseChannelText") || "").trim(),
     };
@@ -3984,7 +4072,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
   }
 
   function getInitialPrimeKeys() {
-    const base = ["setupComplete", "strategy", ...HEADER_ENTITY_KEYS];
+    const base = ["setupComplete", "strategy", ...HEADER_ENTITY_KEYS, ...INITIAL_CORE_UI_KEYS];
     if (state.appView === "settings") {
       return [...new Set([...base, ...getSettingsRefreshKeys()])];
     }
@@ -4052,15 +4140,13 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     const deferredKeys = getDeferredPrimeKeys(initialKeys);
     try {
       await refreshEntities(initialKeys, "all");
-      await waitForInitialOverviewReady();
-      state.loadingEntities = false;
-      render();
-      window.setTimeout(() => {
-        void primeDeferredEntities(deferredKeys);
-      }, 0);
-      window.setTimeout(() => {
-        void primeSupplementaryData();
-      }, 0);
+      if (state.appView === "settings") {
+        await waitForInitialSettingsReady();
+      } else {
+        await waitForInitialOverviewReady();
+      }
+      await primeDeferredEntities(deferredKeys);
+      await primeSupplementaryData();
     } finally {
       state.loadingEntities = false;
       render();
@@ -4095,9 +4181,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
           ...staticKeys,
         ]
       : appView === "settings"
-        ? isBulkDue
-          ? ["setupComplete", ...staticKeys, ...HEADER_ENTITY_KEYS, ...SETTINGS_KEYS]
-          : ["setupComplete", ...HEADER_ENTITY_KEYS, ...staticKeys]
+        ? ["setupComplete", ...staticKeys, ...HEADER_ENTITY_KEYS, ...SETTINGS_KEYS]
         : isBulkDue
           ? [
               "setupComplete",
@@ -4114,7 +4198,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     state.lastEntitySyncAttemptAt = now;
     try {
       const reconnectModeBefore = state.deviceReconnectMode;
-      await refreshEntities([...new Set(keys)], "state");
+      await refreshEntities([...new Set(keys)], appView === "settings" ? "all" : "state");
       state.lastFastEntitySyncAt = Date.now();
       if (isBulkDue) {
         state.lastBulkEntitySyncAt = state.lastFastEntitySyncAt;
@@ -4221,6 +4305,8 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       state.appView,
       state.settingsGroup,
       state.loadingEntities ? "loading" : "ready",
+      getEntitySignatureFragment("setupComplete"),
+      ...SETTINGS_KEYS.map((key) => getEntitySignatureFragment(key)),
     ].join("|");
   }
 
@@ -4806,7 +4892,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
           render();
         }
       } else if (state.appView === "settings") {
-        await refreshEntities(getSettingsRefreshKeys(), "state");
+        await refreshEntities(getSettingsRefreshKeys(), "all");
       } else {
         await refreshEntities(["setupComplete", "strategy", "openquattEnabled", "manualCoolingEnable", "silentModeOverride", ...FLOW_SETTING_KEYS, ...LIMIT_KEYS], "state");
       }
@@ -4848,7 +4934,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       if (state.appView === "overview") {
         await refreshEntities([...OVERVIEW_KEYS, ...HEADER_ENTITY_KEYS, "setupComplete", ...FIRMWARE_ENTITY_KEYS], "state");
       } else if (state.appView === "settings") {
-        await refreshEntities(getSettingsRefreshKeys(), "state");
+        await refreshEntities(getSettingsRefreshKeys(), "all");
       } else {
         await refreshEntities(["setupComplete", "strategy", "openquattEnabled", "manualCoolingEnable", "silentModeOverride", ...FLOW_SETTING_KEYS, ...LIMIT_KEYS], "state");
       }
@@ -6568,13 +6654,23 @@ function renderWebServerLogsModal() {
     `;
   }
 
+  function getSelectEntityOptions(entity = {}) {
+    if (Array.isArray(entity.option)) {
+      return entity.option;
+    }
+    if (Array.isArray(entity.options)) {
+      return entity.options;
+    }
+    return [];
+  }
+
   function renderSettingsSelectField(key, title, copy, className = "") {
     if (!hasEntity(key)) {
       return "";
     }
     const entity = state.entities[key] || {};
     const value = String(getEntityValue(key) || "");
-    const options = Array.isArray(entity.option) ? entity.option : [];
+    const options = getSelectEntityOptions(entity);
     return renderSettingsFieldCard(key, title, copy, `<label class="oq-settings-control oq-settings-control--select"><select class="oq-helper-select" data-oq-field="${escapeHtml(key)}" ${state.loadingEntities ? "disabled" : ""}>${options.map((option) => `<option value="${escapeHtml(option)}" ${option === value ? "selected" : ""}>${escapeHtml(formatSettingsOptionLabel(option))}</option>`).join("")}</select><span class="oq-settings-select-caret" aria-hidden="true"></span></label>`, className);
   }
 
@@ -6647,7 +6743,7 @@ function renderWebServerLogsModal() {
 
     const entity = state.entities[key] || {};
     const currentValue = String(getEntityValue(key) || "");
-    const options = Array.isArray(entity.option) ? entity.option : [];
+    const options = getSelectEntityOptions(entity);
     const busy = state.loadingEntities || state.busyAction === `save-${key}`;
     const controlMarkup = `
       <div class="oq-settings-choice-grid">
@@ -6925,7 +7021,7 @@ function renderWebServerLogsModal() {
       const button = generationStatus.querySelector('button[data-oq-action="open-generation-modal"]');
       const currentLabel = getInstallationLabel();
       const entity = state.entities.hpGeneration || {};
-      const canEdit = hasEntity("hpGeneration") && Array.isArray(entity.option) && entity.option.length > 0;
+      const canEdit = hasEntity("hpGeneration") && getSelectEntityOptions(entity).length > 0;
       if (valueNode) {
         const value = currentLabel || "Onbekend";
         if (valueNode.textContent !== value) {
@@ -7506,7 +7602,7 @@ function renderWebServerLogsModal() {
 
     const entity = state.entities.hpGeneration || {};
     const currentValue = String(getEntityValue("hpGeneration") || "");
-    const options = Array.isArray(entity.option) ? entity.option : [];
+    const options = getSelectEntityOptions(entity);
     const busy = state.loadingEntities || state.busyAction === "save-hpGeneration";
 
     return `
@@ -7535,7 +7631,7 @@ function renderWebServerLogsModal() {
   function renderSettingsGenerationSection() {
     const currentLabel = getInstallationLabel();
     const entity = state.entities.hpGeneration || {};
-    const canEdit = hasEntity("hpGeneration") && Array.isArray(entity.option) && entity.option.length > 0;
+    const canEdit = hasEntity("hpGeneration") && getSelectEntityOptions(entity).length > 0;
 
     if (!currentLabel && !canEdit) {
       return "";
@@ -7838,7 +7934,10 @@ function renderWebServerLogsModal() {
     const sourceChannel = String(draft.source?.firmware_channel || "").trim() || "Onbekend";
     const sourceTopology = String(draft.source?.topology || "").trim() || "Onbekend";
     const currentVersion = getFirmwareCurrentVersion();
-    const topologyMismatch = sourceTopology !== "Onbekend" && sourceTopology !== (hasEntity("hp2Power") ? "duo" : "single");
+    const currentTopology = typeof getInstallationTopology === "function"
+      ? getInstallationTopology()
+      : (hasEntity("hp2Power") ? "duo" : "single");
+    const topologyMismatch = sourceTopology !== "Onbekend" && sourceTopology !== currentTopology;
     const installationMismatch = sourceInstallation !== "Onbekend" && sourceInstallation !== currentInstallation;
     const warningText = topologyMismatch || installationMismatch
       ? "De backup lijkt van een andere installatie te komen. Je kunt nog steeds doorzetten, maar controleer de secties even goed."
@@ -7866,7 +7965,7 @@ function renderWebServerLogsModal() {
             <div class="oq-helper-modal-row">
               <span class="oq-helper-modal-label">Huidige installatie</span>
               <strong class="oq-helper-modal-value">${escapeHtml(currentInstallation)}</strong>
-              <span class="oq-helper-modal-subvalue">Topo: ${escapeHtml(hasEntity("hp2Power") ? "duo" : "single")} · Firmware: ${escapeHtml(currentVersion || "Onbekend")}</span>
+              <span class="oq-helper-modal-subvalue">Topo: ${escapeHtml(currentTopology)} · Firmware: ${escapeHtml(currentVersion || "Onbekend")}</span>
             </div>
             <div class="oq-helper-modal-row">
               <span class="oq-helper-modal-label">Backupkanaal</span>

@@ -30,16 +30,49 @@
     return "";
   }
 
+  function rememberInstallationTopology(topology) {
+    const normalized = String(topology || "").trim().toLowerCase();
+    if (normalized && typeof state !== "undefined" && state && typeof state === "object") {
+      state.lastKnownInstallationTopology = normalized;
+    }
+    return normalized;
+  }
+
+  function getCachedInstallationTopology() {
+    if (typeof state !== "undefined" && state && typeof state === "object") {
+      return String(state.lastKnownInstallationTopology || "").trim().toLowerCase();
+    }
+    return "";
+  }
+
+  function getInstallationTopology() {
+    const metaTopology = String(getDeviceMeta().installation || "").trim().toLowerCase();
+    if (metaTopology === "single" || metaTopology === "duo") {
+      return rememberInstallationTopology(metaTopology);
+    }
+
+    if (hasEntity("hp2Power")) {
+      return rememberInstallationTopology("duo");
+    }
+
+    const cachedTopology = getCachedInstallationTopology();
+    if (cachedTopology === "single" || cachedTopology === "duo") {
+      return cachedTopology;
+    }
+
+    return "single";
+  }
+
   function getInstallationLabel() {
-    const installation = String(getDeviceMeta().installation || "").toLowerCase();
+    const installation = getInstallationTopology();
     if (installation === "single") {
       return "Quatt Single";
     }
-    const generation = getHybridGenerationLabel();
     if (installation === "duo") {
+      const generation = getHybridGenerationLabel();
       return generation ? `Quatt Duo ${generation}` : "Quatt Duo";
     }
-    return hasEntity("hp2Power") ? (generation ? `Quatt Duo ${generation}` : "Quatt Duo") : "Quatt Single";
+    return "Quatt Single";
   }
 
   function getFirmwareDeviceLabel() {
@@ -741,6 +774,8 @@
       state.complete ? "complete" : "incomplete",
       state.overviewTheme,
       state.hpVisualMode,
+      getEntitySignatureFragment("hpGeneration"),
+      getEntitySignatureFragment("hp2Power"),
     ].join("|");
   }
 
