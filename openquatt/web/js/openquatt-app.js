@@ -4210,6 +4210,30 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     }
   }
 
+  function scheduleOverviewPrefetch() {
+    if (state.nativeOpen || state.appView !== "settings") {
+      return;
+    }
+
+    const run = () => {
+      if (state.nativeOpen || state.appView !== "settings") {
+        return;
+      }
+      if (state.loadingEntities || state.focusedField || state.draggingCurveKey || state.busyAction || state.settingsInteractionLock) {
+        window.setTimeout(scheduleOverviewPrefetch, 250);
+        return;
+      }
+      void syncEntities({ prefetchView: "overview", forceFast: true });
+    };
+
+    if (typeof window.requestIdleCallback === "function") {
+      window.requestIdleCallback(run, { timeout: 2000 });
+      return;
+    }
+
+    window.setTimeout(run, 0);
+  }
+
   async function primeSupplementaryData() {
     if (state.nativeOpen) {
       return;
@@ -4224,6 +4248,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       if (state.mounted && !state.nativeOpen) {
         render();
       }
+      scheduleOverviewPrefetch();
     }
   }
 
@@ -4275,14 +4300,23 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     }
 
     const appView = state.appView;
-    const isOverviewLike = appView === "overview" || appView === "trends" || appView === "energy";
+    const isPrefetchOverview = options.prefetchView === "overview" && !options.forceBulk && appView === "settings";
+    const syncView = isPrefetchOverview ? "overview" : appView;
+    const isOverviewLike = syncView === "overview" || syncView === "trends" || syncView === "energy";
     const forceFast = options.forceFast === true && !options.forceBulk;
-    const isBulkDue = !forceFast && (options.forceBulk === true || (now - Number(state.lastBulkEntitySyncAt || 0)) >= BULK_POLL_INTERVAL_MS);
+    const isBulkDue = !forceFast && !isPrefetchOverview && (options.forceBulk === true || (now - Number(state.lastBulkEntitySyncAt || 0)) >= BULK_POLL_INTERVAL_MS);
     const isStaticDue = (now - Number(state.lastStaticEntitySyncAt || 0)) >= STATIC_POLL_INTERVAL_MS;
     const staticKeys = isStaticDue || state.updateInstallBusy || state.updateInstallPhaseHint
       ? FIRMWARE_ENTITY_KEYS
       : [];
-    const keys = isOverviewLike
+    const keys = isPrefetchOverview
+      ? [
+          ...FAST_OVERVIEW_KEYS,
+          ...HEADER_ENTITY_KEYS,
+          "setupComplete",
+          ...staticKeys,
+        ]
+      : isOverviewLike
       ? [
           ...(forceFast ? FAST_OVERVIEW_KEYS : isBulkDue ? OVERVIEW_KEYS : FAST_OVERVIEW_KEYS),
           ...HEADER_ENTITY_KEYS,
@@ -4307,7 +4341,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     state.lastEntitySyncAttemptAt = now;
     try {
       const reconnectModeBefore = state.deviceReconnectMode;
-      await refreshEntities([...new Set(keys)], appView === "settings" ? "all" : "state", {
+      await refreshEntities([...new Set(keys)], isPrefetchOverview ? "state" : appView === "settings" ? "all" : "state", {
         concurrency: forceFast && isOverviewLike ? FAST_VIEW_ENTITY_REFRESH_CONCURRENCY : ENTITY_REFRESH_CONCURRENCY,
       });
       state.lastFastEntitySyncAt = Date.now();
@@ -4316,6 +4350,9 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       }
       if (staticKeys.length) {
         state.lastStaticEntitySyncAt = state.lastFastEntitySyncAt;
+      }
+      if (isPrefetchOverview) {
+        return;
       }
       const reconnectChanged = reconnectModeBefore !== state.deviceReconnectMode;
       const shouldDeferSupplementary = forceFast && isOverviewLike;
@@ -4369,8 +4406,10 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
         }, 0);
       }
     } catch (error) {
-      state.controlError = `Helperstatus kon niet worden geladen. ${error.message}`;
-      render();
+      if (!isPrefetchOverview) {
+        state.controlError = `Helperstatus kon niet worden geladen. ${error.message}`;
+        render();
+      }
     } finally {
       state.entitySyncInFlight = false;
       const pendingOptions = state.pendingEntitySyncOptions;
@@ -4380,7 +4419,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
           void syncEntities(pendingOptions);
         }, 0);
       }
-      if (forceFast && isOverviewLike && !state.nativeOpen && !pendingOptions) {
+      if (forceFast && isOverviewLike && !isPrefetchOverview && !state.nativeOpen && !pendingOptions) {
         window.setTimeout(() => {
           void syncEntities({ forceBulk: true });
         }, 0);
