@@ -634,6 +634,20 @@ text_sensor:
     web_server:
       sorting_group_id: oq_system_diagnostics
   - platform: template
+    id: oq_installation_topology_text
+    name: OpenQuatt Installation Topology
+    icon: mdi:home-analytics
+    entity_category: diagnostic
+    update_interval: never
+    lambda: |-
+      #if OQ_TOPOLOGY_DUO
+      return {"duo"};
+      #else
+      return {"single"};
+      #endif
+    web_server:
+      sorting_group_id: oq_system_diagnostics
+  - platform: template
     id: oq_release_channel_text
     name: OpenQuatt Release Channel
     icon: mdi:source-branch

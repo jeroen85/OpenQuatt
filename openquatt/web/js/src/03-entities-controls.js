@@ -208,6 +208,7 @@
     "strategy",
     "controlModeLabel",
     "openquattEnabled",
+    "installationTopology",
     "hpGeneration",
     "totalPower",
     "flowSelected",
@@ -222,18 +223,17 @@
   const INITIAL_OVERVIEW_THERMAL_KEYS = ["totalHeat", "totalCoolingPower"];
   const INITIAL_OVERVIEW_READY_TIMEOUT_MS = 2000;
   const INITIAL_OVERVIEW_READY_POLL_MS = 250;
-  const INITIAL_SETTINGS_READY_KEYS = [
-    "hpGeneration",
-    "openquattEnabled",
-    "flowControlMode",
-    "silentStartTime",
-    "silentEndTime",
-    "maxWater",
-    "minRuntime",
-  ];
+  const INITIAL_SETTINGS_READY_KEY_MAP = {
+    installation: ["hpGeneration", "silentStartTime", "silentEndTime", "maxWater"],
+    heating: ["strategy"],
+    cooling: ["coolingWithoutDewPointMode"],
+    advanced: ["flowControlMode", "minRuntime"],
+    system: ["setupComplete"],
+  };
   const INITIAL_SETTINGS_READY_TIMEOUT_MS = 3500;
   const INITIAL_SETTINGS_READY_POLL_MS = 250;
   const INITIAL_CORE_UI_KEYS = [
+    "installationTopology",
     "hpGeneration",
     "openquattEnabled",
     "flowControlMode",
@@ -242,6 +242,67 @@
     "maxWater",
     "minRuntime",
   ];
+  const SETTINGS_GROUP_KEY_MAP = {
+    installation: [
+      "setupComplete",
+      "installationTopology",
+      "hpGeneration",
+      ...SILENT_SETTING_KEYS,
+      "maxWater",
+    ],
+    heating: [
+      "strategy",
+      ...POWER_HOUSE_KEYS,
+      ...CURVE_SETTING_KEYS,
+      "dayMax",
+      "silentMax",
+    ],
+    cooling: [
+      "manualCoolingEnable",
+      "coolingWithoutDewPointMode",
+      "coolingDewPointSelected",
+      "coolingMinimumSafeSupplyTemp",
+      "coolingSupplyTarget",
+      "coolingSupplyError",
+      ...COOLING_SETTING_KEYS,
+    ],
+    advanced: [
+      ...FLOW_SETTING_KEYS,
+      ...COMPRESSOR_SETTING_KEYS,
+      ...CIC_COMPATIBILITY_KEYS,
+    ],
+    system: [
+      "setupComplete",
+      ...FIRMWARE_ENTITY_KEYS,
+      "firmwareUpdateChannel",
+      "projectVersionText",
+      "releaseChannelText",
+      "trendHistoryEnabled",
+      "trendHistoryFlashEnabled",
+      "webServerLogHistoryEnabled",
+      "trendHistoryFlashAvailable",
+      "trendHistoryFlashOldest",
+      "trendHistoryFlashNewest",
+      "trendHistoryFlashLastFlush",
+      "trendHistoryFlashSize",
+      "trendHistoryFlashWrites",
+    ],
+  };
+
+  function getSettingsGroupHydrationKeys(groupId = state.settingsGroup) {
+    const normalized = SETTINGS_GROUP_IDS.has(groupId) ? groupId : SETTINGS_GROUPS[0].id;
+    return [...new Set([
+      "setupComplete",
+      "strategy",
+      ...HEADER_ENTITY_KEYS,
+      ...(SETTINGS_GROUP_KEY_MAP[normalized] || []),
+    ])];
+  }
+
+  function getInitialSettingsReadyKeys() {
+    const normalized = SETTINGS_GROUP_IDS.has(state.settingsGroup) ? state.settingsGroup : SETTINGS_GROUPS[0].id;
+    return [...new Set(INITIAL_SETTINGS_READY_KEY_MAP[normalized] || INITIAL_SETTINGS_READY_KEY_MAP.installation)];
+  }
 
   function hasUsableEntityValue(key) {
     const value = String(getEntityValue(key) ?? "").trim().toLowerCase();
@@ -275,7 +336,12 @@
       return true;
     }
 
-    return INITIAL_SETTINGS_READY_KEYS.every(hasUsableEntityValue);
+    return getInitialSettingsReadyKeys().every((key) => {
+      if (ENTITY_DEFS[key]?.optional && !state.entities[key]) {
+        return true;
+      }
+      return hasUsableEntityValue(key);
+    });
   }
 
   async function waitForInitialOverviewReady() {
@@ -303,7 +369,7 @@
     while (!state.nativeOpen && !isInitialSettingsReady() && Date.now() < deadline) {
       await new Promise((resolve) => window.setTimeout(resolve, INITIAL_SETTINGS_READY_POLL_MS));
       try {
-        await refreshEntities(INITIAL_SETTINGS_READY_KEYS, "all");
+        await refreshEntities(getInitialSettingsReadyKeys(), "all");
       } catch (_error) {
         return;
       }
@@ -499,7 +565,7 @@
     return {
       device: getFirmwareDeviceLabel(),
       installation: getInstallationLabel(),
-      topology: typeof getInstallationTopology === "function" ? getInstallationTopology() : (hasEntity("hp2Power") ? "duo" : "single"),
+      topology: typeof getInstallationTopology === "function" ? getInstallationTopology() : "",
       firmware_version: getFirmwareCurrentVersion(),
       firmware_channel: String(getEntityValue("firmwareUpdateChannel") || getEntityValue("releaseChannelText") || "").trim(),
     };
@@ -1102,7 +1168,7 @@
   function getInitialPrimeKeys() {
     const base = ["setupComplete", "strategy", ...HEADER_ENTITY_KEYS, ...INITIAL_CORE_UI_KEYS];
     if (state.appView === "settings") {
-      return [...new Set([...base, ...getSettingsRefreshKeys()])];
+      return [...new Set([...base, ...getSettingsGroupHydrationKeys()])];
     }
     if (state.appView === "overview" || state.appView === "trends" || state.appView === "energy") {
       return [...new Set([...base, ...FAST_OVERVIEW_KEYS])];
@@ -1120,16 +1186,23 @@
     return fullKeys.filter((key) => !initial.has(key));
   }
 
-  async function primeDeferredEntities(keys) {
+  async function primeDeferredEntities(keys, detail = "state") {
     if (!keys.length || state.nativeOpen) {
       return;
     }
 
     state.entitySyncInFlight = true;
     try {
-      await refreshEntities(keys, "state");
+      await refreshEntities(keys, detail);
     } finally {
       state.entitySyncInFlight = false;
+      const pendingOptions = state.pendingEntitySyncOptions;
+      state.pendingEntitySyncOptions = null;
+      if (pendingOptions && !state.nativeOpen) {
+        window.setTimeout(() => {
+          void syncEntities(pendingOptions);
+        }, 0);
+      }
     }
 
     if (state.mounted && !state.nativeOpen) {
@@ -1173,12 +1246,15 @@
       } else {
         await waitForInitialOverviewReady();
       }
-      await primeDeferredEntities(deferredKeys);
-      await primeSupplementaryData();
     } finally {
       state.loadingEntities = false;
       render();
     }
+    const deferredDetail = state.appView === "settings" ? "all" : "state";
+    window.setTimeout(() => {
+      void primeDeferredEntities(deferredKeys, deferredDetail);
+      void primeSupplementaryData();
+    }, 0);
   }
 
   async function syncEntities(options = {}) {
@@ -1186,6 +1262,13 @@
       return;
     }
     if (state.entitySyncInFlight) {
+      if (options.forceBulk === true) {
+        state.pendingEntitySyncOptions = {
+          ...(state.pendingEntitySyncOptions || {}),
+          ...options,
+          forceBulk: true,
+        };
+      }
       return;
     }
 
@@ -1282,6 +1365,13 @@
       render();
     } finally {
       state.entitySyncInFlight = false;
+      const pendingOptions = state.pendingEntitySyncOptions;
+      state.pendingEntitySyncOptions = null;
+      if (pendingOptions && !state.nativeOpen) {
+        window.setTimeout(() => {
+          void syncEntities(pendingOptions);
+        }, 0);
+      }
     }
   }
 
@@ -1324,8 +1414,18 @@
     }
 
     const value = entity.state ?? entity.value ?? "";
-    const options = Array.isArray(entity.options) ? entity.options.join(",") : "";
-    return `${key}:${value}::${options}`;
+    const options = Array.isArray(entity.option)
+      ? entity.option.join(",")
+      : Array.isArray(entity.options)
+        ? entity.options.join(",")
+        : "";
+    const meta = [
+      entity.min_value ?? "",
+      entity.max_value ?? "",
+      entity.step ?? "",
+      entity.uom ?? "",
+    ].join(",");
+    return `${key}:${value}::${options}::${meta}`;
   }
 
   function getSettingsRenderSignature() {
@@ -1551,6 +1651,7 @@
     if (action === "select-settings-group") {
       setSettingsGroup(button.dataset.groupId || SETTINGS_GROUPS[0].id);
       render();
+      syncEntities({ forceBulk: true });
       return;
     }
 

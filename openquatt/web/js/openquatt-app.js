@@ -119,6 +119,7 @@ const LOGO_MARKUP = `
     wifiSsid: { domain: "text_sensor", name: "WiFi SSID", optional: true },
     projectVersionText: { domain: "text_sensor", name: "OpenQuatt Version", optional: true },
     releaseChannelText: { domain: "text_sensor", name: "OpenQuatt Release Channel", optional: true },
+    installationTopology: { domain: "text_sensor", name: "OpenQuatt Installation Topology", optional: true },
     wifiSignal: { domain: "sensor", name: "WiFi Signal", optional: true },
     espInternalTemp: { domain: "sensor", name: "ESP Internal Temperature", optional: true },
     hpGeneration: { domain: "select", name: "Quatt Hybrid version" },
@@ -396,6 +397,7 @@ const LOGO_MARKUP = `
     "ipAddress",
     "wifiSsid",
     "wifiSignal",
+    "installationTopology",
     "hpGeneration",
     "projectVersionText",
     "releaseChannelText",
@@ -620,6 +622,7 @@ const LOGO_MARKUP = `
   ];
   const SETTINGS_KEYS = [
     "strategy",
+    "installationTopology",
     "hpGeneration",
     "openquattEnabled",
     "manualCoolingEnable",
@@ -646,7 +649,7 @@ const LOGO_MARKUP = `
     {
       id: "installation",
       label: "Installatie",
-      keys: ["setupComplete", "hpGeneration", "firmwareUpdateChannel"],
+      keys: ["setupComplete", "installationTopology", "hpGeneration", "firmwareUpdateChannel"],
     },
     {
       id: "operation",
@@ -741,6 +744,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     nativeFrontendLoading: false,
     pollTimer: null,
     entitySyncInFlight: false,
+    pendingEntitySyncOptions: null,
     lastEntitySyncAttemptAt: 0,
     lastFastEntitySyncAt: 0,
     lastBulkEntitySyncAt: 0,
@@ -786,6 +790,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     webServerLogRecentAnchorAt: 0,
     webServerLogEntries: [],
     complete: false,
+    lastKnownInstallationTopology: "",
     quickStartModalOpen: true,
     loadingEntities: true,
     entities: {},
@@ -1456,7 +1461,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
 
   function rememberInstallationTopology(topology) {
     const normalized = String(topology || "").trim().toLowerCase();
-    if (normalized && typeof state !== "undefined" && state && typeof state === "object") {
+    if ((normalized === "single" || normalized === "duo") && typeof state !== "undefined" && state && typeof state === "object") {
       state.lastKnownInstallationTopology = normalized;
     }
     return normalized;
@@ -1464,39 +1469,38 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
 
   function getCachedInstallationTopology() {
     if (typeof state !== "undefined" && state && typeof state === "object") {
-      return String(state.lastKnownInstallationTopology || "").trim().toLowerCase();
+      const cached = String(state.lastKnownInstallationTopology || "").trim().toLowerCase();
+      if (cached === "single" || cached === "duo") {
+        return cached;
+      }
     }
     return "";
   }
 
   function getInstallationTopology() {
+    const entityTopology = String(getEntityValue("installationTopology") || "").trim().toLowerCase();
+    if (entityTopology === "single" || entityTopology === "duo") {
+      return rememberInstallationTopology(entityTopology);
+    }
+
     const metaTopology = String(getDeviceMeta().installation || "").trim().toLowerCase();
     if (metaTopology === "single" || metaTopology === "duo") {
       return rememberInstallationTopology(metaTopology);
     }
 
-    if (hasEntity("hp2Power")) {
-      return rememberInstallationTopology("duo");
-    }
-
-    const cachedTopology = getCachedInstallationTopology();
-    if (cachedTopology === "single" || cachedTopology === "duo") {
-      return cachedTopology;
-    }
-
-    return "single";
+    return getCachedInstallationTopology();
   }
 
   function getInstallationLabel() {
     const installation = getInstallationTopology();
+    const generation = getHybridGenerationLabel();
     if (installation === "single") {
-      return "Quatt Single";
+      return generation ? `Quatt Single ${generation}` : "Quatt Single";
     }
     if (installation === "duo") {
-      const generation = getHybridGenerationLabel();
       return generation ? `Quatt Duo ${generation}` : "Quatt Duo";
     }
-    return "Quatt Single";
+    return generation ? `Quatt Hybrid ${generation}` : "Quatt Hybrid";
   }
 
   function getFirmwareDeviceLabel() {
@@ -2198,8 +2202,10 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       state.complete ? "complete" : "incomplete",
       state.overviewTheme,
       state.hpVisualMode,
+      getEntitySignatureFragment("installationTopology"),
       getEntitySignatureFragment("hpGeneration"),
-      getEntitySignatureFragment("hp2Power"),
+      getEntitySignatureFragment("projectVersionText"),
+      getEntitySignatureFragment("releaseChannelText"),
     ].join("|");
   }
 
@@ -3180,6 +3186,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     "strategy",
     "controlModeLabel",
     "openquattEnabled",
+    "installationTopology",
     "hpGeneration",
     "totalPower",
     "flowSelected",
@@ -3194,18 +3201,17 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
   const INITIAL_OVERVIEW_THERMAL_KEYS = ["totalHeat", "totalCoolingPower"];
   const INITIAL_OVERVIEW_READY_TIMEOUT_MS = 2000;
   const INITIAL_OVERVIEW_READY_POLL_MS = 250;
-  const INITIAL_SETTINGS_READY_KEYS = [
-    "hpGeneration",
-    "openquattEnabled",
-    "flowControlMode",
-    "silentStartTime",
-    "silentEndTime",
-    "maxWater",
-    "minRuntime",
-  ];
+  const INITIAL_SETTINGS_READY_KEY_MAP = {
+    installation: ["hpGeneration", "silentStartTime", "silentEndTime", "maxWater"],
+    heating: ["strategy"],
+    cooling: ["coolingWithoutDewPointMode"],
+    advanced: ["flowControlMode", "minRuntime"],
+    system: ["setupComplete"],
+  };
   const INITIAL_SETTINGS_READY_TIMEOUT_MS = 3500;
   const INITIAL_SETTINGS_READY_POLL_MS = 250;
   const INITIAL_CORE_UI_KEYS = [
+    "installationTopology",
     "hpGeneration",
     "openquattEnabled",
     "flowControlMode",
@@ -3214,6 +3220,67 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     "maxWater",
     "minRuntime",
   ];
+  const SETTINGS_GROUP_KEY_MAP = {
+    installation: [
+      "setupComplete",
+      "installationTopology",
+      "hpGeneration",
+      ...SILENT_SETTING_KEYS,
+      "maxWater",
+    ],
+    heating: [
+      "strategy",
+      ...POWER_HOUSE_KEYS,
+      ...CURVE_SETTING_KEYS,
+      "dayMax",
+      "silentMax",
+    ],
+    cooling: [
+      "manualCoolingEnable",
+      "coolingWithoutDewPointMode",
+      "coolingDewPointSelected",
+      "coolingMinimumSafeSupplyTemp",
+      "coolingSupplyTarget",
+      "coolingSupplyError",
+      ...COOLING_SETTING_KEYS,
+    ],
+    advanced: [
+      ...FLOW_SETTING_KEYS,
+      ...COMPRESSOR_SETTING_KEYS,
+      ...CIC_COMPATIBILITY_KEYS,
+    ],
+    system: [
+      "setupComplete",
+      ...FIRMWARE_ENTITY_KEYS,
+      "firmwareUpdateChannel",
+      "projectVersionText",
+      "releaseChannelText",
+      "trendHistoryEnabled",
+      "trendHistoryFlashEnabled",
+      "webServerLogHistoryEnabled",
+      "trendHistoryFlashAvailable",
+      "trendHistoryFlashOldest",
+      "trendHistoryFlashNewest",
+      "trendHistoryFlashLastFlush",
+      "trendHistoryFlashSize",
+      "trendHistoryFlashWrites",
+    ],
+  };
+
+  function getSettingsGroupHydrationKeys(groupId = state.settingsGroup) {
+    const normalized = SETTINGS_GROUP_IDS.has(groupId) ? groupId : SETTINGS_GROUPS[0].id;
+    return [...new Set([
+      "setupComplete",
+      "strategy",
+      ...HEADER_ENTITY_KEYS,
+      ...(SETTINGS_GROUP_KEY_MAP[normalized] || []),
+    ])];
+  }
+
+  function getInitialSettingsReadyKeys() {
+    const normalized = SETTINGS_GROUP_IDS.has(state.settingsGroup) ? state.settingsGroup : SETTINGS_GROUPS[0].id;
+    return [...new Set(INITIAL_SETTINGS_READY_KEY_MAP[normalized] || INITIAL_SETTINGS_READY_KEY_MAP.installation)];
+  }
 
   function hasUsableEntityValue(key) {
     const value = String(getEntityValue(key) ?? "").trim().toLowerCase();
@@ -3247,7 +3314,12 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       return true;
     }
 
-    return INITIAL_SETTINGS_READY_KEYS.every(hasUsableEntityValue);
+    return getInitialSettingsReadyKeys().every((key) => {
+      if (ENTITY_DEFS[key]?.optional && !state.entities[key]) {
+        return true;
+      }
+      return hasUsableEntityValue(key);
+    });
   }
 
   async function waitForInitialOverviewReady() {
@@ -3275,7 +3347,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     while (!state.nativeOpen && !isInitialSettingsReady() && Date.now() < deadline) {
       await new Promise((resolve) => window.setTimeout(resolve, INITIAL_SETTINGS_READY_POLL_MS));
       try {
-        await refreshEntities(INITIAL_SETTINGS_READY_KEYS, "all");
+        await refreshEntities(getInitialSettingsReadyKeys(), "all");
       } catch (_error) {
         return;
       }
@@ -3471,7 +3543,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     return {
       device: getFirmwareDeviceLabel(),
       installation: getInstallationLabel(),
-      topology: typeof getInstallationTopology === "function" ? getInstallationTopology() : (hasEntity("hp2Power") ? "duo" : "single"),
+      topology: typeof getInstallationTopology === "function" ? getInstallationTopology() : "",
       firmware_version: getFirmwareCurrentVersion(),
       firmware_channel: String(getEntityValue("firmwareUpdateChannel") || getEntityValue("releaseChannelText") || "").trim(),
     };
@@ -4074,7 +4146,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
   function getInitialPrimeKeys() {
     const base = ["setupComplete", "strategy", ...HEADER_ENTITY_KEYS, ...INITIAL_CORE_UI_KEYS];
     if (state.appView === "settings") {
-      return [...new Set([...base, ...getSettingsRefreshKeys()])];
+      return [...new Set([...base, ...getSettingsGroupHydrationKeys()])];
     }
     if (state.appView === "overview" || state.appView === "trends" || state.appView === "energy") {
       return [...new Set([...base, ...FAST_OVERVIEW_KEYS])];
@@ -4092,16 +4164,23 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     return fullKeys.filter((key) => !initial.has(key));
   }
 
-  async function primeDeferredEntities(keys) {
+  async function primeDeferredEntities(keys, detail = "state") {
     if (!keys.length || state.nativeOpen) {
       return;
     }
 
     state.entitySyncInFlight = true;
     try {
-      await refreshEntities(keys, "state");
+      await refreshEntities(keys, detail);
     } finally {
       state.entitySyncInFlight = false;
+      const pendingOptions = state.pendingEntitySyncOptions;
+      state.pendingEntitySyncOptions = null;
+      if (pendingOptions && !state.nativeOpen) {
+        window.setTimeout(() => {
+          void syncEntities(pendingOptions);
+        }, 0);
+      }
     }
 
     if (state.mounted && !state.nativeOpen) {
@@ -4145,12 +4224,15 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       } else {
         await waitForInitialOverviewReady();
       }
-      await primeDeferredEntities(deferredKeys);
-      await primeSupplementaryData();
     } finally {
       state.loadingEntities = false;
       render();
     }
+    const deferredDetail = state.appView === "settings" ? "all" : "state";
+    window.setTimeout(() => {
+      void primeDeferredEntities(deferredKeys, deferredDetail);
+      void primeSupplementaryData();
+    }, 0);
   }
 
   async function syncEntities(options = {}) {
@@ -4158,6 +4240,13 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       return;
     }
     if (state.entitySyncInFlight) {
+      if (options.forceBulk === true) {
+        state.pendingEntitySyncOptions = {
+          ...(state.pendingEntitySyncOptions || {}),
+          ...options,
+          forceBulk: true,
+        };
+      }
       return;
     }
 
@@ -4254,6 +4343,13 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       render();
     } finally {
       state.entitySyncInFlight = false;
+      const pendingOptions = state.pendingEntitySyncOptions;
+      state.pendingEntitySyncOptions = null;
+      if (pendingOptions && !state.nativeOpen) {
+        window.setTimeout(() => {
+          void syncEntities(pendingOptions);
+        }, 0);
+      }
     }
   }
 
@@ -4296,8 +4392,18 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     }
 
     const value = entity.state ?? entity.value ?? "";
-    const options = Array.isArray(entity.options) ? entity.options.join(",") : "";
-    return `${key}:${value}::${options}`;
+    const options = Array.isArray(entity.option)
+      ? entity.option.join(",")
+      : Array.isArray(entity.options)
+        ? entity.options.join(",")
+        : "";
+    const meta = [
+      entity.min_value ?? "",
+      entity.max_value ?? "",
+      entity.step ?? "",
+      entity.uom ?? "",
+    ].join(",");
+    return `${key}:${value}::${options}::${meta}`;
   }
 
   function getSettingsRenderSignature() {
@@ -4523,6 +4629,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     if (action === "select-settings-group") {
       setSettingsGroup(button.dataset.groupId || SETTINGS_GROUPS[0].id);
       render();
+      syncEntities({ forceBulk: true });
       return;
     }
 
@@ -7936,8 +8043,8 @@ function renderWebServerLogsModal() {
     const currentVersion = getFirmwareCurrentVersion();
     const currentTopology = typeof getInstallationTopology === "function"
       ? getInstallationTopology()
-      : (hasEntity("hp2Power") ? "duo" : "single");
-    const topologyMismatch = sourceTopology !== "Onbekend" && sourceTopology !== currentTopology;
+      : "";
+    const topologyMismatch = sourceTopology !== "Onbekend" && currentTopology && sourceTopology !== currentTopology;
     const installationMismatch = sourceInstallation !== "Onbekend" && sourceInstallation !== currentInstallation;
     const warningText = topologyMismatch || installationMismatch
       ? "De backup lijkt van een andere installatie te komen. Je kunt nog steeds doorzetten, maar controleer de secties even goed."
