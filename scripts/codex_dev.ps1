@@ -11,8 +11,8 @@ param(
     )]
     [string]$Command,
     [string]$Distro = "Ubuntu",
-    [string]$RepoDir = "/mnt/c/Codex projecten/OpenQuatt",
-    [string]$VenvDir = "/home/jeroen/src/OpenQuatt/.venv",
+    [string]$RepoDir = "",
+    [string]$VenvDir = "",
     [string]$Device = "",
     [string]$RunId = "",
     [string]$ArtifactName = "openquatt-duo-waveshare-dev-release"
@@ -25,6 +25,13 @@ $duoWaveshareConfig = "firmware/openquatt-duo-waveshare.yaml"
 $ciDownloadDir = Join-Path (Split-Path $PSScriptRoot -Parent) ".tmp\ci-ota"
 $ciFirmwareRelativePath = "firmware/.esphome/build/openquatt-duo-waveshare/.pioenvs/openquatt/firmware.ota.bin"
 $localFirmwareBin = ".esphome/build/openquatt-duo-waveshare/.pioenvs/openquatt/firmware.ota.bin"
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+if (-not $RepoDir) {
+    $RepoDir = $repoRoot
+}
+if (-not $VenvDir) {
+    $VenvDir = Join-Path $repoRoot ".venv"
+}
 
 function Invoke-WslDev {
     param(

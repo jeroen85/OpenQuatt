@@ -4,8 +4,8 @@ param(
     [ValidateSet("bootstrap", "validate", "preview-pages", "status", "fetch", "pull", "push", "branch", "git", "python", "esphome")]
     [string]$Command,
     [string]$Distro = "Ubuntu",
-    [string]$RepoDir = "~/src/OpenQuatt",
-    [string]$VenvDir = ".venv",
+    [string]$RepoDir = "",
+    [string]$VenvDir = "",
     [Parameter(ValueFromRemainingArguments = $true)]
     [string[]]$Arguments
 )
@@ -15,11 +15,24 @@ $ErrorActionPreference = "Stop"
 
 Assert-WslReady -DistroName $Distro
 
+$defaultRepoDir = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+if (-not $RepoDir) {
+    $RepoDir = $defaultRepoDir
+}
+if (-not $VenvDir) {
+    $VenvDir = Join-Path $defaultRepoDir ".venv"
+}
+
 $resolvedRepoDir = Resolve-WslPath -DistroName $Distro -Path $RepoDir
 $resolvedVenvDir = Resolve-WslPath -DistroName $Distro -Path $VenvDir
 $repoDirEsc = Escape-BashDoubleQuotedString -Value $resolvedRepoDir
 $venvDirEsc = Escape-BashDoubleQuotedString -Value $resolvedVenvDir
 $commandArguments = @($Arguments | Where-Object { $null -ne $_ -and $_ -ne "" })
+$requiresWsl = $Command -in @("bootstrap", "validate", "preview-pages", "python", "esphome")
+
+if ($requiresWsl) {
+    Assert-WslReady -DistroName $Distro
+}
 
 switch ($Command) {
     "bootstrap" {
@@ -32,26 +45,31 @@ switch ($Command) {
         $commandParts = @("python3", "scripts/dev.py", "preview-pages") + $commandArguments
     }
     "status" {
-        $commandParts = @("git", "status", "--short", "--branch")
+        git -C $RepoDir status --short --branch
+        exit $LASTEXITCODE
     }
     "fetch" {
-        $commandParts = @("git", "fetch", "--prune") + $commandArguments
+        git -C $RepoDir fetch --prune @commandArguments
+        exit $LASTEXITCODE
     }
     "pull" {
-        $commandParts = @("git", "pull", "--ff-only") + $commandArguments
+        git -C $RepoDir pull --ff-only @commandArguments
+        exit $LASTEXITCODE
     }
     "push" {
-        $commandParts = @("git", "push") + $commandArguments
+        git -C $RepoDir push @commandArguments
+        exit $LASTEXITCODE
     }
     "branch" {
-        $commandParts = @("git", "branch", "-vv") + $commandArguments
+        git -C $RepoDir branch -vv @commandArguments
+        exit $LASTEXITCODE
     }
     "git" {
         if (-not $commandArguments -or $commandArguments.Count -eq 0) {
             throw "Geef een git-subcommand mee, bijvoorbeeld: git status."
         }
-
-        $commandParts = @("git") + $commandArguments
+        git -C $RepoDir @commandArguments
+        exit $LASTEXITCODE
     }
     "python" {
         if (-not $commandArguments -or $commandArguments.Count -eq 0) {

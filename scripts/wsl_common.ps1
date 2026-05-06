@@ -76,6 +76,10 @@ function Resolve-WslPath {
         return "$homeDir/$($Path.Substring(2))"
     }
 
+    if ($Path -match '^[A-Za-z]:[\\/].*') {
+        return Convert-WindowsPathToWslPath -WindowsPath $Path
+    }
+
     return $Path
 }
 

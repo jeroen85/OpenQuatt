@@ -4,11 +4,16 @@ param(
     [switch]$InstallPackages,
     [switch]$CloneRepo,
     [string]$RepoUrl = "https://github.com/jeroen85/OpenQuatt.git",
-    [string]$RepoDir = "~/src/OpenQuatt"
+    [string]$RepoDir = ""
 )
 
 $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "wsl_common.ps1")
+
+$defaultRepoDir = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+if (-not $RepoDir) {
+    $RepoDir = $defaultRepoDir
+}
 
 function Test-IsAdministrator {
     $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -69,7 +74,6 @@ if ($InstallPackages) {
 set -euo pipefail
 sudo apt update
 sudo apt install -y git python3 python3-venv python3-pip
-mkdir -p ~/src
 "@
 
     Invoke-WslBash -DistroName $Distro -Script $packageScript
@@ -105,8 +109,8 @@ fi
 Write-Host ""
 Write-Host "Aanbevolen vervolgstappen:" -ForegroundColor Cyan
 Write-Host "1. Start $Distro." -ForegroundColor Cyan
-Write-Host "2. Ga naar je repo in WSL, bijvoorbeeld: cd ~/src/OpenQuatt" -ForegroundColor Cyan
+Write-Host "2. Werk vanuit de Windows-repo; WSL gebruikt diezelfde map automatisch." -ForegroundColor Cyan
 Write-Host "3. Run: python3 scripts/dev.py bootstrap" -ForegroundColor Cyan
 Write-Host "4. Run: python3 scripts/dev.py validate --jobs 2" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Let op: als je de huidige lokale branch met niet-gecommitte wijzigingen wilt meenemen, commit of push die eerst vanaf Windows voordat je in WSL clone't." -ForegroundColor Yellow
+Write-Host "Let op: een aparte WSL-kloon is niet meer nodig; gebruik dezelfde checkout als op Windows." -ForegroundColor Yellow
