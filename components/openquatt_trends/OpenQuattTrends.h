@@ -140,6 +140,7 @@ class OpenQuattTrends : public Component {
   bool write_flash_block_(const FlashBlockBuilder &builder);
   bool read_flash_block_(uint32_t slot_index, uint32_t expected_sequence, FlashBlockInfo *info,
                          std::array<TrendSample, FLASH_SAMPLES_PER_BLOCK> *samples) const;
+  void invalidate_flash_index_();
   void reset_flash_builder_();
 
   bool write_sample_line_(ChunkedTextWriter *writer, const TrendSample &sample) const;
@@ -179,6 +180,9 @@ class OpenQuattTrends : public Component {
   PsramBuffer<TrendSample> ram_history_{};
   size_t ram_head_{0};
   size_t ram_count_{0};
+
+  PsramBuffer<FlashBlockInfo> flash_index_{};
+  size_t flash_index_count_{0};
 
   FlashBlockBuilder flash_builder_{};
 };

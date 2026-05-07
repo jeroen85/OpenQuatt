@@ -162,6 +162,9 @@ void OpenQuattTrends::setup() {
   if (!this->ram_history_.allocate(RAM_CAPACITY)) {
     ESP_LOGE(TAG, "Failed to allocate trend history buffer in PSRAM");
   }
+  if (!this->flash_index_.allocate(FLASH_SLOT_COUNT)) {
+    ESP_LOGW(TAG, "Failed to allocate trend flash index");
+  }
 
   this->flash_partition_ = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, "openquatt_data");
   if (this->flash_partition_ == nullptr) {
@@ -392,6 +395,7 @@ uint64_t OpenQuattTrends::get_ram_oldest_timestamp_ms_() const {
 bool OpenQuattTrends::scan_flash_archive_() {
   this->reset_flash_metadata_();
   this->next_flash_sequence_ = 0;
+  this->flash_index_count_ = 0;
 
   if (this->flash_partition_ == nullptr) {
     return false;
@@ -399,7 +403,6 @@ bool OpenQuattTrends::scan_flash_archive_() {
 
   bool any_valid = false;
   uint32_t highest_sequence = 0;
-  uint32_t lowest_sequence = 0;
 
   for (size_t slot = 0; slot < FLASH_SLOT_COUNT; ++slot) {
     FlashBlockInfo info{};
@@ -410,15 +413,29 @@ bool OpenQuattTrends::scan_flash_archive_() {
 
     any_valid = true;
     ++this->flash_valid_block_count_;
-    if (this->flash_valid_block_count_ == 1 || info.sequence < lowest_sequence) {
-      lowest_sequence = info.sequence;
+    if (this->flash_index_ && this->flash_index_count_ < this->flash_index_.size()) {
+      this->flash_index_[this->flash_index_count_++] = info;
+    }
+    if (this->flash_valid_block_count_ == 1 || info.start_timestamp_ms < this->flash_oldest_timestamp_ms_) {
       this->flash_oldest_timestamp_ms_ = info.start_timestamp_ms;
     }
-    if (this->flash_valid_block_count_ == 1 || info.sequence >= highest_sequence) {
-      highest_sequence = info.sequence;
+    if (this->flash_valid_block_count_ == 1 || info.end_timestamp_ms >= this->flash_latest_timestamp_ms_) {
       this->flash_latest_timestamp_ms_ = info.end_timestamp_ms;
       this->flash_last_flush_timestamp_ms_ = info.flush_timestamp_ms > 0 ? info.flush_timestamp_ms : info.end_timestamp_ms;
     }
+    if (this->flash_valid_block_count_ == 1 || info.sequence >= highest_sequence) {
+      highest_sequence = info.sequence;
+    }
+  }
+
+  if (this->flash_index_ && this->flash_index_count_ > 1) {
+    std::sort(this->flash_index_.data(), this->flash_index_.data() + this->flash_index_count_,
+              [](const FlashBlockInfo &a, const FlashBlockInfo &b) {
+                if (a.start_timestamp_ms == b.start_timestamp_ms) {
+                  return a.sequence < b.sequence;
+                }
+                return a.start_timestamp_ms < b.start_timestamp_ms;
+              });
   }
 
   this->next_flash_sequence_ = any_valid ? (highest_sequence + 1U) : 0U;
@@ -443,13 +460,11 @@ bool OpenQuattTrends::merge_flash_history_into_ram_() {
   this->ram_head_ = 0;
   this->ram_count_ = 0;
 
-  const uint32_t first_sequence = this->next_flash_sequence_ > FLASH_SLOT_COUNT
-    ? this->next_flash_sequence_ - FLASH_SLOT_COUNT
-    : 0;
-  for (uint32_t sequence = first_sequence; sequence < this->next_flash_sequence_; ++sequence) {
-    FlashBlockInfo info{};
+  for (size_t block_index = 0; block_index < this->flash_index_count_; ++block_index) {
+    const FlashBlockInfo &indexed = this->flash_index_[block_index];
     std::array<TrendSample, FLASH_SAMPLES_PER_BLOCK> block_samples{};
-    if (!this->read_flash_block_(sequence % FLASH_SLOT_COUNT, sequence, &info, &block_samples)) {
+    FlashBlockInfo info{};
+    if (!this->read_flash_block_(indexed.slot_index, indexed.sequence, &info, &block_samples)) {
       continue;
     }
     for (size_t index = 0; index < info.sample_count; ++index) {
@@ -582,6 +597,7 @@ bool OpenQuattTrends::write_flash_block_(const FlashBlockBuilder &builder) {
   this->next_flash_sequence_ = builder.sequence + 1U;
   this->flash_dirty_ = false;
   this->last_flash_flush_ms_ = static_cast<uint32_t>(millis());
+  this->invalidate_flash_index_();
   return true;
 }
 
@@ -603,6 +619,11 @@ bool OpenQuattTrends::flush_flash_builder_(bool force) {
     this->reset_flash_builder_();
   }
   return ok;
+}
+
+void OpenQuattTrends::invalidate_flash_index_() {
+  this->flash_archive_scanned_ = false;
+  this->flash_index_count_ = 0;
 }
 
 bool OpenQuattTrends::read_flash_block_(uint32_t slot_index, uint32_t expected_sequence, FlashBlockInfo *info,
@@ -754,6 +775,7 @@ void OpenQuattTrends::reset_flash_metadata_() {
   this->flash_oldest_timestamp_ms_ = 0;
   this->flash_last_flush_timestamp_ms_ = 0;
   this->flash_valid_block_count_ = 0;
+  this->flash_index_count_ = 0;
 }
 
 uint64_t OpenQuattTrends::get_flash_oldest_timestamp_ms_() const {
@@ -816,13 +838,13 @@ std::string OpenQuattTrends::format_flash_relative_age_(uint64_t timestamp_ms) c
 
 std::string OpenQuattTrends::format_flash_available_span_(uint64_t oldest_timestamp_ms, uint64_t newest_timestamp_ms) const {
   if (oldest_timestamp_ms == 0 || newest_timestamp_ms == 0 || newest_timestamp_ms <= oldest_timestamp_ms) {
-    return "Nog leeg";
+    return "Opgeslagen in flash: leeg";
   }
 
   const float span_days = static_cast<float>(newest_timestamp_ms - oldest_timestamp_ms) / static_cast<float>(24ULL * 60ULL * 60ULL * 1000ULL);
   if (span_days >= 1.0f) {
     char buffer[48];
-    std::snprintf(buffer, sizeof(buffer), "Nog %.1f dagen beschikbaar", span_days);
+    std::snprintf(buffer, sizeof(buffer), "Opgeslagen in flash: %.1f dagen", span_days);
     std::string value(buffer);
     std::replace(value.begin(), value.end(), '.', ',');
     return value;
@@ -831,13 +853,13 @@ std::string OpenQuattTrends::format_flash_available_span_(uint64_t oldest_timest
   const uint64_t span_hours = (newest_timestamp_ms - oldest_timestamp_ms) / (60ULL * 60ULL * 1000ULL);
   if (span_hours >= 1) {
     char buffer[48];
-    std::snprintf(buffer, sizeof(buffer), "Nog %llu uur beschikbaar", static_cast<unsigned long long>(span_hours));
+    std::snprintf(buffer, sizeof(buffer), "Opgeslagen in flash: %llu uur", static_cast<unsigned long long>(span_hours));
     return buffer;
   }
 
   const uint64_t span_minutes = (newest_timestamp_ms - oldest_timestamp_ms) / (60ULL * 1000ULL);
   char buffer[48];
-  std::snprintf(buffer, sizeof(buffer), "Nog %llu min beschikbaar", static_cast<unsigned long long>(span_minutes));
+  std::snprintf(buffer, sizeof(buffer), "Opgeslagen in flash: %llu min", static_cast<unsigned long long>(span_minutes));
   return buffer;
 }
 
@@ -868,6 +890,9 @@ bool OpenQuattTrends::write_sample_line_(ChunkedTextWriter *writer, const TrendS
 void OpenQuattTrends::write_samples_for_history_(ChunkedTextWriter *writer, uint32_t window_hours) {
   const uint64_t cutoff_ms = this->get_window_cutoff_ms_(window_hours);
   const uint32_t stride = this->get_window_stride_(window_hours);
+  if (this->flash_enabled_ && this->flash_partition_ != nullptr && !this->flash_archive_scanned_) {
+    this->scan_flash_archive_();
+  }
   const uint64_t oldest_ram_timestamp_ms = this->get_ram_oldest_timestamp_ms_();
   uint64_t emitted_flash_latest = 0;
 
@@ -893,18 +918,17 @@ void OpenQuattTrends::write_samples_for_history_(ChunkedTextWriter *writer, uint
   };
 
   const bool ram_covers_window = oldest_ram_timestamp_ms != 0 && oldest_ram_timestamp_ms <= cutoff_ms;
-  const bool should_read_flash_archive = this->flash_enabled_ && this->flash_archive_scanned_ && !ram_covers_window;
+  const bool should_read_flash_archive = this->flash_enabled_ && this->flash_archive_scanned_ &&
+                                         this->flash_index_count_ > 0 && !ram_covers_window;
   if (should_read_flash_archive) {
-    const uint32_t first_sequence = this->next_flash_sequence_ > FLASH_SLOT_COUNT
-      ? this->next_flash_sequence_ - FLASH_SLOT_COUNT
-      : 0;
-    for (uint32_t sequence = first_sequence; sequence < this->next_flash_sequence_; ++sequence) {
-      FlashBlockInfo info{};
-      std::array<TrendSample, FLASH_SAMPLES_PER_BLOCK> block_samples{};
-      if (!this->read_flash_block_(sequence % FLASH_SLOT_COUNT, sequence, &info, &block_samples)) {
+    for (size_t block_index = 0; block_index < this->flash_index_count_; ++block_index) {
+      const FlashBlockInfo &indexed = this->flash_index_[block_index];
+      if (indexed.end_timestamp_ms < cutoff_ms) {
         continue;
       }
-      if (info.end_timestamp_ms < cutoff_ms) {
+      std::array<TrendSample, FLASH_SAMPLES_PER_BLOCK> block_samples{};
+      FlashBlockInfo info{};
+      if (!this->read_flash_block_(indexed.slot_index, indexed.sequence, &info, &block_samples)) {
         continue;
       }
       for (size_t index = 0; index < info.sample_count; ++index) {
