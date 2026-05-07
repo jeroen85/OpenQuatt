@@ -609,11 +609,68 @@
     return new Promise((resolve) => window.setTimeout(resolve, ms));
   }
 
+  const DEVICE_RECONNECT_RECOVERY_CLEAR_DELAY_MS = 1500;
+
+  function clearDeviceReconnectRecoveryTimer() {
+    if (!state.deviceReconnectRecoveryTimer) {
+      return;
+    }
+    window.clearTimeout(state.deviceReconnectRecoveryTimer);
+    state.deviceReconnectRecoveryTimer = null;
+  }
+
+  function isDeviceReconnectRecovering() {
+    return Number(state.deviceReconnectRecoveryStartedAt || 0) > 0;
+  }
+
+  function getDeviceReconnectPhaseStartedAt() {
+    return isDeviceReconnectRecovering()
+      ? Number(state.deviceReconnectRecoveryStartedAt || 0)
+      : Number(state.deviceReconnectStartedAt || 0);
+  }
+
+  function getDeviceReconnectStatusLabel() {
+    return isDeviceReconnectRecovering() ? "Gegevens verversen" : "Wachten op gegevens";
+  }
+
+  function getDeviceReconnectStatusCopy() {
+    const startedAt = getDeviceReconnectPhaseStartedAt();
+    const elapsedSeconds = startedAt > 0 ? Math.max(0, Math.round((Date.now() - startedAt) / 1000)) : 0;
+    if (isDeviceReconnectRecovering()) {
+      return elapsedSeconds > 0 ? `${elapsedSeconds}s aan het verversen` : "Net weer online";
+    }
+    return elapsedSeconds > 0 ? `${elapsedSeconds}s bezig` : "Net gestart";
+  }
+
+  function markDeviceReconnectRecovered() {
+    if (!state.deviceReconnectMode || isDeviceReconnectRecovering()) {
+      return false;
+    }
+
+    clearDeviceReconnectRecoveryTimer();
+    state.deviceReconnectRecoveryStartedAt = Date.now();
+    state.deviceReconnectLastError = "";
+    state.entitySyncFailureCount = 0;
+
+    const recoveryStartedAt = state.deviceReconnectRecoveryStartedAt;
+    state.deviceReconnectRecoveryTimer = window.setTimeout(() => {
+      if (state.deviceReconnectMode && Number(state.deviceReconnectRecoveryStartedAt || 0) === recoveryStartedAt) {
+        clearDeviceReconnect();
+        render();
+      }
+    }, DEVICE_RECONNECT_RECOVERY_CLEAR_DELAY_MS);
+
+    render();
+    return true;
+  }
+
   function beginDeviceReconnect(mode = "reconnect", error = "") {
     if (!state.deviceReconnectMode) {
       state.deviceReconnectStartedAt = Date.now();
     }
+    clearDeviceReconnectRecoveryTimer();
     state.deviceReconnectMode = mode;
+    state.deviceReconnectRecoveryStartedAt = 0;
     state.deviceReconnectLastError = error ? String(error) : state.deviceReconnectLastError;
     state.systemModal = "";
     state.updateModalOpen = false;
@@ -621,16 +678,21 @@
   }
 
   function clearDeviceReconnect() {
+    clearDeviceReconnectRecoveryTimer();
     if (!state.deviceReconnectMode && !state.entitySyncFailureCount) {
       return;
     }
     state.deviceReconnectMode = "";
     state.deviceReconnectStartedAt = 0;
+    state.deviceReconnectRecoveryStartedAt = 0;
     state.deviceReconnectLastError = "";
     state.entitySyncFailureCount = 0;
   }
 
   function getDeviceReconnectTitle() {
+    if (isDeviceReconnectRecovering()) {
+      return "OpenQuatt is weer online";
+    }
     if (state.deviceReconnectMode === "ota") {
       return "OpenQuatt wordt bijgewerkt";
     }
@@ -641,6 +703,12 @@
   }
 
   function getDeviceReconnectCopy() {
+    if (isDeviceReconnectRecovering()) {
+      if (state.deviceReconnectMode === "ota") {
+        return "De update is bijna klaar. We verversen nu de gegevens en het logboek.";
+      }
+      return "De controller reageert weer. We verversen nu de gegevens en het logboek.";
+    }
     if (state.deviceReconnectMode === "ota") {
       return "De controller installeert de update en start daarna opnieuw op. Deze melding verdwijnt zodra de web-app weer gegevens ontvangt.";
     }
@@ -654,9 +722,6 @@
     if (!state.deviceReconnectMode) {
       return "";
     }
-    const startedAt = Number(state.deviceReconnectStartedAt || 0);
-    const elapsedSeconds = startedAt > 0 ? Math.max(0, Math.round((Date.now() - startedAt) / 1000)) : 0;
-    const elapsedCopy = elapsedSeconds > 0 ? `${elapsedSeconds}s bezig` : "Net gestart";
     return `
       <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="reconnect">
         <section class="oq-helper-modal oq-helper-modal--reconnect" role="status" aria-live="polite" aria-labelledby="oq-reconnect-modal-title">
@@ -670,8 +735,8 @@
           <div class="oq-helper-reconnect-status">
             <span class="oq-helper-reconnect-spinner" aria-hidden="true"></span>
             <div>
-              <strong>Wachten op gegevens</strong>
-              <span>${escapeHtml(elapsedCopy)}</span>
+              <strong>${escapeHtml(getDeviceReconnectStatusLabel())}</strong>
+              <span>${escapeHtml(getDeviceReconnectStatusCopy())}</span>
             </div>
           </div>
         </section>

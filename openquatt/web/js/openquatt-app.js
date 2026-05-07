@@ -11,6 +11,7 @@ const LOGO_MARKUP = `
   };
   const OFFICIAL_ESPHOME_UI_URL = "https://oi.esphome.io/v3/www.js";
   const ENTITY_REFRESH_CONCURRENCY = 2;
+  const FAST_VIEW_ENTITY_REFRESH_CONCURRENCY = 4;
   const TREND_HISTORY_REFRESH_INTERVAL_MS = 60000;
   const STRATEGY_OPTION_POWER_HOUSE = "Power House";
   const STRATEGY_OPTION_CURVE = "Water Temperature Control (heating curve)";
@@ -770,6 +771,8 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     trendHistoryFetchPromise: null,
     deviceReconnectMode: "",
     deviceReconnectStartedAt: 0,
+    deviceReconnectRecoveryStartedAt: 0,
+    deviceReconnectRecoveryTimer: null,
     deviceReconnectLastError: "",
     entitySyncFailureCount: 0,
     lastEntitySyncAt: 0,
@@ -784,6 +787,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     webServerLogHistoryError: "",
     webServerLogHistoryRequestToken: 0,
     webServerLogHistoryLoaded: false,
+    webServerLogScrollRestoreToken: 0,
     webServerLogCopyMessage: "",
     webServerLogCopyError: "",
     webServerLogRecentTail: [],
@@ -1074,7 +1078,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       void primeEntities();
       return;
     }
-    void syncEntities({ forceBulk: true });
+    void syncEntities(state.appView === "settings" ? { forceBulk: true } : { forceFast: true });
   }
 
   function normalizeAppView(view) {
@@ -1164,7 +1168,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       }
     }
     render();
-    void syncEntities({ forceBulk: true });
+    void syncEntities(nextView === "settings" ? { forceBulk: true } : { forceFast: true });
   }
 
   function syncNativeVisibility() {
@@ -2038,11 +2042,68 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     return new Promise((resolve) => window.setTimeout(resolve, ms));
   }
 
+  const DEVICE_RECONNECT_RECOVERY_CLEAR_DELAY_MS = 1500;
+
+  function clearDeviceReconnectRecoveryTimer() {
+    if (!state.deviceReconnectRecoveryTimer) {
+      return;
+    }
+    window.clearTimeout(state.deviceReconnectRecoveryTimer);
+    state.deviceReconnectRecoveryTimer = null;
+  }
+
+  function isDeviceReconnectRecovering() {
+    return Number(state.deviceReconnectRecoveryStartedAt || 0) > 0;
+  }
+
+  function getDeviceReconnectPhaseStartedAt() {
+    return isDeviceReconnectRecovering()
+      ? Number(state.deviceReconnectRecoveryStartedAt || 0)
+      : Number(state.deviceReconnectStartedAt || 0);
+  }
+
+  function getDeviceReconnectStatusLabel() {
+    return isDeviceReconnectRecovering() ? "Gegevens verversen" : "Wachten op gegevens";
+  }
+
+  function getDeviceReconnectStatusCopy() {
+    const startedAt = getDeviceReconnectPhaseStartedAt();
+    const elapsedSeconds = startedAt > 0 ? Math.max(0, Math.round((Date.now() - startedAt) / 1000)) : 0;
+    if (isDeviceReconnectRecovering()) {
+      return elapsedSeconds > 0 ? `${elapsedSeconds}s aan het verversen` : "Net weer online";
+    }
+    return elapsedSeconds > 0 ? `${elapsedSeconds}s bezig` : "Net gestart";
+  }
+
+  function markDeviceReconnectRecovered() {
+    if (!state.deviceReconnectMode || isDeviceReconnectRecovering()) {
+      return false;
+    }
+
+    clearDeviceReconnectRecoveryTimer();
+    state.deviceReconnectRecoveryStartedAt = Date.now();
+    state.deviceReconnectLastError = "";
+    state.entitySyncFailureCount = 0;
+
+    const recoveryStartedAt = state.deviceReconnectRecoveryStartedAt;
+    state.deviceReconnectRecoveryTimer = window.setTimeout(() => {
+      if (state.deviceReconnectMode && Number(state.deviceReconnectRecoveryStartedAt || 0) === recoveryStartedAt) {
+        clearDeviceReconnect();
+        render();
+      }
+    }, DEVICE_RECONNECT_RECOVERY_CLEAR_DELAY_MS);
+
+    render();
+    return true;
+  }
+
   function beginDeviceReconnect(mode = "reconnect", error = "") {
     if (!state.deviceReconnectMode) {
       state.deviceReconnectStartedAt = Date.now();
     }
+    clearDeviceReconnectRecoveryTimer();
     state.deviceReconnectMode = mode;
+    state.deviceReconnectRecoveryStartedAt = 0;
     state.deviceReconnectLastError = error ? String(error) : state.deviceReconnectLastError;
     state.systemModal = "";
     state.updateModalOpen = false;
@@ -2050,16 +2111,21 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
   }
 
   function clearDeviceReconnect() {
+    clearDeviceReconnectRecoveryTimer();
     if (!state.deviceReconnectMode && !state.entitySyncFailureCount) {
       return;
     }
     state.deviceReconnectMode = "";
     state.deviceReconnectStartedAt = 0;
+    state.deviceReconnectRecoveryStartedAt = 0;
     state.deviceReconnectLastError = "";
     state.entitySyncFailureCount = 0;
   }
 
   function getDeviceReconnectTitle() {
+    if (isDeviceReconnectRecovering()) {
+      return "OpenQuatt is weer online";
+    }
     if (state.deviceReconnectMode === "ota") {
       return "OpenQuatt wordt bijgewerkt";
     }
@@ -2070,6 +2136,12 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
   }
 
   function getDeviceReconnectCopy() {
+    if (isDeviceReconnectRecovering()) {
+      if (state.deviceReconnectMode === "ota") {
+        return "De update is bijna klaar. We verversen nu de gegevens en het logboek.";
+      }
+      return "De controller reageert weer. We verversen nu de gegevens en het logboek.";
+    }
     if (state.deviceReconnectMode === "ota") {
       return "De controller installeert de update en start daarna opnieuw op. Deze melding verdwijnt zodra de web-app weer gegevens ontvangt.";
     }
@@ -2083,9 +2155,6 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     if (!state.deviceReconnectMode) {
       return "";
     }
-    const startedAt = Number(state.deviceReconnectStartedAt || 0);
-    const elapsedSeconds = startedAt > 0 ? Math.max(0, Math.round((Date.now() - startedAt) / 1000)) : 0;
-    const elapsedCopy = elapsedSeconds > 0 ? `${elapsedSeconds}s bezig` : "Net gestart";
     return `
       <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="reconnect">
         <section class="oq-helper-modal oq-helper-modal--reconnect" role="status" aria-live="polite" aria-labelledby="oq-reconnect-modal-title">
@@ -2099,8 +2168,8 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
           <div class="oq-helper-reconnect-status">
             <span class="oq-helper-reconnect-spinner" aria-hidden="true"></span>
             <div>
-              <strong>Wachten op gegevens</strong>
-              <span>${escapeHtml(elapsedCopy)}</span>
+              <strong>${escapeHtml(getDeviceReconnectStatusLabel())}</strong>
+              <span>${escapeHtml(getDeviceReconnectStatusCopy())}</span>
             </div>
           </div>
         </section>
@@ -3282,6 +3351,21 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     return [...new Set(INITIAL_SETTINGS_READY_KEY_MAP[normalized] || INITIAL_SETTINGS_READY_KEY_MAP.installation)];
   }
 
+  function queuePendingEntitySyncOptions(options = {}) {
+    const current = state.pendingEntitySyncOptions || {};
+    const merged = {
+      ...current,
+      ...options,
+    };
+    if (current.forceBulk || options.forceBulk) {
+      merged.forceBulk = true;
+      merged.forceFast = false;
+    } else if (current.forceFast || options.forceFast) {
+      merged.forceFast = true;
+    }
+    state.pendingEntitySyncOptions = merged;
+  }
+
   function hasUsableEntityValue(key) {
     const value = String(getEntityValue(key) ?? "").trim().toLowerCase();
     return value !== "" && value !== "unknown" && value !== "unavailable" && value !== "nan";
@@ -3396,9 +3480,39 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     };
   }
 
+  const ENTITY_REQUEST_TIMEOUT_MS = 8000;
+  const RECONNECT_ENTITY_REQUEST_TIMEOUT_MS = 3000;
+
+  function getEntityRequestTimeoutMs() {
+    return state.deviceReconnectMode || state.busyAction === "restartAction" || state.updateInstallBusy || state.updateInstallPhaseHint
+      ? RECONNECT_ENTITY_REQUEST_TIMEOUT_MS
+      : ENTITY_REQUEST_TIMEOUT_MS;
+  }
+
   async function fetchEntityPayload(key, detail = "state") {
     const entity = ENTITY_DEFS[key];
     const url = `${buildEntityPath(entity.domain, entity.name)}${detail === "all" ? "?detail=all" : ""}`;
+    const timeoutMs = getEntityRequestTimeoutMs();
+
+    if (typeof AbortController === "function") {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(url, { signal: controller.signal });
+        if (!response.ok) {
+          throw new Error(`${entity.name} HTTP ${response.status}`);
+        }
+        return response.json();
+      } catch (error) {
+        if (controller.signal.aborted) {
+          throw new Error(`${entity.name} request timed out after ${timeoutMs}ms`);
+        }
+        throw error;
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
+    }
+
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`${entity.name} HTTP ${response.status}`);
@@ -3420,7 +3534,28 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
 
   function noteEntityRefreshSuccess() {
     state.lastEntitySyncAt = Date.now();
-    clearDeviceReconnect();
+    const wasReconnectActive = Boolean(state.deviceReconnectMode);
+    const reconnectRecovered = wasReconnectActive && typeof markDeviceReconnectRecovered === "function"
+      ? markDeviceReconnectRecovered()
+      : false;
+    if (reconnectRecovered) {
+      state.lastFastEntitySyncAt = 0;
+      state.lastBulkEntitySyncAt = 0;
+      state.lastStaticEntitySyncAt = 0;
+      state.trendHistoryRaw = "";
+      state.trendHistoryError = "";
+      state.trendHistorySignature = "";
+      state.trendHistoryNowMs = Number.NaN;
+      state.trendHistoryLastFetchAt = 0;
+      if (typeof resetWebServerLogRecoveryState === "function") {
+        resetWebServerLogRecoveryState();
+      } else {
+        closeWebServerLogStream();
+        clearWebServerLogOutput();
+        state.webServerLogEnabled = null;
+        state.webServerLogConnected = false;
+      }
+    }
   }
 
   function noteEntityRefreshFailure(message) {
@@ -3445,10 +3580,14 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     }
   }
 
-  async function refreshEntities(keys, detail = "state") {
+  async function refreshEntities(keys, detail = "state", options = {}) {
+    const requestedConcurrency = Number(options.concurrency);
+    const concurrency = Number.isFinite(requestedConcurrency) && requestedConcurrency > 0
+      ? Math.floor(requestedConcurrency)
+      : ENTITY_REFRESH_CONCURRENCY;
     const results = [];
-    for (let index = 0; index < keys.length; index += ENTITY_REFRESH_CONCURRENCY) {
-      const batch = keys.slice(index, index + ENTITY_REFRESH_CONCURRENCY);
+    for (let index = 0; index < keys.length; index += concurrency) {
+      const batch = keys.slice(index, index + concurrency);
       const batchResults = await Promise.allSettled(
         batch.map(async (key) => ({ key, payload: await fetchEntityPayload(key, detail) }))
       );
@@ -4171,7 +4310,9 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
 
     state.entitySyncInFlight = true;
     try {
-      await refreshEntities(keys, detail);
+      await refreshEntities(keys, detail, {
+        concurrency: detail === "all" ? ENTITY_REFRESH_CONCURRENCY : FAST_VIEW_ENTITY_REFRESH_CONCURRENCY,
+      });
     } finally {
       state.entitySyncInFlight = false;
       const pendingOptions = state.pendingEntitySyncOptions;
@@ -4188,6 +4329,30 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     }
   }
 
+  function scheduleOverviewPrefetch() {
+    if (state.nativeOpen || state.appView !== "settings") {
+      return;
+    }
+
+    const run = () => {
+      if (state.nativeOpen || state.appView !== "settings") {
+        return;
+      }
+      if (state.loadingEntities || state.focusedField || state.draggingCurveKey || state.busyAction || state.settingsInteractionLock) {
+        window.setTimeout(scheduleOverviewPrefetch, 250);
+        return;
+      }
+      void syncEntities({ prefetchView: "overview", forceFast: true });
+    };
+
+    if (typeof window.requestIdleCallback === "function") {
+      window.requestIdleCallback(run, { timeout: 2000 });
+      return;
+    }
+
+    window.setTimeout(run, 0);
+  }
+
   async function primeSupplementaryData() {
     if (state.nativeOpen) {
       return;
@@ -4202,6 +4367,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       if (state.mounted && !state.nativeOpen) {
         render();
       }
+      scheduleOverviewPrefetch();
     }
   }
 
@@ -4217,8 +4383,11 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     }
     const initialKeys = getInitialPrimeKeys();
     const deferredKeys = getDeferredPrimeKeys(initialKeys);
+    const initialDetail = state.appView === "settings" ? "all" : "state";
     try {
-      await refreshEntities(initialKeys, "all");
+      await refreshEntities(initialKeys, initialDetail, {
+        concurrency: initialDetail === "all" ? ENTITY_REFRESH_CONCURRENCY : FAST_VIEW_ENTITY_REFRESH_CONCURRENCY,
+      });
       if (state.appView === "settings") {
         await waitForInitialSettingsReady();
       } else {
@@ -4240,13 +4409,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       return;
     }
     if (state.entitySyncInFlight) {
-      if (options.forceBulk === true) {
-        state.pendingEntitySyncOptions = {
-          ...(state.pendingEntitySyncOptions || {}),
-          ...options,
-          forceBulk: true,
-        };
-      }
+      queuePendingEntitySyncOptions(options);
       return;
     }
 
@@ -4256,15 +4419,25 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     }
 
     const appView = state.appView;
-    const isOverviewLike = appView === "overview" || appView === "trends";
-    const isBulkDue = options.forceBulk === true || (now - Number(state.lastBulkEntitySyncAt || 0)) >= BULK_POLL_INTERVAL_MS;
+    const isPrefetchOverview = options.prefetchView === "overview" && !options.forceBulk && appView === "settings";
+    const syncView = isPrefetchOverview ? "overview" : appView;
+    const isOverviewLike = syncView === "overview" || syncView === "trends" || syncView === "energy";
+    const forceFast = options.forceFast === true && !options.forceBulk;
+    const isBulkDue = !forceFast && !isPrefetchOverview && (options.forceBulk === true || (now - Number(state.lastBulkEntitySyncAt || 0)) >= BULK_POLL_INTERVAL_MS);
     const isStaticDue = (now - Number(state.lastStaticEntitySyncAt || 0)) >= STATIC_POLL_INTERVAL_MS;
     const staticKeys = isStaticDue || state.updateInstallBusy || state.updateInstallPhaseHint
       ? FIRMWARE_ENTITY_KEYS
       : [];
-    const keys = isOverviewLike
+    const keys = isPrefetchOverview
       ? [
-          ...(isBulkDue ? OVERVIEW_KEYS : FAST_OVERVIEW_KEYS),
+          ...FAST_OVERVIEW_KEYS,
+          ...HEADER_ENTITY_KEYS,
+          "setupComplete",
+          ...staticKeys,
+        ]
+      : isOverviewLike
+      ? [
+          ...(forceFast ? FAST_OVERVIEW_KEYS : isBulkDue ? OVERVIEW_KEYS : FAST_OVERVIEW_KEYS),
           ...HEADER_ENTITY_KEYS,
           "setupComplete",
           ...staticKeys,
@@ -4287,7 +4460,9 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     state.lastEntitySyncAttemptAt = now;
     try {
       const reconnectModeBefore = state.deviceReconnectMode;
-      await refreshEntities([...new Set(keys)], appView === "settings" ? "all" : "state");
+      await refreshEntities([...new Set(keys)], isPrefetchOverview ? "state" : appView === "settings" ? "all" : "state", {
+        concurrency: forceFast && isOverviewLike ? FAST_VIEW_ENTITY_REFRESH_CONCURRENCY : ENTITY_REFRESH_CONCURRENCY,
+      });
       state.lastFastEntitySyncAt = Date.now();
       if (isBulkDue) {
         state.lastBulkEntitySyncAt = state.lastFastEntitySyncAt;
@@ -4295,11 +4470,17 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       if (staticKeys.length) {
         state.lastStaticEntitySyncAt = state.lastFastEntitySyncAt;
       }
+      if (isPrefetchOverview) {
+        return;
+      }
       const reconnectChanged = reconnectModeBefore !== state.deviceReconnectMode;
-      const trendChanged = isOverviewLike
-        ? await refreshTrendHistoryData()
-        : false;
-      const authChanged = await refreshAuthStatus();
+      const shouldDeferSupplementary = forceFast && isOverviewLike;
+      const trendChanged = shouldDeferSupplementary
+        ? false
+        : isOverviewLike
+          ? await refreshTrendHistoryData()
+          : false;
+      const authChanged = shouldDeferSupplementary ? false : await refreshAuthStatus();
       const nextHeaderSignature = getHeaderRenderSignature();
       if (reconnectChanged) {
         render();
@@ -4338,9 +4519,16 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       if (!patchOverviewDom()) {
         render();
       }
+      if (shouldDeferSupplementary && !state.nativeOpen) {
+        window.setTimeout(() => {
+          void primeSupplementaryData();
+        }, 0);
+      }
     } catch (error) {
-      state.controlError = `Helperstatus kon niet worden geladen. ${error.message}`;
-      render();
+      if (!isPrefetchOverview) {
+        state.controlError = `Helperstatus kon niet worden geladen. ${error.message}`;
+        render();
+      }
     } finally {
       state.entitySyncInFlight = false;
       const pendingOptions = state.pendingEntitySyncOptions;
@@ -4348,6 +4536,11 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       if (pendingOptions && !state.nativeOpen) {
         window.setTimeout(() => {
           void syncEntities(pendingOptions);
+        }, 0);
+      }
+      if (forceFast && isOverviewLike && !isPrefetchOverview && !state.nativeOpen && !pendingOptions) {
+        window.setTimeout(() => {
+          void syncEntities({ forceBulk: true });
         }, 0);
       }
     }
@@ -4606,9 +4799,10 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       if ((button.dataset.viewId || "") === "trends" && !isTrendHistoryEnabled()) {
         return;
       }
-      setAppView(button.dataset.viewId || "overview", { syncMode: "push" });
+      const nextView = button.dataset.viewId || "overview";
+      setAppView(nextView, { syncMode: "push" });
       render();
-      syncEntities({ forceBulk: true });
+      syncEntities(nextView === "settings" ? { forceBulk: true } : { forceFast: true });
       return;
     }
 
@@ -5481,6 +5675,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       }
       state.quickStartModalOpen = action !== "apply";
       setAppView("overview", { syncMode: "replace" });
+      syncEntities({ forceFast: true });
     } catch (error) {
       state.controlError = `Actie mislukt voor "${entity.name}". ${error.message}`;
     } finally {
@@ -5990,11 +6185,66 @@ function scrollWebServerLogToBottom() {
   scroller.scrollTop = scroller.scrollHeight;
 }
 
-async function refreshWebServerLogHistory() {
+function captureWebServerLogScrollState() {
+  const scroller = getWebServerLogScrollerElement();
+  if (!scroller) {
+    return null;
+  }
+
+  return {
+    scrollHeight: scroller.scrollHeight,
+    scrollTop: scroller.scrollTop,
+    stickToBottom: isWebServerLogScrollerNearBottom(scroller),
+  };
+}
+
+function restoreWebServerLogScrollState(scrollState) {
+  if (!scrollState) {
+    return;
+  }
+
+  const scroller = getWebServerLogScrollerElement();
+  if (!scroller) {
+    return;
+  }
+
+  if (scrollState.stickToBottom) {
+    scroller.scrollTop = scroller.scrollHeight;
+    return;
+  }
+
+  const restoredScrollTop = scrollState.scrollTop + (scroller.scrollHeight - scrollState.scrollHeight);
+  scroller.scrollTop = Math.max(0, restoredScrollTop);
+}
+
+function queueWebServerLogScrollRestore(scrollState, defer = true) {
+  if (!scrollState) {
+    return;
+  }
+
+  const restoreToken = Number(state.webServerLogScrollRestoreToken || 0) + 1;
+  state.webServerLogScrollRestoreToken = restoreToken;
+  const applyScrollState = () => {
+    if (state.webServerLogScrollRestoreToken !== restoreToken || state.systemModal !== "webserver-logs") {
+      return;
+    }
+    restoreWebServerLogScrollState(scrollState);
+  };
+
+  if (defer) {
+    window.requestAnimationFrame(applyScrollState);
+    return;
+  }
+
+  applyScrollState();
+}
+
+async function refreshWebServerLogHistory(options = {}) {
   if (state.nativeOpen || typeof window.fetch !== "function") {
     return;
   }
 
+  const scrollState = options.scrollState || captureWebServerLogScrollState();
   const requestToken = Number(state.webServerLogHistoryRequestToken || 0) + 1;
   state.webServerLogHistoryRequestToken = requestToken;
   state.webServerLogHistoryLoading = true;
@@ -6031,24 +6281,8 @@ async function refreshWebServerLogHistory() {
       state.webServerLogHistoryLoading = false;
     }
     if (state.systemModal === "webserver-logs" && state.webServerLogHistoryRequestToken === requestToken) {
-      const scroller = getWebServerLogScrollerElement();
-      const stickToBottom = isWebServerLogScrollerNearBottom(scroller);
-      const previousDistanceFromBottom = scroller ? scroller.scrollHeight - scroller.scrollTop : 0;
       render();
-      window.requestAnimationFrame(() => {
-        if (state.systemModal === "webserver-logs" && state.webServerLogHistoryRequestToken === requestToken) {
-          const nextScroller = getWebServerLogScrollerElement();
-          if (!nextScroller) {
-            return;
-          }
-          if (stickToBottom) {
-            nextScroller.scrollTop = nextScroller.scrollHeight;
-            return;
-          }
-          const targetScrollTop = nextScroller.scrollHeight - previousDistanceFromBottom;
-          nextScroller.scrollTop = Math.max(0, targetScrollTop);
-        }
-      });
+      queueWebServerLogScrollRestore(scrollState);
     }
   }
 }
@@ -6130,6 +6364,7 @@ function clearWebServerLogOutput() {
   state.webServerLogHistoryError = "";
   state.webServerLogHistoryLoading = false;
   state.webServerLogHistoryLoaded = false;
+  state.webServerLogScrollRestoreToken = Number(state.webServerLogScrollRestoreToken || 0) + 1;
   state.webServerLogCopyMessage = "";
   state.webServerLogCopyError = "";
   state.webServerLogHistoryRequestToken += 1;
@@ -6137,6 +6372,17 @@ function clearWebServerLogOutput() {
   state.webServerLogRecentAnchorAt = 0;
   if (state.systemModal === "webserver-logs") {
     render();
+  }
+}
+
+function resetWebServerLogRecoveryState() {
+  const scrollState = captureWebServerLogScrollState();
+  closeWebServerLogStream();
+  state.webServerLogEnabled = null;
+  state.webServerLogConnected = false;
+  clearWebServerLogOutput();
+  if (state.systemModal === "webserver-logs") {
+    void refreshWebServerLogHistory({ scrollState });
   }
 }
 
@@ -6215,10 +6461,14 @@ function handleWebServerLogOpen() {
     return;
   }
 
+  const scrollState = state.systemModal === "webserver-logs"
+    ? captureWebServerLogScrollState()
+    : null;
   state.webServerLogEnabled = true;
   state.webServerLogConnected = true;
   state.webServerLogError = "";
   render();
+  queueWebServerLogScrollRestore(scrollState);
 }
 
 function handleWebServerLogPing() {
@@ -6226,11 +6476,15 @@ function handleWebServerLogPing() {
     return;
   }
 
+  const scrollState = state.systemModal === "webserver-logs"
+    ? captureWebServerLogScrollState()
+    : null;
   state.webServerLogEnabled = true;
   if (!state.webServerLogConnected) {
     state.webServerLogConnected = true;
     state.webServerLogError = "";
     render();
+    queueWebServerLogScrollRestore(scrollState);
   }
 }
 
@@ -6239,11 +6493,15 @@ function handleWebServerLogError() {
     return;
   }
 
+  const scrollState = state.systemModal === "webserver-logs"
+    ? captureWebServerLogScrollState()
+    : null;
   state.webServerLogEnabled = false;
   state.webServerLogConnected = false;
   state.webServerLogError = "De live logstream kon niet worden geopend.";
   closeWebServerLogStream();
   render();
+  queueWebServerLogScrollRestore(scrollState);
 }
 
 function handleWebServerLogMessage(event) {
@@ -6251,6 +6509,7 @@ function handleWebServerLogMessage(event) {
     return;
   }
 
+  const scrollState = captureWebServerLogScrollState();
   const payload = normalizeWebServerLogPayload(event.data);
   if (!payload) {
     return;
@@ -6271,14 +6530,13 @@ function handleWebServerLogMessage(event) {
 
   const output = getWebServerLogOutputElement();
   const scroller = getWebServerLogScrollerElement();
-  const stickToBottom = isWebServerLogScrollerNearBottom(scroller);
 
   trimWebServerLogEntries(output);
   appendWebServerLogEntriesToDom(filteredEntries, output);
 
   state.webServerLogEnabled = true;
-  if (scroller && stickToBottom) {
-    scroller.scrollTop = scroller.scrollHeight;
+  if (scroller && scrollState) {
+    queueWebServerLogScrollRestore(scrollState, false);
   }
 }
 

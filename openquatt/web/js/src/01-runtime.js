@@ -35,6 +35,8 @@
     trendHistoryFetchPromise: null,
     deviceReconnectMode: "",
     deviceReconnectStartedAt: 0,
+    deviceReconnectRecoveryStartedAt: 0,
+    deviceReconnectRecoveryTimer: null,
     deviceReconnectLastError: "",
     entitySyncFailureCount: 0,
     lastEntitySyncAt: 0,
@@ -49,6 +51,7 @@
     webServerLogHistoryError: "",
     webServerLogHistoryRequestToken: 0,
     webServerLogHistoryLoaded: false,
+    webServerLogScrollRestoreToken: 0,
     webServerLogCopyMessage: "",
     webServerLogCopyError: "",
     webServerLogRecentTail: [],
@@ -339,7 +342,7 @@
       void primeEntities();
       return;
     }
-    void syncEntities({ forceBulk: true });
+    void syncEntities(state.appView === "settings" ? { forceBulk: true } : { forceFast: true });
   }
 
   function normalizeAppView(view) {
@@ -429,7 +432,7 @@
       }
     }
     render();
-    void syncEntities({ forceBulk: true });
+    void syncEntities(nextView === "settings" ? { forceBulk: true } : { forceFast: true });
   }
 
   function syncNativeVisibility() {

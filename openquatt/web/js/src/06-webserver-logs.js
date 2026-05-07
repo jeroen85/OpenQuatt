@@ -235,11 +235,66 @@ function scrollWebServerLogToBottom() {
   scroller.scrollTop = scroller.scrollHeight;
 }
 
-async function refreshWebServerLogHistory() {
+function captureWebServerLogScrollState() {
+  const scroller = getWebServerLogScrollerElement();
+  if (!scroller) {
+    return null;
+  }
+
+  return {
+    scrollHeight: scroller.scrollHeight,
+    scrollTop: scroller.scrollTop,
+    stickToBottom: isWebServerLogScrollerNearBottom(scroller),
+  };
+}
+
+function restoreWebServerLogScrollState(scrollState) {
+  if (!scrollState) {
+    return;
+  }
+
+  const scroller = getWebServerLogScrollerElement();
+  if (!scroller) {
+    return;
+  }
+
+  if (scrollState.stickToBottom) {
+    scroller.scrollTop = scroller.scrollHeight;
+    return;
+  }
+
+  const restoredScrollTop = scrollState.scrollTop + (scroller.scrollHeight - scrollState.scrollHeight);
+  scroller.scrollTop = Math.max(0, restoredScrollTop);
+}
+
+function queueWebServerLogScrollRestore(scrollState, defer = true) {
+  if (!scrollState) {
+    return;
+  }
+
+  const restoreToken = Number(state.webServerLogScrollRestoreToken || 0) + 1;
+  state.webServerLogScrollRestoreToken = restoreToken;
+  const applyScrollState = () => {
+    if (state.webServerLogScrollRestoreToken !== restoreToken || state.systemModal !== "webserver-logs") {
+      return;
+    }
+    restoreWebServerLogScrollState(scrollState);
+  };
+
+  if (defer) {
+    window.requestAnimationFrame(applyScrollState);
+    return;
+  }
+
+  applyScrollState();
+}
+
+async function refreshWebServerLogHistory(options = {}) {
   if (state.nativeOpen || typeof window.fetch !== "function") {
     return;
   }
 
+  const scrollState = options.scrollState || captureWebServerLogScrollState();
   const requestToken = Number(state.webServerLogHistoryRequestToken || 0) + 1;
   state.webServerLogHistoryRequestToken = requestToken;
   state.webServerLogHistoryLoading = true;
@@ -276,24 +331,8 @@ async function refreshWebServerLogHistory() {
       state.webServerLogHistoryLoading = false;
     }
     if (state.systemModal === "webserver-logs" && state.webServerLogHistoryRequestToken === requestToken) {
-      const scroller = getWebServerLogScrollerElement();
-      const stickToBottom = isWebServerLogScrollerNearBottom(scroller);
-      const previousDistanceFromBottom = scroller ? scroller.scrollHeight - scroller.scrollTop : 0;
       render();
-      window.requestAnimationFrame(() => {
-        if (state.systemModal === "webserver-logs" && state.webServerLogHistoryRequestToken === requestToken) {
-          const nextScroller = getWebServerLogScrollerElement();
-          if (!nextScroller) {
-            return;
-          }
-          if (stickToBottom) {
-            nextScroller.scrollTop = nextScroller.scrollHeight;
-            return;
-          }
-          const targetScrollTop = nextScroller.scrollHeight - previousDistanceFromBottom;
-          nextScroller.scrollTop = Math.max(0, targetScrollTop);
-        }
-      });
+      queueWebServerLogScrollRestore(scrollState);
     }
   }
 }
@@ -375,6 +414,7 @@ function clearWebServerLogOutput() {
   state.webServerLogHistoryError = "";
   state.webServerLogHistoryLoading = false;
   state.webServerLogHistoryLoaded = false;
+  state.webServerLogScrollRestoreToken = Number(state.webServerLogScrollRestoreToken || 0) + 1;
   state.webServerLogCopyMessage = "";
   state.webServerLogCopyError = "";
   state.webServerLogHistoryRequestToken += 1;
@@ -382,6 +422,17 @@ function clearWebServerLogOutput() {
   state.webServerLogRecentAnchorAt = 0;
   if (state.systemModal === "webserver-logs") {
     render();
+  }
+}
+
+function resetWebServerLogRecoveryState() {
+  const scrollState = captureWebServerLogScrollState();
+  closeWebServerLogStream();
+  state.webServerLogEnabled = null;
+  state.webServerLogConnected = false;
+  clearWebServerLogOutput();
+  if (state.systemModal === "webserver-logs") {
+    void refreshWebServerLogHistory({ scrollState });
   }
 }
 
@@ -460,10 +511,14 @@ function handleWebServerLogOpen() {
     return;
   }
 
+  const scrollState = state.systemModal === "webserver-logs"
+    ? captureWebServerLogScrollState()
+    : null;
   state.webServerLogEnabled = true;
   state.webServerLogConnected = true;
   state.webServerLogError = "";
   render();
+  queueWebServerLogScrollRestore(scrollState);
 }
 
 function handleWebServerLogPing() {
@@ -471,11 +526,15 @@ function handleWebServerLogPing() {
     return;
   }
 
+  const scrollState = state.systemModal === "webserver-logs"
+    ? captureWebServerLogScrollState()
+    : null;
   state.webServerLogEnabled = true;
   if (!state.webServerLogConnected) {
     state.webServerLogConnected = true;
     state.webServerLogError = "";
     render();
+    queueWebServerLogScrollRestore(scrollState);
   }
 }
 
@@ -484,11 +543,15 @@ function handleWebServerLogError() {
     return;
   }
 
+  const scrollState = state.systemModal === "webserver-logs"
+    ? captureWebServerLogScrollState()
+    : null;
   state.webServerLogEnabled = false;
   state.webServerLogConnected = false;
   state.webServerLogError = "De live logstream kon niet worden geopend.";
   closeWebServerLogStream();
   render();
+  queueWebServerLogScrollRestore(scrollState);
 }
 
 function handleWebServerLogMessage(event) {
@@ -496,6 +559,7 @@ function handleWebServerLogMessage(event) {
     return;
   }
 
+  const scrollState = captureWebServerLogScrollState();
   const payload = normalizeWebServerLogPayload(event.data);
   if (!payload) {
     return;
@@ -516,14 +580,13 @@ function handleWebServerLogMessage(event) {
 
   const output = getWebServerLogOutputElement();
   const scroller = getWebServerLogScrollerElement();
-  const stickToBottom = isWebServerLogScrollerNearBottom(scroller);
 
   trimWebServerLogEntries(output);
   appendWebServerLogEntriesToDom(filteredEntries, output);
 
   state.webServerLogEnabled = true;
-  if (scroller && stickToBottom) {
-    scroller.scrollTop = scroller.scrollHeight;
+  if (scroller && scrollState) {
+    queueWebServerLogScrollRestore(scrollState, false);
   }
 }
 

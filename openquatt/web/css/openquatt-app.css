@@ -2553,6 +2553,7 @@ body.oq-surface-native {
   border: 1px solid var(--oq-helper-line);
   border-radius: 18px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(249, 250, 251, 0.98));
+  overflow-anchor: none;
 }
 
 .oq-helper-shell--dark .oq-webserver-log-panel {

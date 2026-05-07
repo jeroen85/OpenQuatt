@@ -7,6 +7,7 @@ const LOGO_MARKUP = `
   };
   const OFFICIAL_ESPHOME_UI_URL = "https://oi.esphome.io/v3/www.js";
   const ENTITY_REFRESH_CONCURRENCY = 2;
+  const FAST_VIEW_ENTITY_REFRESH_CONCURRENCY = 4;
   const TREND_HISTORY_REFRESH_INTERVAL_MS = 60000;
   const STRATEGY_OPTION_POWER_HOUSE = "Power House";
   const STRATEGY_OPTION_CURVE = "Water Temperature Control (heating curve)";
