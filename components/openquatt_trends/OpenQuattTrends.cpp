@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <string>
 
 #include "esphome/core/log.h"
 
@@ -16,6 +17,17 @@ static const char *const TAG = "openquatt.trends";
 namespace {
 
 constexpr uint32_t kDefaultWindowHours = 24;
+
+uint32_t parse_window_hours_value(const char *value) {
+  if (value == nullptr || value[0] == '\0') {
+    return kDefaultWindowHours;
+  }
+  const unsigned long parsed = std::strtoul(value, nullptr, 10);
+  if (parsed > 0) {
+    return static_cast<uint32_t>(parsed);
+  }
+  return kDefaultWindowHours;
+}
 
 uint32_t parse_window_hours_from_url(const char *url) {
   if (url == nullptr) {
@@ -36,10 +48,7 @@ uint32_t parse_window_hours_from_url(const char *url) {
       const size_t value_length = std::min<size_t>(length - 6, sizeof(buffer) - 1);
       std::memcpy(buffer, query + 6, value_length);
       buffer[value_length] = '\0';
-      const unsigned long parsed = std::strtoul(buffer, nullptr, 10);
-      if (parsed > 0) {
-        return static_cast<uint32_t>(parsed);
-      }
+      return parse_window_hours_value(buffer);
     }
 
     if (separator == nullptr) {
@@ -141,7 +150,9 @@ class OpenQuattTrendsRequestHandler : public AsyncWebHandler {
       return;
     }
 
-    const uint32_t window_hours = parse_window_hours_from_url(url_buf);
+    const std::string hours_arg = request->arg("hours");
+    const uint32_t window_hours = hours_arg.empty() ? parse_window_hours_from_url(url_buf)
+                                                    : parse_window_hours_value(hours_arg.c_str());
     httpd_req_t *req = *request;
     httpd_resp_set_status(req, HTTPD_200);
     httpd_resp_set_type(req, "text/plain; charset=utf-8");
