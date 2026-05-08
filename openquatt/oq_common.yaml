@@ -12,6 +12,14 @@
 # ==============================================================================
 # CORE RUNTIME SERVICES
 # ==============================================================================
+esphome:
+  on_boot:
+    priority: -100
+    then:
+      - lambda: |-
+          // Always start from a clean paused state after reboot or OTA.
+          id(oq_runtime_polling_paused).publish_state(false);
+
 logger:
   level: DEBUG
   initial_level: INFO
@@ -29,6 +37,8 @@ ota:
     on_begin:
       then:
         - lambda: |-
+            id(oq_runtime_polling_paused).publish_state(true);
+            ESP_LOGI("oq_fw", "Runtime polling paused for OTA.");
             id(oq_ota_phase_code) = 1;
             id(oq_ota_progress_pct) = 0.0f;
             id(oq_firmware_update_status).publish_state("Starting");
@@ -43,6 +53,8 @@ ota:
     on_end:
       then:
         - lambda: |-
+            id(oq_runtime_polling_paused).publish_state(false);
+            ESP_LOGI("oq_fw", "Runtime polling resumed after OTA.");
             id(oq_ota_phase_code) = 3;
             id(oq_ota_progress_pct) = 100.0f;
             id(oq_firmware_update_status).publish_state("Rebooting");
@@ -50,17 +62,23 @@ ota:
     on_error:
       then:
         - lambda: |-
+            id(oq_runtime_polling_paused).publish_state(false);
+            ESP_LOGI("oq_fw", "Runtime polling resumed after OTA error.");
             id(oq_ota_phase_code) = 5;
             id(oq_firmware_update_status).publish_state("Error");
     on_abort:
       then:
         - lambda: |-
+            id(oq_runtime_polling_paused).publish_state(false);
+            ESP_LOGI("oq_fw", "Runtime polling resumed after OTA abort.");
             id(oq_ota_phase_code) = 6;
             id(oq_firmware_update_status).publish_state("Aborted");
   - platform: http_request
     on_begin:
       then:
         - lambda: |-
+            id(oq_runtime_polling_paused).publish_state(true);
+            ESP_LOGI("oq_fw", "Runtime polling paused for OTA.");
             id(oq_ota_phase_code) = 1;
             id(oq_ota_progress_pct) = 0.0f;
             id(oq_firmware_update_status).publish_state("Starting");
@@ -75,6 +93,8 @@ ota:
     on_end:
       then:
         - lambda: |-
+            id(oq_runtime_polling_paused).publish_state(false);
+            ESP_LOGI("oq_fw", "Runtime polling resumed after OTA.");
             id(oq_ota_phase_code) = 3;
             id(oq_ota_progress_pct) = 100.0f;
             id(oq_firmware_update_status).publish_state("Rebooting");
@@ -82,11 +102,15 @@ ota:
     on_error:
       then:
         - lambda: |-
+            id(oq_runtime_polling_paused).publish_state(false);
+            ESP_LOGI("oq_fw", "Runtime polling resumed after OTA error.");
             id(oq_ota_phase_code) = 5;
             id(oq_firmware_update_status).publish_state("Error");
     on_abort:
       then:
         - lambda: |-
+            id(oq_runtime_polling_paused).publish_state(false);
+            ESP_LOGI("oq_fw", "Runtime polling resumed after OTA abort.");
             id(oq_ota_phase_code) = 6;
             id(oq_firmware_update_status).publish_state("Aborted");
 
@@ -185,6 +209,9 @@ script:
     then:
       - lambda: |-
           // Verzamel een compacte trendregel en sla alleen echte meetwaarden op.
+          if (id(oq_runtime_polling_paused).state) {
+            return;
+          }
           if (!id(oq_trend_history_enabled_switch).state) {
             return;
           }
@@ -420,6 +447,13 @@ binary_sensor:
     entity_category: diagnostic
     web_server:
       sorting_group_id: oq_system_diagnostics
+  - platform: template
+    id: oq_runtime_polling_paused
+    name: Runtime polling paused
+    internal: true
+    entity_category: diagnostic
+    lambda: |-
+      return false;
 
 sensor:
   - platform: debug

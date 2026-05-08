@@ -1232,4 +1232,9 @@ interval:
   - interval: ${oq_modbus_update_interval_s}s
     startup_delay: ${oq_modbus_startup_delay_ms}ms
     then:
-      - component.update: ${hp_id}
+      - if:
+          condition:
+            lambda: |-
+              return !id(oq_runtime_polling_paused).state;
+          then:
+            - component.update: ${hp_id}

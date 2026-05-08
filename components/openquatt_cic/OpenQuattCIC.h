@@ -42,6 +42,7 @@ class OpenQuattCIC : public PollingComponent {
   void set_cic_cooling_enabled(binary_sensor::BinarySensor *binary_sensor) { this->cic_cooling_enabled_ = binary_sensor; }
   void set_feed_ok(binary_sensor::BinarySensor *binary_sensor) { this->feed_ok_ = binary_sensor; }
   void set_data_stale(binary_sensor::BinarySensor *binary_sensor) { this->data_stale_ = binary_sensor; }
+  void set_pause_sensor(binary_sensor::BinarySensor *binary_sensor) { this->pause_sensor_ = binary_sensor; }
   void set_backoff_sensor(sensor::Sensor *sensor) { this->backoff_sensor_ = sensor; }
   void set_last_success_age_sensor(sensor::Sensor *sensor) { this->last_success_age_sensor_ = sensor; }
   void set_request_count_sensor(sensor::Sensor *sensor) { this->request_count_sensor_ = sensor; }
@@ -116,6 +117,7 @@ class OpenQuattCIC : public PollingComponent {
   binary_sensor::BinarySensor *cic_cooling_enabled_{nullptr};
   binary_sensor::BinarySensor *feed_ok_{nullptr};
   binary_sensor::BinarySensor *data_stale_{nullptr};
+  binary_sensor::BinarySensor *pause_sensor_{nullptr};
   sensor::Sensor *backoff_sensor_{nullptr};
   sensor::Sensor *last_success_age_sensor_{nullptr};
   sensor::Sensor *request_count_sensor_{nullptr};

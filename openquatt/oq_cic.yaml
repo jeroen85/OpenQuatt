@@ -197,5 +197,6 @@ openquatt_cic:
   cic_cooling_enabled: cic_cooling_enabled
   feed_ok: feed_ok
   data_stale: cic_data_stale
+  pause_sensor: oq_runtime_polling_paused
   backoff_sensor: cic_backoff_s
   last_success_age_sensor: cic_last_success_age_s

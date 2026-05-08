@@ -263,13 +263,13 @@ namespace esphome {
 		{
 			if (state == ota::OTA_STARTED) {
 				if (!m_otaActive) {
-					ESP_LOGI(TAG, "Pausing OpenTherm during OTA");
+					ESP_LOGI(TAG, "OpenTherm runtime paused for OTA.");
 					m_otaActive = true;
 					stop_opentherm_();
 				}
 			} else if (state == ota::OTA_ABORT || state == ota::OTA_ERROR || state == ota::OTA_COMPLETED) {
 				if (m_otaActive) {
-					ESP_LOGI(TAG, "OpenTherm OTA state ended");
+					ESP_LOGI(TAG, "OpenTherm runtime resumed after OTA.");
 					m_otaActive = false;
 					if (m_enabled && !m_updatePrepareActive) {
 						schedule_opentherm_start_();

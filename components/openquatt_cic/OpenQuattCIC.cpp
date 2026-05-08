@@ -33,6 +33,10 @@ void OpenQuattCIC::setup() {
 void OpenQuattCIC::update() {
   const uint32_t now_ms = millis();
 
+  if (this->pause_sensor_ != nullptr && this->pause_sensor_->state) {
+    return;
+  }
+
   if (this->enabled_switch_ == nullptr || !this->enabled_switch_->state) {
     this->handle_disabled_();
     this->publish_diagnostics_if_due_(now_ms, false);
@@ -61,6 +65,10 @@ void OpenQuattCIC::update() {
 }
 
 void OpenQuattCIC::loop() {
+  if (this->pause_sensor_ != nullptr && this->pause_sensor_->state) {
+    return;
+  }
+
   if (this->fetch_result_.ready) {
     this->finalize_fetch_();
   }

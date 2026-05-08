@@ -27,6 +27,7 @@ CONF_CIC_CH_ENABLED = "cic_ch_enabled"
 CONF_CIC_COOLING_ENABLED = "cic_cooling_enabled"
 CONF_FEED_OK = "feed_ok"
 CONF_DATA_STALE = "data_stale"
+CONF_PAUSE_SENSOR = "pause_sensor"
 CONF_BACKOFF_SENSOR = "backoff_sensor"
 CONF_LAST_SUCCESS_AGE_SENSOR = "last_success_age_sensor"
 CONF_REQUEST_COUNT_SENSOR = "request_count_sensor"
@@ -59,6 +60,7 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Required(CONF_CIC_COOLING_ENABLED): cv.use_id(binary_sensor.BinarySensor),
         cv.Required(CONF_FEED_OK): cv.use_id(binary_sensor.BinarySensor),
         cv.Required(CONF_DATA_STALE): cv.use_id(binary_sensor.BinarySensor),
+        cv.Required(CONF_PAUSE_SENSOR): cv.use_id(binary_sensor.BinarySensor),
         cv.Required(CONF_BACKOFF_SENSOR): cv.use_id(sensor.Sensor),
         cv.Required(CONF_LAST_SUCCESS_AGE_SENSOR): cv.use_id(sensor.Sensor),
         cv.Optional(CONF_REQUEST_COUNT_SENSOR): cv.use_id(sensor.Sensor),
@@ -100,6 +102,7 @@ async def to_code(config):
         CONF_CIC_COOLING_ENABLED,
         CONF_FEED_OK,
         CONF_DATA_STALE,
+        CONF_PAUSE_SENSOR,
         CONF_BACKOFF_SENSOR,
         CONF_LAST_SUCCESS_AGE_SENSOR,
     ]:
