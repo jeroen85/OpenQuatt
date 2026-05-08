@@ -517,6 +517,8 @@ const LOGO_MARKUP = `
     "openquattEnabled",
     "openquattResumeAt",
     "manualCoolingEnable",
+    "trendHistoryEnabled",
+    "trendHistoryFlashEnabled",
     "coolingPermitted",
     "coolingRequestActive",
     "coolingBlockReason",
@@ -6914,12 +6916,12 @@ function renderWebServerLogsModal() {
     const writesValue = getSettingsStatValue("trendHistoryFlashWrites");
 
     const controlMarkup = `
-      <div class="oq-settings-trend-stats-shell">
+        <div class="oq-settings-trend-stats-shell">
         <div class="oq-settings-trend-stats-summary">
           <div class="oq-settings-trend-stats-summary-copy">
-            <span class="oq-settings-trend-stats-summary-label">Beschikbaar</span>
+            <span class="oq-settings-trend-stats-summary-label">Flashhistorie</span>
             <strong class="oq-settings-trend-stats-summary-value">${escapeHtml(availableValue)}</strong>
-            <p class="oq-settings-trend-stats-summary-note">Nieuwste punt ${escapeHtml(newestValue)}.</p>
+            <p class="oq-settings-trend-stats-summary-note">Nieuwste punt in flash: ${escapeHtml(newestValue)}.</p>
           </div>
           <div class="oq-settings-trend-stats-badges" aria-label="Flashhistorie statistieken">
             <div class="oq-settings-trend-stats-badge">
@@ -9835,15 +9837,25 @@ function renderWebServerLogsModal() {
     return `${hours} uur`;
   }
 
-  function formatOverviewTrendAxisLabel(totalMinutes) {
-    if (!Number.isFinite(totalMinutes) || totalMinutes < 0) {
+  function formatOverviewTrendDateTimeLabel(timestamp) {
+    if (!Number.isFinite(timestamp)) {
       return "—";
     }
-    const roundedMinutes = Math.round(totalMinutes);
-    if (roundedMinutes % 60 === 0) {
-      return `${roundedMinutes / 60}u`;
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) {
+      return "—";
     }
-    return formatOverviewTrendDurationLabel(roundedMinutes);
+    const options = {
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    };
+    try {
+      return new Intl.DateTimeFormat("nl-NL", options).format(date);
+    } catch (_error) {
+      return date.toLocaleString("nl-NL", options);
+    }
   }
 
   function getOverviewUptimeMillis() {
@@ -10251,9 +10263,10 @@ function renderWebServerLogsModal() {
 
   function renderOverviewTrendChart(samples, series, mockData = false, windowHours = getOverviewTrendWindowHours()) {
     const model = getOverviewTrendChartModel(samples, series, { mockData, windowHours });
-    const windowLabel = formatOverviewTrendWindowLabel(windowHours);
     const windowText = formatOverviewTrendWindowText(windowHours);
-    const midpointLabel = formatOverviewTrendAxisLabel((windowHours * 60) / 2);
+    const startLabel = formatOverviewTrendDateTimeLabel(model.startTime);
+    const midpointLabel = formatOverviewTrendDateTimeLabel(model.startTime + (model.span / 2));
+    const endLabel = formatOverviewTrendDateTimeLabel(model.endTime);
     const seriesPaths = model.tracks.flatMap((track) => {
       if (track.points.length < 2) {
         const point = track.points[0];
@@ -10298,9 +10311,9 @@ function renderWebServerLogsModal() {
           `).join("")}
         </g>
         <line x1="${model.left}" y1="${model.height - model.bottom}" x2="${model.width - model.right}" y2="${model.height - model.bottom}" class="oq-overview-trend-axis"></line>
-        <text x="${model.left}" y="${model.height - 12}" class="oq-overview-trend-axis-label" text-anchor="start">${escapeHtml(windowLabel)}</text>
+        <text x="${model.left}" y="${model.height - 12}" class="oq-overview-trend-axis-label" text-anchor="start">${escapeHtml(startLabel)}</text>
         <text x="${model.left + (model.plotWidth / 2)}" y="${model.height - 12}" class="oq-overview-trend-axis-label" text-anchor="middle">${escapeHtml(midpointLabel)}</text>
-        <text x="${model.width - model.right}" y="${model.height - 12}" class="oq-overview-trend-axis-label" text-anchor="end">nu</text>
+        <text x="${model.width - model.right}" y="${model.height - 12}" class="oq-overview-trend-axis-label" text-anchor="end">${escapeHtml(endLabel)}</text>
       </svg>
     `;
   }
@@ -10368,7 +10381,8 @@ function renderWebServerLogsModal() {
           ${(() => {
             const requiresFlashHistory = hours > 168;
             const disabled = requiresFlashHistory && !flashHistoryEnabled;
-            const title = disabled ? "Beschikbaar zodra trendhistorie opslaan in flash actief is." : "";
+            const requiredDays = hours / 24;
+            const title = disabled ? `Beschikbaar zodra er minimaal ${requiredDays} dagen flashhistorie is opgeslagen.` : "";
             return `
           <button
             class="oq-overview-controlpanel-segment${windowHours === hours ? " is-selected" : ""}${disabled ? " is-disabled" : ""}"

@@ -723,7 +723,8 @@
     const safeWindowHours = Number.isFinite(Number(windowHours)) && Number(windowHours) > 0 ? Number(windowHours) : 24;
     const windowMs = safeWindowHours * 60 * 60 * 1000;
     const points = Math.max(12, Math.round(safeWindowHours * 12));
-    const startTime = 0;
+    const endTime = Date.now();
+    const startTime = endTime - windowMs;
     const span = Math.max(points - 1, 1);
     const samples = [];
 

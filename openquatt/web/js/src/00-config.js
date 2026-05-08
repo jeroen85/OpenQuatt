@@ -513,6 +513,8 @@ const LOGO_MARKUP = `
     "openquattEnabled",
     "openquattResumeAt",
     "manualCoolingEnable",
+    "trendHistoryEnabled",
+    "trendHistoryFlashEnabled",
     "coolingPermitted",
     "coolingRequestActive",
     "coolingBlockReason",

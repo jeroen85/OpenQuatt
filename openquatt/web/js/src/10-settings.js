@@ -60,12 +60,12 @@
     const writesValue = getSettingsStatValue("trendHistoryFlashWrites");
 
     const controlMarkup = `
-      <div class="oq-settings-trend-stats-shell">
+        <div class="oq-settings-trend-stats-shell">
         <div class="oq-settings-trend-stats-summary">
           <div class="oq-settings-trend-stats-summary-copy">
-            <span class="oq-settings-trend-stats-summary-label">Beschikbaar</span>
+            <span class="oq-settings-trend-stats-summary-label">Flashhistorie</span>
             <strong class="oq-settings-trend-stats-summary-value">${escapeHtml(availableValue)}</strong>
-            <p class="oq-settings-trend-stats-summary-note">Nieuwste punt ${escapeHtml(newestValue)}.</p>
+            <p class="oq-settings-trend-stats-summary-note">Nieuwste punt in flash: ${escapeHtml(newestValue)}.</p>
           </div>
           <div class="oq-settings-trend-stats-badges" aria-label="Flashhistorie statistieken">
             <div class="oq-settings-trend-stats-badge">
