@@ -369,30 +369,49 @@ interval:
               id(oq_flow_at_w1) = id(oq_flow_at_w2);
               id(oq_flow_at_w2) = pv;
               if (!isnan(id(oq_flow_at_w0)) && !isnan(id(oq_flow_at_w1)) && !isnan(id(oq_flow_at_w2)) && ${oq_flow_autotune_ss_window} == 3) {
-                id(oq_flow_at_pv_ss) = (id(oq_flow_at_w0) + id(oq_flow_at_w1) + id(oq_flow_at_w2)) / 3.0f;
+                const float w0 = id(oq_flow_at_w0);
+                const float w1 = id(oq_flow_at_w1);
+                const float w2 = id(oq_flow_at_w2);
+                const float w_min = fminf(w0, fminf(w1, w2));
+                const float w_max = fmaxf(w0, fmaxf(w1, w2));
+                const float spread = w_max - w_min;
+                const float slope01 = fabsf(w1 - w0);
+                const float slope12 = fabsf(w2 - w1);
+
+                // Only trust the final value once the response has flattened out.
+                // This keeps the 63% latch conservative instead of locking on to a
+                // transient rolling average that is still climbing toward steady state.
+                const bool ss_ready = (spread <= 6.0f) && (slope01 <= 2.0f) && (slope12 <= 2.0f);
+                if (ss_ready) {
+                  id(oq_flow_at_pv_ss) = (w0 + w1 + w2) / 3.0f;
+                }
               }
 
-              float pv_ss_est = id(oq_flow_at_pv_ss);
-              if (!isnan(pv_ss_est)) {
-                float dpv = pv_ss_est - pv0;
-                float pv63 = pv0 + 0.632f * dpv;
+              const float pv_ss_est = id(oq_flow_at_pv_ss);
+              if (!isnan(pv_ss_est) && isnan(id(oq_flow_at_pv63_time_s))) {
+                const float dpv = pv_ss_est - pv0;
+                const float pv63 = pv0 + 0.632f * dpv;
 
-                if (isnan(id(oq_flow_at_pv63_time_s))) {
-                  if (dpv >= 0.0f) {
-                    if (pv >= pv63) id(oq_flow_at_pv63_time_s) = (float) t;
-                  } else {
-                    if (pv <= pv63) id(oq_flow_at_pv63_time_s) = (float) t;
-                  }
+                if (dpv >= 0.0f) {
+                  if (pv >= pv63) id(oq_flow_at_pv63_time_s) = (float) t;
+                } else {
+                  if (pv <= pv63) id(oq_flow_at_pv63_time_s) = (float) t;
                 }
               }
 
               id(oq_flow_at_t) = t + (int) sample_time_s;
 
               if (t >= max_s) {
-                id(oq_flow_autotune_state) = 3;
+                if (isnan(id(oq_flow_at_pv_ss))) {
+                  st = 4;
+                  id(oq_flow_autotune_status).publish_state("ABORT: NO_STEADY_STATE");
+                } else {
+                  st = 3;
+                }
               } else {
-                id(oq_flow_autotune_state) = 2;
+                st = 2;
               }
+              id(oq_flow_autotune_state) = st;
               return;
             }
             id(oq_flow_autotune_state) = st;
@@ -418,6 +437,11 @@ interval:
 
             const float dpv = pv_ss - pv0;
             const float K = dpv / du;  // (L/h)/iPWM
+            if (!(K > 0.0f)) {
+              id(oq_flow_autotune_status).publish_state("FAILED: INVALID_GAIN");
+              id(oq_flow_autotune_state) = 0;
+              return;
+            }
             float tau = t63;
             if (isnan(tau) || tau < sample_time_s) tau = ${oq_flow_autotune_tau_fallback_s};
 
