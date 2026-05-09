@@ -681,7 +681,7 @@ interval:
             request_reason_code = 1;
             id(oq_duo_request_hold_until_ms) = 0;
             // Use a fixed fallback threshold now that the tuning entity is gone.
-            int dual_on_f = std::max(2, std::min(5, demand_max_f));
+            int dual_on_f = std::max(2, std::min(9, demand_max_f));
             int dual_off_f = dual_on_f - 2;
             if (dual_off_f < 1) dual_off_f = 1;
 
