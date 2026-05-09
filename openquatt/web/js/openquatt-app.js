@@ -8623,7 +8623,7 @@ function renderWebServerLogsModal() {
     return renderSettingsSection(
       "Toegang",
       "Toegang & Beveiliging",
-      "Open de modals om de web-login of de ESPHome API-sleutel aan te passen.",
+      "Pas hier de web-login of de ESPHome API-sleutel aan.",
       `
         <div class="oq-settings-access-security-shell">
           <div class="oq-settings-quickstart-status" data-oq-access-security-item="login">
@@ -8654,7 +8654,7 @@ function renderWebServerLogsModal() {
                 type="button"
                 data-oq-action="open-api-security-modal"
               >
-                Beheren
+                Aanpassen
               </button>
             </div>
           </div>
