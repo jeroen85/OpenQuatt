@@ -432,8 +432,8 @@
 
 .oq-api-security-key-block {
   display: grid;
-  gap: 10px;
-  margin-top: 14px;
+  gap: 18px;
+  margin-top: 18px;
   max-width: 640px;
 }
 
@@ -446,6 +446,9 @@
   display: flex;
   align-items: baseline;
   gap: 8px;
+  width: fit-content;
+  padding: 0 0 12px;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.9);
   color: var(--oq-helper-faint);
   font-size: 0.84rem;
   font-weight: 700;
@@ -481,6 +484,11 @@
   color: #cbd5e1;
 }
 
+.oq-helper-shell--dark .oq-api-security-status-line,
+.oq-helper-modal-backdrop--dark .oq-api-security-status-line {
+  border-bottom-color: rgba(71, 85, 105, 0.68);
+}
+
 .oq-settings-api-security-key-value {
   box-sizing: border-box;
   min-width: 0;
@@ -506,6 +514,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  margin-top: 12px;
 }
 
 .oq-settings-installation-summary,
