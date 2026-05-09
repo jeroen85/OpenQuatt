@@ -2019,6 +2019,15 @@
       return;
     }
 
+    if (action === "open-api-security-modal") {
+      state.systemModal = "api-security";
+      state.apiSecurityNotice = "";
+      state.apiSecurityError = "";
+      render();
+      void refreshApiSecurityStatus();
+      return;
+    }
+
     if (action === "copy-api-security-key") {
       void copyApiSecurityKey();
       return;
@@ -2147,6 +2156,8 @@
       state.authDraftConfirmPassword = "";
       state.authNotice = "";
       state.authError = "";
+      state.apiSecurityNotice = "";
+      state.apiSecurityError = "";
       clearSettingsBackupDraft();
       render();
       return;

@@ -393,6 +393,15 @@
   line-height: 1.55;
 }
 
+.oq-settings-access-security-shell {
+  display: grid;
+  gap: 12px;
+}
+
+.oq-settings-access-security-shell .oq-settings-quickstart-status-row {
+  align-items: flex-start;
+}
+
 .oq-settings-api-security-shell {
   display: grid;
   gap: 14px;

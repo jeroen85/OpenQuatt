@@ -2361,12 +2361,142 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       : "Login uit. Webtoegang is open / onbeveiligd op het netwerk.";
   }
 
+  function getApiSecurityModalTitle() {
+    return "ESPHome API encryption";
+  }
+
+  function getApiSecurityModalCopy() {
+    const status = state.apiSecurityStatus;
+    if (!status) {
+      return "We halen de huidige API-beveiliging op.";
+    }
+    if (status.enabled) {
+      return "De native API is beveiligd. Je kunt de sleutel hier bekijken, kopiëren of roteren.";
+    }
+    if (status.key) {
+      return "De sleutel blijft opgeslagen, ook wanneer encryptie uit staat. Je kunt hem hier meteen kopiëren of opnieuw inschakelen.";
+    }
+    return "Er is nog geen API-sleutel opgeslagen. Inschakelen maakt direct een nieuwe sleutel aan.";
+  }
+
+  function getApiSecurityModalNotice() {
+    const status = state.apiSecurityStatus;
+    if (!status) {
+      return "";
+    }
+    if (status.enabled) {
+      return "API-encryptie staat aan.";
+    }
+    if (status.key) {
+      return "API-encryptie staat uit, maar de sleutel blijft bewaard.";
+    }
+    return "Er is nog geen API-sleutel opgeslagen.";
+  }
+
+  function getApiSecurityModalStatusDetail() {
+    const status = state.apiSecurityStatus;
+    if (!status) {
+      return "API-beveiliging laden...";
+    }
+    if (status.enabled) {
+      return "De native ESPHome API gebruikt deze sleutel nu voor verbindingen.";
+    }
+    if (status.key) {
+      return "De sleutel blijft zichtbaar in de web-app en kan later weer worden ingeschakeld.";
+    }
+    return "Na inschakelen verschijnt hier direct de nieuwe sleutel.";
+  }
+
+  function getApiSecurityToggleLabel() {
+    const status = state.apiSecurityStatus;
+    if (!status) {
+      return "Laden...";
+    }
+    return status.enabled ? "Uitschakelen" : status.key ? "Inschakelen" : "Genereer en schakel in";
+  }
+
+  function getApiSecurityRotateLabel() {
+    const status = state.apiSecurityStatus;
+    if (!status) {
+      return "Laden...";
+    }
+    return status.key ? "Roteer sleutel" : "Genereer sleutel";
+  }
+
   function renderLoginStatusRow(label, value, copy = "") {
     return `
       <div class="oq-helper-modal-row">
         <span class="oq-helper-modal-label">${escapeHtml(label)}</span>
         <strong class="oq-helper-modal-value">${escapeHtml(value)}</strong>
-        ${copy ? `<span class="oq-helper-modal-subvalue">${escapeHtml(copy)}</span>` : ""}
+      ${copy ? `<span class="oq-helper-modal-subvalue">${escapeHtml(copy)}</span>` : ""}
+    </div>
+    `;
+  }
+
+  function renderApiSecurityModal() {
+    const status = state.apiSecurityStatus || {};
+    const enabled = status.enabled === true;
+    const hasKey = Boolean(status.key);
+    const modalNotice = state.apiSecurityNotice || getApiSecurityModalNotice();
+    const errorMarkup = state.apiSecurityError
+      ? `<div class="oq-helper-modal-note oq-helper-modal-note--error" aria-live="assertive">${escapeHtml(state.apiSecurityError)}</div>`
+      : "";
+
+    return `
+      <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
+        <section class="oq-helper-modal oq-helper-modal--wide" role="dialog" aria-modal="true" aria-labelledby="oq-api-security-modal-title">
+          <div class="oq-helper-modal-head">
+            <div>
+              <p class="oq-helper-modal-kicker">Toegang</p>
+              <h2 class="oq-helper-modal-title" id="oq-api-security-modal-title">${escapeHtml(getApiSecurityModalTitle())}</h2>
+            </div>
+            <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit API-beveiliging popup">×</button>
+          </div>
+          <p class="oq-helper-modal-copy">${escapeHtml(getApiSecurityModalCopy())}</p>
+          ${modalNotice ? `<div class="oq-helper-modal-success oq-helper-modal-success--compact" aria-live="polite"><strong>Status</strong><span>${escapeHtml(modalNotice)}</span></div>` : ""}
+          ${errorMarkup}
+          <div class="oq-helper-modal-grid">
+            ${renderLoginStatusRow("Huidige status", getApiSecurityStatusLabel(), getApiSecurityStatusDetail())}
+            ${renderLoginStatusRow("Bron", status.source || "Onbekend", hasKey ? "De sleutel is opgeslagen en blijft zichtbaar in deze web-app." : "Er is nog geen opgeslagen sleutel.") }
+          </div>
+          <div class="oq-helper-modal-callout oq-helper-modal-callout--subtle">
+            <strong>API-sleutel</strong>
+            <span>${escapeHtml(hasKey ? "Deze sleutel gebruik je in Home Assistant om met de native ESPHome API te verbinden." : "Inschakelen maakt direct een nieuwe sleutel aan en toont die hier.")}</span>
+          </div>
+          <div class="oq-settings-api-security-key-row">
+            <div class="oq-settings-api-security-key-value">${escapeHtml(status.key || "Nog geen sleutel ingesteld")}</div>
+          </div>
+          <div class="oq-settings-api-security-actions">
+            <button
+              class="oq-helper-button oq-helper-button--primary"
+              type="button"
+              data-oq-action="${enabled ? "disable-api-security" : "enable-api-security"}"
+              ${state.apiSecurityBusy || !status.csrf_token ? "disabled" : ""}
+            >
+              ${escapeHtml(getApiSecurityToggleLabel())}
+            </button>
+            <button
+              class="oq-helper-button oq-helper-button--ghost"
+              type="button"
+              data-oq-action="rotate-api-security"
+              ${state.apiSecurityBusy || !status.csrf_token ? "disabled" : ""}
+            >
+              ${escapeHtml(getApiSecurityRotateLabel())}
+            </button>
+            <button
+              class="oq-helper-button oq-helper-button--ghost"
+              type="button"
+              data-oq-action="copy-api-security-key"
+              ${state.apiSecurityBusy || !hasKey ? "disabled" : ""}
+            >
+              Kopieer sleutel
+            </button>
+          </div>
+          <p class="oq-helper-modal-note">Home Assistant moet deze sleutel gebruiken om weer met de native API te verbinden.</p>
+          <div class="oq-helper-modal-actions">
+            <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="close-system-modal" ${state.apiSecurityBusy ? "disabled" : ""}>Gereed</button>
+          </div>
+        </section>
       </div>
     `;
   }
@@ -2862,6 +2992,10 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
   function renderSystemModal() {
     if (state.systemModal === "login") {
       return renderLoginModal();
+    }
+
+    if (state.systemModal === "api-security") {
+      return renderApiSecurityModal();
     }
 
     if (state.systemModal === "connectivity") {
@@ -5072,6 +5206,15 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       return;
     }
 
+    if (action === "open-api-security-modal") {
+      state.systemModal = "api-security";
+      state.apiSecurityNotice = "";
+      state.apiSecurityError = "";
+      render();
+      void refreshApiSecurityStatus();
+      return;
+    }
+
     if (action === "copy-api-security-key") {
       void copyApiSecurityKey();
       return;
@@ -5200,6 +5343,8 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       state.authDraftConfirmPassword = "";
       state.authNotice = "";
       state.authError = "";
+      state.apiSecurityNotice = "";
+      state.apiSecurityError = "";
       clearSettingsBackupDraft();
       render();
       return;
@@ -7487,7 +7632,7 @@ function renderWebServerLogsModal() {
         ? [renderSettingsHeatingSection()]
         : activeGroup === "cooling"
           ? [renderSettingsCoolingSection()]
-      : activeGroup === "advanced"
+        : activeGroup === "advanced"
             ? [
                 renderSettingsFlowSection(),
                 renderSettingsCompressorSection(),
@@ -7496,8 +7641,7 @@ function renderWebServerLogsModal() {
             : [
                 renderSettingsQuickStartSection(),
                 renderSettingsTrendSection(),
-                renderSettingsLoginSection(),
-                renderSettingsApiSecuritySection(),
+                renderSettingsAccessSecuritySection(),
                 renderSettingsBackupSection(),
                 renderSettingsDiagnosticsSection(),
               ];
@@ -7680,22 +7824,36 @@ function renderWebServerLogsModal() {
       }
     }
 
-    const loginStatus = stack.querySelector('button[data-oq-action="open-login-modal"]')?.closest(".oq-settings-quickstart-status");
-    if (loginStatus) {
-      const valueNode = loginStatus.querySelector(".oq-settings-quickstart-status-value");
-      const copyNode = loginStatus.querySelector(".oq-settings-quickstart-status-copy");
-      const button = loginStatus.querySelector('button[data-oq-action="open-login-modal"]');
-      const statusLabel = getWebAuthStatusLabel();
-      const statusCopy = getWebAuthStatusDetail();
-      if (valueNode && valueNode.textContent !== statusLabel) {
-        valueNode.textContent = statusLabel;
-      }
-      if (copyNode && copyNode.textContent !== statusCopy) {
-        copyNode.textContent = statusCopy;
-      }
-      if (button) {
-        button.disabled = false;
-      }
+    const accessRows = stack.querySelectorAll('[data-oq-access-security-item]');
+    if (accessRows.length) {
+      accessRows.forEach((row) => {
+        const item = String(row.dataset.oqAccessSecurityItem || "");
+        const valueNode = row.querySelector(".oq-settings-quickstart-status-value");
+        const copyNode = row.querySelector(".oq-settings-quickstart-status-copy");
+        const button = row.querySelector("button[data-oq-action]");
+        if (item === "login") {
+          const statusLabel = getWebAuthStatusLabel();
+          const statusCopy = getWebAuthStatusDetail();
+          if (valueNode && valueNode.textContent !== statusLabel) {
+            valueNode.textContent = statusLabel;
+          }
+          if (copyNode && copyNode.textContent !== statusCopy) {
+            copyNode.textContent = statusCopy;
+          }
+        } else if (item === "api") {
+          const statusLabel = getApiSecurityStatusLabel();
+          const statusCopy = getApiSecurityStatusDetail();
+          if (valueNode && valueNode.textContent !== statusLabel) {
+            valueNode.textContent = statusLabel;
+          }
+          if (copyNode && copyNode.textContent !== statusCopy) {
+            copyNode.textContent = statusCopy;
+          }
+        }
+        if (button) {
+          button.disabled = false;
+        }
+      });
     }
 
     const systemSummary = stack.querySelector(".oq-settings-system-summary");
@@ -8461,6 +8619,50 @@ function renderWebServerLogsModal() {
     );
   }
 
+  function renderSettingsAccessSecuritySection() {
+    return renderSettingsSection(
+      "Toegang",
+      "Toegang & Beveiliging",
+      "Open de modals om de web-login of de ESPHome API-sleutel aan te passen.",
+      `
+        <div class="oq-settings-access-security-shell">
+          <div class="oq-settings-quickstart-status" data-oq-access-security-item="login">
+            <div class="oq-settings-quickstart-status-row">
+              <div>
+                <p class="oq-settings-quickstart-status-label">Login</p>
+                <strong class="oq-settings-quickstart-status-value">${escapeHtml(getWebAuthStatusLabel())}</strong>
+                <p class="oq-settings-quickstart-status-copy">${escapeHtml(getWebAuthStatusDetail())}</p>
+              </div>
+              <button
+                class="oq-helper-button oq-helper-button--ghost"
+                type="button"
+                data-oq-action="open-login-modal"
+              >
+                Aanpassen
+              </button>
+            </div>
+          </div>
+          <div class="oq-settings-quickstart-status" data-oq-access-security-item="api">
+            <div class="oq-settings-quickstart-status-row">
+              <div>
+                <p class="oq-settings-quickstart-status-label">ESPHome API encryption</p>
+                <strong class="oq-settings-quickstart-status-value">${escapeHtml(getApiSecurityStatusLabel())}</strong>
+                <p class="oq-settings-quickstart-status-copy">${escapeHtml(getApiSecurityStatusDetail())}</p>
+              </div>
+              <button
+                class="oq-helper-button oq-helper-button--ghost"
+                type="button"
+                data-oq-action="open-api-security-modal"
+              >
+                Beheren
+              </button>
+            </div>
+          </div>
+        </div>
+      `,
+    );
+  }
+
   function getApiSecurityStatusLabel() {
     const status = state.apiSecurityStatus;
     if (!status) {
@@ -8492,63 +8694,6 @@ function renderWebServerLogsModal() {
       return "Uitschakelen";
     }
     return status.key ? "Inschakelen" : "Genereer en schakel in";
-  }
-
-  function renderSettingsApiSecuritySection() {
-    return renderSettingsSection(
-      "Toegang",
-      "ESPHome API encryption",
-      "Beheer hier de native ESPHome API-sleutel. De sleutel blijft zichtbaar in deze web-app zodra je hem hebt aangemaakt.",
-      `
-        <div class="oq-settings-api-security-shell">
-          <div class="oq-settings-quickstart-status-row oq-settings-api-security-status-row">
-            <div>
-              <p class="oq-settings-quickstart-status-label">Huidige status</p>
-              <strong class="oq-settings-quickstart-status-value">${escapeHtml(getApiSecurityStatusLabel())}</strong>
-              <p class="oq-settings-quickstart-status-copy">${escapeHtml(getApiSecurityStatusDetail())}</p>
-            </div>
-            <button
-              class="oq-helper-button oq-helper-button--ghost"
-              type="button"
-              data-oq-action="${state.apiSecurityStatus?.enabled ? "disable-api-security" : "enable-api-security"}"
-              ${state.apiSecurityBusy || !state.apiSecurityStatus ? "disabled" : ""}
-            >
-              ${escapeHtml(getApiSecurityActionLabel())}
-            </button>
-          </div>
-
-          <div class="oq-settings-api-security-key">
-            <div class="oq-settings-field-head">
-              <h3>API-sleutel</h3>
-            </div>
-            <div class="oq-settings-api-security-key-row">
-              <div class="oq-settings-api-security-key-value">${escapeHtml(state.apiSecurityStatus?.key || "Nog geen sleutel ingesteld")}</div>
-            </div>
-            <div class="oq-settings-api-security-actions">
-              <button
-              class="oq-helper-button oq-helper-button--ghost"
-              type="button"
-              data-oq-action="rotate-api-security"
-                ${state.apiSecurityBusy || !state.apiSecurityStatus ? "disabled" : ""}
-              >
-                Roteer sleutel
-              </button>
-              <button
-                class="oq-helper-button oq-helper-button--ghost"
-                type="button"
-                data-oq-action="copy-api-security-key"
-                ${state.apiSecurityBusy || !state.apiSecurityStatus?.key ? "disabled" : ""}
-              >
-                Kopieer sleutel
-              </button>
-            </div>
-            ${state.apiSecurityNotice ? `<p class="oq-settings-action-note">${escapeHtml(state.apiSecurityNotice)}</p>` : ""}
-            ${state.apiSecurityError ? `<p class="oq-settings-action-note oq-settings-action-note--error">${escapeHtml(state.apiSecurityError)}</p>` : ""}
-            <p class="oq-settings-action-note">Home Assistant moet deze sleutel gebruiken om weer met de native API te verbinden.</p>
-          </div>
-        </div>
-      `,
-    );
   }
 
   function renderSettingsBackupSection() {
