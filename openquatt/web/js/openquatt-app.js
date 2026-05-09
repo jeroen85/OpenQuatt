@@ -2393,20 +2393,6 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     return "Er is nog geen API-sleutel opgeslagen.";
   }
 
-  function getApiSecurityModalStatusDetail() {
-    const status = state.apiSecurityStatus;
-    if (!status) {
-      return "API-beveiliging laden...";
-    }
-    if (status.enabled) {
-      return "De native ESPHome API gebruikt deze sleutel nu voor verbindingen.";
-    }
-    if (status.key) {
-      return "De sleutel blijft zichtbaar in de web-app en kan later weer worden ingeschakeld.";
-    }
-    return "Na inschakelen verschijnt hier direct de nieuwe sleutel.";
-  }
-
   function getApiSecurityToggleLabel() {
     const status = state.apiSecurityStatus;
     if (!status) {
@@ -2455,15 +2441,11 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
           <p class="oq-helper-modal-copy">${escapeHtml(getApiSecurityModalCopy())}</p>
           ${modalNotice ? `<div class="oq-helper-modal-success oq-helper-modal-success--compact" aria-live="polite"><strong>Status</strong><span>${escapeHtml(modalNotice)}</span></div>` : ""}
           ${errorMarkup}
-          <div class="oq-helper-modal-grid">
-            ${renderLoginStatusRow("Huidige status", getApiSecurityStatusLabel(), getApiSecurityStatusDetail())}
-            ${renderLoginStatusRow("Bron", status.source || "Onbekend", hasKey ? "De sleutel is opgeslagen en blijft zichtbaar in deze web-app." : "Er is nog geen opgeslagen sleutel.") }
-          </div>
-          <div class="oq-helper-modal-callout oq-helper-modal-callout--subtle">
-            <strong>API-sleutel</strong>
-            <span>${escapeHtml(hasKey ? "Deze sleutel gebruik je in Home Assistant om met de native ESPHome API te verbinden." : "Inschakelen maakt direct een nieuwe sleutel aan en toont die hier.")}</span>
-          </div>
-          <div class="oq-settings-api-security-key-row">
+          <div class="oq-api-security-key-block">
+            <div class="oq-api-security-key-head">
+              <strong>API-sleutel</strong>
+              <span>${escapeHtml(hasKey ? "Gebruik deze sleutel in Home Assistant voor de ESPHome-integratie." : "Inschakelen maakt direct een nieuwe sleutel aan.")}</span>
+            </div>
             <div class="oq-settings-api-security-key-value">${escapeHtml(status.key || "Nog geen sleutel ingesteld")}</div>
           </div>
           <div class="oq-settings-api-security-actions">
@@ -2492,7 +2474,6 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
               Kopieer sleutel
             </button>
           </div>
-          <p class="oq-helper-modal-note">Home Assistant moet deze sleutel gebruiken om weer met de native API te verbinden.</p>
           <div class="oq-helper-modal-actions">
             <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="close-system-modal" ${state.apiSecurityBusy ? "disabled" : ""}>Gereed</button>
           </div>

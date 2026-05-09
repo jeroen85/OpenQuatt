@@ -430,6 +430,38 @@
   align-items: flex-start;
 }
 
+.oq-api-security-key-block {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.oq-api-security-key-head {
+  display: grid;
+  gap: 3px;
+}
+
+.oq-api-security-key-head strong {
+  color: var(--oq-helper-ink);
+  font-size: 0.98rem;
+}
+
+.oq-api-security-key-head span {
+  color: var(--oq-helper-soft);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.oq-helper-shell--dark .oq-api-security-key-head strong,
+.oq-helper-modal-backdrop--dark .oq-api-security-key-head strong {
+  color: #f8fafc;
+}
+
+.oq-helper-shell--dark .oq-api-security-key-head span,
+.oq-helper-modal-backdrop--dark .oq-api-security-key-head span {
+  color: #cbd5e1;
+}
+
 .oq-settings-api-security-key-value {
   min-width: 0;
   width: 100%;
