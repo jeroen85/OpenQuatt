@@ -37,9 +37,6 @@ esphome:
     - ${thermal_request_logic_header}
     - ${heating_curve_logic_header}
   platformio_options:
-    board_build.partitions: ../../../openquatt/partitions/openquatt_8mb_trends.csv
-    extra_scripts:
-      - pre:../../../scripts/fix_factory_flasher_args.py
     build_flags:
       # Hard-pinned for Duo entrypoints to prevent accidental topology drift.
       - -DOQ_TOPOLOGY_DUO=1
@@ -66,6 +63,7 @@ esp32:
   board: ${esp_board}
   flash_size: ${esp_flash_size}
   variant: ${esp_variant}
+  partitions: openquatt/partitions/openquatt_8mb_trends.csv
   framework:
     type: esp-idf
     version: recommended
