@@ -2544,7 +2544,7 @@ views:
               - Start **Flow autotune** only on a stable installation without
               active faults.
 
-              - Set `u_step` and `max duration` first, then start autotune.
+              - Autotune uses a fixed duration and an adaptive step preset.
 
               - Apply `Apply autotune Kp/Ki` only if suggested values are
               sensible.
@@ -2563,10 +2563,6 @@ views:
                 name: Flow autotune abort
               - entity: button.openquatt_apply_flow_autotune_kp_ki
                 name: Apply autotune Kp/Ki
-              - entity: number.openquatt_flow_autotune_u_step_ipwm
-                name: Autotune u_step (iPWM)
-              - entity: number.openquatt_flow_autotune_max_duration_s
-                name: Autotune max duration
               - entity: number.openquatt_flow_autotune_kp_suggested
                 name: Autotune Kp suggested
               - entity: number.openquatt_flow_autotune_ki_suggested
