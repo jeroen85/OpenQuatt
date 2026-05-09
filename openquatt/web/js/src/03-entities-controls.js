@@ -1634,6 +1634,21 @@
       return;
     }
 
+    if (event.target.dataset.oqFirmwareUploadFileInput) {
+      const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
+      event.target.value = "";
+      if (file) {
+        state.updateManualUploadOpen = true;
+        state.updateManualUploadFile = file;
+        state.updateManualUploadFileName = file.name || "";
+        state.updateManualUploadError = "";
+      } else {
+        resetFirmwareManualUploadSelection();
+      }
+      render();
+      return;
+    }
+
     const field = event.target.dataset.oqField;
     if (!field) {
       return;
@@ -1879,6 +1894,8 @@
       state.updateModalOpen = false;
       state.updateInstallCompleted = false;
       state.updateInstallCompletedVersion = "";
+      state.updateManualUploadOpen = false;
+      resetFirmwareManualUploadSelection();
       render();
       return;
     }
@@ -2057,6 +2074,23 @@
 
     if (action === "install-firmware-update") {
       installFirmwareUpdate();
+      return;
+    }
+
+    if (action === "toggle-firmware-upload") {
+      if (state.updateManualUploadOpen) {
+        state.updateManualUploadOpen = false;
+        resetFirmwareManualUploadSelection();
+      } else {
+        state.updateManualUploadOpen = true;
+        state.updateManualUploadError = "";
+      }
+      render();
+      return;
+    }
+
+    if (action === "upload-firmware-file") {
+      void uploadFirmwareUpdate();
       return;
     }
 
@@ -2239,6 +2273,8 @@
       return;
     }
 
+    state.updateManualUploadOpen = false;
+    resetFirmwareManualUploadSelection();
     state.updateInstallCompleted = false;
     state.updateInstallCompletedVersion = "";
     state.updateInstallBusy = true;
@@ -2266,6 +2302,54 @@
       }
     } catch (error) {
       state.controlError = `OTA-update kon niet worden gestart. ${error.message}`;
+    } finally {
+      resetFirmwareInstallUiState();
+      render();
+    }
+  }
+
+  async function uploadFirmwareUpdate() {
+    const file = state.updateManualUploadFile;
+    if (!file) {
+      state.updateManualUploadError = "Kies eerst een firmwarebestand.";
+      render();
+      return;
+    }
+
+    state.updateInstallCompleted = false;
+    state.updateInstallCompletedVersion = "";
+    state.updateInstallBusy = true;
+    state.updateInstallTargetVersion = getFirmwareCurrentVersion() || "";
+    state.updateInstallPhaseHint = "starting";
+    state.updateInstallProgressHint = 0;
+    state.controlError = "";
+    state.controlNotice = "";
+    state.updateManualUploadError = "";
+    render();
+
+    try {
+      const formData = new FormData();
+      formData.append("update", file, file.name || "firmware.bin");
+      const response = await fetch("/update", {
+        method: "POST",
+        body: formData,
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      state.updateManualUploadOpen = false;
+      resetFirmwareManualUploadSelection();
+      const completed = await pollFirmwareInstallState();
+      if (completed) {
+        state.updateInstallCompleted = true;
+        state.updateInstallCompletedVersion = getFirmwareCurrentVersion() || state.updateInstallTargetVersion || "";
+        state.controlNotice = "";
+      } else {
+        state.controlNotice = "Handmatige OTA-upload gestart. Wacht tot het device weer online is.";
+      }
+    } catch (error) {
+      state.updateManualUploadError = `Handmatige upload mislukte. ${error.message}`;
     } finally {
       resetFirmwareInstallUiState();
       render();

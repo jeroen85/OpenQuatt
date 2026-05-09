@@ -1489,6 +1489,10 @@
           entries: clone(state.logHistoryEntries),
         });
       }
+      if (url.pathname === "/update" && String(init?.method || "GET").toUpperCase() === "POST") {
+        handleUpdateInstall("Firmware Update");
+        return mockResponse(200, { ok: true });
+      }
 
       const request = parseMockRequest(input);
       if (!request) {

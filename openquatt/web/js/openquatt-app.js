@@ -827,6 +827,10 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     updateInstallProgressHint: Number.NaN,
     updateInstallCompleted: false,
     updateInstallCompletedVersion: "",
+    updateManualUploadOpen: false,
+    updateManualUploadFile: null,
+    updateManualUploadFileName: "",
+    updateManualUploadError: "",
     pauseResumeDraft: "",
     draggingCurveKey: "",
     motionFrame: 0,
@@ -1736,6 +1740,12 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     state.updateInstallProgressHint = Number.NaN;
   }
 
+  function resetFirmwareManualUploadSelection() {
+    state.updateManualUploadFile = null;
+    state.updateManualUploadFileName = "";
+    state.updateManualUploadError = "";
+  }
+
   function syncFirmwareInstallHints() {
     const phase = getFirmwareProgressPhase();
     const percent = getFirmwareProgressPercent();
@@ -2263,6 +2273,40 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       return `Je draait al de nieuwste firmware op kanaal ${channel}.`;
     }
     return "Kies een kanaal en controleer of er een nieuwere firmware klaarstaat.";
+  }
+
+  function renderFirmwareManualUploadSection() {
+    if (!state.updateManualUploadOpen) {
+      return "";
+    }
+
+    const progress = getFirmwareProgressModel();
+    const busy = Boolean(progress || state.updateInstallBusy || isFirmwareUpdateChecking());
+    const selectedFileName = String(state.updateManualUploadFileName || state.updateManualUploadFile?.name || "").trim();
+
+    return `
+      <div class="oq-helper-modal-callout oq-helper-modal-callout--subtle">
+        <strong>Handmatige upload</strong>
+        <span>Gebruik dit alleen als je een geschikte OTA-firmware hebt gedownload, bij voorkeur een <code>*.firmware.ota.bin</code> uit de release.</span>
+        <div class="oq-helper-modal-row">
+          <span class="oq-helper-modal-label">Firmwarebestand</span>
+          <input
+            class="oq-settings-backup-input oq-settings-backup-import-input"
+            type="file"
+            accept=".bin,application/octet-stream"
+            data-oq-firmware-upload-file-input="true"
+            ${busy ? "disabled" : ""}
+          >
+          <span class="oq-helper-modal-subvalue">${escapeHtml(selectedFileName ? `Gekozen bestand: ${selectedFileName}` : "Nog geen bestand gekozen")}</span>
+        </div>
+        <p class="oq-helper-modal-note">De upload gebruikt dezelfde OTA-flow als de normale update. Laat deze pagina open tot het device weer terug is.</p>
+        ${state.updateManualUploadError ? `<p class="oq-helper-modal-note oq-helper-modal-note--error">${escapeHtml(state.updateManualUploadError)}</p>` : ""}
+        <div class="oq-helper-modal-actions">
+          <button class="oq-helper-button" type="button" data-oq-action="upload-firmware-file" ${busy || !state.updateManualUploadFile ? "disabled" : ""}>Upload en installeer</button>
+          <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="toggle-firmware-upload" ${busy ? "disabled" : ""}>Verbergen</button>
+        </div>
+      </div>
+    `;
   }
 
   function getHeaderRenderSignature() {
@@ -2848,8 +2892,12 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
               : `<button class="oq-helper-button" type="button" data-oq-action="install-firmware-update" ${!available || installing || checking || progress || !entity ? "disabled" : ""}>
               ${installing ? "Bijwerken..." : "Nu bijwerken"}
             </button>`}
+            <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="toggle-firmware-upload" ${checking || installing || progress ? "disabled" : ""}>
+              ${state.updateManualUploadOpen ? "Handmatige upload verbergen" : "Handmatige upload"}
+            </button>
             ${releaseUrl ? `<a class="oq-helper-button oq-helper-button--ghost oq-helper-modal-link" href="${escapeHtml(releaseUrl)}" target="_blank" rel="noreferrer">Release notes</a>` : ""}
           </div>
+          ${renderFirmwareManualUploadSection()}
         </section>
       </div>
     `;
@@ -4683,6 +4731,21 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       return;
     }
 
+    if (event.target.dataset.oqFirmwareUploadFileInput) {
+      const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
+      event.target.value = "";
+      if (file) {
+        state.updateManualUploadOpen = true;
+        state.updateManualUploadFile = file;
+        state.updateManualUploadFileName = file.name || "";
+        state.updateManualUploadError = "";
+      } else {
+        resetFirmwareManualUploadSelection();
+      }
+      render();
+      return;
+    }
+
     const field = event.target.dataset.oqField;
     if (!field) {
       return;
@@ -4928,6 +4991,8 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       state.updateModalOpen = false;
       state.updateInstallCompleted = false;
       state.updateInstallCompletedVersion = "";
+      state.updateManualUploadOpen = false;
+      resetFirmwareManualUploadSelection();
       render();
       return;
     }
@@ -5106,6 +5171,23 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
 
     if (action === "install-firmware-update") {
       installFirmwareUpdate();
+      return;
+    }
+
+    if (action === "toggle-firmware-upload") {
+      if (state.updateManualUploadOpen) {
+        state.updateManualUploadOpen = false;
+        resetFirmwareManualUploadSelection();
+      } else {
+        state.updateManualUploadOpen = true;
+        state.updateManualUploadError = "";
+      }
+      render();
+      return;
+    }
+
+    if (action === "upload-firmware-file") {
+      void uploadFirmwareUpdate();
       return;
     }
 
@@ -5288,6 +5370,8 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       return;
     }
 
+    state.updateManualUploadOpen = false;
+    resetFirmwareManualUploadSelection();
     state.updateInstallCompleted = false;
     state.updateInstallCompletedVersion = "";
     state.updateInstallBusy = true;
@@ -5315,6 +5399,54 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       }
     } catch (error) {
       state.controlError = `OTA-update kon niet worden gestart. ${error.message}`;
+    } finally {
+      resetFirmwareInstallUiState();
+      render();
+    }
+  }
+
+  async function uploadFirmwareUpdate() {
+    const file = state.updateManualUploadFile;
+    if (!file) {
+      state.updateManualUploadError = "Kies eerst een firmwarebestand.";
+      render();
+      return;
+    }
+
+    state.updateInstallCompleted = false;
+    state.updateInstallCompletedVersion = "";
+    state.updateInstallBusy = true;
+    state.updateInstallTargetVersion = getFirmwareCurrentVersion() || "";
+    state.updateInstallPhaseHint = "starting";
+    state.updateInstallProgressHint = 0;
+    state.controlError = "";
+    state.controlNotice = "";
+    state.updateManualUploadError = "";
+    render();
+
+    try {
+      const formData = new FormData();
+      formData.append("update", file, file.name || "firmware.bin");
+      const response = await fetch("/update", {
+        method: "POST",
+        body: formData,
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      state.updateManualUploadOpen = false;
+      resetFirmwareManualUploadSelection();
+      const completed = await pollFirmwareInstallState();
+      if (completed) {
+        state.updateInstallCompleted = true;
+        state.updateInstallCompletedVersion = getFirmwareCurrentVersion() || state.updateInstallTargetVersion || "";
+        state.controlNotice = "";
+      } else {
+        state.controlNotice = "Handmatige OTA-upload gestart. Wacht tot het device weer online is.";
+      }
+    } catch (error) {
+      state.updateManualUploadError = `Handmatige upload mislukte. ${error.message}`;
     } finally {
       resetFirmwareInstallUiState();
       render();

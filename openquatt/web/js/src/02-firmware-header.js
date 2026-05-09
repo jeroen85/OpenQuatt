@@ -301,6 +301,12 @@
     state.updateInstallProgressHint = Number.NaN;
   }
 
+  function resetFirmwareManualUploadSelection() {
+    state.updateManualUploadFile = null;
+    state.updateManualUploadFileName = "";
+    state.updateManualUploadError = "";
+  }
+
   function syncFirmwareInstallHints() {
     const phase = getFirmwareProgressPhase();
     const percent = getFirmwareProgressPercent();
@@ -828,6 +834,40 @@
       return `Je draait al de nieuwste firmware op kanaal ${channel}.`;
     }
     return "Kies een kanaal en controleer of er een nieuwere firmware klaarstaat.";
+  }
+
+  function renderFirmwareManualUploadSection() {
+    if (!state.updateManualUploadOpen) {
+      return "";
+    }
+
+    const progress = getFirmwareProgressModel();
+    const busy = Boolean(progress || state.updateInstallBusy || isFirmwareUpdateChecking());
+    const selectedFileName = String(state.updateManualUploadFileName || state.updateManualUploadFile?.name || "").trim();
+
+    return `
+      <div class="oq-helper-modal-callout oq-helper-modal-callout--subtle">
+        <strong>Handmatige upload</strong>
+        <span>Gebruik dit alleen als je een geschikte OTA-firmware hebt gedownload, bij voorkeur een <code>*.firmware.ota.bin</code> uit de release.</span>
+        <div class="oq-helper-modal-row">
+          <span class="oq-helper-modal-label">Firmwarebestand</span>
+          <input
+            class="oq-settings-backup-input oq-settings-backup-import-input"
+            type="file"
+            accept=".bin,application/octet-stream"
+            data-oq-firmware-upload-file-input="true"
+            ${busy ? "disabled" : ""}
+          >
+          <span class="oq-helper-modal-subvalue">${escapeHtml(selectedFileName ? `Gekozen bestand: ${selectedFileName}` : "Nog geen bestand gekozen")}</span>
+        </div>
+        <p class="oq-helper-modal-note">De upload gebruikt dezelfde OTA-flow als de normale update. Laat deze pagina open tot het device weer terug is.</p>
+        ${state.updateManualUploadError ? `<p class="oq-helper-modal-note oq-helper-modal-note--error">${escapeHtml(state.updateManualUploadError)}</p>` : ""}
+        <div class="oq-helper-modal-actions">
+          <button class="oq-helper-button" type="button" data-oq-action="upload-firmware-file" ${busy || !state.updateManualUploadFile ? "disabled" : ""}>Upload en installeer</button>
+          <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="toggle-firmware-upload" ${busy ? "disabled" : ""}>Verbergen</button>
+        </div>
+      </div>
+    `;
   }
 
   function getHeaderRenderSignature() {
@@ -1413,8 +1453,12 @@
               : `<button class="oq-helper-button" type="button" data-oq-action="install-firmware-update" ${!available || installing || checking || progress || !entity ? "disabled" : ""}>
               ${installing ? "Bijwerken..." : "Nu bijwerken"}
             </button>`}
+            <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="toggle-firmware-upload" ${checking || installing || progress ? "disabled" : ""}>
+              ${state.updateManualUploadOpen ? "Handmatige upload verbergen" : "Handmatige upload"}
+            </button>
             ${releaseUrl ? `<a class="oq-helper-button oq-helper-button--ghost oq-helper-modal-link" href="${escapeHtml(releaseUrl)}" target="_blank" rel="noreferrer">Release notes</a>` : ""}
           </div>
+          ${renderFirmwareManualUploadSection()}
         </section>
       </div>
     `;
