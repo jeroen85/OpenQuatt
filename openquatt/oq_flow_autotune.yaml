@@ -584,7 +584,9 @@ interval:
                       id(oq_flow_at_saved_ki) = id(oq_flow_ki).state;
                       id(oq_flow_at_validate_sp0) = sp0;
                       id(oq_flow_at_validate_sp1) = validate_sp1;
-                      id(oq_flow_at_validate_peak_pv) = pv;
+                      // Start the validation peak at the new target so the
+                      // open-loop end state does not count as overshoot.
+                      id(oq_flow_at_validate_peak_pv) = validate_sp1;
                       id(oq_flow_at_validate_confirm_cnt) = 0;
                       id(oq_flow_at_t) = 0;
                       id(oq_flow_at_w0) = NAN;
