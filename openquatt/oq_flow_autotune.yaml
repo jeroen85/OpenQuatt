@@ -301,8 +301,8 @@ interval:
             id(oq_commissioning_state_since_ms) = 0;
             id(oq_commissioning_status).publish_state(keep_cm100 ? "CM100 READY" : "IDLE");
           };
-          auto set_number_value = [](auto &number_entity, float value) {
-            auto call = number_entity.make_call();
+          auto set_number_value = [](auto *number_entity, float value) {
+            auto call = number_entity->make_call();
             call.set_value(value);
             call.perform();
           };
