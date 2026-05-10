@@ -1433,8 +1433,15 @@ interval:
             }
 
             const bool sticky_active = in_cm0 && ms_window_active(id(oq_sticky_until_ms));
+            const bool cm100_task_active =
+                (strcmp(desired_cm, "CM100") == 0) &&
+                (id(oq_commissioning_task_code) != 0);
             // Pump failsafe: never stop circulation while any HP is still active.
-            const bool pump_on = (strcmp(desired_cm, "CM0") != 0) || sticky_active || any_hp_active_guard;
+            // CM100 idle is a service stand, not an active circulation mode.
+            const bool pump_on = (strcmp(desired_cm, "CM0") != 0 && strcmp(desired_cm, "CM100") != 0) ||
+                                 cm100_task_active ||
+                                 sticky_active ||
+                                 any_hp_active_guard;
             set_select_option(id(hp1_set_pump_mode), pump_on ? "On" : "Off");
             #if OQ_TOPOLOGY_DUO
             set_select_option(id(${supervisory_secondary_set_pump_mode_id}), pump_on ? "On" : "Off");

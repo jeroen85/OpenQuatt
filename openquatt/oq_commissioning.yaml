@@ -486,11 +486,11 @@ interval:
             id(oq_commissioning_result_max_w) = NAN;
           };
 
-          auto finish_task = [&](const char *status, int next_state, bool keep_result) {
+          auto finish_task = [&](const char *status, int next_state, bool keep_result, bool keep_cm100) {
             id(oq_commissioning_boiler_request) = false;
             restore_flow_setpoint();
             id(oq_commissioning_request_pending) = false;
-            id(oq_commissioning_active) = false;
+            id(oq_commissioning_active) = keep_cm100;
             id(oq_commissioning_abort_requested) = false;
             id(oq_commissioning_task_code) = 0;
             id(oq_commissioning_state_code) = next_state;
@@ -505,7 +505,7 @@ interval:
             ESP_LOGW("quatt.cm100.boiler", "Boiler test abort requested (state=%d cm=%d active=%d pending=%d)",
                      id(oq_commissioning_state_code), cm_code,
                      (int) id(oq_commissioning_active), (int) id(oq_commissioning_request_pending));
-            finish_task("ABORTED", 7, true);
+            finish_task("ABORTED", 7, true, true);
             return;
           }
 
@@ -560,7 +560,7 @@ interval:
           }
 
           if (!in_cm100) {
-            finish_task("ABORTED: CM100 exited", 7, true);
+            finish_task("ABORTED: CM100 exited", 7, true, false);
             return;
           }
 
@@ -571,18 +571,18 @@ interval:
 
           const uint32_t elapsed_ms = now_ms - id(oq_commissioning_started_ms);
           if (elapsed_ms >= kMaxRuntimeMs) {
-            finish_task("FAILED: timeout", 8, false);
+            finish_task("FAILED: timeout", 8, false, true);
             return;
           }
 
           if (id(oq_water_temp_hard_trip_active)) {
             ESP_LOGW("quatt.cm100.boiler", "Boiler test failed: hard trip active");
-            finish_task("FAILED: hard trip active", 8, false);
+            finish_task("FAILED: hard trip active", 8, false, true);
             return;
           }
           if (id(oq_water_temp_boiler_inhibit_active)) {
             ESP_LOGW("quatt.cm100.boiler", "Boiler test failed: boiler inhibit active");
-            finish_task("FAILED: boiler inhibit active", 8, false);
+            finish_task("FAILED: boiler inhibit active", 8, false, true);
             return;
           }
 
@@ -618,7 +618,7 @@ interval:
                          flow_lph,
                          (int) id(oq_commissioning_boiler_request),
                          (unsigned long) ((now_ms - id(oq_commissioning_state_since_ms)) / 1000UL));
-                finish_task("FAILED: boiler did not start", 8, false);
+                finish_task("FAILED: boiler did not start", 8, false, true);
                 return;
               }
               publish_status("BOILER_SETTLING");
@@ -691,7 +691,7 @@ interval:
               snprintf(msg, sizeof(msg), "DONE: %.0fW (conf %.0f%%)",
                        id(oq_commissioning_result_w), id(oq_commissioning_result_confidence));
               ESP_LOGI("quatt.cm100.boiler", "Cooldown complete; finishing boiler test (%s)", msg);
-              finish_task(msg, 6, true);
+              finish_task(msg, 6, true, true);
             } else {
               publish_status("COOLDOWN");
             }

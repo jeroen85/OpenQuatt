@@ -244,12 +244,12 @@ interval:
           auto in_valid_autotune_mode = []() -> bool {
             return id(oq_control_mode_code) == 100 && id(oq_commissioning_task_code) == 2;
           };
-          auto release_commissioning = [&]() {
+          auto release_commissioning = [&](bool keep_cm100 = true) {
             id(oq_flow_autotune_active) = false;
             id(oq_flow_autotune_abort) = false;
             id(oq_flow_autotune_req) = false;
             id(oq_commissioning_request_pending) = false;
-            id(oq_commissioning_active) = false;
+            id(oq_commissioning_active) = keep_cm100;
             id(oq_commissioning_abort_requested) = false;
             id(oq_commissioning_task_code) = 0;
             id(oq_commissioning_state_code) = 0;
