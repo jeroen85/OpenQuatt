@@ -203,7 +203,7 @@ button:
           const int cm_code = id(oq_control_mode_code);
           const bool cm100_ready = (cm_code == 100);
           const bool task_running = id(oq_commissioning_active) && id(oq_commissioning_task_code) != 0;
-          if (task_running) {
+          if (task_running || id(oq_commissioning_request_pending)) {
             id(oq_boiler_power_test_status).publish_state("REFUSED: BUSY");
             return;
           }
@@ -225,8 +225,8 @@ button:
           }
 
           id(oq_commissioning_task_code) = 1;
-          id(oq_commissioning_request_pending) = false;
-          id(oq_commissioning_active) = true;
+          id(oq_commissioning_request_pending) = true;
+          id(oq_commissioning_active) = false;
           id(oq_commissioning_abort_requested) = false;
           id(oq_commissioning_state_code) = 1;
           id(oq_commissioning_started_ms) = (uint32_t) millis();
