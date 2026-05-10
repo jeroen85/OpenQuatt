@@ -423,7 +423,7 @@ interval:
       - lambda: |-
           // Phase-based boiler commissioning: request CM100, settle flow, measure output, then restore flow.
           constexpr uint32_t kMaxRuntimeMs = 15UL * 60UL * 1000UL;
-          constexpr uint32_t kFlowSettleMinMs = 20UL * 1000UL;
+          constexpr uint32_t kFlowSettleMinMs = 2UL * 60UL * 1000UL;
           constexpr uint32_t kBoilerSettleMinMs = 30UL * 1000UL;
           constexpr uint32_t kMeasureMinMs = 3UL * 60UL * 1000UL;
           constexpr uint32_t kCooldownMs = 15UL * 1000UL;
