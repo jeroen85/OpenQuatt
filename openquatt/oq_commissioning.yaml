@@ -363,7 +363,8 @@ binary_sensor:
     web_server:
       sorting_group_id: oq_boiler
     lambda: |-
-      return id(oq_control_mode_code) == 100 && id(oq_commissioning_active);
+      // This is the mode indicator: true whenever Control Mode is CM100.
+      return id(oq_control_mode_code) == 100;
 
   - platform: template
     id: oq_boiler_power_test_active
