@@ -11,7 +11,7 @@
 # What this package DOES do:
 #   - Determines base mode (idle / heating / cooling / frost) based on demand and conditions
 #   - Applies flow override: with insufficient flow -> CM1 (holding)
-#   - Supports test override: Force CM0/CM1/CM100 and Diagnostic Force CM98 (auto-expire)
+#   - Supports test override: Force CM0/CM1 and Diagnostic Force CM98 (auto-expire)
 #   - Exposes CM100 commissioning when a service task is explicitly requested
 #   - Automatically switches CM2 <-> CM3 based on thermal deficit (`oq_P_deficit_w`) with timers/hysteresis
 #   - Publishes current CM as text_sensor (for example 'CM2', 'CM3', 'CM5', 'CM100')
@@ -206,7 +206,6 @@ select:
       - Force CM0
       - Force CM1
       - Force CM98
-      - Force CM100
     initial_option: Auto
     restore_value: false
     optimistic: true
@@ -1078,10 +1077,10 @@ interval:
 
             // Supervisory override (test/commissioning)
             // - Auto (normal logic)
-            // - Force CM0 / Force CM1 / Force CM100
+            // - Force CM0 / Force CM1
             // - Force CM98 (auto-expire after 30 min)
-            int override_mode = id(oq_cm_override).active_index().value_or(0); // 0=AUTO,1=CM0,2=CM1,3=CM98_DIAG,4=CM100
-            if (override_mode < 0 || override_mode > 4) override_mode = 0;
+            int override_mode = id(oq_cm_override).active_index().value_or(0); // 0=AUTO,1=CM0,2=CM1,3=CM98_DIAG
+            if (override_mode < 0 || override_mode > 3) override_mode = 0;
             // Track entry into CM98 diagnostic override for auto-expire
             if (override_mode != id(oq_override_last_mode)) {
               id(oq_override_last_mode) = override_mode;
@@ -1118,9 +1117,6 @@ interval:
               } else if (override_mode == 3) {
                 desired_local = 98; // CM98
                 cm_transition_reason = "supervisory override: Force CM98";
-              } else if (override_mode == 4) {
-                desired_local = 100; // CM100
-                cm_transition_reason = "supervisory override: Force CM100";
               }
             } else {
               const bool commissioning_in_progress =

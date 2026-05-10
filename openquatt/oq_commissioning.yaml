@@ -125,8 +125,8 @@ button:
           }
           if (id(oq_cm_override).has_state()) {
             const std::string override_mode = id(oq_cm_override).current_option();
-            if (override_mode != "Auto" && override_mode != "Force CM100") {
-              id(oq_commissioning_status).publish_state("REFUSED: CM Override not CM100");
+            if (override_mode != "Auto") {
+              id(oq_commissioning_status).publish_state("REFUSED: CM Override must be Auto");
               return;
             }
           }
