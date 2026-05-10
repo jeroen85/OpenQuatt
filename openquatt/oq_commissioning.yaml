@@ -292,7 +292,7 @@ button:
 
   - platform: template
     id: oq_boiler_power_test_apply
-    name: "Apply Boiler Power Test"
+    name: "Boiler Power Test Apply"
     icon: mdi:check-circle-outline
     entity_category: config
     web_server:
