@@ -2965,7 +2965,7 @@ views:
                 name: ControlMode
               - entity: binary_sensor.openquatt_cm100_active
                 name: CM100 actief
-              - entity: text_sensor.openquatt_commissioning_status
+              - entity: sensor.openquatt_commissioning_status
                 name: CM100 status
       - type: grid
         cards:
@@ -3004,7 +3004,7 @@ views:
                 name: Boiler power test resultaat
               - entity: sensor.openquatt_boiler_power_test_confidence
                 name: Boiler power test confidence
-              - entity: text_sensor.openquatt_boiler_power_test_status
+              - entity: sensor.openquatt_boiler_power_test_status
                 name: Boiler power test status
       - type: grid
         cards:
@@ -3048,7 +3048,7 @@ views:
                 name: Autotune Kp voorstel
               - entity: number.openquatt_flow_autotune_ki_suggested
                 name: Autotune Ki voorstel
-              - entity: text_sensor.openquatt_flow_autotune_status
+              - entity: sensor.openquatt_flow_autotune_status
                 name: Autotune status
     header:
       card:
