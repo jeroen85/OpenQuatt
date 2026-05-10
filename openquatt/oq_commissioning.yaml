@@ -694,7 +694,9 @@ interval:
               char msg[128];
               snprintf(msg, sizeof(msg), "DONE: %.0fW (conf %.0f%%)",
                        id(oq_commissioning_result_w), id(oq_commissioning_result_confidence));
-              ESP_LOGI("quatt.cm100.boiler", "Cooldown complete; finishing boiler test (%s)", msg);
+              ESP_LOGI("quatt.cm100.boiler",
+                       "Cooldown complete; CM100 idle after boiler test (flow restored, boiler off, %s)",
+                       msg);
               finish_task(msg, 6, true, true);
             } else {
               publish_status("COOLDOWN");

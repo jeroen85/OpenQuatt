@@ -147,7 +147,7 @@ interval:
           static bool last_boiler_allowed = false;
           static std::string last_boiler_block_reason = "";
           if (boiler_allowed != last_boiler_allowed || boiler_block_reason != last_boiler_block_reason) {
-            if (boiler_allowed) {
+          if (boiler_allowed) {
               if (commissioning_boiler) {
                 ESP_LOGI("quatt.boiler", "Boiler enabled: CM100 commissioning task and safety guards clear");
               } else {
@@ -155,6 +155,8 @@ interval:
               }
             } else if (id(oq_water_temp_hard_trip_active)) {
               ESP_LOGW("quatt.boiler", "Boiler blocked: %s", boiler_block_reason.c_str());
+            } else if (boiler_block_reason == "CM100 boiler commissioning waiting for flow settle") {
+              ESP_LOGI("quatt.boiler", "Boiler commissioning: waiting for flow to settle");
             } else {
               ESP_LOGI("quatt.boiler", "Boiler blocked: %s", boiler_block_reason.c_str());
             }
