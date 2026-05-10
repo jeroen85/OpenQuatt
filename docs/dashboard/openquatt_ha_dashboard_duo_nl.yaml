@@ -2945,7 +2945,7 @@ views:
               - **Flow autotune** starten bij stabiele installatie en zonder
               actieve fouten.
 
-              - Eerst `u_step` en `max duration` bepalen, daarna pas autotune
+              - Autotune gebruikt een vaste duur en een adaptieve stap-preset.
               starten.
 
               - `Apply autotune Kp/Ki` alleen toepassen als de voorgestelde
@@ -2965,10 +2965,6 @@ views:
                 name: Flow autotune afbreken
               - entity: button.openquatt_apply_flow_autotune_kp_ki
                 name: Pas autotune Kp/Ki toe
-              - entity: number.openquatt_flow_autotune_u_step_ipwm
-                name: Autotune u_step (iPWM)
-              - entity: number.openquatt_flow_autotune_max_duration_s
-                name: Autotune maximale duur
               - entity: number.openquatt_flow_autotune_kp_suggested
                 name: Autotune Kp voorstel
               - entity: number.openquatt_flow_autotune_ki_suggested
