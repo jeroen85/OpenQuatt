@@ -40,24 +40,25 @@ Package include order is intentional:
 
 1. `oq_common`
 2. `oq_supervisory_controlmode`
-3. `oq_thermal_limits`
-4. `oq_strategy_manager`
-5. `oq_cooling_strategy`
-6. `oq_heating_curve_strategy`
-7. `oq_power_house_strategy`
-8. `oq_thermal_request_control`
-9. `oq_thermal_actuator`
-10. `oq_flow_control`
-11. `oq_flow_autotune`
-12. `oq_boiler_control`
-13. `oq_energy`
-14. `oq_cic`
-15. `oq_ha_inputs`
-16. `oq_local_sensors`
-17. `oq_sensor_sources`
-18. `oq_ot_slave`
-19. `oq_webserver`
-20. `oq_HP_io` (HP1 always; HP2 only on Duo)
+3. `oq_commissioning`
+4. `oq_thermal_limits`
+5. `oq_strategy_manager`
+6. `oq_cooling_strategy`
+7. `oq_heating_curve_strategy`
+8. `oq_power_house_strategy`
+9. `oq_thermal_request_control`
+10. `oq_thermal_actuator`
+11. `oq_flow_control`
+12. `oq_flow_autotune`
+13. `oq_boiler_control`
+14. `oq_energy`
+15. `oq_cic`
+16. `oq_ha_inputs`
+17. `oq_local_sensors`
+18. `oq_sensor_sources`
+19. `oq_ot_slave`
+20. `oq_webserver`
+21. `oq_HP_io` (HP1 always; HP2 only on Duo)
 
 This order mirrors data dependencies and ownership boundaries.
 `oq_ot_slave` uses the ESP-IDF RMT-based OpenTherm runtime and is only intended for RMT-capable ESP32 targets.
@@ -67,6 +68,7 @@ This order mirrors data dependencies and ownership boundaries.
 OpenQuatt follows strict subsystem ownership:
 
 - **Control Mode state machine**: `oq_supervisory_controlmode`
+- **Commissioning / service tasks**: `oq_commissioning`
 - **Shared heating strategy interface (`oq_heat_mode_code`, `oq_strategy_*`)**: `oq_strategy_manager`
 - **Heating-curve demand and compressor requests**: `oq_heating_curve_strategy`
 - **Power House demand and compressor requests**: `oq_power_house_strategy`
@@ -93,8 +95,8 @@ This prevents hidden control coupling and keeps debugging deterministic.
 | Power House | `${oq_heat_loop_tick_s}` with effective cadence `${oq_heat_loop_powerhouse_s}` | Power model, filtered demand, and Power House compressor requests |
 | Cooling | `${oq_heat_loop_tick_s}` | Cooling target, PI demand, and cooling compressor requests |
 | Thermal request control | Tick `${oq_heat_loop_tick_s}` (default 5s), effective cadence `${oq_heat_loop_curve_s}` (Curve) / `${oq_heat_loop_powerhouse_s}` (Power House) | Shared request control, guards, and actuator input |
-| Flow control | `${oq_flow_loop_s}` (default 5s) | Pump iPWM control (AUTO/MANUAL/FROST/autotune override) |
-| Boiler control | `${oq_boiler_loop_s}` (default 5s) | CM3 gating under the shared water-temperature guardrail |
+| Flow control | `${oq_flow_loop_s}` (default 5s) | Pump iPWM control (AUTO/MANUAL/FROST/CM100 autotune override) |
+| Boiler control | `${oq_boiler_loop_s}` (default 5s) | CM3 gating plus CM100 boiler test under the shared water-temperature guardrail |
 | CIC polling tick | `${cic_poll_tick_ms}` (default 5s) | Poll scheduler, stale detection, feed invalidation |
 
 ## 4. Data Pipeline
@@ -244,7 +246,7 @@ Power House duo request selection works in simple steps:
 Flow control execution priority:
 
 1. CM0 early return
-2. autotune override (CM1 only)
+2. autotune override (CM100 commissioning task only)
 3. manual/frost fixed iPWM
 4. AUTO PI path
 

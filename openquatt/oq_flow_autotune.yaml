@@ -10,7 +10,7 @@
 #   - Flow control remains the owner of iPWM.
 #   - This package only requests a temporary PWM override via:
 #       * globals: oq_flow_autotune_active, oq_flow_autotune_pwm (added in flow_control)
-#   - Autotune is only allowed in CM1 (pre/postflow), not in CM0/CM2/CM3/CM98.
+#   - Autotune is only allowed in CM100 together with commissioning task FLOW_AUTOTUNE.
 #
 # Operation (high level):
 #   1) Arm/Settle: force baseline PWM (last_good_pwm) and wait for stable flow
@@ -89,17 +89,6 @@ globals:
 # ----------------------------
 # CONTROL INPUTS
 # ----------------------------
-switch:
-  - platform: template
-    id: oq_flow_autotune_enable
-    name: "Flow Autotune Enable"
-    icon: mdi:auto-fix
-    restore_mode: RESTORE_DEFAULT_OFF
-    optimistic: true
-    entity_category: config
-    web_server:
-      sorting_group_id: oq_tuning_flow
-
 button:
   - platform: template
     id: oq_flow_autotune_start
@@ -110,11 +99,53 @@ button:
       sorting_group_id: oq_tuning_flow
     on_press:
       - lambda: |-
-          if (id(oq_flow_autotune_state) != 0 || id(oq_flow_autotune_active)) {
+          // Start autotune only when the system is already in CM100.
+          const int cm_code = id(oq_control_mode_code);
+          const bool cm100_ready = (cm_code == 100);
+          const bool task_running = id(oq_commissioning_active) && id(oq_commissioning_task_code) != 0;
+          if (id(oq_flow_autotune_state) != 0 ||
+              id(oq_flow_autotune_active) ||
+              id(oq_flow_autotune_req) ||
+              task_running) {
             id(oq_flow_autotune_status).publish_state("REFUSED: BUSY");
             return;
           }
+          if (!cm100_ready) {
+            id(oq_flow_autotune_status).publish_state("REFUSED: not CM100");
+            return;
+          }
+          ESP_LOGI("quatt.cm100.autotune",
+                   "Autotune requested (cm=%d flow_mode=%s setpoint=%.0fL/h last_good_pwm=%d active=%d state=%d)",
+                   cm_code,
+                   id(oq_flow_control_mode).state.c_str(),
+                   id(oq_flow_setpoint_lph).state,
+                   (int) id(oq_flow_last_good_pwm),
+                   (int) id(oq_flow_autotune_active),
+                   (int) id(oq_flow_autotune_state));
+          id(oq_commissioning_task_code) = 2;
+          id(oq_commissioning_request_pending) = false;
+          id(oq_commissioning_active) = true;
+          id(oq_commissioning_abort_requested) = false;
+          id(oq_commissioning_state_code) = 1;
+          id(oq_commissioning_started_ms) = (uint32_t) millis();
+          id(oq_commissioning_state_since_ms) = (uint32_t) millis();
           id(oq_flow_autotune_req) = true;
+          id(oq_flow_autotune_abort) = false;
+          id(oq_flow_autotune_state) = 0;
+          id(oq_flow_at_t) = 0;
+          id(oq_flow_at_pwm0) = 850;
+          id(oq_flow_at_pwm_step) = 850;
+          id(oq_flow_at_pv0) = NAN;
+          id(oq_flow_at_pv_ss) = NAN;
+          id(oq_flow_at_pv63_time_s) = NAN;
+          id(oq_flow_at_w0) = NAN;
+          id(oq_flow_at_w1) = NAN;
+          id(oq_flow_at_w2) = NAN;
+          id(oq_flow_at_ss_confirm_cnt) = 0;
+          id(oq_flow_autotune_active) = false;
+          id(oq_flow_autotune_pwm) = id(oq_flow_last_good_pwm);
+          id(oq_commissioning_status).publish_state("FLOW AUTOTUNE STARTED");
+          id(oq_flow_autotune_status).publish_state("REQUESTED");
 
   - platform: template
     id: oq_flow_autotune_abort_btn
@@ -211,7 +242,20 @@ interval:
             return value;
           };
           auto in_valid_autotune_mode = []() -> bool {
-            return id(oq_control_mode_code) == 1;
+            return id(oq_control_mode_code) == 100 && id(oq_commissioning_task_code) == 2;
+          };
+          auto release_commissioning = [&](bool keep_cm100 = true) {
+            id(oq_flow_autotune_active) = false;
+            id(oq_flow_autotune_abort) = false;
+            id(oq_flow_autotune_req) = false;
+            id(oq_commissioning_request_pending) = false;
+            id(oq_commissioning_active) = keep_cm100;
+            id(oq_commissioning_abort_requested) = false;
+            id(oq_commissioning_task_code) = 0;
+            id(oq_commissioning_state_code) = 0;
+            id(oq_commissioning_started_ms) = 0;
+            id(oq_commissioning_state_since_ms) = 0;
+            id(oq_commissioning_status).publish_state(keep_cm100 ? "CM100 READY" : "IDLE");
           };
 
           // Abort button always works
@@ -222,21 +266,6 @@ interval:
 
           const float pv = id(flow_rate_selected).state;
           const bool flow_valid = !(isnan(pv) || pv <= 0.0f);
-
-          // Only run when enabled
-          if (!id(oq_flow_autotune_enable).state) {
-            id(oq_flow_autotune_active) = false;
-            id(oq_flow_autotune_req) = false;
-            id(oq_flow_at_w0) = NAN;
-            id(oq_flow_at_w1) = NAN;
-            id(oq_flow_at_w2) = NAN;
-            id(oq_flow_at_ss_confirm_cnt) = 0;
-            if (id(oq_flow_autotune_state) != 0) {
-              id(oq_flow_autotune_state) = 0;
-              id(oq_flow_autotune_status).publish_state("DISABLED");
-            }
-            return;
-          }
 
           int st = id(oq_flow_autotune_state);
 
@@ -249,13 +278,17 @@ interval:
           // IDLE
           if (st == 0) {
             if (id(oq_flow_autotune_req)) {
-              id(oq_flow_autotune_req) = false;
-
               if (!in_valid_autotune_mode()) {
-                id(oq_flow_autotune_status).publish_state("REFUSED: not CM1");
+                id(oq_commissioning_request_pending) = true;
+                id(oq_commissioning_active) = false;
+                id(oq_flow_autotune_status).publish_state("WAITING_FOR_CM100");
+                ESP_LOGI("quatt.cm100.autotune", "Waiting for CM100 before autotune can start");
                 return;
               }
+              id(oq_flow_autotune_req) = false;
               if (!flow_valid) {
+                ESP_LOGW("quatt.cm100.autotune", "Autotune refused: flow invalid at request time (pv=%.1f)", pv);
+                release_commissioning();
                 id(oq_flow_autotune_status).publish_state("REFUSED: FLOW_INVALID");
                 return;
               }
@@ -276,7 +309,17 @@ interval:
               id(oq_flow_at_pwm0) = pwm0;
               id(oq_flow_autotune_pwm) = pwm0;
               id(oq_flow_autotune_active) = true;
+              id(oq_commissioning_request_pending) = false;
+              id(oq_commissioning_active) = true;
+              id(oq_commissioning_abort_requested) = false;
+              id(oq_commissioning_started_ms) = (uint32_t) millis();
+              id(oq_commissioning_state_since_ms) = (uint32_t) millis();
 
+              ESP_LOGI("quatt.cm100.autotune",
+                       "Baseline settle started (pwm0=%d pv=%.1f target=%.1f settle=%us stable_band=%.1f)",
+                       pwm0, pv, id(oq_flow_setpoint_lph).state,
+                       (unsigned int) ${oq_flow_autotune_settle_s},
+                       (float) ${oq_flow_autotune_stable_band_lph});
               id(oq_flow_autotune_status).publish_state("SETTLING");
               id(oq_flow_autotune_state) = 1;
             }
@@ -285,8 +328,8 @@ interval:
 
           // ARM
           if (st == 1) {
-            if (!in_valid_autotune_mode()) { st = 4; id(oq_flow_autotune_status).publish_state("ABORT: not CM1"); }
-            else if (!flow_valid) { st = 4; id(oq_flow_autotune_status).publish_state("ABORT: FLOW_INVALID"); }
+            if (!in_valid_autotune_mode()) { st = 4; id(oq_flow_autotune_status).publish_state("ABORT: not CM100"); }
+            else if (!flow_valid) { st = 4; ESP_LOGW("quatt.cm100.autotune", "Autotune abort: flow invalid while settling (pv=%.1f)", pv); id(oq_flow_autotune_status).publish_state("ABORT: FLOW_INVALID"); }
             else {
               // Keep baseline override active while settling.
               const int pwm0 = clamp_ipwm(id(oq_flow_at_pwm0));
@@ -314,10 +357,16 @@ interval:
 
                 if (t >= ${oq_flow_autotune_settle_s} && spread <= ${oq_flow_autotune_stable_band_lph}) {
                   id(oq_flow_at_pv0) = mean;
+                  ESP_LOGI("quatt.cm100.autotune",
+                           "Baseline stable (pv0=%.1f pwm0=%d spread=%.1f t=%ds)",
+                           mean, pwm0, spread, t);
 
                   const int pwm_headroom = pwm0 - ${oq_flow_pwm_min};
                   if (pwm_headroom < ${oq_flow_autotune_min_step}) {
                     st = 4;
+                    ESP_LOGW("quatt.cm100.autotune",
+                             "Autotune refused: insufficient step headroom (pwm0=%d min=%d headroom=%d required=%d)",
+                             pwm0, ${oq_flow_pwm_min}, pwm_headroom, ${oq_flow_autotune_min_step});
                     id(oq_flow_autotune_status).publish_state("REFUSED: STEP_HEADROOM");
                   } else {
                     int u_step = (int) roundf(kAutotuneStepFrac * (float) pwm0);
@@ -335,6 +384,9 @@ interval:
                     id(oq_flow_at_ss_confirm_cnt) = 0;
 
                     id(oq_flow_autotune_pwm) = pwm_step;
+                    ESP_LOGI("quatt.cm100.autotune",
+                             "Step applied (pwm0=%d step=%d pwm_step=%d pv0=%.1f)",
+                             pwm0, u_step, pwm_step, mean);
                     id(oq_flow_autotune_status).publish_state("STEP");
                     st = 2;
                   }
@@ -347,8 +399,8 @@ interval:
 
           // STEP / MEASURE
           if (st == 2) {
-            if (!in_valid_autotune_mode()) { st = 4; id(oq_flow_autotune_status).publish_state("ABORT: not CM1"); }
-            else if (!flow_valid) { st = 4; id(oq_flow_autotune_status).publish_state("ABORT: FLOW_INVALID"); }
+            if (!in_valid_autotune_mode()) { st = 4; id(oq_flow_autotune_status).publish_state("ABORT: not CM100"); }
+            else if (!flow_valid) { st = 4; ESP_LOGW("quatt.cm100.autotune", "Autotune abort: flow invalid during step (pv=%.1f)", pv); id(oq_flow_autotune_status).publish_state("ABORT: FLOW_INVALID"); }
             else {
               const float pv0 = id(oq_flow_at_pv0);
               const int t = id(oq_flow_at_t);
@@ -375,6 +427,11 @@ interval:
                 if (ss_ready) {
                   id(oq_flow_at_pv_ss) = (w0 + w1 + w2) / 3.0f;
                   if (id(oq_flow_at_ss_confirm_cnt) < 255) id(oq_flow_at_ss_confirm_cnt)++;
+                  if (id(oq_flow_at_ss_confirm_cnt) == 1) {
+                    ESP_LOGI("quatt.cm100.autotune",
+                             "Steady-state candidate locked (pv_ss=%.1f t=%ds spread=%.1f slopes=%.1f/%.1f)",
+                             id(oq_flow_at_pv_ss), t, spread, slope01, slope12);
+                  }
                 } else {
                   id(oq_flow_at_ss_confirm_cnt) = 0;
                 }
@@ -402,8 +459,12 @@ interval:
               if (early_done || t >= max_s) {
                 if (isnan(id(oq_flow_at_pv_ss))) {
                   st = 4;
+                  ESP_LOGW("quatt.cm100.autotune", "Autotune aborted: no steady-state response (t=%ds pv=%.1f)", t, pv);
                   id(oq_flow_autotune_status).publish_state("ABORT: NO_STEADY_STATE");
                 } else {
+                  ESP_LOGI("quatt.cm100.autotune",
+                           "Response captured (pv0=%.1f pv_ss=%.1f t63=%.1f samples=%d t=%ds)",
+                           pv0, id(oq_flow_at_pv_ss), id(oq_flow_at_pv63_time_s), id(oq_flow_at_ss_confirm_cnt), t);
                   st = 3;
                 }
               } else {
@@ -428,7 +489,9 @@ interval:
             const float du = (float)(pwm0 - pwm_step); // >0
 
             if (isnan(pv0) || isnan(pv_ss) || du <= 0.0f) {
+              ESP_LOGW("quatt.cm100.autotune", "Autotune failed: no response (pv0=%.1f pv_ss=%.1f du=%d)", pv0, pv_ss, (int) du);
               id(oq_flow_autotune_status).publish_state("FAILED: NO_RESPONSE");
+              release_commissioning();
               id(oq_flow_autotune_state) = 0;
               return;
             }
@@ -436,7 +499,9 @@ interval:
             const float dpv = pv_ss - pv0;
             const float K = dpv / du;  // (L/h)/iPWM
             if (!(K > 0.0f)) {
+              ESP_LOGW("quatt.cm100.autotune", "Autotune failed: invalid gain (pv0=%.1f pv_ss=%.1f du=%.1f)", pv0, pv_ss, du);
               id(oq_flow_autotune_status).publish_state("FAILED: INVALID_GAIN");
+              release_commissioning();
               id(oq_flow_autotune_state) = 0;
               return;
             }
@@ -480,6 +545,9 @@ interval:
             } else {
               snprintf(msg, sizeof(msg), "DONE: K=%.3f tau=%.0fs -> Kp=%.3f Ki=%.4f", K, tau, Kp, Ki);
             }
+            ESP_LOGI("quatt.cm100.autotune",
+                     "Autotune done: K=%.3f tau=%.0fs theta=%.0fs Kp=%.3f Ki=%.4f clamped=%d pv0=%.1f pv_ss=%.1f pwm0=%d pwm_step=%d",
+                     K, tau, theta, Kp, Ki, (int) clamped, pv0, pv_ss, pwm0, pwm_step);
             id(oq_flow_autotune_status).publish_state(msg);
 
             // restore previous pwm best-effort
@@ -488,6 +556,7 @@ interval:
             id(oq_flow_at_w1) = NAN;
             id(oq_flow_at_w2) = NAN;
             id(oq_flow_at_ss_confirm_cnt) = 0;
+            release_commissioning();
 
             id(oq_flow_autotune_state) = 0;
             return;
@@ -501,6 +570,8 @@ interval:
             id(oq_flow_at_w1) = NAN;
             id(oq_flow_at_w2) = NAN;
             id(oq_flow_at_ss_confirm_cnt) = 0;
+            ESP_LOGW("quatt.cm100.autotune", "Autotune aborted; restoring last PWM=%d", (int) id(oq_flow_last_pwm));
+            release_commissioning();
             id(oq_flow_autotune_status).publish_state("ABORTED");
             id(oq_flow_autotune_state) = 0;
             return;

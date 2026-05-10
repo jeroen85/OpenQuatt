@@ -42,6 +42,8 @@ STAGE_EXCLUDE_FILES = ("*.pyc", "*.pyo")
 
 EFUSE_DUPLICATE_SOURCE = '"src/esp_efuse_fields.c"'
 EFUSE_DUPLICATE_UTILITY_SOURCE = '"src/esp_efuse_utility.c"'
+EFUSE_SOC_UTILITY_SOURCE = '"esp_efuse_utility.c"'
+EFUSE_SOC_UTILITY_RENAMED = '"esp_efuse_utility_esp32s3.c"'
 EFUSE_PATCH_MARKER_PREFIX = (
     "# OpenQuatt validate patch: target-specific sources.cmake already provides "
 )
@@ -255,40 +257,16 @@ def patch_framework_espidf_efuse_main_cmake(package_dir: Path) -> bool:
         return False
 
     text = cmake_path.read_text(encoding="utf-8")
-    if EFUSE_PATCH_MARKER_PREFIX not in text and EFUSE_DUPLICATE_SOURCE not in text:
-        return False
-
     updated = text
-    if EFUSE_DUPLICATE_SOURCE in updated:
-        updated = updated.replace('                 "src/esp_efuse_fields.c"\n', "", 1)
-
-    if EFUSE_DUPLICATE_UTILITY_SOURCE not in updated:
+    if 'src/esp_efuse_utility.c' not in updated and 'list(APPEND srcs "src/esp_efuse_api.c"\n                 "src/efuse_controller/keys/${type}/esp_efuse_api_key.c")' in updated:
         updated = updated.replace(
-            'list(APPEND srcs "src/esp_efuse_api.c"\n',
-            'list(APPEND srcs "src/esp_efuse_api.c"\n'
-            '                 "src/esp_efuse_utility.c"\n',
+            'list(APPEND srcs "src/esp_efuse_api.c"\n                 "src/efuse_controller/keys/${type}/esp_efuse_api_key.c")',
+            'list(APPEND srcs "src/esp_efuse_api.c"\n                 "src/esp_efuse_utility.c"\n                 "src/efuse_controller/keys/${type}/esp_efuse_api_key.c")',
             1,
         )
 
     if updated == text:
         return False
-
-    if EFUSE_PATCH_MARKER_PREFIX not in updated:
-        old = (
-            'list(APPEND srcs "src/esp_efuse_api.c"\n'
-            '                 "src/esp_efuse_fields.c"\n'
-            '                 "src/esp_efuse_utility.c"\n'
-            '                 "src/efuse_controller/keys/${type}/esp_efuse_api_key.c")'
-        )
-        new = (
-            EFUSE_PATCH_MARKER
-            +
-            'list(APPEND srcs "src/esp_efuse_api.c"\n'
-            '                 "src/esp_efuse_utility.c"\n'
-            '                 "src/efuse_controller/keys/${type}/esp_efuse_api_key.c")'
-        )
-        if old in text:
-            updated = text.replace(old, new, 1)
 
     cmake_path.write_text(updated, encoding="utf-8")
     return True
@@ -296,17 +274,22 @@ def patch_framework_espidf_efuse_main_cmake(package_dir: Path) -> bool:
 
 def patch_framework_espidf_efuse_sources(package_dir: Path) -> bool:
     patched = False
-    for sources_path in package_dir.glob("*/sources.cmake"):
+    for sources_path in package_dir.glob("components/efuse/*/sources.cmake"):
         if not sources_path.is_file():
             continue
 
         text = sources_path.read_text(encoding="utf-8")
-        if EFUSE_DUPLICATE_UTILITY_SOURCE not in text:
+        target_dir = sources_path.parent.name
+        if target_dir != "esp32s3" or EFUSE_SOC_UTILITY_SOURCE not in text:
             continue
 
-        updated = text.replace('                    "esp_efuse_utility.c"\n', "", 1)
+        updated = text.replace(EFUSE_SOC_UTILITY_SOURCE, EFUSE_SOC_UTILITY_RENAMED, 1)
         if updated != text:
             sources_path.write_text(updated, encoding="utf-8")
+            renamed_path = sources_path.parent / "esp_efuse_utility_esp32s3.c"
+            original_path = sources_path.parent / "esp_efuse_utility.c"
+            if original_path.is_file() and not renamed_path.exists():
+                renamed_path.write_text(original_path.read_text(encoding="utf-8"), encoding="utf-8")
             patched = True
     return patched
 
@@ -327,7 +310,9 @@ def has_framework_espidf_efuse_workaround(pio_core_dir: Path) -> bool:
         if not cmake_path.is_file():
             continue
         text = cmake_path.read_text(encoding="utf-8")
-        if EFUSE_PATCH_MARKER_PREFIX in text and 'src/esp_efuse_utility.c' in text:
+        esp32s3_sources = package_dir / "components" / "efuse" / "esp32s3" / "sources.cmake"
+        renamed_source = package_dir / "components" / "efuse" / "esp32s3" / "esp_efuse_utility_esp32s3.c"
+        if 'src/esp_efuse_utility.c' in text and esp32s3_sources.is_file() and renamed_source.is_file():
             return True
     return False
 
@@ -574,6 +559,7 @@ def validate_command(args: argparse.Namespace) -> int:
 
     env = os.environ.copy()
     env["PLATFORMIO_CORE_DIR"] = str(pio_core_dir)
+    env["PLATFORMIO_HOME_DIR"] = str(pio_core_dir)
 
     print(f"Workspace root: {root_dir}")
     if command_root != root_dir:

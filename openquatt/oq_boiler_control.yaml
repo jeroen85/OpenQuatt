@@ -3,7 +3,8 @@
 # ==============================================================================
 #
 # Goal:
-#   Controls the electric inline heater (boiler) as auxiliary heating based on Control Mode (CM3).
+#   Controls the electric inline heater (boiler) as auxiliary heating in CM3
+#   and during the explicit CM100 boiler power test.
 #
 # Role in architecture:
 #   Owner of the boiler relay; boiler control is passive and follows CM status from supervisory.
@@ -25,6 +26,7 @@
 #
 # Interaction with Control Modes:
 #   - CM3 -> boiler ON (unless the shared water-temperature guardrail blocks it)
+#   - CM100 + boiler power test -> boiler ON only while the commissioning task requests it
 #   - CM0/CM1/CM2/CM98 → boiler OFF
 #
 # Safety / fail-safe:
@@ -78,13 +80,18 @@ sensor:
     device_class: power
     state_class: measurement
     accuracy_decimals: 0
-    update_interval: 10s
+    update_interval: 5s
     web_server:
       sorting_group_id: oq_boiler
     lambda: |-
-      // Only meaningful in CM3 (boiler operation). Outside CM3, show 0 W.
-      const bool in_cm3 = (id(oq_control_mode_code) == 3);
-      if (!in_cm3) return 0.0f;
+      const int cm_code = id(oq_control_mode_code);
+      const bool commissioning_boiler =
+          (cm_code == 100) &&
+          id(oq_commissioning_active) &&
+          (id(oq_commissioning_task_code) == 1) &&
+          id(oq_commissioning_boiler_request);
+      const bool in_cm3 = (cm_code == 3);
+      if (!in_cm3 && !commissioning_boiler) return 0.0f;
 
       const float hp2_outlet_c = id(${heatpump_outlet_temp_id}).state;
       const float supply_c = id(water_supply_temp_selected).state;
@@ -109,32 +116,47 @@ interval:
     startup_delay: 4600ms
     then:
       - lambda: |-
+          const int cm_code = id(oq_control_mode_code);
+          const bool commissioning_boiler =
+              (cm_code == 100) &&
+              id(oq_commissioning_active) &&
+              (id(oq_commissioning_task_code) == 1) &&
+              id(oq_commissioning_boiler_request);
           // Boiler follows Control Mode CM3, but the shared water-temperature model
           // may block it independently from CM ownership.
-          const bool in_cm3 = (id(oq_control_mode_code) == 3);
+          const bool in_cm3 = (cm_code == 3);
           const float supply_c = id(water_supply_temp_selected).state;
           const bool has_valid_supply_temp = !isnan(supply_c);
           std::string boiler_block_reason;
-          if (!in_cm3) {
-            boiler_block_reason = "Control Mode is not CM3";
-          } else if (!has_valid_supply_temp) {
+          if (!has_valid_supply_temp) {
             boiler_block_reason = "water supply temperature unavailable";
-          } else if (id(oq_boot_startup_inhibit_active)) {
-            boiler_block_reason = "startup inhibit active";
           } else if (id(oq_water_temp_boiler_inhibit_active)) {
             boiler_block_reason = "water temperature boiler inhibit active";
           } else if (id(oq_water_temp_hard_trip_active)) {
             boiler_block_reason = "water temperature hard trip active";
+          } else if ((cm_code == 100) &&
+                     id(oq_commissioning_active) &&
+                     (id(oq_commissioning_task_code) == 1) &&
+                     !id(oq_commissioning_boiler_request)) {
+            boiler_block_reason = "CM100 boiler commissioning waiting for flow settle";
+          } else if (!in_cm3 && !commissioning_boiler) {
+            boiler_block_reason = "Control Mode is not CM3";
           }
           const bool boiler_allowed =
               boiler_block_reason.empty();
           static bool last_boiler_allowed = false;
           static std::string last_boiler_block_reason = "";
           if (boiler_allowed != last_boiler_allowed || boiler_block_reason != last_boiler_block_reason) {
-            if (boiler_allowed) {
-              ESP_LOGI("quatt.boiler", "Boiler enabled: CM3 and safety guards clear");
+          if (boiler_allowed) {
+              if (commissioning_boiler) {
+                ESP_LOGI("quatt.boiler", "Boiler enabled: CM100 commissioning task and safety guards clear");
+              } else {
+                ESP_LOGI("quatt.boiler", "Boiler enabled: CM3 and safety guards clear");
+              }
             } else if (id(oq_water_temp_hard_trip_active)) {
               ESP_LOGW("quatt.boiler", "Boiler blocked: %s", boiler_block_reason.c_str());
+            } else if (boiler_block_reason == "CM100 boiler commissioning waiting for flow settle") {
+              ESP_LOGI("quatt.boiler", "Boiler commissioning: waiting for flow to settle");
             } else {
               ESP_LOGI("quatt.boiler", "Boiler blocked: %s", boiler_block_reason.c_str());
             }

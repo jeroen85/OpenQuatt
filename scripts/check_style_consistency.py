@@ -71,6 +71,7 @@ STRICT_TOP_LEVEL_ORDER_RULES = {
     "openquatt/oq_packages_common.yaml": (
         "oq_common",
         "oq_supervisory_controlmode",
+        "oq_commissioning",
         "oq_thermal_limits",
         "oq_strategy_manager",
         "oq_cooling_strategy",

@@ -23,7 +23,7 @@
 #   - Pump output is correctly configured for PWM
 #
 # Interaction with Control Modes:
-#   - Active in CM1/CM2/CM3 (AUTO=PI, MANUAL=fixed iPWM)
+#   - Active in CM1/CM2/CM3/CM100 (AUTO=PI, MANUAL=fixed iPWM)
 #   - CM0: early return (supervisory owns pump state in idle)
 #   - CM98: fixed frost PWM path
 #
@@ -323,7 +323,7 @@ interval:
           //
           // Priority (highest -> lowest):
           // 1) CM0 early return (no writes from this loop)
-          // 2) AUTOTUNE override (CM1 only)
+          // 2) AUTOTUNE override (CM100 commissioning task only)
           // 3) MANUAL / FROST fixed iPWM
           // 4) AUTO PI path (with startup-hold + failsafe)
           //
@@ -547,7 +547,7 @@ interval:
           id(oq_flow_last_mode) = mode;
 
           // Autotune temporarily overrides PWM (flow_control remains output owner).
-          if (id(oq_flow_autotune_active) && (cm_code == 1) && !is_frost) {
+          if (id(oq_flow_autotune_active) && (cm_code == 100) && (id(oq_commissioning_task_code) == 2) && !is_frost) {
             int at_pwm = clamp_iPWM((int) id(oq_flow_autotune_pwm));
             id(oq_flow_last_pwm) = at_pwm;
             stable_cnt = 0;

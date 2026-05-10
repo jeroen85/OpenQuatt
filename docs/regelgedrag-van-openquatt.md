@@ -23,6 +23,7 @@ Daardoor kun je vreemd gedrag bijna nooit verklaren vanuit alleen een pompstand 
 | `CM2` | normaal verwarmen met warmtepomp |
 | `CM3` | warmtepomp met ketelhulp |
 | `CM98` | vorstbeveiliging |
+| `CM100` | commissioning / servicedoel |
 
 Voor gebruikers zijn vooral deze twee dingen belangrijk:
 
@@ -51,6 +52,8 @@ In gewone taal:
 - pas dan mag ketelhulp actief worden.
 
 De ketel springt dus normaal niet op elk kort dipje direct bij.
+
+`CM100` is iets anders: dat is een expliciete service- of commissioningstand voor metingen zoals het boilervermogentestje of flow-autotune. Daar hoort geen normale warmtevraaglogica bij.
 
 ## Waarom blijft het systeem soms juist te lang in een tussenstand?
 

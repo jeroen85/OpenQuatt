@@ -2809,6 +2809,83 @@ views:
         cards:
           - type: heading
             icon: mdi:tools
+            heading: CM100 commissioning
+            heading_style: title
+          - type: markdown
+            content: >-
+              <details>
+
+              <summary><strong>Parameter explanation</strong></summary>
+
+
+              - Start **CM100** first. In this mode nothing happens yet: no
+              flow, no boiler, and no autotune.
+
+              - Then choose exactly one commissioning task: **Boiler power
+              test** or **Flow autotune**.
+
+              - Start **CM100** first. Only then can you start exactly one
+              commissioning task.
+
+
+              </details>
+            text_only: true
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: button.openquatt_cm100_start
+                name: Start CM100
+              - entity: button.openquatt_cm100_stop
+                name: Stop CM100
+              - entity: sensor.openquatt_control_mode_label
+                name: ControlMode
+              - entity: binary_sensor.openquatt_cm100_active
+                name: CM100 active
+              - entity: sensor.openquatt_commissioning_status
+                name: CM100 status
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:water-boiler
+            heading: Boiler power test
+            heading_style: title
+          - type: markdown
+            content: >-
+              <details>
+
+              <summary><strong>Parameter explanation</strong></summary>
+
+
+              - Measures the effective boiler output at stable flow.
+
+              - Start the test only while **CM100** is already active.
+
+              - Apply the measured value only if it looks sensible.
+
+
+              </details>
+            text_only: true
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: button.openquatt_boiler_power_test_start
+                name: Start boiler power test
+              - entity: button.openquatt_boiler_power_test_abort
+                name: Abort boiler power test
+              - entity: button.openquatt_boiler_power_test_apply
+                name: Apply boiler power
+              - entity: number.openquatt_boiler_rated_heat_power
+                name: Boiler rated heat power
+              - entity: sensor.openquatt_boiler_power_test_result
+                name: Boiler power test result
+              - entity: sensor.openquatt_boiler_power_test_confidence
+                name: Boiler power test confidence
+              - entity: sensor.openquatt_boiler_power_test_status
+                name: Boiler power test status
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:tools
             heading: Flow autotune
             heading_style: title
           - type: markdown
@@ -2818,8 +2895,11 @@ views:
               <summary><strong>Parameter explanation</strong></summary>
 
 
-              - Start **Flow autotune** only on a stable installation without
-              active faults.
+              - Start **Flow autotune** only while **CM100** is already
+              active.
+
+              - In CM100, autotune starts the flow itself and then measures
+              the response.
 
               - Autotune uses a fixed duration and an adaptive step preset.
 
@@ -2832,8 +2912,6 @@ views:
           - type: entities
             show_header_toggle: false
             entities:
-              - entity: switch.openquatt_flow_autotune_enable
-                name: Flow autotune enable
               - entity: button.openquatt_flow_autotune_start
                 name: Flow autotune start
               - entity: button.openquatt_flow_autotune_abort
