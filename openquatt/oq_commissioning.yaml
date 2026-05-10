@@ -131,7 +131,7 @@ button:
             }
           }
           ESP_LOGI("quatt.cm100", "CM100 requested via dashboard (override=%s task=%d active=%d pending=%d)",
-                   id(oq_cm_override).state.c_str(),
+                   id(oq_cm_override).current_option().c_str(),
                    id(oq_commissioning_task_code),
                    (int) id(oq_commissioning_active),
                    (int) id(oq_commissioning_request_pending));
@@ -231,7 +231,7 @@ button:
           ESP_LOGI("quatt.cm100.boiler",
                    "Boiler power test requested (cm=%d flow_mode=%s flow_sp=%.0fL/h current_task=%d active=%d)",
                    cm_code,
-                   id(oq_flow_control_mode).state.c_str(),
+                   id(oq_flow_control_mode).current_option().c_str(),
                    id(oq_flow_setpoint_lph).state,
                    id(oq_commissioning_task_code),
                    (int) id(oq_commissioning_active));

@@ -144,7 +144,7 @@ button:
           ESP_LOGI("quatt.cm100.autotune",
                    "Autotune requested (cm=%d flow_mode=%s setpoint=%.0fL/h last_good_pwm=%d baseline_pwm=%d active=%d state=%d)",
                    cm_code,
-                   id(oq_flow_control_mode).state.c_str(),
+                   id(oq_flow_control_mode).current_option().c_str(),
                    id(oq_flow_setpoint_lph).state,
                    (int) id(oq_flow_last_good_pwm),
                    400,
