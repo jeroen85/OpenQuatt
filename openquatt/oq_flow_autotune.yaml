@@ -14,7 +14,7 @@
 #   - Autotune is only allowed in CM100 together with commissioning task FLOW_AUTOTUNE.
 #
 # Operation (high level):
-#   1) Arm/Settle: force baseline PWM (last_good_pwm) and wait for stable flow
+#   1) Arm/Settle: force a fixed baseline PWM and wait for stable flow
 #   2) Step: decrease iPWM with an adaptive step sized from the baseline PWM
 #   3) Measure: determine Δpv_ss and t63 (time to 63% response)
 #      and stop early once the response is settled and confirmed
@@ -142,11 +142,12 @@ button:
             return;
           }
           ESP_LOGI("quatt.cm100.autotune",
-                   "Autotune requested (cm=%d flow_mode=%s setpoint=%.0fL/h last_good_pwm=%d active=%d state=%d)",
+                   "Autotune requested (cm=%d flow_mode=%s setpoint=%.0fL/h last_good_pwm=%d baseline_pwm=%d active=%d state=%d)",
                    cm_code,
                    id(oq_flow_control_mode).state.c_str(),
                    id(oq_flow_setpoint_lph).state,
                    (int) id(oq_flow_last_good_pwm),
+                   400,
                    (int) id(oq_flow_autotune_active),
                    (int) id(oq_flow_autotune_state));
           id(oq_commissioning_task_code) = 2;
@@ -176,7 +177,7 @@ button:
           id(oq_flow_at_validate_peak_pv) = NAN;
           id(oq_flow_at_validate_confirm_cnt) = 0;
           id(oq_flow_autotune_active) = false;
-          id(oq_flow_autotune_pwm) = id(oq_flow_last_good_pwm);
+          id(oq_flow_autotune_pwm) = 400;
           id(oq_commissioning_status).publish_state("FLOW AUTOTUNE STARTED");
           id(oq_flow_autotune_status).publish_state("REQUESTED");
 
@@ -279,6 +280,8 @@ interval:
           constexpr float kAutotuneValidateSeedTiFrac = 2.0f;
           constexpr float kAutotuneValidateSeedMinLambdaS = 60.0f;
           constexpr float kAutotuneValidateSeedMinTiS = 60.0f;
+          constexpr int kAutotuneBaselinePwm = 400;
+          constexpr int kAutotuneBaselineWaitMaxS = 60;
 
           auto clamp_ipwm = [](int value) -> int {
             if (value < ${oq_flow_pwm_min}) return ${oq_flow_pwm_min};
@@ -335,13 +338,6 @@ interval:
                 return;
               }
               id(oq_flow_autotune_req) = false;
-              if (!flow_valid) {
-                ESP_LOGW("quatt.cm100.autotune", "Autotune refused: flow invalid at request time (pv=%.1f)", pv);
-                release_commissioning();
-                id(oq_flow_autotune_status).publish_state("REFUSED: FLOW_INVALID");
-                return;
-              }
-
               // Baseline window is tracked via w0/w1/w2 rolling samples.
               id(oq_flow_at_pv0) = NAN;
               id(oq_flow_at_pv_ss) = NAN;
@@ -352,9 +348,9 @@ interval:
               id(oq_flow_at_ss_confirm_cnt) = 0;
               id(oq_flow_at_t) = 0;
 
-              // Start from last known stable PWM (instead of instantaneous last_pwm),
-              // then wait until baseline flow is stable before the step test.
-              const int pwm0 = clamp_ipwm((int) id(oq_flow_last_good_pwm));
+              // Start from a fixed baseline PWM so autotune begins in a
+              // consistent place across installations, then wait for a stable flow.
+              const int pwm0 = clamp_ipwm(kAutotuneBaselinePwm);
               id(oq_flow_at_pwm0) = pwm0;
               id(oq_flow_autotune_pwm) = pwm0;
               id(oq_flow_autotune_active) = true;
@@ -369,7 +365,7 @@ interval:
                        pwm0, pv, id(oq_flow_setpoint_lph).state,
                        (unsigned int) ${oq_flow_autotune_settle_s},
                        (float) ${oq_flow_autotune_stable_band_lph});
-              id(oq_flow_autotune_status).publish_state("SETTLING");
+              id(oq_flow_autotune_status).publish_state(flow_valid ? "SETTLING" : "WAITING_FOR_FLOW");
               id(oq_flow_autotune_state) = 1;
             }
             return;
@@ -378,21 +374,35 @@ interval:
           // ARM
           if (st == 1) {
             if (!in_valid_autotune_mode()) { st = 4; id(oq_flow_autotune_status).publish_state("ABORT: not CM100"); }
-            else if (!flow_valid) { st = 4; ESP_LOGW("quatt.cm100.autotune", "Autotune abort: flow invalid while settling (pv=%.1f)", pv); id(oq_flow_autotune_status).publish_state("ABORT: FLOW_INVALID"); }
             else {
               // Keep baseline override active while settling.
               const int pwm0 = clamp_ipwm(id(oq_flow_at_pwm0));
               id(oq_flow_autotune_pwm) = pwm0;
               id(oq_flow_autotune_active) = true;
+              const int t = id(oq_flow_at_t);
+              id(oq_flow_at_t) = t + (int) sample_time_s;
+
+              if (!flow_valid) {
+                if (t >= kAutotuneBaselineWaitMaxS) {
+                  st = 4;
+                  ESP_LOGW("quatt.cm100.autotune",
+                           "Autotune aborted: baseline flow never became valid (pwm0=%d pv=%.1f t=%ds)",
+                           pwm0, pv, t);
+                  id(oq_flow_autotune_status).publish_state("ABORT: NO_BASELINE_FLOW");
+                } else {
+                  id(oq_flow_at_ss_confirm_cnt) = 0;
+                  id(oq_flow_autotune_status).publish_state("WAITING_FOR_FLOW");
+                }
+                id(oq_flow_autotune_state) = st;
+                return;
+              }
+
               id(oq_flow_at_ss_confirm_cnt) = 0;
 
               // Baseline stability check on rolling 3-sample window.
               id(oq_flow_at_w0) = id(oq_flow_at_w1);
               id(oq_flow_at_w1) = id(oq_flow_at_w2);
               id(oq_flow_at_w2) = pv;
-
-              const int t = id(oq_flow_at_t);
-              id(oq_flow_at_t) = t + (int) sample_time_s;
 
               const bool win_ready = !isnan(id(oq_flow_at_w0)) && !isnan(id(oq_flow_at_w1)) && !isnan(id(oq_flow_at_w2));
               if (win_ready) {
@@ -404,7 +414,10 @@ interval:
                 const float spread = w_max - w_min;
                 const float mean = (w0 + w1 + w2) / 3.0f;
 
-                if (t >= ${oq_flow_autotune_settle_s} && spread <= ${oq_flow_autotune_stable_band_lph}) {
+                if (t >= ${oq_flow_autotune_settle_s} &&
+                    t <= kAutotuneBaselineWaitMaxS &&
+                    spread <= ${oq_flow_autotune_stable_band_lph} &&
+                    mean > 0.0f) {
                   id(oq_flow_at_pv0) = mean;
                   ESP_LOGI("quatt.cm100.autotune",
                            "Baseline stable (pv0=%.1f pwm0=%d spread=%.1f t=%ds)",
@@ -439,6 +452,12 @@ interval:
                     id(oq_flow_autotune_status).publish_state("STEP");
                     st = 2;
                   }
+                } else if (t >= kAutotuneBaselineWaitMaxS) {
+                  st = 4;
+                  ESP_LOGW("quatt.cm100.autotune",
+                           "Autotune aborted: baseline never stabilized (pwm0=%d pv=%.1f spread=%.1f t=%ds)",
+                           pwm0, pv, spread, t);
+                  id(oq_flow_autotune_status).publish_state("ABORT: NO_BASELINE_FLOW");
                 }
               }
             }
