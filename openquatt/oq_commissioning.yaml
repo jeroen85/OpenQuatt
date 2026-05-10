@@ -489,12 +489,6 @@ interval:
                 publish_status("CM100 READY");
                 id(oq_commissioning_status).publish_state("CM100 READY");
               }
-            } else if (in_cm100) {
-              if (!id(oq_commissioning_active)) {
-                id(oq_commissioning_active) = true;
-              }
-              publish_status("CM100 READY");
-              id(oq_commissioning_status).publish_state("CM100 READY");
             }
             return;
           }
