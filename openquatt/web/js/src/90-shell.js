@@ -38,6 +38,10 @@ function renderSettingsView() {
       return;
     }
 
+    const webServerLogScrollState = state.systemModal === "webserver-logs"
+      ? captureWebServerLogScrollState()
+      : null;
+
     if (state.nativeOpen) {
       state.root.innerHTML = `
         ${renderDevPanel()}
@@ -51,6 +55,7 @@ function renderSettingsView() {
       bindHeaderDevControls();
       syncDocumentTheme();
       syncDocumentTitle();
+      queueWebServerLogScrollRestore(webServerLogScrollState);
       return;
     }
 
@@ -101,6 +106,7 @@ function renderSettingsView() {
     bindHeaderDevControls();
     syncDocumentTheme();
     syncDocumentTitle();
+    queueWebServerLogScrollRestore(webServerLogScrollState);
   }
 
   function escapeHtml(value) {
