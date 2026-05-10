@@ -123,9 +123,12 @@ button:
             id(oq_boiler_power_test_status).publish_state("REFUSED: OpenQuatt disabled");
             return;
           }
-          if (id(oq_cm_override).has_state() && id(oq_cm_override).current_option() != "Auto") {
-            id(oq_boiler_power_test_status).publish_state("REFUSED: CM Override not Auto");
-            return;
+          if (id(oq_cm_override).has_state()) {
+            const std::string override_mode = id(oq_cm_override).current_option();
+            if (override_mode != "Auto" && override_mode != "Force CM100") {
+              id(oq_commissioning_status).publish_state("REFUSED: CM Override not CM100");
+              return;
+            }
           }
           if (id(oq_commissioning_active) && id(oq_commissioning_task_code) != 0) {
             id(oq_commissioning_status).publish_state("REFUSED: BUSY");
@@ -206,10 +209,6 @@ button:
           }
           if (!id(oq_enabled).state) {
             id(oq_boiler_power_test_status).publish_state("REFUSED: OpenQuatt disabled");
-            return;
-          }
-          if (id(oq_cm_override).has_state() && id(oq_cm_override).current_option() != "Auto") {
-            id(oq_boiler_power_test_status).publish_state("REFUSED: CM Override not Auto");
             return;
           }
           if (!id(oq_flow_control_mode).has_state() || id(oq_flow_control_mode).current_option() != "Flow Setpoint") {
