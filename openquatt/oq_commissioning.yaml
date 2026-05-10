@@ -228,11 +228,6 @@ button:
             id(oq_boiler_power_test_status).publish_state("REFUSED: not CM100");
             return;
           }
-          if (id(oq_boot_startup_inhibit_active)) {
-            id(oq_boiler_power_test_status).publish_state("REFUSED: startup inhibit active");
-            ESP_LOGW("quatt.cm100.boiler", "Boiler power test refused: startup inhibit active");
-            return;
-          }
           ESP_LOGI("quatt.cm100.boiler",
                    "Boiler power test requested (cm=%d flow_mode=%s flow_sp=%.0fL/h current_task=%d active=%d)",
                    cm_code,

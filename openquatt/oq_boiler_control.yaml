@@ -130,8 +130,6 @@ interval:
           std::string boiler_block_reason;
           if (!has_valid_supply_temp) {
             boiler_block_reason = "water supply temperature unavailable";
-          } else if (id(oq_boot_startup_inhibit_active)) {
-            boiler_block_reason = "startup inhibit active";
           } else if (id(oq_water_temp_boiler_inhibit_active)) {
             boiler_block_reason = "water temperature boiler inhibit active";
           } else if (id(oq_water_temp_hard_trip_active)) {
