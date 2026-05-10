@@ -136,6 +136,11 @@ interval:
             boiler_block_reason = "water temperature boiler inhibit active";
           } else if (id(oq_water_temp_hard_trip_active)) {
             boiler_block_reason = "water temperature hard trip active";
+          } else if ((cm_code == 100) &&
+                     id(oq_commissioning_active) &&
+                     (id(oq_commissioning_task_code) == 1) &&
+                     !id(oq_commissioning_boiler_request)) {
+            boiler_block_reason = "CM100 boiler commissioning waiting for flow settle";
           } else if (!in_cm3 && !commissioning_boiler) {
             boiler_block_reason = "Control Mode is not CM3";
           }

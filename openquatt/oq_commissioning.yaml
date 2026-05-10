@@ -225,10 +225,10 @@ button:
           }
 
           id(oq_commissioning_task_code) = 1;
-          id(oq_commissioning_request_pending) = true;
-          id(oq_commissioning_active) = false;
+          id(oq_commissioning_request_pending) = false;
+          id(oq_commissioning_active) = true;
           id(oq_commissioning_abort_requested) = false;
-          id(oq_commissioning_state_code) = 1;
+          id(oq_commissioning_state_code) = 2;
           id(oq_commissioning_started_ms) = (uint32_t) millis();
           id(oq_commissioning_state_since_ms) = (uint32_t) millis();
           id(oq_commissioning_boiler_request) = false;
@@ -247,7 +247,7 @@ button:
           set_flow.perform();
 
           id(oq_commissioning_status).publish_state("BOILER TEST STARTED");
-          id(oq_boiler_power_test_status).publish_state("REQUESTED");
+          id(oq_boiler_power_test_status).publish_state("FLOW_SETTLING");
 
   - platform: template
     id: oq_boiler_power_test_abort
