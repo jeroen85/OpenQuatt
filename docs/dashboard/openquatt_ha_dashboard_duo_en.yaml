@@ -2833,13 +2833,13 @@ views:
           - type: entities
             show_header_toggle: false
             entities:
-              - entity: button.openquatt_commissioning_cm100_start
+              - entity: button.openquatt_cm100_start
                 name: Start CM100
-              - entity: button.openquatt_commissioning_cm100_stop
+              - entity: button.openquatt_cm100_stop
                 name: Stop CM100
               - entity: sensor.openquatt_control_mode_label
                 name: ControlMode
-              - entity: binary_sensor.openquatt_commissioning_cm100_active
+              - entity: binary_sensor.openquatt_cm100_active
                 name: CM100 active
               - entity: text_sensor.openquatt_commissioning_status
                 name: CM100 status
@@ -2880,7 +2880,7 @@ views:
                 name: Boiler power test result
               - entity: sensor.openquatt_boiler_power_test_confidence
                 name: Boiler power test confidence
-              - entity: sensor.openquatt_boiler_power_test_status
+              - entity: text_sensor.openquatt_boiler_power_test_status
                 name: Boiler power test status
       - type: grid
         cards:
@@ -2924,7 +2924,7 @@ views:
                 name: Autotune Kp suggested
               - entity: number.openquatt_flow_autotune_ki_suggested
                 name: Autotune Ki suggested
-              - entity: sensor.openquatt_flow_autotune_status
+              - entity: text_sensor.openquatt_flow_autotune_status
                 name: Autotune status
     header:
       card:
