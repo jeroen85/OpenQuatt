@@ -15,14 +15,14 @@
 #
 # Operation (high level):
 #   1) Arm/Settle: force a fixed baseline PWM and wait for stable flow
-#   2) Step: decrease iPWM with an adaptive step sized from the baseline PWM
-#   3) Measure: determine Δpv_ss and t63 (time to 63% response)
-#      and stop early once the response is settled and confirmed
-#   4) Compute: K = Δpv/Δu, τ = t63, θ≈Ts (5s), then derive a conservative
-#      seed using a large lambda and a longer Ti.
-#   5) Validate the seed with a short closed-loop setpoint step while the
+#   2) Step A: decrease iPWM with a conservative adaptive step
+#   3) Recover: return to baseline and let the loop settle again
+#   4) Step B: repeat with a larger step so the estimate is not based on
+#      a single amplitude only
+#   5) Compute: combine both step responses into a conservative seed
+#   6) Validate the seed with a short closed-loop setpoint step while the
 #      normal PI loop is active.
-#   6) Publish the suggested values; apply button writes them to oq_flow_kp/
+#   7) Publish the suggested values; apply button writes them to oq_flow_kp/
 #      oq_flow_ki.
 #
 # Defaults are conservative by design so the same logic can work across many
@@ -37,7 +37,7 @@ globals:
   - id: oq_flow_autotune_state
     type: int
     restore_value: false
-    initial_value: '0'   # 0=IDLE,1=ARM,2=STEP,3=DONE,4=ABORT
+    initial_value: '0'   # 0=IDLE,1=ARM,2=STEP1,3=RECOVER,4=STEP2,5=VALIDATE,6=ABORT
   - id: oq_flow_autotune_req
     type: bool
     restore_value: false
@@ -64,7 +64,15 @@ globals:
     type: float
     restore_value: false
     initial_value: 'NAN'
+  - id: oq_flow_at_step1_pv0
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
   - id: oq_flow_at_pv_ss
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+  - id: oq_flow_at_step1_pv_ss
     type: float
     restore_value: false
     initial_value: 'NAN'
@@ -72,6 +80,22 @@ globals:
     type: float
     restore_value: false
     initial_value: 'NAN'
+  - id: oq_flow_at_step1_pv63_time_s
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+  - id: oq_flow_at_step1_k
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+  - id: oq_flow_at_step1_tau
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+  - id: oq_flow_at_step1_pwm_step
+    type: int
+    restore_value: false
+    initial_value: '850'
   - id: oq_flow_at_w0
     type: float
     restore_value: false
@@ -164,8 +188,14 @@ button:
           id(oq_flow_at_pwm0) = 850;
           id(oq_flow_at_pwm_step) = 850;
           id(oq_flow_at_pv0) = NAN;
+          id(oq_flow_at_step1_pv0) = NAN;
           id(oq_flow_at_pv_ss) = NAN;
+          id(oq_flow_at_step1_pv_ss) = NAN;
           id(oq_flow_at_pv63_time_s) = NAN;
+          id(oq_flow_at_step1_pv63_time_s) = NAN;
+          id(oq_flow_at_step1_k) = NAN;
+          id(oq_flow_at_step1_tau) = NAN;
+          id(oq_flow_at_step1_pwm_step) = 850;
           id(oq_flow_at_w0) = NAN;
           id(oq_flow_at_w1) = NAN;
           id(oq_flow_at_w2) = NAN;
@@ -265,11 +295,7 @@ interval:
     then:
       - lambda: |-
           const float sample_time_s = ${oq_flow_ts}.0f;
-          constexpr float kAutotuneStepFrac = 0.08f;
-          constexpr int kAutotuneStepMinIpwm = 10;
-          constexpr int kAutotuneStepMaxIpwm = 40;
           constexpr int kAutotuneDurationS = 120;
-          constexpr int kAutotuneValidateDurationS = 90;
           constexpr float kAutotuneValidateStepFrac = 0.05f;
           constexpr float kAutotuneValidateStepMinLph = 15.0f;
           constexpr float kAutotuneValidateStepMaxLph = 40.0f;
@@ -280,8 +306,16 @@ interval:
           constexpr float kAutotuneValidateSeedTiFrac = 2.0f;
           constexpr float kAutotuneValidateSeedMinLambdaS = 60.0f;
           constexpr float kAutotuneValidateSeedMinTiS = 60.0f;
+          constexpr int kAutotuneValidateDurationS = 120;
           constexpr int kAutotuneBaselinePwm = 400;
           constexpr int kAutotuneBaselineWaitMaxS = 60;
+          constexpr float kAutotuneStep1Frac = 0.06f;
+          constexpr int kAutotuneStep1MinIpwm = 10;
+          constexpr int kAutotuneStep1MaxIpwm = 28;
+          constexpr float kAutotuneStep2Frac = 0.10f;
+          constexpr int kAutotuneStep2MinIpwm = 15;
+          constexpr int kAutotuneStep2MaxIpwm = 40;
+          constexpr float kAutotuneStepConsistencyFrac = 0.20f;
 
           auto clamp_ipwm = [](int value) -> int {
             if (value < ${oq_flow_pwm_min}) return ${oq_flow_pwm_min};
@@ -313,7 +347,7 @@ interval:
           // Abort button always works
           if (id(oq_flow_autotune_abort)) {
             id(oq_flow_autotune_abort) = false;
-            id(oq_flow_autotune_state) = 4;
+            id(oq_flow_autotune_state) = 6;
           }
 
           const float pv = id(flow_rate_selected).state;
@@ -373,7 +407,7 @@ interval:
 
           // ARM
           if (st == 1) {
-            if (!in_valid_autotune_mode()) { st = 4; id(oq_flow_autotune_status).publish_state("ABORT: not CM100"); }
+            if (!in_valid_autotune_mode()) { st = 6; id(oq_flow_autotune_status).publish_state("ABORT: not CM100"); }
             else {
               // Keep baseline override active while settling.
               const int pwm0 = clamp_ipwm(id(oq_flow_at_pwm0));
@@ -384,7 +418,7 @@ interval:
 
               if (!flow_valid) {
                 if (t >= kAutotuneBaselineWaitMaxS) {
-                  st = 4;
+                  st = 6;
                   ESP_LOGW("quatt.cm100.autotune",
                            "Autotune aborted: baseline flow never became valid (pwm0=%d pv=%.1f t=%ds)",
                            pwm0, pv, t);
@@ -425,15 +459,15 @@ interval:
 
                   const int pwm_headroom = pwm0 - ${oq_flow_pwm_min};
                   if (pwm_headroom < ${oq_flow_autotune_min_step}) {
-                    st = 4;
+                    st = 6;
                     ESP_LOGW("quatt.cm100.autotune",
                              "Autotune refused: insufficient step headroom (pwm0=%d min=%d headroom=%d required=%d)",
                              pwm0, ${oq_flow_pwm_min}, pwm_headroom, ${oq_flow_autotune_min_step});
                     id(oq_flow_autotune_status).publish_state("REFUSED: STEP_HEADROOM");
                   } else {
-                    int u_step = (int) roundf(kAutotuneStepFrac * (float) pwm0);
-                    if (u_step < kAutotuneStepMinIpwm) u_step = kAutotuneStepMinIpwm;
-                    if (u_step > kAutotuneStepMaxIpwm) u_step = kAutotuneStepMaxIpwm;
+                    int u_step = (int) roundf(kAutotuneStep1Frac * (float) pwm0);
+                    if (u_step < kAutotuneStep1MinIpwm) u_step = kAutotuneStep1MinIpwm;
+                    if (u_step > kAutotuneStep1MaxIpwm) u_step = kAutotuneStep1MaxIpwm;
                     if (u_step > pwm_headroom) u_step = pwm_headroom;
                     if (u_step < ${oq_flow_autotune_min_step}) u_step = ${oq_flow_autotune_min_step};
 
@@ -453,7 +487,7 @@ interval:
                     st = 2;
                   }
                 } else if (t >= kAutotuneBaselineWaitMaxS) {
-                  st = 4;
+                  st = 6;
                   ESP_LOGW("quatt.cm100.autotune",
                            "Autotune aborted: baseline never stabilized (pwm0=%d pv=%.1f spread=%.1f t=%ds)",
                            pwm0, pv, spread, t);
@@ -465,10 +499,10 @@ interval:
             return;
           }
 
-          // STEP / MEASURE
+          // STEP 1 / MEASURE
           if (st == 2) {
-            if (!in_valid_autotune_mode()) { st = 4; id(oq_flow_autotune_status).publish_state("ABORT: not CM100"); }
-            else if (!flow_valid) { st = 4; ESP_LOGW("quatt.cm100.autotune", "Autotune abort: flow invalid during step (pv=%.1f)", pv); id(oq_flow_autotune_status).publish_state("ABORT: FLOW_INVALID"); }
+            if (!in_valid_autotune_mode()) { st = 6; id(oq_flow_autotune_status).publish_state("ABORT: not CM100"); }
+            else if (!flow_valid) { st = 6; ESP_LOGW("quatt.cm100.autotune", "Autotune abort: flow invalid during step1 (pv=%.1f)", pv); id(oq_flow_autotune_status).publish_state("ABORT: FLOW_INVALID"); }
             else {
               const float pv0 = id(oq_flow_at_pv0);
               const int t = id(oq_flow_at_t);
@@ -487,17 +521,13 @@ interval:
                 const float spread = w_max - w_min;
                 const float slope01 = fabsf(w1 - w0);
                 const float slope12 = fabsf(w2 - w1);
-
-                // Only trust the final value once the response has flattened out.
-                // This keeps the 63% latch conservative instead of locking on to a
-                // transient rolling average that is still climbing toward steady state.
                 const bool ss_ready = (spread <= 6.0f) && (slope01 <= 2.0f) && (slope12 <= 2.0f);
                 if (ss_ready) {
                   id(oq_flow_at_pv_ss) = (w0 + w1 + w2) / 3.0f;
                   if (id(oq_flow_at_ss_confirm_cnt) < 255) id(oq_flow_at_ss_confirm_cnt)++;
                   if (id(oq_flow_at_ss_confirm_cnt) == 1) {
                     ESP_LOGI("quatt.cm100.autotune",
-                             "Steady-state candidate locked (pv_ss=%.1f t=%ds spread=%.1f slopes=%.1f/%.1f)",
+                             "Step1 steady-state candidate locked (pv_ss=%.1f t=%ds spread=%.1f slopes=%.1f/%.1f)",
                              id(oq_flow_at_pv_ss), t, spread, slope01, slope12);
                   }
                 } else {
@@ -509,7 +539,6 @@ interval:
               if (!isnan(pv_ss_est) && isnan(id(oq_flow_at_pv63_time_s))) {
                 const float dpv = pv_ss_est - pv0;
                 const float pv63 = pv0 + 0.632f * dpv;
-
                 if (dpv >= 0.0f) {
                   if (pv >= pv63) id(oq_flow_at_pv63_time_s) = (float) t;
                 } else {
@@ -526,23 +555,245 @@ interval:
 
               if (early_done || t >= max_s) {
                 if (isnan(id(oq_flow_at_pv_ss))) {
-                  st = 4;
-                  ESP_LOGW("quatt.cm100.autotune", "Autotune aborted: no steady-state response (t=%ds pv=%.1f)", t, pv);
+                  st = 6;
+                  ESP_LOGW("quatt.cm100.autotune", "Autotune aborted: no step1 steady-state response (t=%ds pv=%.1f)", t, pv);
                   id(oq_flow_autotune_status).publish_state("ABORT: NO_STEADY_STATE");
                 } else {
-                  const float pv_ss = id(oq_flow_at_pv_ss);
-                  const float t63 = id(oq_flow_at_pv63_time_s);
+                  const float pv_ss1 = id(oq_flow_at_pv_ss);
+                  const float t63_1 = id(oq_flow_at_pv63_time_s);
                   const int pwm0 = clamp_ipwm(id(oq_flow_at_pwm0));
-                  const int pwm_step = clamp_ipwm(id(oq_flow_at_pwm_step));
-                  const float du = (float)(pwm0 - pwm_step); // >0
-                  const float dpv = pv_ss - pv0;
-                  const float K = dpv / du;  // (L/h)/iPWM
-                  if (!(K > 0.0f)) {
-                    st = 4;
-                    ESP_LOGW("quatt.cm100.autotune", "Autotune failed: invalid open-loop gain (pv0=%.1f pv_ss=%.1f du=%.1f)", pv0, pv_ss, du);
+                  const int pwm_step1 = clamp_ipwm(id(oq_flow_at_pwm_step));
+                  const float du1 = (float)(pwm0 - pwm_step1); // >0
+                  const float dpv1 = pv_ss1 - pv0;
+                  const float K1 = dpv1 / du1;
+                  if (!(K1 > 0.0f)) {
+                    st = 6;
+                    ESP_LOGW("quatt.cm100.autotune",
+                             "Autotune failed: invalid step1 gain (pv0=%.1f pv_ss=%.1f du=%.1f)",
+                             pv0, pv_ss1, du1);
                     id(oq_flow_autotune_status).publish_state("FAILED: INVALID_GAIN");
                   } else {
-                    float tau = t63;
+                    float tau1 = t63_1;
+                    if (isnan(tau1) || tau1 < sample_time_s) tau1 = ${oq_flow_autotune_tau_fallback_s};
+                    id(oq_flow_at_step1_pv0) = pv0;
+                    id(oq_flow_at_step1_pv_ss) = pv_ss1;
+                    id(oq_flow_at_step1_pv63_time_s) = t63_1;
+                    id(oq_flow_at_step1_k) = K1;
+                    id(oq_flow_at_step1_tau) = tau1;
+                    id(oq_flow_at_step1_pwm_step) = pwm_step1;
+
+                    const int pwm_headroom = pwm0 - ${oq_flow_pwm_min};
+                    if (pwm_headroom < ${oq_flow_autotune_min_step}) {
+                      st = 6;
+                      ESP_LOGW("quatt.cm100.autotune",
+                               "Autotune refused: insufficient recovery headroom (pwm0=%d min=%d headroom=%d required=%d)",
+                               pwm0, ${oq_flow_pwm_min}, pwm_headroom, ${oq_flow_autotune_min_step});
+                      id(oq_flow_autotune_status).publish_state("REFUSED: STEP_HEADROOM");
+                    } else {
+                      id(oq_flow_autotune_pwm) = pwm0;
+                      id(oq_flow_at_t) = 0;
+                      id(oq_flow_at_w0) = NAN;
+                      id(oq_flow_at_w1) = NAN;
+                      id(oq_flow_at_w2) = NAN;
+                      id(oq_flow_at_ss_confirm_cnt) = 0;
+                      id(oq_flow_at_pv0) = NAN;
+                      id(oq_flow_at_pv_ss) = NAN;
+                      id(oq_flow_at_pv63_time_s) = NAN;
+                      ESP_LOGI("quatt.cm100.autotune",
+                               "Step1 captured (pwm0=%d step=%d pv0=%.1f pv_ss=%.1f t63=%.1f K1=%.3f tau1=%.0fs) -> recover",
+                               pwm0, pwm_step1, pv0, pv_ss1, tau1, K1);
+                      id(oq_flow_autotune_status).publish_state("RECOVERING");
+                      st = 3;
+                    }
+                  }
+                }
+              } else {
+                st = 2;
+              }
+              id(oq_flow_autotune_state) = st;
+              return;
+            }
+            id(oq_flow_autotune_state) = st;
+          }
+
+          // RECOVER / STEP 2 ARM
+          if (st == 3) {
+            if (!in_valid_autotune_mode()) { st = 6; id(oq_flow_autotune_status).publish_state("ABORT: not CM100"); }
+            else {
+              const int pwm0 = clamp_ipwm(id(oq_flow_at_pwm0));
+              id(oq_flow_autotune_pwm) = pwm0;
+              id(oq_flow_autotune_active) = true;
+              const int t = id(oq_flow_at_t);
+              id(oq_flow_at_t) = t + (int) sample_time_s;
+
+              if (!flow_valid) {
+                if (t >= kAutotuneBaselineWaitMaxS) {
+                  st = 6;
+                  ESP_LOGW("quatt.cm100.autotune",
+                           "Autotune aborted: recovery flow never became valid (pwm0=%d pv=%.1f t=%ds)",
+                           pwm0, pv, t);
+                  id(oq_flow_autotune_status).publish_state("ABORT: NO_BASELINE_FLOW");
+                } else {
+                  id(oq_flow_at_ss_confirm_cnt) = 0;
+                  id(oq_flow_autotune_status).publish_state("WAITING_FOR_FLOW");
+                }
+                id(oq_flow_autotune_state) = st;
+                return;
+              }
+
+              id(oq_flow_at_ss_confirm_cnt) = 0;
+              id(oq_flow_at_w0) = id(oq_flow_at_w1);
+              id(oq_flow_at_w1) = id(oq_flow_at_w2);
+              id(oq_flow_at_w2) = pv;
+              const bool win_ready = !isnan(id(oq_flow_at_w0)) && !isnan(id(oq_flow_at_w1)) && !isnan(id(oq_flow_at_w2));
+              if (win_ready) {
+                const float w0 = id(oq_flow_at_w0);
+                const float w1 = id(oq_flow_at_w1);
+                const float w2 = id(oq_flow_at_w2);
+                const float w_min = fminf(w0, fminf(w1, w2));
+                const float w_max = fmaxf(w0, fmaxf(w1, w2));
+                const float spread = w_max - w_min;
+                const float mean = (w0 + w1 + w2) / 3.0f;
+
+                if (t >= ${oq_flow_autotune_settle_s} &&
+                    t <= kAutotuneBaselineWaitMaxS &&
+                    spread <= ${oq_flow_autotune_stable_band_lph} &&
+                    mean > 0.0f) {
+                  ESP_LOGI("quatt.cm100.autotune",
+                           "Recovery stable (pv=%.1f pwm0=%d spread=%.1f t=%ds)",
+                           mean, pwm0, spread, t);
+
+                  int u_step = (int) roundf(kAutotuneStep2Frac * (float) pwm0);
+                  if (u_step < kAutotuneStep2MinIpwm) u_step = kAutotuneStep2MinIpwm;
+                  if (u_step > kAutotuneStep2MaxIpwm) u_step = kAutotuneStep2MaxIpwm;
+                  const int step1_u = pwm0 - clamp_ipwm(id(oq_flow_at_step1_pwm_step));
+                  if (u_step <= step1_u) u_step = step1_u + 8;
+                  if (u_step > pwm0 - ${oq_flow_pwm_min}) u_step = pwm0 - ${oq_flow_pwm_min};
+                  if (u_step <= step1_u) {
+                    st = 6;
+                    ESP_LOGW("quatt.cm100.autotune",
+                             "Autotune refused: insufficient distinct step2 headroom (step1=%d step2=%d pwm0=%d)",
+                             step1_u, u_step, pwm0);
+                    id(oq_flow_autotune_status).publish_state("REFUSED: STEP_HEADROOM");
+                  } else {
+                    const int pwm_step2 = clamp_ipwm(pwm0 - u_step);
+                    id(oq_flow_at_pv0) = mean;
+                    id(oq_flow_at_pwm_step) = pwm_step2;
+                    id(oq_flow_at_t) = 0;
+                    id(oq_flow_at_w0) = NAN;
+                    id(oq_flow_at_w1) = NAN;
+                    id(oq_flow_at_w2) = NAN;
+                    id(oq_flow_at_ss_confirm_cnt) = 0;
+                    id(oq_flow_autotune_pwm) = pwm_step2;
+                    ESP_LOGI("quatt.cm100.autotune",
+                             "Step2 applied (pwm0=%d step=%d pwm_step=%d pv0=%.1f)",
+                             pwm0, u_step, pwm_step2, mean);
+                    id(oq_flow_autotune_status).publish_state("STEP2");
+                    st = 4;
+                  }
+                } else if (t >= kAutotuneBaselineWaitMaxS) {
+                  st = 6;
+                  ESP_LOGW("quatt.cm100.autotune",
+                           "Autotune aborted: recovery never stabilized (pwm0=%d pv=%.1f spread=%.1f t=%ds)",
+                           pwm0, pv, spread, t);
+                  id(oq_flow_autotune_status).publish_state("ABORT: NO_BASELINE_FLOW");
+                }
+              }
+            }
+            id(oq_flow_autotune_state) = st;
+            return;
+          }
+
+          // STEP 2 / MEASURE
+          if (st == 4) {
+            if (!in_valid_autotune_mode()) { st = 6; id(oq_flow_autotune_status).publish_state("ABORT: not CM100"); }
+            else if (!flow_valid) { st = 6; ESP_LOGW("quatt.cm100.autotune", "Autotune abort: flow invalid during step2 (pv=%.1f)", pv); id(oq_flow_autotune_status).publish_state("ABORT: FLOW_INVALID"); }
+            else {
+              const float pv0 = id(oq_flow_at_pv0);
+              const int t = id(oq_flow_at_t);
+              const int max_s = kAutotuneDurationS;
+
+              // Rolling window for ss-estimate.
+              id(oq_flow_at_w0) = id(oq_flow_at_w1);
+              id(oq_flow_at_w1) = id(oq_flow_at_w2);
+              id(oq_flow_at_w2) = pv;
+              if (!isnan(id(oq_flow_at_w0)) && !isnan(id(oq_flow_at_w1)) && !isnan(id(oq_flow_at_w2)) && ${oq_flow_autotune_ss_window} == 3) {
+                const float w0 = id(oq_flow_at_w0);
+                const float w1 = id(oq_flow_at_w1);
+                const float w2 = id(oq_flow_at_w2);
+                const float w_min = fminf(w0, fminf(w1, w2));
+                const float w_max = fmaxf(w0, fmaxf(w1, w2));
+                const float spread = w_max - w_min;
+                const float slope01 = fabsf(w1 - w0);
+                const float slope12 = fabsf(w2 - w1);
+                const bool ss_ready = (spread <= 6.0f) && (slope01 <= 2.0f) && (slope12 <= 2.0f);
+                if (ss_ready) {
+                  id(oq_flow_at_pv_ss) = (w0 + w1 + w2) / 3.0f;
+                  if (id(oq_flow_at_ss_confirm_cnt) < 255) id(oq_flow_at_ss_confirm_cnt)++;
+                  if (id(oq_flow_at_ss_confirm_cnt) == 1) {
+                    ESP_LOGI("quatt.cm100.autotune",
+                             "Step2 steady-state candidate locked (pv_ss=%.1f t=%ds spread=%.1f slopes=%.1f/%.1f)",
+                             id(oq_flow_at_pv_ss), t, spread, slope01, slope12);
+                  }
+                } else {
+                  id(oq_flow_at_ss_confirm_cnt) = 0;
+                }
+              }
+
+              const float pv_ss_est = id(oq_flow_at_pv_ss);
+              if (!isnan(pv_ss_est) && isnan(id(oq_flow_at_pv63_time_s))) {
+                const float dpv = pv_ss_est - pv0;
+                const float pv63 = pv0 + 0.632f * dpv;
+                if (dpv >= 0.0f) {
+                  if (pv >= pv63) id(oq_flow_at_pv63_time_s) = (float) t;
+                } else {
+                  if (pv <= pv63) id(oq_flow_at_pv63_time_s) = (float) t;
+                }
+              }
+
+              const bool early_done =
+                  !isnan(id(oq_flow_at_pv_ss)) &&
+                  !isnan(id(oq_flow_at_pv63_time_s)) &&
+                  (id(oq_flow_at_ss_confirm_cnt) >= 2);
+
+              id(oq_flow_at_t) = t + (int) sample_time_s;
+
+              if (early_done || t >= max_s) {
+                if (isnan(id(oq_flow_at_pv_ss))) {
+                  st = 6;
+                  ESP_LOGW("quatt.cm100.autotune", "Autotune aborted: no step2 steady-state response (t=%ds pv=%.1f)", t, pv);
+                  id(oq_flow_autotune_status).publish_state("ABORT: NO_STEADY_STATE");
+                } else {
+                  const float pv_ss2 = id(oq_flow_at_pv_ss);
+                  const float t63_2 = id(oq_flow_at_pv63_time_s);
+                  const int pwm0 = clamp_ipwm(id(oq_flow_at_pwm0));
+                  const int pwm_step2 = clamp_ipwm(id(oq_flow_at_pwm_step));
+                  const float du2 = (float)(pwm0 - pwm_step2); // >0
+                  const float dpv2 = pv_ss2 - pv0;
+                  const float K2 = dpv2 / du2;
+                  const float K1 = id(oq_flow_at_step1_k);
+                  const float tau1 = id(oq_flow_at_step1_tau);
+                  if (!(K2 > 0.0f) || !(K1 > 0.0f) || isnan(tau1)) {
+                    st = 6;
+                    ESP_LOGW("quatt.cm100.autotune",
+                             "Autotune failed: invalid step2 gain (pv0=%.1f pv_ss=%.1f du=%.1f step1_k=%.3f tau1=%.1f)",
+                             pv0, pv_ss2, du2, K1, tau1);
+                    id(oq_flow_autotune_status).publish_state("FAILED: INVALID_GAIN");
+                  } else {
+                    float tau2 = t63_2;
+                    if (isnan(tau2) || tau2 < sample_time_s) tau2 = ${oq_flow_autotune_tau_fallback_s};
+                    const float rel_k = fabsf(K1 - K2) / fmaxf(fmaxf(K1, K2), 1e-3f);
+                    const float rel_tau = fabsf(tau1 - tau2) / fmaxf(fmaxf(tau1, tau2), sample_time_s);
+                    const bool consistent = (rel_k <= kAutotuneStepConsistencyFrac) && (rel_tau <= 0.35f);
+
+                    const float du1 = (float)(pwm0 - clamp_ipwm(id(oq_flow_at_step1_pwm_step)));
+                    float K = 0.0f;
+                    if (consistent) {
+                      K = (K1 * du1 + K2 * du2) / fmaxf(du1 + du2, 1.0f);
+                    } else {
+                      K = fmaxf(K1, K2);
+                    }
+                    float tau = fmaxf(tau1, tau2);
                     if (isnan(tau) || tau < sample_time_s) tau = ${oq_flow_autotune_tau_fallback_s};
 
                     const float theta = sample_time_s;
@@ -574,7 +825,7 @@ interval:
                     if (validate_step_lph > kAutotuneValidateStepMaxLph) validate_step_lph = kAutotuneValidateStepMaxLph;
                     float validate_sp1 = sp0 + validate_step_lph;
                     if (!(validate_sp1 > sp0)) {
-                      st = 4;
+                      st = 6;
                       ESP_LOGW("quatt.cm100.autotune",
                                "Autotune failed: invalid validation setpoint (sp0=%.1f step=%.1f)",
                                sp0, validate_step_lph);
@@ -584,8 +835,6 @@ interval:
                       id(oq_flow_at_saved_ki) = id(oq_flow_ki).state;
                       id(oq_flow_at_validate_sp0) = sp0;
                       id(oq_flow_at_validate_sp1) = validate_sp1;
-                      // Start the validation peak at the new target so the
-                      // open-loop end state does not count as overshoot.
                       id(oq_flow_at_validate_peak_pv) = validate_sp1;
                       id(oq_flow_at_validate_confirm_cnt) = 0;
                       id(oq_flow_at_t) = 0;
@@ -598,16 +847,20 @@ interval:
                       set_number_value(id(oq_flow_setpoint_lph), validate_sp1);
                       id(oq_flow_autotune_active) = false;
 
+                      const char *consistency_tag = consistent ? "2STEP" : "2STEP (LIMITED)";
                       ESP_LOGI("quatt.cm100.autotune",
-                               "Open-loop captured (pv0=%.1f pv_ss=%.1f t63=%.1f K=%.3f tau=%.0fs raw=%.3f/%.4f seed=%.3f/%.4f validate_sp=%.1f->%.1f)",
-                               pv0, pv_ss, tau, K, Kp_raw, Ki_raw, Kp_seed, Ki_seed, sp0, validate_sp1);
+                               "Open-loop captured (%s) step1: pv0=%.1f pv_ss=%.1f t63=%.1f K=%.3f tau=%.0fs | step2: pv0=%.1f pv_ss=%.1f t63=%.1f K=%.3f tau=%.0fs | combined: K=%.3f tau=%.0fs raw=%.3f/%.4f seed=%.3f/%.4f validate_sp=%.1f->%.1f",
+                               consistency_tag,
+                               id(oq_flow_at_step1_pv0), id(oq_flow_at_step1_pv_ss), id(oq_flow_at_step1_pv63_time_s), K1, tau1,
+                               pv0, pv_ss2, t63_2, K2, tau2,
+                               K, tau, Kp_raw, Ki_raw, Kp_seed, Ki_seed, sp0, validate_sp1);
                       id(oq_flow_autotune_status).publish_state("VALIDATING");
-                      st = 3;
+                      st = 5;
                     }
                   }
                 }
               } else {
-                st = 2;
+                st = 4;
               }
               id(oq_flow_autotune_state) = st;
               return;
@@ -616,14 +869,14 @@ interval:
           }
 
           // VALIDATION
-          if (id(oq_flow_autotune_state) == 3) {
-            if (!in_valid_autotune_mode()) { st = 4; id(oq_flow_autotune_status).publish_state("ABORT: not CM100"); }
-            else if (!flow_valid) { st = 4; ESP_LOGW("quatt.cm100.autotune", "Autotune abort: flow invalid during validation (pv=%.1f)", pv); id(oq_flow_autotune_status).publish_state("ABORT: FLOW_INVALID"); }
+          if (id(oq_flow_autotune_state) == 5) {
+            if (!in_valid_autotune_mode()) { st = 6; id(oq_flow_autotune_status).publish_state("ABORT: not CM100"); }
+            else if (!flow_valid) { st = 6; ESP_LOGW("quatt.cm100.autotune", "Autotune abort: flow invalid during validation (pv=%.1f)", pv); id(oq_flow_autotune_status).publish_state("ABORT: FLOW_INVALID"); }
             else {
               const float sp0 = id(oq_flow_at_validate_sp0);
               const float sp1 = id(oq_flow_at_validate_sp1);
               if (isnan(sp0) || isnan(sp1) || !(sp1 > sp0)) {
-                st = 4;
+                st = 6;
                 ESP_LOGW("quatt.cm100.autotune",
                          "Autotune failed: invalid validation state (sp0=%.1f sp1=%.1f)",
                          sp0, sp1);
@@ -751,7 +1004,7 @@ interval:
           }
 
           // ABORT
-          if (id(oq_flow_autotune_state) == 4) {
+          if (id(oq_flow_autotune_state) == 6) {
             id(oq_flow_autotune_active) = false;
             id(oq_flow_autotune_pwm) = clamp_ipwm((int) id(oq_flow_last_pwm));
             if (!isnan(id(oq_flow_at_saved_kp)) && !isnan(id(oq_flow_at_saved_ki))) {
