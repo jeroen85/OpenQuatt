@@ -1050,6 +1050,25 @@
     return { min, max };
   }
 
+  function getNiceTickStep(rawStep) {
+    if (!Number.isFinite(rawStep) || rawStep <= 0) {
+      return 1;
+    }
+    const exponent = Math.floor(Math.log10(rawStep));
+    const fraction = rawStep / (10 ** exponent);
+    let niceFraction;
+    if (fraction <= 1) {
+      niceFraction = 1;
+    } else if (fraction <= 2) {
+      niceFraction = 2;
+    } else if (fraction <= 5) {
+      niceFraction = 5;
+    } else {
+      niceFraction = 10;
+    }
+    return niceFraction * (10 ** exponent);
+  }
+
   function getOverviewTrendChartModel(samples, series, options = {}) {
     const rawWindowHours = Number(options.windowHours);
     const windowHours = Number.isFinite(rawWindowHours) ? rawWindowHours : getOverviewTrendWindowHours();
@@ -1071,27 +1090,31 @@
     const span = Math.max(endTime - startTime, 1);
     const uptimeMs = span;
     const range = getOverviewTrendRange(samples, series);
+    const rangeSpan = Math.max(range.max - range.min, 1);
+    const tickStep = getNiceTickStep(rangeSpan / 4);
+    const axisMin = Math.floor(range.min / tickStep) * tickStep;
+    const axisMax = Math.ceil(range.max / tickStep) * tickStep;
+    const axisSpan = Math.max(axisMax - axisMin, tickStep);
+    const axisDecimals = tickStep < 1 ? 1 : 0;
+    const axisTicks = [];
+    for (let value = axisMin; value <= axisMax + (tickStep * 0.5); value += tickStep) {
+      axisTicks.push(value);
+    }
 
     const xOf = (timestamp) => left + (((timestamp - startTime) / span) * plotWidth);
     const yOf = (value) => {
       if (!Number.isFinite(value)) {
         return Number.NaN;
       }
-      const ratio = (value - range.min) / Math.max(range.max - range.min, 1);
+      const ratio = (value - axisMin) / axisSpan;
       return top + ((1 - Math.min(1, Math.max(0, ratio))) * plotHeight);
     };
 
     const gridXs = [0, 0.5, 1].map((fraction) => left + (plotWidth * fraction));
-    const gridFractions = [0.25, 0.5, 0.75];
-    const gridYs = gridFractions.map((fraction) => top + (plotHeight * fraction));
-    const axisDecimals = series.reduce((max, item) => {
-      const decimals = Number(item?.decimals);
-      return Math.max(max, Number.isFinite(decimals) ? decimals : 0);
-    }, 0);
-    const yAxisLabels = gridFractions.map((fraction, index) => {
-      const value = range.max - ((range.max - range.min) * fraction);
+    const gridYs = axisTicks.map((value) => yOf(value));
+    const yAxisLabels = axisTicks.map((value, index) => {
       return {
-        x: 6,
+        x: left - 10,
         y: gridYs[index],
         text: formatNumericState(value, axisDecimals),
       };
@@ -1269,7 +1292,7 @@
             x="${label.x}"
             y="${label.y.toFixed(1)}"
             class="oq-overview-trend-axis-label oq-overview-trend-axis-label--y"
-            text-anchor="start"
+            text-anchor="end"
             dominant-baseline="middle"
           >${escapeHtml(label.text)}</text>
         `).join("")}
