@@ -10782,7 +10782,7 @@ function renderWebServerLogsModal() {
         mock: isMockData,
         windowHours,
         series: [
-          { id: "flow", sampleKey: "flow", label: "Flow", tone: "sky", decimals: 0, unit: " L/h" },
+          { id: "flow", sampleKey: "flow", label: "Flow", tone: "sky", decimals: 0, unit: " L/h", axisTickStep: 50 },
         ],
       },
     ];
@@ -10860,11 +10860,14 @@ function renderWebServerLogsModal() {
     return niceFraction * (10 ** exponent);
   }
 
-  function getOverviewTrendAxisTicks(range) {
+  function getOverviewTrendAxisTicks(range, series) {
     const rangeMin = Number.isFinite(range?.min) ? range.min : 0;
     const rangeMax = Number.isFinite(range?.max) ? range.max : 1;
     const rangeSpan = Math.max(rangeMax - rangeMin, 1);
-    const tickStep = Math.max(1, getNiceTickStep(rangeSpan / 4));
+    const explicitTickStep = Array.isArray(series)
+      ? series.map((item) => Number(item?.axisTickStep)).find((value) => Number.isFinite(value) && value > 0)
+      : Number.NaN;
+    const tickStep = Math.max(1, Number.isFinite(explicitTickStep) ? explicitTickStep : getNiceTickStep(rangeSpan / 4));
     const tickRatio = rangeSpan / tickStep;
     const tickCount = tickRatio <= 1.8 ? 3 : (tickRatio <= 4.25 ? 5 : 7);
     const halfCount = Math.floor(tickCount / 2);
@@ -10916,7 +10919,7 @@ function renderWebServerLogsModal() {
           min: rawRange.min - Math.max((rawRange.max - rawRange.min) * 0.12, 1),
           max: rawRange.max + Math.max((rawRange.max - rawRange.min) * 0.12, 1),
         };
-    const axisTicks = getOverviewTrendAxisTicks(rawRange);
+    const axisTicks = getOverviewTrendAxisTicks(rawRange, series);
 
     const xOf = (timestamp) => left + (((timestamp - startTime) / span) * plotWidth);
     const yOf = (value) => {
