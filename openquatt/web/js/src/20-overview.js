@@ -1036,18 +1036,10 @@
       return { min: 0, max: 1 };
     }
 
-    let min = Math.min(...values);
-    let max = Math.max(...values);
-    if (min === max) {
-      const offset = Math.max(Math.abs(min) * 0.1, 1);
-      min -= offset;
-      max += offset;
-    } else {
-      const pad = Math.max((max - min) * 0.12, 1);
-      min -= pad;
-      max += pad;
-    }
-    return { min, max };
+    return {
+      min: Math.min(...values),
+      max: Math.max(...values),
+    };
   }
 
   function getNiceTickStep(rawStep) {
@@ -1075,7 +1067,7 @@
     const rangeSpan = Math.max(rangeMax - rangeMin, 1);
     const tickStep = Math.max(1, getNiceTickStep(rangeSpan / 4));
     const tickRatio = rangeSpan / tickStep;
-    const tickCount = tickRatio <= 2.25 ? 3 : (tickRatio <= 4.75 ? 5 : 7);
+    const tickCount = tickRatio <= 1.8 ? 3 : (tickRatio <= 4.25 ? 5 : 7);
     const halfCount = Math.floor(tickCount / 2);
     const midpoint = (rangeMin + rangeMax) / 2;
     const centerTick = Math.round(midpoint / tickStep) * tickStep;
@@ -1115,16 +1107,24 @@
     const startTime = mockData ? 0 : (endTime - windowMs);
     const span = Math.max(endTime - startTime, 1);
     const uptimeMs = span;
-    const range = getOverviewTrendRange(samples, series);
-    const axisTicks = getOverviewTrendAxisTicks(range);
-    const axisSpan = Math.max(axisTicks.axisMax - axisTicks.axisMin, 1);
+    const rawRange = getOverviewTrendRange(samples, series);
+    const displayRange = rawRange.min === rawRange.max
+      ? {
+          min: rawRange.min - 1,
+          max: rawRange.max + 1,
+        }
+      : {
+          min: rawRange.min - Math.max((rawRange.max - rawRange.min) * 0.12, 1),
+          max: rawRange.max + Math.max((rawRange.max - rawRange.min) * 0.12, 1),
+        };
+    const axisTicks = getOverviewTrendAxisTicks(rawRange);
 
     const xOf = (timestamp) => left + (((timestamp - startTime) / span) * plotWidth);
     const yOf = (value) => {
       if (!Number.isFinite(value)) {
         return Number.NaN;
       }
-      const ratio = (value - axisTicks.axisMin) / axisSpan;
+      const ratio = (value - displayRange.min) / Math.max(displayRange.max - displayRange.min, 1);
       return top + ((1 - Math.min(1, Math.max(0, ratio))) * plotHeight);
     };
 
@@ -1217,7 +1217,8 @@
       startTime,
       span,
       windowHours,
-      range,
+      range: rawRange,
+      displayRange,
       gridXs,
       gridYs,
       yAxisLabels,
