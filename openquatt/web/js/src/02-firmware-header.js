@@ -971,8 +971,11 @@
     if (!status) {
       return "We halen de huidige API-beveiliging op.";
     }
-    if (status.enabled) {
+    if (status.transport_active === true) {
       return "De native API is beveiligd. Je kunt de sleutel hier bekijken, kopiëren of roteren.";
+    }
+    if (status.enabled) {
+      return "API-encryptie wordt net aangepast. Geef het apparaat even de tijd om de status bij te werken.";
     }
     if (status.key) {
       return "De sleutel blijft opgeslagen, ook wanneer encryptie uit staat. Je kunt hem hier meteen kopiëren of opnieuw inschakelen.";

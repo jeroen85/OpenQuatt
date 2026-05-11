@@ -1428,6 +1428,12 @@
     if (!status) {
       return "Laden...";
     }
+    if (status.transport_active === true) {
+      return "Aan";
+    }
+    if (status.transport_active === false) {
+      return "Uit";
+    }
     return status.enabled ? "Aan" : "Uit";
   }
 
@@ -1436,8 +1442,11 @@
     if (!status) {
       return "API-encryptie wordt geladen.";
     }
-    if (status.enabled) {
+    if (status.transport_active === true) {
       return "API-encryptie staat aan. Gebruik dezelfde sleutel in Home Assistant.";
+    }
+    if (status.enabled) {
+      return "API-encryptie wordt net aangepast. Wacht even tot de status is bijgewerkt.";
     }
     if (status.key) {
       return "De sleutel blijft opgeslagen, maar de native API staat nu open op je lokale netwerk.";

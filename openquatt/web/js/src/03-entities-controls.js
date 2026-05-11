@@ -596,6 +596,7 @@
   function getApiSecurityStatusSignature(status = state.apiSecurityStatus || {}) {
     return [
       status.enabled ? "on" : "off",
+      status.transport_active ? "active" : "idle",
       String(status.key || ""),
       String(status.source || ""),
       String(status.csrf_token || ""),
@@ -643,6 +644,7 @@
       const payload = await response.json();
       const nextStatus = {
         enabled: Boolean(payload.enabled),
+        transport_active: Boolean(payload.transport_active),
         key: String(payload.key || ""),
         source: String(payload.source || ""),
         csrf_token: String(payload.csrf_token || ""),

@@ -21,6 +21,7 @@
     },
     apiSecurity: {
       enabled: false,
+      transportActive: false,
       key: "",
       source: "bootstrap-disabled",
       csrfToken: "",
@@ -292,6 +293,7 @@
   function getApiSecurityStatusPayload() {
     return {
       enabled: Boolean(state.apiSecurity.enabled),
+      transport_active: Boolean(state.apiSecurity.transportActive),
       key: String(state.apiSecurity.key || ""),
       source: String(state.apiSecurity.source || ""),
       csrf_token: String(state.apiSecurity.csrfToken || ""),
@@ -313,6 +315,7 @@
       state.apiSecurity.key = generateApiKey();
     }
     state.apiSecurity.enabled = true;
+    state.apiSecurity.transportActive = true;
     state.apiSecurity.source = "runtime-enabled";
     refreshApiSecurityToken();
     return makeAuthResponse(200, {
@@ -330,6 +333,7 @@
 
     state.apiSecurity.key = generateApiKey();
     state.apiSecurity.enabled = true;
+    state.apiSecurity.transportActive = true;
     state.apiSecurity.source = "runtime-rotated";
     refreshApiSecurityToken();
     return makeAuthResponse(200, {
@@ -346,6 +350,7 @@
     }
 
     state.apiSecurity.enabled = false;
+    state.apiSecurity.transportActive = false;
     state.apiSecurity.source = "runtime-disabled";
     refreshApiSecurityToken();
     return makeAuthResponse(200, {
