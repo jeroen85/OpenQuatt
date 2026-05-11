@@ -1069,6 +1069,32 @@
     return niceFraction * (10 ** exponent);
   }
 
+  function getOverviewTrendAxisTicks(range) {
+    const rangeMin = Number.isFinite(range?.min) ? range.min : 0;
+    const rangeMax = Number.isFinite(range?.max) ? range.max : 1;
+    const rangeSpan = Math.max(rangeMax - rangeMin, 1);
+    const tickStep = Math.max(1, getNiceTickStep(rangeSpan / 4));
+    const tickRatio = rangeSpan / tickStep;
+    const tickCount = tickRatio <= 2.25 ? 3 : (tickRatio <= 4.75 ? 5 : 7);
+    const halfCount = Math.floor(tickCount / 2);
+    const midpoint = (rangeMin + rangeMax) / 2;
+    const centerTick = Math.round(midpoint / tickStep) * tickStep;
+    const ticks = [];
+
+    for (let index = -halfCount; index <= halfCount; index += 1) {
+      ticks.push(centerTick + (index * tickStep));
+    }
+
+    const axisMin = ticks[0];
+    const axisMax = ticks[ticks.length - 1];
+    return {
+      ticks,
+      axisMin,
+      axisMax,
+      axisDecimals: 0,
+    };
+  }
+
   function getOverviewTrendChartModel(samples, series, options = {}) {
     const rawWindowHours = Number(options.windowHours);
     const windowHours = Number.isFinite(rawWindowHours) ? rawWindowHours : getOverviewTrendWindowHours();
@@ -1090,33 +1116,25 @@
     const span = Math.max(endTime - startTime, 1);
     const uptimeMs = span;
     const range = getOverviewTrendRange(samples, series);
-    const rangeSpan = Math.max(range.max - range.min, 1);
-    const tickStep = getNiceTickStep(rangeSpan / 4);
-    const axisMin = Math.floor(range.min / tickStep) * tickStep;
-    const axisMax = Math.ceil(range.max / tickStep) * tickStep;
-    const axisSpan = Math.max(axisMax - axisMin, tickStep);
-    const axisDecimals = tickStep < 1 ? 1 : 0;
-    const axisTicks = [];
-    for (let value = axisMin; value <= axisMax + (tickStep * 0.5); value += tickStep) {
-      axisTicks.push(value);
-    }
+    const axisTicks = getOverviewTrendAxisTicks(range);
+    const axisSpan = Math.max(axisTicks.axisMax - axisTicks.axisMin, 1);
 
     const xOf = (timestamp) => left + (((timestamp - startTime) / span) * plotWidth);
     const yOf = (value) => {
       if (!Number.isFinite(value)) {
         return Number.NaN;
       }
-      const ratio = (value - axisMin) / axisSpan;
+      const ratio = (value - axisTicks.axisMin) / axisSpan;
       return top + ((1 - Math.min(1, Math.max(0, ratio))) * plotHeight);
     };
 
     const gridXs = [0, 0.5, 1].map((fraction) => left + (plotWidth * fraction));
-    const gridYs = axisTicks.map((value) => yOf(value));
-    const yAxisLabels = axisTicks.map((value, index) => {
+    const gridYs = axisTicks.ticks.map((value) => yOf(value));
+    const yAxisLabels = axisTicks.ticks.map((value, index) => {
       return {
         x: left - 10,
         y: gridYs[index],
-        text: formatNumericState(value, axisDecimals),
+        text: formatNumericState(value, axisTicks.axisDecimals),
       };
     });
 
