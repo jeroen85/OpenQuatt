@@ -1351,6 +1351,7 @@ views:
             columns: 1
             cards:
               - type: picture-elements
+                title: Quatt HP1
                 image: >-
                   https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Quatt.png
                 elements:
@@ -1376,295 +1377,169 @@ views:
                   - type: state-label
                     entity: sensor.openquatt_hp1_outside_temperature
                     style:
-                      top: 4%
+                      top: 3%
                       left: 8%
+                      font-weight: bold
+                      color: black
+                      font-size: 0.75em
                       transform: none
-                      color: #0f172a
-                      background: rgba(255, 255, 255, 0.78)
-                      border: 1px solid rgba(255, 255, 255, 0.72)
-                      border-radius: 999px
-                      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                      backdrop-filter: blur(6px)
-                      padding: 2px 7px
-                      font-weight: 800
-                      font-size: 0.76em
-                      line-height: 1.2
                     prefix: 'Buiten: '
-                  - type: state-label
+                  - type: state-badge
                     entity: sensor.openquatt_hp1_gas_discharge_temperature
                     style:
-                        top: 22%
-                        left: 60%
-                        transform: translate(-50%, -50%)
-                        color: #ffffff
-                        background: rgba(15, 23, 42, 0.82)
-                        border: 1px solid #ef4444
-                        border-radius: 999px
-                        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                        backdrop-filter: blur(6px)
-                        padding: 2px 7px
-                        font-weight: 800
-                        font-size: 0.72em
-                        line-height: 1.2
-                  - type: state-label
+                      top: 22%
+                      left: 58%
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
+                  - type: state-badge
                     entity: sensor.openquatt_hp1_inner_coil_temperature
                     style:
                       top: 70%
-                      left: 61%
-                      transform: translate(-50%, -50%)
-                      color: #ffffff
-                      background: rgba(15, 23, 42, 0.82)
-                      border: 1px solid #f59e0b
-                      border-radius: 999px
-                      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                      backdrop-filter: blur(6px)
-                      padding: 2px 7px
-                      font-weight: 800
-                      font-size: 0.72em
-                      line-height: 1.2
-                  - type: state-label
+                      left: 60%
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
+                  - type: state-badge
                     entity: sensor.openquatt_hp1_eev_steps
                     style:
-                        top: 70%
-                        left: 42%
-                        transform: translate(-50%, -50%)
-                        color: #ffffff
-                        background: rgba(15, 23, 42, 0.82)
-                        border: 1px solid #f59e0b
-                        border-radius: 999px
-                        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                        backdrop-filter: blur(6px)
-                        padding: 2px 7px
-                        font-weight: 800
-                        font-size: 0.72em
-                        line-height: 1.2
-                  - type: state-label
+                      top: 70%
+                      left: 42%
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
+                  - type: state-badge
                     entity: sensor.openquatt_hp1_gas_return_temperature
                     style:
                       top: 22%
                       left: 26%
-                      transform: translate(-50%, -50%)
-                      color: #ffffff
-                      background: rgba(15, 23, 42, 0.82)
-                      border: 1px solid #38bdf8
-                      border-radius: 999px
-                      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                      backdrop-filter: blur(6px)
-                      padding: 2px 7px
-                      font-weight: 800
-                      font-size: 0.72em
-                      line-height: 1.2
-                  - type: state-label
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
+                  - type: state-badge
                     entity: sensor.openquatt_hp1_evaporating_temperature
                     style:
-                        top: 70%
-                        left: 25%
-                        transform: translate(-50%, -50%)
-                        color: #ffffff
-                        background: rgba(15, 23, 42, 0.82)
-                        border: 1px solid #2563eb
-                        border-radius: 999px
-                        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                        backdrop-filter: blur(6px)
-                        padding: 2px 7px
-                        font-weight: 800
-                        font-size: 0.72em
-                        line-height: 1.2
-                  - type: state-label
+                      top: 70%
+                      left: 25%
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
+                  - type: state-badge
                     entity: sensor.openquatt_hp1_evaporator_coil_temperature
                     style:
                       top: 58%
-                      left: 8%
-                      transform: translate(-50%, -50%)
-                      color: #ffffff
-                      background: rgba(15, 23, 42, 0.82)
-                      border: 1px solid #2563eb
-                      border-radius: 999px
-                      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                      backdrop-filter: blur(6px)
-                      padding: 2px 7px
-                      font-weight: 800
-                      font-size: 0.72em
-                      line-height: 1.2
-                  - type: state-label
+                      left: 6%
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
+                  - type: state-badge
                     entity: sensor.openquatt_hp1_condenser_pressure
                     style:
-                        top: 11%
-                        left: 56%
-                        transform: translate(-50%, -50%)
-                        color: #ffffff
-                        background: rgba(15, 23, 42, 0.82)
-                        border: 1px solid #ef4444
-                        border-radius: 999px
-                        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                        backdrop-filter: blur(6px)
-                        padding: 2px 7px
-                        font-weight: 800
-                        font-size: 0.72em
-                        line-height: 1.2
-                  - type: state-label
+                      top: 11%
+                      left: 55%
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
+                  - type: state-badge
                     entity: sensor.openquatt_hp1_evaporator_pressure
                     style:
                       top: 11%
-                      left: 31%
-                      transform: translate(-50%, -50%)
-                      color: #ffffff
-                      background: rgba(15, 23, 42, 0.82)
-                      border: 1px solid #2563eb
-                      border-radius: 999px
-                      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                      backdrop-filter: blur(6px)
-                      padding: 2px 7px
-                      font-weight: 800
-                      font-size: 0.72em
-                      line-height: 1.2
-                  - type: state-label
+                      left: 30%
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
+                  - type: state-badge
                     entity: sensor.openquatt_hp1_fan_speed
                     style:
-                        top: 54%
-                        left: 27%
-                        transform: translate(-50%, -50%)
-                        color: #ffffff
-                        background: rgba(15, 23, 42, 0.82)
-                        border: 1px solid #64748b
-                        border-radius: 999px
-                        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                        backdrop-filter: blur(6px)
-                        padding: 2px 7px
-                        font-weight: 800
-                        font-size: 0.72em
-                        line-height: 1.2
-                  - type: state-label
+                      top: 53%
+                      left: 25%
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
+                  - type: state-badge
                     entity: sensor.openquatt_hp1_compressor_frequency
                     style:
                       top: 18%
-                      left: 42%
-                      transform: translate(-50%, -50%)
-                      color: #ffffff
-                      background: rgba(15, 23, 42, 0.82)
-                      border: 1px solid #111827
-                      border-radius: 999px
-                      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                      backdrop-filter: blur(6px)
-                      padding: 2px 7px
-                      font-weight: 800
-                      font-size: 0.72em
-                      line-height: 1.2
-                  - type: state-label
+                      left: 40%
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
+                  - type: state-badge
                     entity: sensor.openquatt_hp1_water_out_temperature
                     style:
-                        top: 43%
-                        left: 88%
-                        transform: translate(-50%, -50%)
-                        color: #ffffff
-                        background: rgba(15, 23, 42, 0.82)
-                        border: 1px solid #ef4444
-                        border-radius: 999px
-                        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                        backdrop-filter: blur(6px)
-                        padding: 2px 7px
-                        font-weight: 800
-                        font-size: 0.72em
-                        line-height: 1.2
-                  - type: state-label
+                      top: 43%
+                      left: 92%
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
+                  - type: state-badge
                     entity: sensor.openquatt_hp1_water_in_temperature
                     style:
                       top: 63%
-                      left: 88%
-                      transform: translate(-50%, -50%)
-                      color: #ffffff
-                      background: rgba(15, 23, 42, 0.82)
-                      border: 1px solid #2563eb
-                      border-radius: 999px
-                      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                      backdrop-filter: blur(6px)
-                      padding: 2px 7px
-                      font-weight: 800
-                      font-size: 0.72em
-                      line-height: 1.2
-                  - type: state-label
+                      left: 92%
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
+                  - type: state-badge
                     entity: sensor.openquatt_hp1_flow
                     style:
-                        top: 78%
-                        left: 82%
-                        transform: translate(-50%, -50%)
-                        color: #ffffff
-                        background: rgba(15, 23, 42, 0.82)
-                        border: 1px solid #0f766e
-                        border-radius: 999px
-                        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                        backdrop-filter: blur(6px)
-                        padding: 2px 7px
-                        font-weight: 800
-                        font-size: 0.72em
-                        line-height: 1.2
+                      top: 76%
+                      left: 81%
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
                   - type: state-label
                     entity: sensor.openquatt_hp1_working_mode_label
                     style:
                       top: 8%
                       left: 8%
+                      font-weight: bold
+                      color: white
+                      font-size: 0.75em
                       transform: none
-                      color: #ffffff
-                      background: rgba(15, 23, 42, 0.66)
-                      border: 1px solid rgba(255, 255, 255, 0.22)
-                      border-radius: 999px
-                      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                      backdrop-filter: blur(6px)
-                      padding: 2px 7px
-                      font-weight: 800
-                      font-size: 0.74em
-                      line-height: 1.2
                     prefix: 'Modus: '
                   - type: state-label
                     entity: sensor.openquatt_hp1_power_input
                     style:
                       top: 11%
                       left: 8%
+                      font-weight: bold
+                      color: white
+                      font-size: 0.75em
                       transform: none
-                      color: #ffffff
-                      background: rgba(15, 23, 42, 0.66)
-                      border: 1px solid rgba(255, 255, 255, 0.22)
-                      border-radius: 999px
-                      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                      backdrop-filter: blur(6px)
-                      padding: 2px 7px
-                      font-weight: 800
-                      font-size: 0.74em
-                      line-height: 1.2
                     prefix: 'PowerInput: '
                   - type: state-label
                     entity: sensor.openquatt_hp1_heat_power
                     style:
                       top: 14%
                       left: 8%
+                      font-weight: bold
+                      color: white
+                      font-size: 0.75em
                       transform: none
-                      color: #ffffff
-                      background: rgba(15, 23, 42, 0.66)
-                      border: 1px solid rgba(255, 255, 255, 0.22)
-                      border-radius: 999px
-                      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                      backdrop-filter: blur(6px)
-                      padding: 2px 7px
-                      font-weight: 800
-                      font-size: 0.74em
-                      line-height: 1.2
                     prefix: 'Heat Power: '
                   - type: state-label
                     entity: sensor.openquatt_hp1_cop
                     style:
                       top: 17%
                       left: 8%
+                      font-weight: bold
+                      color: white
+                      font-size: 0.75em
                       transform: none
-                      color: #ffffff
-                      background: rgba(15, 23, 42, 0.66)
-                      border: 1px solid rgba(255, 255, 255, 0.22)
-                      border-radius: 999px
-                      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                      backdrop-filter: blur(6px)
-                      padding: 2px 7px
-                      font-weight: 800
-                      font-size: 0.74em
-                      line-height: 1.2
                     prefix: 'COP: '
                   - type: conditional
                     conditions:
@@ -1677,13 +1552,8 @@ views:
                         style:
                           top: 82%
                           left: 15%
-                          transform: translate(-50%, -50%)
+                          transform: none
                           color: white
-                          background: rgba(14, 165, 233, 0.88)
-                          border-radius: 999px
-                          box-shadow: 0 0 18px rgba(14, 165, 233, 0.65)
-                          padding: 5px
-                          --mdc-icon-size: 18px
                   - type: conditional
                     conditions:
                       - entity: binary_sensor.openquatt_hp1_defrost
@@ -1695,12 +1565,8 @@ views:
                         style:
                           top: 82%
                           left: 15%
-                          transform: translate(-50%, -50%)
-                          color: rgba(148, 163, 184, 0.72)
-                          background: rgba(15, 23, 42, 0.34)
-                          border-radius: 999px
-                          padding: 5px
-                          --mdc-icon-size: 18px
+                          transform: none
+                          color: grey
                   - type: conditional
                     conditions:
                       - entity: binary_sensor.openquatt_hp1_bottom_plate_heater
@@ -1712,13 +1578,8 @@ views:
                         style:
                           top: 82%
                           left: 8%
-                          transform: translate(-50%, -50%)
+                          transform: none
                           color: white
-                          background: rgba(14, 165, 233, 0.88)
-                          border-radius: 999px
-                          box-shadow: 0 0 18px rgba(14, 165, 233, 0.65)
-                          padding: 5px
-                          --mdc-icon-size: 18px
                   - type: conditional
                     conditions:
                       - entity: binary_sensor.openquatt_hp1_bottom_plate_heater
@@ -1730,12 +1591,8 @@ views:
                         style:
                           top: 82%
                           left: 8%
-                          transform: translate(-50%, -50%)
-                          color: rgba(148, 163, 184, 0.72)
-                          background: rgba(15, 23, 42, 0.34)
-                          border-radius: 999px
-                          padding: 5px
-                          --mdc-icon-size: 18px
+                          transform: none
+                          color: grey
             grid_options:
               columns: 12
               rows: auto
@@ -1784,6 +1641,7 @@ views:
             columns: 1
             cards:
               - type: picture-elements
+                title: Quatt HP2
                 image: >-
                   https://raw.githubusercontent.com/jeroen85/OpenQuatt/refs/heads/main/docs/dashboard/heatpump/Quatt.png
                 elements:
@@ -1809,295 +1667,169 @@ views:
                   - type: state-label
                     entity: sensor.openquatt_hp2_outside_temperature
                     style:
-                      top: 4%
+                      top: 3%
                       left: 8%
+                      font-weight: bold
+                      color: black
+                      font-size: 0.75em
                       transform: none
-                      color: #0f172a
-                      background: rgba(255, 255, 255, 0.78)
-                      border: 1px solid rgba(255, 255, 255, 0.72)
-                      border-radius: 999px
-                      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                      backdrop-filter: blur(6px)
-                      padding: 2px 7px
-                      font-weight: 800
-                      font-size: 0.76em
-                      line-height: 1.2
                     prefix: 'Buiten: '
-                  - type: state-label
+                  - type: state-badge
                     entity: sensor.openquatt_hp2_gas_discharge_temperature
                     style:
-                        top: 22%
-                        left: 60%
-                        transform: translate(-50%, -50%)
-                        color: #ffffff
-                        background: rgba(15, 23, 42, 0.82)
-                        border: 1px solid #ef4444
-                        border-radius: 999px
-                        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                        backdrop-filter: blur(6px)
-                        padding: 2px 7px
-                        font-weight: 800
-                        font-size: 0.72em
-                        line-height: 1.2
-                  - type: state-label
+                      top: 22%
+                      left: 58%
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
+                  - type: state-badge
                     entity: sensor.openquatt_hp2_inner_coil_temperature
                     style:
                       top: 70%
-                      left: 61%
-                      transform: translate(-50%, -50%)
-                      color: #ffffff
-                      background: rgba(15, 23, 42, 0.82)
-                      border: 1px solid #f59e0b
-                      border-radius: 999px
-                      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                      backdrop-filter: blur(6px)
-                      padding: 2px 7px
-                      font-weight: 800
-                      font-size: 0.72em
-                      line-height: 1.2
-                  - type: state-label
+                      left: 60%
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
+                  - type: state-badge
                     entity: sensor.openquatt_hp2_eev_steps
                     style:
-                        top: 70%
-                        left: 42%
-                        transform: translate(-50%, -50%)
-                        color: #ffffff
-                        background: rgba(15, 23, 42, 0.82)
-                        border: 1px solid #f59e0b
-                        border-radius: 999px
-                        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                        backdrop-filter: blur(6px)
-                        padding: 2px 7px
-                        font-weight: 800
-                        font-size: 0.72em
-                        line-height: 1.2
-                  - type: state-label
+                      top: 70%
+                      left: 42%
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
+                  - type: state-badge
                     entity: sensor.openquatt_hp2_gas_return_temperature
                     style:
                       top: 22%
                       left: 26%
-                      transform: translate(-50%, -50%)
-                      color: #ffffff
-                      background: rgba(15, 23, 42, 0.82)
-                      border: 1px solid #38bdf8
-                      border-radius: 999px
-                      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                      backdrop-filter: blur(6px)
-                      padding: 2px 7px
-                      font-weight: 800
-                      font-size: 0.72em
-                      line-height: 1.2
-                  - type: state-label
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
+                  - type: state-badge
                     entity: sensor.openquatt_hp2_evaporating_temperature
                     style:
-                        top: 70%
-                        left: 25%
-                        transform: translate(-50%, -50%)
-                        color: #ffffff
-                        background: rgba(15, 23, 42, 0.82)
-                        border: 1px solid #2563eb
-                        border-radius: 999px
-                        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                        backdrop-filter: blur(6px)
-                        padding: 2px 7px
-                        font-weight: 800
-                        font-size: 0.72em
-                        line-height: 1.2
-                  - type: state-label
+                      top: 70%
+                      left: 25%
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
+                  - type: state-badge
                     entity: sensor.openquatt_hp2_evaporator_coil_temperature
                     style:
                       top: 58%
-                      left: 8%
-                      transform: translate(-50%, -50%)
-                      color: #ffffff
-                      background: rgba(15, 23, 42, 0.82)
-                      border: 1px solid #2563eb
-                      border-radius: 999px
-                      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                      backdrop-filter: blur(6px)
-                      padding: 2px 7px
-                      font-weight: 800
-                      font-size: 0.72em
-                      line-height: 1.2
-                  - type: state-label
+                      left: 6%
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
+                  - type: state-badge
                     entity: sensor.openquatt_hp2_condenser_pressure
                     style:
-                        top: 11%
-                        left: 56%
-                        transform: translate(-50%, -50%)
-                        color: #ffffff
-                        background: rgba(15, 23, 42, 0.82)
-                        border: 1px solid #ef4444
-                        border-radius: 999px
-                        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                        backdrop-filter: blur(6px)
-                        padding: 2px 7px
-                        font-weight: 800
-                        font-size: 0.72em
-                        line-height: 1.2
-                  - type: state-label
+                      top: 11%
+                      left: 55%
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
+                  - type: state-badge
                     entity: sensor.openquatt_hp2_evaporator_pressure
                     style:
                       top: 11%
-                      left: 31%
-                      transform: translate(-50%, -50%)
-                      color: #ffffff
-                      background: rgba(15, 23, 42, 0.82)
-                      border: 1px solid #2563eb
-                      border-radius: 999px
-                      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                      backdrop-filter: blur(6px)
-                      padding: 2px 7px
-                      font-weight: 800
-                      font-size: 0.72em
-                      line-height: 1.2
-                  - type: state-label
+                      left: 30%
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
+                  - type: state-badge
                     entity: sensor.openquatt_hp2_fan_speed
                     style:
-                        top: 54%
-                        left: 27%
-                        transform: translate(-50%, -50%)
-                        color: #ffffff
-                        background: rgba(15, 23, 42, 0.82)
-                        border: 1px solid #64748b
-                        border-radius: 999px
-                        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                        backdrop-filter: blur(6px)
-                        padding: 2px 7px
-                        font-weight: 800
-                        font-size: 0.72em
-                        line-height: 1.2
-                  - type: state-label
+                      top: 53%
+                      left: 25%
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
+                  - type: state-badge
                     entity: sensor.openquatt_hp2_compressor_frequency
                     style:
                       top: 18%
-                      left: 42%
-                      transform: translate(-50%, -50%)
-                      color: #ffffff
-                      background: rgba(15, 23, 42, 0.82)
-                      border: 1px solid #111827
-                      border-radius: 999px
-                      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                      backdrop-filter: blur(6px)
-                      padding: 2px 7px
-                      font-weight: 800
-                      font-size: 0.72em
-                      line-height: 1.2
-                  - type: state-label
+                      left: 40%
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
+                  - type: state-badge
                     entity: sensor.openquatt_hp2_water_out_temperature
                     style:
-                        top: 43%
-                        left: 88%
-                        transform: translate(-50%, -50%)
-                        color: #ffffff
-                        background: rgba(15, 23, 42, 0.82)
-                        border: 1px solid #ef4444
-                        border-radius: 999px
-                        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                        backdrop-filter: blur(6px)
-                        padding: 2px 7px
-                        font-weight: 800
-                        font-size: 0.72em
-                        line-height: 1.2
-                  - type: state-label
+                      top: 43%
+                      left: 92%
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
+                  - type: state-badge
                     entity: sensor.openquatt_hp2_water_in_temperature
                     style:
                       top: 63%
-                      left: 88%
-                      transform: translate(-50%, -50%)
-                      color: #ffffff
-                      background: rgba(15, 23, 42, 0.82)
-                      border: 1px solid #2563eb
-                      border-radius: 999px
-                      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                      backdrop-filter: blur(6px)
-                      padding: 2px 7px
-                      font-weight: 800
-                      font-size: 0.72em
-                      line-height: 1.2
-                  - type: state-label
+                      left: 92%
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
+                  - type: state-badge
                     entity: sensor.openquatt_hp2_flow
                     style:
-                        top: 78%
-                        left: 82%
-                        transform: translate(-50%, -50%)
-                        color: #ffffff
-                        background: rgba(15, 23, 42, 0.82)
-                        border: 1px solid #0f766e
-                        border-radius: 999px
-                        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                        backdrop-filter: blur(6px)
-                        padding: 2px 7px
-                        font-weight: 800
-                        font-size: 0.72em
-                        line-height: 1.2
+                      top: 76%
+                      left: 81%
+                      font-weight: bold
+                      color: rgba(0,0,0,0)
+                      transform: none
+                      font-size: 0.65em
                   - type: state-label
                     entity: sensor.openquatt_hp2_working_mode_label
                     style:
                       top: 8%
                       left: 8%
+                      font-weight: bold
+                      color: white
+                      font-size: 0.75em
                       transform: none
-                      color: #ffffff
-                      background: rgba(15, 23, 42, 0.66)
-                      border: 1px solid rgba(255, 255, 255, 0.22)
-                      border-radius: 999px
-                      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                      backdrop-filter: blur(6px)
-                      padding: 2px 7px
-                      font-weight: 800
-                      font-size: 0.74em
-                      line-height: 1.2
                     prefix: 'Modus: '
                   - type: state-label
                     entity: sensor.openquatt_hp2_power_input
                     style:
                       top: 11%
                       left: 8%
+                      font-weight: bold
+                      color: white
+                      font-size: 0.75em
                       transform: none
-                      color: #ffffff
-                      background: rgba(15, 23, 42, 0.66)
-                      border: 1px solid rgba(255, 255, 255, 0.22)
-                      border-radius: 999px
-                      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                      backdrop-filter: blur(6px)
-                      padding: 2px 7px
-                      font-weight: 800
-                      font-size: 0.74em
-                      line-height: 1.2
                     prefix: 'PowerInput: '
                   - type: state-label
                     entity: sensor.openquatt_hp2_heat_power
                     style:
                       top: 14%
                       left: 8%
+                      font-weight: bold
+                      color: white
+                      font-size: 0.75em
                       transform: none
-                      color: #ffffff
-                      background: rgba(15, 23, 42, 0.66)
-                      border: 1px solid rgba(255, 255, 255, 0.22)
-                      border-radius: 999px
-                      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                      backdrop-filter: blur(6px)
-                      padding: 2px 7px
-                      font-weight: 800
-                      font-size: 0.74em
-                      line-height: 1.2
                     prefix: 'Heat Power: '
                   - type: state-label
                     entity: sensor.openquatt_hp2_cop
                     style:
                       top: 17%
                       left: 8%
+                      font-weight: bold
+                      color: white
+                      font-size: 0.75em
                       transform: none
-                      color: #ffffff
-                      background: rgba(15, 23, 42, 0.66)
-                      border: 1px solid rgba(255, 255, 255, 0.22)
-                      border-radius: 999px
-                      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28)
-                      backdrop-filter: blur(6px)
-                      padding: 2px 7px
-                      font-weight: 800
-                      font-size: 0.74em
-                      line-height: 1.2
                     prefix: 'COP: '
                   - type: conditional
                     conditions:
@@ -2110,13 +1842,8 @@ views:
                         style:
                           top: 82%
                           left: 15%
-                          transform: translate(-50%, -50%)
+                          transform: none
                           color: white
-                          background: rgba(14, 165, 233, 0.88)
-                          border-radius: 999px
-                          box-shadow: 0 0 18px rgba(14, 165, 233, 0.65)
-                          padding: 5px
-                          --mdc-icon-size: 18px
                   - type: conditional
                     conditions:
                       - entity: binary_sensor.openquatt_hp2_defrost
@@ -2128,12 +1855,8 @@ views:
                         style:
                           top: 82%
                           left: 15%
-                          transform: translate(-50%, -50%)
-                          color: rgba(148, 163, 184, 0.72)
-                          background: rgba(15, 23, 42, 0.34)
-                          border-radius: 999px
-                          padding: 5px
-                          --mdc-icon-size: 18px
+                          transform: none
+                          color: grey
                   - type: conditional
                     conditions:
                       - entity: binary_sensor.openquatt_hp2_bottom_plate_heater
@@ -2145,13 +1868,8 @@ views:
                         style:
                           top: 82%
                           left: 8%
-                          transform: translate(-50%, -50%)
+                          transform: none
                           color: white
-                          background: rgba(14, 165, 233, 0.88)
-                          border-radius: 999px
-                          box-shadow: 0 0 18px rgba(14, 165, 233, 0.65)
-                          padding: 5px
-                          --mdc-icon-size: 18px
                   - type: conditional
                     conditions:
                       - entity: binary_sensor.openquatt_hp2_bottom_plate_heater
@@ -2163,12 +1881,8 @@ views:
                         style:
                           top: 82%
                           left: 8%
-                          transform: translate(-50%, -50%)
-                          color: rgba(148, 163, 184, 0.72)
-                          background: rgba(15, 23, 42, 0.34)
-                          border-radius: 999px
-                          padding: 5px
-                          --mdc-icon-size: 18px
+                          transform: none
+                          color: grey
             grid_options:
               columns: 12
               rows: auto
