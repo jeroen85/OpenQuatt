@@ -136,6 +136,10 @@ globals:
     type: int
     restore_value: false
     initial_value: '0'
+  - id: oq_flow_at_validate_settle_ready
+    type: bool
+    restore_value: false
+    initial_value: 'false'
 
 # ----------------------------
 # CONTROL INPUTS
@@ -206,6 +210,7 @@ button:
           id(oq_flow_at_validate_sp1) = NAN;
           id(oq_flow_at_validate_peak_pv) = NAN;
           id(oq_flow_at_validate_confirm_cnt) = 0;
+          id(oq_flow_at_validate_settle_ready) = false;
           id(oq_flow_autotune_active) = false;
           id(oq_flow_autotune_pwm) = 400;
           id(oq_commissioning_status).publish_state("FLOW AUTOTUNE STARTED");
@@ -840,6 +845,7 @@ interval:
                       id(oq_flow_at_validate_sp1) = validate_sp1;
                       id(oq_flow_at_validate_peak_pv) = validate_sp1;
                       id(oq_flow_at_validate_confirm_cnt) = 0;
+                      id(oq_flow_at_validate_settle_ready) = false;
                       id(oq_flow_at_t) = 0;
                       id(oq_flow_at_w0) = NAN;
                       id(oq_flow_at_w1) = NAN;
@@ -857,7 +863,7 @@ interval:
                                id(oq_flow_at_step1_pv0), id(oq_flow_at_step1_pv_ss), id(oq_flow_at_step1_pv63_time_s), K1, tau1,
                                pv0, pv_ss2, t63_2, K2, tau2,
                                K, tau, Kp_raw, Ki_raw, Kp_seed, Ki_seed, sp0, validate_sp1);
-                      id(oq_flow_autotune_status).publish_state("VALIDATING");
+                      id(oq_flow_autotune_status).publish_state("VALIDATING_SETTLING");
                       st = 5;
                     }
                   }
@@ -888,6 +894,64 @@ interval:
                 const float step_lph = sp1 - sp0;
                 const float settle_band = fmaxf(kAutotuneValidateBandFloorLph, kAutotuneValidateBandFrac * step_lph);
                 const float overshoot_band = fmaxf(settle_band, kAutotuneValidateOvershootFrac * step_lph);
+                constexpr int kAutotuneValidateSettleGraceS = 20;
+                constexpr int kAutotuneValidateSettleMaxS = 60;
+
+                if (!id(oq_flow_at_validate_settle_ready)) {
+                  id(oq_flow_at_validate_peak_pv) = fmaxf(id(oq_flow_at_validate_peak_pv), pv);
+                  id(oq_flow_at_w0) = id(oq_flow_at_w1);
+                  id(oq_flow_at_w1) = id(oq_flow_at_w2);
+                  id(oq_flow_at_w2) = pv;
+
+                  const int t = id(oq_flow_at_t);
+                  id(oq_flow_at_t) = t + (int) sample_time_s;
+
+                  const bool win_ready = !isnan(id(oq_flow_at_w0)) && !isnan(id(oq_flow_at_w1)) && !isnan(id(oq_flow_at_w2));
+                  if (win_ready) {
+                    const float w0 = id(oq_flow_at_w0);
+                    const float w1 = id(oq_flow_at_w1);
+                    const float w2 = id(oq_flow_at_w2);
+                    const float w_min = fminf(w0, fminf(w1, w2));
+                    const float w_max = fmaxf(w0, fmaxf(w1, w2));
+                    const float spread = w_max - w_min;
+                    const float slope01 = fabsf(w1 - w0);
+                    const float slope12 = fabsf(w2 - w1);
+                    const bool settle_ready_now = (t >= kAutotuneValidateSettleGraceS) &&
+                                                  (spread <= settle_band) &&
+                                                  (slope01 <= settle_band) &&
+                                                  (slope12 <= settle_band) &&
+                                                  (fabsf(pv - sp1) <= settle_band);
+                    if (settle_ready_now) {
+                      if (id(oq_flow_at_validate_confirm_cnt) < 255) id(oq_flow_at_validate_confirm_cnt)++;
+                    } else {
+                      id(oq_flow_at_validate_confirm_cnt) = 0;
+                    }
+                  }
+
+                  if (id(oq_flow_at_validate_confirm_cnt) >= 2 || t >= kAutotuneValidateSettleMaxS) {
+                    if (t >= kAutotuneValidateSettleMaxS && id(oq_flow_at_validate_confirm_cnt) < 2) {
+                      ESP_LOGW("quatt.cm100.autotune",
+                               "Validation settle timeout; starting measurement anyway (sp0=%.1f sp1=%.1f t=%ds)",
+                               sp0, sp1, t);
+                    } else {
+                      ESP_LOGI("quatt.cm100.autotune",
+                               "Validation settle done (sp0=%.1f sp1=%.1f t=%ds)",
+                               sp0, sp1, t);
+                    }
+                    id(oq_flow_at_validate_settle_ready) = true;
+                    id(oq_flow_at_validate_confirm_cnt) = 0;
+                    id(oq_flow_at_validate_peak_pv) = sp1;
+                    id(oq_flow_at_w0) = NAN;
+                    id(oq_flow_at_w1) = NAN;
+                    id(oq_flow_at_w2) = NAN;
+                    id(oq_flow_at_t) = 0;
+                    id(oq_flow_autotune_status).publish_state("VALIDATING");
+                  } else {
+                    id(oq_flow_autotune_status).publish_state("VALIDATING_SETTLING");
+                  }
+                  id(oq_flow_autotune_state) = st;
+                  return;
+                }
 
                 id(oq_flow_at_validate_peak_pv) = fmaxf(id(oq_flow_at_validate_peak_pv), pv);
                 id(oq_flow_at_w0) = id(oq_flow_at_w1);
@@ -976,6 +1040,7 @@ interval:
                   id(oq_flow_at_w1) = NAN;
                   id(oq_flow_at_w2) = NAN;
                   id(oq_flow_at_validate_confirm_cnt) = 0;
+                  id(oq_flow_at_validate_settle_ready) = false;
 
                   char msg[220];
                   if (timed_out && !settled) {
@@ -1027,6 +1092,7 @@ interval:
             id(oq_flow_at_w2) = NAN;
             id(oq_flow_at_ss_confirm_cnt) = 0;
             id(oq_flow_at_validate_confirm_cnt) = 0;
+            id(oq_flow_at_validate_settle_ready) = false;
             ESP_LOGW("quatt.cm100.autotune", "Autotune aborted; restoring last PWM=%d", (int) id(oq_flow_last_pwm));
             release_commissioning();
             id(oq_flow_autotune_status).publish_state("ABORTED");
