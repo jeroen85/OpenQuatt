@@ -306,7 +306,10 @@ interval:
           constexpr float kAutotuneValidateSeedTiFrac = 2.0f;
           constexpr float kAutotuneValidateSeedMinLambdaS = 60.0f;
           constexpr float kAutotuneValidateSeedMinTiS = 60.0f;
-          constexpr int kAutotuneValidateDurationS = 120;
+          // Closed-loop validation needs a bit more breathing room than the
+          // open-loop identification, because the controller has to settle
+          // after the seed gains are applied.
+          constexpr int kAutotuneValidateDurationS = 180;
           constexpr int kAutotuneBaselinePwm = 400;
           constexpr int kAutotuneBaselineWaitMaxS = 60;
           constexpr float kAutotuneStep1Frac = 0.06f;
