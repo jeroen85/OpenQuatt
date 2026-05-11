@@ -555,6 +555,62 @@ const LOGO_MARKUP = `
     "hp2Mode",
     "hp2Flow",
   ];
+  const OVERVIEW_METADATA_KEYS = [
+    "coolingDewPointSelected",
+    "coolingMinimumSafeSupplyTemp",
+    "coolingEffectiveMinSupplyTemp",
+    "coolingFallbackNightMinOutdoorTemp",
+    "coolingFallbackMinSupplyTemp",
+    "coolingSupplyTarget",
+    "coolingSupplyError",
+    "coolingDemandRaw",
+    "totalPower",
+    "heatingPowerInput",
+    "coolingPowerInput",
+    "totalHeat",
+    "totalCoolingPower",
+    "strategyRequestedPower",
+    "phouseHouse",
+    "phouseReq",
+    "hpCapacity",
+    "boilerHeatPower",
+    "systemHeatPower",
+    "flowSelected",
+    "roomTemp",
+    "roomSetpoint",
+    "supplyTemp",
+    "curveSupplyTarget",
+    "hp1Power",
+    "hp1Heat",
+    "hp1Cooling",
+    "hp1Freq",
+    "hp1FanSpeed",
+    "hp1Flow",
+    "hp1EvaporatorCoilTemp",
+    "hp1InnerCoilTemp",
+    "hp1OutsideTemp",
+    "hp1CondenserPressure",
+    "hp1DischargeTemp",
+    "hp1EvaporatorPressure",
+    "hp1ReturnTemp",
+    "hp1WaterIn",
+    "hp1WaterOut",
+    "hp2Power",
+    "hp2Heat",
+    "hp2Cooling",
+    "hp2Freq",
+    "hp2FanSpeed",
+    "hp2Flow",
+    "hp2EvaporatorCoilTemp",
+    "hp2InnerCoilTemp",
+    "hp2OutsideTemp",
+    "hp2CondenserPressure",
+    "hp2DischargeTemp",
+    "hp2EvaporatorPressure",
+    "hp2ReturnTemp",
+    "hp2WaterIn",
+    "hp2WaterOut",
+  ];
   const OVERVIEW_ENERGY_COLUMN_CONFIGS = [
     {
       label: "Nu",
@@ -778,6 +834,8 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     deviceReconnectLastError: "",
     entitySyncFailureCount: 0,
     lastEntitySyncAt: 0,
+    overviewMetadataHydrated: false,
+    overviewMetadataHydrating: false,
     busyAction: "",
     controlError: "",
     controlNotice: "",
@@ -3550,6 +3608,43 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     return state.appView === "overview" || state.appView === "trends" || state.appView === "energy";
   }
 
+  function getOverviewMetadataHydrationKeys() {
+    return OVERVIEW_METADATA_KEYS.filter((key) => {
+      const entity = state.entities[key];
+      if (!entity) {
+        return !ENTITY_DEFS[key]?.optional;
+      }
+      const unit = String(entity.uom ?? entity.unit_of_measurement ?? "").trim();
+      return !unit;
+    });
+  }
+
+  async function hydrateOverviewMetadata() {
+    if (state.nativeOpen || !isInitialOverviewView() || state.overviewMetadataHydrated || state.overviewMetadataHydrating) {
+      return false;
+    }
+
+    const keys = getOverviewMetadataHydrationKeys();
+    if (!keys.length) {
+      state.overviewMetadataHydrated = true;
+      return false;
+    }
+
+    state.overviewMetadataHydrating = true;
+    try {
+      await refreshEntities(keys, "all", { concurrency: ENTITY_REFRESH_CONCURRENCY });
+      state.overviewMetadataHydrated = true;
+      return true;
+    } catch (_error) {
+      return false;
+    } finally {
+      state.overviewMetadataHydrating = false;
+      if (state.mounted && !state.nativeOpen) {
+        render();
+      }
+    }
+  }
+
   function isInitialOverviewReady() {
     if (!isInitialOverviewView()) {
       return true;
@@ -4738,6 +4833,9 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     }
 
     try {
+      if (isInitialOverviewView()) {
+        await hydrateOverviewMetadata();
+      }
       if (state.appView === "overview" || state.appView === "trends") {
         await refreshTrendHistoryData({ force: true });
       }
@@ -4854,6 +4952,9 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       }
       if (isPrefetchOverview) {
         return;
+      }
+      if (isOverviewLike && !state.overviewMetadataHydrated && !state.overviewMetadataHydrating) {
+        void hydrateOverviewMetadata();
       }
       const reconnectChanged = reconnectModeBefore !== state.deviceReconnectMode;
       const shouldDeferSupplementary = forceFast && isOverviewLike;
@@ -6335,6 +6436,53 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     return Number.isNaN(value) ? NaN : value;
   }
 
+  function getEntityDisplayUnit(key, fallbackUnit = "") {
+    const entityUnit = String(state.entities[key]?.uom || "").trim();
+    if (entityUnit) {
+      return entityUnit;
+    }
+
+    const fallbackUnits = {
+      totalPower: "W",
+      heatingPowerInput: "W",
+      coolingPowerInput: "W",
+      totalHeat: "W",
+      totalCoolingPower: "W",
+      boilerHeatPower: "W",
+      systemHeatPower: "W",
+      hpCapacity: "W",
+      hpDeficit: "W",
+      flowSelected: "L/h",
+      hp1Flow: "L/h",
+      hp2Flow: "L/h",
+      supplyTemp: "°C",
+      curveSupplyTarget: "°C",
+      coolingSupplyTarget: "°C",
+      coolingEffectiveMinSupplyTemp: "°C",
+      coolingDemandRaw: "W",
+      hp1EvaporatorCoilTemp: "°C",
+      hp1InnerCoilTemp: "°C",
+      hp1OutsideTemp: "°C",
+      hp1CondenserPressure: "bar",
+      hp1DischargeTemp: "°C",
+      hp1EvaporatorPressure: "bar",
+      hp1ReturnTemp: "°C",
+      hp1WaterIn: "°C",
+      hp1WaterOut: "°C",
+      hp2EvaporatorCoilTemp: "°C",
+      hp2InnerCoilTemp: "°C",
+      hp2OutsideTemp: "°C",
+      hp2CondenserPressure: "bar",
+      hp2DischargeTemp: "°C",
+      hp2EvaporatorPressure: "bar",
+      hp2ReturnTemp: "°C",
+      hp2WaterIn: "°C",
+      hp2WaterOut: "°C",
+    };
+
+    return fallbackUnits[key] || fallbackUnit;
+  }
+
   function formatOverviewStatValue(key) {
     const entity = state.entities[key];
     if (!entity) {
@@ -6345,7 +6493,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       return getEntityStateText(key);
     }
     const decimals = key.toLowerCase().includes("cop") ? 1 : 0;
-    return formatNumericState(numeric, decimals, entity.uom || "");
+    return formatNumericState(numeric, decimals, getEntityDisplayUnit(key));
   }
 
   function isEntityActive(key) {
@@ -11618,6 +11766,14 @@ function renderWebServerLogsModal() {
     `;
   }
 
+  function formatHeatPumpReading(key, decimals, fallbackUnit = "") {
+    const numeric = getEntityNumericValue(key);
+    if (Number.isNaN(numeric)) {
+      return getEntityStateText(key);
+    }
+    return formatNumericState(numeric, decimals, getEntityDisplayUnit(key, fallbackUnit));
+  }
+
   function buildHeatPumpSchematicModel(title, keys, accent, mode, defrostActive, failures, running) {
     const freqValue = getEntityNumericValue(keys.freq);
     const freqText = Number.isNaN(freqValue) ? "—" : String(Math.round(freqValue));
@@ -11630,16 +11786,16 @@ function renderWebServerLogsModal() {
     const failureText = failures === "Geen actieve storingen" ? "Geen storingen" : failures;
     const warningActive = failureText !== "Geen storingen";
     const defrostText = defrostActive ? "Actief" : "Uit";
-    const waterOutText = getEntityStateText(keys.waterOut);
-    const waterInText = getEntityStateText(keys.waterIn);
-    const flowText = getEntityStateText(keys.flow);
-    const evaporatorCoilTempText = getEntityStateText(keys.evaporatorCoilTemp);
-    const innerCoilTempText = getEntityStateText(keys.innerCoilTemp);
-    const outsideTempText = getEntityStateText(keys.outsideTemp);
-    const dischargePressureText = getEntityStateText(keys.condenserPressure);
-    const dischargeTempText = getEntityStateText(keys.dischargeTemp);
-    const suctionPressureText = getEntityStateText(keys.evaporatorPressure);
-    const suctionTempText = getEntityStateText(keys.returnTemp);
+    const waterOutText = formatHeatPumpReading(keys.waterOut, 1, "°C");
+    const waterInText = formatHeatPumpReading(keys.waterIn, 1, "°C");
+    const flowText = formatHeatPumpReading(keys.flow, 0, "L/h");
+    const evaporatorCoilTempText = formatHeatPumpReading(keys.evaporatorCoilTemp, 1, "°C");
+    const innerCoilTempText = formatHeatPumpReading(keys.innerCoilTemp, 1, "°C");
+    const outsideTempText = formatHeatPumpReading(keys.outsideTemp, 1, "°C");
+    const dischargePressureText = formatHeatPumpReading(keys.condenserPressure, 1, "bar");
+    const dischargeTempText = formatHeatPumpReading(keys.dischargeTemp, 1, "°C");
+    const suctionPressureText = formatHeatPumpReading(keys.evaporatorPressure, 1, "bar");
+    const suctionTempText = formatHeatPumpReading(keys.returnTemp, 1, "°C");
     const bottomPlateActive = isEntityActive(keys.bottomPlate);
     const crankcaseActive = isEntityActive(keys.crankcase);
     const eevPositionText = formatComponentPositionLabel(keys.eev);

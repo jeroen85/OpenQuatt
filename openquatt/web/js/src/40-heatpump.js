@@ -316,6 +316,14 @@
     `;
   }
 
+  function formatHeatPumpReading(key, decimals, fallbackUnit = "") {
+    const numeric = getEntityNumericValue(key);
+    if (Number.isNaN(numeric)) {
+      return getEntityStateText(key);
+    }
+    return formatNumericState(numeric, decimals, getEntityDisplayUnit(key, fallbackUnit));
+  }
+
   function buildHeatPumpSchematicModel(title, keys, accent, mode, defrostActive, failures, running) {
     const freqValue = getEntityNumericValue(keys.freq);
     const freqText = Number.isNaN(freqValue) ? "—" : String(Math.round(freqValue));
@@ -328,16 +336,16 @@
     const failureText = failures === "Geen actieve storingen" ? "Geen storingen" : failures;
     const warningActive = failureText !== "Geen storingen";
     const defrostText = defrostActive ? "Actief" : "Uit";
-    const waterOutText = getEntityStateText(keys.waterOut);
-    const waterInText = getEntityStateText(keys.waterIn);
-    const flowText = getEntityStateText(keys.flow);
-    const evaporatorCoilTempText = getEntityStateText(keys.evaporatorCoilTemp);
-    const innerCoilTempText = getEntityStateText(keys.innerCoilTemp);
-    const outsideTempText = getEntityStateText(keys.outsideTemp);
-    const dischargePressureText = getEntityStateText(keys.condenserPressure);
-    const dischargeTempText = getEntityStateText(keys.dischargeTemp);
-    const suctionPressureText = getEntityStateText(keys.evaporatorPressure);
-    const suctionTempText = getEntityStateText(keys.returnTemp);
+    const waterOutText = formatHeatPumpReading(keys.waterOut, 1, "°C");
+    const waterInText = formatHeatPumpReading(keys.waterIn, 1, "°C");
+    const flowText = formatHeatPumpReading(keys.flow, 0, "L/h");
+    const evaporatorCoilTempText = formatHeatPumpReading(keys.evaporatorCoilTemp, 1, "°C");
+    const innerCoilTempText = formatHeatPumpReading(keys.innerCoilTemp, 1, "°C");
+    const outsideTempText = formatHeatPumpReading(keys.outsideTemp, 1, "°C");
+    const dischargePressureText = formatHeatPumpReading(keys.condenserPressure, 1, "bar");
+    const dischargeTempText = formatHeatPumpReading(keys.dischargeTemp, 1, "°C");
+    const suctionPressureText = formatHeatPumpReading(keys.evaporatorPressure, 1, "bar");
+    const suctionTempText = formatHeatPumpReading(keys.returnTemp, 1, "°C");
     const bottomPlateActive = isEntityActive(keys.bottomPlate);
     const crankcaseActive = isEntityActive(keys.crankcase);
     const eevPositionText = formatComponentPositionLabel(keys.eev);

@@ -332,6 +332,43 @@
     return state.appView === "overview" || state.appView === "trends" || state.appView === "energy";
   }
 
+  function getOverviewMetadataHydrationKeys() {
+    return OVERVIEW_METADATA_KEYS.filter((key) => {
+      const entity = state.entities[key];
+      if (!entity) {
+        return !ENTITY_DEFS[key]?.optional;
+      }
+      const unit = String(entity.uom ?? entity.unit_of_measurement ?? "").trim();
+      return !unit;
+    });
+  }
+
+  async function hydrateOverviewMetadata() {
+    if (state.nativeOpen || !isInitialOverviewView() || state.overviewMetadataHydrated || state.overviewMetadataHydrating) {
+      return false;
+    }
+
+    const keys = getOverviewMetadataHydrationKeys();
+    if (!keys.length) {
+      state.overviewMetadataHydrated = true;
+      return false;
+    }
+
+    state.overviewMetadataHydrating = true;
+    try {
+      await refreshEntities(keys, "all", { concurrency: ENTITY_REFRESH_CONCURRENCY });
+      state.overviewMetadataHydrated = true;
+      return true;
+    } catch (_error) {
+      return false;
+    } finally {
+      state.overviewMetadataHydrating = false;
+      if (state.mounted && !state.nativeOpen) {
+        render();
+      }
+    }
+  }
+
   function isInitialOverviewReady() {
     if (!isInitialOverviewView()) {
       return true;
@@ -1520,6 +1557,9 @@
     }
 
     try {
+      if (isInitialOverviewView()) {
+        await hydrateOverviewMetadata();
+      }
       if (state.appView === "overview" || state.appView === "trends") {
         await refreshTrendHistoryData({ force: true });
       }
@@ -1636,6 +1676,9 @@
       }
       if (isPrefetchOverview) {
         return;
+      }
+      if (isOverviewLike && !state.overviewMetadataHydrated && !state.overviewMetadataHydrating) {
+        void hydrateOverviewMetadata();
       }
       const reconnectChanged = reconnectModeBefore !== state.deviceReconnectMode;
       const shouldDeferSupplementary = forceFast && isOverviewLike;

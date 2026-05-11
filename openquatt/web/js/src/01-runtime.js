@@ -40,6 +40,8 @@
     deviceReconnectLastError: "",
     entitySyncFailureCount: 0,
     lastEntitySyncAt: 0,
+    overviewMetadataHydrated: false,
+    overviewMetadataHydrating: false,
     busyAction: "",
     controlError: "",
     controlNotice: "",

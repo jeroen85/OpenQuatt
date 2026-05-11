@@ -59,6 +59,53 @@
     return Number.isNaN(value) ? NaN : value;
   }
 
+  function getEntityDisplayUnit(key, fallbackUnit = "") {
+    const entityUnit = String(state.entities[key]?.uom || "").trim();
+    if (entityUnit) {
+      return entityUnit;
+    }
+
+    const fallbackUnits = {
+      totalPower: "W",
+      heatingPowerInput: "W",
+      coolingPowerInput: "W",
+      totalHeat: "W",
+      totalCoolingPower: "W",
+      boilerHeatPower: "W",
+      systemHeatPower: "W",
+      hpCapacity: "W",
+      hpDeficit: "W",
+      flowSelected: "L/h",
+      hp1Flow: "L/h",
+      hp2Flow: "L/h",
+      supplyTemp: "°C",
+      curveSupplyTarget: "°C",
+      coolingSupplyTarget: "°C",
+      coolingEffectiveMinSupplyTemp: "°C",
+      coolingDemandRaw: "W",
+      hp1EvaporatorCoilTemp: "°C",
+      hp1InnerCoilTemp: "°C",
+      hp1OutsideTemp: "°C",
+      hp1CondenserPressure: "bar",
+      hp1DischargeTemp: "°C",
+      hp1EvaporatorPressure: "bar",
+      hp1ReturnTemp: "°C",
+      hp1WaterIn: "°C",
+      hp1WaterOut: "°C",
+      hp2EvaporatorCoilTemp: "°C",
+      hp2InnerCoilTemp: "°C",
+      hp2OutsideTemp: "°C",
+      hp2CondenserPressure: "bar",
+      hp2DischargeTemp: "°C",
+      hp2EvaporatorPressure: "bar",
+      hp2ReturnTemp: "°C",
+      hp2WaterIn: "°C",
+      hp2WaterOut: "°C",
+    };
+
+    return fallbackUnits[key] || fallbackUnit;
+  }
+
   function formatOverviewStatValue(key) {
     const entity = state.entities[key];
     if (!entity) {
@@ -69,7 +116,7 @@
       return getEntityStateText(key);
     }
     const decimals = key.toLowerCase().includes("cop") ? 1 : 0;
-    return formatNumericState(numeric, decimals, entity.uom || "");
+    return formatNumericState(numeric, decimals, getEntityDisplayUnit(key));
   }
 
   function isEntityActive(key) {
