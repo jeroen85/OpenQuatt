@@ -36,6 +36,7 @@ class OpenQuattWebAuth : public Component {
   bool has_api_security_key() const { return this->api_security_key_present_; }
   const std::string &get_api_security_key() const { return this->api_security_key_; }
   const std::string &get_api_security_source() const { return this->api_security_source_; }
+  bool is_api_security_transport_active() const;
 
  protected:
   static constexpr uint32_t STORAGE_MAGIC = 0x4F514157;
@@ -91,6 +92,7 @@ class OpenQuattWebAuth : public Component {
   bool default_auth_enabled_{true};
   bool api_security_enabled_{false};
   bool api_security_key_present_{false};
+  bool api_security_transport_active_{false};
   ESPPreferenceObject pref_;
   ESPPreferenceObject api_security_pref_;
   bool handlers_registered_{false};

@@ -2414,8 +2414,11 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     if (!status) {
       return "We halen de huidige API-beveiliging op.";
     }
-    if (status.enabled) {
+    if (status.transport_active === true) {
       return "De native API is beveiligd. Je kunt de sleutel hier bekijken, kopiëren of roteren.";
+    }
+    if (status.enabled) {
+      return "API-encryptie wordt net aangepast. Geef het apparaat even de tijd om de status bij te werken.";
     }
     if (status.key) {
       return "De sleutel blijft opgeslagen, ook wanneer encryptie uit staat. Je kunt hem hier meteen kopiëren of opnieuw inschakelen.";
@@ -3811,6 +3814,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
   function getApiSecurityStatusSignature(status = state.apiSecurityStatus || {}) {
     return [
       status.enabled ? "on" : "off",
+      status.transport_active ? "active" : "idle",
       String(status.key || ""),
       String(status.source || ""),
       String(status.csrf_token || ""),
@@ -3858,6 +3862,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       const payload = await response.json();
       const nextStatus = {
         enabled: Boolean(payload.enabled),
+        transport_active: Boolean(payload.transport_active),
         key: String(payload.key || ""),
         source: String(payload.source || ""),
         csrf_token: String(payload.csrf_token || ""),
@@ -8780,6 +8785,12 @@ function renderWebServerLogsModal() {
     if (!status) {
       return "Laden...";
     }
+    if (status.transport_active === true) {
+      return "Aan";
+    }
+    if (status.transport_active === false) {
+      return "Uit";
+    }
     return status.enabled ? "Aan" : "Uit";
   }
 
@@ -8788,8 +8799,11 @@ function renderWebServerLogsModal() {
     if (!status) {
       return "API-encryptie wordt geladen.";
     }
-    if (status.enabled) {
+    if (status.transport_active === true) {
       return "API-encryptie staat aan. Gebruik dezelfde sleutel in Home Assistant.";
+    }
+    if (status.enabled) {
+      return "API-encryptie wordt net aangepast. Wacht even tot de status is bijgewerkt.";
     }
     if (status.key) {
       return "De sleutel blijft opgeslagen, maar de native API staat nu open op je lokale netwerk.";
