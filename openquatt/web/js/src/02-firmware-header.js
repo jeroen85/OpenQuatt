@@ -1093,6 +1093,7 @@
     const topicPrefixValue = String(state.mqttDraftTopicPrefix || "");
     const usernameValue = String(state.mqttDraftUsername || "");
     const passwordValue = String(state.mqttDraftPassword || "");
+    const diagnosticPublishIntervalValue = String(state.mqttDraftDiagnosticPublishIntervalS || "30");
 
     return `
       <div class="oq-helper-modal-backdrop oq-helper-modal-backdrop--top${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
@@ -1111,6 +1112,7 @@
             ${renderLoginStatusRow("Status", getMqttStatusLabel(), getMqttStatusDetail())}
             ${renderLoginStatusRow("Broker", String(status.broker || "").trim() || "Geen broker", status.connected ? "MQTT publiceert en ontvangt via deze broker." : "Nog geen actieve verbinding.")}
             ${renderLoginStatusRow("Topic prefix", String(status.topic_prefix || "").trim() || "openquatt", "Alle MQTT-topics krijgen deze prefix.")}
+            ${renderLoginStatusRow("Diagnostisch interval", Number(status.diagnostic_publish_interval_s || 0) > 0 ? `${Number(status.diagnostic_publish_interval_s || 0)}s` : "Alleen wijziging", Number(status.diagnostic_publish_interval_s || 0) > 0 ? "Verbose statusmeldingen worden afgeknepen." : "Alleen wijzigingen worden direct gepusht.")}
             ${renderLoginStatusRow("Gebruiker", String(status.username || "").trim() || "Anoniem", status.password_set ? "Er is een wachtwoord opgeslagen." : "Er is nog geen wachtwoord opgeslagen.")}
           </div>
           <div class="oq-helper-modal-form-grid">
@@ -1140,6 +1142,11 @@
             <label class="oq-helper-modal-channel oq-helper-modal-channel--span-2">
               <span class="oq-helper-modal-label">Topic prefix</span>
               <input class="oq-helper-input" type="text" autocomplete="off" spellcheck="false" data-oq-mqtt-field="topicPrefix" value="${escapeHtml(topicPrefixValue)}" placeholder="openquatt" ${busy ? "disabled" : ""}>
+            </label>
+            <label class="oq-helper-modal-channel oq-helper-modal-channel--span-2">
+              <span class="oq-helper-modal-label">Diagnostische publish-interval</span>
+              <input class="oq-helper-input" type="number" min="0" max="3600" step="1" inputmode="numeric" autocomplete="off" data-oq-mqtt-field="diagnosticPublishIntervalS" value="${escapeHtml(diagnosticPublishIntervalValue)}" ${busy ? "disabled" : ""}>
+              <span class="oq-helper-modal-subvalue">0 betekent alleen bij wijziging; hogere waarden knijpen de drukkere statusmeldingen af.</span>
             </label>
           </div>
           <p class="oq-helper-modal-note">Laat het wachtwoord leeg als je alleen broker, prefix of gebruikersnaam wijzigt. De opgeslagen waarde blijft dan behouden.</p>

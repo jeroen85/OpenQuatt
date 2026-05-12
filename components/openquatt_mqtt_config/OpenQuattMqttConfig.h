@@ -21,6 +21,9 @@ class OpenQuattMqttConfig : public Component {
     this->bootstrap_topic_prefix_ = bootstrap_topic_prefix;
   }
   void set_default_enabled(bool default_enabled) { this->default_enabled_ = default_enabled; }
+  void set_diagnostic_publish_interval_s(uint32_t diagnostic_publish_interval_s) {
+    this->diagnostic_publish_interval_s_ = diagnostic_publish_interval_s;
+  }
 
   void setup() override;
   void dump_config() override;
@@ -35,9 +38,11 @@ class OpenQuattMqttConfig : public Component {
   bool has_password() const { return !this->password_.empty(); }
   const std::string &get_config_source() const { return this->config_source_; }
   const std::string &get_csrf_token() const { return this->csrf_token_; }
+  uint32_t get_diagnostic_publish_interval_s() const { return this->diagnostic_publish_interval_s_; }
 
   bool set_runtime_config(const std::string &broker, uint16_t port, const std::string &username,
-                          const std::string &password, const std::string &topic_prefix, bool enabled);
+                          const std::string &password, const std::string &topic_prefix, bool enabled,
+                          uint32_t diagnostic_publish_interval_s);
 
  protected:
   static constexpr uint32_t STORAGE_MAGIC = 0x4F514D54;
@@ -75,6 +80,7 @@ class OpenQuattMqttConfig : public Component {
   std::string bootstrap_password_;
   std::string bootstrap_topic_prefix_{"openquatt"};
   bool default_enabled_{false};
+  uint32_t diagnostic_publish_interval_s_{30};
   std::string broker_;
   uint16_t port_{1883};
   std::string username_;
@@ -84,6 +90,7 @@ class OpenQuattMqttConfig : public Component {
   std::string config_source_;
   std::string csrf_token_;
   ESPPreferenceObject pref_;
+  ESPPreferenceObject diagnostic_pref_;
   bool handlers_registered_{false};
 };
 

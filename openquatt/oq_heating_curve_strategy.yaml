@@ -924,7 +924,12 @@ interval:
             const char *phase_text =
                 !id(oq_curve_heat_request_active) ? "off" : (regime_code == 1 ? "heat" : "coast");
             const char *regime_text = oq_curve::regime_name(regime_code);
-            id(oq_strategy_phase_text).publish_state(regime_text);
+            static std::string last_strategy_phase_text;
+            const std::string strategy_phase_text = regime_text;
+            if (strategy_phase_text != last_strategy_phase_text) {
+              id(oq_strategy_phase_text).publish_state(strategy_phase_text.c_str());
+              last_strategy_phase_text = strategy_phase_text;
+            }
 
             char debug_buf[192];
             const float target_c = id(oq_supply_target_temp).state;
@@ -935,7 +940,20 @@ interval:
               phase_text, regime_text,
               id(oq_curve_demand_continuous), d_out,
               id(oq_curve_demand_pre_guardrail), target_c, supply_c);
-            id(oq_strategy_debug_state).publish_state(debug_buf);
+            static std::string last_strategy_debug_state;
+            static uint32_t last_strategy_debug_publish_ms = 0;
+            const uint32_t strategy_debug_publish_interval_ms =
+                id(oq_mqtt_config).get_diagnostic_publish_interval_s() * 1000U;
+            const uint32_t now_ms = millis();
+            const bool debug_due = strategy_debug_publish_interval_ms != 0U &&
+                                   (last_strategy_debug_publish_ms == 0U ||
+                                    (uint32_t)(now_ms - last_strategy_debug_publish_ms) >= strategy_debug_publish_interval_ms);
+            const std::string debug_state(debug_buf);
+            if (debug_state != last_strategy_debug_state || debug_due) {
+              id(oq_strategy_debug_state).publish_state(debug_state.c_str());
+              last_strategy_debug_state = debug_state;
+              last_strategy_debug_publish_ms = now_ms;
+            }
           } else {
             if (id(oq_heating_curve_pid).mode != CLIMATE_MODE_OFF) {
               auto c0 = id(oq_heating_curve_pid).make_call();

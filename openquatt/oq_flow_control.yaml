@@ -531,7 +531,10 @@ interval:
           if (is_cm0) {
             // Keep manual-edge memory synchronized while idle.
             was_manual = want_manual;
-            id(oq_flow_mode).publish_state("CM0");
+            if (last_mode != "CM0") {
+              id(oq_flow_mode).publish_state("CM0");
+              last_mode = "CM0";
+            }
             return;
           }
 

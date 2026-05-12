@@ -882,6 +882,17 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     apiSecurityBusy: false,
     apiSecurityNotice: "",
     apiSecurityError: "",
+    mqttStatus: null,
+    mqttDraftEnabled: false,
+    mqttDraftBroker: "",
+    mqttDraftPort: "1883",
+    mqttDraftUsername: "",
+    mqttDraftPassword: "",
+    mqttDraftTopicPrefix: "openquatt",
+    mqttDraftDiagnosticPublishIntervalS: "30",
+    mqttBusy: false,
+    mqttNotice: "",
+    mqttError: "",
     updateCheckBusy: false,
     updateInstallBusy: false,
     updateInstallTargetVersion: "",
@@ -2594,6 +2605,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     const topicPrefixValue = String(state.mqttDraftTopicPrefix || "");
     const usernameValue = String(state.mqttDraftUsername || "");
     const passwordValue = String(state.mqttDraftPassword || "");
+    const diagnosticPublishIntervalValue = String(state.mqttDraftDiagnosticPublishIntervalS || "30");
 
     return `
       <div class="oq-helper-modal-backdrop oq-helper-modal-backdrop--top${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
@@ -2612,6 +2624,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
             ${renderLoginStatusRow("Status", getMqttStatusLabel(), getMqttStatusDetail())}
             ${renderLoginStatusRow("Broker", String(status.broker || "").trim() || "Geen broker", status.connected ? "MQTT publiceert en ontvangt via deze broker." : "Nog geen actieve verbinding.")}
             ${renderLoginStatusRow("Topic prefix", String(status.topic_prefix || "").trim() || "openquatt", "Alle MQTT-topics krijgen deze prefix.")}
+            ${renderLoginStatusRow("Diagnostisch interval", Number(status.diagnostic_publish_interval_s || 0) > 0 ? `${Number(status.diagnostic_publish_interval_s || 0)}s` : "Alleen wijziging", Number(status.diagnostic_publish_interval_s || 0) > 0 ? "Verbose statusmeldingen worden afgeknepen." : "Alleen wijzigingen worden direct gepusht.")}
             ${renderLoginStatusRow("Gebruiker", String(status.username || "").trim() || "Anoniem", status.password_set ? "Er is een wachtwoord opgeslagen." : "Er is nog geen wachtwoord opgeslagen.")}
           </div>
           <div class="oq-helper-modal-form-grid">
@@ -2641,6 +2654,11 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
             <label class="oq-helper-modal-channel oq-helper-modal-channel--span-2">
               <span class="oq-helper-modal-label">Topic prefix</span>
               <input class="oq-helper-input" type="text" autocomplete="off" spellcheck="false" data-oq-mqtt-field="topicPrefix" value="${escapeHtml(topicPrefixValue)}" placeholder="openquatt" ${busy ? "disabled" : ""}>
+            </label>
+            <label class="oq-helper-modal-channel oq-helper-modal-channel--span-2">
+              <span class="oq-helper-modal-label">Diagnostische publish-interval</span>
+              <input class="oq-helper-input" type="number" min="0" max="3600" step="1" inputmode="numeric" autocomplete="off" data-oq-mqtt-field="diagnosticPublishIntervalS" value="${escapeHtml(diagnosticPublishIntervalValue)}" ${busy ? "disabled" : ""}>
+              <span class="oq-helper-modal-subvalue">0 betekent alleen bij wijziging; hogere waarden knijpen de drukkere statusmeldingen af.</span>
             </label>
           </div>
           <p class="oq-helper-modal-note">Laat het wachtwoord leeg als je alleen broker, prefix of gebruikersnaam wijzigt. De opgeslagen waarde blijft dan behouden.</p>
@@ -3999,6 +4017,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       String(status.port || ""),
       String(status.username || ""),
       String(status.topic_prefix || ""),
+      String(status.diagnostic_publish_interval_s || ""),
       status.password_set ? "set" : "empty",
       String(status.source || ""),
       String(status.csrf_token || ""),
@@ -4013,6 +4032,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     state.mqttDraftUsername = String(status.username || "");
     state.mqttDraftPassword = "";
     state.mqttDraftTopicPrefix = String(status.topic_prefix || "openquatt");
+    state.mqttDraftDiagnosticPublishIntervalS = String(status.diagnostic_publish_interval_s ?? 30);
     state.mqttNotice = "";
     state.mqttError = "";
   }
@@ -4132,6 +4152,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
         port: Number(payload.port || 0),
         username: String(payload.username || ""),
         topic_prefix: String(payload.topic_prefix || ""),
+        diagnostic_publish_interval_s: Number(payload.diagnostic_publish_interval_s ?? 30),
         password_set: Boolean(payload.password_set),
         source: String(payload.source || ""),
         csrf_token: String(payload.csrf_token || ""),
@@ -4310,6 +4331,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     const username = String(state.mqttDraftUsername || "").trim();
     const password = String(state.mqttDraftPassword || "");
     const topicPrefix = String(state.mqttDraftTopicPrefix || "").trim();
+    const diagnosticPublishIntervalS = Number(String(state.mqttDraftDiagnosticPublishIntervalS || "").trim());
 
     if (!topicPrefix) {
       state.mqttError = "Vul een topic prefix in.";
@@ -4331,6 +4353,11 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       render();
       return;
     }
+    if (!Number.isFinite(diagnosticPublishIntervalS) || diagnosticPublishIntervalS < 0 || diagnosticPublishIntervalS > 3600) {
+      state.mqttError = "Vul een geldige diagnostic publish interval in.";
+      render();
+      return;
+    }
 
     state.mqttBusy = true;
     state.mqttError = "";
@@ -4346,6 +4373,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       params.set("username", username);
       params.set("password", password);
       params.set("topic_prefix", topicPrefix);
+      params.set("diagnostic_publish_interval_s", String(diagnosticPublishIntervalS));
 
       const response = await fetch("/mqtt/save", {
         method: "POST",
@@ -5398,6 +5426,8 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
           state.mqttDraftPassword = String(event.target.value || "");
         } else if (mqttField === "topicPrefix") {
           state.mqttDraftTopicPrefix = String(event.target.value || "");
+        } else if (mqttField === "diagnosticPublishIntervalS") {
+          state.mqttDraftDiagnosticPublishIntervalS = String(event.target.value || "");
         }
         return;
       }
@@ -5518,6 +5548,8 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       state.mqttDraftPassword = String(event.target.value || "");
     } else if (mqttField === "topicPrefix") {
       state.mqttDraftTopicPrefix = String(event.target.value || "");
+    } else if (mqttField === "diagnosticPublishIntervalS") {
+      state.mqttDraftDiagnosticPublishIntervalS = String(event.target.value || "");
     }
   }
 

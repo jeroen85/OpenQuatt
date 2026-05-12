@@ -648,6 +648,7 @@
       String(status.port || ""),
       String(status.username || ""),
       String(status.topic_prefix || ""),
+      String(status.diagnostic_publish_interval_s || ""),
       status.password_set ? "set" : "empty",
       String(status.source || ""),
       String(status.csrf_token || ""),
@@ -662,6 +663,7 @@
     state.mqttDraftUsername = String(status.username || "");
     state.mqttDraftPassword = "";
     state.mqttDraftTopicPrefix = String(status.topic_prefix || "openquatt");
+    state.mqttDraftDiagnosticPublishIntervalS = String(status.diagnostic_publish_interval_s ?? 30);
     state.mqttNotice = "";
     state.mqttError = "";
   }
@@ -781,6 +783,7 @@
         port: Number(payload.port || 0),
         username: String(payload.username || ""),
         topic_prefix: String(payload.topic_prefix || ""),
+        diagnostic_publish_interval_s: Number(payload.diagnostic_publish_interval_s ?? 30),
         password_set: Boolean(payload.password_set),
         source: String(payload.source || ""),
         csrf_token: String(payload.csrf_token || ""),
@@ -959,6 +962,7 @@
     const username = String(state.mqttDraftUsername || "").trim();
     const password = String(state.mqttDraftPassword || "");
     const topicPrefix = String(state.mqttDraftTopicPrefix || "").trim();
+    const diagnosticPublishIntervalS = Number(String(state.mqttDraftDiagnosticPublishIntervalS || "").trim());
 
     if (!topicPrefix) {
       state.mqttError = "Vul een topic prefix in.";
@@ -980,6 +984,11 @@
       render();
       return;
     }
+    if (!Number.isFinite(diagnosticPublishIntervalS) || diagnosticPublishIntervalS < 0 || diagnosticPublishIntervalS > 3600) {
+      state.mqttError = "Vul een geldige diagnostic publish interval in.";
+      render();
+      return;
+    }
 
     state.mqttBusy = true;
     state.mqttError = "";
@@ -995,6 +1004,7 @@
       params.set("username", username);
       params.set("password", password);
       params.set("topic_prefix", topicPrefix);
+      params.set("diagnostic_publish_interval_s", String(diagnosticPublishIntervalS));
 
       const response = await fetch("/mqtt/save", {
         method: "POST",
@@ -2047,6 +2057,8 @@
           state.mqttDraftPassword = String(event.target.value || "");
         } else if (mqttField === "topicPrefix") {
           state.mqttDraftTopicPrefix = String(event.target.value || "");
+        } else if (mqttField === "diagnosticPublishIntervalS") {
+          state.mqttDraftDiagnosticPublishIntervalS = String(event.target.value || "");
         }
         return;
       }
@@ -2167,6 +2179,8 @@
       state.mqttDraftPassword = String(event.target.value || "");
     } else if (mqttField === "topicPrefix") {
       state.mqttDraftTopicPrefix = String(event.target.value || "");
+    } else if (mqttField === "diagnosticPublishIntervalS") {
+      state.mqttDraftDiagnosticPublishIntervalS = String(event.target.value || "");
     }
   }
 

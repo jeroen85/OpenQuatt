@@ -10,6 +10,7 @@ CONF_BOOTSTRAP_USERNAME = "bootstrap_username"
 CONF_BOOTSTRAP_PASSWORD = "bootstrap_password"
 CONF_BOOTSTRAP_TOPIC_PREFIX = "bootstrap_topic_prefix"
 CONF_DEFAULT_ENABLED = "default_enabled"
+CONF_DIAGNOSTIC_PUBLISH_INTERVAL_S = "diagnostic_publish_interval_s"
 
 openquatt_mqtt_config_ns = cg.esphome_ns.namespace("openquatt_mqtt_config")
 OpenQuattMqttConfig = openquatt_mqtt_config_ns.class_("OpenQuattMqttConfig", cg.Component)
@@ -26,6 +27,7 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Optional(CONF_BOOTSTRAP_PASSWORD, default=""): cv.All(cv.string_strict, cv.Length(max=128)),
         cv.Optional(CONF_BOOTSTRAP_TOPIC_PREFIX, default="openquatt"): cv.All(cv.publish_topic, cv.Length(max=64)),
         cv.Optional(CONF_DEFAULT_ENABLED, default=False): cv.boolean,
+        cv.Optional(CONF_DIAGNOSTIC_PUBLISH_INTERVAL_S, default=30): cv.int_range(min=0, max=3600),
     }
 ).extend(cv.COMPONENT_SCHEMA)
 
@@ -43,3 +45,4 @@ async def to_code(config):
     cg.add(var.set_bootstrap_password(config[CONF_BOOTSTRAP_PASSWORD]))
     cg.add(var.set_bootstrap_topic_prefix(config[CONF_BOOTSTRAP_TOPIC_PREFIX]))
     cg.add(var.set_default_enabled(config[CONF_DEFAULT_ENABLED]))
+    cg.add(var.set_diagnostic_publish_interval_s(config[CONF_DIAGNOSTIC_PUBLISH_INTERVAL_S]))

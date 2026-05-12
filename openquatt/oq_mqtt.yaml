@@ -30,3 +30,4 @@ openquatt_mqtt_config:
   bootstrap_password: "${mqtt_bootstrap_password}"
   bootstrap_topic_prefix: "${mqtt_bootstrap_topic_prefix}"
   default_enabled: ${mqtt_default_enabled}
+  diagnostic_publish_interval_s: ${mqtt_diagnostic_publish_interval_s}

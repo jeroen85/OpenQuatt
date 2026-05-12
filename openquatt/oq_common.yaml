@@ -462,7 +462,7 @@ sensor:
     icon: mdi:progress-upload
     unit_of_measurement: "%"
     accuracy_decimals: 0
-    update_interval: 1s
+    update_interval: never
     entity_category: diagnostic
     lambda: |-
       return id(oq_ota_progress_pct);
@@ -561,7 +561,7 @@ text_sensor:
     name: Firmware Update Status
     icon: mdi:upload-network-outline
     entity_category: diagnostic
-    update_interval: 1s
+    update_interval: never
     lambda: |-
       // Expose a compact OTA phase label for dashboards and the local web UI.
       switch (id(oq_ota_phase_code)) {

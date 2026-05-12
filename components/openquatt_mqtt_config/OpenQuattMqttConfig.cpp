@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <cinttypes>
 #include <array>
 #include <cstdio>
 #include <cstring>
@@ -113,11 +114,12 @@ class OpenQuattMqttConfigRequestHandler : public AsyncWebHandler {
     if (url == "/mqtt/status" && request->method() == HTTP_GET) {
       auto *stream = request->beginResponseStream("application/json");
       stream->printf(
-          R"({"enabled":%s,"connected":%s,"broker":"%s","port":%u,"username":"%s","topic_prefix":"%s","password_set":%s,"source":"%s","csrf_token":"%s"})",
+          R"({"enabled":%s,"connected":%s,"broker":"%s","port":%u,"username":"%s","topic_prefix":"%s","diagnostic_publish_interval_s":%u,"password_set":%s,"source":"%s","csrf_token":"%s"})",
           this->parent_->is_enabled() ? "true" : "false", this->parent_->is_connected() ? "true" : "false",
           this->parent_->get_broker().c_str(), this->parent_->get_port(), this->parent_->get_username().c_str(),
-          this->parent_->get_topic_prefix().c_str(), this->parent_->has_password() ? "true" : "false",
-          this->parent_->get_config_source().c_str(), this->parent_->get_csrf_token().c_str());
+          this->parent_->get_topic_prefix().c_str(), this->parent_->get_diagnostic_publish_interval_s(),
+          this->parent_->has_password() ? "true" : "false", this->parent_->get_config_source().c_str(),
+          this->parent_->get_csrf_token().c_str());
       request->send(stream);
       return;
     }
@@ -133,6 +135,7 @@ class OpenQuattMqttConfigRequestHandler : public AsyncWebHandler {
       const std::string username = request->arg("username");
       const std::string password = request->arg("password");
       const std::string topic_prefix = request->arg("topic_prefix");
+      const std::string interval_arg = request->arg("diagnostic_publish_interval_s");
       const std::string enabled_arg = request->arg("enabled");
       const bool enabled = enabled_arg == "true" || enabled_arg == "1" || enabled_arg == "on";
 
@@ -148,6 +151,17 @@ class OpenQuattMqttConfigRequestHandler : public AsyncWebHandler {
       };
 
       const uint16_t port = parse_port();
+      const auto parse_interval = [&]() -> uint32_t {
+        if (interval_arg.empty()) {
+          return this->parent_->get_diagnostic_publish_interval_s();
+        }
+        const long parsed = std::strtol(interval_arg.c_str(), nullptr, 10);
+        if (parsed < 0 || parsed > 3600) {
+          return UINT32_MAX;
+        }
+        return static_cast<uint32_t>(parsed);
+      };
+      const uint32_t diagnostic_publish_interval_s = parse_interval();
       if (enabled && broker.empty()) {
         request->send(409, "application/json", R"({"ok":false,"error":"missing_broker"})");
         return;
@@ -160,7 +174,12 @@ class OpenQuattMqttConfigRequestHandler : public AsyncWebHandler {
         request->send(409, "application/json", R"({"ok":false,"error":"invalid_port"})");
         return;
       }
-      if (!this->parent_->set_runtime_config(broker, port, username, password, topic_prefix, enabled)) {
+      if (diagnostic_publish_interval_s == UINT32_MAX) {
+        request->send(409, "application/json", R"({"ok":false,"error":"invalid_publish_interval"})");
+        return;
+      }
+      if (!this->parent_->set_runtime_config(broker, port, username, password, topic_prefix, enabled,
+                                             diagnostic_publish_interval_s)) {
         request->send(500, "application/json", R"({"ok":false,"error":"persist_failed"})");
         return;
       }
@@ -196,6 +215,15 @@ void OpenQuattMqttConfig::setup() {
   this->rotate_csrf_token_();
   this->register_http_handlers_();
   this->pref_ = global_preferences->make_preference<Storage>(STORAGE_KEY, true);
+  this->diagnostic_pref_ = global_preferences->make_preference<uint32_t>(fnv1_hash("openquatt_mqtt_diag_interval"), true);
+
+  uint32_t diagnostic_publish_interval_s = this->diagnostic_publish_interval_s_;
+  if (this->diagnostic_pref_.load(&diagnostic_publish_interval_s) && diagnostic_publish_interval_s <= 3600U) {
+    this->diagnostic_publish_interval_s_ = diagnostic_publish_interval_s;
+  } else {
+    this->diagnostic_pref_.save(&this->diagnostic_publish_interval_s_);
+    global_preferences->sync();
+  }
 
   Storage storage{};
   if (!this->load_storage_(&storage)) {
@@ -221,6 +249,7 @@ void OpenQuattMqttConfig::dump_config() {
   ESP_LOGCONFIG(TAG, "  Broker: %s:%u", this->broker_.empty() ? "<none>" : this->broker_.c_str(), this->port_);
   ESP_LOGCONFIG(TAG, "  Username: %s", this->username_.empty() ? "<none>" : this->username_.c_str());
   ESP_LOGCONFIG(TAG, "  Topic prefix: %s", this->topic_prefix_.empty() ? "<none>" : this->topic_prefix_.c_str());
+  ESP_LOGCONFIG(TAG, "  Diagnostic publish interval: %" PRIu32 "s", this->diagnostic_publish_interval_s_);
   ESP_LOGCONFIG(TAG, "  Runtime source: %s", this->config_source_.empty() ? "<unknown>" : this->config_source_.c_str());
   ESP_LOGCONFIG(TAG, "  HTTP handlers registered: %s", YESNO(this->handlers_registered_));
 }
@@ -229,7 +258,7 @@ float OpenQuattMqttConfig::get_setup_priority() const { return setup_priority::L
 
 bool OpenQuattMqttConfig::set_runtime_config(const std::string &broker, uint16_t port, const std::string &username,
                                              const std::string &password, const std::string &topic_prefix,
-                                             bool enabled) {
+                                             bool enabled, uint32_t diagnostic_publish_interval_s) {
   Storage storage{};
   if (!this->load_storage_(&storage)) {
     if (!this->build_storage_(this->bootstrap_broker_, this->bootstrap_port_, this->bootstrap_username_,
@@ -244,6 +273,15 @@ bool OpenQuattMqttConfig::set_runtime_config(const std::string &broker, uint16_t
     return false;
   }
   if (!this->save_storage_(storage)) {
+    return false;
+  }
+  this->diagnostic_publish_interval_s_ = diagnostic_publish_interval_s;
+  if (!this->diagnostic_pref_.save(&this->diagnostic_publish_interval_s_)) {
+    ESP_LOGE(TAG, "Failed to save MQTT diagnostic interval to preferences");
+    return false;
+  }
+  if (!global_preferences->sync()) {
+    ESP_LOGE(TAG, "Failed to sync MQTT diagnostic interval to preferences");
     return false;
   }
   return this->apply_storage_(storage, "runtime");

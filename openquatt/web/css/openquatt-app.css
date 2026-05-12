@@ -791,6 +791,9 @@ body.oq-surface-native {
   padding: 24px;
   background: rgba(15, 23, 42, 0.42);
   backdrop-filter: blur(8px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .oq-helper-modal-backdrop--loading {
@@ -798,6 +801,7 @@ body.oq-surface-native {
 }
 
 .oq-helper-modal {
+  box-sizing: border-box;
   width: min(100%, 560px);
   border: 1px solid rgba(226, 232, 240, 0.9);
   border-radius: calc(var(--oq-helper-radius-lg) + 4px);
@@ -827,8 +831,10 @@ body.oq-surface-native {
 }
 
 .oq-helper-modal--scrollable {
-  max-height: calc(100svh - 48px);
-  overflow: auto;
+  min-height: 0;
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
 }
@@ -6994,7 +7000,7 @@ esp-app.oq-native-app.oq-native-app--collapsed {
   }
 
   .oq-helper-modal--scrollable {
-    max-height: calc(100svh - 24px);
+    max-height: calc(100dvh - 24px);
   }
 
   .oq-helper-modal-grid {

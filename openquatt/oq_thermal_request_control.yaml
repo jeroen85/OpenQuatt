@@ -787,9 +787,17 @@ interval:
               (unsigned long) off_age_s,
               id(hp1_minutes), rt2);
             const std::string s(buf);
-            if (s != last_debug) {
+            static uint32_t last_debug_publish_ms = 0;
+            const uint32_t debug_publish_interval_ms =
+                id(oq_mqtt_config).get_diagnostic_publish_interval_s() * 1000U;
+            const uint32_t now_ms = millis();
+            const bool debug_due = debug_publish_interval_ms != 0U &&
+                                   (last_debug_publish_ms == 0U ||
+                                    (uint32_t)(now_ms - last_debug_publish_ms) >= debug_publish_interval_ms);
+            if (s != last_debug || debug_due) {
               id(oq_heating_debug_state).publish_state(s.c_str());
               last_debug = s;
+              last_debug_publish_ms = now_ms;
             }
           };
 

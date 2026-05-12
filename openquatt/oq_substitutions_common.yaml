@@ -31,6 +31,7 @@ mqtt_bootstrap_username: ""                           # Bootstrap MQTT username.
 mqtt_bootstrap_password: ""                           # Bootstrap MQTT password.
 mqtt_bootstrap_topic_prefix: "openquatt"              # Default MQTT topic prefix.
 mqtt_default_enabled: false                           # MQTT starts disabled until the user enables it explicitly.
+mqtt_diagnostic_publish_interval_s: "30"              # Minimum interval for verbose MQTT diagnostic/status publishes [s].
 
 # ----------------------------
 # HARDWARE
