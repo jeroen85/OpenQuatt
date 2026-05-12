@@ -882,6 +882,20 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     apiSecurityBusy: false,
     apiSecurityNotice: "",
     apiSecurityError: "",
+    mqttStatus: null,
+    mqttDraftEnabled: false,
+    mqttDraftBroker: "",
+    mqttDraftPort: "1883",
+    mqttDraftUsername: "",
+    mqttDraftPassword: "",
+    mqttDraftBaseTopic: "openquatt",
+    mqttDraftPublishProfile: "standard",
+    mqttDraftEssentialIntervalS: "10",
+    mqttDraftStandardIntervalS: "30",
+    mqttDraftRetainSnapshots: true,
+    mqttBusy: false,
+    mqttNotice: "",
+    mqttError: "",
     updateCheckBusy: false,
     updateInstallBusy: false,
     updateInstallTargetVersion: "",
@@ -2586,6 +2600,100 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     `;
   }
 
+  function renderMqttModal() {
+    const status = state.mqttStatus || {};
+    const modalNotice = state.mqttNotice;
+    const busy = state.mqttBusy;
+    const brokerValue = String(state.mqttDraftBroker || "");
+    const baseTopicValue = String(state.mqttDraftBaseTopic || "");
+    const usernameValue = String(state.mqttDraftUsername || "");
+    const passwordValue = String(state.mqttDraftPassword || "");
+    const essentialIntervalValue = String(state.mqttDraftEssentialIntervalS || "10");
+    const standardIntervalValue = String(state.mqttDraftStandardIntervalS || "30");
+
+    return `
+      <div class="oq-helper-modal-backdrop oq-helper-modal-backdrop--top${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
+        <section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--scrollable" role="dialog" aria-modal="true" aria-labelledby="oq-mqtt-modal-title">
+          <div class="oq-helper-modal-head">
+            <div>
+              <p class="oq-helper-modal-kicker">Integratie</p>
+              <h2 class="oq-helper-modal-title" id="oq-mqtt-modal-title">MQTT-configuratie</h2>
+            </div>
+            <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit MQTT-popup" ${busy ? "disabled" : ""}>×</button>
+          </div>
+          <p class="oq-helper-modal-copy">MQTT is een compacte publish-only telemetry-export. Gebruik voor Home Assistant de native ESPHome API.</p>
+          ${modalNotice ? `<div class="oq-helper-modal-success oq-helper-modal-success--compact" aria-live="polite"><strong>Status</strong><span>${escapeHtml(modalNotice)}</span></div>` : ""}
+          ${state.mqttError ? `<div class="oq-helper-modal-note oq-helper-modal-note--error" aria-live="assertive">${escapeHtml(state.mqttError)}</div>` : ""}
+          <div class="oq-helper-modal-grid">
+            ${renderLoginStatusRow("Status", getMqttStatusLabel(), getMqttStatusDetail())}
+            ${renderLoginStatusRow("Broker", String(status.broker || "").trim() || "Geen broker", status.connected ? "MQTT publiceert en ontvangt via deze broker." : "Nog geen actieve verbinding.")}
+            ${renderLoginStatusRow("Base topic", String(status.base_topic || "").trim() || "openquatt", "Alle compacte telemetry-topics hangen hieronder.")}
+            ${renderLoginStatusRow("Publish-profiel", formatMqttPublishProfile(status.publish_profile), `Essential: ${Number(status.essential_interval_s || 10)}s, Standard: ${Number(status.standard_interval_s || 30)}s`)}
+            ${renderLoginStatusRow("Gebruiker", String(status.username || "").trim() || "Anoniem", status.password_set ? "Er is een wachtwoord opgeslagen." : "Er is nog geen wachtwoord opgeslagen.")}
+            ${renderLoginStatusRow("Retain snapshots", status.retain_snapshots !== false ? "Aan" : "Uit", status.retain_snapshots !== false ? "Nieuwe subscribers zien meteen de laatste snapshot." : "Alleen live berichten worden doorgestuurd.")}
+          </div>
+          <div class="oq-helper-modal-form-grid">
+            <label class="oq-helper-modal-channel oq-helper-modal-channel--toggle oq-helper-modal-channel--span-2">
+              <span class="oq-helper-modal-toggle-copy">
+                <span class="oq-helper-modal-label">MQTT inschakelen</span>
+                <span class="oq-helper-modal-subvalue">Als dit aan staat, probeert OpenQuatt direct met de broker te verbinden.</span>
+              </span>
+              <input type="checkbox" data-oq-mqtt-field="enabled" ${state.mqttDraftEnabled ? "checked" : ""} ${busy ? "disabled" : ""}>
+            </label>
+            <label class="oq-helper-modal-channel">
+              <span class="oq-helper-modal-label">Broker</span>
+              <input class="oq-helper-input" type="text" inputmode="url" autocomplete="off" spellcheck="false" data-oq-mqtt-field="broker" value="${escapeHtml(brokerValue)}" placeholder="mqtt.example.local" ${busy ? "disabled" : ""}>
+            </label>
+            <label class="oq-helper-modal-channel">
+              <span class="oq-helper-modal-label">Poort</span>
+              <input class="oq-helper-input" type="number" min="1" max="65535" step="1" inputmode="numeric" autocomplete="off" data-oq-mqtt-field="port" value="${escapeHtml(String(state.mqttDraftPort || "1883"))}" ${busy ? "disabled" : ""}>
+            </label>
+            <label class="oq-helper-modal-channel">
+              <span class="oq-helper-modal-label">Gebruiker</span>
+              <input class="oq-helper-input" type="text" autocomplete="off" spellcheck="false" data-oq-mqtt-field="username" value="${escapeHtml(usernameValue)}" placeholder="optioneel" ${busy ? "disabled" : ""}>
+            </label>
+            <label class="oq-helper-modal-channel">
+              <span class="oq-helper-modal-label">Wachtwoord</span>
+              <input class="oq-helper-input" type="password" autocomplete="new-password" data-oq-mqtt-field="password" value="${escapeHtml(passwordValue)}" placeholder="${status.password_set ? "Leeg laten om te behouden" : "optioneel"}" ${busy ? "disabled" : ""}>
+            </label>
+            <label class="oq-helper-modal-channel oq-helper-modal-channel--span-2">
+              <span class="oq-helper-modal-label">Base topic</span>
+              <input class="oq-helper-input" type="text" autocomplete="off" spellcheck="false" data-oq-mqtt-field="baseTopic" value="${escapeHtml(baseTopicValue)}" placeholder="openquatt" ${busy ? "disabled" : ""}>
+            </label>
+            <label class="oq-helper-modal-channel">
+              <span class="oq-helper-modal-label">Publish-profiel</span>
+              <select class="oq-helper-select" data-oq-mqtt-field="publishProfile" ${busy ? "disabled" : ""}>
+                <option value="off" ${String(state.mqttDraftPublishProfile || "") === "off" ? "selected" : ""}>Uit</option>
+                <option value="essential" ${String(state.mqttDraftPublishProfile || "") === "essential" ? "selected" : ""}>Essential</option>
+                <option value="standard" ${String(state.mqttDraftPublishProfile || "") === "standard" ? "selected" : ""}>Standard</option>
+              </select>
+            </label>
+            <label class="oq-helper-modal-channel oq-helper-modal-channel--toggle">
+              <span class="oq-helper-modal-toggle-copy">
+                <span class="oq-helper-modal-label">Retain snapshots</span>
+                <span class="oq-helper-modal-subvalue">Bewaar de laatste schema-, state- en heat_pumps-snapshot op de broker.</span>
+              </span>
+              <input type="checkbox" data-oq-mqtt-field="retainSnapshots" ${state.mqttDraftRetainSnapshots ? "checked" : ""} ${busy ? "disabled" : ""}>
+            </label>
+            <label class="oq-helper-modal-channel">
+              <span class="oq-helper-modal-label">Essential interval</span>
+              <input class="oq-helper-input" type="number" min="1" max="3600" step="1" inputmode="numeric" autocomplete="off" data-oq-mqtt-field="essentialIntervalS" value="${escapeHtml(essentialIntervalValue)}" ${busy ? "disabled" : ""}>
+            </label>
+            <label class="oq-helper-modal-channel">
+              <span class="oq-helper-modal-label">Standard interval</span>
+              <input class="oq-helper-input" type="number" min="1" max="3600" step="1" inputmode="numeric" autocomplete="off" data-oq-mqtt-field="standardIntervalS" value="${escapeHtml(standardIntervalValue)}" ${busy ? "disabled" : ""}>
+            </label>
+          </div>
+          <p class="oq-helper-modal-note">Laat het wachtwoord leeg als je alleen broker, topic of gebruikersnaam wijzigt. De opgeslagen waarde blijft dan behouden.</p>
+          <div class="oq-helper-modal-actions">
+            <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="close-system-modal" ${busy ? "disabled" : ""}>Gereed</button>
+            <button class="oq-helper-button oq-helper-button--primary" type="button" data-oq-action="save-mqtt-config" ${busy ? "disabled" : ""}>${state.mqttDraftEnabled ? "Opslaan en verbinden" : "Opslaan"}</button>
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
   function getConnectivityModalRows() {
     const rows = [
       ["Netwerkstatus", getConnectivityStatus()],
@@ -3085,6 +3193,10 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
 
     if (state.systemModal === "api-security") {
       return renderApiSecurityModal();
+    }
+
+    if (state.systemModal === "mqtt") {
+      return renderMqttModal();
     }
 
     if (state.systemModal === "connectivity") {
@@ -3920,6 +4032,51 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     ].join(":");
   }
 
+  function getMqttStatusSignature(status = state.mqttStatus || {}) {
+    return [
+      status.enabled ? "on" : "off",
+      status.connected ? "connected" : "disconnected",
+      String(status.broker || ""),
+      String(status.port || ""),
+      String(status.username || ""),
+      String(status.base_topic || ""),
+      String(status.publish_profile || ""),
+      String(status.essential_interval_s || ""),
+      String(status.standard_interval_s || ""),
+      status.retain_snapshots ? "retain" : "volatile",
+      status.password_set ? "set" : "empty",
+      String(status.source || ""),
+      String(status.csrf_token || ""),
+    ].join(":");
+  }
+
+  function syncMqttDraftsFromStatus() {
+    const status = state.mqttStatus || {};
+    state.mqttDraftEnabled = status.enabled === true;
+    state.mqttDraftBroker = String(status.broker || "");
+    state.mqttDraftPort = String(status.port || 1883);
+    state.mqttDraftUsername = String(status.username || "");
+    state.mqttDraftPassword = "";
+    state.mqttDraftBaseTopic = String(status.base_topic || "openquatt");
+    state.mqttDraftPublishProfile = String(status.publish_profile || "standard");
+    state.mqttDraftEssentialIntervalS = String(status.essential_interval_s ?? 10);
+    state.mqttDraftStandardIntervalS = String(status.standard_interval_s ?? 30);
+    state.mqttDraftRetainSnapshots = status.retain_snapshots !== false;
+    state.mqttNotice = "";
+    state.mqttError = "";
+  }
+
+  function formatMqttPublishProfile(profile) {
+    const normalized = String(profile || "").trim().toLowerCase();
+    if (normalized === "off") {
+      return "Uit";
+    }
+    if (normalized === "essential") {
+      return "Essential";
+    }
+    return "Standard";
+  }
+
   async function refreshAuthStatus() {
     try {
       const response = await fetch("/auth/status", { cache: "no-store" });
@@ -3976,6 +4133,88 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       return previousSignature !== nextSignature;
     } catch (error) {
       state.apiSecurityError = `API-beveiliging kon niet worden geladen. ${error.message}`;
+      return false;
+    }
+  }
+
+  function getMqttStatusLabel() {
+    const status = state.mqttStatus;
+    if (!status) {
+      return "Laden...";
+    }
+    if (status.enabled !== true) {
+      return "Uit";
+    }
+    if (status.connected === true) {
+      return "Verbonden";
+    }
+    if (!String(status.broker || "").trim()) {
+      return "Geen broker";
+    }
+    return "Verbinding maken";
+  }
+
+  function getMqttStatusDetail() {
+    const status = state.mqttStatus;
+    if (!status) {
+      return "MQTT-configuratie wordt geladen.";
+    }
+
+    const broker = String(status.broker || "").trim();
+    const baseTopic = String(status.base_topic || "").trim();
+    const profileLabel = formatMqttPublishProfile(status.publish_profile);
+    if (status.enabled !== true) {
+      return "MQTT staat uit en maakt geen verbinding.";
+    }
+    if (status.connected === true) {
+      return broker
+        ? `Verbonden met ${broker}${baseTopic ? ` en publiceert ${profileLabel.toLowerCase()} telemetry via ${baseTopic}.` : "."}`
+        : "MQTT is verbonden en publiceert met de opgeslagen instellingen.";
+    }
+    if (broker) {
+      return baseTopic
+        ? `De broker staat ingesteld op ${broker}; het device probeert ${profileLabel.toLowerCase()} telemetry via ${baseTopic} te publiceren.`
+        : `De broker staat ingesteld op ${broker}; het device probeert verbinding te maken.`;
+    }
+    return "Er is nog geen broker opgeslagen.";
+  }
+
+  async function refreshMqttStatus() {
+    try {
+      const response = await fetch("/mqtt/status", { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const payload = await response.json();
+      const nextStatus = {
+        enabled: Boolean(payload.enabled),
+        connected: Boolean(payload.connected),
+        broker: String(payload.broker || ""),
+        port: Number(payload.port || 0),
+        username: String(payload.username || ""),
+        base_topic: String(payload.base_topic || ""),
+        publish_profile: String(payload.publish_profile || "standard"),
+        essential_interval_s: Number(payload.essential_interval_s ?? 10),
+        standard_interval_s: Number(payload.standard_interval_s ?? 30),
+        retain_snapshots: payload.retain_snapshots !== false,
+        password_set: Boolean(payload.password_set),
+        source: String(payload.source || ""),
+        csrf_token: String(payload.csrf_token || ""),
+      };
+      const previousSignature = getMqttStatusSignature();
+      const nextSignature = getMqttStatusSignature(nextStatus);
+      state.mqttStatus = nextStatus;
+      if (previousSignature !== nextSignature) {
+        syncMqttDraftsFromStatus();
+      }
+      if (state.systemModal === "mqtt") {
+        state.mqttError = "";
+      }
+      return previousSignature !== nextSignature;
+    } catch (error) {
+      if (state.systemModal === "mqtt") {
+        state.mqttError = `MQTT-status kon niet worden geladen. ${error.message}`;
+      }
       return false;
     }
   }
@@ -4124,6 +4363,96 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       render();
     } finally {
       state.apiSecurityBusy = false;
+      render();
+    }
+  }
+
+  async function commitMqttChanges() {
+    const status = state.mqttStatus || {};
+    const enabled = Boolean(state.mqttDraftEnabled);
+    const broker = String(state.mqttDraftBroker || "").trim();
+    const port = Number(String(state.mqttDraftPort || "").trim());
+    const username = String(state.mqttDraftUsername || "").trim();
+    const password = String(state.mqttDraftPassword || "");
+    const baseTopic = String(state.mqttDraftBaseTopic || "").trim();
+    const publishProfile = String(state.mqttDraftPublishProfile || "standard").trim().toLowerCase();
+    const essentialIntervalS = Number(String(state.mqttDraftEssentialIntervalS || "").trim());
+    const standardIntervalS = Number(String(state.mqttDraftStandardIntervalS || "").trim());
+    const retainSnapshots = Boolean(state.mqttDraftRetainSnapshots);
+
+    if (!baseTopic) {
+      state.mqttError = "Vul een base topic in.";
+      render();
+      return;
+    }
+    if (!Number.isFinite(port) || port < 1 || port > 65535) {
+      state.mqttError = "Vul een geldige poort in.";
+      render();
+      return;
+    }
+    if (enabled && !broker) {
+      state.mqttError = "Vul een broker in als je MQTT inschakelt.";
+      render();
+      return;
+    }
+    if (!status.csrf_token) {
+      state.mqttError = "MQTT-configuratie laden nog. Probeer het zo opnieuw.";
+      render();
+      return;
+    }
+    if (!["off", "essential", "standard"].includes(publishProfile)) {
+      state.mqttError = "Kies een geldig publish-profiel.";
+      render();
+      return;
+    }
+    if (!Number.isFinite(essentialIntervalS) || essentialIntervalS < 1 || essentialIntervalS > 3600) {
+      state.mqttError = "Vul een geldig essential interval in.";
+      render();
+      return;
+    }
+    if (!Number.isFinite(standardIntervalS) || standardIntervalS < 1 || standardIntervalS > 3600) {
+      state.mqttError = "Vul een geldig standard interval in.";
+      render();
+      return;
+    }
+
+    state.mqttBusy = true;
+    state.mqttError = "";
+    state.mqttNotice = "";
+    render();
+
+    try {
+      const params = new URLSearchParams();
+      params.set("csrf_token", status.csrf_token);
+      params.set("enabled", enabled ? "true" : "false");
+      params.set("broker", broker);
+      params.set("port", String(port));
+      params.set("username", username);
+      params.set("password", password);
+      params.set("base_topic", baseTopic);
+      params.set("publish_profile", publishProfile);
+      params.set("essential_interval_s", String(essentialIntervalS));
+      params.set("standard_interval_s", String(standardIntervalS));
+      params.set("retain_snapshots", retainSnapshots ? "true" : "false");
+
+      const response = await fetch("/mqtt/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body: params.toString(),
+      });
+      const payload = await response.json().catch(() => ({ ok: false, error: "invalid_response" }));
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error || `HTTP ${response.status}`);
+      }
+      await refreshMqttStatus();
+      state.mqttNotice = enabled ? "MQTT staat nu aan." : "MQTT-configuratie opgeslagen.";
+      state.mqttError = "";
+      render();
+    } catch (error) {
+      state.mqttError = `Opslaan is mislukt. ${error.message}`;
+      render();
+    } finally {
+      state.mqttBusy = false;
       render();
     }
   }
@@ -4846,6 +5175,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       await refreshAuthStatus();
       if (state.appView === "settings") {
         await refreshApiSecurityStatus();
+        await refreshMqttStatus();
       }
     } finally {
       if (state.mounted && !state.nativeOpen) {
@@ -4969,6 +5299,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
           : false;
       const authChanged = shouldDeferSupplementary ? false : await refreshAuthStatus();
       const apiSecurityChanged = shouldDeferSupplementary || state.appView !== "settings" ? false : await refreshApiSecurityStatus();
+      const mqttChanged = shouldDeferSupplementary || state.appView !== "settings" ? false : await refreshMqttStatus();
       const nextHeaderSignature = getHeaderRenderSignature();
       if (reconnectChanged) {
         render();
@@ -4983,6 +5314,10 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
         return;
       }
       if (apiSecurityChanged && state.appView === "settings") {
+        render();
+        return;
+      }
+      if (mqttChanged && state.appView === "settings") {
         render();
         return;
       }
@@ -5097,6 +5432,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       state.settingsGroup,
       state.loadingEntities ? "loading" : "ready",
       getApiSecurityStatusSignature(),
+      getMqttStatusSignature(),
       getEntitySignatureFragment("setupComplete"),
       ...SETTINGS_KEYS.map((key) => getEntitySignatureFragment(key)),
     ].join("|");
@@ -5131,6 +5467,34 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     if (!field) {
       const authField = event.target.dataset.oqAuthField;
       if (!authField) {
+        const mqttField = event.target.dataset.oqMqttField;
+        if (!mqttField) {
+          return;
+        }
+
+        state.mqttNotice = "";
+        state.mqttError = "";
+        if (mqttField === "enabled") {
+          state.mqttDraftEnabled = Boolean(event.target.checked);
+        } else if (mqttField === "broker") {
+          state.mqttDraftBroker = String(event.target.value || "");
+        } else if (mqttField === "port") {
+          state.mqttDraftPort = String(event.target.value || "");
+        } else if (mqttField === "username") {
+          state.mqttDraftUsername = String(event.target.value || "");
+        } else if (mqttField === "password") {
+          state.mqttDraftPassword = String(event.target.value || "");
+        } else if (mqttField === "baseTopic") {
+          state.mqttDraftBaseTopic = String(event.target.value || "");
+        } else if (mqttField === "publishProfile") {
+          state.mqttDraftPublishProfile = String(event.target.value || "");
+        } else if (mqttField === "essentialIntervalS") {
+          state.mqttDraftEssentialIntervalS = String(event.target.value || "");
+        } else if (mqttField === "standardIntervalS") {
+          state.mqttDraftStandardIntervalS = String(event.target.value || "");
+        } else if (mqttField === "retainSnapshots") {
+          state.mqttDraftRetainSnapshots = Boolean(event.target.checked);
+        }
         return;
       }
 
@@ -5228,6 +5592,36 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
         return;
       }
       commitDateTime(field, normalized);
+      return;
+    }
+
+    const mqttField = event.target.dataset.oqMqttField;
+    if (!mqttField) {
+      return;
+    }
+
+    state.mqttNotice = "";
+    state.mqttError = "";
+    if (mqttField === "enabled") {
+      state.mqttDraftEnabled = Boolean(event.target.checked);
+    } else if (mqttField === "broker") {
+      state.mqttDraftBroker = String(event.target.value || "");
+    } else if (mqttField === "port") {
+      state.mqttDraftPort = String(event.target.value || "");
+    } else if (mqttField === "username") {
+      state.mqttDraftUsername = String(event.target.value || "");
+    } else if (mqttField === "password") {
+      state.mqttDraftPassword = String(event.target.value || "");
+    } else if (mqttField === "baseTopic") {
+      state.mqttDraftBaseTopic = String(event.target.value || "");
+    } else if (mqttField === "publishProfile") {
+      state.mqttDraftPublishProfile = String(event.target.value || "");
+    } else if (mqttField === "essentialIntervalS") {
+      state.mqttDraftEssentialIntervalS = String(event.target.value || "");
+    } else if (mqttField === "standardIntervalS") {
+      state.mqttDraftStandardIntervalS = String(event.target.value || "");
+    } else if (mqttField === "retainSnapshots") {
+      state.mqttDraftRetainSnapshots = Boolean(event.target.checked);
     }
   }
 
@@ -5368,6 +5762,14 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       return;
     }
 
+    if (action === "open-mqtt-modal") {
+      state.systemModal = "mqtt";
+      syncMqttDraftsFromStatus();
+      render();
+      void refreshMqttStatus();
+      return;
+    }
+
     if (action === "copy-api-security-key") {
       void copyApiSecurityKey();
       return;
@@ -5385,6 +5787,11 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
 
     if (action === "disable-api-security") {
       void commitDisableApiSecurity();
+      return;
+    }
+
+    if (action === "save-mqtt-config") {
+      void commitMqttChanges();
       return;
     }
 
@@ -5500,6 +5907,8 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       state.authError = "";
       state.apiSecurityNotice = "";
       state.apiSecurityError = "";
+      state.mqttNotice = "";
+      state.mqttError = "";
       clearSettingsBackupDraft();
       render();
       return;
@@ -7911,6 +8320,7 @@ function renderWebServerLogsModal() {
                 renderSettingsQuickStartSection(),
                 renderSettingsTrendSection(),
                 renderSettingsAccessSecuritySection(),
+                renderSettingsMqttSection(),
                 renderSettingsBackupSection(),
                 renderSettingsDiagnosticsSection(),
               ];
@@ -8118,6 +8528,26 @@ function renderWebServerLogsModal() {
           if (copyNode && copyNode.textContent !== statusCopy) {
             copyNode.textContent = statusCopy;
           }
+        }
+        if (button) {
+          button.disabled = false;
+        }
+      });
+    }
+
+    const mqttRows = stack.querySelectorAll('[data-oq-mqtt-item]');
+    if (mqttRows.length) {
+      mqttRows.forEach((row) => {
+        const valueNode = row.querySelector(".oq-settings-quickstart-status-value");
+        const copyNode = row.querySelector(".oq-settings-quickstart-status-copy");
+        const button = row.querySelector('button[data-oq-action="open-mqtt-modal"]');
+        const statusLabel = getMqttStatusLabel();
+        const statusCopy = getMqttStatusDetail();
+        if (valueNode && valueNode.textContent !== statusLabel) {
+          valueNode.textContent = statusLabel;
+        }
+        if (copyNode && copyNode.textContent !== statusCopy) {
+          copyNode.textContent = statusCopy;
         }
         if (button) {
           button.disabled = false;
@@ -8926,6 +9356,32 @@ function renderWebServerLogsModal() {
                 Aanpassen
               </button>
             </div>
+          </div>
+        </div>
+      `,
+    );
+  }
+
+  function renderSettingsMqttSection() {
+    return renderSettingsSection(
+      "Integratie",
+      "MQTT",
+      "Stel hier de broker in voor de compacte publish-only telemetry-export van OpenQuatt.",
+      `
+        <div class="oq-settings-quickstart-status" data-oq-mqtt-item="mqtt">
+          <div class="oq-settings-quickstart-status-row">
+            <div>
+              <p class="oq-settings-quickstart-status-label">MQTT-status</p>
+              <strong class="oq-settings-quickstart-status-value">${escapeHtml(getMqttStatusLabel())}</strong>
+              <p class="oq-settings-quickstart-status-copy">${escapeHtml(getMqttStatusDetail())}</p>
+            </div>
+            <button
+              class="oq-helper-button oq-helper-button--ghost"
+              type="button"
+              data-oq-action="open-mqtt-modal"
+            >
+              Aanpassen
+            </button>
           </div>
         </div>
       `,

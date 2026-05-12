@@ -25,6 +25,16 @@ web_auth_bootstrap_username: "admin"                  # Bootstrap username used 
 web_auth_bootstrap_password: "openquatt"              # Bootstrap password used to keep web auth support compiled in.
 web_auth_default_enabled: false                       # Web auth is opt-in by default for new installs.
 web_auth_recovery_pin: "GPIO0"                        # Temporary recovery input pin used to arm the setup window.
+mqtt_bootstrap_broker: ""                             # Bootstrap MQTT broker kept empty until the web app stores one.
+mqtt_bootstrap_port: "1883"                           # Default MQTT broker port used for bootstrap/runtime storage.
+mqtt_bootstrap_username: ""                           # Bootstrap MQTT username.
+mqtt_bootstrap_password: ""                           # Bootstrap MQTT password.
+mqtt_base_topic: "openquatt"                          # Base topic for compact MQTT telemetry snapshots.
+mqtt_default_enabled: false                           # MQTT starts disabled until the user enables it explicitly.
+mqtt_default_publish_profile: "standard"              # MQTT publish profile: off / essential / standard.
+mqtt_essential_interval_s: "10"                       # Publish interval for essential state telemetry [s].
+mqtt_standard_interval_s: "30"                        # Publish interval for standard state + heat pump telemetry [s].
+mqtt_retain_snapshots: "true"                         # Retain schema/state/heat_pumps snapshots on the broker.
 
 # ----------------------------
 # HARDWARE

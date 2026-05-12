@@ -174,7 +174,7 @@ esp-app.oq-native-app.oq-native-app--collapsed {
   }
 
   .oq-helper-modal--scrollable {
-    max-height: calc(100svh - 24px);
+    max-height: calc(100dvh - 24px);
   }
 
   .oq-helper-modal-grid {
