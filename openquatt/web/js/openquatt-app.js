@@ -2596,8 +2596,8 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     const passwordValue = String(state.mqttDraftPassword || "");
 
     return `
-      <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
-        <section class="oq-helper-modal oq-helper-modal--wide" role="dialog" aria-modal="true" aria-labelledby="oq-mqtt-modal-title">
+      <div class="oq-helper-modal-backdrop oq-helper-modal-backdrop--top${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
+        <section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--scrollable" role="dialog" aria-modal="true" aria-labelledby="oq-mqtt-modal-title">
           <div class="oq-helper-modal-head">
             <div>
               <p class="oq-helper-modal-kicker">Integratie</p>
@@ -2614,31 +2614,35 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
             ${renderLoginStatusRow("Topic prefix", String(status.topic_prefix || "").trim() || "openquatt", "Alle MQTT-topics krijgen deze prefix.")}
             ${renderLoginStatusRow("Gebruiker", String(status.username || "").trim() || "Anoniem", status.password_set ? "Er is een wachtwoord opgeslagen." : "Er is nog geen wachtwoord opgeslagen.")}
           </div>
-          <label class="oq-helper-modal-channel">
-            <span class="oq-helper-modal-label">MQTT inschakelen</span>
-            <span class="oq-settings-quickstart-status-copy">Als dit aan staat, probeert OpenQuatt direct met de broker te verbinden.</span>
-            <input type="checkbox" data-oq-mqtt-field="enabled" ${state.mqttDraftEnabled ? "checked" : ""} ${busy ? "disabled" : ""}>
-          </label>
-          <label class="oq-helper-modal-channel">
-            <span class="oq-helper-modal-label">Broker</span>
-            <input class="oq-helper-input" type="text" inputmode="url" autocomplete="off" spellcheck="false" data-oq-mqtt-field="broker" value="${escapeHtml(brokerValue)}" placeholder="mqtt.example.local" ${busy ? "disabled" : ""}>
-          </label>
-          <label class="oq-helper-modal-channel">
-            <span class="oq-helper-modal-label">Poort</span>
-            <input class="oq-helper-input" type="number" min="1" max="65535" step="1" inputmode="numeric" autocomplete="off" data-oq-mqtt-field="port" value="${escapeHtml(String(state.mqttDraftPort || "1883"))}" ${busy ? "disabled" : ""}>
-          </label>
-          <label class="oq-helper-modal-channel">
-            <span class="oq-helper-modal-label">Gebruiker</span>
-            <input class="oq-helper-input" type="text" autocomplete="off" spellcheck="false" data-oq-mqtt-field="username" value="${escapeHtml(usernameValue)}" placeholder="optioneel" ${busy ? "disabled" : ""}>
-          </label>
-          <label class="oq-helper-modal-channel">
-            <span class="oq-helper-modal-label">Wachtwoord</span>
-            <input class="oq-helper-input" type="password" autocomplete="new-password" data-oq-mqtt-field="password" value="${escapeHtml(passwordValue)}" placeholder="${status.password_set ? "Leeg laten om te behouden" : "optioneel"}" ${busy ? "disabled" : ""}>
-          </label>
-          <label class="oq-helper-modal-channel">
-            <span class="oq-helper-modal-label">Topic prefix</span>
-            <input class="oq-helper-input" type="text" autocomplete="off" spellcheck="false" data-oq-mqtt-field="topicPrefix" value="${escapeHtml(topicPrefixValue)}" placeholder="openquatt" ${busy ? "disabled" : ""}>
-          </label>
+          <div class="oq-helper-modal-form-grid">
+            <label class="oq-helper-modal-channel oq-helper-modal-channel--toggle oq-helper-modal-channel--span-2">
+              <span class="oq-helper-modal-toggle-copy">
+                <span class="oq-helper-modal-label">MQTT inschakelen</span>
+                <span class="oq-helper-modal-subvalue">Als dit aan staat, probeert OpenQuatt direct met de broker te verbinden.</span>
+              </span>
+              <input type="checkbox" data-oq-mqtt-field="enabled" ${state.mqttDraftEnabled ? "checked" : ""} ${busy ? "disabled" : ""}>
+            </label>
+            <label class="oq-helper-modal-channel">
+              <span class="oq-helper-modal-label">Broker</span>
+              <input class="oq-helper-input" type="text" inputmode="url" autocomplete="off" spellcheck="false" data-oq-mqtt-field="broker" value="${escapeHtml(brokerValue)}" placeholder="mqtt.example.local" ${busy ? "disabled" : ""}>
+            </label>
+            <label class="oq-helper-modal-channel">
+              <span class="oq-helper-modal-label">Poort</span>
+              <input class="oq-helper-input" type="number" min="1" max="65535" step="1" inputmode="numeric" autocomplete="off" data-oq-mqtt-field="port" value="${escapeHtml(String(state.mqttDraftPort || "1883"))}" ${busy ? "disabled" : ""}>
+            </label>
+            <label class="oq-helper-modal-channel">
+              <span class="oq-helper-modal-label">Gebruiker</span>
+              <input class="oq-helper-input" type="text" autocomplete="off" spellcheck="false" data-oq-mqtt-field="username" value="${escapeHtml(usernameValue)}" placeholder="optioneel" ${busy ? "disabled" : ""}>
+            </label>
+            <label class="oq-helper-modal-channel">
+              <span class="oq-helper-modal-label">Wachtwoord</span>
+              <input class="oq-helper-input" type="password" autocomplete="new-password" data-oq-mqtt-field="password" value="${escapeHtml(passwordValue)}" placeholder="${status.password_set ? "Leeg laten om te behouden" : "optioneel"}" ${busy ? "disabled" : ""}>
+            </label>
+            <label class="oq-helper-modal-channel oq-helper-modal-channel--span-2">
+              <span class="oq-helper-modal-label">Topic prefix</span>
+              <input class="oq-helper-input" type="text" autocomplete="off" spellcheck="false" data-oq-mqtt-field="topicPrefix" value="${escapeHtml(topicPrefixValue)}" placeholder="openquatt" ${busy ? "disabled" : ""}>
+            </label>
+          </div>
           <p class="oq-helper-modal-note">Laat het wachtwoord leeg als je alleen broker, prefix of gebruikersnaam wijzigt. De opgeslagen waarde blijft dan behouden.</p>
           <div class="oq-helper-modal-actions">
             <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="close-system-modal" ${busy ? "disabled" : ""}>Gereed</button>
