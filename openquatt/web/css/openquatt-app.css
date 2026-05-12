@@ -4377,6 +4377,23 @@ body.oq-surface-native {
   background: rgba(139, 92, 246, 0.08);
 }
 
+.oq-overview-controlpanel-meta-item--loading strong,
+.oq-overview-controlpanel-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.oq-overview-controlpanel-spinner {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 2px solid rgba(249, 115, 22, 0.22);
+  border-top-color: #f97316;
+  animation: oq-reconnect-spin 0.9s linear infinite;
+  flex: 0 0 auto;
+}
+
 .oq-overview-controlpanel-actions {
   display: flex;
   align-items: center;
@@ -4433,11 +4450,16 @@ body.oq-surface-native {
 
 .oq-overview-controlpanel-segment:disabled,
 .oq-overview-controlpanel-segment.is-busy,
+.oq-overview-controlpanel-segment--loading,
 .oq-overview-controlpanel-toggle:disabled,
 .oq-overview-controlpanel-toggle.is-busy {
   cursor: wait;
   opacity: 0.75;
   transform: none;
+}
+
+.oq-overview-controlpanel-segment--loading {
+  gap: 8px;
 }
 
 .oq-overview-controlpanel-toggle {

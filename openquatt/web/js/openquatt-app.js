@@ -10342,6 +10342,7 @@ function renderWebServerLogsModal() {
     const openquattEnabled = isEntityActive("openquattEnabled");
     const openquattResumeAt = getEntityValue("openquattResumeAt");
     const openquattResumeScheduled = hasOpenQuattResumeSchedule(openquattResumeAt);
+    const openquattResumeLoading = (state.loadingEntities || state.entitySyncInFlight) && !hasEntity("openquattResumeAt");
     const manualCoolingEnabled = isEntityActive("manualCoolingEnable");
     const silentModeOverride = String(getEntityValue("silentModeOverride") || "Schedule");
     const coolingBlocked = !isEntityActive("coolingPermitted");
@@ -10382,7 +10383,7 @@ function renderWebServerLogsModal() {
     }
 
     return [
-      { key: "openquattEnabled", label: "Openquatt regeling", status: openquattEnabled ? "Actief" : "Tijdelijk uit", copy: openquattEnabled ? "Verwarmen en koelen worden automatisch geregeld." : openquattResumeScheduled ? "Verwarming en koeling zijn tijdelijk uitgeschakeld. Beveiligingen blijven actief." : "Verwarming en koeling zijn uitgeschakeld. Beveiligingen blijven actief.", tone: openquattEnabled ? "green" : "orange", kind: "openquatt-control", meta: openquattEnabled ? [] : [{ label: openquattResumeScheduled ? "Hervat automatisch" : "Hervatten", value: openquattResumeScheduled ? formatOpenQuattResumeDateTime(openquattResumeAt, true) : "Handmatig", tone: openquattResumeScheduled ? "orange" : "neutral" }] },
+      { key: "openquattEnabled", label: "Openquatt regeling", status: openquattEnabled ? "Actief" : "Tijdelijk uit", copy: openquattEnabled ? "Verwarmen en koelen worden automatisch geregeld." : openquattResumeScheduled ? "Verwarming en koeling zijn tijdelijk uitgeschakeld. Beveiligingen blijven actief." : "Verwarming en koeling zijn uitgeschakeld. Beveiligingen blijven actief.", tone: openquattEnabled ? "green" : "orange", kind: "openquatt-control", meta: openquattEnabled ? [] : [openquattResumeLoading ? { label: "Hervatten", value: "Laden…", tone: "neutral", loading: true } : { label: openquattResumeScheduled ? "Hervat automatisch" : "Hervatten", value: openquattResumeScheduled ? formatOpenQuattResumeDateTime(openquattResumeAt, true) : "Handmatig", tone: openquattResumeScheduled ? "orange" : "neutral" }] },
       { key: "manualCoolingEnable", label: "Koeling", status: coolingStatus, copy: coolingCopy, buttonLabel: manualCoolingEnabled ? "Zet uit" : "Zet aan", nextState: manualCoolingEnabled ? "off" : "on", tone: manualCoolingEnabled ? (coolingModeActive ? "blue" : "sky") : "neutral" },
       { key: "silentModeOverride", label: "Stille modus", status: silentStatus, copy: silentCopy, tone: silentTone, kind: "select", selectedOption: silentModeOverride, settingsAction: true, options: [{ value: "Off", label: "Uit" }, { value: "On", label: "Aan" }, { value: "Schedule", label: "Schema" }] },
     ].filter((card) => hasEntity(card.key));
@@ -10392,36 +10393,50 @@ function renderWebServerLogsModal() {
     return !meta.length ? "" : `
       <div class="oq-overview-controlpanel-meta">
         ${meta.map((item) => `
-          <div class="oq-overview-controlpanel-meta-item oq-overview-controlpanel-meta-item--${escapeHtml(item.tone || "neutral")}">
+          <div class="oq-overview-controlpanel-meta-item oq-overview-controlpanel-meta-item--${escapeHtml(item.tone || "neutral")}${item.loading ? " oq-overview-controlpanel-meta-item--loading" : ""}">
             <span>${escapeHtml(item.label)}</span>
-            <strong>${escapeHtml(item.value)}</strong>
+            <strong>${item.loading ? `
+              <span class="oq-overview-controlpanel-loading">
+                <span class="oq-overview-controlpanel-spinner" aria-hidden="true"></span>
+                <span>${escapeHtml(item.value)}</span>
+              </span>
+            ` : escapeHtml(item.value)}</strong>
           </div>
         `).join("")}
       </div>
     `;
   }
 
-  function renderOverviewControlButton({ className, action, label, busy = false, attrs = "" }) {
+  function renderOverviewControlButton({ className, action, label, busy = false, loading = false, attrs = "" }) {
     return `
       <button
         class="${className}${busy ? " is-busy" : ""}"
         type="button"
-        data-oq-action="${escapeHtml(action)}"
+        ${action ? `data-oq-action="${escapeHtml(action)}"` : ""}
         ${attrs}
-        ${state.busyAction ? "disabled" : ""}
-      >${escapeHtml(busy ? "Bezig..." : label)}</button>
+        ${state.busyAction || loading ? "disabled" : ""}
+      >${loading ? `
+        <span class="oq-overview-controlpanel-loading">
+          <span class="oq-overview-controlpanel-spinner" aria-hidden="true"></span>
+          <span>${escapeHtml(label)}</span>
+        </span>
+      ` : escapeHtml(busy ? "Bezig..." : label)}</button>
     `;
   }
 
   function renderOverviewControlActions(card) {
     if (card.kind === "openquatt-control") {
       const busy = state.busyAction === "openquatt-regulation";
+      const resumeLoading = (state.loadingEntities || state.entitySyncInFlight) && !hasEntity("openquattResumeAt");
       return isEntityActive("openquattEnabled")
         ? `<div class="oq-overview-controlpanel-actions">${renderOverviewControlButton({ className: "oq-overview-controlpanel-toggle", action: "open-openquatt-pause-modal", label: "Tijdelijk uitschakelen", busy })}</div>`
         : `
           <div class="oq-overview-controlpanel-actions oq-overview-controlpanel-actions--split">
             ${renderOverviewControlButton({ className: "oq-overview-controlpanel-toggle", action: "enable-openquatt-now", label: "Nu inschakelen", busy })}
-            ${renderOverviewControlButton({ className: "oq-overview-controlpanel-segment", action: "open-openquatt-pause-modal", label: hasOpenQuattResumeSchedule() ? "Moment wijzigen" : "Automatisch hervatten" })}
+            ${resumeLoading
+              ? renderOverviewControlButton({ className: "oq-overview-controlpanel-segment oq-overview-controlpanel-segment--loading", action: "", label: "Hervatopties laden…", loading: true })
+              : renderOverviewControlButton({ className: "oq-overview-controlpanel-segment", action: "open-openquatt-pause-modal", label: hasOpenQuattResumeSchedule() ? "Moment wijzigen" : "Automatisch hervatten" })
+            }
           </div>
         `;
     }
