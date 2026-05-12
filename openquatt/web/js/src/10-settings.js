@@ -402,6 +402,7 @@
                 renderSettingsQuickStartSection(),
                 renderSettingsTrendSection(),
                 renderSettingsAccessSecuritySection(),
+                renderSettingsMqttSection(),
                 renderSettingsBackupSection(),
                 renderSettingsDiagnosticsSection(),
               ];
@@ -1417,6 +1418,32 @@
                 Aanpassen
               </button>
             </div>
+          </div>
+        </div>
+      `,
+    );
+  }
+
+  function renderSettingsMqttSection() {
+    return renderSettingsSection(
+      "Integratie",
+      "MQTT",
+      "Stel hier de broker in en zet MQTT pas aan zodra de app klaar is met opslaan.",
+      `
+        <div class="oq-settings-quickstart-status" data-oq-mqtt-item="mqtt">
+          <div class="oq-settings-quickstart-status-row">
+            <div>
+              <p class="oq-settings-quickstart-status-label">MQTT-status</p>
+              <strong class="oq-settings-quickstart-status-value">${escapeHtml(getMqttStatusLabel())}</strong>
+              <p class="oq-settings-quickstart-status-copy">${escapeHtml(getMqttStatusDetail())}</p>
+            </div>
+            <button
+              class="oq-helper-button oq-helper-button--ghost"
+              type="button"
+              data-oq-action="open-mqtt-modal"
+            >
+              Aanpassen
+            </button>
           </div>
         </div>
       `,

@@ -1085,6 +1085,69 @@
     `;
   }
 
+  function renderMqttModal() {
+    const status = state.mqttStatus || {};
+    const modalNotice = state.mqttNotice;
+    const busy = state.mqttBusy;
+    const brokerValue = String(state.mqttDraftBroker || "");
+    const topicPrefixValue = String(state.mqttDraftTopicPrefix || "");
+    const usernameValue = String(state.mqttDraftUsername || "");
+    const passwordValue = String(state.mqttDraftPassword || "");
+
+    return `
+      <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
+        <section class="oq-helper-modal oq-helper-modal--wide" role="dialog" aria-modal="true" aria-labelledby="oq-mqtt-modal-title">
+          <div class="oq-helper-modal-head">
+            <div>
+              <p class="oq-helper-modal-kicker">Integratie</p>
+              <h2 class="oq-helper-modal-title" id="oq-mqtt-modal-title">MQTT-configuratie</h2>
+            </div>
+            <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit MQTT-popup" ${busy ? "disabled" : ""}>×</button>
+          </div>
+          <p class="oq-helper-modal-copy">Zet hier de broker, gebruiker en topic-prefix klaar. MQTT blijft uit totdat je het expliciet inschakelt.</p>
+          ${modalNotice ? `<div class="oq-helper-modal-success oq-helper-modal-success--compact" aria-live="polite"><strong>Status</strong><span>${escapeHtml(modalNotice)}</span></div>` : ""}
+          ${state.mqttError ? `<div class="oq-helper-modal-note oq-helper-modal-note--error" aria-live="assertive">${escapeHtml(state.mqttError)}</div>` : ""}
+          <div class="oq-helper-modal-grid">
+            ${renderLoginStatusRow("Status", getMqttStatusLabel(), getMqttStatusDetail())}
+            ${renderLoginStatusRow("Broker", String(status.broker || "").trim() || "Geen broker", status.connected ? "MQTT publiceert en ontvangt via deze broker." : "Nog geen actieve verbinding.")}
+            ${renderLoginStatusRow("Topic prefix", String(status.topic_prefix || "").trim() || "openquatt", "Alle MQTT-topics krijgen deze prefix.")}
+            ${renderLoginStatusRow("Gebruiker", String(status.username || "").trim() || "Anoniem", status.password_set ? "Er is een wachtwoord opgeslagen." : "Er is nog geen wachtwoord opgeslagen.")}
+          </div>
+          <label class="oq-helper-modal-channel">
+            <span class="oq-helper-modal-label">MQTT inschakelen</span>
+            <span class="oq-settings-quickstart-status-copy">Als dit aan staat, probeert OpenQuatt direct met de broker te verbinden.</span>
+            <input type="checkbox" data-oq-mqtt-field="enabled" ${state.mqttDraftEnabled ? "checked" : ""} ${busy ? "disabled" : ""}>
+          </label>
+          <label class="oq-helper-modal-channel">
+            <span class="oq-helper-modal-label">Broker</span>
+            <input class="oq-helper-input" type="text" inputmode="url" autocomplete="off" spellcheck="false" data-oq-mqtt-field="broker" value="${escapeHtml(brokerValue)}" placeholder="mqtt.example.local" ${busy ? "disabled" : ""}>
+          </label>
+          <label class="oq-helper-modal-channel">
+            <span class="oq-helper-modal-label">Poort</span>
+            <input class="oq-helper-input" type="number" min="1" max="65535" step="1" inputmode="numeric" autocomplete="off" data-oq-mqtt-field="port" value="${escapeHtml(String(state.mqttDraftPort || "1883"))}" ${busy ? "disabled" : ""}>
+          </label>
+          <label class="oq-helper-modal-channel">
+            <span class="oq-helper-modal-label">Gebruiker</span>
+            <input class="oq-helper-input" type="text" autocomplete="off" spellcheck="false" data-oq-mqtt-field="username" value="${escapeHtml(usernameValue)}" placeholder="optioneel" ${busy ? "disabled" : ""}>
+          </label>
+          <label class="oq-helper-modal-channel">
+            <span class="oq-helper-modal-label">Wachtwoord</span>
+            <input class="oq-helper-input" type="password" autocomplete="new-password" data-oq-mqtt-field="password" value="${escapeHtml(passwordValue)}" placeholder="${status.password_set ? "Leeg laten om te behouden" : "optioneel"}" ${busy ? "disabled" : ""}>
+          </label>
+          <label class="oq-helper-modal-channel">
+            <span class="oq-helper-modal-label">Topic prefix</span>
+            <input class="oq-helper-input" type="text" autocomplete="off" spellcheck="false" data-oq-mqtt-field="topicPrefix" value="${escapeHtml(topicPrefixValue)}" placeholder="openquatt" ${busy ? "disabled" : ""}>
+          </label>
+          <p class="oq-helper-modal-note">Laat het wachtwoord leeg als je alleen broker, prefix of gebruikersnaam wijzigt. De opgeslagen waarde blijft dan behouden.</p>
+          <div class="oq-helper-modal-actions">
+            <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="close-system-modal" ${busy ? "disabled" : ""}>Gereed</button>
+            <button class="oq-helper-button oq-helper-button--primary" type="button" data-oq-action="save-mqtt-config" ${busy ? "disabled" : ""}>${state.mqttDraftEnabled ? "Opslaan en verbinden" : "Opslaan"}</button>
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
   function getConnectivityModalRows() {
     const rows = [
       ["Netwerkstatus", getConnectivityStatus()],
@@ -1584,6 +1647,10 @@
 
     if (state.systemModal === "api-security") {
       return renderApiSecurityModal();
+    }
+
+    if (state.systemModal === "mqtt") {
+      return renderMqttModal();
     }
 
     if (state.systemModal === "connectivity") {

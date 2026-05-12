@@ -1,0 +1,32 @@
+# ==============================================================================
+# OpenQuatt - MQTT Runtime / Publish-Only Setup
+# ==============================================================================
+# MQTT is compiled in, but stays disabled until the web app stores broker data.
+# ==============================================================================
+
+external_components:
+  - source:
+      type: local
+      path: components
+    components: [openquatt_mqtt_config]
+
+mqtt:
+  id: oq_mqtt_client
+  broker: "${mqtt_bootstrap_broker}"
+  port: ${mqtt_bootstrap_port}
+  username: "${mqtt_bootstrap_username}"
+  password: "${mqtt_bootstrap_password}"
+  topic_prefix: "${mqtt_bootstrap_topic_prefix}"
+  discovery: true
+  discover_ip: false
+  enable_on_boot: false
+
+openquatt_mqtt_config:
+  id: oq_mqtt_config
+  mqtt_id: oq_mqtt_client
+  bootstrap_broker: "${mqtt_bootstrap_broker}"
+  bootstrap_port: ${mqtt_bootstrap_port}
+  bootstrap_username: "${mqtt_bootstrap_username}"
+  bootstrap_password: "${mqtt_bootstrap_password}"
+  bootstrap_topic_prefix: "${mqtt_bootstrap_topic_prefix}"
+  default_enabled: ${mqtt_default_enabled}
