@@ -787,6 +787,9 @@ body.oq-surface-native {
   padding: 24px;
   background: rgba(15, 23, 42, 0.42);
   backdrop-filter: blur(8px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .oq-helper-modal-backdrop--loading {
@@ -794,6 +797,7 @@ body.oq-surface-native {
 }
 
 .oq-helper-modal {
+  box-sizing: border-box;
   width: min(100%, 560px);
   border: 1px solid rgba(226, 232, 240, 0.9);
   border-radius: calc(var(--oq-helper-radius-lg) + 4px);
@@ -823,13 +827,24 @@ body.oq-surface-native {
 }
 
 .oq-helper-modal--scrollable {
-  max-height: calc(100svh - 48px);
-  overflow: auto;
+  min-height: 0;
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  overflow-anchor: none;
 }
 
 .oq-helper-modal-backdrop--quickstart {
   align-items: flex-start;
   padding-top: 24px;
+}
+
+.oq-helper-modal-backdrop--top {
+  align-items: flex-start;
+  padding-top: 24px;
+  padding-bottom: 24px;
 }
 
 .oq-helper-shell--dark .oq-helper-modal,
@@ -1176,11 +1191,26 @@ body.oq-surface-native {
   gap: 10px;
 }
 
+.oq-mqtt-modal--loading .oq-helper-modal-grid {
+  min-height: 268px;
+}
+
+.oq-mqtt-status-grid .oq-helper-modal-row {
+  display: grid;
+  align-content: start;
+  min-height: 74px;
+  padding: 10px 12px;
+}
+
 .oq-helper-modal-row {
   padding: 12px 14px;
   border: 1px solid rgba(229, 231, 235, 0.92);
   border-radius: var(--oq-helper-radius-md);
   background: rgba(255, 255, 255, 0.84);
+}
+
+.oq-helper-modal-row--loading {
+  min-height: 72px;
 }
 
 .oq-helper-shell--dark .oq-helper-modal-row,
@@ -1208,6 +1238,12 @@ body.oq-surface-native {
   font-weight: 700;
 }
 
+.oq-helper-modal-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .oq-helper-shell--dark .oq-helper-modal-value,
 .oq-helper-modal-backdrop--dark .oq-helper-modal-value {
   color: #f8fafc;
@@ -1217,6 +1253,143 @@ body.oq-surface-native {
   display: grid;
   gap: 8px;
   margin-top: 14px;
+}
+
+.oq-mqtt-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.oq-mqtt-form--loading {
+  min-height: 522px;
+}
+
+.oq-mqtt-section {
+  display: grid;
+  gap: 6px;
+}
+
+.oq-mqtt-section-title {
+  margin: 0;
+  color: var(--oq-helper-faint);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.oq-mqtt-form-grid {
+  margin-top: 0;
+}
+
+.oq-mqtt-field,
+.oq-mqtt-setting-card {
+  min-height: 0;
+}
+
+.oq-mqtt-setting-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(132px, 170px);
+  align-items: center;
+  gap: 10px;
+  min-height: 60px;
+  margin-top: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--oq-helper-line);
+  border-radius: var(--oq-helper-radius-md);
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.oq-mqtt-setting-card.oq-helper-modal-channel--span-2 {
+  min-height: 58px;
+}
+
+.oq-mqtt-setting-card--toggle {
+  display: grid;
+}
+
+.oq-mqtt-setting-card input[type="checkbox"] {
+  justify-self: end;
+}
+
+.oq-mqtt-setting-card .oq-helper-select {
+  width: 100%;
+  min-height: 36px;
+}
+
+.oq-helper-shell--dark .oq-mqtt-setting-card,
+.oq-helper-modal-backdrop--dark .oq-mqtt-setting-card {
+  border-color: rgba(71, 85, 105, 0.48);
+  background: rgba(24, 35, 49, 0.78);
+}
+
+.oq-helper-modal-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+  margin-top: 14px;
+}
+
+.oq-helper-modal-form-grid .oq-helper-modal-channel {
+  margin-top: 0;
+}
+
+.oq-helper-modal-channel--span-2 {
+  grid-column: 1 / -1;
+}
+
+.oq-helper-modal-channel--toggle {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--oq-helper-line);
+  border-radius: var(--oq-helper-radius-md);
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.oq-helper-shell--dark .oq-helper-modal-channel--toggle,
+.oq-helper-modal-backdrop--dark .oq-helper-modal-channel--toggle {
+  border-color: rgba(71, 85, 105, 0.48);
+  background: rgba(24, 35, 49, 0.78);
+}
+
+.oq-helper-modal-toggle-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.oq-helper-modal-channel--toggle input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+}
+
+.oq-mqtt-setting-card.oq-helper-modal-channel--toggle,
+.oq-mqtt-setting-card {
+  display: grid;
+}
+
+.oq-mqtt-setting-card.oq-helper-modal-channel--toggle input[type="checkbox"] {
+  justify-self: end;
+  margin-top: 0;
+}
+
+.oq-mqtt-setting-card .oq-helper-input,
+.oq-mqtt-setting-card .oq-helper-select,
+.oq-mqtt-field .oq-helper-input {
+  min-height: 40px;
+  font-size: 0.95rem;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.oq-mqtt-setting-card .oq-helper-select {
+  min-height: 36px;
 }
 
 .oq-helper-modal-channel select {
@@ -1283,6 +1456,23 @@ body.oq-surface-native {
 
   .oq-helper-modal-inline .oq-helper-button {
     width: 100%;
+  }
+
+  .oq-helper-modal-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .oq-mqtt-setting-card.oq-helper-modal-channel--toggle,
+  .oq-mqtt-setting-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .oq-mqtt-setting-card.oq-helper-modal-channel--toggle input[type="checkbox"] {
+    justify-self: start;
+  }
+
+  .oq-helper-modal-channel--span-2 {
+    grid-column: auto;
   }
 }
 

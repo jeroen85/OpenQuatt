@@ -1,0 +1,93 @@
+# ==============================================================================
+# OpenQuatt - MQTT Runtime / Publish-Only Setup
+# ==============================================================================
+# Experimental telemetry export layer; Home Assistant stays on native ESPHome API.
+# MQTT is compiled in, but stays disabled until the web app stores broker data.
+# ==============================================================================
+
+external_components:
+  - source:
+      type: local
+      path: components
+    components:
+      - openquatt_mqtt_config
+      - openquatt_mqtt_publisher
+
+mqtt:
+  id: oq_mqtt_client
+  broker: "${mqtt_bootstrap_broker}"
+  port: ${mqtt_bootstrap_port}
+  username: "${mqtt_bootstrap_username}"
+  password: "${mqtt_bootstrap_password}"
+  topic_prefix: null
+  discovery: false
+  discover_ip: false
+  log_topic: null
+  enable_on_boot: false
+
+openquatt_mqtt_config:
+  id: oq_mqtt_config
+  mqtt_id: oq_mqtt_client
+  bootstrap_broker: "${mqtt_bootstrap_broker}"
+  bootstrap_port: ${mqtt_bootstrap_port}
+  bootstrap_username: "${mqtt_bootstrap_username}"
+  bootstrap_password: "${mqtt_bootstrap_password}"
+  bootstrap_base_topic: "${mqtt_base_topic}"
+  default_enabled: ${mqtt_default_enabled}
+  default_publish_profile: "${mqtt_default_publish_profile}"
+  default_essential_interval_s: ${mqtt_essential_interval_s}
+  default_standard_interval_s: ${mqtt_standard_interval_s}
+  default_diagnostic_interval_s: ${mqtt_diagnostic_interval_s}
+  default_retain_snapshots: ${mqtt_retain_snapshots}
+
+openquatt_mqtt_publisher:
+  id: oq_mqtt_publisher
+  config_id: oq_mqtt_config
+  has_secondary_hp: ${ot_secondary_present}
+  control_mode_text_sensor: oq_control_mode_label
+  strategy_text_sensor: heating_strategy_status
+  heat_request_binary_sensor: oq_strategy_heat_request_active_sensor
+  cooling_request_binary_sensor: cooling_request_active
+  demand_sensor: oq_demand_filtered_sensor
+  outside_temp_sensor: outside_temp_selected
+  room_temp_sensor: room_temp_selected
+  room_setpoint_sensor: room_setpoint_selected
+  supply_temp_sensor: oq_system_supply_temp
+  supply_target_sensor: oq_strategy_supply_target_temp_sensor
+  flow_sensor: flow_rate_selected
+  total_power_input_sensor: oq_total_power_input
+  total_heat_power_sensor: oq_total_heat_power
+  total_cop_sensor: oq_total_cop
+  lowflow_fault_binary_sensor: oq_lowflow_fault_active_bs
+  strategy_phase_text_sensor: oq_strategy_phase_text
+  strategy_debug_state_text_sensor: oq_strategy_debug_state
+  request_reason_text_sensor: oq_request_reason
+  heating_debug_state_text_sensor: oq_heating_debug_state
+  duo_optimizer_reason_text_sensor: oq_duo_optimizer_reason
+  flow_control_mode_select: oq_flow_control_mode
+  flow_mode_text_sensor: oq_flow_mode
+  flow_mismatch_binary_sensor: oq_flow_mismatch
+  commissioning_status_text_sensor: oq_commissioning_status
+  flow_autotune_status_text_sensor: oq_flow_autotune_status
+  firmware_update_status_text_sensor: oq_firmware_update_status
+  firmware_update_progress_sensor: oq_firmware_update_progress
+  hp1_working_mode_sensor: hp1_working_mode
+  hp1_working_mode_label_text_sensor: hp1_working_mode_label
+  hp1_compressor_level_sensor: oq_hp1_compressor_level_sensor
+  hp1_power_input_sensor: hp1_power_input
+  hp1_heat_power_sensor: hp1_heat_power
+  hp1_flow_sensor: hp1_flow
+  hp1_water_in_temp_sensor: hp1_water_in_temp
+  hp1_water_out_temp_sensor: hp1_water_out_temp
+  hp1_defrost_binary_sensor: hp1_defrost
+  hp1_fault_binary_sensor: hp1_ot_fault_active
+  hp2_working_mode_sensor: ${secondary_hp_id}_working_mode
+  hp2_working_mode_label_text_sensor: ${secondary_hp_id}_working_mode_label
+  hp2_compressor_level_sensor: oq_hp2_compressor_level_sensor
+  hp2_power_input_sensor: ${secondary_hp_id}_power_input
+  hp2_heat_power_sensor: ${secondary_hp_id}_heat_power
+  hp2_flow_sensor: ${secondary_hp_id}_flow
+  hp2_water_in_temp_sensor: ${secondary_hp_id}_water_in_temp
+  hp2_water_out_temp_sensor: ${secondary_hp_id}_water_out_temp
+  hp2_defrost_binary_sensor: ${secondary_hp_id}_defrost
+  hp2_fault_binary_sensor: ${secondary_hp_id}_ot_fault_active

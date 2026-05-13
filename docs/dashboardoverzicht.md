@@ -125,4 +125,5 @@ Dat is belangrijk, omdat er meerdere bronnen mogelijk zijn voor dezelfde meting.
 
 - Uitleg van verwarmen en koelen: [Verwarmen en koelen uitgelegd](verwarmen-en-koelen.md)
 - Problemen oplossen: [Problemen oplossen en afstellen](diagnose-en-afstelling.md)
+- MQTT-integratie: [MQTT integratie](mqtt.md)
 - Technische verdieping: [Instellingen en meetwaarden](instellingen-en-meetwaarden.md)

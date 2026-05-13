@@ -134,5 +134,6 @@ Te veel aanpassen houdt onrust vaak juist in stand.
 ## Verder lezen
 
 - Uitleg van de basis: [Verwarmen en koelen uitgelegd](verwarmen-en-koelen.md)
+- MQTT-integratie: [MQTT integratie](mqtt.md)
 - Dashboardroute: [Dashboard gebruiken](dashboardoverzicht.md)
 - Technische verdieping: [Instellingen en meetwaarden](instellingen-en-meetwaarden.md) en [Regelgedrag van OpenQuatt](regelgedrag-van-openquatt.md)
