@@ -971,7 +971,7 @@
     if (!status) {
       return "We halen de huidige API-beveiliging op.";
     }
-    if (status.enabled !== status.transport_active) {
+    if (status.pending_restart) {
       return "Deze wijziging wordt actief na herstart. Je kunt de sleutel hier bekijken, kopiëren of vernieuwen.";
     }
     if (status.transport_active === true) {
@@ -988,7 +988,7 @@
     if (!status) {
       return "Laden...";
     }
-    return status.enabled ? "Uitschakelen en herstarten" : status.key ? "Inschakelen en herstarten" : "Genereer en herstart";
+    return status.enabled ? "Uitschakelen" : "Inschakelen";
   }
 
   function getApiSecurityRotateLabel() {
@@ -1018,6 +1018,7 @@
     const status = state.apiSecurityStatus || {};
     const enabled = status.enabled === true;
     const hasKey = Boolean(status.key);
+    const restartPending = Boolean(status.pending_restart);
     const modalNotice = state.apiSecurityNotice;
     const errorMarkup = state.apiSecurityError
       ? `<div class="oq-helper-modal-note oq-helper-modal-note--error" aria-live="assertive">${escapeHtml(state.apiSecurityError)}</div>`
@@ -1052,17 +1053,19 @@
                 ${escapeHtml(getApiSecurityToggleLabel())}
               </button>
             </div>
-              <div class="oq-settings-api-security-key">
+            <div class="oq-settings-api-security-key">
               <div class="oq-settings-field-head">
                 <h3>API-sleutel</h3>
               </div>
-              <p class="oq-settings-action-note">${escapeHtml(status.enabled === status.transport_active
+              <p class="oq-settings-action-note">${escapeHtml(restartPending
                 ? (hasKey
-                    ? "Gebruik deze sleutel in Home Assistant voor de ESPHome-integratie."
+                    ? "Deze sleutel is opgeslagen. Kopieer hem nu en kies daarna Opslaan en herstarten."
                     : "Inschakelen maakt direct een nieuwe sleutel aan. Deze wijziging wordt actief na herstart.")
-                : (status.enabled
-                    ? "De sleutel is opgeslagen. OpenQuatt start opnieuw op om API-encryptie in te schakelen."
-                    : "De sleutel blijft opgeslagen. OpenQuatt start opnieuw op om API-encryptie uit te schakelen."))}</p>
+                : (status.transport_active
+                    ? "Gebruik deze sleutel in Home Assistant voor de ESPHome-integratie."
+                    : status.key
+                      ? "De sleutel blijft opgeslagen, maar de native API staat nu open op je lokale netwerk."
+                      : "Er is nog geen API-sleutel opgeslagen."))}</p>
               ${hasKey ? `<div class="oq-settings-api-security-key-row"><div class="oq-settings-api-security-key-value">${escapeHtml(status.key)}</div></div>` : ""}
               ${hasKey
                 ? `
@@ -1089,6 +1092,16 @@
             </div>
           </div>
           <div class="oq-helper-modal-actions">
+            ${restartPending ? `
+              <button
+                class="oq-helper-button oq-helper-button--primary"
+                type="button"
+                data-oq-action="restart-api-security"
+                ${state.apiSecurityBusy ? "disabled" : ""}
+              >
+                Opslaan en herstarten
+              </button>
+            ` : ""}
             <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="close-system-modal" ${state.apiSecurityBusy ? "disabled" : ""}>Gereed</button>
           </div>
         </section>

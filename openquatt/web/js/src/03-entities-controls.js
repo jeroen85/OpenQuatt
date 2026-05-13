@@ -634,6 +634,7 @@
     return [
       status.enabled ? "on" : "off",
       status.transport_active ? "active" : "idle",
+      status.pending_restart ? "pending" : "settled",
       String(status.key || ""),
       String(status.source || ""),
       String(status.csrf_token || ""),
@@ -732,6 +733,7 @@
       const nextStatus = {
         enabled: Boolean(payload.enabled),
         transport_active: Boolean(payload.transport_active),
+        pending_restart: Boolean(payload.pending_restart),
         key: String(payload.key || ""),
         source: String(payload.source || ""),
         csrf_token: String(payload.csrf_token || ""),
@@ -894,9 +896,10 @@
       if (!response.ok || !payload.ok) {
         throw new Error(payload.error || `HTTP ${response.status}`);
       }
-      state.apiSecurityNotice = "API-beveiliging is opgeslagen. OpenQuatt wordt opnieuw opgestart.";
+      await refreshApiSecurityStatus();
+      state.apiSecurityNotice = "API-beveiliging is opgeslagen. Kopieer de sleutel en kies daarna Opslaan en herstarten.";
+      state.apiSecurityError = "";
       render();
-      await restartForApiSecurityChange();
     } catch (error) {
       state.apiSecurityError = `Inschakelen is mislukt. ${error.message}`;
       render();
@@ -932,9 +935,10 @@
       if (!response.ok || !payload.ok) {
         throw new Error(payload.error || `HTTP ${response.status}`);
       }
-      state.apiSecurityNotice = "API-sleutel is opgeslagen. OpenQuatt wordt opnieuw opgestart.";
+      await refreshApiSecurityStatus();
+      state.apiSecurityNotice = "API-sleutel is opgeslagen. Kopieer de nieuwe sleutel en kies daarna Opslaan en herstarten.";
+      state.apiSecurityError = "";
       render();
-      await restartForApiSecurityChange();
     } catch (error) {
       state.apiSecurityError = `Roteren is mislukt. ${error.message}`;
       render();
@@ -976,9 +980,10 @@
       if (!response.ok || !payload.ok) {
         throw new Error(payload.error || `HTTP ${response.status}`);
       }
-      state.apiSecurityNotice = "API-beveiliging is opgeslagen. OpenQuatt wordt opnieuw opgestart.";
+      await refreshApiSecurityStatus();
+      state.apiSecurityNotice = "API-beveiliging is opgeslagen. Kies daarna Opslaan en herstarten om dit toe te passen.";
+      state.apiSecurityError = "";
       render();
-      await restartForApiSecurityChange();
     } catch (error) {
       state.apiSecurityError = `Uitzetten is mislukt. ${error.message}`;
       render();
@@ -2419,6 +2424,11 @@
 
     if (action === "disable-api-security") {
       void commitDisableApiSecurity();
+      return;
+    }
+
+    if (action === "restart-api-security") {
+      void restartForApiSecurityChange();
       return;
     }
 

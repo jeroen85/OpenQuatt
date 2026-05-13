@@ -1476,7 +1476,7 @@
     if (!status) {
       return "Laden...";
     }
-    if (status.enabled !== status.transport_active) {
+    if (status.pending_restart) {
       return "Herstart nodig";
     }
     if (status.transport_active === true) {
@@ -1493,7 +1493,7 @@
     if (!status) {
       return "API-encryptie wordt geladen.";
     }
-    if (status.enabled !== status.transport_active) {
+    if (status.pending_restart) {
       return status.key
         ? "Deze wijziging wordt actief na herstart. De sleutel blijft opgeslagen voor later gebruik."
         : "Deze wijziging wordt actief na herstart.";
@@ -1513,9 +1513,9 @@
       return "Laden...";
     }
     if (status.enabled) {
-      return "Uitschakelen en herstarten";
+      return "Uitschakelen";
     }
-    return status.key ? "Inschakelen en herstarten" : "Genereer en herstart";
+    return "Inschakelen";
   }
 
   function renderSettingsBackupSection() {

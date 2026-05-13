@@ -22,6 +22,7 @@
     apiSecurity: {
       enabled: false,
       transportActive: false,
+      pendingRestart: false,
       key: "",
       source: "bootstrap-disabled",
       csrfToken: "",
@@ -294,6 +295,7 @@
     return {
       enabled: Boolean(state.apiSecurity.enabled),
       transport_active: Boolean(state.apiSecurity.transportActive),
+      pending_restart: Boolean(state.apiSecurity.pendingRestart),
       key: String(state.apiSecurity.key || ""),
       source: String(state.apiSecurity.source || ""),
       csrf_token: String(state.apiSecurity.csrfToken || ""),
@@ -315,7 +317,7 @@
       state.apiSecurity.key = generateApiKey();
     }
     state.apiSecurity.enabled = true;
-    state.apiSecurity.transportActive = true;
+    state.apiSecurity.pendingRestart = true;
     state.apiSecurity.source = "runtime-enabled";
     refreshApiSecurityToken();
     return makeAuthResponse(200, {
@@ -333,7 +335,7 @@
 
     state.apiSecurity.key = generateApiKey();
     state.apiSecurity.enabled = true;
-    state.apiSecurity.transportActive = true;
+    state.apiSecurity.pendingRestart = true;
     state.apiSecurity.source = "runtime-rotated";
     refreshApiSecurityToken();
     return makeAuthResponse(200, {
@@ -350,7 +352,7 @@
     }
 
     state.apiSecurity.enabled = false;
-    state.apiSecurity.transportActive = false;
+    state.apiSecurity.pendingRestart = true;
     state.apiSecurity.source = "runtime-disabled";
     refreshApiSecurityToken();
     return makeAuthResponse(200, {
@@ -475,6 +477,7 @@
     syncDevMeta();
     setEntity("text_sensor", "Summary", { state: "" });
     setEntity("button", "Check Firmware Updates", { state: "" });
+    setEntity("button", "Restart", { state: "" });
     setEntity("text_sensor", "OpenQuatt Version", { state: "v0.26.0", value: "v0.26.0" });
     setEntity("text_sensor", "OpenQuatt Release Channel", { state: "dev", value: "dev" });
     setEntity("sensor", "Uptime", { value: 0, uom: "h" });
@@ -1472,6 +1475,10 @@
       state.trendFlashNewestAt = Date.now() - (2 * 60 * 1000);
       state.trendFlashWrites += 1;
       state.trendFlashStoredKiB = Math.min(360, Number((state.trendFlashStoredKiB + 0.5).toFixed(1)));
+    } else if (name === "Restart") {
+      state.apiSecurity.transportActive = Boolean(state.apiSecurity.enabled);
+      state.apiSecurity.pendingRestart = false;
+      state.apiSecurity.source = state.apiSecurity.enabled ? "stored" : "bootstrap-disabled";
     }
     updateSummary();
     notifyMockUpdated();
