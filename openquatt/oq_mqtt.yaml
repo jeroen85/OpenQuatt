@@ -1,5 +1,6 @@
 # ==============================================================================
 # OpenQuatt - MQTT Runtime / Publish-Only Setup
+# Experimental telemetry export layer; Home Assistant stays on native ESPHome API.
 # ==============================================================================
 # MQTT is compiled in, but stays disabled until the web app stores broker data.
 # ==============================================================================

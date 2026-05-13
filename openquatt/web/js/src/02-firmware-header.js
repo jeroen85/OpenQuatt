@@ -1108,13 +1108,14 @@
       <div class="oq-helper-modal-backdrop oq-helper-modal-backdrop--top${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
         <section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--scrollable oq-mqtt-modal${loading ? " oq-mqtt-modal--loading" : ""}" role="dialog" aria-modal="true" aria-labelledby="oq-mqtt-modal-title">
           <div class="oq-helper-modal-head">
-            <div>
+            <div class="oq-mqtt-modal-head-copy">
               <p class="oq-helper-modal-kicker">Integratie</p>
+              <span class="oq-settings-section-badge oq-settings-section-badge--experimental">Experimenteel</span>
               <h2 class="oq-helper-modal-title" id="oq-mqtt-modal-title">MQTT-configuratie</h2>
             </div>
             <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit MQTT-popup" ${busy ? "disabled" : ""}>×</button>
           </div>
-          <p class="oq-helper-modal-copy">MQTT is een compacte publish-only telemetry-export. Gebruik voor Home Assistant de native ESPHome API.</p>
+          <p class="oq-helper-modal-copy">MQTT is een experimentele, compacte publish-only telemetry-export. Gebruik voor Home Assistant de native ESPHome API.</p>
           ${modalNotice ? `<div class="oq-helper-modal-success oq-helper-modal-success--compact" aria-live="polite"><strong>Status</strong><span>${escapeHtml(modalNotice)}</span></div>` : ""}
           ${state.mqttError ? `<div class="oq-helper-modal-note oq-helper-modal-note--error" aria-live="assertive">${escapeHtml(state.mqttError)}</div>` : ""}
           <div class="oq-helper-modal-grid oq-mqtt-status-grid">

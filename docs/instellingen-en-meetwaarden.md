@@ -190,6 +190,7 @@ Als je te veel tegelijk wijzigt, wordt het juist moeilijker om te begrijpen wat 
 
 ## Verder lezen
 
+- MQTT-integratie: [MQTT integratie](mqtt.md)
 - [Verwarmen en koelen uitgelegd](verwarmen-en-koelen.md)
 - [Power House](power-house.md)
 - [Water Temperature Control](water-temperature-control.md)

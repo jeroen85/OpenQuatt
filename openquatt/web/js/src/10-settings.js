@@ -357,8 +357,8 @@
     return renderSettingsFieldCard(key, title, copy, `<label class="oq-settings-control oq-settings-control--time"><input class="oq-helper-input oq-helper-input--time" type="time" step="60" lang="nl-NL" inputmode="numeric" data-oq-field="${escapeHtml(key)}" value="${escapeHtml(value)}" ${state.loadingEntities ? "disabled" : ""}><span class="oq-settings-time-icon" aria-hidden="true"><svg viewBox="0 0 20 20" focusable="false"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6" /><path d="M10 6.2 V10 L12.9 11.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg></span></label>`, className || "oq-settings-field--time");
   }
 
-  function renderSettingsSection(kicker, title, copy, body) {
-    return `<section class="oq-settings-section"><div class="oq-settings-section-head"><p class="oq-helper-label">${escapeHtml(kicker)}</p><h3>${escapeHtml(title)}</h3><p>${escapeHtml(copy)}</p></div>${body}</section>`;
+  function renderSettingsSection(kicker, title, copy, body, badgeMarkup = "") {
+    return `<section class="oq-settings-section"><div class="oq-settings-section-head"><div class="oq-settings-section-head-meta"><p class="oq-helper-label">${escapeHtml(kicker)}</p>${badgeMarkup}</div><h3>${escapeHtml(title)}</h3><p>${escapeHtml(copy)}</p></div>${body}</section>`;
   }
 
   function renderSettingsGroupNav() {
@@ -1448,7 +1448,7 @@
     return renderSettingsSection(
       "Integratie",
       "MQTT",
-      "Stel hier de broker in voor de compacte publish-only telemetry-export van OpenQuatt.",
+      "Stel hier de broker in voor de experimentele, compacte publish-only telemetry-export van OpenQuatt.",
       `
         <div class="oq-settings-quickstart-status" data-oq-mqtt-item="mqtt">
           <div class="oq-settings-quickstart-status-row">
@@ -1467,6 +1467,7 @@
           </div>
         </div>
       `,
+      `<span class="oq-settings-section-badge oq-settings-section-badge--experimental">Experimenteel</span>`,
     );
   }
 
