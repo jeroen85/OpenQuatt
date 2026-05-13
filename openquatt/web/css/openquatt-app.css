@@ -837,6 +837,7 @@ body.oq-surface-native {
   overflow-x: hidden;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
+  overflow-anchor: none;
 }
 
 .oq-helper-modal-backdrop--quickstart {
@@ -1194,11 +1195,19 @@ body.oq-surface-native {
   gap: 10px;
 }
 
+.oq-mqtt-modal--loading .oq-helper-modal-grid {
+  min-height: 268px;
+}
+
 .oq-helper-modal-row {
   padding: 12px 14px;
   border: 1px solid rgba(229, 231, 235, 0.92);
   border-radius: var(--oq-helper-radius-md);
   background: rgba(255, 255, 255, 0.84);
+}
+
+.oq-helper-modal-row--loading {
+  min-height: 86px;
 }
 
 .oq-helper-shell--dark .oq-helper-modal-row,
@@ -1226,6 +1235,12 @@ body.oq-surface-native {
   font-weight: 700;
 }
 
+.oq-helper-modal-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .oq-helper-shell--dark .oq-helper-modal-value,
 .oq-helper-modal-backdrop--dark .oq-helper-modal-value {
   color: #f8fafc;
@@ -1242,6 +1257,10 @@ body.oq-surface-native {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin-top: 14px;
+}
+
+.oq-mqtt-modal--loading .oq-helper-modal-form-grid {
+  min-height: 382px;
 }
 
 .oq-helper-modal-form-grid .oq-helper-modal-channel {
