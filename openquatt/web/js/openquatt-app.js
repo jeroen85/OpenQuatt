@@ -2487,16 +2487,16 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     if (!status) {
       return "We halen de huidige API-beveiliging op.";
     }
-    if (status.transport_active === true) {
-      return "De native API is beveiligd. Je kunt de sleutel hier bekijken, kopiëren of roteren.";
+    if (status.enabled !== status.transport_active) {
+      return "Deze wijziging wordt actief na herstart. Je kunt de sleutel hier bekijken, kopiëren of vernieuwen.";
     }
-    if (status.enabled) {
-      return "API-encryptie wordt net aangepast. Geef het apparaat even de tijd om de status bij te werken.";
+    if (status.transport_active === true) {
+      return "De native API is beveiligd. Je kunt de sleutel hier bekijken, kopiëren of vernieuwen.";
     }
     if (status.key) {
       return "De sleutel blijft opgeslagen, ook wanneer encryptie uit staat. Je kunt hem hier meteen kopiëren of opnieuw inschakelen.";
     }
-    return "Er is nog geen API-sleutel opgeslagen. Inschakelen maakt direct een nieuwe sleutel aan.";
+    return "Er is nog geen API-sleutel opgeslagen. Deze wijziging wordt actief na herstart.";
   }
 
   function getApiSecurityToggleLabel() {
@@ -2504,7 +2504,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     if (!status) {
       return "Laden...";
     }
-    return status.enabled ? "Uitschakelen" : status.key ? "Inschakelen" : "Genereer en schakel in";
+    return status.enabled ? "Uitschakelen en herstarten" : status.key ? "Inschakelen en herstarten" : "Genereer en herstart";
   }
 
   function getApiSecurityRotateLabel() {
@@ -2512,7 +2512,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     if (!status) {
       return "Laden...";
     }
-    return status.key ? "Roteer sleutel" : "Genereer sleutel";
+    return status.key ? "Vernieuw sleutel" : "Genereer sleutel";
   }
 
   function renderLoginStatusRow(label, value, copy = "", loading = false) {
@@ -2568,11 +2568,17 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
                 ${escapeHtml(getApiSecurityToggleLabel())}
               </button>
             </div>
-            <div class="oq-settings-api-security-key">
+              <div class="oq-settings-api-security-key">
               <div class="oq-settings-field-head">
                 <h3>API-sleutel</h3>
               </div>
-              <p class="oq-settings-action-note">${escapeHtml(hasKey ? "Gebruik deze sleutel in Home Assistant voor de ESPHome-integratie." : "Inschakelen maakt direct een nieuwe sleutel aan.")}</p>
+              <p class="oq-settings-action-note">${escapeHtml(status.enabled === status.transport_active
+                ? (hasKey
+                    ? "Gebruik deze sleutel in Home Assistant voor de ESPHome-integratie."
+                    : "Inschakelen maakt direct een nieuwe sleutel aan. Deze wijziging wordt actief na herstart.")
+                : (status.enabled
+                    ? "De sleutel is opgeslagen. OpenQuatt start opnieuw op om API-encryptie in te schakelen."
+                    : "De sleutel blijft opgeslagen. OpenQuatt start opnieuw op om API-encryptie uit te schakelen."))}</p>
               ${hasKey ? `<div class="oq-settings-api-security-key-row"><div class="oq-settings-api-security-key-value">${escapeHtml(status.key)}</div></div>` : ""}
               ${hasKey
                 ? `
@@ -4292,6 +4298,14 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     return success;
   }
 
+  async function restartForApiSecurityChange() {
+    await triggerNamedButton("restartAction", {
+      successNotice: "OpenQuatt wordt opnieuw opgestart om de API-beveiliging toe te passen.",
+      errorPrefix: "Herstart mislukt",
+      reconnectMode: "restart",
+    });
+  }
+
   async function commitEnableApiSecurity() {
     const status = state.apiSecurityStatus || {};
     if (!status.csrf_token) {
@@ -4318,9 +4332,9 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       if (!response.ok || !payload.ok) {
         throw new Error(payload.error || `HTTP ${response.status}`);
       }
-      await refreshApiSecurityStatus();
-      state.apiSecurityNotice = "API-encryptie staat nu aan.";
+      state.apiSecurityNotice = "API-beveiliging is opgeslagen. OpenQuatt wordt opnieuw opgestart.";
       render();
+      await restartForApiSecurityChange();
     } catch (error) {
       state.apiSecurityError = `Inschakelen is mislukt. ${error.message}`;
       render();
@@ -4356,9 +4370,9 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       if (!response.ok || !payload.ok) {
         throw new Error(payload.error || `HTTP ${response.status}`);
       }
-      await refreshApiSecurityStatus();
-      state.apiSecurityNotice = "API-sleutel is vernieuwd.";
+      state.apiSecurityNotice = "API-sleutel is opgeslagen. OpenQuatt wordt opnieuw opgestart.";
       render();
+      await restartForApiSecurityChange();
     } catch (error) {
       state.apiSecurityError = `Roteren is mislukt. ${error.message}`;
       render();
@@ -4400,9 +4414,9 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       if (!response.ok || !payload.ok) {
         throw new Error(payload.error || `HTTP ${response.status}`);
       }
-      await refreshApiSecurityStatus();
-      state.apiSecurityNotice = "API-encryptie staat nu uit.";
+      state.apiSecurityNotice = "API-beveiliging is opgeslagen. OpenQuatt wordt opnieuw opgestart.";
       render();
+      await restartForApiSecurityChange();
     } catch (error) {
       state.apiSecurityError = `Uitzetten is mislukt. ${error.message}`;
       render();
@@ -9378,7 +9392,7 @@ function renderWebServerLogsModal() {
     return renderSettingsSection(
       "Toegang",
       "Toegang & Beveiliging",
-      "Pas hier de web-login of de ESPHome API-sleutel aan.",
+      "Pas hier de web-login of de ESPHome API-sleutel aan. Deze wijziging wordt actief na herstart.",
       `
         <div class="oq-settings-access-security-shell">
           <div class="oq-settings-quickstart-status" data-oq-access-security-item="login">
@@ -9450,6 +9464,9 @@ function renderWebServerLogsModal() {
     if (!status) {
       return "Laden...";
     }
+    if (status.enabled !== status.transport_active) {
+      return "Herstart nodig";
+    }
     if (status.transport_active === true) {
       return "Aan";
     }
@@ -9464,11 +9481,13 @@ function renderWebServerLogsModal() {
     if (!status) {
       return "API-encryptie wordt geladen.";
     }
+    if (status.enabled !== status.transport_active) {
+      return status.key
+        ? "Deze wijziging wordt actief na herstart. De sleutel blijft opgeslagen voor later gebruik."
+        : "Deze wijziging wordt actief na herstart.";
+    }
     if (status.transport_active === true) {
       return "API-encryptie staat aan. Gebruik dezelfde sleutel in Home Assistant.";
-    }
-    if (status.enabled) {
-      return "API-encryptie wordt net aangepast. Wacht even tot de status is bijgewerkt.";
     }
     if (status.key) {
       return "De sleutel blijft opgeslagen, maar de native API staat nu open op je lokale netwerk.";
@@ -9482,9 +9501,9 @@ function renderWebServerLogsModal() {
       return "Laden...";
     }
     if (status.enabled) {
-      return "Uitschakelen";
+      return "Uitschakelen en herstarten";
     }
-    return status.key ? "Inschakelen" : "Genereer en schakel in";
+    return status.key ? "Inschakelen en herstarten" : "Genereer en herstart";
   }
 
   function renderSettingsBackupSection() {

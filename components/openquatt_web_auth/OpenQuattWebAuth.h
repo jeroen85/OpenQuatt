@@ -68,7 +68,7 @@ class OpenQuattWebAuth : public Component {
   bool is_valid_storage_(const AuthStorage &storage) const;
   bool load_api_security_storage_(ApiSecurityStorage *storage);
   bool save_api_security_storage_(const ApiSecurityStorage &storage);
-  bool apply_api_security_storage_(const ApiSecurityStorage &storage, const char *source);
+  bool apply_api_security_storage_(const ApiSecurityStorage &storage, const char *source, bool apply_transport = true);
   bool build_api_security_storage_(bool enabled, const std::string &key, ApiSecurityStorage *storage);
   bool is_valid_api_security_storage_(const ApiSecurityStorage &storage) const;
   static std::string encode_api_security_key_(const std::array<uint8_t, 32> &key);

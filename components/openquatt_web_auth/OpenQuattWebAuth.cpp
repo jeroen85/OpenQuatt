@@ -6,6 +6,7 @@
 #include <cstring>
 
 #include "esp_random.h"
+#include "esphome/core/application.h"
 #include "esphome/components/api/api_server.h"
 #include "esphome/core/helpers.h"
 #include "esphome/core/log.h"
@@ -397,7 +398,7 @@ bool OpenQuattWebAuth::set_api_security_enabled(bool enabled) {
   if (!this->save_api_security_storage_(storage)) {
     return false;
   }
-  if (!this->apply_api_security_storage_(storage, enabled ? "runtime-enabled" : "runtime-disabled")) {
+  if (!this->apply_api_security_storage_(storage, enabled ? "runtime-enabled" : "runtime-disabled", false)) {
     return false;
   }
   this->api_security_ready_ = true;
@@ -417,7 +418,7 @@ bool OpenQuattWebAuth::rotate_api_security_key() {
   if (!this->save_api_security_storage_(storage)) {
     return false;
   }
-  if (!this->apply_api_security_storage_(storage, "runtime-rotated")) {
+  if (!this->apply_api_security_storage_(storage, "runtime-rotated", false)) {
     return false;
   }
   this->api_security_ready_ = true;
@@ -468,7 +469,8 @@ bool OpenQuattWebAuth::save_api_security_storage_(const ApiSecurityStorage &stor
   return true;
 }
 
-bool OpenQuattWebAuth::apply_api_security_storage_(const ApiSecurityStorage &storage, const char *source) {
+bool OpenQuattWebAuth::apply_api_security_storage_(const ApiSecurityStorage &storage, const char *source,
+                                                   bool apply_transport) {
   if (api::global_api_server == nullptr) {
     return false;
   }
@@ -480,28 +482,31 @@ bool OpenQuattWebAuth::apply_api_security_storage_(const ApiSecurityStorage &sto
   bool transport_active = false;
 #ifdef USE_API_NOISE
   transport_active = api::global_api_server->get_noise_ctx().has_psk();
-  if (enabled) {
-    if (!key_present) {
-      return false;
-    }
-    const bool key_matches = transport_active && std::equal(storage.key.begin(), storage.key.end(),
-                                                             api::global_api_server->get_noise_ctx().get_psk().begin());
-    if (!key_matches) {
-      if (!api::global_api_server->save_noise_psk(storage.key, true)) {
-        ESP_LOGE(TAG, "Failed to activate API encryption");
+  if (apply_transport) {
+    if (enabled) {
+      if (!key_present) {
         return false;
       }
-      transport_active = true;
+      const bool key_matches = transport_active &&
+                               std::equal(storage.key.begin(), storage.key.end(),
+                                          api::global_api_server->get_noise_ctx().get_psk().begin());
+      if (!key_matches) {
+        if (!api::global_api_server->save_noise_psk(storage.key, true)) {
+          ESP_LOGE(TAG, "Failed to activate API encryption");
+          return false;
+        }
+        transport_active = true;
+      }
+    } else if (transport_active) {
+      if (!api::global_api_server->clear_noise_psk(true)) {
+        ESP_LOGE(TAG, "Failed to clear API encryption");
+        return false;
+      }
+      transport_active = false;
     }
-  } else if (transport_active) {
-    if (!api::global_api_server->clear_noise_psk(true)) {
-      ESP_LOGE(TAG, "Failed to clear API encryption");
-      return false;
-    }
-    transport_active = false;
   }
 #else
-  if (enabled) {
+  if (apply_transport && enabled) {
     return false;
   }
 #endif

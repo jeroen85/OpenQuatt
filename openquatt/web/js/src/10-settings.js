@@ -1404,7 +1404,7 @@
     return renderSettingsSection(
       "Toegang",
       "Toegang & Beveiliging",
-      "Pas hier de web-login of de ESPHome API-sleutel aan.",
+      "Pas hier de web-login of de ESPHome API-sleutel aan. Deze wijziging wordt actief na herstart.",
       `
         <div class="oq-settings-access-security-shell">
           <div class="oq-settings-quickstart-status" data-oq-access-security-item="login">
@@ -1476,6 +1476,9 @@
     if (!status) {
       return "Laden...";
     }
+    if (status.enabled !== status.transport_active) {
+      return "Herstart nodig";
+    }
     if (status.transport_active === true) {
       return "Aan";
     }
@@ -1490,11 +1493,13 @@
     if (!status) {
       return "API-encryptie wordt geladen.";
     }
+    if (status.enabled !== status.transport_active) {
+      return status.key
+        ? "Deze wijziging wordt actief na herstart. De sleutel blijft opgeslagen voor later gebruik."
+        : "Deze wijziging wordt actief na herstart.";
+    }
     if (status.transport_active === true) {
       return "API-encryptie staat aan. Gebruik dezelfde sleutel in Home Assistant.";
-    }
-    if (status.enabled) {
-      return "API-encryptie wordt net aangepast. Wacht even tot de status is bijgewerkt.";
     }
     if (status.key) {
       return "De sleutel blijft opgeslagen, maar de native API staat nu open op je lokale netwerk.";
@@ -1508,9 +1513,9 @@
       return "Laden...";
     }
     if (status.enabled) {
-      return "Uitschakelen";
+      return "Uitschakelen en herstarten";
     }
-    return status.key ? "Inschakelen" : "Genereer en schakel in";
+    return status.key ? "Inschakelen en herstarten" : "Genereer en herstart";
   }
 
   function renderSettingsBackupSection() {

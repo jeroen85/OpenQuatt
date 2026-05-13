@@ -971,16 +971,16 @@
     if (!status) {
       return "We halen de huidige API-beveiliging op.";
     }
-    if (status.transport_active === true) {
-      return "De native API is beveiligd. Je kunt de sleutel hier bekijken, kopiëren of roteren.";
+    if (status.enabled !== status.transport_active) {
+      return "Deze wijziging wordt actief na herstart. Je kunt de sleutel hier bekijken, kopiëren of vernieuwen.";
     }
-    if (status.enabled) {
-      return "API-encryptie wordt net aangepast. Geef het apparaat even de tijd om de status bij te werken.";
+    if (status.transport_active === true) {
+      return "De native API is beveiligd. Je kunt de sleutel hier bekijken, kopiëren of vernieuwen.";
     }
     if (status.key) {
       return "De sleutel blijft opgeslagen, ook wanneer encryptie uit staat. Je kunt hem hier meteen kopiëren of opnieuw inschakelen.";
     }
-    return "Er is nog geen API-sleutel opgeslagen. Inschakelen maakt direct een nieuwe sleutel aan.";
+    return "Er is nog geen API-sleutel opgeslagen. Deze wijziging wordt actief na herstart.";
   }
 
   function getApiSecurityToggleLabel() {
@@ -988,7 +988,7 @@
     if (!status) {
       return "Laden...";
     }
-    return status.enabled ? "Uitschakelen" : status.key ? "Inschakelen" : "Genereer en schakel in";
+    return status.enabled ? "Uitschakelen en herstarten" : status.key ? "Inschakelen en herstarten" : "Genereer en herstart";
   }
 
   function getApiSecurityRotateLabel() {
@@ -996,7 +996,7 @@
     if (!status) {
       return "Laden...";
     }
-    return status.key ? "Roteer sleutel" : "Genereer sleutel";
+    return status.key ? "Vernieuw sleutel" : "Genereer sleutel";
   }
 
   function renderLoginStatusRow(label, value, copy = "", loading = false) {
@@ -1052,11 +1052,17 @@
                 ${escapeHtml(getApiSecurityToggleLabel())}
               </button>
             </div>
-            <div class="oq-settings-api-security-key">
+              <div class="oq-settings-api-security-key">
               <div class="oq-settings-field-head">
                 <h3>API-sleutel</h3>
               </div>
-              <p class="oq-settings-action-note">${escapeHtml(hasKey ? "Gebruik deze sleutel in Home Assistant voor de ESPHome-integratie." : "Inschakelen maakt direct een nieuwe sleutel aan.")}</p>
+              <p class="oq-settings-action-note">${escapeHtml(status.enabled === status.transport_active
+                ? (hasKey
+                    ? "Gebruik deze sleutel in Home Assistant voor de ESPHome-integratie."
+                    : "Inschakelen maakt direct een nieuwe sleutel aan. Deze wijziging wordt actief na herstart.")
+                : (status.enabled
+                    ? "De sleutel is opgeslagen. OpenQuatt start opnieuw op om API-encryptie in te schakelen."
+                    : "De sleutel blijft opgeslagen. OpenQuatt start opnieuw op om API-encryptie uit te schakelen."))}</p>
               ${hasKey ? `<div class="oq-settings-api-security-key-row"><div class="oq-settings-api-security-key-value">${escapeHtml(status.key)}</div></div>` : ""}
               ${hasKey
                 ? `
