@@ -21,13 +21,9 @@ void OpenQuattMqttPublisher::setup() {
   this->last_state_publish_ms_ = 0;
   this->last_heat_pumps_publish_ms_ = 0;
   this->last_diagnostics_publish_ms_ = 0;
-  this->last_schema_payload_.clear();
   this->last_state_signature_.clear();
-  this->last_state_payload_.clear();
   this->last_heat_pumps_signature_.clear();
-  this->last_heat_pumps_payload_.clear();
   this->last_diagnostics_signature_.clear();
-  this->last_diagnostics_payload_.clear();
 }
 
 void OpenQuattMqttPublisher::loop() {
@@ -65,7 +61,7 @@ void OpenQuattMqttPublisher::loop() {
     } else if (profile == PublishProfile::ESSENTIAL) {
       this->clear_topic_(base_topic, "heat_pumps");
     }
-    this->publish_schema_(true);
+    this->publish_schema_();
     this->last_state_publish_ms_ = 0;
     this->last_heat_pumps_publish_ms_ = 0;
     this->last_diagnostics_publish_ms_ = 0;
@@ -99,20 +95,20 @@ void OpenQuattMqttPublisher::dump_config() {
 
 float OpenQuattMqttPublisher::get_setup_priority() const { return setup_priority::LATE; }
 
-void OpenQuattMqttPublisher::publish_schema_(bool force) {
+void OpenQuattMqttPublisher::publish_schema_() {
   if (this->config_ == nullptr) {
     return;
   }
   const std::string topic = this->topic_for_(this->config_->get_base_topic(), "schema");
   const std::string profile_name = this->config_->get_publish_profile_name();
   const std::string base_topic = this->config_->get_base_topic();
-  this->publish_cached_json_(topic, [base_topic, profile_name](JsonObject root) {
+  this->publish_json(topic, [base_topic, profile_name](JsonObject root) {
     root["schema"] = "openquatt.schema.v1";
     root["mqtt_api_version"] = 1;
     root["base_topic"] = base_topic;
     root["publish_profile"] = profile_name;
     root["publish_format"] = "json";
-  }, true, force, 0, &this->last_schema_payload_, nullptr);
+  }, 0, true);
 }
 
 void OpenQuattMqttPublisher::publish_state_(bool force, uint32_t now_ms, uint32_t interval_ms) {
@@ -130,7 +126,7 @@ void OpenQuattMqttPublisher::publish_state_(bool force, uint32_t now_ms, uint32_
     return;
   }
 
-  this->publish_cached_json_(topic, [this, fault_active](JsonObject root) {
+  this->publish_json(topic, [this, fault_active](JsonObject root) {
     root["schema"] = "openquatt.state.v1";
     set_text_or_null_(root, "control_mode", this->control_mode_text_sensor_);
     set_text_or_null_(root, "strategy", this->strategy_text_sensor_);
@@ -147,8 +143,9 @@ void OpenQuattMqttPublisher::publish_state_(bool force, uint32_t now_ms, uint32_
     set_number_or_null_(root, "total_heat_power_w", this->total_heat_power_sensor_);
     set_number_or_null_(root, "cop", this->total_cop_sensor_);
     root["fault_active"] = fault_active;
-  }, retain, force, interval_ms, &this->last_state_payload_, &this->last_state_publish_ms_);
+  }, 0, retain);
   this->last_state_signature_ = signature;
+  this->last_state_publish_ms_ = now_ms;
 
   (void) now_ms;
 }
@@ -167,7 +164,7 @@ void OpenQuattMqttPublisher::publish_heat_pumps_(bool force, uint32_t now_ms, ui
     return;
   }
 
-  this->publish_cached_json_(topic, [this](JsonObject root) {
+  this->publish_json(topic, [this](JsonObject root) {
     root["schema"] = "openquatt.heat_pumps.v1";
 
     JsonObject hp1 = root["hp1"].to<JsonObject>();
@@ -195,8 +192,9 @@ void OpenQuattMqttPublisher::publish_heat_pumps_(bool force, uint32_t now_ms, ui
       set_bool_or_null_(hp2, "defrost", this->hp2_defrost_binary_sensor_);
       set_bool_or_null_(hp2, "fault_active", this->hp2_fault_binary_sensor_);
     }
-  }, retain, force, interval_ms, &this->last_heat_pumps_payload_, &this->last_heat_pumps_publish_ms_);
+  }, 0, retain);
   this->last_heat_pumps_signature_ = signature;
+  this->last_heat_pumps_publish_ms_ = now_ms;
 
   (void) now_ms;
 }
@@ -214,7 +212,7 @@ void OpenQuattMqttPublisher::publish_diagnostics_(bool force, uint32_t now_ms, u
     return;
   }
 
-  this->publish_cached_json_(topic, [this](JsonObject root) {
+  this->publish_json(topic, [this](JsonObject root) {
     root["schema"] = "openquatt.diagnostics.v1";
     set_text_or_null_(root, "strategy_phase", this->strategy_phase_text_sensor_);
     set_text_or_null_(root, "strategy_debug_state", this->strategy_debug_state_text_sensor_);
@@ -228,43 +226,11 @@ void OpenQuattMqttPublisher::publish_diagnostics_(bool force, uint32_t now_ms, u
     set_text_or_null_(root, "flow_autotune_status", this->flow_autotune_status_text_sensor_);
     set_text_or_null_(root, "firmware_update_status", this->firmware_update_status_text_sensor_);
     set_number_or_null_(root, "firmware_update_progress", this->firmware_update_progress_sensor_);
-  }, false, force, interval_ms, &this->last_diagnostics_payload_, &this->last_diagnostics_publish_ms_);
+  }, 0, false);
   this->last_diagnostics_signature_ = signature;
+  this->last_diagnostics_publish_ms_ = now_ms;
 
   (void) now_ms;
-}
-
-bool OpenQuattMqttPublisher::publish_cached_json_(const std::string &topic, const json::json_build_t &builder,
-                                                  bool retain, bool force, uint32_t interval_ms,
-                                                  std::string *last_payload, uint32_t *last_publish_ms) {
-  if (topic.empty() || last_payload == nullptr) {
-    return false;
-  }
-
-  const uint32_t now_ms = millis();
-  const auto payload_buffer = json::build_json(builder);
-  const std::string payload = payload_buffer.c_str();
-  const bool same_payload = *last_payload == payload;
-  const bool interval_due = interval_ms != 0U && last_publish_ms != nullptr && *last_publish_ms != 0U &&
-                            static_cast<uint32_t>(now_ms - *last_publish_ms) >= interval_ms;
-
-  if (!force && same_payload && !interval_due) {
-    return true;
-  }
-
-  if (!this->is_connected()) {
-    return false;
-  }
-
-  if (!this->publish(topic, payload, 0, retain)) {
-    return false;
-  }
-
-  *last_payload = payload;
-  if (last_publish_ms != nullptr) {
-    *last_publish_ms = now_ms;
-  }
-  return true;
 }
 
 void OpenQuattMqttPublisher::clear_topic_(const std::string &base_topic, const char *suffix) {

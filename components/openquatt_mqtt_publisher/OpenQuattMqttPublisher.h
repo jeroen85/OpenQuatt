@@ -115,7 +115,7 @@ class OpenQuattMqttPublisher : public Component, public mqtt::CustomMQTTDevice {
   float get_setup_priority() const override;
 
  protected:
-  void publish_schema_(bool force);
+  void publish_schema_();
   void publish_state_(bool force, uint32_t now_ms, uint32_t interval_ms);
   void publish_heat_pumps_(bool force, uint32_t now_ms, uint32_t interval_ms);
   void publish_diagnostics_(bool force, uint32_t now_ms, uint32_t interval_ms);
@@ -126,8 +126,6 @@ class OpenQuattMqttPublisher : public Component, public mqtt::CustomMQTTDevice {
   std::string build_heat_pumps_signature_() const;
   std::string build_diagnostics_signature_() const;
   bool is_fault_active_() const;
-  bool publish_cached_json_(const std::string &topic, const json::json_build_t &builder, bool retain, bool force,
-                            uint32_t interval_ms, std::string *last_payload, uint32_t *last_publish_ms);
   static void set_number_or_null_(JsonObject root, const char *key, const sensor::Sensor *sensor);
   static void set_bool_or_null_(JsonObject root, const char *key, const binary_sensor::BinarySensor *binary_sensor);
   static void set_text_or_null_(JsonObject root, const char *key, const text_sensor::TextSensor *sensor);
@@ -193,13 +191,9 @@ class OpenQuattMqttPublisher : public Component, public mqtt::CustomMQTTDevice {
   uint32_t last_state_publish_ms_{0};
   uint32_t last_heat_pumps_publish_ms_{0};
   uint32_t last_diagnostics_publish_ms_{0};
-  std::string last_schema_payload_{};
   std::string last_state_signature_{};
-  std::string last_state_payload_{};
   std::string last_heat_pumps_signature_{};
-  std::string last_heat_pumps_payload_{};
   std::string last_diagnostics_signature_{};
-  std::string last_diagnostics_payload_{};
 };
 
 }  // namespace openquatt_mqtt_publisher
