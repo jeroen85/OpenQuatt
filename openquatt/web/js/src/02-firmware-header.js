@@ -1116,7 +1116,7 @@
           <p class="oq-helper-modal-copy">MQTT is een compacte publish-only telemetry-export. Gebruik voor Home Assistant de native ESPHome API.</p>
           ${modalNotice ? `<div class="oq-helper-modal-success oq-helper-modal-success--compact" aria-live="polite"><strong>Status</strong><span>${escapeHtml(modalNotice)}</span></div>` : ""}
           ${state.mqttError ? `<div class="oq-helper-modal-note oq-helper-modal-note--error" aria-live="assertive">${escapeHtml(state.mqttError)}</div>` : ""}
-          <div class="oq-helper-modal-grid">
+          <div class="oq-helper-modal-grid oq-mqtt-status-grid">
             ${loading
               ? `
                 ${renderLoginStatusRow("Status", "Laden...", "MQTT-configuratie wordt opgehaald.", true)}
@@ -1136,57 +1136,70 @@
               `
             }
           </div>
-          <div class="oq-helper-modal-form-grid${loading ? " oq-helper-modal-form-grid--loading" : ""}">
-            <label class="oq-helper-modal-channel oq-helper-modal-channel--toggle oq-helper-modal-channel--span-2">
-              <span class="oq-helper-modal-toggle-copy">
-                <span class="oq-helper-modal-label">MQTT inschakelen</span>
-                <span class="oq-helper-modal-subvalue">Als dit aan staat, probeert OpenQuatt direct met de broker te verbinden.</span>
-              </span>
-              <input type="checkbox" data-oq-mqtt-field="enabled" ${state.mqttDraftEnabled ? "checked" : ""} ${formBusy ? "disabled" : ""}>
-            </label>
-            <label class="oq-helper-modal-channel">
-              <span class="oq-helper-modal-label">Broker</span>
-              <input class="oq-helper-input" type="text" inputmode="url" autocomplete="off" spellcheck="false" data-oq-mqtt-field="broker" value="${escapeHtml(brokerValue)}" placeholder="mqtt.example.local" ${formBusy ? "disabled" : ""}>
-            </label>
-            <label class="oq-helper-modal-channel">
-              <span class="oq-helper-modal-label">Poort</span>
-              <input class="oq-helper-input" type="number" min="1" max="65535" step="1" inputmode="numeric" autocomplete="off" data-oq-mqtt-field="port" value="${escapeHtml(String(state.mqttDraftPort || "1883"))}" ${formBusy ? "disabled" : ""}>
-            </label>
-            <label class="oq-helper-modal-channel">
-              <span class="oq-helper-modal-label">Gebruiker</span>
-              <input class="oq-helper-input" type="text" autocomplete="off" spellcheck="false" data-oq-mqtt-field="username" value="${escapeHtml(usernameValue)}" placeholder="optioneel" ${formBusy ? "disabled" : ""}>
-            </label>
-            <label class="oq-helper-modal-channel">
-              <span class="oq-helper-modal-label">Wachtwoord</span>
-              <input class="oq-helper-input" type="password" autocomplete="new-password" data-oq-mqtt-field="password" value="${escapeHtml(passwordValue)}" placeholder="${status.password_set ? "Leeg laten om te behouden" : "optioneel"}" ${formBusy ? "disabled" : ""}>
-            </label>
-            <label class="oq-helper-modal-channel oq-helper-modal-channel--span-2">
-              <span class="oq-helper-modal-label">Base topic</span>
-              <input class="oq-helper-input" type="text" autocomplete="off" spellcheck="false" data-oq-mqtt-field="baseTopic" value="${escapeHtml(baseTopicValue)}" placeholder="openquatt" ${formBusy ? "disabled" : ""}>
-            </label>
-            <label class="oq-helper-modal-channel">
-              <span class="oq-helper-modal-label">Publish-profiel</span>
-              <select class="oq-helper-select" data-oq-mqtt-field="publishProfile" ${formBusy ? "disabled" : ""}>
-                <option value="off" ${String(state.mqttDraftPublishProfile || "") === "off" ? "selected" : ""}>Uit</option>
-                <option value="essential" ${String(state.mqttDraftPublishProfile || "") === "essential" ? "selected" : ""}>Essential</option>
-                <option value="standard" ${String(state.mqttDraftPublishProfile || "") === "standard" ? "selected" : ""}>Standard</option>
-              </select>
-            </label>
-            <label class="oq-helper-modal-channel oq-helper-modal-channel--toggle">
-              <span class="oq-helper-modal-toggle-copy">
-                <span class="oq-helper-modal-label">Retain snapshots</span>
-                <span class="oq-helper-modal-subvalue">Bewaar de laatste schema-, state- en heat_pumps-snapshot op de broker.</span>
-              </span>
-              <input type="checkbox" data-oq-mqtt-field="retainSnapshots" ${state.mqttDraftRetainSnapshots ? "checked" : ""} ${formBusy ? "disabled" : ""}>
-            </label>
-            <label class="oq-helper-modal-channel">
-              <span class="oq-helper-modal-label">Essential interval</span>
-              <input class="oq-helper-input" type="number" min="1" max="3600" step="1" inputmode="numeric" autocomplete="off" data-oq-mqtt-field="essentialIntervalS" value="${escapeHtml(essentialIntervalValue)}" ${formBusy ? "disabled" : ""}>
-            </label>
-            <label class="oq-helper-modal-channel">
-              <span class="oq-helper-modal-label">Standard interval</span>
-              <input class="oq-helper-input" type="number" min="1" max="3600" step="1" inputmode="numeric" autocomplete="off" data-oq-mqtt-field="standardIntervalS" value="${escapeHtml(standardIntervalValue)}" ${formBusy ? "disabled" : ""}>
-            </label>
+          <div class="oq-mqtt-form${loading ? " oq-mqtt-form--loading" : ""}">
+            <div class="oq-mqtt-section">
+              <p class="oq-mqtt-section-title">Verbinding</p>
+              <div class="oq-helper-modal-form-grid oq-mqtt-form-grid">
+                <label class="oq-helper-modal-channel oq-helper-modal-channel--toggle oq-helper-modal-channel--span-2 oq-mqtt-setting-card oq-mqtt-setting-card--toggle">
+                  <span class="oq-helper-modal-toggle-copy">
+                    <span class="oq-helper-modal-label">MQTT inschakelen</span>
+                    <span class="oq-helper-modal-subvalue">Als dit aan staat, probeert OpenQuatt direct met de broker te verbinden.</span>
+                  </span>
+                  <input type="checkbox" data-oq-mqtt-field="enabled" ${state.mqttDraftEnabled ? "checked" : ""} ${formBusy ? "disabled" : ""}>
+                </label>
+                <label class="oq-helper-modal-channel oq-mqtt-field">
+                  <span class="oq-helper-modal-label">Broker</span>
+                  <input class="oq-helper-input" type="text" inputmode="url" autocomplete="off" spellcheck="false" data-oq-mqtt-field="broker" value="${escapeHtml(brokerValue)}" placeholder="mqtt.example.local" ${formBusy ? "disabled" : ""}>
+                </label>
+                <label class="oq-helper-modal-channel oq-mqtt-field">
+                  <span class="oq-helper-modal-label">Poort</span>
+                  <input class="oq-helper-input" type="number" min="1" max="65535" step="1" inputmode="numeric" autocomplete="off" data-oq-mqtt-field="port" value="${escapeHtml(String(state.mqttDraftPort || "1883"))}" ${formBusy ? "disabled" : ""}>
+                </label>
+                <label class="oq-helper-modal-channel oq-mqtt-field">
+                  <span class="oq-helper-modal-label">Gebruiker</span>
+                  <input class="oq-helper-input" type="text" autocomplete="off" spellcheck="false" data-oq-mqtt-field="username" value="${escapeHtml(usernameValue)}" placeholder="optioneel" ${formBusy ? "disabled" : ""}>
+                </label>
+                <label class="oq-helper-modal-channel oq-mqtt-field">
+                  <span class="oq-helper-modal-label">Wachtwoord</span>
+                  <input class="oq-helper-input" type="password" autocomplete="new-password" data-oq-mqtt-field="password" value="${escapeHtml(passwordValue)}" placeholder="${status.password_set ? "Leeg laten om te behouden" : "optioneel"}" ${formBusy ? "disabled" : ""}>
+                </label>
+                <label class="oq-helper-modal-channel oq-helper-modal-channel--span-2 oq-mqtt-field">
+                  <span class="oq-helper-modal-label">Base topic</span>
+                  <input class="oq-helper-input" type="text" autocomplete="off" spellcheck="false" data-oq-mqtt-field="baseTopic" value="${escapeHtml(baseTopicValue)}" placeholder="openquatt" ${formBusy ? "disabled" : ""}>
+                </label>
+              </div>
+            </div>
+            <div class="oq-mqtt-section">
+              <p class="oq-mqtt-section-title">Publicatie</p>
+              <div class="oq-helper-modal-form-grid oq-mqtt-form-grid">
+                <label class="oq-helper-modal-channel oq-mqtt-setting-card">
+                  <span class="oq-helper-modal-toggle-copy">
+                    <span class="oq-helper-modal-label">Publish-profiel</span>
+                    <span class="oq-helper-modal-subvalue">Kies hoeveel telemetry OpenQuatt periodiek publiceert.</span>
+                  </span>
+                  <select class="oq-helper-select" data-oq-mqtt-field="publishProfile" ${formBusy ? "disabled" : ""}>
+                    <option value="off" ${String(state.mqttDraftPublishProfile || "") === "off" ? "selected" : ""}>Uit</option>
+                    <option value="essential" ${String(state.mqttDraftPublishProfile || "") === "essential" ? "selected" : ""}>Essential</option>
+                    <option value="standard" ${String(state.mqttDraftPublishProfile || "") === "standard" ? "selected" : ""}>Standard</option>
+                  </select>
+                </label>
+                <label class="oq-helper-modal-channel oq-helper-modal-channel--toggle oq-mqtt-setting-card oq-mqtt-setting-card--toggle">
+                  <span class="oq-helper-modal-toggle-copy">
+                    <span class="oq-helper-modal-label">Retain snapshots</span>
+                    <span class="oq-helper-modal-subvalue">Bewaar de laatste schema-, state- en heat_pumps-snapshot op de broker.</span>
+                  </span>
+                  <input type="checkbox" data-oq-mqtt-field="retainSnapshots" ${state.mqttDraftRetainSnapshots ? "checked" : ""} ${formBusy ? "disabled" : ""}>
+                </label>
+                <label class="oq-helper-modal-channel oq-mqtt-field">
+                  <span class="oq-helper-modal-label">Essential interval</span>
+                  <input class="oq-helper-input" type="number" min="1" max="3600" step="1" inputmode="numeric" autocomplete="off" data-oq-mqtt-field="essentialIntervalS" value="${escapeHtml(essentialIntervalValue)}" ${formBusy ? "disabled" : ""}>
+                </label>
+                <label class="oq-helper-modal-channel oq-mqtt-field">
+                  <span class="oq-helper-modal-label">Standard interval</span>
+                  <input class="oq-helper-input" type="number" min="1" max="3600" step="1" inputmode="numeric" autocomplete="off" data-oq-mqtt-field="standardIntervalS" value="${escapeHtml(standardIntervalValue)}" ${formBusy ? "disabled" : ""}>
+                </label>
+              </div>
+            </div>
           </div>
           <p class="oq-helper-modal-note">Laat het wachtwoord leeg als je alleen broker, topic of gebruikersnaam wijzigt. De opgeslagen waarde blijft dan behouden.</p>
           <div class="oq-helper-modal-actions">

@@ -1199,6 +1199,12 @@ body.oq-surface-native {
   min-height: 268px;
 }
 
+.oq-mqtt-status-grid .oq-helper-modal-row {
+  display: grid;
+  align-content: start;
+  min-height: 92px;
+}
+
 .oq-helper-modal-row {
   padding: 12px 14px;
   border: 1px solid rgba(229, 231, 235, 0.92);
@@ -1252,15 +1258,75 @@ body.oq-surface-native {
   margin-top: 14px;
 }
 
+.oq-mqtt-form {
+  display: grid;
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.oq-mqtt-form--loading {
+  min-height: 522px;
+}
+
+.oq-mqtt-section {
+  display: grid;
+  gap: 10px;
+}
+
+.oq-mqtt-section-title {
+  margin: 0;
+  color: var(--oq-helper-faint);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.oq-mqtt-form-grid {
+  margin-top: 0;
+}
+
+.oq-mqtt-field,
+.oq-mqtt-setting-card {
+  min-height: 0;
+}
+
+.oq-mqtt-setting-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 220px);
+  align-items: center;
+  gap: 16px;
+  min-height: 102px;
+  margin-top: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--oq-helper-line);
+  border-radius: var(--oq-helper-radius-md);
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.oq-mqtt-setting-card--toggle {
+  display: grid;
+}
+
+.oq-mqtt-setting-card input[type="checkbox"] {
+  justify-self: end;
+}
+
+.oq-mqtt-setting-card .oq-helper-select {
+  width: 100%;
+}
+
+.oq-helper-shell--dark .oq-mqtt-setting-card,
+.oq-helper-modal-backdrop--dark .oq-mqtt-setting-card {
+  border-color: rgba(71, 85, 105, 0.48);
+  background: rgba(24, 35, 49, 0.78);
+}
+
 .oq-helper-modal-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin-top: 14px;
-}
-
-.oq-mqtt-modal--loading .oq-helper-modal-form-grid {
-  min-height: 382px;
 }
 
 .oq-helper-modal-form-grid .oq-helper-modal-channel {
@@ -1299,6 +1365,16 @@ body.oq-surface-native {
   width: 20px;
   height: 20px;
   margin-top: 2px;
+}
+
+.oq-mqtt-setting-card.oq-helper-modal-channel--toggle,
+.oq-mqtt-setting-card {
+  display: grid;
+}
+
+.oq-mqtt-setting-card.oq-helper-modal-channel--toggle input[type="checkbox"] {
+  justify-self: end;
+  margin-top: 0;
 }
 
 .oq-helper-modal-channel select {
@@ -1369,6 +1445,15 @@ body.oq-surface-native {
 
   .oq-helper-modal-form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .oq-mqtt-setting-card.oq-helper-modal-channel--toggle,
+  .oq-mqtt-setting-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .oq-mqtt-setting-card.oq-helper-modal-channel--toggle input[type="checkbox"] {
+    justify-self: start;
   }
 
   .oq-helper-modal-channel--span-2 {
