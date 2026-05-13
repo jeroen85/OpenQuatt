@@ -126,6 +126,7 @@ const LOGO_MARKUP = `
     hpGeneration: { domain: "select", name: "Quatt Hybrid version" },
     strategy: { domain: "select", name: "Heating Control Mode" },
     openquattEnabled: { domain: "switch", name: "OpenQuatt Enabled", optional: true },
+    boilerCvAssistEnabled: { domain: "switch", name: "Boiler/CV assist enabled", optional: true },
     manualCoolingEnable: { domain: "switch", name: "Manual Cooling Enable", optional: true },
     cicCompatibilityMode: { domain: "switch", name: "CiC Compatibility Mode", optional: true },
     silentModeOverride: { domain: "select", name: "Silent Mode Override", optional: true },
@@ -684,6 +685,7 @@ const LOGO_MARKUP = `
     "installationTopology",
     "hpGeneration",
     "openquattEnabled",
+    "boilerCvAssistEnabled",
     "manualCoolingEnable",
     "silentModeOverride",
     "trendHistoryEnabled",
@@ -708,7 +710,7 @@ const LOGO_MARKUP = `
     {
       id: "installation",
       label: "Installatie",
-      keys: ["setupComplete", "installationTopology", "hpGeneration", "firmwareUpdateChannel"],
+      keys: ["setupComplete", "installationTopology", "hpGeneration", "boilerCvAssistEnabled", "firmwareUpdateChannel"],
     },
     {
       id: "operation",
@@ -716,6 +718,7 @@ const LOGO_MARKUP = `
       keys: [
         "strategy",
         "openquattEnabled",
+        "boilerCvAssistEnabled",
         "manualCoolingEnable",
         "cicCompatibilityMode",
         "trendHistoryEnabled",
@@ -3686,7 +3689,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
   const INITIAL_OVERVIEW_READY_TIMEOUT_MS = 2000;
   const INITIAL_OVERVIEW_READY_POLL_MS = 250;
   const INITIAL_SETTINGS_READY_KEY_MAP = {
-    installation: ["hpGeneration", "silentStartTime", "silentEndTime", "maxWater"],
+    installation: ["hpGeneration", "boilerCvAssistEnabled", "silentStartTime", "silentEndTime", "maxWater"],
     heating: ["strategy"],
     cooling: ["coolingWithoutDewPointMode"],
     advanced: ["flowControlMode", "minRuntime"],
@@ -3709,6 +3712,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       "setupComplete",
       "installationTopology",
       "hpGeneration",
+      "boilerCvAssistEnabled",
       ...SILENT_SETTING_KEYS,
       "maxWater",
     ],
@@ -8407,6 +8411,7 @@ function renderWebServerLogsModal() {
     const sections = activeGroup === "installation"
       ? [
           renderSettingsGenerationSection(),
+          renderSettingsBoilerCvSection(),
           renderSettingsSilentSection(),
           renderSettingsWaterSection(),
         ]
@@ -9237,6 +9242,29 @@ function renderWebServerLogsModal() {
             Aanpassen
           </button>
           </div>
+        </div>
+      `,
+    );
+  }
+
+  function renderSettingsBoilerCvSection() {
+    if (!hasEntity("boilerCvAssistEnabled")) {
+      return "";
+    }
+
+    return renderSettingsSection(
+      "Basis",
+      "CV-ketel of boiler",
+      "Geef aan of OpenQuatt een CV-ketel of boiler als ondersteuning mag gebruiken.",
+      `
+        <div class="oq-settings-grid">
+          ${renderSettingsSwitchField(
+            "boilerCvAssistEnabled",
+            "CV-ketel/boiler aanwezig",
+            "Zet dit alleen aan als de installatie een CV-ketel of boiler heeft die OpenQuatt mag schakelen.",
+            "OpenQuatt kan de boiler/CV-ketel inschakelen indien de warmtepompen te weinig vermogen leveren.",
+            "OpenQuatt schakelt geen boiler/CV-ketel in."
+          )}
         </div>
       `,
     );

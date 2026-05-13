@@ -422,13 +422,14 @@
     setNumber("HP capacity (W)", capacity, "W");
     setNumber("HP deficit (W)", Math.max(0, strategyRequested - capacity), "W");
 
-    const boilerHeat = state.scenario === "dual" ? 180 : 0;
+    const boilerAssistEnabled = isSwitchEnabled("Boiler/CV assist enabled");
+    const boilerHeat = boilerAssistEnabled && state.scenario === "dual" ? 180 : 0;
     const systemHeat = Math.max(0, Number((Number(totalHeat || 0) + boilerHeat).toFixed(0)));
     const electricalDaily = state.scenario === "idle" ? 3.1 : state.scenario === "defrost" ? 6.4 : state.scenario === "cooling" ? (single ? 6.8 : 8.1) : single ? 7.2 : 8.6;
     const heatpumpDaily = state.scenario === "idle" ? 9.4 : state.scenario === "defrost" ? 18.2 : state.scenario === "cooling" ? (single ? 24.6 : 31.8) : single ? 28.4 : 36.9;
     const coolingElectricalDaily = state.scenario === "cooling" ? (single ? 1.8 : 2.4) : 0.0;
     const coolingDaily = state.scenario === "cooling" ? (single ? 7.1 : 9.3) : 0.0;
-    const boilerDaily = state.scenario === "dual" ? 2.7 : 0.0;
+    const boilerDaily = boilerAssistEnabled && state.scenario === "dual" ? 2.7 : 0.0;
     const systemDaily = Number((heatpumpDaily + boilerDaily).toFixed(1));
     const heatpumpCopDaily = electricalDaily > 0 ? Number((heatpumpDaily / electricalDaily).toFixed(2)) : 0;
     const heatpumpEerDaily = coolingElectricalDaily > 0 ? Number((coolingDaily / coolingElectricalDaily).toFixed(2)) : 0;
@@ -436,7 +437,7 @@
     const heatpumpCumulative = single ? 1208.7 : 2048.6;
     const coolingElectricalCumulative = state.scenario === "cooling" ? (single ? 28.6 : 41.9) : 0.0;
     const coolingCumulative = state.scenario === "cooling" ? (single ? 109.4 : 163.7) : 0.0;
-    const boilerCumulative = state.scenario === "dual" ? 114.8 : 0.0;
+    const boilerCumulative = boilerAssistEnabled && state.scenario === "dual" ? 114.8 : 0.0;
     const systemCumulative = Number((heatpumpCumulative + boilerCumulative).toFixed(1));
     const heatpumpCopCumulative = electricalCumulative > 0 ? Number((heatpumpCumulative / electricalCumulative).toFixed(2)) : 0;
     const heatpumpEerCumulative = coolingElectricalCumulative > 0 ? Number((coolingCumulative / coolingElectricalCumulative).toFixed(2)) : 0;
@@ -508,6 +509,7 @@
       option: ["Power House", "Water Temperature Control (heating curve)"],
     });
     setEntity("switch", "OpenQuatt Enabled", { value: true, state: true });
+    setEntity("switch", "Boiler/CV assist enabled", { value: true, state: true });
     setEntity("switch", "Manual Cooling Enable", { value: false, state: false });
     setEntity("switch", "CiC Compatibility Mode", { value: false, state: false });
     setEntity("switch", "Trendopslag", { value: true, state: true });

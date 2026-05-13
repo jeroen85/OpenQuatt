@@ -233,7 +233,7 @@
   const INITIAL_OVERVIEW_READY_TIMEOUT_MS = 2000;
   const INITIAL_OVERVIEW_READY_POLL_MS = 250;
   const INITIAL_SETTINGS_READY_KEY_MAP = {
-    installation: ["hpGeneration", "silentStartTime", "silentEndTime", "maxWater"],
+    installation: ["hpGeneration", "boilerCvAssistEnabled", "silentStartTime", "silentEndTime", "maxWater"],
     heating: ["strategy"],
     cooling: ["coolingWithoutDewPointMode"],
     advanced: ["flowControlMode", "minRuntime"],
@@ -256,6 +256,7 @@
       "setupComplete",
       "installationTopology",
       "hpGeneration",
+      "boilerCvAssistEnabled",
       ...SILENT_SETTING_KEYS,
       "maxWater",
     ],

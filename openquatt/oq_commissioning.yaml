@@ -204,6 +204,10 @@ button:
           const int cm_code = id(oq_control_mode_code);
           const bool cm100_ready = (cm_code == 100);
           const bool task_running = id(oq_commissioning_active) && id(oq_commissioning_task_code) != 0;
+          if (!id(oq_boiler_assist_enabled).state) {
+            id(oq_boiler_power_test_status).publish_state("REFUSED: boiler/CV assist disabled");
+            return;
+          }
           if (task_running || id(oq_commissioning_request_pending)) {
             id(oq_boiler_power_test_status).publish_state("REFUSED: BUSY");
             return;
@@ -601,6 +605,11 @@ interval:
           if (id(oq_water_temp_boiler_inhibit_active)) {
             ESP_LOGW("quatt.cm100.boiler", "Boiler test failed: boiler inhibit active");
             finish_task("FAILED: boiler inhibit active", 8, false, true);
+            return;
+          }
+          if (!id(oq_boiler_assist_enabled).state) {
+            ESP_LOGW("quatt.cm100.boiler", "Boiler test failed: boiler/CV assist disabled");
+            finish_task("FAILED: boiler/CV assist disabled", 8, false, true);
             return;
           }
 

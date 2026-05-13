@@ -385,6 +385,7 @@
     const sections = activeGroup === "installation"
       ? [
           renderSettingsGenerationSection(),
+          renderSettingsBoilerCvSection(),
           renderSettingsSilentSection(),
           renderSettingsWaterSection(),
         ]
@@ -1215,6 +1216,29 @@
             Aanpassen
           </button>
           </div>
+        </div>
+      `,
+    );
+  }
+
+  function renderSettingsBoilerCvSection() {
+    if (!hasEntity("boilerCvAssistEnabled")) {
+      return "";
+    }
+
+    return renderSettingsSection(
+      "Basis",
+      "CV-ketel of boiler",
+      "Geef aan of OpenQuatt een CV-ketel of boiler als ondersteuning mag gebruiken.",
+      `
+        <div class="oq-settings-grid">
+          ${renderSettingsSwitchField(
+            "boilerCvAssistEnabled",
+            "CV-ketel/boiler aanwezig",
+            "Zet dit alleen aan als de installatie een CV-ketel of boiler heeft die OpenQuatt mag schakelen.",
+            "OpenQuatt kan de boiler/CV-ketel inschakelen indien de warmtepompen te weinig vermogen leveren.",
+            "OpenQuatt schakelt geen boiler/CV-ketel in."
+          )}
         </div>
       `,
     );

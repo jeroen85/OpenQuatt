@@ -229,6 +229,16 @@ select:
 
 switch:
   - platform: template
+    id: oq_boiler_assist_enabled
+    name: "Boiler/CV assist enabled"
+    icon: mdi:water-boiler
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_control
+
+  - platform: template
     id: oq_enabled
     name: "OpenQuatt Enabled"
     icon: mdi:power-standby
@@ -1232,15 +1242,16 @@ interval:
                     desired_local = 1;
                   }
 
-              // CM3 (boiler assist) is a Power House-only feature. Heating-curve mode
-              // must never promote into boiler assist from deficit telemetry.
+              // CM3 (boiler assist) is a Power House-only feature and only applies
+              // when the installation has explicit boiler/CV assist enabled.
               const int cm_now =
                   (strcmp(cur_cm, "CM3") == 0) ? 3 :
                   (strcmp(cur_cm, "CM2") == 0) ? 2 :
                   (strcmp(cur_cm, "CM5") == 0) ? 5 :
                   (strcmp(cur_cm, "CM1") == 0) ? 1 :
                   (strcmp(cur_cm, "CM98") == 0) ? 98 : 0;
-              if (power_house_active) {
+              const bool boiler_assist_enabled = id(oq_boiler_assist_enabled).state;
+              if (power_house_active && boiler_assist_enabled) {
                 // CM3 (boiler assist) auto-switching
                 // Promote/Demote: deficit-based (thermal deficit) + timers/hysteresis
                 const float deficit_w = id(oq_P_deficit_w);
@@ -1286,7 +1297,9 @@ interval:
                 id(oq_cm3_demote_since_ms) = 0;
                 if (cm_now == 3 && heating_req && base_target == 2) {
                   desired_local = 2;
-                  cm_transition_reason = "Power House assist disabled, returning to CM2";
+                  cm_transition_reason = boiler_assist_enabled
+                      ? "Power House assist disabled, returning to CM2"
+                      : "boiler/CV assist disabled, returning to CM2";
                 }
               }
               }
