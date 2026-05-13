@@ -3563,7 +3563,10 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
 
   function toDateTimeInputValue(rawValue) {
     const normalized = normalizeDateTimeValue(rawValue);
-    return normalized ? normalized.slice(0, 16).replace(" ", "T") : "";
+    if (!normalized || normalized === OPENQUATT_RESUME_CLEAR_VALUE) {
+      return "";
+    }
+    return normalized.slice(0, 16).replace(" ", "T");
   }
 
   function parseDateTimeValue(rawValue) {
@@ -3639,11 +3642,17 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
   }
 
   function getOpenQuattPauseDraftValue() {
-    if (state.pauseResumeDraft) {
-      return state.pauseResumeDraft;
+    const draftValue = toDateTimeInputValue(state.pauseResumeDraft);
+    if (draftValue) {
+      return draftValue;
     }
     const scheduledValue = toDateTimeInputValue(getEntityValue("openquattResumeAt"));
-    return scheduledValue || getOpenQuattPausePresetValue("8h");
+    if (scheduledValue) {
+      return scheduledValue;
+    }
+
+    // Offer a nearby suggestion without committing anything to firmware yet.
+    return getOpenQuattPausePresetValue("2h");
   }
 
   function getSettingsRefreshKeys() {
