@@ -634,6 +634,7 @@
     return [
       status.enabled ? "on" : "off",
       status.transport_active ? "active" : "idle",
+      status.pending_restart ? "pending" : "settled",
       String(status.key || ""),
       String(status.source || ""),
       String(status.csrf_token || ""),
@@ -732,6 +733,7 @@
       const nextStatus = {
         enabled: Boolean(payload.enabled),
         transport_active: Boolean(payload.transport_active),
+        pending_restart: Boolean(payload.pending_restart),
         key: String(payload.key || ""),
         source: String(payload.source || ""),
         csrf_token: String(payload.csrf_token || ""),
@@ -860,6 +862,14 @@
     return success;
   }
 
+  async function restartForApiSecurityChange() {
+    await triggerNamedButton("restartAction", {
+      successNotice: "OpenQuatt wordt opnieuw opgestart om de API-beveiliging toe te passen.",
+      errorPrefix: "Herstart mislukt",
+      reconnectMode: "restart",
+    });
+  }
+
   async function commitEnableApiSecurity() {
     const status = state.apiSecurityStatus || {};
     if (!status.csrf_token) {
@@ -887,7 +897,8 @@
         throw new Error(payload.error || `HTTP ${response.status}`);
       }
       await refreshApiSecurityStatus();
-      state.apiSecurityNotice = "API-encryptie staat nu aan.";
+      state.apiSecurityNotice = "API-beveiliging is opgeslagen. Kopieer de sleutel en kies daarna Opslaan en herstarten.";
+      state.apiSecurityError = "";
       render();
     } catch (error) {
       state.apiSecurityError = `Inschakelen is mislukt. ${error.message}`;
@@ -925,7 +936,8 @@
         throw new Error(payload.error || `HTTP ${response.status}`);
       }
       await refreshApiSecurityStatus();
-      state.apiSecurityNotice = "API-sleutel is vernieuwd.";
+      state.apiSecurityNotice = "API-sleutel is opgeslagen. Kopieer de nieuwe sleutel en kies daarna Opslaan en herstarten.";
+      state.apiSecurityError = "";
       render();
     } catch (error) {
       state.apiSecurityError = `Roteren is mislukt. ${error.message}`;
@@ -969,7 +981,8 @@
         throw new Error(payload.error || `HTTP ${response.status}`);
       }
       await refreshApiSecurityStatus();
-      state.apiSecurityNotice = "API-encryptie staat nu uit.";
+      state.apiSecurityNotice = "API-beveiliging is opgeslagen. Kies daarna Opslaan en herstarten om dit toe te passen.";
+      state.apiSecurityError = "";
       render();
     } catch (error) {
       state.apiSecurityError = `Uitzetten is mislukt. ${error.message}`;
@@ -2411,6 +2424,11 @@
 
     if (action === "disable-api-security") {
       void commitDisableApiSecurity();
+      return;
+    }
+
+    if (action === "restart-api-security") {
+      void restartForApiSecurityChange();
       return;
     }
 

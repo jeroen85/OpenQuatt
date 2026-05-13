@@ -37,6 +37,7 @@ class OpenQuattWebAuth : public Component {
   const std::string &get_api_security_key() const { return this->api_security_key_; }
   const std::string &get_api_security_source() const { return this->api_security_source_; }
   bool is_api_security_transport_active() const;
+  bool is_api_security_restart_pending() const { return this->api_security_restart_pending_; }
 
  protected:
   static constexpr uint32_t STORAGE_MAGIC = 0x4F514157;
@@ -68,7 +69,7 @@ class OpenQuattWebAuth : public Component {
   bool is_valid_storage_(const AuthStorage &storage) const;
   bool load_api_security_storage_(ApiSecurityStorage *storage);
   bool save_api_security_storage_(const ApiSecurityStorage &storage);
-  bool apply_api_security_storage_(const ApiSecurityStorage &storage, const char *source);
+  bool apply_api_security_storage_(const ApiSecurityStorage &storage, const char *source, bool apply_transport = true);
   bool build_api_security_storage_(bool enabled, const std::string &key, ApiSecurityStorage *storage);
   bool is_valid_api_security_storage_(const ApiSecurityStorage &storage) const;
   static std::string encode_api_security_key_(const std::array<uint8_t, 32> &key);
@@ -93,6 +94,7 @@ class OpenQuattWebAuth : public Component {
   bool api_security_enabled_{false};
   bool api_security_key_present_{false};
   bool api_security_transport_active_{false};
+  bool api_security_restart_pending_{false};
   ESPPreferenceObject pref_;
   ESPPreferenceObject api_security_pref_;
   bool handlers_registered_{false};
