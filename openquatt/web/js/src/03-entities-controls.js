@@ -2176,6 +2176,11 @@
   }
 
   function handleChange(event) {
+    if (event.target.dataset.oqDevControl === "boiler" && typeof window.__OQ_SET_MOCK_BOILER__ === "function") {
+      window.__OQ_SET_MOCK_BOILER__(event.target.value);
+      return;
+    }
+
     if (event.target.dataset.oqBackupFileInput) {
       const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
       event.target.value = "";
@@ -2332,6 +2337,11 @@
     }
 
     const action = button.dataset.oqAction;
+    if (action === "set-mock-boiler" && typeof window.__OQ_SET_MOCK_BOILER__ === "function") {
+      window.__OQ_SET_MOCK_BOILER__(button.dataset.boilerMode || "off");
+      return;
+    }
+
     if (action === "toggle-interface-panel") {
       setInterfacePanelOpen(!state.interfacePanelOpen);
       render();

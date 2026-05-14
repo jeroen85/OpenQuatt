@@ -710,8 +710,181 @@
     `;
   }
 
+  function shouldRenderBoilerPanel() {
+    return isEntityActive("boilerCvAssistEnabled") && hasEntity("boilerHeatPower");
+  }
+
+  function getBoilerReturnTemperatureKey() {
+    const installationTopology = typeof getInstallationTopology === "function" ? getInstallationTopology() : "";
+    if (installationTopology !== "single" && hasEntity("hp2WaterOut")) {
+      return "hp2WaterOut";
+    }
+    return "hp1WaterOut";
+  }
+
+  function getBoilerFlowKey() {
+    const installationTopology = typeof getInstallationTopology === "function" ? getInstallationTopology() : "";
+    if (installationTopology !== "single" && hasEntity("hp2Flow")) {
+      return "hp2Flow";
+    }
+    return "hp1Flow";
+  }
+
+  function getBoilerPanelModel() {
+    const heatValue = getEntityNumericValue("boilerHeatPower");
+    const flowValue = getEntityNumericValue(getBoilerFlowKey());
+    const active = hasEntity("boilerActive")
+      ? isEntityActive("boilerActive")
+      : (!Number.isNaN(heatValue) && heatValue > 20);
+    const flowActive = !Number.isNaN(flowValue) && flowValue > 0;
+    const heatText = formatNumericState(heatValue, 0, "W");
+    const returnTempText = formatNumericState(getEntityNumericValue(getBoilerReturnTemperatureKey()), 1, "°C");
+    const supplyTempText = formatNumericState(getEntityNumericValue("supplyTemp"), 1, "°C");
+    const statusText = active ? "Aan" : "Uit";
+    const statusCopy = active
+      ? "Levert ondersteuning"
+      : "Geen ondersteuning";
+    const boardClass = [
+      "oq-boiler-card",
+      active ? "is-running" : "is-idle",
+    ].filter(Boolean).join(" ");
+
+    return {
+      active,
+      flowActive,
+      heatText,
+      returnTempText,
+      supplyTempText,
+      statusText,
+      statusCopy,
+      boardClass,
+      flowPathClass: flowActive ? "is-flowing" : "is-static",
+    };
+  }
+
+  function getBoilerPanelRenderSignature(model = getBoilerPanelModel()) {
+    return getRenderSignature({
+      version: "hp-pipe-colors-v1",
+      boardClass: "oq-boiler-card",
+    });
+  }
+
+  function patchBoilerPanelRuntime(panel, model = getBoilerPanelModel()) {
+    const card = panel.querySelector(".oq-boiler-card");
+    if (card) {
+      card.className = [
+        "oq-boiler-card",
+        model.active ? "is-running" : "is-idle",
+        model.flowActive ? "is-flowing" : "is-static",
+      ].join(" ");
+    }
+    const chip = panel.querySelector(".oq-overview-chip");
+    if (chip) {
+      chip.className = `oq-overview-chip oq-overview-chip--${model.active ? "active" : "neutral"}`;
+      if (chip.textContent !== model.statusText) {
+        chip.textContent = model.statusText;
+      }
+    }
+    const supportBox = panel.querySelector(".oq-boiler-summary-box--support");
+    if (supportBox) {
+      supportBox.classList.toggle("is-active", model.active);
+      supportBox.classList.toggle("is-idle", !model.active);
+    }
+    const supportValue = panel.querySelector(".oq-boiler-summary-box--support strong");
+    if (supportValue && supportValue.textContent !== model.statusCopy) {
+      supportValue.textContent = model.statusCopy;
+    }
+    const heatValue = panel.querySelector("[data-oq-boiler-heat-value]");
+    if (heatValue && heatValue.textContent !== model.heatText) {
+      heatValue.textContent = model.heatText;
+    }
+    const statusValue = panel.querySelector("[data-oq-boiler-status-value]");
+    if (statusValue && statusValue.textContent !== model.statusCopy) {
+      statusValue.textContent = model.statusCopy;
+    }
+    const returnTemp = panel.querySelector('[data-oq-bind="boiler-return-value"]');
+    if (returnTemp && returnTemp.textContent !== model.returnTempText) {
+      returnTemp.textContent = model.returnTempText;
+    }
+    const supplyTemp = panel.querySelector('[data-oq-bind="boiler-supply-value"]');
+    if (supplyTemp && supplyTemp.textContent !== model.supplyTempText) {
+      supplyTemp.textContent = model.supplyTempText;
+    }
+  }
+
+  function renderBoilerPanel() {
+    if (!shouldRenderBoilerPanel()) {
+      return "";
+    }
+
+    const model = getBoilerPanelModel();
+    return `
+      <section class="oq-overview-hp oq-overview-boiler" data-oq-boiler-panel data-render-signature="${escapeHtml(getBoilerPanelRenderSignature(model))}">
+        <div class="${escapeHtml([model.boardClass, model.flowPathClass].filter(Boolean).join(" "))}">
+          <div class="oq-boiler-card-main">
+            <div class="oq-boiler-card-head">
+              <div>
+                <span class="oq-boiler-eyebrow">Ondersteuning</span>
+                <h3>CV-ketel / boiler</h3>
+              </div>
+              <span class="oq-overview-chip oq-overview-chip--${model.active ? "active" : "neutral"}">${escapeHtml(model.statusText)}</span>
+            </div>
+            <p class="oq-boiler-copy">De boiler geeft ondersteuning wanneer de warmtepomp extra hulp nodig heeft.</p>
+            <div class="oq-boiler-mini-schematic">
+              <svg class="oq-boiler-mini-svg" viewBox="0 0 420 132" role="img" aria-label="Schematische weergave CV-ketel of boiler">
+                <defs>
+                  <linearGradient id="oq-boiler-card-body" x1="0" y1="1" x2="0" y2="0">
+                    <stop offset="0%" stop-color="#111827"></stop>
+                    <stop offset="62%" stop-color="#7f1d1d"></stop>
+                    <stop offset="100%" stop-color="#fb923c"></stop>
+                  </linearGradient>
+                  <linearGradient id="oq-boiler-card-flame" x1="0" y1="1" x2="0" y2="0">
+                    <stop offset="0%" stop-color="#f97316"></stop>
+                    <stop offset="48%" stop-color="#facc15"></stop>
+                    <stop offset="100%" stop-color="#fee2e2"></stop>
+                  </linearGradient>
+                </defs>
+                ${renderTechPipeLayer("boiler-return", "return", "M24 88 H166 C180 88 190 80 196 68", true, "water")}
+                ${renderTechPipeLayer("boiler-supply", "supply", "M224 52 C232 40 244 36 258 36 H396", true, "water")}
+                <g class="oq-boiler-card-unit">
+                  <rect class="oq-boiler-card-unit-shell" x="176" y="26" width="68" height="82" rx="22" />
+                  <rect class="oq-boiler-card-unit-core" x="190" y="40" width="40" height="54" rx="14" fill="url(#oq-boiler-card-body)" />
+                  <path class="oq-boiler-card-coil" d="M199 54 H221 M199 68 H221 M199 82 H221" />
+                  <g class="oq-boiler-card-flame" transform="translate(210 90)">
+                    <path class="oq-boiler-card-flame-outer" fill="url(#oq-boiler-card-flame)" d="M0 14 C-12 6 -9 -6 -1 -17 C2 -9 11 -6 9 5 C16 2 18 12 11 17 C7 21 -5 20 0 14 Z" />
+                    <path class="oq-boiler-card-flame-inner" d="M0 14 C-5 9 -3 3 2 -4 C2 4 8 6 6 12 C4 16 -2 16 0 14 Z" />
+                  </g>
+                </g>
+                ${renderTechWaterReading({ bind: "boiler-return", x: 22, y: 70, width: 78, value: model.returnTempText, label: "Retour", ariaLabel: `Retour ${model.returnTempText}`, align: "start" })}
+                ${renderTechTooltip({ bind: "boiler-return", modifier: "return", icon: "temperature", x: 82, y: 70, width: 124, kicker: "Temperatuur", detail: "Retour", direction: "left" })}
+                ${renderTechWaterReading({ bind: "boiler-supply", x: 320, y: 16, width: 76, value: model.supplyTempText, label: "Aanvoer", ariaLabel: `Aanvoer ${model.supplyTempText}`, align: "end" })}
+                ${renderTechTooltip({ bind: "boiler-supply", modifier: "supply", icon: "temperature", x: 294, y: 14, width: 124, kicker: "Temperatuur", detail: "Aanvoer", direction: "right" })}
+              </svg>
+              <div class="oq-boiler-summary-grid">
+                <div class="oq-boiler-summary-box oq-boiler-summary-box--power">
+                  <span>Geleverd vermogen</span>
+                  <strong data-oq-boiler-heat-value>${escapeHtml(model.heatText)}</strong>
+                </div>
+                <div class="oq-boiler-summary-box oq-boiler-summary-box--support ${model.active ? "is-active" : "is-idle"}">
+                  <span>Ondersteuning</span>
+                  <strong data-oq-boiler-status-value>${escapeHtml(model.statusCopy)}</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
   function getHeatPumpPanels() {
-    return HP_PANEL_CONFIGS.filter((panel) => hasEntity(panel.keys.power));
+    const installationTopology = typeof getInstallationTopology === "function" ? getInstallationTopology() : "";
+    return HP_PANEL_CONFIGS.filter((panel) => {
+      if (installationTopology === "single" && panel.title === "HP2") {
+        return false;
+      }
+      return hasEntity(panel.keys.power);
+    });
   }
 
   function getEffectiveHpLayoutMode(heatPumpPanels) {
@@ -748,6 +921,13 @@
       layout: index === 0 ? "focus-hp1" : "focus-hp2",
       label: "Vergroot",
     };
+  }
+
+  function getHeatPumpGridLayoutVariant(heatPumpPanels) {
+    if (!Array.isArray(heatPumpPanels) || heatPumpPanels.length !== 1) {
+      return getEffectiveHpLayoutMode(heatPumpPanels);
+    }
+    return shouldRenderBoilerPanel() ? "equal" : "single";
   }
 
   function renderMagnifyActionIcon(kind = "plus") {
@@ -807,6 +987,7 @@
     const strategyLabel = getOverviewStrategyLabel();
     const heatPumpPanels = getHeatPumpPanels();
     const hpLayoutMode = getEffectiveHpLayoutMode(heatPumpPanels);
+    const hpGridLayout = getHeatPumpGridLayoutVariant(heatPumpPanels);
     const heatPumpControls = renderHeatPumpControlsInner(heatPumpPanels);
 
     return `
@@ -818,8 +999,9 @@
             ${renderOverviewTempsPanel()}
           </div>
           ${heatPumpControls ? `<div class="oq-overview-hp-tools">${heatPumpControls}</div>` : ""}
-          <div class="oq-overview-hp-grid ${heatPumpPanels.length === 1 ? "oq-overview-hp-grid--single" : ""} ${heatPumpPanels.length > 1 ? `oq-overview-hp-grid--${hpLayoutMode}` : ""}">
+          <div class="oq-overview-hp-grid oq-overview-hp-grid--${escapeHtml(hpGridLayout)}">
             ${heatPumpPanels.map((panel, index) => renderHeatPumpPanel(panel.title, panel.keys, panel.accent, getHeatPumpPanelEmphasis(index, heatPumpPanels, hpLayoutMode), getHeatPumpPanelLayoutAction(index, heatPumpPanels, hpLayoutMode))).join("")}
+            ${renderBoilerPanel()}
           </div>
         </div>
       </section>
@@ -1125,6 +1307,7 @@
     const trends = board.querySelector(".oq-overview-trends");
     const hpTools = board.querySelector(".oq-overview-hp-tools");
     const hpGrid = board.querySelector(".oq-overview-hp-grid");
+    const boilerPanel = board.querySelector("[data-oq-boiler-panel]");
     const heatPumpPanels = getHeatPumpPanels();
 
     if (summaryShell) {
@@ -1183,6 +1366,18 @@
       return false;
     }
 
+    const nextBoilerModel = shouldRenderBoilerPanel() ? getBoilerPanelModel() : null;
+    const nextBoilerMarkup = nextBoilerModel ? renderBoilerPanel() : "";
+    const nextBoilerSignature = nextBoilerModel ? getBoilerPanelRenderSignature(nextBoilerModel) : "";
+    if (Boolean(boilerPanel) !== Boolean(nextBoilerMarkup)) {
+      return false;
+    }
+    if (boilerPanel && boilerPanel.dataset.renderSignature !== nextBoilerSignature) {
+      boilerPanel.outerHTML = nextBoilerMarkup;
+    } else if (boilerPanel && nextBoilerModel) {
+      patchBoilerPanelRuntime(boilerPanel, nextBoilerModel);
+    }
+
     patchHeatPumpControls(hpTools, heatPumpPanels);
 
     const renderedPanels = hpGrid.querySelectorAll("[data-oq-hp-panel]");
@@ -1191,7 +1386,7 @@
     }
 
     const hpLayoutMode = getEffectiveHpLayoutMode(heatPumpPanels);
-    setVariantClass(hpGrid, "oq-overview-hp-grid--", heatPumpPanels.length === 1 ? "single" : hpLayoutMode, ["single", "equal", "focus-hp1", "focus-hp2"]);
+    setVariantClass(hpGrid, "oq-overview-hp-grid--", getHeatPumpGridLayoutVariant(heatPumpPanels), ["single", "equal", "focus-hp1", "focus-hp2"]);
     heatPumpPanels.forEach((panel, index) => {
       const panelNode = board.querySelector(`[data-oq-hp-panel="${panel.title}"]`);
       if (panelNode) {

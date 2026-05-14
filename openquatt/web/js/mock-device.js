@@ -3,9 +3,11 @@
   const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
   const OPENQUATT_AUTH_RECOVERY_WINDOW_MS = 600000;
   const entities = new Map();
+  let devControlsRoot = null;
   const state = {
     scenario: "heating",
     installation: "duo",
+    boiler: "off",
     complete: true,
     tick: 0,
     autoAnimate: true,
@@ -370,6 +372,9 @@
   function syncOverviewTelemetry(single) {
     const hp1Outside = Number(getEntity("sensor", "HP1 - Outside temperature")?.value);
     const hp2Outside = Number(getEntity("sensor", "HP2 - Outside temperature")?.value);
+    const hpOutlet = Number(getEntity("sensor", single ? "HP1 - Water out temperature" : "HP2 - Water out temperature")?.value);
+    const supplyTemp = Number(getEntity("sensor", "Water Supply Temp (Selected)")?.value);
+    const flowLph = Number(getEntity("sensor", "Flow average (Selected)")?.value);
     const totalHeat = Number(getEntity("sensor", "Total Heat Power")?.value);
     const totalPower = Number(getEntity("sensor", "Total Power Input")?.value);
     const strategy = String(getEntity("select", "Heating Control Mode")?.value || "");
@@ -423,13 +428,17 @@
     setNumber("HP deficit (W)", Math.max(0, strategyRequested - capacity), "W");
 
     const boilerAssistEnabled = isSwitchEnabled("Boiler/CV assist enabled");
-    const boilerHeat = boilerAssistEnabled && state.scenario === "dual" ? 180 : 0;
+    const boilerActive = boilerAssistEnabled && state.boiler === "on";
+    const boilerDelta = Number.isNaN(supplyTemp) || Number.isNaN(hpOutlet) ? 0 : supplyTemp - hpOutlet;
+    const boilerHeat = boilerActive && !Number.isNaN(flowLph)
+      ? Number(Math.max(0, (flowLph / 3600) * 4186 * boilerDelta).toFixed(1))
+      : 0;
     const systemHeat = Math.max(0, Number((Number(totalHeat || 0) + boilerHeat).toFixed(0)));
     const electricalDaily = state.scenario === "idle" ? 3.1 : state.scenario === "defrost" ? 6.4 : state.scenario === "cooling" ? (single ? 6.8 : 8.1) : single ? 7.2 : 8.6;
     const heatpumpDaily = state.scenario === "idle" ? 9.4 : state.scenario === "defrost" ? 18.2 : state.scenario === "cooling" ? (single ? 24.6 : 31.8) : single ? 28.4 : 36.9;
     const coolingElectricalDaily = state.scenario === "cooling" ? (single ? 1.8 : 2.4) : 0.0;
     const coolingDaily = state.scenario === "cooling" ? (single ? 7.1 : 9.3) : 0.0;
-    const boilerDaily = boilerAssistEnabled && state.scenario === "dual" ? 2.7 : 0.0;
+    const boilerDaily = boilerActive ? 2.7 : 0.0;
     const systemDaily = Number((heatpumpDaily + boilerDaily).toFixed(1));
     const heatpumpCopDaily = electricalDaily > 0 ? Number((heatpumpDaily / electricalDaily).toFixed(2)) : 0;
     const heatpumpEerDaily = coolingElectricalDaily > 0 ? Number((coolingDaily / coolingElectricalDaily).toFixed(2)) : 0;
@@ -437,7 +446,7 @@
     const heatpumpCumulative = single ? 1208.7 : 2048.6;
     const coolingElectricalCumulative = state.scenario === "cooling" ? (single ? 28.6 : 41.9) : 0.0;
     const coolingCumulative = state.scenario === "cooling" ? (single ? 109.4 : 163.7) : 0.0;
-    const boilerCumulative = boilerAssistEnabled && state.scenario === "dual" ? 114.8 : 0.0;
+    const boilerCumulative = boilerActive ? 114.8 : 0.0;
     const systemCumulative = Number((heatpumpCumulative + boilerCumulative).toFixed(1));
     const heatpumpCopCumulative = electricalCumulative > 0 ? Number((heatpumpCumulative / electricalCumulative).toFixed(2)) : 0;
     const heatpumpEerCumulative = coolingElectricalCumulative > 0 ? Number((coolingCumulative / coolingElectricalCumulative).toFixed(2)) : 0;
@@ -449,6 +458,7 @@
       : 0;
 
     setNumber("Boiler Heat Power", boilerHeat, "W");
+    setBinary("Boiler active", boilerActive);
     setNumber("System Heat Power", systemHeat, "W");
     setNumber("Heating Power Input", state.scenario === "cooling" ? 0 : (Number.isNaN(totalPower) ? 0 : totalPower), "W");
     setNumber("Cooling Power Input", state.scenario === "cooling" ? (Number.isNaN(totalPower) ? 0 : totalPower) : 0, "W");
@@ -477,6 +487,7 @@
   function seedEntities() {
     syncDevMeta();
     setEntity("text_sensor", "Summary", { state: "" });
+    setEntity("text_sensor", "OpenQuatt Installation Topology", { state: state.installation, value: state.installation });
     setEntity("button", "Check Firmware Updates", { state: "" });
     setEntity("button", "Restart", { state: "" });
     setEntity("text_sensor", "OpenQuatt Version", { state: "v0.26.0", value: "v0.26.0" });
@@ -702,6 +713,7 @@
       ["Cooling Enable (Selected)", false],
       ["Cooling Request Active", false],
       ["Cooling Permitted", false],
+      ["Boiler active", false],
       ["HP1 - Defrost", false],
       ["HP1 - 4-Way valve", false],
       ["HP1 - Bottom plate heater", false],
@@ -730,6 +742,7 @@
 
   function setInstallationMode(mode) {
     state.installation = mode === "single" ? "single" : "duo";
+    setText("text_sensor", "OpenQuatt Installation Topology", state.installation);
     if (state.installation === "single") {
       clearHp2Entities();
       if (state.scenario === "dual") {
@@ -904,6 +917,18 @@
       setNumber("Day max level", 10);
       setNumber("Silent max level", 8);
     }
+  }
+
+  function syncBoilerDevControlFromDom() {
+    if (typeof document === "undefined") {
+      return;
+    }
+    const boilerControl = devControlsRoot?.querySelector('[data-oq-dev-control="boiler"]')
+      || document.querySelector('[data-oq-dev-control="boiler"]');
+    if (!boilerControl) {
+      return;
+    }
+    state.boiler = boilerControl.value === "on" ? "on" : "off";
   }
 
   function applyScenario(name) {
@@ -1680,8 +1705,17 @@
               <option value="defrost">Defrost</option>
             </select>
           </label>
+          <label class="oq-helper-hub-dev-row">
+            <span class="oq-helper-hub-dev-label">CV-ketel</span>
+            <select class="oq-helper-hub-dev-select" data-oq-dev-control="boiler">
+              <option value="off">Uit</option>
+              <option value="on">Aan</option>
+            </select>
+          </label>
         </div>
         <div class="oq-helper-hub-dev-actions">
+          <button class="oq-helper-hub-dev-button" type="button" data-oq-dev-control="boiler-off" data-oq-action="set-mock-boiler" data-boiler-mode="off">CV uit</button>
+          <button class="oq-helper-hub-dev-button" type="button" data-oq-dev-control="boiler-on" data-oq-action="set-mock-boiler" data-boiler-mode="on">CV aan</button>
           <button class="oq-helper-hub-dev-button" type="button" data-oq-dev-control="arm-auth">Login herstelvenster</button>
         </div>
         <div class="oq-helper-hub-dev-actions">
@@ -1691,6 +1725,7 @@
         <div class="oq-helper-hub-dev-meta">
           <span class="oq-helper-hub-dev-badge">Quick Start ${state.complete ? "afgerond" : "actief"}</span>
           <span class="oq-helper-hub-dev-badge">Datastroom ${state.autoAnimate ? "live mock" : "gepauzeerd"}</span>
+          <span class="oq-helper-hub-dev-badge">CV-ketel ${state.boiler === "on" ? "aan" : "uit"}</span>
         </div>
       </section>
     `;
@@ -1701,6 +1736,7 @@
     if (!controlsRoot) {
       return;
     }
+    devControlsRoot = controlsRoot;
 
     const installation = controlsRoot.querySelector('[data-oq-dev-control="installation"]');
     if (installation) {
@@ -1719,6 +1755,48 @@
       scenario.value = state.scenario;
       scenario.onchange = () => {
         state.scenario = scenario.value;
+        applyScenario(state.scenario);
+        updateSummary();
+        notifyMockUpdated();
+        notifyDevControlsChanged();
+      };
+    }
+
+    const boiler = controlsRoot.querySelector('[data-oq-dev-control="boiler"]');
+    if (boiler) {
+      const handleBoilerChange = () => {
+        state.boiler = boiler.value === "on" ? "on" : "off";
+        applyScenario(state.scenario);
+        updateSummary();
+        notifyMockUpdated();
+        notifyDevControlsChanged();
+      };
+      boiler.value = state.boiler;
+      boiler.onchange = handleBoilerChange;
+      boiler.oninput = handleBoilerChange;
+    }
+
+    const boilerOff = controlsRoot.querySelector('[data-oq-dev-control="boiler-off"]');
+    if (boilerOff) {
+      boilerOff.onclick = () => {
+        state.boiler = "off";
+        if (boiler) {
+          boiler.value = "off";
+        }
+        applyScenario(state.scenario);
+        updateSummary();
+        notifyMockUpdated();
+        notifyDevControlsChanged();
+      };
+    }
+
+    const boilerOn = controlsRoot.querySelector('[data-oq-dev-control="boiler-on"]');
+    if (boilerOn) {
+      boilerOn.onclick = () => {
+        state.boiler = "on";
+        if (boiler) {
+          boiler.value = "on";
+        }
         applyScenario(state.scenario);
         updateSummary();
         notifyMockUpdated();
@@ -1759,6 +1837,41 @@
   window.__OQ_DEV_TREND_MOCKS__ = {
     buildTrendPreviewSamples,
   };
+  window.__OQ_SET_MOCK_BOILER__ = applyBoilerDevMode;
+
+  function getDevControlFromEvent(event) {
+    const path = typeof event.composedPath === "function" ? event.composedPath() : [];
+    return path.find((item) => item?.dataset?.oqDevControl) || event.target?.closest?.("[data-oq-dev-control]");
+  }
+
+  function applyBoilerDevMode(value) {
+    state.boiler = value === "on" ? "on" : "off";
+    const boilerControl = devControlsRoot?.querySelector('[data-oq-dev-control="boiler"]');
+    if (boilerControl) {
+      boilerControl.value = state.boiler;
+    }
+    applyScenario(state.scenario);
+    updateSummary();
+    notifyMockUpdated();
+    notifyDevControlsChanged();
+  }
+
+  window.addEventListener("click", (event) => {
+    const control = getDevControlFromEvent(event);
+    const action = control?.dataset?.oqDevControl;
+    if (action === "boiler-on") {
+      applyBoilerDevMode("on");
+    } else if (action === "boiler-off") {
+      applyBoilerDevMode("off");
+    }
+  });
+
+  window.addEventListener("change", (event) => {
+    const control = getDevControlFromEvent(event);
+    if (control?.dataset?.oqDevControl === "boiler") {
+      applyBoilerDevMode(control.value);
+    }
+  });
 
   seedEntities();
   refreshAuthToken();
