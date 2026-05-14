@@ -105,7 +105,7 @@ views:
               - `Verwarmingsstrategie`: bron van de warmtevraag (bijv. Power
               House/curve).
 
-              - `Ketel actief`: geeft aan of ketel-assist actief is.
+              - `Ketel actief`: geeft aan of ketelondersteuning actief is.
 
               - `Stille modus actief`: toont of het stil-venster nu van kracht is.
 
@@ -2553,12 +2553,16 @@ views:
               <summary><strong>Uitleg parameters</strong></summary>
 
               - **Nominaal ketelvermogen** is de referentie voor
-              boiler-assist en de boiler power test.
+              boilerondersteuning en de boiler power test.
+
+              - **CV-ketel/boiler aanwezig** moet aan staan voordat
+              OpenQuatt de ketel/boiler als ondersteuning of de boiler power
+              test mag gebruiken.
 
               - De **CM3-tekort inschakel- en uitschakeldrempels** bepalen
-              wanneer boiler-assist mag inschakelen/uitschakelen.
+              wanneer boilerondersteuning mag inschakelen/uitschakelen.
 
-              - Boiler-assist wordt daarnaast geblokkeerd door de
+              - Boilerondersteuning wordt daarnaast geblokkeerd door de
               watertempbegrenzing als de gemeten aanvoer te hoog wordt.
 
               - Houd de inschakeldrempel duidelijk hoger dan de
@@ -2573,6 +2577,8 @@ views:
           - type: entities
             show_header_toggle: false
             entities:
+              - entity: switch.openquatt_boiler_cv_assist_enabled
+                name: CV-ketel/boiler aanwezig
               - entity: number.openquatt_boiler_rated_heat_power
                 name: Nominaal ketelvermogen
               - entity: number.openquatt_cm3_deficit_on_threshold

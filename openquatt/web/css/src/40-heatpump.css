@@ -1420,3 +1420,277 @@
   will-change: transform;
 }
 
+.oq-overview-boiler {
+  margin-top: 0;
+}
+
+.oq-boiler-card {
+  display: block;
+}
+
+.oq-boiler-card-main {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.oq-boiler-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.oq-boiler-card-head h3 {
+  margin: 2px 0 0;
+  font-size: 1.12rem;
+}
+
+.oq-boiler-eyebrow {
+  display: block;
+  color: var(--oq-helper-accent-deep);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.oq-boiler-copy {
+  margin: 0;
+  color: var(--oq-overview-soft);
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.oq-boiler-mini-schematic {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px 12px;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 50% 58%, rgba(251, 146, 60, 0.14), transparent 25%),
+    linear-gradient(180deg, #151c27, #101722);
+  border: 1px solid rgba(71, 85, 105, 0.38);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.oq-boiler-mini-svg {
+  display: block;
+  width: 100%;
+  max-height: 118px;
+  height: auto;
+}
+
+.oq-boiler-card-pipe-base,
+.oq-boiler-card-pipe-core,
+.oq-boiler-card-pipe-flow {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.oq-boiler-card-pipe-base {
+  opacity: 0.14;
+  stroke-width: 10;
+}
+
+.oq-boiler-card-pipe-core {
+  opacity: 0.94;
+  stroke-width: 5;
+}
+
+.oq-boiler-card-pipe-flow {
+  opacity: 0.72;
+  stroke-dasharray: 7 18;
+  stroke-width: 2.4;
+  will-change: stroke-dashoffset;
+}
+
+.oq-boiler-card-pipe--return .oq-boiler-card-pipe-base,
+.oq-boiler-card-pipe--return .oq-boiler-card-pipe-core {
+  stroke: #3b82f6;
+}
+
+.oq-boiler-card-pipe--return .oq-boiler-card-pipe-flow {
+  stroke: #60a5fa;
+}
+
+.oq-boiler-card-pipe--supply .oq-boiler-card-pipe-base,
+.oq-boiler-card-pipe--supply .oq-boiler-card-pipe-core {
+  stroke: #ef4444;
+}
+
+.oq-boiler-card-pipe--supply .oq-boiler-card-pipe-flow {
+  stroke: #f87171;
+}
+
+.oq-boiler-card-unit-shell {
+  fill: rgba(15, 23, 42, 0.9);
+  stroke: rgba(148, 163, 184, 0.34);
+  stroke-width: 2;
+}
+
+.oq-boiler-card-unit-core {
+  stroke: rgba(251, 146, 60, 0.24);
+}
+
+.oq-boiler-card-coil {
+  fill: none;
+  stroke: rgba(226, 232, 240, 0.36);
+  stroke-linecap: round;
+  stroke-width: 3;
+}
+
+.oq-boiler-card-flame {
+  opacity: 0.22;
+  transform-origin: center;
+}
+
+.oq-boiler-card-flame-inner {
+  fill: rgba(255, 255, 255, 0.74);
+}
+
+.oq-boiler-card.is-running .oq-boiler-card-flame {
+  opacity: 0.98;
+  animation: oq-hp-pulse 1.8s ease-in-out infinite;
+}
+
+.oq-boiler-card.is-flowing .oq-hp-tech-pipe--return .oq-hp-tech-pipe-flow {
+  animation: oq-boiler-flow-forward 1.4s linear infinite;
+}
+
+.oq-boiler-card.is-flowing .oq-hp-tech-pipe--supply .oq-hp-tech-pipe-flow {
+  animation: oq-boiler-flow-forward 1.4s linear infinite;
+}
+
+.oq-boiler-card.is-idle .oq-boiler-card-pipe--supply .oq-boiler-card-pipe-base,
+.oq-boiler-card.is-idle .oq-boiler-card-pipe--supply .oq-boiler-card-pipe-core {
+  stroke: #3b82f6;
+}
+
+.oq-boiler-card.is-idle .oq-boiler-card-pipe--supply .oq-boiler-card-pipe-flow {
+  stroke: #60a5fa;
+}
+
+.oq-boiler-card.is-idle .oq-hp-tech-pipe--supply .oq-hp-tech-pipe-base,
+.oq-boiler-card.is-idle .oq-hp-tech-pipe--supply .oq-hp-tech-pipe-core {
+  stroke: #3b82f6;
+}
+
+.oq-boiler-card.is-idle .oq-hp-tech-pipe--supply .oq-hp-tech-pipe-flow {
+  stroke: #60a5fa;
+}
+
+@keyframes oq-boiler-flow-forward {
+  from {
+    stroke-dashoffset: 0;
+  }
+
+  to {
+    stroke-dashoffset: -25;
+  }
+}
+
+.oq-boiler-card-label {
+  fill: #e2e8f0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  paint-order: stroke;
+  stroke: #101722;
+  stroke-linejoin: round;
+  stroke-width: 4px;
+}
+
+.oq-boiler-card-label--return {
+  fill: #bfdbfe;
+}
+
+.oq-boiler-card-label--supply {
+  fill: #fecaca;
+}
+
+.oq-boiler-card.is-idle .oq-boiler-card-label--supply {
+  fill: #bfdbfe;
+}
+
+.oq-boiler-card.is-idle .oq-boiler-card-unit-core {
+  filter: grayscale(0.75) saturate(0.55) brightness(0.72);
+  opacity: 0.78;
+}
+
+.oq-boiler-summary-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 10px;
+}
+
+.oq-boiler-summary-box {
+  display: flex;
+  min-height: 72px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.46);
+  border: 1px solid rgba(71, 85, 105, 0.36);
+}
+
+.oq-boiler-summary-box span {
+  color: #9aa8bc;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.oq-boiler-summary-box strong {
+  color: #f8fafc;
+  font-size: 1.22rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.oq-boiler-summary-box--support strong {
+  font-size: 0.98rem;
+  line-height: 1.15;
+}
+
+.oq-boiler-summary-box--power {
+  border-color: rgba(71, 85, 105, 0.42);
+}
+
+.oq-boiler-summary-box--support.is-active {
+  border-color: rgba(34, 197, 94, 0.24);
+  background: rgba(15, 23, 42, 0.58);
+}
+
+.oq-boiler-summary-box--support.is-idle {
+  border-color: rgba(148, 163, 184, 0.28);
+}
+
+.oq-boiler-temp-list {
+  margin-top: 0;
+}
+
+.oq-boiler-temp-row {
+  border-bottom-color: rgba(148, 163, 184, 0.16);
+}
+
+.oq-boiler-temp-row span {
+  color: rgba(226, 232, 240, 0.84);
+}
+
+.oq-boiler-temp-row strong {
+  color: #f8fafc;
+}
+
+@media (max-width: 540px) {
+  .oq-boiler-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}

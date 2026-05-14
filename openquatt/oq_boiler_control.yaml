@@ -91,6 +91,7 @@ sensor:
           (id(oq_commissioning_task_code) == 1) &&
           id(oq_commissioning_boiler_request);
       const bool in_cm3 = (cm_code == 3);
+      if (!id(oq_boiler_assist_enabled).state) return 0.0f;
       if (!in_cm3 && !commissioning_boiler) return 0.0f;
 
       const float hp2_outlet_c = id(${heatpump_outlet_temp_id}).state;
@@ -128,7 +129,9 @@ interval:
           const float supply_c = id(water_supply_temp_selected).state;
           const bool has_valid_supply_temp = !isnan(supply_c);
           std::string boiler_block_reason;
-          if (!has_valid_supply_temp) {
+          if (!id(oq_boiler_assist_enabled).state) {
+            boiler_block_reason = "boiler/CV assist disabled";
+          } else if (!has_valid_supply_temp) {
             boiler_block_reason = "water supply temperature unavailable";
           } else if (id(oq_water_temp_boiler_inhibit_active)) {
             boiler_block_reason = "water temperature boiler inhibit active";

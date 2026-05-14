@@ -233,7 +233,7 @@
   const INITIAL_OVERVIEW_READY_TIMEOUT_MS = 2000;
   const INITIAL_OVERVIEW_READY_POLL_MS = 250;
   const INITIAL_SETTINGS_READY_KEY_MAP = {
-    installation: ["hpGeneration", "silentStartTime", "silentEndTime", "maxWater"],
+    installation: ["hpGeneration", "boilerCvAssistEnabled", "silentStartTime", "silentEndTime", "maxWater"],
     heating: ["strategy"],
     cooling: ["coolingWithoutDewPointMode"],
     advanced: ["flowControlMode", "minRuntime"],
@@ -256,6 +256,7 @@
       "setupComplete",
       "installationTopology",
       "hpGeneration",
+      "boilerCvAssistEnabled",
       ...SILENT_SETTING_KEYS,
       "maxWater",
     ],
@@ -2175,6 +2176,11 @@
   }
 
   function handleChange(event) {
+    if (event.target.dataset.oqDevControl === "boiler" && typeof window.__OQ_SET_MOCK_BOILER__ === "function") {
+      window.__OQ_SET_MOCK_BOILER__(event.target.value);
+      return;
+    }
+
     if (event.target.dataset.oqBackupFileInput) {
       const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
       event.target.value = "";
@@ -2331,6 +2337,11 @@
     }
 
     const action = button.dataset.oqAction;
+    if (action === "set-mock-boiler" && typeof window.__OQ_SET_MOCK_BOILER__ === "function") {
+      window.__OQ_SET_MOCK_BOILER__(button.dataset.boilerMode || "off");
+      return;
+    }
+
     if (action === "toggle-interface-panel") {
       setInterfacePanelOpen(!state.interfacePanelOpen);
       render();
