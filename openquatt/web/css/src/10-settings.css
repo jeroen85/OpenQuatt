@@ -523,9 +523,7 @@
 
 .oq-settings-commissioning-card-head {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 14px;
-  align-items: start;
+  gap: 8px;
 }
 
 .oq-settings-commissioning-card-copy {
@@ -554,11 +552,12 @@
   gap: 10px;
   justify-content: flex-start;
   align-items: center;
-  align-content: start;
+  margin-top: 2px;
 }
 
 .oq-settings-commissioning-card-actions .oq-helper-button {
   min-width: 150px;
+  flex: 0 1 180px;
 }
 
 .oq-settings-commissioning-card-status {
@@ -749,7 +748,7 @@
   }
 
   .oq-settings-commissioning-card-head {
-    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
   }
 
   .oq-settings-commissioning-card-actions {
