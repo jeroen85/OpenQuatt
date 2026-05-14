@@ -233,10 +233,31 @@
   const INITIAL_OVERVIEW_READY_TIMEOUT_MS = 2000;
   const INITIAL_OVERVIEW_READY_POLL_MS = 250;
   const INITIAL_SETTINGS_READY_KEY_MAP = {
-    installation: ["hpGeneration", "boilerCvAssistEnabled", "silentStartTime", "silentEndTime", "maxWater"],
+    installation: [
+      "hpGeneration",
+      "boilerCvAssistEnabled",
+      "boilerRatedHeatPower",
+      "flowControlMode",
+      "flowSetpoint",
+      "manualIpwm",
+      "flowKp",
+      "flowKi",
+      "commissioningStatus",
+      "cm100Active",
+      "boilerPowerTestStatus",
+      "boilerPowerTestResult",
+      "boilerPowerTestConfidence",
+      "boilerPowerTestActive",
+      "flowAutotuneStatus",
+      "flowKpSuggested",
+      "flowKiSuggested",
+      "silentStartTime",
+      "silentEndTime",
+      "maxWater",
+    ],
     heating: ["strategy"],
     cooling: ["coolingWithoutDewPointMode"],
-    advanced: ["flowControlMode", "minRuntime"],
+    advanced: ["minRuntime"],
     system: ["setupComplete"],
   };
   const INITIAL_SETTINGS_READY_TIMEOUT_MS = 3500;
@@ -257,6 +278,18 @@
       "installationTopology",
       "hpGeneration",
       "boilerCvAssistEnabled",
+      "boilerRatedHeatPower",
+      ...FLOW_SETTING_KEYS,
+      ...FLOW_TUNING_KEYS,
+      "commissioningStatus",
+      "cm100Active",
+      "boilerPowerTestStatus",
+      "boilerPowerTestResult",
+      "boilerPowerTestConfidence",
+      "boilerPowerTestActive",
+      "flowAutotuneStatus",
+      "flowKpSuggested",
+      "flowKiSuggested",
       ...SILENT_SETTING_KEYS,
       "maxWater",
     ],
@@ -277,7 +310,6 @@
       ...COOLING_SETTING_KEYS,
     ],
     advanced: [
-      ...FLOW_SETTING_KEYS,
       ...COMPRESSOR_SETTING_KEYS,
       ...CIC_COMPATIBILITY_KEYS,
     ],
@@ -2073,6 +2105,7 @@
     return [
       state.appView,
       state.settingsGroup,
+      state.busyAction,
       state.loadingEntities ? "loading" : "ready",
       getApiSecurityStatusSignature(),
       getMqttStatusSignature(),
@@ -2557,6 +2590,14 @@
       state.quickStartModalMode = "generation";
       state.quickStartModalOpen = true;
       render();
+      return;
+    }
+
+    if (action === "press-named-button") {
+      const buttonKey = String(button.dataset.buttonKey || "").trim();
+      if (buttonKey) {
+        void triggerNamedButton(buttonKey);
+      }
       return;
     }
 
