@@ -9715,7 +9715,7 @@ function renderWebServerLogsModal() {
           key: "boilerRatedHeatPower",
           value: boilerValue,
           meta: boilerMeta,
-          controlClass: "oq-helper-control oq-helper-control--split oq-settings-boiler-power-control",
+          controlClass: "oq-helper-control oq-helper-control--suffix oq-settings-boiler-power-control",
           unitMarkup: `<span class="oq-helper-unit-chip">W</span>`,
         })
       : `
