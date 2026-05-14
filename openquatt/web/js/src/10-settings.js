@@ -1435,6 +1435,7 @@
 
     const cm100Status = getSettingsStatValue("commissioningStatus");
     const cm100Active = isEntityActive("cm100Active");
+    const cm100OpenLabel = cm100Active ? "Service-stand bekijken" : "Service-stand openen";
 
     return renderSettingsSection(
       "Installatie",
