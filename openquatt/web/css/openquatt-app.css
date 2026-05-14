@@ -939,8 +939,8 @@ body.oq-surface-native {
 }
 
 .oq-helper-modal-progress {
-  margin: 0 0 20px;
-  padding: 14px 16px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
   border: 1px solid rgba(229, 231, 235, 0.92);
   border-radius: var(--oq-helper-radius-md);
   background: rgba(255, 255, 255, 0.84);
@@ -957,7 +957,7 @@ body.oq-surface-native {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   color: var(--oq-helper-ink);
   font-size: 0.92rem;
   font-weight: 700;
@@ -971,7 +971,7 @@ body.oq-surface-native {
 .oq-helper-modal-progress-track {
   position: relative;
   overflow: hidden;
-  height: 12px;
+  height: 10px;
   border-radius: 999px;
   background: rgba(148, 163, 184, 0.18);
 }
@@ -2614,7 +2614,7 @@ body.oq-surface-native {
 
 .oq-settings-quickstart-status {
   display: grid;
-  gap: 18px;
+  gap: 14px;
 }
 
 .oq-settings-quickstart-status-row {

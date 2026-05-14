@@ -2593,6 +2593,12 @@
       return;
     }
 
+    if (action === "open-cm100-commissioning-modal") {
+      state.systemModal = "cm100-commissioning";
+      render();
+      return;
+    }
+
     if (action === "press-named-button") {
       const buttonKey = String(button.dataset.buttonKey || "").trim();
       if (buttonKey) {
