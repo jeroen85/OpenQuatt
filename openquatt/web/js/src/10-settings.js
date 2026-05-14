@@ -1322,7 +1322,6 @@
     const cm100Status = getSettingsStatValue("commissioningStatus");
     const cm100Active = isEntityActive("cm100Active");
     const cm100Busy = state.loadingEntities || state.busyAction === "commissioningCm100Start" || state.busyAction === "commissioningCm100Stop";
-    const cm100Controls = Boolean(state.entities.commissioningCm100Start || state.entities.commissioningCm100Stop);
     const boilerStatus = getSettingsStatValue("boilerPowerTestStatus");
     const boilerActive = isEntityActive("boilerPowerTestActive");
     const boilerBusy = state.loadingEntities || state.busyAction === "boilerPowerTestStart" || state.busyAction === "boilerPowerTestAbort" || state.busyAction === "boilerPowerTestApply";
@@ -1358,12 +1357,10 @@
               <h3>Service-stand voor testen en afstelling</h3>
               <p>CM100 staat bewust los van de normale OpenQuatt-regeling. Van hieruit kun je een boilervermogentest of flow autotune starten wanneer je dat wilt.</p>
             </div>
-            ${cm100Controls ? `
-              <div class="oq-settings-commissioning-hero-actions">
-                ${state.entities.commissioningCm100Start ? renderNamedActionButton("commissioningCm100Start", "CM100 starten", "oq-helper-button oq-helper-button--primary", cm100Busy) : ""}
-                ${state.entities.commissioningCm100Stop ? renderNamedActionButton("commissioningCm100Stop", "CM100 stoppen", "oq-helper-button oq-helper-button--ghost", cm100Busy) : ""}
-              </div>
-            ` : ""}
+            <div class="oq-settings-commissioning-hero-actions">
+              ${state.entities.commissioningCm100Start ? renderNamedActionButton("commissioningCm100Start", "CM100 starten", "oq-helper-button oq-helper-button--primary", cm100Busy) : ""}
+              ${state.entities.commissioningCm100Stop ? renderNamedActionButton("commissioningCm100Stop", "CM100 stoppen", "oq-helper-button oq-helper-button--ghost", cm100Busy) : ""}
+            </div>
           </div>
 
           <div class="oq-settings-quickstart-status oq-settings-quickstart-status--compact oq-settings-commissioning-summary">
@@ -1438,31 +1435,32 @@
 
     const cm100Status = getSettingsStatValue("commissioningStatus");
     const cm100Active = isEntityActive("cm100Active");
-    const cm100Controls = Boolean(state.entities.commissioningCm100Start || state.entities.commissioningCm100Stop);
 
     return renderSettingsSection(
       "Installatie",
       "Service & commissioning",
-      "Open de CM100-modal om de service-stand te starten en daarna de boiler-test of flow autotune uit te voeren. De taken blijven bewust los van de normale OpenQuatt-regeling.",
+      "Open de service-stand om de installatie klaar te zetten voor testen en afstelling.",
       `
-        <div class="oq-settings-quickstart-status oq-settings-commissioning-teaser">
-          <div class="oq-settings-quickstart-status-row">
-            <div>
-              <p class="oq-settings-quickstart-status-label">Huidige status</p>
-              <strong class="oq-settings-quickstart-status-value">${escapeHtml(cm100Status)}</strong>
-              <p class="oq-settings-quickstart-status-copy">${escapeHtml(cm100Active ? "CM100 is actief en klaar voor commissioning." : "Open de modal om CM100 te starten en de taken hieronder te ontgrendelen.")}</p>
-            </div>
-            ${cm100Controls ? `
-              <button
-                class="oq-helper-button oq-helper-button--primary"
-                type="button"
-                data-oq-action="open-cm100-commissioning-modal"
-              >
-                CM100 openen
-              </button>
-            ` : ""}
+        <div class="oq-settings-commissioning-teaser">
+          <div class="oq-settings-commissioning-teaser-copy">
+            <p class="oq-helper-label">CM100</p>
+            <h4>Service-stand</h4>
+            <p>Open deze werkstand wanneer je wilt testen, afstellen of een meting wilt starten.</p>
           </div>
-          <p class="oq-settings-quickstart-status-copy">Boilervermogensmeting en autotune zijn bewust uit de pagina gehaald en leven in een aparte modal.</p>
+          <div class="oq-settings-commissioning-teaser-panel">
+            <div class="oq-settings-commissioning-teaser-status">
+              <span class="oq-settings-commissioning-teaser-status-label">Huidige status</span>
+              <strong>${escapeHtml(cm100Status)}</strong>
+              <p>${escapeHtml(cm100Active ? "CM100 staat klaar voor gebruik." : "Start CM100 om de service-stand te openen.")}</p>
+            </div>
+            <button
+              class="oq-helper-button oq-helper-button--primary oq-settings-commissioning-teaser-button"
+              type="button"
+              data-oq-action="open-cm100-commissioning-modal"
+            >
+              ${escapeHtml(cm100OpenLabel)}
+            </button>
+          </div>
         </div>
       `,
     );

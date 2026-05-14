@@ -2612,6 +2612,297 @@ body.oq-surface-native {
   min-width: 0;
 }
 
+.oq-settings-commissioning-teaser {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  gap: 14px;
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: var(--oq-helper-radius-lg);
+  border: 1px solid var(--oq-helper-line);
+  background: linear-gradient(180deg, rgba(255, 247, 237, 0.72), rgba(255, 255, 255, 0.96));
+}
+
+.oq-helper-shell--dark .oq-settings-commissioning-teaser {
+  background: linear-gradient(180deg, rgba(66, 32, 14, 0.34), rgba(22, 33, 49, 0.94));
+}
+
+.oq-settings-commissioning-teaser-copy {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.oq-settings-commissioning-teaser-copy h4 {
+  margin: 0;
+  color: var(--oq-helper-ink);
+  font-size: 1.1rem;
+  line-height: 1.18;
+  letter-spacing: -0.02em;
+}
+
+.oq-settings-commissioning-teaser-copy p:last-child {
+  margin: 0;
+  color: var(--oq-helper-soft);
+  line-height: 1.58;
+}
+
+.oq-settings-commissioning-teaser-panel {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid var(--oq-helper-line);
+  background: var(--oq-helper-card);
+}
+
+.oq-helper-shell--dark .oq-settings-commissioning-teaser-panel {
+  background: rgba(15, 23, 42, 0.34);
+}
+
+.oq-settings-commissioning-teaser-status {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.oq-settings-commissioning-teaser-status-label {
+  color: var(--oq-helper-faint);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.oq-settings-commissioning-teaser-status strong {
+  color: var(--oq-helper-ink);
+  font-size: 1.02rem;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.oq-settings-commissioning-teaser-status p {
+  margin: 0;
+  color: var(--oq-helper-soft);
+  line-height: 1.52;
+}
+
+.oq-settings-commissioning-teaser-button {
+  width: 100%;
+  min-height: 50px;
+}
+
+.oq-settings-commissioning-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 10px;
+}
+
+.oq-settings-commissioning-summary {
+  margin-top: 16px;
+}
+
+.oq-settings-commissioning-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.oq-settings-commissioning-grid--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.oq-settings-commissioning-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: var(--oq-helper-radius-lg);
+  border: 1px solid var(--oq-helper-line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(249, 250, 251, 0.98));
+}
+
+.oq-helper-shell--dark .oq-settings-commissioning-card {
+  background: linear-gradient(180deg, rgba(28, 39, 56, 0.96), rgba(23, 34, 49, 0.98));
+}
+
+.oq-settings-commissioning-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.oq-settings-commissioning-card-copy {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.oq-settings-commissioning-card-copy h3 {
+  margin: 0;
+  color: var(--oq-helper-ink);
+  font-size: 1.12rem;
+  line-height: 1.16;
+  letter-spacing: -0.03em;
+}
+
+.oq-settings-commissioning-card-copy p:last-child {
+  margin: 0;
+  color: var(--oq-helper-soft);
+  line-height: 1.58;
+}
+
+.oq-settings-commissioning-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+}
+
+.oq-settings-commissioning-card-actions .oq-helper-button {
+  min-width: 150px;
+}
+
+.oq-settings-commissioning-card-status {
+  margin-top: 2px;
+}
+
+.oq-settings-boiler-shell {
+  display: grid;
+  gap: 16px;
+}
+
+.oq-settings-boiler-summary {
+  display: grid;
+  gap: 8px;
+}
+
+.oq-settings-boiler-summary h4 {
+  margin: 0;
+  color: var(--oq-helper-ink);
+  font-size: 1.18rem;
+  line-height: 1.18;
+  letter-spacing: -0.03em;
+}
+
+.oq-settings-boiler-summary p:last-child {
+  margin: 0;
+  color: var(--oq-helper-soft);
+  line-height: 1.58;
+}
+
+.oq-settings-boiler-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.oq-settings-boiler-presence,
+.oq-settings-boiler-power {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: var(--oq-helper-radius-lg);
+  border: 1px solid var(--oq-helper-line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(249, 250, 251, 0.98));
+}
+
+.oq-helper-shell--dark .oq-settings-boiler-presence,
+.oq-helper-shell--dark .oq-settings-boiler-power {
+  background: linear-gradient(180deg, rgba(28, 39, 56, 0.96), rgba(23, 34, 49, 0.98));
+}
+
+.oq-settings-boiler-card-head {
+  display: grid;
+  gap: 6px;
+}
+
+.oq-settings-boiler-card-head h4 {
+  margin: 0;
+  color: var(--oq-helper-ink);
+  font-size: 1.05rem;
+  line-height: 1.22;
+  letter-spacing: -0.02em;
+}
+
+.oq-settings-boiler-card-head p:last-child {
+  margin: 0;
+  color: var(--oq-helper-soft);
+  line-height: 1.58;
+}
+
+.oq-settings-boiler-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.oq-settings-boiler-choice {
+  min-height: 100%;
+}
+
+.oq-settings-boiler-choice-title {
+  font-size: 1.02rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--oq-helper-ink);
+}
+
+.oq-settings-boiler-choice-copy {
+  color: var(--oq-helper-soft);
+  line-height: 1.55;
+}
+
+.oq-settings-boiler-power-control-shell {
+  display: grid;
+  gap: 10px;
+}
+
+.oq-settings-boiler-power-control {
+  width: 100%;
+}
+
+.oq-settings-boiler-power-empty {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px dashed var(--oq-helper-line);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.oq-helper-shell--dark .oq-settings-boiler-power-empty {
+  background: rgba(15, 23, 42, 0.24);
+}
+
+.oq-settings-boiler-power-empty strong {
+  color: var(--oq-helper-ink);
+  font-size: 0.94rem;
+}
+
+.oq-settings-boiler-power-empty p,
+.oq-settings-boiler-power-note,
+.oq-settings-boiler-foot {
+  margin: 0;
+  color: var(--oq-helper-soft);
+  line-height: 1.58;
+}
+
+.oq-settings-boiler-power-note {
+  padding-top: 2px;
+}
+
+.oq-settings-boiler-foot {
+  padding-top: 2px;
+}
+
 .oq-settings-quickstart-status {
   display: grid;
   gap: 14px;
@@ -2656,6 +2947,22 @@ body.oq-surface-native {
   margin: 0;
   color: var(--oq-helper-soft);
   line-height: 1.55;
+}
+
+@media (max-width: 960px) {
+  .oq-settings-commissioning-teaser,
+  .oq-settings-boiler-grid,
+  .oq-settings-commissioning-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .oq-settings-commissioning-card-head {
+    flex-direction: column;
+  }
+
+  .oq-settings-commissioning-card-actions {
+    justify-content: flex-start;
+  }
 }
 
 .oq-settings-access-security-shell {
