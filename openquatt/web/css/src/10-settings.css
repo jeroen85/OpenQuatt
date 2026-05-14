@@ -552,8 +552,9 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  justify-content: flex-end;
-  flex: 0 0 auto;
+  justify-content: flex-start;
+  align-items: center;
+  padding-top: 2px;
 }
 
 .oq-settings-commissioning-card-actions .oq-helper-button {

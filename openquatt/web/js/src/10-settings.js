@@ -899,8 +899,8 @@
             <h3>${escapeHtml(title)}</h3>
             <p>${escapeHtml(copy)}</p>
           </div>
-          ${actions ? `<div class="oq-settings-commissioning-card-actions">${actions}</div>` : ""}
         </div>
+        ${actions ? `<div class="oq-settings-commissioning-card-actions">${actions}</div>` : ""}
         <div class="oq-settings-quickstart-status oq-settings-quickstart-status--compact oq-settings-commissioning-card-status">
           <div class="oq-settings-quickstart-status-row">
             <div>
@@ -1355,7 +1355,7 @@
             <div class="oq-settings-commissioning-hero-copy">
               <p class="oq-helper-label">CM100</p>
               <h3>Service-stand voor testen en afstelling</h3>
-              <p>CM100 staat bewust los van de normale OpenQuatt-regeling. Van hieruit kun je een boilervermogentest of flow autotune starten wanneer je dat wilt.</p>
+              <p>Open de service-stand om metingen en afstelling uit te voeren.</p>
             </div>
             <div class="oq-settings-commissioning-hero-actions">
               ${state.entities.commissioningCm100Start ? renderNamedActionButton("commissioningCm100Start", "CM100 starten", "oq-helper-button oq-helper-button--primary", cm100Busy) : ""}
