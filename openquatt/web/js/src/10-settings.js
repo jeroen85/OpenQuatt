@@ -1565,35 +1565,89 @@
     }
 
     const boilerPresent = isEntityActive("boilerCvAssistEnabled");
+    const boilerMeta = getNumberMeta("boilerRatedHeatPower");
+    const boilerValue = getInputDraftValue("boilerRatedHeatPower");
+    const boilerBusy = state.loadingEntities || state.busyAction === "switch-boilerCvAssistEnabled";
+    const boilerDisabledHint = "Zet CV-ketel/boiler aanwezig aan om het vermogen in te stellen.";
+    const boilerPowerControl = boilerPresent
+      ? renderNumberInputControl({
+          key: "boilerRatedHeatPower",
+          value: boilerValue,
+          meta: boilerMeta,
+          controlClass: "oq-helper-control oq-helper-control--split oq-settings-boiler-power-control",
+          unitMarkup: "",
+        })
+      : `
+        <div class="oq-settings-boiler-power-empty">
+          <strong>Niet actief</strong>
+          <p>${escapeHtml(boilerDisabledHint)}</p>
+        </div>
+      `;
 
     return renderSettingsSection(
       "Basis",
       "CV-ketel of boiler",
-      "Geef aan of OpenQuatt een CV-ketel of boiler als ondersteuning mag gebruiken en hoeveel effectief vermogen die installatiefunctie heeft.",
+      "Geef aan of OpenQuatt een CV-ketel of boiler als ondersteuning mag gebruiken en hoeveel effectief vermogen die functie heeft.",
       `
-        <div class="oq-settings-grid">
-          ${renderSettingsSwitchField(
-            "boilerCvAssistEnabled",
-            "CV-ketel/boiler aanwezig",
-            "Zet dit alleen aan als de installatie een CV-ketel of boiler heeft die OpenQuatt mag schakelen.",
-            "OpenQuatt kan de boiler/CV-ketel inschakelen indien de warmtepompen te weinig vermogen leveren.",
-            "OpenQuatt schakelt geen boiler/CV-ketel in."
-          )}
-          ${boilerPresent ? renderSettingsMiniNumberField(
-            "boilerRatedHeatPower",
-            "Boilervermogen",
-            "Effectief boilervermogen dat later ook als basis voor CM3-drempels en commissioning gebruikt wordt.",
-            { compact: true, infoId: "boilerRatedHeatPower-installation" }
-          ) : `
-            <article class="oq-settings-mini-field oq-settings-mini-field--compact oq-settings-field--span-2">
-              <div class="oq-settings-mini-copy">
-                <div class="oq-settings-mini-copy-head">
-                  <h5>Boilervermogen</h5>
+        <div class="oq-settings-boiler-shell">
+          <div class="oq-settings-boiler-summary">
+            <p class="oq-helper-label">CV-ketel / boiler</p>
+            <h4>Back-up voor momenten met extra warmtevraag</h4>
+            <p>Gebruik je een CV-ketel of boiler als ondersteuning? Zet hem hier aan en vul het effectieve vermogen in dat OpenQuatt mag meerekenen.</p>
+          </div>
+
+          <div class="oq-settings-boiler-grid">
+            <section class="oq-settings-boiler-presence">
+              <div class="oq-settings-boiler-card-head">
+                <div>
+                  <p class="oq-helper-label">Aanwezigheid</p>
+                  <h4>Heeft deze installatie een CV-ketel of boiler?</h4>
                 </div>
-                <p>Zet CV-ketel/boiler aanwezig aan om het boilervermogen en de commissioning-test te tonen.</p>
               </div>
-            </article>
-          `}
+              <div class="oq-settings-boiler-choice-grid">
+                <button
+                  class="oq-settings-choice-card oq-settings-boiler-choice${boilerPresent ? "" : " is-active"}"
+                  type="button"
+                  data-oq-action="toggle-overview-control"
+                  data-control-key="boilerCvAssistEnabled"
+                  data-control-state="off"
+                  aria-pressed="${boilerPresent ? "false" : "true"}"
+                  ${boilerBusy ? "disabled" : ""}
+                >
+                  <span class="oq-settings-boiler-choice-title">Uit</span>
+                  <span class="oq-settings-boiler-choice-copy">OpenQuatt schakelt geen boiler of CV-ketel in.</span>
+                </button>
+                <button
+                  class="oq-settings-choice-card oq-settings-boiler-choice${boilerPresent ? " is-active" : ""}"
+                  type="button"
+                  data-oq-action="toggle-overview-control"
+                  data-control-key="boilerCvAssistEnabled"
+                  data-control-state="on"
+                  aria-pressed="${boilerPresent ? "true" : "false"}"
+                  ${boilerBusy ? "disabled" : ""}
+                >
+                  <span class="oq-settings-boiler-choice-title">Aan</span>
+                  <span class="oq-settings-boiler-choice-copy">OpenQuatt mag de ketel of boiler bijschakelen als dat nodig is.</span>
+                </button>
+              </div>
+            </section>
+
+            <section class="oq-settings-boiler-power${boilerPresent ? "" : " is-disabled"}">
+              <div class="oq-settings-boiler-card-head">
+                <div>
+                  <p class="oq-helper-label">Boilervermogen</p>
+                  <h4>Effectief vermogen</h4>
+                  <p>Dit vermogen gebruiken we later voor CM3-drempels en de commissioning-test.</p>
+                </div>
+              </div>
+              <div class="oq-settings-boiler-power-control-shell">
+                ${boilerPowerControl}
+              </div>
+              <p class="oq-settings-boiler-power-note">${escapeHtml(boilerPresent ? "Je kunt deze waarde altijd handmatig aanpassen." : boilerDisabledHint)}</p>
+            </section>
+          </div>
+
+          <p class="oq-settings-boiler-foot">Het vermogen blijft handmatig aanpasbaar. De commissioning-test kan daar later een voorstel voor geven.</p>
         </div>
       `,
     );
