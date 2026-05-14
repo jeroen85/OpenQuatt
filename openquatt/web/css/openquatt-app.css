@@ -2731,10 +2731,10 @@ body.oq-surface-native {
 }
 
 .oq-settings-commissioning-card-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 14px;
+  align-items: start;
 }
 
 .oq-settings-commissioning-card-copy {
@@ -2763,7 +2763,7 @@ body.oq-surface-native {
   gap: 10px;
   justify-content: flex-start;
   align-items: center;
-  padding-top: 2px;
+  align-content: start;
 }
 
 .oq-settings-commissioning-card-actions .oq-helper-button {
@@ -2958,7 +2958,7 @@ body.oq-surface-native {
   }
 
   .oq-settings-commissioning-card-head {
-    flex-direction: column;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .oq-settings-commissioning-card-actions {

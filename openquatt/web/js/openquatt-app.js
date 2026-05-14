@@ -9065,8 +9065,8 @@ function renderWebServerLogsModal() {
             <h3>${escapeHtml(title)}</h3>
             <p>${escapeHtml(copy)}</p>
           </div>
+          ${actions ? `<div class="oq-settings-commissioning-card-actions">${actions}</div>` : ""}
         </div>
-        ${actions ? `<div class="oq-settings-commissioning-card-actions">${actions}</div>` : ""}
         <div class="oq-settings-quickstart-status oq-settings-quickstart-status--compact oq-settings-commissioning-card-status">
           <div class="oq-settings-quickstart-status-row">
             <div>
