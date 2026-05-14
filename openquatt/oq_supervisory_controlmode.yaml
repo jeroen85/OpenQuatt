@@ -230,7 +230,7 @@ select:
 switch:
   - platform: template
     id: oq_boiler_assist_enabled
-    name: "Boiler/CV assist enabled"
+    name: "Boiler assist enabled"
     icon: mdi:water-boiler
     restore_mode: RESTORE_DEFAULT_ON
     optimistic: true

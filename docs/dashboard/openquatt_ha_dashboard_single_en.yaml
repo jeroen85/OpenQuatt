@@ -2465,7 +2465,7 @@ views:
               - **Boiler rated power** is the reference for boiler assist and
               the boiler power test.
 
-              - **Boiler/CV assist enabled** must be on before OpenQuatt may
+              - **Boiler assist enabled** must be on before OpenQuatt may
               use CM3 or run the boiler power test.
 
               - The **CM3 deficit turn-on and turn-off thresholds** define
@@ -2487,7 +2487,7 @@ views:
             show_header_toggle: false
             entities:
               - entity: switch.openquatt_boiler_cv_assist_enabled
-                name: Boiler/CV assist enabled
+                name: Boiler assist enabled
               - entity: number.openquatt_boiler_rated_heat_power
                 name: Boiler rated power
               - entity: number.openquatt_cm3_deficit_on_threshold

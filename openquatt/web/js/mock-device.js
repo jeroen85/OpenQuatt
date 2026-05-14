@@ -427,7 +427,7 @@
     setNumber("HP capacity (W)", capacity, "W");
     setNumber("HP deficit (W)", Math.max(0, strategyRequested - capacity), "W");
 
-    const boilerAssistEnabled = isSwitchEnabled("Boiler/CV assist enabled");
+    const boilerAssistEnabled = isSwitchEnabled("Boiler assist enabled");
     const boilerActive = boilerAssistEnabled && state.boiler === "on";
     const boilerDelta = Number.isNaN(supplyTemp) || Number.isNaN(hpOutlet) ? 0 : supplyTemp - hpOutlet;
     const boilerHeat = boilerActive && !Number.isNaN(flowLph)
@@ -520,7 +520,7 @@
       option: ["Power House", "Water Temperature Control (heating curve)"],
     });
     setEntity("switch", "OpenQuatt Enabled", { value: true, state: true });
-    setEntity("switch", "Boiler/CV assist enabled", { value: true, state: true });
+    setEntity("switch", "Boiler assist enabled", { value: true, state: true });
     setEntity("switch", "Manual Cooling Enable", { value: false, state: false });
     setEntity("switch", "CiC Compatibility Mode", { value: false, state: false });
     setEntity("switch", "Trendopslag", { value: true, state: true });
