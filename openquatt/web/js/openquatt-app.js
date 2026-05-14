@@ -9488,17 +9488,17 @@ function renderWebServerLogsModal() {
           <div class="oq-helper-modal-head">
             <div>
               <p class="oq-helper-modal-kicker">Installatie</p>
-              <h2 class="oq-helper-modal-title" id="oq-cm100-commissioning-modal-title">CM100 commissioning</h2>
+              <h2 class="oq-helper-modal-title" id="oq-cm100-commissioning-modal-title">CM100 service-stand</h2>
             </div>
-            <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit CM100 commissioning">×</button>
+            <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit CM100 service-stand">×</button>
           </div>
-          <p class="oq-helper-modal-copy">Start eerst CM100 als neutrale service-stand. Daarna kun je hier de boilervermogentest of flow autotune uitvoeren zonder de normale regeling te verlaten.</p>
+          <p class="oq-helper-modal-copy">Start eerst CM100 als tijdelijke service-stand. Daarna kun je hier de boilervermogentest of flow autotune uitvoeren zonder de normale regeling te verlaten.</p>
 
           <div class="oq-settings-commissioning-hero">
             <div class="oq-settings-commissioning-hero-copy">
               <p class="oq-helper-label">CM100</p>
-              <h3>Service-stand voor installateurs</h3>
-              <p>CM100 leeft bewust los van de normale OpenQuatt-regeling. De modal hieronder houdt de workflow compact en laat per taak exact zien wat er gebeurt.</p>
+              <h3>Service-stand voor testen en afstelling</h3>
+              <p>CM100 staat bewust los van de normale OpenQuatt-regeling. Van hieruit kun je een boilervermogentest of flow autotune starten wanneer je dat wilt.</p>
             </div>
             ${cm100Controls ? `
               <div class="oq-settings-commissioning-hero-actions">
@@ -9513,11 +9513,10 @@ function renderWebServerLogsModal() {
               <div>
                 <p class="oq-settings-quickstart-status-label">Huidige status</p>
                 <strong class="oq-settings-quickstart-status-value">${escapeHtml(cm100Status)}</strong>
-                <p class="oq-settings-quickstart-status-copy">${escapeHtml(cm100Active ? "CM100 is actief en klaar voor commissioning." : "Start CM100 om de taken hieronder te ontgrendelen.")}</p>
+                <p class="oq-settings-quickstart-status-copy">${escapeHtml(cm100Active ? "CM100 is actief en klaar voor testen en afstelling." : "Start CM100 om de taken hieronder te ontgrendelen.")}</p>
               </div>
             </div>
           </div>
-          ${renderCommissioningProgressBar(cm100Status, "cm100")}
 
           <div class="oq-settings-commissioning-grid${hasBoilerAssist ? "" : " oq-settings-commissioning-grid--single"}">
             ${hasBoilerAssist ? renderCommissioningTaskCard({
@@ -9526,7 +9525,7 @@ function renderWebServerLogsModal() {
               title: "Boiler power test",
               copy: "Meet het effectieve boilervermogen bij stabiele flow en schrijf daarna een afgerond voorstel weg naar de boilerinstelling.",
               status: boilerStatus,
-              statusCopy: boilerActive ? "De boiler-test draait op dit moment." : "Start CM100 eerst en voer daarna de boiler-test uit.",
+              statusCopy: boilerActive ? "De boiler-test draait op dit moment." : "Start CM100 eerst en voer daarna de boilervermogentest uit.",
               progressTask: "boiler",
               actions: `
                 ${state.entities.boilerPowerTestStart ? renderNamedActionButton("boilerPowerTestStart", "Boiler test starten", "oq-helper-button oq-helper-button--primary", boilerBusy || boilerStartDisabled) : ""}
@@ -9559,7 +9558,7 @@ function renderWebServerLogsModal() {
             })}
           </div>
 
-          <p class="oq-helper-modal-note">Tip: de modal blijft bewust los van de normale OpenQuatt-regeling. Gebruik CM100 alleen als je een commissioningstap wilt uitvoeren.</p>
+          <p class="oq-helper-modal-note">Tip: de modal blijft bewust los van de normale OpenQuatt-regeling. Gebruik CM100 alleen wanneer je een test of afstelling wilt uitvoeren.</p>
           <div class="oq-helper-modal-actions">
             <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="close-system-modal">Sluiten</button>
           </div>
