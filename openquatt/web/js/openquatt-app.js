@@ -9579,7 +9579,6 @@ function renderWebServerLogsModal() {
             })}
           </div>
 
-          <p class="oq-helper-modal-note">Tip: de modal blijft bewust los van de normale OpenQuatt-regeling. Gebruik CM100 alleen wanneer je een test of afstelling wilt uitvoeren.</p>
           <div class="oq-helper-modal-actions">
             <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="close-system-modal">Sluiten</button>
           </div>
