@@ -11,7 +11,20 @@
     complete: true,
     tick: 0,
     autoAnimate: true,
+    commissioningTimers: [],
     bootedAt: Date.now() - ((2 * 3600) + (13 * 60)) * 1000,
+    commissioning: {
+      cm100Active: false,
+      task: "none",
+      phase: "idle",
+      globalStatus: "CM0 - Standby",
+      boilerStatusText: "IDLE",
+      autotuneStatusText: "IDLE",
+      boilerResult: 0,
+      boilerConfidence: 0,
+      flowKpSuggested: 0,
+      flowKiSuggested: 0,
+    },
     otaTimers: [],
     auth: {
       enabled: false,
@@ -171,6 +184,87 @@
   function clearOtaSimulation() {
     state.otaTimers.forEach((timer) => window.clearTimeout(timer));
     state.otaTimers = [];
+  }
+
+  function clearCommissioningTimers() {
+    state.commissioningTimers.forEach((timer) => window.clearTimeout(timer));
+    state.commissioningTimers = [];
+  }
+
+  function scheduleCommissioningStep(delay, callback) {
+    const timer = window.setTimeout(() => {
+      callback();
+      applyScenario(state.scenario);
+      updateSummary();
+      notifyMockUpdated();
+    }, delay);
+    state.commissioningTimers.push(timer);
+    return timer;
+  }
+
+  function roundToHundred(value) {
+    return Math.max(0, Math.round(Number(value || 0) / 100) * 100);
+  }
+
+  function setCommissioningPhase(task, phase, extra = {}) {
+    state.commissioning.task = task;
+    state.commissioning.phase = phase;
+    if (Number.isFinite(extra.boilerResult)) {
+      state.commissioning.boilerResult = Number(extra.boilerResult);
+    }
+    if (Number.isFinite(extra.boilerConfidence)) {
+      state.commissioning.boilerConfidence = Number(extra.boilerConfidence);
+    }
+    if (Number.isFinite(extra.flowKpSuggested)) {
+      state.commissioning.flowKpSuggested = Number(extra.flowKpSuggested);
+    }
+    if (Number.isFinite(extra.flowKiSuggested)) {
+      state.commissioning.flowKiSuggested = Number(extra.flowKiSuggested);
+    }
+  }
+
+  function syncCommissioningEntities(single) {
+    const cm100Active = Boolean(state.commissioning.cm100Active);
+    if (!cm100Active) {
+      return;
+    }
+    const task = String(state.commissioning.task || "none");
+    const phase = String(state.commissioning.phase || "idle");
+    const boilerTaskActive = task === "boiler" && cm100Active && !["done", "applied", "aborted", "refused"].includes(phase.toLowerCase());
+    const autotuneTaskActive = task === "autotune" && cm100Active && !["done", "applied", "aborted", "refused"].includes(phase.toLowerCase());
+    const commissioningLabel = "CM100 - Commissioning";
+    const commissioningStatus = String(state.commissioning.globalStatus || "CM100 READY");
+
+    setText("text_sensor", "Control Mode (Label)", commissioningLabel);
+    setText("text_sensor", "Commissioning status", commissioningStatus);
+    setBinary("CM100 active", cm100Active);
+    setText("text_sensor", "Flow Mode", cm100Active
+      ? (boilerTaskActive
+        ? "CM100 boiler test"
+        : autotuneTaskActive
+          ? "CM100 flow autotune"
+          : "CM100 idle")
+      : "Gepauzeerd");
+
+    if (cm100Active) {
+      setNumber("Flow average (Selected)", boilerTaskActive ? 800 : autotuneTaskActive ? 790 : 0, "L/h");
+      setNumber("Total Heat Power", boilerTaskActive ? Number(getEntity("sensor", "Boiler Heat Power")?.value || 0) : 0, "W");
+      setNumber("Total Power Input", boilerTaskActive ? (single ? 560 : 640) : single ? 12 : 18, "W");
+      setBinary("Boiler active", task === "boiler" && ["boiler settling", "measuring"].includes(phase.toLowerCase()));
+    }
+
+    setBinary("Boiler power test active", boilerTaskActive);
+    setText("text_sensor", "Boiler power test status", cm100Active
+      ? String(state.commissioning.boilerStatusText || "IDLE")
+      : "IDLE");
+    setNumber("Boiler power test result", state.commissioning.boilerResult, "W");
+    setNumber("Boiler power test confidence", state.commissioning.boilerConfidence, "%");
+
+    setText("text_sensor", "Flow Autotune status", cm100Active
+      ? String(state.commissioning.autotuneStatusText || "IDLE")
+      : "IDLE");
+    setNumber("Flow Autotune Kp suggested", state.commissioning.flowKpSuggested, "");
+    setNumber("Flow Autotune Ki suggested", state.commissioning.flowKiSuggested, "");
   }
 
   function generateAuthToken() {
@@ -536,6 +630,23 @@
       state: "Flow Setpoint",
       option: ["Flow Setpoint", "Manual PWM"],
     });
+    setEntity("text_sensor", "Commissioning status", { state: "IDLE", value: "IDLE" });
+    setEntity("binary_sensor", "CM100 active", { value: false, state: false });
+    setEntity("button", "CM100 Start", {});
+    setEntity("button", "CM100 Stop", {});
+    setEntity("button", "Boiler Power Test Start", {});
+    setEntity("button", "Boiler Power Test Abort", {});
+    setEntity("button", "Boiler Power Test Apply", {});
+    setEntity("button", "Flow Autotune Start", {});
+    setEntity("button", "Flow Autotune Abort", {});
+    setEntity("button", "Apply Flow Autotune Kp-Ki", {});
+    setEntity("binary_sensor", "Boiler power test active", { value: false, state: false });
+    setEntity("text_sensor", "Boiler power test status", { state: "IDLE", value: "IDLE" });
+    setEntity("sensor", "Boiler power test result", { value: 0, uom: "W" });
+    setEntity("sensor", "Boiler power test confidence", { value: 0, uom: "%" });
+    setEntity("text_sensor", "Flow Autotune status", { state: "IDLE", value: "IDLE" });
+    setEntity("number", "Flow Autotune Kp suggested", { value: 0, min_value: 0, max_value: 5, step: 0.01, uom: "" });
+    setEntity("number", "Flow Autotune Ki suggested", { value: 0, min_value: 0, max_value: 5, step: 0.01, uom: "" });
     setEntity("select", "Quatt Hybrid version", {
       value: "V1.5",
       state: "V1.5",
@@ -589,6 +700,9 @@
     [
       ["Flow Setpoint", 800, 0, 1500, 10, "L/h"],
       ["Manual iPWM", 400, 50, 850, 1, "iPWM"],
+      ["Flow PI Kp", 0.35, 0, 5, 0.01, ""],
+      ["Flow PI Ki", 0.05, 0, 5, 0.01, ""],
+      ["Boiler rated heat power", 1800, 500, 10000, 100, "W"],
       ["Day max level", 10, 0, 10, 1, ""],
       ["Silent max level", 6, 0, 10, 1, ""],
       ["Maximum water temperature", 56, 25, 75, 1, "°C"],
@@ -1013,6 +1127,7 @@
         setBinary("HP2 - Crankcase heater", true);
       }
       applyRuntimeControlOverlay(single);
+      syncCommissioningEntities(single);
       return;
     }
 
@@ -1072,6 +1187,7 @@
         setBinary("HP2 - Crankcase heater", true);
       }
       applyRuntimeControlOverlay(single);
+      syncCommissioningEntities(single);
       return;
     }
 
@@ -1129,6 +1245,7 @@
       setBinary("HP2 - Bottom plate heater", true);
       setBinary("HP2 - Crankcase heater", true);
       applyRuntimeControlOverlay(single);
+      syncCommissioningEntities(single);
       return;
     }
 
@@ -1193,6 +1310,7 @@
         setBinary("HP2 - Crankcase heater", true);
       }
       applyRuntimeControlOverlay(single);
+      syncCommissioningEntities(single);
       return;
     }
 
@@ -1262,6 +1380,7 @@
         setBinary("HP2 - 4-Way valve", true);
       }
       applyRuntimeControlOverlay(single);
+      syncCommissioningEntities(single);
       return;
     }
   }
@@ -1328,6 +1447,7 @@
     const openquattEnabled = isSwitchEnabled("OpenQuatt Enabled");
     const manualCoolingEnabled = isSwitchEnabled("Manual Cooling Enable");
     const silentModeOverride = String(getEntity("select", "Silent Mode Override")?.value || "Schedule");
+    const commissioningActive = Boolean(state.commissioning.cm100Active);
 
     if (silentModeOverride === "On") {
       setBinary("Silent active", true);
@@ -1342,7 +1462,7 @@
       }
     }
 
-    if (!openquattEnabled) {
+    if (!openquattEnabled && !commissioningActive) {
       setText("text_sensor", "Control Mode (Label)", "CM0 - Standby");
       setBinary("Cooling Request Active", false);
       setBinary("Cooling Permitted", false);
@@ -1478,7 +1598,179 @@
   }
 
   function handleButtonPress(name) {
-    if (name === "Complete setup") {
+    if (name === "CM100 Start") {
+      clearCommissioningTimers();
+      state.commissioning.cm100Active = true;
+      state.commissioning.globalStatus = "CM100 READY";
+      setCommissioningPhase("none", "idle", {
+        boilerResult: state.commissioning.boilerResult || 0,
+        boilerConfidence: state.commissioning.boilerConfidence || 0,
+        flowKpSuggested: state.commissioning.flowKpSuggested || 0,
+        flowKiSuggested: state.commissioning.flowKiSuggested || 0,
+      });
+      setText("text_sensor", "Control Mode (Label)", "CM100 - Commissioning");
+      setText("text_sensor", "Flow Mode", "CM100 idle");
+      setText("text_sensor", "Commissioning status", "CM100 READY");
+      state.commissioning.boilerStatusText = "IDLE";
+      state.commissioning.autotuneStatusText = "IDLE";
+      setText("text_sensor", "Boiler power test status", "IDLE");
+      setText("text_sensor", "Flow Autotune status", "IDLE");
+      setNumber("Flow average (Selected)", 0, "L/h");
+      setBinary("Boiler power test active", false);
+      setBinary("Boiler active", false);
+    } else if (name === "CM100 Stop") {
+      clearCommissioningTimers();
+      state.commissioning.cm100Active = false;
+      state.commissioning.globalStatus = "CM100 STOPPED";
+      setCommissioningPhase("none", "idle");
+      setText("text_sensor", "Control Mode (Label)", "CM0 - Standby");
+      setText("text_sensor", "Flow Mode", "Gepauzeerd");
+      setText("text_sensor", "Commissioning status", "CM100 STOPPED");
+      state.commissioning.boilerStatusText = "IDLE";
+      state.commissioning.autotuneStatusText = "IDLE";
+      setText("text_sensor", "Boiler power test status", "IDLE");
+      setText("text_sensor", "Flow Autotune status", "IDLE");
+      setBinary("CM100 active", false);
+      setBinary("Boiler power test active", false);
+      setBinary("Boiler active", false);
+    } else if (name === "Boiler Power Test Start") {
+      if (!state.commissioning.cm100Active) {
+        state.commissioning.boilerStatusText = "REFUSED: CM100 required";
+        setText("text_sensor", "Boiler power test status", "REFUSED: CM100 required");
+      } else {
+        clearCommissioningTimers();
+        state.commissioning.globalStatus = "BOILER TEST STARTED";
+        setCommissioningPhase("boiler", "requested", {
+          boilerResult: state.commissioning.boilerResult || 0,
+          boilerConfidence: state.commissioning.boilerConfidence || 0,
+        });
+        setText("text_sensor", "Control Mode (Label)", "CM100 - Commissioning");
+        setText("text_sensor", "Flow Mode", "CM100 boiler test");
+        setNumber("Flow average (Selected)", 800, "L/h");
+        setBinary("Boiler power test active", true);
+        state.commissioning.boilerStatusText = "REQUESTED";
+        setText("text_sensor", "Boiler power test status", "REQUESTED");
+        setText("text_sensor", "Commissioning status", "BOILER TEST STARTED");
+        scheduleCommissioningStep(700, () => {
+          setCommissioningPhase("boiler", "flow_settling");
+          state.commissioning.boilerStatusText = "FLOW_SETTLING";
+          setText("text_sensor", "Boiler power test status", "FLOW_SETTLING");
+        });
+        scheduleCommissioningStep(1700, () => {
+          setCommissioningPhase("boiler", "boiler_settling");
+          state.commissioning.boilerStatusText = "BOILER_SETTLING";
+          setText("text_sensor", "Boiler power test status", "BOILER_SETTLING");
+          setBinary("Boiler active", true);
+          setNumber("Boiler Heat Power", 0, "W");
+        });
+        scheduleCommissioningStep(2900, () => {
+          setCommissioningPhase("boiler", "measuring");
+          state.commissioning.boilerStatusText = "MEASURING";
+          setText("text_sensor", "Boiler power test status", "MEASURING");
+          setBinary("Boiler active", true);
+          setNumber("Boiler Heat Power", 1803, "W");
+          setNumber("Flow average (Selected)", 802, "L/h");
+        });
+        scheduleCommissioningStep(4300, () => {
+          setCommissioningPhase("boiler", "done", {
+            boilerResult: 1803,
+            boilerConfidence: 65,
+          });
+          state.commissioning.boilerStatusText = "DONE: 1803W (conf 65%)";
+          setText("text_sensor", "Boiler power test status", "DONE: 1803W (conf 65%)");
+          setText("text_sensor", "Commissioning status", "CM100 READY");
+          setBinary("Boiler power test active", false);
+          setBinary("Boiler active", false);
+          setNumber("Boiler Heat Power", 0, "W");
+          state.commissioning.globalStatus = "CM100 READY";
+        });
+      }
+    } else if (name === "Boiler Power Test Abort") {
+      clearCommissioningTimers();
+      state.commissioning.globalStatus = state.commissioning.cm100Active ? "CM100 READY" : "CM0 - Standby";
+      setCommissioningPhase("boiler", "aborted");
+      state.commissioning.boilerStatusText = "ABORTED";
+      setText("text_sensor", "Boiler power test status", "ABORTED");
+      setText("text_sensor", "Commissioning status", state.commissioning.globalStatus);
+      setBinary("Boiler power test active", false);
+      setBinary("Boiler active", false);
+      setNumber("Boiler Heat Power", 0, "W");
+    } else if (name === "Boiler Power Test Apply") {
+      const rounded = roundToHundred(state.commissioning.boilerResult || Number(getEntity("sensor", "Boiler power test result")?.value || 0));
+      setNumber("Boiler rated heat power", rounded, "W");
+      state.commissioning.boilerStatusText = `APPLIED: ${rounded}W`;
+      setText("text_sensor", "Boiler power test status", `APPLIED: ${rounded}W`);
+      setCommissioningPhase("boiler", "applied", {
+        boilerResult: rounded,
+      });
+      state.commissioning.globalStatus = "CM100 READY";
+    } else if (name === "Flow Autotune Start") {
+      if (!state.commissioning.cm100Active) {
+        state.commissioning.autotuneStatusText = "REFUSED: CM100 required";
+        setText("text_sensor", "Flow Autotune status", "REFUSED: CM100 required");
+      } else {
+        clearCommissioningTimers();
+        state.commissioning.globalStatus = "FLOW AUTOTUNE STARTED";
+        setCommissioningPhase("autotune", "requested", {
+          flowKpSuggested: state.commissioning.flowKpSuggested || 0,
+          flowKiSuggested: state.commissioning.flowKiSuggested || 0,
+        });
+        setText("text_sensor", "Control Mode (Label)", "CM100 - Commissioning");
+        setText("text_sensor", "Flow Mode", "CM100 flow autotune");
+        setNumber("Flow average (Selected)", 790, "L/h");
+        state.commissioning.autotuneStatusText = "REQUESTED";
+        setText("text_sensor", "Flow Autotune status", "REQUESTED");
+        setText("text_sensor", "Commissioning status", "FLOW AUTOTUNE STARTED");
+        scheduleCommissioningStep(700, () => {
+          setCommissioningPhase("autotune", "baseline_settling");
+          state.commissioning.autotuneStatusText = "BASELINE_SETTLING";
+          setText("text_sensor", "Flow Autotune status", "BASELINE_SETTLING");
+        });
+        scheduleCommissioningStep(1700, () => {
+          setCommissioningPhase("autotune", "step_test");
+          state.commissioning.autotuneStatusText = "STEP_TEST";
+          setText("text_sensor", "Flow Autotune status", "STEP_TEST");
+          setNumber("Flow average (Selected)", 798, "L/h");
+        });
+        scheduleCommissioningStep(2900, () => {
+          setCommissioningPhase("autotune", "measuring", {
+            flowKpSuggested: 0.42,
+            flowKiSuggested: 0.08,
+          });
+          state.commissioning.autotuneStatusText = "MEASURING";
+          setText("text_sensor", "Flow Autotune status", "MEASURING");
+        });
+        scheduleCommissioningStep(4200, () => {
+          setCommissioningPhase("autotune", "done", {
+            flowKpSuggested: 0.42,
+            flowKiSuggested: 0.08,
+          });
+          state.commissioning.autotuneStatusText = "DONE: Kp 0.42 Ki 0.08";
+          setText("text_sensor", "Flow Autotune status", "DONE: Kp 0.42 Ki 0.08");
+          setText("text_sensor", "Commissioning status", "CM100 READY");
+          state.commissioning.globalStatus = "CM100 READY";
+        });
+      }
+    } else if (name === "Flow Autotune Abort") {
+      clearCommissioningTimers();
+      state.commissioning.globalStatus = state.commissioning.cm100Active ? "CM100 READY" : "CM0 - Standby";
+      setCommissioningPhase("autotune", "aborted");
+      state.commissioning.autotuneStatusText = "ABORTED";
+      setText("text_sensor", "Flow Autotune status", "ABORTED");
+      setText("text_sensor", "Commissioning status", state.commissioning.globalStatus);
+    } else if (name === "Apply Flow Autotune Kp-Ki") {
+      const kp = Number(state.commissioning.flowKpSuggested || getEntity("number", "Flow Autotune Kp suggested")?.value || 0);
+      const ki = Number(state.commissioning.flowKiSuggested || getEntity("number", "Flow Autotune Ki suggested")?.value || 0);
+      setNumber("Flow PI Kp", kp, "");
+      setNumber("Flow PI Ki", ki, "");
+      state.commissioning.autotuneStatusText = `APPLIED: Kp ${kp.toFixed(2)} Ki ${ki.toFixed(2)}`;
+      setText("text_sensor", "Flow Autotune status", `APPLIED: Kp ${kp.toFixed(2)} Ki ${ki.toFixed(2)}`);
+      setCommissioningPhase("autotune", "applied", {
+        flowKpSuggested: kp,
+        flowKiSuggested: ki,
+      });
+      state.commissioning.globalStatus = "CM100 READY";
+    } else if (name === "Complete setup") {
       state.complete = true;
     } else if (name === "Reset setup state") {
       state.complete = false;
@@ -1686,6 +1978,7 @@
         <div class="oq-helper-hub-dev-meta">
           <span class="oq-helper-hub-dev-badge">Login ${state.auth.enabled ? "aan" : "uit"}</span>
           <span class="oq-helper-hub-dev-badge">${isAuthRecoveryWindowActive() ? "Herstelvenster open" : "Herstelvenster dicht"}</span>
+          <span class="oq-helper-hub-dev-badge">CM100 ${state.commissioning.cm100Active ? "aan" : "uit"}</span>
         </div>
         <div class="oq-helper-hub-dev-grid">
           <label class="oq-helper-hub-dev-row">
@@ -1726,6 +2019,7 @@
           <span class="oq-helper-hub-dev-badge">Quick Start ${state.complete ? "afgerond" : "actief"}</span>
           <span class="oq-helper-hub-dev-badge">Datastroom ${state.autoAnimate ? "live mock" : "gepauzeerd"}</span>
           <span class="oq-helper-hub-dev-badge">CV-ketel ${state.boiler === "on" ? "aan" : "uit"}</span>
+          <span class="oq-helper-hub-dev-badge">CM100 ${state.commissioning.globalStatus || "CM0 - Standby"}</span>
         </div>
       </section>
     `;
