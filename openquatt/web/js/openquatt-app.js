@@ -9474,9 +9474,9 @@ function renderWebServerLogsModal() {
             </div>
             ${renderCommissioningProgressBar(boilerStatus, "boiler")}
             <div class="oq-settings-grid">
-              ${renderSettingsStaticField("boilerRatedHeatPower", "Boiler rated heat power", "De huidige boilerinstelling waarop de regeling en commissioning zich baseren.", boilerRatedPower)}
-              ${renderSettingsStaticField("boilerPowerTestResult", "Boiler power test resultaat", "Het meest recente gemeten boilervermogen.", boilerResult)}
-              ${renderSettingsStaticField("boilerPowerTestConfidence", "Boiler power test confidence", "Hoe stabiel en betrouwbaar de meting was.", boilerConfidence)}
+              ${renderSettingsStaticField("boilerRatedHeatPower", "Ingesteld boilervermogen", "De huidige boilerinstelling waarop de regeling en commissioning zich baseren.", boilerRatedPower)}
+              ${renderSettingsStaticField("boilerPowerTestResult", "Gemeten boilervermogen", "Het meest recente gemeten boilervermogen.", boilerResult)}
+              ${renderSettingsStaticField("boilerPowerTestConfidence", "Betrouwbaarheid meting", "Hoe stabiel en betrouwbaar de meting was.", boilerConfidence)}
             </div>
           </div>
         ` : ""}
@@ -9626,15 +9626,15 @@ function renderWebServerLogsModal() {
           )}
           ${boilerPresent ? renderSettingsNumberField(
             "boilerRatedHeatPower",
-            "Boiler rated heat power",
+            "Boilervermogen",
             "Effectief boilervermogen dat later ook als basis voor CM3-drempels en commissioning gebruikt wordt."
           ) : `
             <article class="oq-settings-field oq-settings-field--span-2">
               <div class="oq-settings-field-head">
-                <h3>Boiler rated heat power</h3>
+                <h3>Boilervermogen</h3>
               </div>
               <div class="oq-settings-action-field">
-                <p class="oq-settings-action-note">Zet CV-ketel/boiler aanwezig aan om het effectieve boilervermogen en de commissioning-test te tonen.</p>
+                <p class="oq-settings-action-note">Zet CV-ketel/boiler aanwezig aan om het boilervermogen en de commissioning-test te tonen.</p>
               </div>
             </article>
           `}
