@@ -375,6 +375,24 @@
     `;
   }
 
+  function renderNamedToggleActionButton({
+    active,
+    startKey,
+    stopKey,
+    startLabel,
+    stopLabel,
+    startClass = "oq-helper-button oq-helper-button--primary",
+    stopClass = "oq-helper-button oq-helper-button--ghost",
+    startDisabled = false,
+    stopDisabled = false,
+  }) {
+    const key = active ? stopKey : startKey;
+    const label = active ? stopLabel : startLabel;
+    const buttonClass = active ? stopClass : startClass;
+    const disabled = active ? stopDisabled : startDisabled;
+    return renderNamedActionButton(key, label, buttonClass, disabled);
+  }
+
   function renderSettingsOptionCardsField(key, title, copy, descriptions, className = "") {
     if (!hasEntity(key)) {
       return "";
@@ -1526,8 +1544,15 @@
                 : (cm100Active ? "CM100 staat klaar. Start de boiler-test wanneer je wilt." : "Start CM100 eerst en voer daarna de boilervermogentest uit."),
               progressTask: "boiler",
               actions: `
-                ${state.entities.boilerPowerTestStart ? renderNamedActionButton("boilerPowerTestStart", "Boiler test starten", "oq-helper-button oq-helper-button--primary", boilerBusy || boilerStartDisabled) : ""}
-                ${state.entities.boilerPowerTestAbort ? renderNamedActionButton("boilerPowerTestAbort", "Boiler test afbreken", "oq-helper-button oq-helper-button--ghost", boilerBusy || boilerAbortDisabled) : ""}
+                ${state.entities.boilerPowerTestStart || state.entities.boilerPowerTestAbort ? renderNamedToggleActionButton({
+                  active: boilerTaskRunning,
+                  startKey: "boilerPowerTestStart",
+                  stopKey: "boilerPowerTestAbort",
+                  startLabel: "Boiler test starten",
+                  stopLabel: "Boiler test stoppen",
+                  startDisabled: boilerBusy || boilerStartDisabled,
+                  stopDisabled: boilerBusy || boilerAbortDisabled,
+                }) : ""}
                 ${state.entities.boilerPowerTestApply ? renderNamedActionButton("boilerPowerTestApply", "Pas boilervermogen toe", "oq-helper-button oq-helper-button--ghost", boilerBusy || boilerApplyDisabled) : ""}
               `,
               metrics: `
@@ -1547,8 +1572,15 @@
                 : (cm100Active ? "CM100 staat klaar. Start de autotune wanneer je wilt." : "Start CM100 eerst en voer daarna autotune uit."),
               progressTask: "autotune",
               actions: `
-                ${state.entities.flowAutotuneStart ? renderNamedActionButton("flowAutotuneStart", "Autotune starten", "oq-helper-button oq-helper-button--primary", autotuneBusy || autotuneStartDisabled) : ""}
-                ${state.entities.flowAutotuneAbort ? renderNamedActionButton("flowAutotuneAbort", "Autotune afbreken", "oq-helper-button oq-helper-button--ghost", autotuneBusy || autotuneAbortDisabled) : ""}
+                ${state.entities.flowAutotuneStart || state.entities.flowAutotuneAbort ? renderNamedToggleActionButton({
+                  active: autotuneTaskRunning,
+                  startKey: "flowAutotuneStart",
+                  stopKey: "flowAutotuneAbort",
+                  startLabel: "Autotune starten",
+                  stopLabel: "Autotune stoppen",
+                  startDisabled: autotuneBusy || autotuneStartDisabled,
+                  stopDisabled: autotuneBusy || autotuneAbortDisabled,
+                }) : ""}
                 ${state.entities.flowAutotuneApply ? renderNamedActionButton("flowAutotuneApply", "Pas flowvoorstel toe", "oq-helper-button oq-helper-button--ghost", autotuneBusy || autotuneApplyDisabled) : ""}
               `,
               metrics: `
