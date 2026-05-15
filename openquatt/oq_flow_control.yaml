@@ -53,6 +53,10 @@ globals:
     type: int
     restore_value: true
     initial_value: "440"
+  - id: oq_flow_commissioning_start_pwm
+    type: int
+    restore_value: false
+    initial_value: '400'
   - id: oq_flow_control_mode_code
     type: int
     restore_value: false
@@ -384,11 +388,15 @@ interval:
             int fallback = (int) roundf(id(oq_flow_auto_start_pwm).state);
             fallback = clamp_iPWM(fallback);
 
-            int start_pwm = (int) id(oq_flow_last_good_pwm);
-            if (start_pwm < 50 || start_pwm > 850) start_pwm = fallback;
+            const int cm_code = id(oq_control_mode_code);
+            const bool commissioning_start = (cm_code == 100) && (id(oq_commissioning_task_code) != 0);
+            int start_pwm = commissioning_start
+              ? clamp_iPWM(id(oq_flow_commissioning_start_pwm))
+              : (int) id(oq_flow_last_good_pwm);
+            if (!commissioning_start && (start_pwm < 50 || start_pwm > 850)) start_pwm = fallback;
 
-            ESP_LOGI("flow", "AUTO start(%s): iPWM=%d (last_good=%d fallback=%d, hold %ds, fixed iPWM)",
-                     tag, start_pwm, (int)id(oq_flow_last_good_pwm), fallback, STARTUP_HOLD_S);
+            ESP_LOGI("flow", "AUTO start(%s): iPWM=%d (last_good=%d fallback=%d commissioning=%s hold %ds, fixed iPWM)",
+                     tag, start_pwm, (int)id(oq_flow_last_good_pwm), fallback, commissioning_start ? "yes" : "no", STARTUP_HOLD_S);
 
             id(oq_flow_last_pwm) = start_pwm;
             id(oq_flow_i) = 0.0f;

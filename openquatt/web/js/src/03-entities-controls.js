@@ -251,7 +251,6 @@
       "boilerPowerTestApply",
       "boilerPowerTestStatus",
       "boilerPowerTestResult",
-      "boilerPowerTestConfidence",
       "boilerPowerTestActive",
       "boilerHeatPower",
       "flowAutotuneStart",
@@ -299,7 +298,6 @@
       "boilerPowerTestApply",
       "boilerPowerTestStatus",
       "boilerPowerTestResult",
-      "boilerPowerTestConfidence",
       "boilerPowerTestActive",
       "boilerHeatPower",
       "flowAutotuneStart",
@@ -2623,15 +2621,18 @@
         if (buttonKey === "commissioningCm100Start") {
           state.pendingCommissioningCm100Start = true;
           state.commissioningTaskLock = "cm100";
+          state.commissioningBoilerHeatPowerDisplay = "";
         } else if (buttonKey === "commissioningCm100Stop") {
           state.pendingCommissioningCm100Start = false;
           state.pendingBoilerPowerTestStart = false;
           state.pendingFlowAutotuneStart = false;
           state.commissioningTaskLock = "";
+          state.commissioningBoilerHeatPowerDisplay = "";
         } else if (buttonKey === "boilerPowerTestStart") {
           state.pendingBoilerPowerTestStart = true;
           state.pendingFlowAutotuneStart = false;
           state.commissioningTaskLock = "boiler";
+          state.commissioningBoilerHeatPowerDisplay = "";
         } else if (buttonKey === "boilerPowerTestAbort" || buttonKey === "boilerPowerTestApply") {
           state.commissioningTaskLock = "boiler";
         } else if (buttonKey === "flowAutotuneStart") {

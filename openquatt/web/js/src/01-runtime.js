@@ -75,6 +75,7 @@
     pendingBoilerPowerTestStart: false,
     pendingFlowAutotuneStart: false,
     commissioningTaskLock: "",
+    commissioningBoilerHeatPowerDisplay: "",
     headerRenderSignature: "",
     drafts: {},
     inputDrafts: {},

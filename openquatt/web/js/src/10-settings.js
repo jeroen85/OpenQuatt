@@ -104,7 +104,8 @@
     const normalized = String(status || "").trim().toUpperCase();
     return normalized.includes("WAITING_FOR_CM100")
       || normalized.includes("CM100 REQUESTED")
-      || normalized.includes("WACHTEN OP CM100");
+      || normalized.includes("WACHTEN OP CM100")
+      || normalized === "WACHTEN";
   }
 
   function isCommissioningTaskStatusActive(status) {

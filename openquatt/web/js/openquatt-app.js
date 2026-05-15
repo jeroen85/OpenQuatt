@@ -158,7 +158,6 @@ const LOGO_MARKUP = `
     boilerPowerTestAbort: { domain: "button", name: "Boiler Power Test Abort", optional: true },
     boilerPowerTestApply: { domain: "button", name: "Boiler Power Test Apply", optional: true },
     boilerPowerTestResult: { domain: "sensor", name: "Boiler power test result", optional: true },
-    boilerPowerTestConfidence: { domain: "sensor", name: "Boiler power test confidence", optional: true },
     boilerPowerTestActive: { domain: "binary_sensor", name: "Boiler power test active", optional: true },
     boilerPowerTestStatus: { domain: "text_sensor", name: "Boiler power test status", optional: true },
     flowAutotuneStart: { domain: "button", name: "Flow Autotune Start", optional: true },
@@ -408,7 +407,6 @@ const LOGO_MARKUP = `
     "boilerPowerTestAbort",
     "boilerPowerTestApply",
     "boilerPowerTestResult",
-    "boilerPowerTestConfidence",
     "boilerPowerTestActive",
     "boilerPowerTestStatus",
     "boilerHeatPower",
@@ -936,6 +934,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     pendingBoilerPowerTestStart: false,
     pendingFlowAutotuneStart: false,
     commissioningTaskLock: "",
+    commissioningBoilerHeatPowerDisplay: "",
     headerRenderSignature: "",
     drafts: {},
     inputDrafts: {},
@@ -3780,7 +3779,6 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       "boilerPowerTestApply",
       "boilerPowerTestStatus",
       "boilerPowerTestResult",
-      "boilerPowerTestConfidence",
       "boilerPowerTestActive",
       "boilerHeatPower",
       "flowAutotuneStart",
@@ -3828,7 +3826,6 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       "boilerPowerTestApply",
       "boilerPowerTestStatus",
       "boilerPowerTestResult",
-      "boilerPowerTestConfidence",
       "boilerPowerTestActive",
       "boilerHeatPower",
       "flowAutotuneStart",
@@ -6152,15 +6149,18 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
         if (buttonKey === "commissioningCm100Start") {
           state.pendingCommissioningCm100Start = true;
           state.commissioningTaskLock = "cm100";
+          state.commissioningBoilerHeatPowerDisplay = "";
         } else if (buttonKey === "commissioningCm100Stop") {
           state.pendingCommissioningCm100Start = false;
           state.pendingBoilerPowerTestStart = false;
           state.pendingFlowAutotuneStart = false;
           state.commissioningTaskLock = "";
+          state.commissioningBoilerHeatPowerDisplay = "";
         } else if (buttonKey === "boilerPowerTestStart") {
           state.pendingBoilerPowerTestStart = true;
           state.pendingFlowAutotuneStart = false;
           state.commissioningTaskLock = "boiler";
+          state.commissioningBoilerHeatPowerDisplay = "";
         } else if (buttonKey === "boilerPowerTestAbort" || buttonKey === "boilerPowerTestApply") {
           state.commissioningTaskLock = "boiler";
         } else if (buttonKey === "flowAutotuneStart") {
@@ -8410,7 +8410,8 @@ function renderWebServerLogsModal() {
     const normalized = String(status || "").trim().toUpperCase();
     return normalized.includes("WAITING_FOR_CM100")
       || normalized.includes("CM100 REQUESTED")
-      || normalized.includes("WACHTEN OP CM100");
+      || normalized.includes("WACHTEN OP CM100")
+      || normalized === "WACHTEN";
   }
 
   function isCommissioningTaskStatusActive(status) {
