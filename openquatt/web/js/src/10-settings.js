@@ -28,7 +28,10 @@
     return renderSettingsFieldCard(fieldKey, title, copy, `<div class="oq-settings-static-value">${escapeHtml(value)}</div>`, className);
   }
 
-  function getSettingsStatValue(key) {
+  function getSettingsStatValue(key, options = {}) {
+    const config = typeof options === "number"
+      ? { decimals: options }
+      : (options || {});
     const entity = state.entities[key];
     if (!entity) {
       return "—";
@@ -36,12 +39,114 @@
 
     const numeric = Number(entity.value);
     if (!Number.isNaN(numeric)) {
-      const decimals = Number.isInteger(numeric) ? 0 : 1;
-      return `${numeric.toFixed(decimals)}${entity.uom ? ` ${entity.uom}` : ""}`;
+      const decimals = Number.isInteger(numeric)
+        ? 0
+        : Number.isFinite(config.decimals) ? config.decimals : 1;
+      let formatted = numeric.toFixed(Math.max(0, decimals));
+      if (config.trimTrailingZeros && formatted.includes(".")) {
+        formatted = formatted.replace(/\.?0+$/, "");
+      }
+      return `${formatted}${entity.uom ? ` ${entity.uom}` : ""}`;
     }
 
     const text = String(entity.state ?? entity.value ?? "").trim();
     return text || "—";
+  }
+
+  function getSettingsTextStatValue(key, fallback = "—") {
+    const entity = state.entities[key];
+    if (!entity) {
+      return fallback;
+    }
+
+    const text = String(entity.state ?? entity.value ?? "").trim();
+    if (!text || text === "0" || text === "—") {
+      return fallback;
+    }
+
+    return text;
+  }
+
+  function isCommissioningTaskStatusBusy(status) {
+    const normalized = String(status || "").trim().toUpperCase();
+    if (!normalized || normalized === "0" || normalized === "IDLE" || normalized === "CM100 READY" || normalized === "CM100 STOPPED") {
+      return false;
+    }
+    if (normalized.includes("DONE") || normalized.includes("FAILED") || normalized.includes("ABORT") || normalized.includes("APPLIED") || normalized.includes("REFUSED")) {
+      return false;
+    }
+    return normalized.includes("REQUESTED")
+      || normalized.includes("WAITING")
+      || normalized.includes("WACHTEN")
+      || normalized.includes("SETTLING")
+      || normalized.includes("MEASUR")
+      || normalized.includes("COOLDOWN")
+      || normalized.includes("RUNNING")
+      || normalized.includes("VALIDATING")
+      || normalized.includes("STARTED")
+      || normalized.includes("RECOVER")
+      || normalized.includes("STEP");
+  }
+
+  function isCommissioningTaskStatusTerminal(status) {
+    const normalized = String(status || "").trim().toUpperCase();
+    if (!normalized) {
+      return false;
+    }
+    return normalized.includes("DONE")
+      || normalized.includes("FAILED")
+      || normalized.includes("ABORT")
+      || normalized.includes("APPLIED")
+      || normalized.includes("REFUSED");
+  }
+
+  function isCommissioningTaskStatusWaitingForCm100(status) {
+    const normalized = String(status || "").trim().toUpperCase();
+    return normalized.includes("WAITING_FOR_CM100")
+      || normalized.includes("CM100 REQUESTED")
+      || normalized.includes("WACHTEN OP CM100")
+      || normalized === "WACHTEN";
+  }
+
+  function isCommissioningTaskStatusActive(status) {
+    return isCommissioningTaskStatusBusy(status) && !isCommissioningTaskStatusWaitingForCm100(status);
+  }
+
+  function getStatusTextValue(key, fallback = "IDLE") {
+    const rawValue = getSettingsTextStatValue(key, fallback);
+    const normalized = String(rawValue ?? "").trim();
+    if (!normalized || normalized === "0" || normalized === "UNKNOWN" || normalized === "UNAVAILABLE" || normalized === "NAN") {
+      return fallback;
+    }
+    return normalized;
+  }
+
+  function getCommissioningStatusValue() {
+    const rawStatus = getSettingsTextStatValue("commissioningStatus", "");
+    const cm100Active = isEntityActive("cm100Active");
+    const normalizedRawStatus = String(rawStatus || "").trim().toUpperCase();
+    if (
+      cm100Active
+      || normalizedRawStatus === "CM100 READY"
+      || normalizedRawStatus === "CM100 STOPPED"
+      || normalizedRawStatus.includes("DONE")
+      || normalizedRawStatus.includes("FAILED")
+      || normalizedRawStatus.includes("ABORT")
+      || normalizedRawStatus.includes("APPLIED")
+      || normalizedRawStatus.includes("REFUSED")
+    ) {
+      state.pendingCommissioningCm100Start = false;
+    }
+    if (normalizedRawStatus && normalizedRawStatus !== "0") {
+      if (normalizedRawStatus === "IDLE" && state.pendingCommissioningCm100Start) {
+        return "CM100 REQUESTED";
+      }
+      return normalizedRawStatus;
+    }
+    if (state.pendingCommissioningCm100Start) {
+      return "CM100 REQUESTED";
+    }
+    return cm100Active ? "CM100 READY" : "IDLE";
   }
 
   function renderSettingsTrendStatsField() {
@@ -248,6 +353,7 @@
             class="${buttonClass}"
             type="button"
             data-oq-action="${escapeHtml(action)}"
+            ${options.buttonKey ? `data-oq-button-key="${escapeHtml(options.buttonKey)}"` : ""}
             ${busy || disabled ? "disabled" : ""}
           >
             ${escapeHtml(buttonLabel)}
@@ -257,6 +363,53 @@
       `,
       className,
     );
+  }
+
+  function renderSettingsNamedButtonField(key, title, copy, buttonLabel, className = "", options = {}) {
+    return renderSettingsButtonField(
+      key,
+      title,
+      copy,
+      buttonLabel,
+      "press-named-button",
+      className,
+      {
+        ...options,
+        buttonKey: options.buttonKey || key,
+      },
+    );
+  }
+
+  function renderNamedActionButton(buttonKey, label, buttonClass = "oq-helper-button oq-helper-button--ghost", disabled = false) {
+    return `
+      <button
+        class="${buttonClass}"
+        type="button"
+        data-oq-action="press-named-button"
+        data-oq-button-key="${escapeHtml(buttonKey)}"
+        ${disabled ? "disabled" : ""}
+      >
+        ${escapeHtml(label)}
+      </button>
+    `;
+  }
+
+  function renderNamedToggleActionButton({
+    active,
+    startKey,
+    stopKey,
+    startLabel,
+    stopLabel,
+    startClass = "oq-helper-button oq-helper-button--primary",
+    stopClass = "oq-helper-button oq-helper-button--ghost",
+    startDisabled = false,
+    stopDisabled = false,
+  }) {
+    const key = active ? stopKey : startKey;
+    const label = active ? stopLabel : startLabel;
+    const buttonClass = active ? stopClass : startClass;
+    const disabled = active ? stopDisabled : startDisabled;
+    return renderNamedActionButton(key, label, buttonClass, disabled);
   }
 
   function renderSettingsOptionCardsField(key, title, copy, descriptions, className = "") {
@@ -386,6 +539,8 @@
       ? [
           renderSettingsGenerationSection(),
           renderSettingsBoilerCvSection(),
+          renderSettingsFlowSection(),
+          renderSettingsCommissioningSection(),
           renderSettingsSilentSection(),
           renderSettingsWaterSection(),
         ]
@@ -395,7 +550,6 @@
           ? [renderSettingsCoolingSection()]
         : activeGroup === "advanced"
             ? [
-                renderSettingsFlowSection(),
                 renderSettingsCompressorSection(),
                 renderSettingsCiCCompatibilitySection(),
               ]
@@ -561,6 +715,27 @@
       }
       if (button) {
         button.disabled = !canEdit || state.loadingEntities || state.busyAction === "save-hpGeneration";
+      }
+    }
+
+    const commissioningTeaser = stack.querySelector('button[data-oq-action="open-cm100-commissioning-modal"]')?.closest(".oq-settings-quickstart-status");
+    if (commissioningTeaser) {
+      const valueNode = commissioningTeaser.querySelector(".oq-settings-quickstart-status-value");
+      const copyNode = commissioningTeaser.querySelector(".oq-settings-quickstart-status-copy");
+      const button = commissioningTeaser.querySelector('button[data-oq-action="open-cm100-commissioning-modal"]');
+      const cm100Status = getCommissioningStatusValue();
+      const cm100Active = isEntityActive("cm100Active");
+      if (valueNode && valueNode.textContent !== cm100Status) {
+        valueNode.textContent = cm100Status;
+      }
+      const copy = cm100Active
+        ? "CM100 is actief en klaar voor commissioning."
+        : "Open de modal om CM100 te starten en de taken hieronder te ontgrendelen.";
+      if (copyNode && copyNode.textContent !== copy) {
+        copyNode.textContent = copy;
+      }
+      if (button) {
+        button.disabled = state.loadingEntities;
       }
     }
 
@@ -739,6 +914,137 @@
           ? renderSettingsNumberField("manualIpwm", "Vaste pompstand", "Deze pompstand wordt gebruikt zolang de regeling op handmatig staat.")
           : renderSettingsNumberField("flowSetpoint", "Gewenste flow", "De flow die OpenQuatt zoveel mogelijk probeert vast te houden.")}
       </div>
+    `;
+  }
+
+  function renderFlowTuningFields(className = "oq-settings-grid") {
+    const fields = [
+      renderSettingsNumberField("flowKp", "Flow Kp", "Hoe sterk de regeling direct reageert op een afwijking."),
+      renderSettingsNumberField("flowKi", "Flow Ki", "Hoe snel de regeling kleine restfouten wegwerkt."),
+    ].filter(Boolean);
+    if (!fields.length) {
+      return "";
+    }
+    return `
+      <div class="${escapeHtml(className)}">
+        ${fields.join("")}
+      </div>
+    `;
+  }
+
+  function getCommissioningProgressModel(statusText = "", task = "") {
+    const value = String(statusText || "").trim().toUpperCase();
+    const taskType = String(task || "").trim().toLowerCase();
+    const tokens = value.split(/[^A-Z0-9]+/).filter(Boolean);
+    const matchesStatus = (needle) => {
+      const normalizedNeedle = String(needle || "").trim().toUpperCase();
+      if (!normalizedNeedle) {
+        return false;
+      }
+      return value === normalizedNeedle
+        || value.startsWith(`${normalizedNeedle}:`)
+        || value.startsWith(`${normalizedNeedle} `)
+        || tokens.includes(normalizedNeedle);
+    };
+
+    const progressMaps = {
+      boiler: [
+        { match: ["REQUESTED", "WAITING_FOR_CM100", "REFUSED"], phase: "Voorbereiden", percent: 12 },
+        { match: ["FLOW_SETTLING"], phase: "Flow stabiliseren", percent: 28 },
+        { match: ["BOILER_SETTLING"], phase: "Boiler stabiliseren", percent: 48 },
+        { match: ["MEASURING"], phase: "Meten", percent: 72 },
+        { match: ["COOLDOWN"], phase: "Afronden", percent: 90 },
+        { match: ["DONE", "APPLIED"], phase: "Klaar", percent: 100 },
+        { match: ["ABORTED", "FAILED", "ABORT"], phase: "Afgebroken", percent: 100 },
+      ],
+      autotune: [
+        { match: ["REQUESTED", "WAITING_FOR_CM100", "REFUSED"], phase: "Voorbereiden", percent: 10 },
+        { match: ["WAITING_FOR_FLOW", "SETTLING"], phase: "Flow stabiliseren", percent: 26 },
+        { match: ["STEP2"], phase: "Staptest 2", percent: 56 },
+        { match: ["STEP", "STEP1"], phase: "Staptest 1", percent: 42 },
+        { match: ["VALIDATING_SETTLING"], phase: "Flow valideren", percent: 70 },
+        { match: ["VALIDATING"], phase: "Flow valideren", percent: 84 },
+        { match: ["RECOVERING"], phase: "Herstellen", percent: 92 },
+        { match: ["DONE", "APPLIED"], phase: "Klaar", percent: 100 },
+        { match: ["ABORTED", "FAILED", "ABORT"], phase: "Afgebroken", percent: 100 },
+      ],
+      cm100: [
+        { match: ["REQUESTED"], phase: "Wachten op CM100", percent: 0 },
+        { match: ["WAITING_FOR_CM100"], phase: "Wachten op CM100", percent: 0 },
+        { match: ["CM100 READY"], phase: "Klaar", percent: 100 },
+        { match: ["IDLE"], phase: "Klaar", percent: 100 },
+      ],
+    };
+
+    if (!value || value === "—" || value === "UNKNOWN" || value === "UNAVAILABLE" || value === "NAN") {
+      return { phase: "Wachten", percent: 0 };
+    }
+
+    if (value.includes("WAITING") || value.includes("WACHTEN")) {
+      return { phase: "Wachten", percent: 0 };
+    }
+
+    if (taskType !== "cm100" && (
+      value === "IDLE"
+      || value === "CM0 - STANDBY"
+      || value === "CM100 READY"
+      || value === "CM100 STOPPED"
+      || value === "GEPAUZEERD"
+    )) {
+      return { phase: "Wachten", percent: 0 };
+    }
+
+    const selected = progressMaps[taskType] || [];
+    const match = selected.find((item) => item.match.some((needle) => matchesStatus(needle)));
+    if (match) {
+      return match;
+    }
+
+    if (value.includes("DONE") || value.includes("APPLIED")) {
+      return { phase: "Klaar", percent: 100 };
+    }
+    if (value.includes("ABORT") || value.includes("FAILED") || value.includes("REFUSED")) {
+      return { phase: "Afgebroken", percent: 100 };
+    }
+    if (taskType === "cm100" && value.includes("CM100")) {
+      return { phase: "Klaar", percent: 100 };
+    }
+    return { phase: statusText, percent: 0 };
+  }
+
+  function renderCommissioningTaskCard({
+    taskKey,
+    title,
+    copy,
+    subcopy = "",
+    status,
+    statusCopy,
+    progressTask,
+    actions = "",
+    metrics = "",
+    className = "",
+  }) {
+    return `
+      <article class="oq-settings-commissioning-card${className ? ` ${escapeHtml(className)}` : ""}" data-oq-commissioning-task="${escapeHtml(taskKey)}">
+        <div class="oq-settings-commissioning-card-head">
+          <div class="oq-settings-commissioning-card-copy">
+            <h3>${escapeHtml(title)}</h3>
+            <p>${escapeHtml(copy)}</p>
+            ${subcopy ? `<p class="oq-settings-commissioning-card-subcopy">${escapeHtml(subcopy)}</p>` : ""}
+          </div>
+        </div>
+        ${actions ? `<div class="oq-settings-commissioning-card-actions">${actions}</div>` : ""}
+        <div class="oq-settings-quickstart-status oq-settings-quickstart-status--compact oq-settings-commissioning-card-status">
+          <div class="oq-settings-quickstart-status-row">
+            <div>
+              <p class="oq-settings-quickstart-status-label">Huidige status</p>
+              <strong class="oq-settings-quickstart-status-value">${escapeHtml(status)}</strong>
+              <p class="oq-settings-quickstart-status-copy">${escapeHtml(statusCopy)}</p>
+            </div>
+          </div>
+        </div>
+        ${metrics ? `<div class="oq-settings-grid oq-settings-commissioning-metrics">${metrics}</div>` : ""}
+      </article>
     `;
   }
 
@@ -1122,11 +1428,237 @@
   }
 
   function renderSettingsFlowSection() {
+    const flowTuning = renderFlowTuningFields();
     return renderSettingsSection(
-      "Pomp",
+      "Installatie",
       "Flowregeling",
-      "Kies of OpenQuatt de pomp automatisch op flow regelt, of dat je zelf een vaste pompstand instelt.",
-      renderFlowSettingsFields(),
+      "Kies hoe de pomp wordt geregeld en stel de flow-instellingen direct als installatieparameter in. De autotune vind je later bij Service & commissioning.",
+      `
+        ${renderFlowSettingsFields()}
+        ${flowTuning ? `
+          <div class="oq-settings-subpanel oq-settings-subpanel--nested">
+            <div class="oq-settings-subpanel-head">
+              <p class="oq-helper-label">Flow afstelling</p>
+              <h4>Flow Kp en Ki</h4>
+              <p>Deze waarden bepalen hoe stevig de flowregeling corrigeert op afwijkingen. Autotune vult hier later een voorstel voor in.</p>
+            </div>
+            ${flowTuning}
+          </div>
+        ` : ""}
+      `,
+    );
+  }
+
+  function renderSettingsCm100CommissioningModal() {
+    const hasBoilerAssist = hasEntity("boilerCvAssistEnabled") && isEntityActive("boilerCvAssistEnabled");
+    const cm100Status = getCommissioningStatusValue();
+    const cm100Active = isEntityActive("cm100Active");
+    const cm100TaskLocked = state.commissioningTaskLock === "cm100";
+    const cm100Busy = state.loadingEntities || state.busyAction === "commissioningCm100Start" || state.busyAction === "commissioningCm100Stop" || cm100TaskLocked;
+    const cm100Pending = Boolean(state.pendingCommissioningCm100Start);
+    const cm100StartDisabled = cm100Busy || cm100Active;
+    const cm100StopDisabled = cm100Busy || !cm100Active;
+    const boilerStatus = getStatusTextValue("boilerPowerTestStatus", "IDLE");
+    const boilerProgress = getCommissioningProgressModel(boilerStatus, "boiler");
+    const boilerActive = isEntityActive("boilerPowerTestActive");
+    const boilerBusy = state.loadingEntities || state.busyAction === "boilerPowerTestStart" || state.busyAction === "boilerPowerTestAbort" || state.busyAction === "boilerPowerTestApply";
+    const boilerControls = Boolean(state.entities.boilerPowerTestStart || state.entities.boilerPowerTestAbort || state.entities.boilerPowerTestApply);
+    const boilerPending = Boolean(state.pendingBoilerPowerTestStart);
+    const boilerTaskLocked = state.commissioningTaskLock === "boiler";
+    const boilerTaskWaitingForCm100 = isCommissioningTaskStatusWaitingForCm100(boilerStatus);
+    const boilerTaskRunning = (boilerActive || boilerPending || boilerTaskLocked || isCommissioningTaskStatusActive(boilerStatus)) && !boilerTaskWaitingForCm100;
+    const boilerRatedPower = getSettingsStatValue("boilerRatedHeatPower");
+    const boilerHeatPowerRaw = getSettingsStatValue("boilerHeatPower");
+    const boilerHeatPowerNumeric = getEntityNumericValue("boilerHeatPower");
+    const boilerHeatPower = boilerHeatPowerNumeric > 0
+      ? boilerHeatPowerRaw
+      : (boilerTaskRunning && state.commissioningBoilerHeatPowerDisplay ? state.commissioningBoilerHeatPowerDisplay : boilerHeatPowerRaw);
+    if (boilerHeatPowerNumeric > 0) {
+      state.commissioningBoilerHeatPowerDisplay = boilerHeatPowerRaw;
+    }
+    const autotuneStatus = getStatusTextValue("flowAutotuneStatus", "IDLE");
+    const autotuneProgress = getCommissioningProgressModel(autotuneStatus, "autotune");
+    const autotuneBusy = state.loadingEntities || state.busyAction === "flowAutotuneStart" || state.busyAction === "flowAutotuneAbort" || state.busyAction === "flowAutotuneApply";
+    const autotuneControls = Boolean(state.entities.flowAutotuneStart || state.entities.flowAutotuneAbort || state.entities.flowAutotuneApply);
+    const autotunePending = Boolean(state.pendingFlowAutotuneStart);
+    const autotuneTaskLocked = state.commissioningTaskLock === "autotune";
+    const autotuneTaskWaitingForCm100 = isCommissioningTaskStatusWaitingForCm100(autotuneStatus);
+    const autotuneTaskRunning = (autotunePending || autotuneTaskLocked || isCommissioningTaskStatusActive(autotuneStatus)) && !autotuneTaskWaitingForCm100;
+    const flowKpSuggested = getSettingsStatValue("flowKpSuggested", { decimals: 5, trimTrailingZeros: true });
+    const flowKiSuggested = getSettingsStatValue("flowKiSuggested", { decimals: 5, trimTrailingZeros: true });
+    const boilerResultReady = /DONE|APPLIED/.test(String(boilerStatus || "").toUpperCase());
+    const autotuneResultReady = /DONE|APPLIED/.test(String(autotuneStatus || "").toUpperCase());
+    const boilerStatusDisplay = cm100Active
+      ? (boilerTaskWaitingForCm100
+        ? "Wachten op CM100"
+        : (boilerTaskRunning
+          ? boilerProgress.phase
+          : (boilerResultReady ? "Klaar om toe te passen" : "Klaar om te starten")))
+      : "Wachten op CM100";
+    const autotuneStatusDisplay = cm100Active
+      ? (autotuneTaskWaitingForCm100
+        ? "Wachten op CM100"
+        : (autotuneTaskRunning
+          ? autotuneProgress.phase
+          : (autotuneResultReady ? "Klaar om toe te passen" : "Klaar om te starten")))
+      : "Wachten op CM100";
+    const boilerStartDisabled = !cm100Active || boilerBusy || !boilerControls || autotuneTaskRunning || boilerTaskRunning || autotuneTaskLocked || boilerPending;
+    const boilerAbortDisabled = boilerBusy || !(boilerTaskRunning || boilerTaskLocked || boilerPending);
+    const boilerApplyDisabled = boilerBusy || boilerStartDisabled || !boilerResultReady || autotuneTaskRunning;
+    const autotuneStartDisabled = !cm100Active || autotuneBusy || !autotuneControls || boilerTaskRunning || autotuneTaskRunning || boilerTaskLocked || autotunePending;
+    const autotuneAbortDisabled = autotuneBusy || !(autotuneTaskRunning || autotuneTaskLocked || autotunePending);
+    const autotuneApplyDisabled = autotuneBusy || autotuneStartDisabled || !autotuneResultReady || boilerTaskRunning;
+
+    if (cm100Pending && cm100Active) {
+      state.pendingCommissioningCm100Start = false;
+    }
+    if (cm100TaskLocked && (cm100Active || /READY|STOPPED|DONE|FAILED|ABORT|APPLIED|REFUSED/.test(String(cm100Status || "").toUpperCase()))) {
+      state.commissioningTaskLock = "";
+    }
+    if (boilerPending && (boilerActive || isCommissioningTaskStatusTerminal(boilerStatus))) {
+      state.pendingBoilerPowerTestStart = false;
+    }
+    if (boilerTaskLocked && isCommissioningTaskStatusTerminal(boilerStatus)) {
+      state.commissioningTaskLock = "";
+    }
+    if (autotunePending && isCommissioningTaskStatusTerminal(autotuneStatus)) {
+      state.pendingFlowAutotuneStart = false;
+    }
+    if (autotuneTaskLocked && isCommissioningTaskStatusTerminal(autotuneStatus)) {
+      state.commissioningTaskLock = "";
+    }
+
+    return `
+      <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
+        <section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--scrollable oq-helper-modal--cm100" data-oq-cm100-commissioning-scroller role="dialog" aria-modal="true" aria-labelledby="oq-cm100-commissioning-modal-title">
+          <div class="oq-helper-modal-head oq-helper-modal-head--cm100">
+            <div>
+              <p class="oq-helper-modal-kicker">Installatie</p>
+              <h2 class="oq-helper-modal-title" id="oq-cm100-commissioning-modal-title">Service-stand</h2>
+            </div>
+            <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit service-stand">×</button>
+          </div>
+          <p class="oq-settings-commissioning-modal-copy oq-settings-commissioning-modal-copy--lead">Open de service-stand (controlmode CM100) om testen en afstelling uit te voeren.</p>
+          <div class="oq-settings-commissioning-hero">
+            <div class="oq-settings-commissioning-hero-actions">
+              ${state.entities.commissioningCm100Start ? renderNamedActionButton("commissioningCm100Start", "Service starten", "oq-helper-button oq-helper-button--primary", cm100StartDisabled) : ""}
+              ${state.entities.commissioningCm100Stop ? renderNamedActionButton("commissioningCm100Stop", "Service stoppen", "oq-helper-button oq-helper-button--ghost", cm100StopDisabled) : ""}
+            </div>
+          </div>
+
+          <div class="oq-settings-commissioning-grid${hasBoilerAssist ? "" : " oq-settings-commissioning-grid--single"}">
+            ${renderCommissioningTaskCard({
+              taskKey: "autotune",
+              title: "Flow autotune",
+              copy: "Bereken een voorstel voor de flowregeling en pas dat daarna toe in de installatie-instellingen. Autotune duurt meestal ongeveer 5 tot 10 minuten.",
+              subcopy: "Na toepassen worden de flow-instellingen bijgewerkt.",
+              status: autotuneStatusDisplay,
+              statusCopy: autotuneTaskWaitingForCm100
+                ? "Wacht totdat CM100 actief is voordat je autotune start."
+                : (autotuneTaskRunning
+                  ? "Autotune draait op dit moment."
+                  : (cm100Active ? "CM100 staat klaar. Start de autotune wanneer je wilt." : "Start CM100 eerst en voer daarna autotune uit.")),
+              progressTask: "autotune",
+              actions: `
+                ${state.entities.flowAutotuneStart || state.entities.flowAutotuneAbort ? renderNamedToggleActionButton({
+                  active: autotuneTaskRunning,
+                  startKey: "flowAutotuneStart",
+                  stopKey: "flowAutotuneAbort",
+                  startLabel: "Autotune starten",
+                  stopLabel: "Autotune stoppen",
+                  startDisabled: autotuneBusy || autotuneStartDisabled,
+                  stopDisabled: autotuneBusy || autotuneAbortDisabled,
+                }) : ""}
+                ${state.entities.flowAutotuneApply ? renderNamedActionButton("flowAutotuneApply", "Toepassen", "oq-helper-button oq-helper-button--ghost", autotuneBusy || autotuneApplyDisabled) : ""}
+              `,
+              metrics: `
+                ${renderSettingsStaticField("flowKpSuggested", "Voorgestelde Kp", "Kp bepaalt hoe sterk de regeling meteen corrigeert.", flowKpSuggested, "oq-settings-field--compact")}
+                ${renderSettingsStaticField("flowKiSuggested", "Voorgestelde Ki", "Ki corrigeert kleine afwijkingen langzaam weg.", flowKiSuggested, "oq-settings-field--compact")}
+              `,
+            })}
+            ${hasBoilerAssist ? renderCommissioningTaskCard({
+              taskKey: "boiler",
+              title: "Boiler power test",
+              copy: "Meet het effectieve boilervermogen bij stabiele flow en schrijf daarna een afgerond voorstel weg naar de boilerinstelling. Boilertest duurt meestal ongeveer 5 tot 10 minuten.",
+              subcopy: `Ingesteld boilervermogen: ${escapeHtml(boilerRatedPower)}`,
+              status: boilerStatusDisplay,
+              statusCopy: boilerTaskWaitingForCm100
+                ? "Wacht totdat CM100 actief is voordat je de boiler-test start."
+                : (boilerTaskRunning
+                  ? "De boiler-test draait op dit moment."
+                  : (cm100Active ? "CM100 staat klaar. Start de boiler-test wanneer je wilt." : "Start CM100 eerst en voer daarna de boilervermogentest uit.")),
+              progressTask: "boiler",
+              actions: `
+                ${state.entities.boilerPowerTestStart || state.entities.boilerPowerTestAbort ? renderNamedToggleActionButton({
+                  active: boilerTaskRunning,
+                  startKey: "boilerPowerTestStart",
+                  stopKey: "boilerPowerTestAbort",
+                  startLabel: "Boiler test starten",
+                  stopLabel: "Boiler test stoppen",
+                  startDisabled: boilerBusy || boilerStartDisabled,
+                  stopDisabled: boilerBusy || boilerAbortDisabled,
+                }) : ""}
+                ${state.entities.boilerPowerTestApply ? renderNamedActionButton("boilerPowerTestApply", "Toepassen", "oq-helper-button oq-helper-button--ghost", boilerBusy || boilerApplyDisabled) : ""}
+              `,
+              metrics: `
+                ${renderSettingsStaticField("boilerHeatPower", "Actueel vermogen", "Live meting tijdens de boiler-test.", boilerHeatPower)}
+                ${renderSettingsStaticField("boilerPowerTestResult", "Gemeten testresultaat", "Afgerond resultaat van de laatste boiler-test.", getSettingsStatValue("boilerPowerTestResult"))}
+              `,
+            }) : ""}
+          </div>
+
+          <div class="oq-helper-modal-actions">
+            <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="close-system-modal">Sluiten</button>
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
+  function renderSettingsCommissioningSection() {
+    const hasCommissioning = Boolean(
+      state.entities.commissioningStatus
+      || state.entities.commissioningCm100Start
+      || state.entities.flowAutotuneStart
+      || state.entities.boilerPowerTestStart,
+    );
+    if (!hasCommissioning) {
+      return "";
+    }
+
+    const cm100Status = getCommissioningStatusValue();
+    const cm100Active = isEntityActive("cm100Active");
+    if (cm100Active || /READY|STOPPED|DONE|FAILED|ABORT|APPLIED/.test(String(cm100Status || "").toUpperCase())) {
+      state.pendingCommissioningCm100Start = false;
+    }
+    const cm100OpenLabel = cm100Active ? "Service-stand bekijken" : "Service-stand openen";
+
+    return renderSettingsSection(
+      "Installatie",
+      "Service & commissioning",
+      "Open de service-stand (controlmode CM100) om de installatie klaar te zetten voor testen en afstelling.",
+      `
+        <div class="oq-settings-commissioning-teaser">
+          <div class="oq-settings-commissioning-teaser-copy">
+            <h4>Service-stand</h4>
+            <p>Open deze werkstand wanneer je wilt testen, afstellen of een meting wilt starten.</p>
+          </div>
+          <div class="oq-settings-commissioning-teaser-panel">
+            <div class="oq-settings-commissioning-teaser-status">
+              <span class="oq-settings-commissioning-teaser-status-label">Huidige status</span>
+              <strong>${escapeHtml(cm100Status)}</strong>
+              <p>${escapeHtml(cm100Active ? "De service-stand staat klaar voor gebruik." : "Start de service-stand om deze te openen.")}</p>
+            </div>
+            <button
+              class="oq-helper-button oq-helper-button--primary oq-settings-commissioning-teaser-button"
+              type="button"
+              data-oq-action="open-cm100-commissioning-modal"
+            >
+              ${escapeHtml(cm100OpenLabel)}
+            </button>
+          </div>
+        </div>
+      `,
     );
   }
 
@@ -1226,18 +1758,91 @@
       return "";
     }
 
+    const boilerPresent = isEntityActive("boilerCvAssistEnabled");
+    const boilerPowerEntityAvailable = hasEntity("boilerRatedHeatPower");
+    const boilerMeta = getNumberMeta("boilerRatedHeatPower");
+    const boilerValue = getInputDraftValue("boilerRatedHeatPower");
+    const boilerBusy = state.loadingEntities || state.busyAction === "switch-boilerCvAssistEnabled";
+    const boilerDisabledHint = "Zet CV-ketel/boiler aanwezig aan om het vermogen in te stellen.";
+    const boilerPowerMissingHint = "Deze firmware levert nog geen bewerkbare boilervermogensinstelling.";
+    const boilerPowerControl = boilerPresent
+      ? (boilerPowerEntityAvailable
+        ? renderNumberInputControl({
+            key: "boilerRatedHeatPower",
+            value: boilerValue,
+            meta: boilerMeta,
+            controlClass: "oq-helper-control oq-helper-control--suffix oq-settings-boiler-power-control",
+            unitMarkup: `<span class="oq-helper-unit-chip">W</span>`,
+          })
+        : `
+          <div class="oq-settings-boiler-power-empty">
+            <strong>Niet beschikbaar</strong>
+            <p>${escapeHtml(boilerPowerMissingHint)}</p>
+          </div>
+        `)
+      : `
+        <div class="oq-settings-boiler-power-empty">
+          <strong>Niet actief</strong>
+          <p>${escapeHtml(boilerDisabledHint)}</p>
+        </div>
+      `;
+
     return renderSettingsSection(
       "Basis",
       "CV-ketel of boiler",
-      "Geef aan of OpenQuatt een CV-ketel of boiler als ondersteuning mag gebruiken.",
+      "Geef aan of OpenQuatt een CV-ketel of boiler als ondersteuning mag gebruiken en hoeveel effectief vermogen die functie heeft.",
       `
-        <div class="oq-settings-grid">
-          ${renderSettingsSwitchField(
+        <div class="oq-settings-grid oq-settings-boiler-simple-grid">
+          ${renderSettingsFieldCard(
             "boilerCvAssistEnabled",
-            "CV-ketel/boiler aanwezig",
-            "Zet dit alleen aan als de installatie een CV-ketel of boiler heeft die OpenQuatt mag schakelen.",
-            "OpenQuatt kan de boiler/CV-ketel inschakelen indien de warmtepompen te weinig vermogen leveren.",
-            "OpenQuatt schakelt geen boiler/CV-ketel in."
+            "CV-ketel / boiler aanwezig",
+            "Geef aan of OpenQuatt deze installatie als ondersteuning mag gebruiken.",
+            `
+              <div class="oq-settings-boiler-choice-grid">
+                <button
+                  class="oq-settings-choice-card oq-settings-boiler-choice${boilerPresent ? "" : " is-active"}"
+                  type="button"
+                  data-oq-action="toggle-overview-control"
+                  data-control-key="boilerCvAssistEnabled"
+                  data-control-state="off"
+                  aria-pressed="${boilerPresent ? "false" : "true"}"
+                  ${boilerBusy ? "disabled" : ""}
+                >
+                  <span class="oq-settings-boiler-choice-title">Uit</span>
+                  <span class="oq-settings-boiler-choice-copy">Geen ondersteuning via boiler of CV-ketel.</span>
+                </button>
+                <button
+                  class="oq-settings-choice-card oq-settings-boiler-choice${boilerPresent ? " is-active" : ""}"
+                  type="button"
+                  data-oq-action="toggle-overview-control"
+                  data-control-key="boilerCvAssistEnabled"
+                  data-control-state="on"
+                  aria-pressed="${boilerPresent ? "true" : "false"}"
+                  ${boilerBusy ? "disabled" : ""}
+                >
+                  <span class="oq-settings-boiler-choice-title">Aan</span>
+                  <span class="oq-settings-boiler-choice-copy">OpenQuatt mag de ketel of boiler bijschakelen als dat nodig is.</span>
+                </button>
+              </div>
+            `,
+            "oq-settings-field--compact",
+          )}
+
+          ${renderSettingsFieldCard(
+            "boilerRatedHeatPower",
+            "Ingesteld boilervermogen",
+            "Vul hier het vermogen in dat OpenQuatt mag meerekenen.",
+            `
+              <div class="oq-settings-boiler-power-inline">
+                ${boilerPowerControl}
+              </div>
+            `,
+            boilerPresent && boilerPowerEntityAvailable ? "oq-settings-field--compact" : "oq-settings-field--compact is-disabled",
+            `<p class="oq-settings-boiler-power-note">${escapeHtml(
+              boilerPresent
+                ? (boilerPowerEntityAvailable ? "Je kunt deze waarde altijd handmatig aanpassen." : boilerPowerMissingHint)
+                : boilerDisabledHint,
+            )}</p>`,
           )}
         </div>
       `,

@@ -886,8 +886,11 @@
   }
 
   function getConnectivityStatus() {
-    if (state.entities.status && !isEntityActive("status")) {
+    if (hasEntity("status") && !isEntityActive("status")) {
       return "Offline";
+    }
+    if (state.deviceReconnectMode) {
+      return isDeviceReconnectRecovering() ? "Verbonden" : "Bezig";
     }
     const ip = getDeviceIpAddress();
     if (ip && ip !== "—") {
@@ -1779,6 +1782,10 @@
 
     if (state.systemModal === "settings-backup-import") {
       return renderSettingsBackupImportModal();
+    }
+
+    if (state.systemModal === "cm100-commissioning") {
+      return renderSettingsCm100CommissioningModal();
     }
 
     if (state.systemModal === "settings-backup-success") {

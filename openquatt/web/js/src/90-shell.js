@@ -41,6 +41,9 @@ function renderSettingsView() {
     const webServerLogScrollState = state.systemModal === "webserver-logs"
       ? captureWebServerLogScrollState()
       : null;
+    const cm100CommissioningScrollState = state.systemModal === "cm100-commissioning"
+      ? captureCm100CommissioningScrollState()
+      : null;
 
     if (state.nativeOpen) {
       state.root.innerHTML = `
@@ -56,6 +59,7 @@ function renderSettingsView() {
       syncDocumentTheme();
       syncDocumentTitle();
       queueWebServerLogScrollRestore(webServerLogScrollState);
+      queueCm100CommissioningScrollRestore(cm100CommissioningScrollState);
       return;
     }
 
@@ -107,6 +111,7 @@ function renderSettingsView() {
     syncDocumentTheme();
     syncDocumentTitle();
     queueWebServerLogScrollRestore(webServerLogScrollState);
+    queueCm100CommissioningScrollRestore(cm100CommissioningScrollState);
   }
 
   function escapeHtml(value) {

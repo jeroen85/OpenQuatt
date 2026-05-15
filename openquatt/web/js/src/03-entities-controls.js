@@ -233,10 +233,39 @@
   const INITIAL_OVERVIEW_READY_TIMEOUT_MS = 2000;
   const INITIAL_OVERVIEW_READY_POLL_MS = 250;
   const INITIAL_SETTINGS_READY_KEY_MAP = {
-    installation: ["hpGeneration", "boilerCvAssistEnabled", "silentStartTime", "silentEndTime", "maxWater"],
+    installation: [
+      "hpGeneration",
+      "boilerCvAssistEnabled",
+      "boilerRatedHeatPower",
+      "flowControlMode",
+      "flowSetpoint",
+      "manualIpwm",
+      "flowKp",
+      "flowKi",
+      "commissioningStatus",
+      "cm100Active",
+      "commissioningCm100Start",
+      "commissioningCm100Stop",
+      "boilerPowerTestStart",
+      "boilerPowerTestAbort",
+      "boilerPowerTestApply",
+      "boilerPowerTestStatus",
+      "boilerPowerTestResult",
+      "boilerPowerTestActive",
+      "boilerHeatPower",
+      "flowAutotuneStart",
+      "flowAutotuneAbort",
+      "flowAutotuneApply",
+      "flowAutotuneStatus",
+      "flowKpSuggested",
+      "flowKiSuggested",
+      "silentStartTime",
+      "silentEndTime",
+      "maxWater",
+    ],
     heating: ["strategy"],
     cooling: ["coolingWithoutDewPointMode"],
-    advanced: ["flowControlMode", "minRuntime"],
+    advanced: ["minRuntime"],
     system: ["setupComplete"],
   };
   const INITIAL_SETTINGS_READY_TIMEOUT_MS = 3500;
@@ -257,6 +286,26 @@
       "installationTopology",
       "hpGeneration",
       "boilerCvAssistEnabled",
+      "boilerRatedHeatPower",
+      ...FLOW_SETTING_KEYS,
+      ...FLOW_TUNING_KEYS,
+      "commissioningStatus",
+      "cm100Active",
+      "commissioningCm100Start",
+      "commissioningCm100Stop",
+      "boilerPowerTestStart",
+      "boilerPowerTestAbort",
+      "boilerPowerTestApply",
+      "boilerPowerTestStatus",
+      "boilerPowerTestResult",
+      "boilerPowerTestActive",
+      "boilerHeatPower",
+      "flowAutotuneStart",
+      "flowAutotuneAbort",
+      "flowAutotuneApply",
+      "flowAutotuneStatus",
+      "flowKpSuggested",
+      "flowKiSuggested",
       ...SILENT_SETTING_KEYS,
       "maxWater",
     ],
@@ -277,7 +326,6 @@
       ...COOLING_SETTING_KEYS,
     ],
     advanced: [
-      ...FLOW_SETTING_KEYS,
       ...COMPRESSOR_SETTING_KEYS,
       ...CIC_COMPATIBILITY_KEYS,
     ],
@@ -2073,6 +2121,7 @@
     return [
       state.appView,
       state.settingsGroup,
+      state.busyAction,
       state.loadingEntities ? "loading" : "ready",
       getApiSecurityStatusSignature(),
       getMqttStatusSignature(),
@@ -2557,6 +2606,72 @@
       state.quickStartModalMode = "generation";
       state.quickStartModalOpen = true;
       render();
+      return;
+    }
+
+    if (action === "open-cm100-commissioning-modal") {
+      state.systemModal = "cm100-commissioning";
+      render();
+      return;
+    }
+
+    if (action === "press-named-button") {
+      const buttonKey = String(button.dataset.oqButtonKey || button.dataset.buttonKey || button.getAttribute("data-oq-button-key") || "").trim();
+      if (buttonKey) {
+        if (buttonKey === "commissioningCm100Start") {
+          state.pendingCommissioningCm100Start = true;
+          state.commissioningTaskLock = "cm100";
+          state.commissioningBoilerHeatPowerDisplay = "";
+        } else if (buttonKey === "commissioningCm100Stop") {
+          state.pendingCommissioningCm100Start = false;
+          state.pendingBoilerPowerTestStart = false;
+          state.pendingFlowAutotuneStart = false;
+          state.commissioningTaskLock = "";
+          state.commissioningBoilerHeatPowerDisplay = "";
+        } else if (buttonKey === "boilerPowerTestStart") {
+          state.pendingBoilerPowerTestStart = true;
+          state.pendingFlowAutotuneStart = false;
+          state.commissioningTaskLock = "boiler";
+          state.commissioningBoilerHeatPowerDisplay = "";
+        } else if (buttonKey === "boilerPowerTestAbort" || buttonKey === "boilerPowerTestApply") {
+          state.commissioningTaskLock = "boiler";
+        } else if (buttonKey === "flowAutotuneStart") {
+          state.pendingFlowAutotuneStart = true;
+          state.pendingBoilerPowerTestStart = false;
+          state.commissioningTaskLock = "autotune";
+        } else if (buttonKey === "flowAutotuneAbort" || buttonKey === "flowAutotuneApply") {
+          state.commissioningTaskLock = "autotune";
+        }
+        const refreshKeys = [];
+        if (buttonKey === "commissioningCm100Start" || buttonKey === "commissioningCm100Stop") {
+          refreshKeys.push(
+            "commissioningStatus",
+            "cm100Active",
+            "boilerPowerTestStatus",
+            "boilerPowerTestActive",
+            "flowAutotuneStatus",
+          );
+        } else if (buttonKey === "boilerPowerTestStart" || buttonKey === "boilerPowerTestAbort" || buttonKey === "boilerPowerTestApply") {
+          refreshKeys.push(
+            "commissioningStatus",
+            "boilerPowerTestStatus",
+            "boilerPowerTestActive",
+            "boilerHeatPower",
+            "boilerPowerTestResult",
+            "boilerRatedHeatPower",
+          );
+        } else if (buttonKey === "flowAutotuneStart" || buttonKey === "flowAutotuneAbort" || buttonKey === "flowAutotuneApply") {
+          refreshKeys.push(
+            "commissioningStatus",
+            "flowAutotuneStatus",
+            "flowKpSuggested",
+            "flowKiSuggested",
+            "flowKp",
+            "flowKi",
+          );
+        }
+        void triggerNamedButton(buttonKey, refreshKeys.length ? { refreshKeys } : {});
+      }
       return;
     }
 
@@ -3380,7 +3495,19 @@
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      state.systemModal = "";
+      const keepCommissioningModalOpen = [
+        "commissioningCm100Start",
+        "commissioningCm100Stop",
+        "boilerPowerTestStart",
+        "boilerPowerTestAbort",
+        "boilerPowerTestApply",
+        "flowAutotuneStart",
+        "flowAutotuneAbort",
+        "flowAutotuneApply",
+      ].includes(key);
+      if (!keepCommissioningModalOpen) {
+        state.systemModal = "";
+      }
       state.controlNotice = options.successNotice || `${entity.name} gestart.`;
       if (options.reconnectMode) {
         beginDeviceReconnect(options.reconnectMode);
@@ -3389,6 +3516,16 @@
         await refreshEntities(options.refreshKeys, "state");
       }
     } catch (error) {
+      if (key === "commissioningCm100Start") {
+        state.pendingCommissioningCm100Start = false;
+        state.commissioningTaskLock = "";
+      } else if (key === "boilerPowerTestStart") {
+        state.pendingBoilerPowerTestStart = false;
+        state.commissioningTaskLock = "";
+      } else if (key === "flowAutotuneStart") {
+        state.pendingFlowAutotuneStart = false;
+        state.commissioningTaskLock = "";
+      }
       state.controlError = `${options.errorPrefix || `Actie mislukt voor "${entity.name}"`}. ${error.message}`;
     } finally {
       state.busyAction = "";
