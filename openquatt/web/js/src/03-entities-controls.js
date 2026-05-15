@@ -2621,20 +2621,24 @@
       if (buttonKey) {
         if (buttonKey === "commissioningCm100Start") {
           state.pendingCommissioningCm100Start = true;
+          state.commissioningTaskLock = "cm100";
         } else if (buttonKey === "commissioningCm100Stop") {
           state.pendingCommissioningCm100Start = false;
           state.pendingBoilerPowerTestStart = false;
           state.pendingFlowAutotuneStart = false;
+          state.commissioningTaskLock = "";
         } else if (buttonKey === "boilerPowerTestStart") {
           state.pendingBoilerPowerTestStart = true;
           state.pendingFlowAutotuneStart = false;
+          state.commissioningTaskLock = "boiler";
         } else if (buttonKey === "boilerPowerTestAbort" || buttonKey === "boilerPowerTestApply") {
-          state.pendingBoilerPowerTestStart = false;
+          state.commissioningTaskLock = "boiler";
         } else if (buttonKey === "flowAutotuneStart") {
           state.pendingFlowAutotuneStart = true;
           state.pendingBoilerPowerTestStart = false;
+          state.commissioningTaskLock = "autotune";
         } else if (buttonKey === "flowAutotuneAbort" || buttonKey === "flowAutotuneApply") {
-          state.pendingFlowAutotuneStart = false;
+          state.commissioningTaskLock = "autotune";
         }
         const refreshKeys = [];
         if (buttonKey === "commissioningCm100Start" || buttonKey === "commissioningCm100Stop") {
@@ -2650,6 +2654,7 @@
             "commissioningStatus",
             "boilerPowerTestStatus",
             "boilerPowerTestActive",
+            "boilerHeatPower",
             "boilerPowerTestResult",
             "boilerRatedHeatPower",
           );
@@ -3511,10 +3516,13 @@
     } catch (error) {
       if (key === "commissioningCm100Start") {
         state.pendingCommissioningCm100Start = false;
+        state.commissioningTaskLock = "";
       } else if (key === "boilerPowerTestStart") {
         state.pendingBoilerPowerTestStart = false;
+        state.commissioningTaskLock = "";
       } else if (key === "flowAutotuneStart") {
         state.pendingFlowAutotuneStart = false;
+        state.commissioningTaskLock = "";
       }
       state.controlError = `${options.errorPrefix || `Actie mislukt voor "${entity.name}"`}. ${error.message}`;
     } finally {

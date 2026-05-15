@@ -52,12 +52,12 @@ const LOGO_MARKUP = `
     {
       id: "flow",
       kicker: "Stap 4",
-      title: "Flowregeling en PI-tuning",
-      copy: "Leg daarna vast hoe de pomp geregeld moet worden en welke PI-waarden daarbij horen. De autotune staat later onder Instellingen → Installatie → Service & commissioning.",
+      title: "Flowregeling en afstelling",
+      copy: "Leg daarna vast hoe de pomp geregeld moet worden en welke waarden daarbij horen. De autotune staat later onder Instellingen → Installatie → Service & commissioning.",
       fields: [
         {
           title: "Flowregeling en tuning",
-          copy: "Kies of OpenQuatt de pomp automatisch regelt, of dat je zelf een vaste pompstand instelt. Stel hier ook de PI-waarden in.",
+          copy: "Kies of OpenQuatt de pomp automatisch regelt, of dat je zelf een vaste pompstand instelt. Stel hier ook de flow-instellingen in.",
         },
       ],
     },
@@ -143,8 +143,8 @@ const LOGO_MARKUP = `
     flowControlMode: { domain: "select", name: "Flow Control Mode" },
     flowSetpoint: { domain: "number", name: "Flow Setpoint" },
     manualIpwm: { domain: "number", name: "Manual iPWM" },
-    flowKp: { domain: "number", name: "Flow PI Kp", optional: true },
-    flowKi: { domain: "number", name: "Flow PI Ki", optional: true },
+    flowKp: { domain: "number", name: "Flow Kp", optional: true },
+    flowKi: { domain: "number", name: "Flow Ki", optional: true },
     boilerRatedHeatPower: { domain: "number", name: "Boiler rated heat power", optional: true },
     commissioningCm100Start: { domain: "button", name: "CM100 Start", optional: true },
     commissioningCm100Stop: { domain: "button", name: "CM100 Stop", optional: true },

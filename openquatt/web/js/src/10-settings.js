@@ -68,6 +68,7 @@
     }
     return normalized.includes("REQUESTED")
       || normalized.includes("WAITING")
+      || normalized.includes("WACHTEN")
       || normalized.includes("SETTLING")
       || normalized.includes("MEASUR")
       || normalized.includes("COOLDOWN")
@@ -88,6 +89,17 @@
       || normalized.includes("ABORT")
       || normalized.includes("APPLIED")
       || normalized.includes("REFUSED");
+  }
+
+  function isCommissioningTaskStatusWaitingForCm100(status) {
+    const normalized = String(status || "").trim().toUpperCase();
+    return normalized.includes("WAITING_FOR_CM100")
+      || normalized.includes("CM100 REQUESTED")
+      || normalized.includes("WACHTEN OP CM100");
+  }
+
+  function isCommissioningTaskStatusActive(status) {
+    return isCommissioningTaskStatusBusy(status) && !isCommissioningTaskStatusWaitingForCm100(status);
   }
 
   function getCommissioningStatusValue() {
@@ -909,8 +921,8 @@
         { match: ["ABORTED", "FAILED", "ABORT"], phase: "Afgebroken", percent: 100 },
       ],
       cm100: [
-        { match: ["REQUESTED"], phase: "Aanvragen", percent: 35 },
-        { match: ["WAITING_FOR_CM100"], phase: "Wachten op CM100", percent: 20 },
+        { match: ["REQUESTED"], phase: "Wachten op CM100", percent: 0 },
+        { match: ["WAITING_FOR_CM100"], phase: "Wachten op CM100", percent: 0 },
         { match: ["CM100 READY"], phase: "Klaar", percent: 100 },
         { match: ["IDLE"], phase: "Klaar", percent: 100 },
       ],
@@ -957,7 +969,7 @@
     return `
       <div class="oq-helper-modal-progress" aria-live="polite">
         <div class="oq-helper-modal-progress-head">
-          <strong>${escapeHtml(progress.phase)}</strong>
+          <strong>Voortgang</strong>
           <span>${escapeHtml(`${Math.max(0, Math.min(100, progress.percent))}%`)}</span>
         </div>
         <div class="oq-helper-modal-progress-track" aria-hidden="true">
@@ -979,6 +991,7 @@
     metrics = "",
     className = "",
   }) {
+    const showProgress = isCommissioningTaskStatusActive(status);
     return `
       <article class="oq-settings-commissioning-card${className ? ` ${escapeHtml(className)}` : ""}" data-oq-commissioning-task="${escapeHtml(taskKey)}">
         <div class="oq-settings-commissioning-card-head">
@@ -998,7 +1011,7 @@
             </div>
           </div>
         </div>
-        ${renderCommissioningProgressBar(status, progressTask)}
+        ${showProgress ? renderCommissioningProgressBar(status, progressTask) : ""}
         ${metrics ? `<div class="oq-settings-grid oq-settings-commissioning-metrics">${metrics}</div>` : ""}
       </article>
     `;
@@ -1388,13 +1401,13 @@
     return renderSettingsSection(
       "Installatie",
       "Flowregeling",
-      "Kies hoe de pomp wordt geregeld en stel de PI-waarden direct als installatieparameter in. De autotune vind je later bij Service & commissioning.",
+      "Kies hoe de pomp wordt geregeld en stel de flow-instellingen direct als installatieparameter in. De autotune vind je later bij Service & commissioning.",
       `
         ${renderFlowSettingsFields()}
         ${flowTuning ? `
           <div class="oq-settings-subpanel oq-settings-subpanel--nested">
             <div class="oq-settings-subpanel-head">
-              <p class="oq-helper-label">Flow PI-tuning</p>
+              <p class="oq-helper-label">Flow afstelling</p>
               <h4>Flow Kp en Ki</h4>
               <p>Deze waarden bepalen hoe stevig de flowregeling corrigeert op afwijkingen. Autotune vult hier later een voorstel voor in.</p>
             </div>
@@ -1409,46 +1422,62 @@
     const hasBoilerAssist = hasEntity("boilerCvAssistEnabled") && isEntityActive("boilerCvAssistEnabled");
     const cm100Status = getCommissioningStatusValue();
     const cm100Active = isEntityActive("cm100Active");
-    const cm100Busy = state.loadingEntities || state.busyAction === "commissioningCm100Start" || state.busyAction === "commissioningCm100Stop";
+    const cm100TaskLocked = state.commissioningTaskLock === "cm100";
+    const cm100Busy = state.loadingEntities || state.busyAction === "commissioningCm100Start" || state.busyAction === "commissioningCm100Stop" || cm100TaskLocked;
     const cm100Pending = Boolean(state.pendingCommissioningCm100Start);
+    const cm100StartDisabled = cm100Busy || cm100Active;
+    const cm100StopDisabled = cm100Busy || !cm100Active;
     const boilerStatus = getSettingsTextStatValue("boilerPowerTestStatus", "IDLE");
+    const boilerProgress = getCommissioningProgressModel(boilerStatus, "boiler");
     const boilerActive = isEntityActive("boilerPowerTestActive");
     const boilerBusy = state.loadingEntities || state.busyAction === "boilerPowerTestStart" || state.busyAction === "boilerPowerTestAbort" || state.busyAction === "boilerPowerTestApply";
     const boilerControls = Boolean(state.entities.boilerPowerTestStart || state.entities.boilerPowerTestAbort || state.entities.boilerPowerTestApply);
     const boilerPending = Boolean(state.pendingBoilerPowerTestStart);
-    const boilerTaskRunning = boilerActive || boilerPending || isCommissioningTaskStatusBusy(boilerStatus);
+    const boilerTaskLocked = state.commissioningTaskLock === "boiler";
+    const boilerTaskRunning = boilerActive || boilerPending || boilerTaskLocked || isCommissioningTaskStatusBusy(boilerStatus) || isCommissioningTaskStatusWaitingForCm100(boilerStatus);
     const boilerRatedPower = getSettingsStatValue("boilerRatedHeatPower");
     const boilerHeatPower = getSettingsStatValue("boilerHeatPower");
     const autotuneStatus = getSettingsTextStatValue("flowAutotuneStatus", "IDLE");
+    const autotuneProgress = getCommissioningProgressModel(autotuneStatus, "autotune");
     const autotuneBusy = state.loadingEntities || state.busyAction === "flowAutotuneStart" || state.busyAction === "flowAutotuneAbort" || state.busyAction === "flowAutotuneApply";
     const autotuneControls = Boolean(state.entities.flowAutotuneStart || state.entities.flowAutotuneAbort || state.entities.flowAutotuneApply);
     const autotunePending = Boolean(state.pendingFlowAutotuneStart);
-    const autotuneTaskRunning = autotunePending || isCommissioningTaskStatusBusy(autotuneStatus);
+    const autotuneTaskLocked = state.commissioningTaskLock === "autotune";
+    const autotuneTaskRunning = autotunePending || autotuneTaskLocked || isCommissioningTaskStatusBusy(autotuneStatus) || isCommissioningTaskStatusWaitingForCm100(autotuneStatus);
     const flowKpSuggested = getSettingsStatValue("flowKpSuggested");
     const flowKiSuggested = getSettingsStatValue("flowKiSuggested");
     const boilerResultReady = /DONE|APPLIED/.test(String(boilerStatus || "").toUpperCase());
     const autotuneResultReady = /DONE|APPLIED/.test(String(autotuneStatus || "").toUpperCase());
     const boilerStatusDisplay = cm100Active
-      ? (boilerPending && !boilerActive && !isCommissioningTaskStatusBusy(boilerStatus) ? "Starten..." : boilerStatus)
+      ? (boilerTaskRunning ? boilerProgress.phase : "Klaar om te starten")
       : "Wachten op CM100";
     const autotuneStatusDisplay = cm100Active
-      ? (autotunePending && !isCommissioningTaskStatusBusy(autotuneStatus) ? "Starten..." : autotuneStatus)
+      ? (autotuneTaskRunning ? autotuneProgress.phase : "Klaar om te starten")
       : "Wachten op CM100";
-    const boilerStartDisabled = !cm100Active || boilerBusy || !boilerControls || autotuneTaskRunning || boilerTaskRunning;
-    const boilerAbortDisabled = boilerBusy || !boilerTaskRunning;
-    const boilerApplyDisabled = boilerBusy || boilerStartDisabled || !boilerResultReady || autotuneTaskRunning;
-    const autotuneStartDisabled = !cm100Active || autotuneBusy || !autotuneControls || boilerTaskRunning || autotuneTaskRunning;
-    const autotuneAbortDisabled = autotuneBusy || !autotuneTaskRunning;
-    const autotuneApplyDisabled = autotuneBusy || autotuneStartDisabled || !autotuneResultReady || boilerTaskRunning;
+    const boilerStartDisabled = !cm100Active || boilerBusy || !boilerControls || autotuneTaskRunning || boilerTaskRunning || autotuneTaskLocked;
+    const boilerAbortDisabled = boilerBusy || !(boilerTaskRunning || boilerTaskLocked);
+    const boilerApplyDisabled = boilerBusy || boilerStartDisabled || !boilerResultReady || autotuneTaskRunning || !boilerTaskLocked;
+    const autotuneStartDisabled = !cm100Active || autotuneBusy || !autotuneControls || boilerTaskRunning || autotuneTaskRunning || boilerTaskLocked;
+    const autotuneAbortDisabled = autotuneBusy || !(autotuneTaskRunning || autotuneTaskLocked);
+    const autotuneApplyDisabled = autotuneBusy || autotuneStartDisabled || !autotuneResultReady || boilerTaskRunning || !autotuneTaskLocked;
 
     if (cm100Pending && cm100Active) {
       state.pendingCommissioningCm100Start = false;
     }
-    if (boilerPending && (boilerActive || isCommissioningTaskStatusBusy(boilerStatus) || isCommissioningTaskStatusTerminal(boilerStatus))) {
+    if (cm100TaskLocked && (cm100Active || /READY|STOPPED|DONE|FAILED|ABORT|APPLIED|REFUSED/.test(String(cm100Status || "").toUpperCase()))) {
+      state.commissioningTaskLock = "";
+    }
+    if (boilerPending && (boilerActive || isCommissioningTaskStatusTerminal(boilerStatus))) {
       state.pendingBoilerPowerTestStart = false;
     }
-    if (autotunePending && (isCommissioningTaskStatusBusy(autotuneStatus) || isCommissioningTaskStatusTerminal(autotuneStatus))) {
+    if (boilerTaskLocked && isCommissioningTaskStatusTerminal(boilerStatus)) {
+      state.commissioningTaskLock = "";
+    }
+    if (autotunePending && isCommissioningTaskStatusTerminal(autotuneStatus)) {
       state.pendingFlowAutotuneStart = false;
+    }
+    if (autotuneTaskLocked && isCommissioningTaskStatusTerminal(autotuneStatus)) {
+      state.commissioningTaskLock = "";
     }
 
     return `
@@ -1470,8 +1499,8 @@
               <p>Open de service-stand om metingen en afstelling uit te voeren.</p>
             </div>
             <div class="oq-settings-commissioning-hero-actions">
-              ${state.entities.commissioningCm100Start ? renderNamedActionButton("commissioningCm100Start", "CM100 starten", "oq-helper-button oq-helper-button--primary", cm100Busy) : ""}
-              ${state.entities.commissioningCm100Stop ? renderNamedActionButton("commissioningCm100Stop", "CM100 stoppen", "oq-helper-button oq-helper-button--ghost", cm100Busy) : ""}
+              ${state.entities.commissioningCm100Start ? renderNamedActionButton("commissioningCm100Start", "CM100 starten", "oq-helper-button oq-helper-button--primary", cm100StartDisabled) : ""}
+              ${state.entities.commissioningCm100Stop ? renderNamedActionButton("commissioningCm100Stop", "CM100 stoppen", "oq-helper-button oq-helper-button--ghost", cm100StopDisabled) : ""}
             </div>
           </div>
 
@@ -1492,7 +1521,9 @@
               title: "Boiler power test",
               copy: "Meet het effectieve boilervermogen bij stabiele flow en schrijf daarna een afgerond voorstel weg naar de boilerinstelling.",
               status: boilerStatusDisplay,
-              statusCopy: boilerTaskRunning ? "De boiler-test draait op dit moment." : "Start CM100 eerst en voer daarna de boilervermogentest uit.",
+              statusCopy: boilerTaskRunning
+                ? (isCommissioningTaskStatusWaitingForCm100(boilerStatus) ? "Wachten tot CM100 actief is." : "De boiler-test draait op dit moment.")
+                : (cm100Active ? "CM100 staat klaar. Start de boiler-test wanneer je wilt." : "Start CM100 eerst en voer daarna de boilervermogentest uit."),
               progressTask: "boiler",
               actions: `
                 ${state.entities.boilerPowerTestStart ? renderNamedActionButton("boilerPowerTestStart", "Boiler test starten", "oq-helper-button oq-helper-button--primary", boilerBusy || boilerStartDisabled) : ""}
@@ -1511,12 +1542,14 @@
               title: "Flow autotune",
               copy: "Bereken een voorstel voor de flowregeling en pas dat daarna toe in de installatie-instellingen.",
               status: autotuneStatusDisplay,
-              statusCopy: autotuneTaskRunning ? "Autotune draait op dit moment." : (cm100Active ? "Autotune start pas zodra CM100 actief is." : "Start CM100 eerst en voer daarna autotune uit."),
+              statusCopy: autotuneTaskRunning
+                ? (isCommissioningTaskStatusWaitingForCm100(autotuneStatus) ? "Wachten tot CM100 actief is." : "Autotune draait op dit moment.")
+                : (cm100Active ? "CM100 staat klaar. Start de autotune wanneer je wilt." : "Start CM100 eerst en voer daarna autotune uit."),
               progressTask: "autotune",
               actions: `
                 ${state.entities.flowAutotuneStart ? renderNamedActionButton("flowAutotuneStart", "Autotune starten", "oq-helper-button oq-helper-button--primary", autotuneBusy || autotuneStartDisabled) : ""}
                 ${state.entities.flowAutotuneAbort ? renderNamedActionButton("flowAutotuneAbort", "Autotune afbreken", "oq-helper-button oq-helper-button--ghost", autotuneBusy || autotuneAbortDisabled) : ""}
-                ${state.entities.flowAutotuneApply ? renderNamedActionButton("flowAutotuneApply", "Pas Kp/Ki toe", "oq-helper-button oq-helper-button--ghost", autotuneBusy || autotuneApplyDisabled) : ""}
+                ${state.entities.flowAutotuneApply ? renderNamedActionButton("flowAutotuneApply", "Pas flowvoorstel toe", "oq-helper-button oq-helper-button--ghost", autotuneBusy || autotuneApplyDisabled) : ""}
               `,
               metrics: `
                 ${renderSettingsStaticField("flowKpSuggested", "Voorgestelde Kp", "Kp bepaalt hoe sterk de regeling meteen corrigeert.", flowKpSuggested, "oq-settings-field--compact")}

@@ -510,7 +510,7 @@
 
 .oq-settings-commissioning-card {
   display: grid;
-  gap: 16px;
+  gap: 12px;
   padding: 18px;
   border-radius: var(--oq-helper-radius-lg);
   border: 1px solid var(--oq-helper-line);
@@ -561,7 +561,7 @@
 }
 
 .oq-settings-commissioning-card-status {
-  margin-top: 4px;
+  margin-top: 0;
 }
 
 .oq-settings-boiler-shell {

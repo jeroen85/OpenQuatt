@@ -74,6 +74,7 @@
     pendingCommissioningCm100Start: false,
     pendingBoilerPowerTestStart: false,
     pendingFlowAutotuneStart: false,
+    commissioningTaskLock: "",
     headerRenderSignature: "",
     drafts: {},
     inputDrafts: {},

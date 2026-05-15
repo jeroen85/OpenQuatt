@@ -83,13 +83,13 @@
     return `
       <section class="oq-helper-panel">
         <p class="oq-helper-label">Stap 4</p>
-        <h2 class="oq-helper-section-title">Flowregeling en PI-tuning</h2>
-        <p class="oq-helper-section-copy">Kies hier hoe OpenQuatt de pomp regelt en stel meteen de PI-waarden in. De autotune vind je later terug onder Instellingen → Installatie → Service & commissioning.</p>
+        <h2 class="oq-helper-section-title">Flowregeling en afstelling</h2>
+        <p class="oq-helper-section-copy">Kies hier hoe OpenQuatt de pomp regelt en stel meteen de Kp- en Ki-waarden in. De autotune vind je later terug onder Instellingen → Installatie → Service & commissioning.</p>
         ${renderFlowSettingsFields("oq-settings-grid oq-settings-grid--quickstart")}
         ${flowTuning ? `
           <div class="oq-settings-subpanel oq-settings-subpanel--nested">
             <div class="oq-settings-subpanel-head">
-              <p class="oq-helper-label">Flow PI-tuning</p>
+              <p class="oq-helper-label">Flow afstelling</p>
               <h4>Kp en Ki</h4>
               <p>Deze waarden bepalen hoe stevig de flowregeling corrigeert. Quick Start toont ze hier al, zodat je de installatie direct af kunt stemmen.</p>
             </div>
@@ -320,8 +320,8 @@
       flowMode === "Manual PWM"
         ? ["Vaste pompstand", formatValue("manualIpwm")]
         : ["Gewenste flow", formatValue("flowSetpoint")],
-      ["Flow PI Kp", formatValue("flowKp")],
-      ["Flow PI Ki", formatValue("flowKi")],
+      ["Flow Kp", formatValue("flowKp")],
+      ["Flow Ki", formatValue("flowKi")],
     ];
 
     const boilerLines = hasEntity("boilerCvAssistEnabled")

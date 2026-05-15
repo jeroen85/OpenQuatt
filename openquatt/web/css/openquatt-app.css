@@ -939,7 +939,7 @@ body.oq-surface-native {
 }
 
 .oq-helper-modal-progress {
-  margin: 0 0 16px;
+  margin: 0 0 12px;
   padding: 12px 14px;
   border: 1px solid rgba(229, 231, 235, 0.92);
   border-radius: var(--oq-helper-radius-md);
@@ -957,7 +957,7 @@ body.oq-surface-native {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   color: var(--oq-helper-ink);
   font-size: 0.92rem;
   font-weight: 700;
@@ -2719,7 +2719,7 @@ body.oq-surface-native {
 
 .oq-settings-commissioning-card {
   display: grid;
-  gap: 16px;
+  gap: 12px;
   padding: 18px;
   border-radius: var(--oq-helper-radius-lg);
   border: 1px solid var(--oq-helper-line);
@@ -2770,7 +2770,7 @@ body.oq-surface-native {
 }
 
 .oq-settings-commissioning-card-status {
-  margin-top: 4px;
+  margin-top: 0;
 }
 
 .oq-settings-boiler-shell {
