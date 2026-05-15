@@ -78,6 +78,18 @@
       || normalized.includes("STEP");
   }
 
+  function isCommissioningTaskStatusTerminal(status) {
+    const normalized = String(status || "").trim().toUpperCase();
+    if (!normalized) {
+      return false;
+    }
+    return normalized.includes("DONE")
+      || normalized.includes("FAILED")
+      || normalized.includes("ABORT")
+      || normalized.includes("APPLIED")
+      || normalized.includes("REFUSED");
+  }
+
   function getCommissioningStatusValue() {
     const rawStatus = getSettingsTextStatValue("commissioningStatus", "");
     const cm100Active = isEntityActive("cm100Active");
@@ -90,6 +102,7 @@
       || normalizedRawStatus.includes("FAILED")
       || normalizedRawStatus.includes("ABORT")
       || normalizedRawStatus.includes("APPLIED")
+      || normalizedRawStatus.includes("REFUSED")
     ) {
       state.pendingCommissioningCm100Start = false;
     }
@@ -1397,31 +1410,46 @@
     const cm100Status = getCommissioningStatusValue();
     const cm100Active = isEntityActive("cm100Active");
     const cm100Busy = state.loadingEntities || state.busyAction === "commissioningCm100Start" || state.busyAction === "commissioningCm100Stop";
+    const cm100Pending = Boolean(state.pendingCommissioningCm100Start);
     const boilerStatus = getSettingsTextStatValue("boilerPowerTestStatus", "IDLE");
     const boilerActive = isEntityActive("boilerPowerTestActive");
     const boilerBusy = state.loadingEntities || state.busyAction === "boilerPowerTestStart" || state.busyAction === "boilerPowerTestAbort" || state.busyAction === "boilerPowerTestApply";
     const boilerControls = Boolean(state.entities.boilerPowerTestStart || state.entities.boilerPowerTestAbort || state.entities.boilerPowerTestApply);
-    const boilerTaskRunning = boilerActive || isCommissioningTaskStatusBusy(boilerStatus);
-    const boilerResult = getSettingsStatValue("boilerPowerTestResult");
-    const boilerConfidence = getSettingsStatValue("boilerPowerTestConfidence");
+    const boilerPending = Boolean(state.pendingBoilerPowerTestStart);
+    const boilerTaskRunning = boilerActive || boilerPending || isCommissioningTaskStatusBusy(boilerStatus);
     const boilerRatedPower = getSettingsStatValue("boilerRatedHeatPower");
     const boilerHeatPower = getSettingsStatValue("boilerHeatPower");
     const autotuneStatus = getSettingsTextStatValue("flowAutotuneStatus", "IDLE");
     const autotuneBusy = state.loadingEntities || state.busyAction === "flowAutotuneStart" || state.busyAction === "flowAutotuneAbort" || state.busyAction === "flowAutotuneApply";
     const autotuneControls = Boolean(state.entities.flowAutotuneStart || state.entities.flowAutotuneAbort || state.entities.flowAutotuneApply);
-    const autotuneTaskRunning = isCommissioningTaskStatusBusy(autotuneStatus);
+    const autotunePending = Boolean(state.pendingFlowAutotuneStart);
+    const autotuneTaskRunning = autotunePending || isCommissioningTaskStatusBusy(autotuneStatus);
     const flowKpSuggested = getSettingsStatValue("flowKpSuggested");
     const flowKiSuggested = getSettingsStatValue("flowKiSuggested");
-    const boilerStatusDisplay = cm100Active ? boilerStatus : "Wachten op CM100";
-    const autotuneStatusDisplay = cm100Active ? autotuneStatus : "Wachten op CM100";
     const boilerResultReady = /DONE|APPLIED/.test(String(boilerStatus || "").toUpperCase());
     const autotuneResultReady = /DONE|APPLIED/.test(String(autotuneStatus || "").toUpperCase());
-    const boilerStartDisabled = !cm100Active || boilerBusy || !boilerControls || autotuneTaskRunning;
+    const boilerStatusDisplay = cm100Active
+      ? (boilerPending && !boilerActive && !isCommissioningTaskStatusBusy(boilerStatus) ? "Starten..." : boilerStatus)
+      : "Wachten op CM100";
+    const autotuneStatusDisplay = cm100Active
+      ? (autotunePending && !isCommissioningTaskStatusBusy(autotuneStatus) ? "Starten..." : autotuneStatus)
+      : "Wachten op CM100";
+    const boilerStartDisabled = !cm100Active || boilerBusy || !boilerControls || autotuneTaskRunning || boilerTaskRunning;
     const boilerAbortDisabled = boilerBusy || !boilerTaskRunning;
     const boilerApplyDisabled = boilerBusy || boilerStartDisabled || !boilerResultReady || autotuneTaskRunning;
-    const autotuneStartDisabled = !cm100Active || autotuneBusy || !autotuneControls || boilerTaskRunning;
+    const autotuneStartDisabled = !cm100Active || autotuneBusy || !autotuneControls || boilerTaskRunning || autotuneTaskRunning;
     const autotuneAbortDisabled = autotuneBusy || !autotuneTaskRunning;
     const autotuneApplyDisabled = autotuneBusy || autotuneStartDisabled || !autotuneResultReady || boilerTaskRunning;
+
+    if (cm100Pending && cm100Active) {
+      state.pendingCommissioningCm100Start = false;
+    }
+    if (boilerPending && (boilerActive || isCommissioningTaskStatusBusy(boilerStatus) || isCommissioningTaskStatusTerminal(boilerStatus))) {
+      state.pendingBoilerPowerTestStart = false;
+    }
+    if (autotunePending && (isCommissioningTaskStatusBusy(autotuneStatus) || isCommissioningTaskStatusTerminal(autotuneStatus))) {
+      state.pendingFlowAutotuneStart = false;
+    }
 
     return `
       <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
@@ -1473,8 +1501,8 @@
               `,
               metrics: `
                 ${renderSettingsStaticField("boilerRatedHeatPower", "Ingesteld boilervermogen", "Het boilervermogen waarop regeling en commissioning zich baseren.", boilerRatedPower, "oq-settings-field--span-2")}
-                ${renderSettingsStaticField("boilerHeatPower", "Boilervermogen tijdens test", "Dit is de live meting die tijdens de boiler-test meeloopt.", boilerHeatPower, "oq-settings-field--span-2")}
-                ${renderSettingsStaticField("boilerPowerTestConfidence", "Betrouwbaarheid meting", "Hoe stabiel en betrouwbaar de meting was.", boilerConfidence)}
+                ${renderSettingsStaticField("boilerHeatPower", "Actueel boilervermogen", "Live meting tijdens de boiler-test.", boilerHeatPower)}
+                ${renderSettingsStaticField("boilerPowerTestResult", "Gemeten testresultaat", "Afgerond resultaat van de laatste boiler-test.", getSettingsStatValue("boilerPowerTestResult"))}
               `,
             }) : ""}
             ${renderCommissioningTaskCard({

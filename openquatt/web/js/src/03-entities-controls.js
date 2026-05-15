@@ -2623,6 +2623,18 @@
           state.pendingCommissioningCm100Start = true;
         } else if (buttonKey === "commissioningCm100Stop") {
           state.pendingCommissioningCm100Start = false;
+          state.pendingBoilerPowerTestStart = false;
+          state.pendingFlowAutotuneStart = false;
+        } else if (buttonKey === "boilerPowerTestStart") {
+          state.pendingBoilerPowerTestStart = true;
+          state.pendingFlowAutotuneStart = false;
+        } else if (buttonKey === "boilerPowerTestAbort" || buttonKey === "boilerPowerTestApply") {
+          state.pendingBoilerPowerTestStart = false;
+        } else if (buttonKey === "flowAutotuneStart") {
+          state.pendingFlowAutotuneStart = true;
+          state.pendingBoilerPowerTestStart = false;
+        } else if (buttonKey === "flowAutotuneAbort" || buttonKey === "flowAutotuneApply") {
+          state.pendingFlowAutotuneStart = false;
         }
         const refreshKeys = [];
         if (buttonKey === "commissioningCm100Start" || buttonKey === "commissioningCm100Stop") {
@@ -2638,9 +2650,7 @@
             "commissioningStatus",
             "boilerPowerTestStatus",
             "boilerPowerTestActive",
-            "boilerHeatPower",
             "boilerPowerTestResult",
-            "boilerPowerTestConfidence",
             "boilerRatedHeatPower",
           );
         } else if (buttonKey === "flowAutotuneStart" || buttonKey === "flowAutotuneAbort" || buttonKey === "flowAutotuneApply") {
@@ -3499,6 +3509,13 @@
         await refreshEntities(options.refreshKeys, "state");
       }
     } catch (error) {
+      if (key === "commissioningCm100Start") {
+        state.pendingCommissioningCm100Start = false;
+      } else if (key === "boilerPowerTestStart") {
+        state.pendingBoilerPowerTestStart = false;
+      } else if (key === "flowAutotuneStart") {
+        state.pendingFlowAutotuneStart = false;
+      }
       state.controlError = `${options.errorPrefix || `Actie mislukt voor "${entity.name}"`}. ${error.message}`;
     } finally {
       state.busyAction = "";
