@@ -9132,8 +9132,8 @@ function renderWebServerLogsModal() {
 
   function renderFlowTuningFields(className = "oq-settings-grid") {
     const fields = [
-      renderSettingsNumberField("flowKp", "Flow PI Kp", "Proportionele versterking voor de flowregeling."),
-      renderSettingsNumberField("flowKi", "Flow PI Ki", "Integrerende versterking voor de flowregeling."),
+      renderSettingsNumberField("flowKp", "Flow Kp", "Hoe sterk de regeling direct reageert op een afwijking."),
+      renderSettingsNumberField("flowKi", "Flow Ki", "Hoe snel de regeling kleine restfouten wegwerkt."),
     ].filter(Boolean);
     if (!fields.length) {
       return "";
@@ -9182,6 +9182,10 @@ function renderWebServerLogsModal() {
       return { phase: "Wachten", percent: 0 };
     }
 
+    if (value.includes("WAITING") || value.includes("WACHTEN")) {
+      return { phase: "Wachten", percent: 0 };
+    }
+
     if (taskType !== "cm100" && (
       value === "IDLE"
       || value === "CM0 - STANDBY"
@@ -9192,11 +9196,11 @@ function renderWebServerLogsModal() {
       return { phase: "Wachten", percent: 0 };
     }
 
-    const selected = progressMaps[taskType] || [];
-    const match = selected.find((item) => item.match.some((needle) => value.includes(needle)));
-    if (match) {
-      return match;
-    }
+      const selected = progressMaps[taskType] || [];
+      const match = selected.find((item) => item.match.some((needle) => value.includes(needle)));
+      if (match) {
+        return match;
+      }
 
     if (value.includes("DONE") || value.includes("APPLIED")) {
       return { phase: "Klaar", percent: 100 };
@@ -9207,7 +9211,7 @@ function renderWebServerLogsModal() {
     if (taskType === "cm100" && value.includes("CM100")) {
       return { phase: "Klaar", percent: 100 };
     }
-    return { phase: statusText, percent: 50 };
+    return { phase: statusText, percent: 0 };
   }
 
   function renderCommissioningProgressBar(statusText, task = "") {
@@ -9743,9 +9747,8 @@ function renderWebServerLogsModal() {
                 ${state.entities.boilerPowerTestApply ? renderNamedActionButton("boilerPowerTestApply", "Pas boilervermogen toe", "oq-helper-button oq-helper-button--ghost", boilerBusy || boilerApplyDisabled) : ""}
               `,
               metrics: `
-                ${renderSettingsStaticField("boilerRatedHeatPower", "Boilervermogen", "Het huidige boilervermogen waarop regeling en commissioning zich baseren.", boilerRatedPower, "oq-settings-field--span-2")}
-                ${renderSettingsStaticField("boilerHeatPower", "Actueel boilervermogen", "Het actuele boilervermogen dat tijdens de test wordt gemeten.", boilerHeatPower, "oq-settings-field--span-2")}
-                ${renderSettingsStaticField("boilerPowerTestResult", "Gemeten boilervermogen", "Het meest recente gemeten boilervermogen.", boilerResult)}
+                ${renderSettingsStaticField("boilerRatedHeatPower", "Ingesteld boilervermogen", "Het boilervermogen waarop regeling en commissioning zich baseren.", boilerRatedPower, "oq-settings-field--span-2")}
+                ${renderSettingsStaticField("boilerHeatPower", "Boilervermogen tijdens test", "Dit is de live meting die tijdens de boiler-test meeloopt.", boilerHeatPower, "oq-settings-field--span-2")}
                 ${renderSettingsStaticField("boilerPowerTestConfidence", "Betrouwbaarheid meting", "Hoe stabiel en betrouwbaar de meting was.", boilerConfidence)}
               `,
             }) : ""}
@@ -9753,7 +9756,7 @@ function renderWebServerLogsModal() {
               taskKey: "autotune",
               kicker: "Flowregeling",
               title: "Flow autotune",
-              copy: "Bereken een voorstel voor de PI-waarden van de flowregeling en pas dat daarna toe in de installatie-instellingen.",
+              copy: "Bereken een voorstel voor de flowregeling en pas dat daarna toe in de installatie-instellingen.",
               status: autotuneStatusDisplay,
               statusCopy: autotuneTaskRunning ? "Autotune draait op dit moment." : (cm100Active ? "Autotune start pas zodra CM100 actief is." : "Start CM100 eerst en voer daarna autotune uit."),
               progressTask: "autotune",
@@ -9763,8 +9766,8 @@ function renderWebServerLogsModal() {
                 ${state.entities.flowAutotuneApply ? renderNamedActionButton("flowAutotuneApply", "Pas Kp/Ki toe", "oq-helper-button oq-helper-button--ghost", autotuneBusy || autotuneApplyDisabled) : ""}
               `,
               metrics: `
-                ${renderSettingsStaticField("flowKpSuggested", "Voorgestelde Flow PI Kp", "Het autotune-voorstel voor Kp.", flowKpSuggested)}
-                ${renderSettingsStaticField("flowKiSuggested", "Voorgestelde Flow PI Ki", "Het autotune-voorstel voor Ki.", flowKiSuggested)}
+                ${renderSettingsStaticField("flowKpSuggested", "Voorgestelde Kp", "Kp bepaalt hoe sterk de regeling meteen corrigeert.", flowKpSuggested, "oq-settings-field--compact")}
+                ${renderSettingsStaticField("flowKiSuggested", "Voorgestelde Ki", "Ki corrigeert kleine afwijkingen langzaam weg.", flowKiSuggested, "oq-settings-field--compact")}
               `,
             })}
           </div>
@@ -9984,8 +9987,8 @@ function renderWebServerLogsModal() {
 
           ${renderSettingsFieldCard(
             "boilerRatedHeatPower",
-            "Boilervermogen",
-            "Vul hier het effectieve vermogen in dat OpenQuatt mag meerekenen.",
+            "Ingesteld boilervermogen",
+            "Vul hier het vermogen in dat OpenQuatt mag meerekenen.",
             `
               <div class="oq-settings-boiler-power-inline">
                 ${boilerPowerControl}
