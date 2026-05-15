@@ -886,8 +886,8 @@
   }
 
   function getConnectivityStatus() {
-    if (state.entities.status && !isEntityActive("status")) {
-      return "Offline";
+    if (state.deviceReconnectMode) {
+      return isDeviceReconnectRecovering() ? "Verbonden" : "Bezig";
     }
     const ip = getDeviceIpAddress();
     if (ip && ip !== "—") {

@@ -2468,8 +2468,8 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
   }
 
   function getConnectivityStatus() {
-    if (state.entities.status && !isEntityActive("status")) {
-      return "Offline";
+    if (state.deviceReconnectMode) {
+      return isDeviceReconnectRecovering() ? "Verbonden" : "Bezig";
     }
     const ip = getDeviceIpAddress();
     if (ip && ip !== "—") {
