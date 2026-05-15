@@ -411,6 +411,7 @@ const LOGO_MARKUP = `
     "boilerPowerTestConfidence",
     "boilerPowerTestActive",
     "boilerPowerTestStatus",
+    "boilerHeatPower",
     "flowAutotuneStart",
     "flowAutotuneAbort",
     "flowAutotuneApply",
@@ -9286,24 +9287,9 @@ function renderWebServerLogsModal() {
     return { phase: statusText, percent: 0 };
   }
 
-  function renderCommissioningProgressBar(statusText, task = "") {
-    const progress = getCommissioningProgressModel(statusText, task);
-    return `
-      <div class="oq-helper-modal-progress" aria-live="polite">
-        <div class="oq-helper-modal-progress-head">
-          <strong>Voortgang</strong>
-          <span>${escapeHtml(`${Math.max(0, Math.min(100, progress.percent))}%`)}</span>
-        </div>
-        <div class="oq-helper-modal-progress-track" aria-hidden="true">
-          <span class="oq-helper-modal-progress-fill" style="width:${Math.max(0, Math.min(100, progress.percent))}%"></span>
-        </div>
-      </div>
-    `;
-  }
-
   function renderCommissioningTaskCard({
     taskKey,
-    kicker,
+    kicker = "",
     title,
     copy,
     status,
@@ -9313,12 +9299,11 @@ function renderWebServerLogsModal() {
     metrics = "",
     className = "",
   }) {
-    const showProgress = isCommissioningTaskStatusActive(status);
     return `
       <article class="oq-settings-commissioning-card${className ? ` ${escapeHtml(className)}` : ""}" data-oq-commissioning-task="${escapeHtml(taskKey)}">
         <div class="oq-settings-commissioning-card-head">
           <div class="oq-settings-commissioning-card-copy">
-            <p class="oq-helper-label">${escapeHtml(kicker)}</p>
+            ${kicker ? `<p class="oq-helper-label">${escapeHtml(kicker)}</p>` : ""}
             <h3>${escapeHtml(title)}</h3>
             <p>${escapeHtml(copy)}</p>
           </div>
@@ -9333,7 +9318,6 @@ function renderWebServerLogsModal() {
             </div>
           </div>
         </div>
-        ${showProgress ? renderCommissioningProgressBar(status, progressTask) : ""}
         ${metrics ? `<div class="oq-settings-grid oq-settings-commissioning-metrics">${metrics}</div>` : ""}
       </article>
     `;
@@ -9808,15 +9792,14 @@ function renderWebServerLogsModal() {
           <div class="oq-helper-modal-head">
             <div>
               <p class="oq-helper-modal-kicker">Installatie</p>
-              <h2 class="oq-helper-modal-title" id="oq-cm100-commissioning-modal-title">CM100 service-stand</h2>
+              <h2 class="oq-helper-modal-title" id="oq-cm100-commissioning-modal-title">Service-stand</h2>
             </div>
-            <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit CM100 service-stand">×</button>
+            <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit service-stand">×</button>
           </div>
-          <p class="oq-helper-modal-copy">Start eerst CM100 als tijdelijke service-stand. Daarna kun je hier de boilervermogentest of flow autotune uitvoeren zonder de normale regeling te verlaten.</p>
+          <p class="oq-helper-modal-copy">Open de service-stand om de boilervermogentest of flow autotune uit te voeren zonder de normale regeling te verlaten.</p>
 
           <div class="oq-settings-commissioning-hero">
             <div class="oq-settings-commissioning-hero-copy">
-              <p class="oq-helper-label">CM100</p>
               <h3>Service-stand voor testen en afstelling</h3>
               <p>Open de service-stand om metingen en afstelling uit te voeren.</p>
             </div>
@@ -9839,7 +9822,6 @@ function renderWebServerLogsModal() {
           <div class="oq-settings-commissioning-grid${hasBoilerAssist ? "" : " oq-settings-commissioning-grid--single"}">
             ${hasBoilerAssist ? renderCommissioningTaskCard({
               taskKey: "boiler",
-              kicker: "CV-ketel / boiler",
               title: "Boiler power test",
               copy: "Meet het effectieve boilervermogen bij stabiele flow en schrijf daarna een afgerond voorstel weg naar de boilerinstelling.",
               status: boilerStatusDisplay,
@@ -9857,7 +9839,7 @@ function renderWebServerLogsModal() {
                   startDisabled: boilerBusy || boilerStartDisabled,
                   stopDisabled: boilerBusy || boilerAbortDisabled,
                 }) : ""}
-                ${state.entities.boilerPowerTestApply ? renderNamedActionButton("boilerPowerTestApply", "Pas boilervermogen toe", "oq-helper-button oq-helper-button--ghost", boilerBusy || boilerApplyDisabled) : ""}
+                ${state.entities.boilerPowerTestApply ? renderNamedActionButton("boilerPowerTestApply", "Toepassen", "oq-helper-button oq-helper-button--ghost", boilerBusy || boilerApplyDisabled) : ""}
               `,
               metrics: `
                 ${renderSettingsStaticField("boilerRatedHeatPower", "Ingesteld boilervermogen", "Het boilervermogen waarop regeling en commissioning zich baseren.", boilerRatedPower, "oq-settings-field--span-2")}
@@ -9867,7 +9849,6 @@ function renderWebServerLogsModal() {
             }) : ""}
             ${renderCommissioningTaskCard({
               taskKey: "autotune",
-              kicker: "Flowregeling",
               title: "Flow autotune",
               copy: "Bereken een voorstel voor de flowregeling en pas dat daarna toe in de installatie-instellingen.",
               status: autotuneStatusDisplay,
@@ -9885,7 +9866,7 @@ function renderWebServerLogsModal() {
                   startDisabled: autotuneBusy || autotuneStartDisabled,
                   stopDisabled: autotuneBusy || autotuneAbortDisabled,
                 }) : ""}
-                ${state.entities.flowAutotuneApply ? renderNamedActionButton("flowAutotuneApply", "Pas flowvoorstel toe", "oq-helper-button oq-helper-button--ghost", autotuneBusy || autotuneApplyDisabled) : ""}
+                ${state.entities.flowAutotuneApply ? renderNamedActionButton("flowAutotuneApply", "Toepassen", "oq-helper-button oq-helper-button--ghost", autotuneBusy || autotuneApplyDisabled) : ""}
               `,
               metrics: `
                 ${renderSettingsStaticField("flowKpSuggested", "Voorgestelde Kp", "Kp bepaalt hoe sterk de regeling meteen corrigeert.", flowKpSuggested, "oq-settings-field--compact")}

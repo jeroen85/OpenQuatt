@@ -407,6 +407,7 @@ const LOGO_MARKUP = `
     "boilerPowerTestConfidence",
     "boilerPowerTestActive",
     "boilerPowerTestStatus",
+    "boilerHeatPower",
     "flowAutotuneStart",
     "flowAutotuneAbort",
     "flowAutotuneApply",
