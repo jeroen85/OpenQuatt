@@ -65,6 +65,16 @@ globals:
     restore_value: false
     initial_value: 'NAN'
 
+  - id: oq_commissioning_flow_auto_start_saved
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+  - id: oq_commissioning_prev_flow_auto_start_pwm
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+
   - id: oq_commissioning_boiler_request
     type: bool
     restore_value: false
@@ -161,6 +171,13 @@ button:
           id(oq_commissioning_result_peak_w) = NAN;
           id(oq_commissioning_result_plateau_count) = 0;
           id(oq_commissioning_status).publish_state("CM100 REQUESTED");
+          if (!id(oq_commissioning_flow_auto_start_saved) && id(oq_flow_auto_start_pwm).has_state()) {
+            id(oq_commissioning_prev_flow_auto_start_pwm) = id(oq_flow_auto_start_pwm).state;
+            id(oq_commissioning_flow_auto_start_saved) = true;
+          }
+          auto start_pwm_call = id(oq_flow_auto_start_pwm).make_call();
+          start_pwm_call.set_value(400.0f);
+          start_pwm_call.perform();
 
   - platform: template
     id: oq_commissioning_cm100_stop
@@ -317,6 +334,13 @@ button:
           id(oq_flow_autotune_active) = false;
           id(oq_flow_autotune_state) = 0;
           id(oq_commissioning_status).publish_state("IDLE");
+          if (id(oq_commissioning_flow_auto_start_saved) && !isnan(id(oq_commissioning_prev_flow_auto_start_pwm))) {
+            auto restore_auto_start_call = id(oq_flow_auto_start_pwm).make_call();
+            restore_auto_start_call.set_value(id(oq_commissioning_prev_flow_auto_start_pwm));
+            restore_auto_start_call.perform();
+          }
+          id(oq_commissioning_flow_auto_start_saved) = false;
+          id(oq_commissioning_prev_flow_auto_start_pwm) = NAN;
 
   - platform: template
     id: oq_boiler_power_test_apply
