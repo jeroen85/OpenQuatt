@@ -490,18 +490,47 @@
   flex-wrap: wrap;
   gap: 10px;
   align-items: flex-start;
-  margin-top: 10px;
+  margin-top: 0;
+}
+
+.oq-helper-modal-head--cm100 {
+  align-items: flex-start;
+  margin-bottom: 6px;
+}
+
+.oq-helper-modal-head--cm100 .oq-helper-modal-close {
+  margin-top: 6px;
+}
+
+.oq-settings-commissioning-modal-copy {
+  margin: 0 0 12px;
+  color: var(--oq-helper-soft);
+  font-size: 0.96rem;
+  line-height: 1.45;
+}
+
+.oq-settings-commissioning-modal-copy--lead {
+  margin-top: 2px;
 }
 
 .oq-settings-commissioning-summary {
-  margin-top: 16px;
+  margin-top: 12px;
 }
 
 .oq-settings-commissioning-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
-  margin-top: 18px;
+  margin-top: 14px;
+  align-items: stretch;
+}
+
+.oq-helper-modal--cm100 {
+  padding-bottom: 16px;
+}
+
+.oq-helper-modal--cm100 .oq-settings-commissioning-grid {
+  align-items: start;
 }
 
 .oq-settings-commissioning-grid--single {
@@ -510,7 +539,9 @@
 
 .oq-settings-commissioning-card {
   display: grid;
-  gap: 12px;
+  gap: 6px;
+  align-content: start;
+  height: auto;
   padding: 18px;
   border-radius: var(--oq-helper-radius-lg);
   border: 1px solid var(--oq-helper-line);
@@ -523,45 +554,91 @@
 
 .oq-settings-commissioning-card-head {
   display: grid;
-  gap: 10px;
+  gap: 2px;
+  align-content: start;
+  min-height: 0;
 }
 
 .oq-settings-commissioning-card-copy {
   display: grid;
-  gap: 8px;
+  gap: 3px;
   min-width: 0;
 }
 
 .oq-settings-commissioning-card-copy h3 {
   margin: 0;
   color: var(--oq-helper-ink);
-  font-size: 1.12rem;
-  line-height: 1.16;
-  letter-spacing: -0.03em;
+  font-size: 1.08rem;
+  line-height: 1.18;
+  letter-spacing: -0.028em;
 }
 
 .oq-settings-commissioning-card-copy p:last-child {
   margin: 0;
   color: var(--oq-helper-soft);
-  line-height: 1.58;
+  line-height: 1.38;
+}
+
+.oq-settings-commissioning-card-subcopy {
+  margin: 0;
+  color: var(--oq-helper-faint);
+  font-size: 0.84rem;
+  line-height: 1.35;
 }
 
 .oq-settings-commissioning-card-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  justify-content: flex-start;
-  align-items: center;
-  margin-top: 6px;
+  margin-top: 2px;
 }
 
 .oq-settings-commissioning-card-actions .oq-helper-button {
-  min-width: 150px;
-  flex: 0 1 180px;
+  box-sizing: border-box;
+  height: 50px;
+  width: 100%;
+  min-width: 0;
+  min-height: 50px;
+  padding: 0 16px;
+  line-height: 1.12;
 }
 
 .oq-settings-commissioning-card-status {
+  margin-top: 2px;
+}
+
+.oq-settings-commissioning-card-status .oq-settings-quickstart-status-row {
+  box-sizing: border-box;
+  height: auto;
+  min-height: 0;
+  align-items: flex-start;
+  padding: 10px 16px;
+}
+
+.oq-settings-commissioning-metrics {
+  align-self: start;
+  align-items: start;
   margin-top: 0;
+  gap: 12px;
+}
+
+.oq-settings-commissioning-metrics .oq-settings-field {
+  min-height: 0;
+  align-content: start;
+  padding: 12px 14px;
+  gap: 6px;
+}
+
+.oq-settings-commissioning-metrics .oq-settings-field-head {
+  align-items: flex-start;
+}
+
+.oq-settings-commissioning-metrics .oq-settings-field-head h3 {
+  line-height: 1.25;
+}
+
+.oq-helper-modal--cm100 .oq-helper-modal-actions {
+  margin-top: 10px;
 }
 
 .oq-settings-boiler-shell {

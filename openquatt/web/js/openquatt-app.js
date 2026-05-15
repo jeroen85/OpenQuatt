@@ -3830,6 +3830,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       "boilerPowerTestResult",
       "boilerPowerTestConfidence",
       "boilerPowerTestActive",
+      "boilerHeatPower",
       "flowAutotuneStart",
       "flowAutotuneAbort",
       "flowAutotuneApply",
@@ -8407,6 +8408,15 @@ function renderWebServerLogsModal() {
     return isCommissioningTaskStatusBusy(status) && !isCommissioningTaskStatusWaitingForCm100(status);
   }
 
+  function getStatusTextValue(key, fallback = "IDLE") {
+    const rawValue = getSettingsTextStatValue(key, fallback);
+    const normalized = String(rawValue ?? "").trim();
+    if (!normalized || normalized === "0" || normalized === "UNKNOWN" || normalized === "UNAVAILABLE" || normalized === "NAN") {
+      return fallback;
+    }
+    return normalized;
+  }
+
   function getCommissioningStatusValue() {
     const rawStatus = getSettingsTextStatValue("commissioningStatus", "");
     const cm100Active = isEntityActive("cm100Active");
@@ -8423,11 +8433,11 @@ function renderWebServerLogsModal() {
     ) {
       state.pendingCommissioningCm100Start = false;
     }
-    if (rawStatus && normalizedRawStatus !== "0") {
+    if (normalizedRawStatus && normalizedRawStatus !== "0") {
       if (normalizedRawStatus === "IDLE" && state.pendingCommissioningCm100Start) {
         return "CM100 REQUESTED";
       }
-      return rawStatus;
+      return normalizedRawStatus;
     }
     if (state.pendingCommissioningCm100Start) {
       return "CM100 REQUESTED";
@@ -9289,9 +9299,9 @@ function renderWebServerLogsModal() {
 
   function renderCommissioningTaskCard({
     taskKey,
-    kicker = "",
     title,
     copy,
+    subcopy = "",
     status,
     statusCopy,
     progressTask,
@@ -9303,9 +9313,9 @@ function renderWebServerLogsModal() {
       <article class="oq-settings-commissioning-card${className ? ` ${escapeHtml(className)}` : ""}" data-oq-commissioning-task="${escapeHtml(taskKey)}">
         <div class="oq-settings-commissioning-card-head">
           <div class="oq-settings-commissioning-card-copy">
-            ${kicker ? `<p class="oq-helper-label">${escapeHtml(kicker)}</p>` : ""}
             <h3>${escapeHtml(title)}</h3>
             <p>${escapeHtml(copy)}</p>
+            ${subcopy ? `<p class="oq-settings-commissioning-card-subcopy">${escapeHtml(subcopy)}</p>` : ""}
           </div>
         </div>
         ${actions ? `<div class="oq-settings-commissioning-card-actions">${actions}</div>` : ""}
@@ -9733,39 +9743,52 @@ function renderWebServerLogsModal() {
     const cm100Pending = Boolean(state.pendingCommissioningCm100Start);
     const cm100StartDisabled = cm100Busy || cm100Active;
     const cm100StopDisabled = cm100Busy || !cm100Active;
-    const boilerStatus = getSettingsTextStatValue("boilerPowerTestStatus", "IDLE");
+    const boilerStatus = getStatusTextValue("boilerPowerTestStatus", "IDLE");
     const boilerProgress = getCommissioningProgressModel(boilerStatus, "boiler");
     const boilerActive = isEntityActive("boilerPowerTestActive");
     const boilerBusy = state.loadingEntities || state.busyAction === "boilerPowerTestStart" || state.busyAction === "boilerPowerTestAbort" || state.busyAction === "boilerPowerTestApply";
     const boilerControls = Boolean(state.entities.boilerPowerTestStart || state.entities.boilerPowerTestAbort || state.entities.boilerPowerTestApply);
     const boilerPending = Boolean(state.pendingBoilerPowerTestStart);
     const boilerTaskLocked = state.commissioningTaskLock === "boiler";
-    const boilerTaskRunning = boilerActive || boilerPending || boilerTaskLocked || isCommissioningTaskStatusBusy(boilerStatus) || isCommissioningTaskStatusWaitingForCm100(boilerStatus);
+    const boilerTaskWaiting = isCommissioningTaskStatusWaitingForCm100(boilerStatus);
+    const boilerTaskRunning = boilerActive || boilerPending || boilerTaskLocked || isCommissioningTaskStatusBusy(boilerStatus);
     const boilerRatedPower = getSettingsStatValue("boilerRatedHeatPower");
-    const boilerHeatPower = getSettingsStatValue("boilerHeatPower");
-    const autotuneStatus = getSettingsTextStatValue("flowAutotuneStatus", "IDLE");
+    const boilerHeatPowerRaw = getSettingsStatValue("boilerHeatPower");
+    const boilerHeatPowerNumeric = getEntityNumericValue("boilerHeatPower");
+    const boilerHeatPower = boilerHeatPowerNumeric > 0
+      ? boilerHeatPowerRaw
+      : (boilerTaskRunning && state.commissioningBoilerHeatPowerDisplay ? state.commissioningBoilerHeatPowerDisplay : boilerHeatPowerRaw);
+    if (boilerHeatPowerNumeric > 0) {
+      state.commissioningBoilerHeatPowerDisplay = boilerHeatPowerRaw;
+    }
+    const autotuneStatus = getStatusTextValue("flowAutotuneStatus", "IDLE");
     const autotuneProgress = getCommissioningProgressModel(autotuneStatus, "autotune");
     const autotuneBusy = state.loadingEntities || state.busyAction === "flowAutotuneStart" || state.busyAction === "flowAutotuneAbort" || state.busyAction === "flowAutotuneApply";
     const autotuneControls = Boolean(state.entities.flowAutotuneStart || state.entities.flowAutotuneAbort || state.entities.flowAutotuneApply);
     const autotunePending = Boolean(state.pendingFlowAutotuneStart);
     const autotuneTaskLocked = state.commissioningTaskLock === "autotune";
-    const autotuneTaskRunning = autotunePending || autotuneTaskLocked || isCommissioningTaskStatusBusy(autotuneStatus) || isCommissioningTaskStatusWaitingForCm100(autotuneStatus);
+    const autotuneTaskWaiting = isCommissioningTaskStatusWaitingForCm100(autotuneStatus);
+    const autotuneTaskRunning = autotunePending || autotuneTaskLocked || isCommissioningTaskStatusBusy(autotuneStatus);
     const flowKpSuggested = getSettingsStatValue("flowKpSuggested");
     const flowKiSuggested = getSettingsStatValue("flowKiSuggested");
     const boilerResultReady = /DONE|APPLIED/.test(String(boilerStatus || "").toUpperCase());
     const autotuneResultReady = /DONE|APPLIED/.test(String(autotuneStatus || "").toUpperCase());
     const boilerStatusDisplay = cm100Active
-      ? (boilerTaskRunning ? boilerProgress.phase : "Klaar om te starten")
+      ? (boilerTaskRunning
+        ? boilerProgress.phase
+        : (boilerResultReady ? "Klaar om toe te passen" : "Klaar om te starten"))
       : "Wachten op CM100";
     const autotuneStatusDisplay = cm100Active
-      ? (autotuneTaskRunning ? autotuneProgress.phase : "Klaar om te starten")
+      ? (autotuneTaskRunning
+        ? autotuneProgress.phase
+        : (autotuneResultReady ? "Klaar om toe te passen" : "Klaar om te starten"))
       : "Wachten op CM100";
     const boilerStartDisabled = !cm100Active || boilerBusy || !boilerControls || autotuneTaskRunning || boilerTaskRunning || autotuneTaskLocked;
     const boilerAbortDisabled = boilerBusy || !(boilerTaskRunning || boilerTaskLocked);
-    const boilerApplyDisabled = boilerBusy || boilerStartDisabled || !boilerResultReady || autotuneTaskRunning || !boilerTaskLocked;
+    const boilerApplyDisabled = boilerBusy || boilerStartDisabled || !boilerResultReady || autotuneTaskRunning;
     const autotuneStartDisabled = !cm100Active || autotuneBusy || !autotuneControls || boilerTaskRunning || autotuneTaskRunning || boilerTaskLocked;
     const autotuneAbortDisabled = autotuneBusy || !(autotuneTaskRunning || autotuneTaskLocked);
-    const autotuneApplyDisabled = autotuneBusy || autotuneStartDisabled || !autotuneResultReady || boilerTaskRunning || !autotuneTaskLocked;
+    const autotuneApplyDisabled = autotuneBusy || autotuneStartDisabled || !autotuneResultReady || boilerTaskRunning;
 
     if (cm100Pending && cm100Active) {
       state.pendingCommissioningCm100Start = false;
@@ -9788,34 +9811,19 @@ function renderWebServerLogsModal() {
 
     return `
       <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
-        <section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--scrollable" data-oq-cm100-commissioning-scroller role="dialog" aria-modal="true" aria-labelledby="oq-cm100-commissioning-modal-title">
-          <div class="oq-helper-modal-head">
+        <section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--scrollable oq-helper-modal--cm100" data-oq-cm100-commissioning-scroller role="dialog" aria-modal="true" aria-labelledby="oq-cm100-commissioning-modal-title">
+          <div class="oq-helper-modal-head oq-helper-modal-head--cm100">
             <div>
               <p class="oq-helper-modal-kicker">Installatie</p>
               <h2 class="oq-helper-modal-title" id="oq-cm100-commissioning-modal-title">Service-stand</h2>
             </div>
             <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit service-stand">×</button>
           </div>
-          <p class="oq-helper-modal-copy">Open de service-stand om de boilervermogentest of flow autotune uit te voeren zonder de normale regeling te verlaten.</p>
-
+          <p class="oq-settings-commissioning-modal-copy oq-settings-commissioning-modal-copy--lead">Open de service-stand om testen en afstelling uit te voeren.</p>
           <div class="oq-settings-commissioning-hero">
-            <div class="oq-settings-commissioning-hero-copy">
-              <h3>Service-stand voor testen en afstelling</h3>
-              <p>Open de service-stand om metingen en afstelling uit te voeren.</p>
-            </div>
             <div class="oq-settings-commissioning-hero-actions">
               ${state.entities.commissioningCm100Start ? renderNamedActionButton("commissioningCm100Start", "CM100 starten", "oq-helper-button oq-helper-button--primary", cm100StartDisabled) : ""}
               ${state.entities.commissioningCm100Stop ? renderNamedActionButton("commissioningCm100Stop", "CM100 stoppen", "oq-helper-button oq-helper-button--ghost", cm100StopDisabled) : ""}
-            </div>
-          </div>
-
-          <div class="oq-settings-quickstart-status oq-settings-quickstart-status--compact oq-settings-commissioning-summary">
-            <div class="oq-settings-quickstart-status-row">
-              <div>
-                <p class="oq-settings-quickstart-status-label">Huidige status</p>
-                <strong class="oq-settings-quickstart-status-value">${escapeHtml(cm100Status)}</strong>
-                <p class="oq-settings-quickstart-status-copy">${escapeHtml(cm100Active ? "CM100 is actief en klaar voor testen en afstelling." : "Start CM100 om de taken hieronder te ontgrendelen.")}</p>
-              </div>
             </div>
           </div>
 
@@ -9823,10 +9831,11 @@ function renderWebServerLogsModal() {
             ${hasBoilerAssist ? renderCommissioningTaskCard({
               taskKey: "boiler",
               title: "Boiler power test",
-              copy: "Meet het effectieve boilervermogen bij stabiele flow en schrijf daarna een afgerond voorstel weg naar de boilerinstelling.",
+              copy: "Meet het effectieve boilervermogen bij stabiele flow en schrijf daarna een afgerond voorstel weg naar de boilerinstelling. Boilertest duurt meestal ongeveer 5 tot 10 minuten.",
+              subcopy: `Ingesteld boilervermogen: ${escapeHtml(boilerRatedPower)}`,
               status: boilerStatusDisplay,
               statusCopy: boilerTaskRunning
-                ? (isCommissioningTaskStatusWaitingForCm100(boilerStatus) ? "Wachten tot CM100 actief is." : "De boiler-test draait op dit moment.")
+                ? "De boiler-test draait op dit moment."
                 : (cm100Active ? "CM100 staat klaar. Start de boiler-test wanneer je wilt." : "Start CM100 eerst en voer daarna de boilervermogentest uit."),
               progressTask: "boiler",
               actions: `
@@ -9842,18 +9851,18 @@ function renderWebServerLogsModal() {
                 ${state.entities.boilerPowerTestApply ? renderNamedActionButton("boilerPowerTestApply", "Toepassen", "oq-helper-button oq-helper-button--ghost", boilerBusy || boilerApplyDisabled) : ""}
               `,
               metrics: `
-                ${renderSettingsStaticField("boilerRatedHeatPower", "Ingesteld boilervermogen", "Het boilervermogen waarop regeling en commissioning zich baseren.", boilerRatedPower, "oq-settings-field--span-2")}
-                ${renderSettingsStaticField("boilerHeatPower", "Actueel boilervermogen", "Live meting tijdens de boiler-test.", boilerHeatPower)}
+                ${renderSettingsStaticField("boilerHeatPower", "Actueel vermogen", "Live meting tijdens de boiler-test.", boilerHeatPower)}
                 ${renderSettingsStaticField("boilerPowerTestResult", "Gemeten testresultaat", "Afgerond resultaat van de laatste boiler-test.", getSettingsStatValue("boilerPowerTestResult"))}
               `,
             }) : ""}
             ${renderCommissioningTaskCard({
               taskKey: "autotune",
               title: "Flow autotune",
-              copy: "Bereken een voorstel voor de flowregeling en pas dat daarna toe in de installatie-instellingen.",
+              copy: "Bereken een voorstel voor de flowregeling en pas dat daarna toe in de installatie-instellingen. Autotune duurt meestal ongeveer 5 tot 10 minuten.",
+              subcopy: "Na toepassen worden de flow-instellingen bijgewerkt.",
               status: autotuneStatusDisplay,
               statusCopy: autotuneTaskRunning
-                ? (isCommissioningTaskStatusWaitingForCm100(autotuneStatus) ? "Wachten tot CM100 actief is." : "Autotune draait op dit moment.")
+                ? "Autotune draait op dit moment."
                 : (cm100Active ? "CM100 staat klaar. Start de autotune wanneer je wilt." : "Start CM100 eerst en voer daarna autotune uit."),
               progressTask: "autotune",
               actions: `
@@ -9908,7 +9917,6 @@ function renderWebServerLogsModal() {
       `
         <div class="oq-settings-commissioning-teaser">
           <div class="oq-settings-commissioning-teaser-copy">
-            <p class="oq-helper-label">CM100</p>
             <h4>Service-stand</h4>
             <p>Open deze werkstand wanneer je wilt testen, afstellen of een meting wilt starten.</p>
           </div>

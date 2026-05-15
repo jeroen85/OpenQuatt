@@ -301,6 +301,7 @@
       "boilerPowerTestResult",
       "boilerPowerTestConfidence",
       "boilerPowerTestActive",
+      "boilerHeatPower",
       "flowAutotuneStart",
       "flowAutotuneAbort",
       "flowAutotuneApply",
