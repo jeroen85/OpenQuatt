@@ -2616,7 +2616,7 @@
     }
 
     if (action === "press-named-button") {
-      const buttonKey = String(button.dataset.buttonKey || "").trim();
+      const buttonKey = String(button.dataset.oqButtonKey || button.dataset.buttonKey || button.getAttribute("data-oq-button-key") || "").trim();
       if (buttonKey) {
         const refreshKeys = [];
         if (buttonKey === "commissioningCm100Start" || buttonKey === "commissioningCm100Stop") {
