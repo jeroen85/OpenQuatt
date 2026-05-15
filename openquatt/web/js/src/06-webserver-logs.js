@@ -289,6 +289,67 @@ function queueWebServerLogScrollRestore(scrollState, defer = true) {
   applyScrollState();
 }
 
+function getCm100CommissioningModalScrollerElement() {
+  if (!state.root) {
+    return null;
+  }
+  return state.root.querySelector("[data-oq-cm100-commissioning-scroller]");
+}
+
+function captureCm100CommissioningScrollState() {
+  const scroller = getCm100CommissioningModalScrollerElement();
+  if (!scroller) {
+    return null;
+  }
+
+  return {
+    scrollHeight: scroller.scrollHeight,
+    scrollTop: scroller.scrollTop,
+    stickToBottom: isWebServerLogScrollerNearBottom(scroller),
+  };
+}
+
+function restoreCm100CommissioningScrollState(scrollState) {
+  if (!scrollState) {
+    return;
+  }
+
+  const scroller = getCm100CommissioningModalScrollerElement();
+  if (!scroller) {
+    return;
+  }
+
+  if (scrollState.stickToBottom) {
+    scroller.scrollTop = scroller.scrollHeight;
+    return;
+  }
+
+  const restoredScrollTop = scrollState.scrollTop + (scroller.scrollHeight - scrollState.scrollHeight);
+  scroller.scrollTop = Math.max(0, restoredScrollTop);
+}
+
+function queueCm100CommissioningScrollRestore(scrollState, defer = true) {
+  if (!scrollState) {
+    return;
+  }
+
+  const restoreToken = Number(state.cm100CommissioningScrollRestoreToken || 0) + 1;
+  state.cm100CommissioningScrollRestoreToken = restoreToken;
+  const applyScrollState = () => {
+    if (state.cm100CommissioningScrollRestoreToken !== restoreToken || state.systemModal !== "cm100-commissioning") {
+      return;
+    }
+    restoreCm100CommissioningScrollState(scrollState);
+  };
+
+  if (defer) {
+    window.requestAnimationFrame(applyScrollState);
+    return;
+  }
+
+  applyScrollState();
+}
+
 async function refreshWebServerLogHistory(options = {}) {
   if (state.nativeOpen || typeof window.fetch !== "function") {
     return;

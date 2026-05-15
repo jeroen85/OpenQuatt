@@ -914,6 +914,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     webServerLogHistoryRequestToken: 0,
     webServerLogHistoryLoaded: false,
     webServerLogScrollRestoreToken: 0,
+    cm100CommissioningScrollRestoreToken: 0,
     webServerLogCopyMessage: "",
     webServerLogCopyError: "",
     webServerLogRecentTail: [],
@@ -3776,6 +3777,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       "boilerPowerTestResult",
       "boilerPowerTestConfidence",
       "boilerPowerTestActive",
+      "boilerHeatPower",
       "flowAutotuneStart",
       "flowAutotuneAbort",
       "flowAutotuneApply",
@@ -6141,6 +6143,11 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     if (action === "press-named-button") {
       const buttonKey = String(button.dataset.oqButtonKey || button.dataset.buttonKey || button.getAttribute("data-oq-button-key") || "").trim();
       if (buttonKey) {
+        if (buttonKey === "commissioningCm100Start") {
+          state.pendingCommissioningCm100Start = true;
+        } else if (buttonKey === "commissioningCm100Stop") {
+          state.pendingCommissioningCm100Start = false;
+        }
         const refreshKeys = [];
         if (buttonKey === "commissioningCm100Start" || buttonKey === "commissioningCm100Stop") {
           refreshKeys.push(
@@ -6155,6 +6162,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
             "commissioningStatus",
             "boilerPowerTestStatus",
             "boilerPowerTestActive",
+            "boilerHeatPower",
             "boilerPowerTestResult",
             "boilerPowerTestConfidence",
             "boilerRatedHeatPower",
@@ -7591,6 +7599,67 @@ function queueWebServerLogScrollRestore(scrollState, defer = true) {
   applyScrollState();
 }
 
+function getCm100CommissioningModalScrollerElement() {
+  if (!state.root) {
+    return null;
+  }
+  return state.root.querySelector("[data-oq-cm100-commissioning-scroller]");
+}
+
+function captureCm100CommissioningScrollState() {
+  const scroller = getCm100CommissioningModalScrollerElement();
+  if (!scroller) {
+    return null;
+  }
+
+  return {
+    scrollHeight: scroller.scrollHeight,
+    scrollTop: scroller.scrollTop,
+    stickToBottom: isWebServerLogScrollerNearBottom(scroller),
+  };
+}
+
+function restoreCm100CommissioningScrollState(scrollState) {
+  if (!scrollState) {
+    return;
+  }
+
+  const scroller = getCm100CommissioningModalScrollerElement();
+  if (!scroller) {
+    return;
+  }
+
+  if (scrollState.stickToBottom) {
+    scroller.scrollTop = scroller.scrollHeight;
+    return;
+  }
+
+  const restoredScrollTop = scrollState.scrollTop + (scroller.scrollHeight - scrollState.scrollHeight);
+  scroller.scrollTop = Math.max(0, restoredScrollTop);
+}
+
+function queueCm100CommissioningScrollRestore(scrollState, defer = true) {
+  if (!scrollState) {
+    return;
+  }
+
+  const restoreToken = Number(state.cm100CommissioningScrollRestoreToken || 0) + 1;
+  state.cm100CommissioningScrollRestoreToken = restoreToken;
+  const applyScrollState = () => {
+    if (state.cm100CommissioningScrollRestoreToken !== restoreToken || state.systemModal !== "cm100-commissioning") {
+      return;
+    }
+    restoreCm100CommissioningScrollState(scrollState);
+  };
+
+  if (defer) {
+    window.requestAnimationFrame(applyScrollState);
+    return;
+  }
+
+  applyScrollState();
+}
+
 async function refreshWebServerLogHistory(options = {}) {
   if (state.nativeOpen || typeof window.fetch !== "function") {
     return;
@@ -8264,11 +8333,49 @@ function renderWebServerLogsModal() {
     return text;
   }
 
+  function isCommissioningTaskStatusBusy(status) {
+    const normalized = String(status || "").trim().toUpperCase();
+    if (!normalized || normalized === "0" || normalized === "IDLE" || normalized === "CM100 READY" || normalized === "CM100 STOPPED") {
+      return false;
+    }
+    if (normalized.includes("DONE") || normalized.includes("FAILED") || normalized.includes("ABORT") || normalized.includes("APPLIED") || normalized.includes("REFUSED")) {
+      return false;
+    }
+    return normalized.includes("REQUESTED")
+      || normalized.includes("WAITING")
+      || normalized.includes("SETTLING")
+      || normalized.includes("MEASUR")
+      || normalized.includes("COOLDOWN")
+      || normalized.includes("RUNNING")
+      || normalized.includes("VALIDATING")
+      || normalized.includes("STARTED")
+      || normalized.includes("RECOVER")
+      || normalized.includes("STEP");
+  }
+
   function getCommissioningStatusValue() {
     const rawStatus = getSettingsTextStatValue("commissioningStatus", "");
     const cm100Active = isEntityActive("cm100Active");
-    if (rawStatus) {
+    const normalizedRawStatus = String(rawStatus || "").trim().toUpperCase();
+    if (
+      cm100Active
+      || normalizedRawStatus === "CM100 READY"
+      || normalizedRawStatus === "CM100 STOPPED"
+      || normalizedRawStatus.includes("DONE")
+      || normalizedRawStatus.includes("FAILED")
+      || normalizedRawStatus.includes("ABORT")
+      || normalizedRawStatus.includes("APPLIED")
+    ) {
+      state.pendingCommissioningCm100Start = false;
+    }
+    if (rawStatus && normalizedRawStatus !== "0") {
+      if (normalizedRawStatus === "IDLE" && state.pendingCommissioningCm100Start) {
+        return "CM100 REQUESTED";
+      }
       return rawStatus;
+    }
+    if (state.pendingCommissioningCm100Start) {
+      return "CM100 REQUESTED";
     }
     return cm100Active ? "CM100 READY" : "IDLE";
   }
@@ -9565,24 +9672,31 @@ function renderWebServerLogsModal() {
     const boilerActive = isEntityActive("boilerPowerTestActive");
     const boilerBusy = state.loadingEntities || state.busyAction === "boilerPowerTestStart" || state.busyAction === "boilerPowerTestAbort" || state.busyAction === "boilerPowerTestApply";
     const boilerControls = Boolean(state.entities.boilerPowerTestStart || state.entities.boilerPowerTestAbort || state.entities.boilerPowerTestApply);
+    const boilerTaskRunning = boilerActive || isCommissioningTaskStatusBusy(boilerStatus);
     const boilerResult = getSettingsStatValue("boilerPowerTestResult");
     const boilerConfidence = getSettingsStatValue("boilerPowerTestConfidence");
     const boilerRatedPower = getSettingsStatValue("boilerRatedHeatPower");
+    const boilerHeatPower = getSettingsStatValue("boilerHeatPower");
     const autotuneStatus = getSettingsTextStatValue("flowAutotuneStatus", "IDLE");
     const autotuneBusy = state.loadingEntities || state.busyAction === "flowAutotuneStart" || state.busyAction === "flowAutotuneAbort" || state.busyAction === "flowAutotuneApply";
     const autotuneControls = Boolean(state.entities.flowAutotuneStart || state.entities.flowAutotuneAbort || state.entities.flowAutotuneApply);
+    const autotuneTaskRunning = isCommissioningTaskStatusBusy(autotuneStatus);
     const flowKpSuggested = getSettingsStatValue("flowKpSuggested");
     const flowKiSuggested = getSettingsStatValue("flowKiSuggested");
     const boilerStatusDisplay = cm100Active ? boilerStatus : "Wachten op CM100";
     const autotuneStatusDisplay = cm100Active ? autotuneStatus : "Wachten op CM100";
-    const boilerStartDisabled = !cm100Active || boilerBusy || !boilerControls;
-    const autotuneStartDisabled = !cm100Active || autotuneBusy || !autotuneControls;
     const boilerResultReady = /DONE|APPLIED/.test(String(boilerStatus || "").toUpperCase());
     const autotuneResultReady = /DONE|APPLIED/.test(String(autotuneStatus || "").toUpperCase());
+    const boilerStartDisabled = !cm100Active || boilerBusy || !boilerControls || autotuneTaskRunning;
+    const boilerAbortDisabled = boilerBusy || !boilerTaskRunning;
+    const boilerApplyDisabled = boilerBusy || boilerStartDisabled || !boilerResultReady || autotuneTaskRunning;
+    const autotuneStartDisabled = !cm100Active || autotuneBusy || !autotuneControls || boilerTaskRunning;
+    const autotuneAbortDisabled = autotuneBusy || !autotuneTaskRunning;
+    const autotuneApplyDisabled = autotuneBusy || autotuneStartDisabled || !autotuneResultReady || boilerTaskRunning;
 
     return `
       <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
-        <section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--scrollable" role="dialog" aria-modal="true" aria-labelledby="oq-cm100-commissioning-modal-title">
+        <section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--scrollable" data-oq-cm100-commissioning-scroller role="dialog" aria-modal="true" aria-labelledby="oq-cm100-commissioning-modal-title">
           <div class="oq-helper-modal-head">
             <div>
               <p class="oq-helper-modal-kicker">Installatie</p>
@@ -9621,15 +9735,16 @@ function renderWebServerLogsModal() {
               title: "Boiler power test",
               copy: "Meet het effectieve boilervermogen bij stabiele flow en schrijf daarna een afgerond voorstel weg naar de boilerinstelling.",
               status: boilerStatusDisplay,
-              statusCopy: boilerActive ? "De boiler-test draait op dit moment." : "Start CM100 eerst en voer daarna de boilervermogentest uit.",
+              statusCopy: boilerTaskRunning ? "De boiler-test draait op dit moment." : "Start CM100 eerst en voer daarna de boilervermogentest uit.",
               progressTask: "boiler",
               actions: `
                 ${state.entities.boilerPowerTestStart ? renderNamedActionButton("boilerPowerTestStart", "Boiler test starten", "oq-helper-button oq-helper-button--primary", boilerBusy || boilerStartDisabled) : ""}
-                ${state.entities.boilerPowerTestAbort ? renderNamedActionButton("boilerPowerTestAbort", "Boiler test afbreken", "oq-helper-button oq-helper-button--ghost", boilerBusy || !boilerActive) : ""}
-                ${state.entities.boilerPowerTestApply ? renderNamedActionButton("boilerPowerTestApply", "Pas boilervermogen toe", "oq-helper-button oq-helper-button--ghost", boilerBusy || boilerStartDisabled || !boilerResultReady) : ""}
+                ${state.entities.boilerPowerTestAbort ? renderNamedActionButton("boilerPowerTestAbort", "Boiler test afbreken", "oq-helper-button oq-helper-button--ghost", boilerBusy || boilerAbortDisabled) : ""}
+                ${state.entities.boilerPowerTestApply ? renderNamedActionButton("boilerPowerTestApply", "Pas boilervermogen toe", "oq-helper-button oq-helper-button--ghost", boilerBusy || boilerApplyDisabled) : ""}
               `,
               metrics: `
                 ${renderSettingsStaticField("boilerRatedHeatPower", "Boilervermogen", "Het huidige boilervermogen waarop regeling en commissioning zich baseren.", boilerRatedPower, "oq-settings-field--span-2")}
+                ${renderSettingsStaticField("boilerHeatPower", "Actueel boilervermogen", "Het actuele boilervermogen dat tijdens de test wordt gemeten.", boilerHeatPower, "oq-settings-field--span-2")}
                 ${renderSettingsStaticField("boilerPowerTestResult", "Gemeten boilervermogen", "Het meest recente gemeten boilervermogen.", boilerResult)}
                 ${renderSettingsStaticField("boilerPowerTestConfidence", "Betrouwbaarheid meting", "Hoe stabiel en betrouwbaar de meting was.", boilerConfidence)}
               `,
@@ -9640,12 +9755,12 @@ function renderWebServerLogsModal() {
               title: "Flow autotune",
               copy: "Bereken een voorstel voor de PI-waarden van de flowregeling en pas dat daarna toe in de installatie-instellingen.",
               status: autotuneStatusDisplay,
-              statusCopy: cm100Active ? "Autotune start pas zodra CM100 actief is." : "Start CM100 eerst en voer daarna autotune uit.",
+              statusCopy: autotuneTaskRunning ? "Autotune draait op dit moment." : (cm100Active ? "Autotune start pas zodra CM100 actief is." : "Start CM100 eerst en voer daarna autotune uit."),
               progressTask: "autotune",
               actions: `
                 ${state.entities.flowAutotuneStart ? renderNamedActionButton("flowAutotuneStart", "Autotune starten", "oq-helper-button oq-helper-button--primary", autotuneBusy || autotuneStartDisabled) : ""}
-                ${state.entities.flowAutotuneAbort ? renderNamedActionButton("flowAutotuneAbort", "Autotune afbreken", "oq-helper-button oq-helper-button--ghost", autotuneBusy || !cm100Active) : ""}
-                ${state.entities.flowAutotuneApply ? renderNamedActionButton("flowAutotuneApply", "Pas Kp/Ki toe", "oq-helper-button oq-helper-button--ghost", autotuneBusy || autotuneStartDisabled || !autotuneResultReady) : ""}
+                ${state.entities.flowAutotuneAbort ? renderNamedActionButton("flowAutotuneAbort", "Autotune afbreken", "oq-helper-button oq-helper-button--ghost", autotuneBusy || autotuneAbortDisabled) : ""}
+                ${state.entities.flowAutotuneApply ? renderNamedActionButton("flowAutotuneApply", "Pas Kp/Ki toe", "oq-helper-button oq-helper-button--ghost", autotuneBusy || autotuneApplyDisabled) : ""}
               `,
               metrics: `
                 ${renderSettingsStaticField("flowKpSuggested", "Voorgestelde Flow PI Kp", "Het autotune-voorstel voor Kp.", flowKpSuggested)}
@@ -9675,6 +9790,9 @@ function renderWebServerLogsModal() {
 
     const cm100Status = getCommissioningStatusValue();
     const cm100Active = isEntityActive("cm100Active");
+    if (cm100Active || /READY|STOPPED|DONE|FAILED|ABORT|APPLIED/.test(String(cm100Status || "").toUpperCase())) {
+      state.pendingCommissioningCm100Start = false;
+    }
     const cm100OpenLabel = cm100Active ? "Service-stand bekijken" : "Service-stand openen";
 
     return renderSettingsSection(
@@ -14224,6 +14342,9 @@ function renderSettingsView() {
     const webServerLogScrollState = state.systemModal === "webserver-logs"
       ? captureWebServerLogScrollState()
       : null;
+    const cm100CommissioningScrollState = state.systemModal === "cm100-commissioning"
+      ? captureCm100CommissioningScrollState()
+      : null;
 
     if (state.nativeOpen) {
       state.root.innerHTML = `
@@ -14239,6 +14360,7 @@ function renderSettingsView() {
       syncDocumentTheme();
       syncDocumentTitle();
       queueWebServerLogScrollRestore(webServerLogScrollState);
+      queueCm100CommissioningScrollRestore(cm100CommissioningScrollState);
       return;
     }
 
@@ -14290,6 +14412,7 @@ function renderSettingsView() {
     syncDocumentTheme();
     syncDocumentTitle();
     queueWebServerLogScrollRestore(webServerLogScrollState);
+    queueCm100CommissioningScrollRestore(cm100CommissioningScrollState);
   }
 
   function escapeHtml(value) {

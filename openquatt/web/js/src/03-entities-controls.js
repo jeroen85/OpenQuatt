@@ -253,6 +253,7 @@
       "boilerPowerTestResult",
       "boilerPowerTestConfidence",
       "boilerPowerTestActive",
+      "boilerHeatPower",
       "flowAutotuneStart",
       "flowAutotuneAbort",
       "flowAutotuneApply",
@@ -2618,6 +2619,11 @@
     if (action === "press-named-button") {
       const buttonKey = String(button.dataset.oqButtonKey || button.dataset.buttonKey || button.getAttribute("data-oq-button-key") || "").trim();
       if (buttonKey) {
+        if (buttonKey === "commissioningCm100Start") {
+          state.pendingCommissioningCm100Start = true;
+        } else if (buttonKey === "commissioningCm100Stop") {
+          state.pendingCommissioningCm100Start = false;
+        }
         const refreshKeys = [];
         if (buttonKey === "commissioningCm100Start" || buttonKey === "commissioningCm100Stop") {
           refreshKeys.push(
@@ -2632,6 +2638,7 @@
             "commissioningStatus",
             "boilerPowerTestStatus",
             "boilerPowerTestActive",
+            "boilerHeatPower",
             "boilerPowerTestResult",
             "boilerPowerTestConfidence",
             "boilerRatedHeatPower",

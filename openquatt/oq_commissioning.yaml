@@ -105,6 +105,16 @@ globals:
     restore_value: false
     initial_value: 'NAN'
 
+  - id: oq_commissioning_result_peak_w
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+
+  - id: oq_commissioning_result_plateau_count
+    type: int
+    restore_value: false
+    initial_value: '0'
+
 # ----------------------------
 # CONTROL INPUTS
 # ----------------------------
@@ -148,6 +158,8 @@ button:
           id(oq_flow_autotune_abort) = false;
           id(oq_flow_autotune_active) = false;
           id(oq_flow_autotune_state) = 0;
+          id(oq_commissioning_result_peak_w) = NAN;
+          id(oq_commissioning_result_plateau_count) = 0;
           id(oq_commissioning_status).publish_state("CM100 REQUESTED");
 
   - platform: template
@@ -189,6 +201,8 @@ button:
           id(oq_flow_autotune_abort) = false;
           id(oq_flow_autotune_active) = false;
           id(oq_flow_autotune_state) = 0;
+          id(oq_commissioning_result_peak_w) = NAN;
+          id(oq_commissioning_result_plateau_count) = 0;
           id(oq_commissioning_status).publish_state("IDLE");
 
   - platform: template
@@ -247,6 +261,8 @@ button:
           id(oq_commissioning_result_max_w) = NAN;
           id(oq_commissioning_result_w) = NAN;
           id(oq_commissioning_result_confidence) = 0.0f;
+          id(oq_commissioning_result_peak_w) = NAN;
+          id(oq_commissioning_result_plateau_count) = 0;
 
           id(oq_commissioning_prev_flow_setpoint_lph) = id(oq_flow_setpoint_lph).state;
           id(oq_commissioning_flow_setpoint_saved) = true;
@@ -505,6 +521,8 @@ interval:
             id(oq_commissioning_result_sum_w) = 0.0f;
             id(oq_commissioning_result_min_w) = NAN;
             id(oq_commissioning_result_max_w) = NAN;
+            id(oq_commissioning_result_peak_w) = NAN;
+            id(oq_commissioning_result_plateau_count) = 0;
           };
 
           auto finish_task = [&](const char *status, int next_state, bool keep_result, bool keep_cm100) {
@@ -516,8 +534,10 @@ interval:
             id(oq_commissioning_task_code) = 0;
             id(oq_commissioning_state_code) = next_state;
             if (!keep_result) {
-              id(oq_commissioning_result_w) = NAN;
-              id(oq_commissioning_result_confidence) = 0.0f;
+          id(oq_commissioning_result_w) = NAN;
+          id(oq_commissioning_result_confidence) = 0.0f;
+          id(oq_commissioning_result_peak_w) = NAN;
+          id(oq_commissioning_result_plateau_count) = 0;
             }
             publish_status(status);
             id(oq_commissioning_status).publish_state(keep_cm100 ? "CM100 READY" : "IDLE");
@@ -669,13 +689,33 @@ interval:
 
           if (id(oq_commissioning_state_code) == 4) {
             if (flow_stable_now && heat_valid && heat_w > 0.0f) {
-              id(oq_commissioning_sample_count)++;
-              id(oq_commissioning_result_sum_w) += heat_w;
-              if (isnan(id(oq_commissioning_result_min_w)) || heat_w < id(oq_commissioning_result_min_w)) {
-                id(oq_commissioning_result_min_w) = heat_w;
+              constexpr float kPlateauRatio = 0.95f;
+              constexpr int kPlateauConfirmSamples = 4;
+              if (isnan(id(oq_commissioning_result_peak_w)) || heat_w > id(oq_commissioning_result_peak_w)) {
+                id(oq_commissioning_result_peak_w) = heat_w;
+                id(oq_commissioning_result_plateau_count) = 0;
               }
-              if (isnan(id(oq_commissioning_result_max_w)) || heat_w > id(oq_commissioning_result_max_w)) {
-                id(oq_commissioning_result_max_w) = heat_w;
+
+              const float plateau_floor = isnan(id(oq_commissioning_result_peak_w))
+                  ? heat_w
+                  : id(oq_commissioning_result_peak_w) * kPlateauRatio;
+              if (heat_w >= plateau_floor) {
+                if (id(oq_commissioning_result_plateau_count) < 1000) {
+                  id(oq_commissioning_result_plateau_count)++;
+                }
+              } else {
+                id(oq_commissioning_result_plateau_count) = 0;
+              }
+
+              if (id(oq_commissioning_result_plateau_count) >= kPlateauConfirmSamples) {
+                id(oq_commissioning_sample_count)++;
+                id(oq_commissioning_result_sum_w) += heat_w;
+                if (isnan(id(oq_commissioning_result_min_w)) || heat_w < id(oq_commissioning_result_min_w)) {
+                  id(oq_commissioning_result_min_w) = heat_w;
+                }
+                if (isnan(id(oq_commissioning_result_max_w)) || heat_w > id(oq_commissioning_result_max_w)) {
+                  id(oq_commissioning_result_max_w) = heat_w;
+                }
               }
             }
 

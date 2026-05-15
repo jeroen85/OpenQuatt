@@ -54,6 +54,7 @@
     webServerLogHistoryRequestToken: 0,
     webServerLogHistoryLoaded: false,
     webServerLogScrollRestoreToken: 0,
+    cm100CommissioningScrollRestoreToken: 0,
     webServerLogCopyMessage: "",
     webServerLogCopyError: "",
     webServerLogRecentTail: [],
