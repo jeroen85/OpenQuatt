@@ -9573,6 +9573,8 @@ function renderWebServerLogsModal() {
     const autotuneControls = Boolean(state.entities.flowAutotuneStart || state.entities.flowAutotuneAbort || state.entities.flowAutotuneApply);
     const flowKpSuggested = getSettingsStatValue("flowKpSuggested");
     const flowKiSuggested = getSettingsStatValue("flowKiSuggested");
+    const boilerStatusDisplay = cm100Active ? boilerStatus : "Wachten op CM100";
+    const autotuneStatusDisplay = cm100Active ? autotuneStatus : "Wachten op CM100";
     const boilerStartDisabled = !cm100Active || boilerBusy || !boilerControls;
     const autotuneStartDisabled = !cm100Active || autotuneBusy || !autotuneControls;
     const boilerResultReady = /DONE|APPLIED/.test(String(boilerStatus || "").toUpperCase());
@@ -9618,7 +9620,7 @@ function renderWebServerLogsModal() {
               kicker: "CV-ketel / boiler",
               title: "Boiler power test",
               copy: "Meet het effectieve boilervermogen bij stabiele flow en schrijf daarna een afgerond voorstel weg naar de boilerinstelling.",
-              status: boilerStatus,
+              status: boilerStatusDisplay,
               statusCopy: boilerActive ? "De boiler-test draait op dit moment." : "Start CM100 eerst en voer daarna de boilervermogentest uit.",
               progressTask: "boiler",
               actions: `
@@ -9637,7 +9639,7 @@ function renderWebServerLogsModal() {
               kicker: "Flowregeling",
               title: "Flow autotune",
               copy: "Bereken een voorstel voor de PI-waarden van de flowregeling en pas dat daarna toe in de installatie-instellingen.",
-              status: autotuneStatus,
+              status: autotuneStatusDisplay,
               statusCopy: cm100Active ? "Autotune start pas zodra CM100 actief is." : "Start CM100 eerst en voer daarna autotune uit.",
               progressTask: "autotune",
               actions: `
