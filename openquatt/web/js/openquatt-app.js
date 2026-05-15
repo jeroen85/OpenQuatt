@@ -9852,35 +9852,6 @@ function renderWebServerLogsModal() {
           </div>
 
           <div class="oq-settings-commissioning-grid${hasBoilerAssist ? "" : " oq-settings-commissioning-grid--single"}">
-            ${hasBoilerAssist ? renderCommissioningTaskCard({
-              taskKey: "boiler",
-              title: "Boiler power test",
-              copy: "Meet het effectieve boilervermogen bij stabiele flow en schrijf daarna een afgerond voorstel weg naar de boilerinstelling. Boilertest duurt meestal ongeveer 5 tot 10 minuten.",
-              subcopy: `Ingesteld boilervermogen: ${escapeHtml(boilerRatedPower)}`,
-              status: boilerStatusDisplay,
-              statusCopy: boilerTaskWaitingForCm100
-                ? "Wacht totdat CM100 actief is voordat je de boiler-test start."
-                : (boilerTaskRunning
-                  ? "De boiler-test draait op dit moment."
-                  : (cm100Active ? "CM100 staat klaar. Start de boiler-test wanneer je wilt." : "Start CM100 eerst en voer daarna de boilervermogentest uit.")),
-              progressTask: "boiler",
-              actions: `
-                ${state.entities.boilerPowerTestStart || state.entities.boilerPowerTestAbort ? renderNamedToggleActionButton({
-                  active: boilerTaskRunning,
-                  startKey: "boilerPowerTestStart",
-                  stopKey: "boilerPowerTestAbort",
-                  startLabel: "Boiler test starten",
-                  stopLabel: "Boiler test stoppen",
-                  startDisabled: boilerBusy || boilerStartDisabled,
-                  stopDisabled: boilerBusy || boilerAbortDisabled,
-                }) : ""}
-                ${state.entities.boilerPowerTestApply ? renderNamedActionButton("boilerPowerTestApply", "Toepassen", "oq-helper-button oq-helper-button--ghost", boilerBusy || boilerApplyDisabled) : ""}
-              `,
-              metrics: `
-                ${renderSettingsStaticField("boilerHeatPower", "Actueel vermogen", "Live meting tijdens de boiler-test.", boilerHeatPower)}
-                ${renderSettingsStaticField("boilerPowerTestResult", "Gemeten testresultaat", "Afgerond resultaat van de laatste boiler-test.", getSettingsStatValue("boilerPowerTestResult"))}
-              `,
-            }) : ""}
             ${renderCommissioningTaskCard({
               taskKey: "autotune",
               title: "Flow autotune",
@@ -9910,6 +9881,35 @@ function renderWebServerLogsModal() {
                 ${renderSettingsStaticField("flowKiSuggested", "Voorgestelde Ki", "Ki corrigeert kleine afwijkingen langzaam weg.", flowKiSuggested, "oq-settings-field--compact")}
               `,
             })}
+            ${hasBoilerAssist ? renderCommissioningTaskCard({
+              taskKey: "boiler",
+              title: "Boiler power test",
+              copy: "Meet het effectieve boilervermogen bij stabiele flow en schrijf daarna een afgerond voorstel weg naar de boilerinstelling. Boilertest duurt meestal ongeveer 5 tot 10 minuten.",
+              subcopy: `Ingesteld boilervermogen: ${escapeHtml(boilerRatedPower)}`,
+              status: boilerStatusDisplay,
+              statusCopy: boilerTaskWaitingForCm100
+                ? "Wacht totdat CM100 actief is voordat je de boiler-test start."
+                : (boilerTaskRunning
+                  ? "De boiler-test draait op dit moment."
+                  : (cm100Active ? "CM100 staat klaar. Start de boiler-test wanneer je wilt." : "Start CM100 eerst en voer daarna de boilervermogentest uit.")),
+              progressTask: "boiler",
+              actions: `
+                ${state.entities.boilerPowerTestStart || state.entities.boilerPowerTestAbort ? renderNamedToggleActionButton({
+                  active: boilerTaskRunning,
+                  startKey: "boilerPowerTestStart",
+                  stopKey: "boilerPowerTestAbort",
+                  startLabel: "Boiler test starten",
+                  stopLabel: "Boiler test stoppen",
+                  startDisabled: boilerBusy || boilerStartDisabled,
+                  stopDisabled: boilerBusy || boilerAbortDisabled,
+                }) : ""}
+                ${state.entities.boilerPowerTestApply ? renderNamedActionButton("boilerPowerTestApply", "Toepassen", "oq-helper-button oq-helper-button--ghost", boilerBusy || boilerApplyDisabled) : ""}
+              `,
+              metrics: `
+                ${renderSettingsStaticField("boilerHeatPower", "Actueel vermogen", "Live meting tijdens de boiler-test.", boilerHeatPower)}
+                ${renderSettingsStaticField("boilerPowerTestResult", "Gemeten testresultaat", "Afgerond resultaat van de laatste boiler-test.", getSettingsStatValue("boilerPowerTestResult"))}
+              `,
+            }) : ""}
           </div>
 
           <div class="oq-helper-modal-actions">
