@@ -1759,18 +1759,27 @@
     }
 
     const boilerPresent = isEntityActive("boilerCvAssistEnabled");
+    const boilerPowerEntityAvailable = hasEntity("boilerRatedHeatPower");
     const boilerMeta = getNumberMeta("boilerRatedHeatPower");
     const boilerValue = getInputDraftValue("boilerRatedHeatPower");
     const boilerBusy = state.loadingEntities || state.busyAction === "switch-boilerCvAssistEnabled";
     const boilerDisabledHint = "Zet CV-ketel/boiler aanwezig aan om het vermogen in te stellen.";
+    const boilerPowerMissingHint = "Deze firmware levert nog geen bewerkbare boilervermogensinstelling.";
     const boilerPowerControl = boilerPresent
-      ? renderNumberInputControl({
-          key: "boilerRatedHeatPower",
-          value: boilerValue,
-          meta: boilerMeta,
-          controlClass: "oq-helper-control oq-helper-control--suffix oq-settings-boiler-power-control",
-          unitMarkup: `<span class="oq-helper-unit-chip">W</span>`,
-        })
+      ? (boilerPowerEntityAvailable
+        ? renderNumberInputControl({
+            key: "boilerRatedHeatPower",
+            value: boilerValue,
+            meta: boilerMeta,
+            controlClass: "oq-helper-control oq-helper-control--suffix oq-settings-boiler-power-control",
+            unitMarkup: `<span class="oq-helper-unit-chip">W</span>`,
+          })
+        : `
+          <div class="oq-settings-boiler-power-empty">
+            <strong>Niet beschikbaar</strong>
+            <p>${escapeHtml(boilerPowerMissingHint)}</p>
+          </div>
+        `)
       : `
         <div class="oq-settings-boiler-power-empty">
           <strong>Niet actief</strong>
@@ -1828,8 +1837,12 @@
                 ${boilerPowerControl}
               </div>
             `,
-            boilerPresent ? "oq-settings-field--compact" : "oq-settings-field--compact is-disabled",
-            `<p class="oq-settings-boiler-power-note">${escapeHtml(boilerPresent ? "Je kunt deze waarde altijd handmatig aanpassen." : boilerDisabledHint)}</p>`,
+            boilerPresent && boilerPowerEntityAvailable ? "oq-settings-field--compact" : "oq-settings-field--compact is-disabled",
+            `<p class="oq-settings-boiler-power-note">${escapeHtml(
+              boilerPresent
+                ? (boilerPowerEntityAvailable ? "Je kunt deze waarde altijd handmatig aanpassen." : boilerPowerMissingHint)
+                : boilerDisabledHint,
+            )}</p>`,
           )}
         </div>
       `,

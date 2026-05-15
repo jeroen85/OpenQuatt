@@ -886,6 +886,9 @@
   }
 
   function getConnectivityStatus() {
+    if (hasEntity("status") && !isEntityActive("status")) {
+      return "Offline";
+    }
     if (state.deviceReconnectMode) {
       return isDeviceReconnectRecovering() ? "Verbonden" : "Bezig";
     }
