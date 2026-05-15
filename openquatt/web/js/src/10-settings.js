@@ -1464,7 +1464,8 @@
     const boilerControls = Boolean(state.entities.boilerPowerTestStart || state.entities.boilerPowerTestAbort || state.entities.boilerPowerTestApply);
     const boilerPending = Boolean(state.pendingBoilerPowerTestStart);
     const boilerTaskLocked = state.commissioningTaskLock === "boiler";
-    const boilerTaskRunning = boilerActive || boilerPending || boilerTaskLocked || isCommissioningTaskStatusBusy(boilerStatus);
+    const boilerTaskWaitingForCm100 = isCommissioningTaskStatusWaitingForCm100(boilerStatus);
+    const boilerTaskRunning = (boilerActive || boilerPending || boilerTaskLocked || isCommissioningTaskStatusActive(boilerStatus)) && !boilerTaskWaitingForCm100;
     const boilerRatedPower = getSettingsStatValue("boilerRatedHeatPower");
     const boilerHeatPowerRaw = getSettingsStatValue("boilerHeatPower");
     const boilerHeatPowerNumeric = getEntityNumericValue("boilerHeatPower");
@@ -1480,26 +1481,31 @@
     const autotuneControls = Boolean(state.entities.flowAutotuneStart || state.entities.flowAutotuneAbort || state.entities.flowAutotuneApply);
     const autotunePending = Boolean(state.pendingFlowAutotuneStart);
     const autotuneTaskLocked = state.commissioningTaskLock === "autotune";
-    const autotuneTaskRunning = autotunePending || autotuneTaskLocked || isCommissioningTaskStatusBusy(autotuneStatus);
+    const autotuneTaskWaitingForCm100 = isCommissioningTaskStatusWaitingForCm100(autotuneStatus);
+    const autotuneTaskRunning = (autotunePending || autotuneTaskLocked || isCommissioningTaskStatusActive(autotuneStatus)) && !autotuneTaskWaitingForCm100;
     const flowKpSuggested = getSettingsStatValue("flowKpSuggested", { decimals: 5, trimTrailingZeros: true });
     const flowKiSuggested = getSettingsStatValue("flowKiSuggested", { decimals: 5, trimTrailingZeros: true });
     const boilerResultReady = /DONE|APPLIED/.test(String(boilerStatus || "").toUpperCase());
     const autotuneResultReady = /DONE|APPLIED/.test(String(autotuneStatus || "").toUpperCase());
     const boilerStatusDisplay = cm100Active
-      ? (boilerTaskRunning
-        ? boilerProgress.phase
-        : (boilerResultReady ? "Klaar om toe te passen" : "Klaar om te starten"))
+      ? (boilerTaskWaitingForCm100
+        ? "Wachten op CM100"
+        : (boilerTaskRunning
+          ? boilerProgress.phase
+          : (boilerResultReady ? "Klaar om toe te passen" : "Klaar om te starten")))
       : "Wachten op CM100";
     const autotuneStatusDisplay = cm100Active
-      ? (autotuneTaskRunning
-        ? autotuneProgress.phase
-        : (autotuneResultReady ? "Klaar om toe te passen" : "Klaar om te starten"))
+      ? (autotuneTaskWaitingForCm100
+        ? "Wachten op CM100"
+        : (autotuneTaskRunning
+          ? autotuneProgress.phase
+          : (autotuneResultReady ? "Klaar om toe te passen" : "Klaar om te starten")))
       : "Wachten op CM100";
-    const boilerStartDisabled = !cm100Active || boilerBusy || !boilerControls || autotuneTaskRunning || boilerTaskRunning || autotuneTaskLocked;
-    const boilerAbortDisabled = boilerBusy || !(boilerTaskRunning || boilerTaskLocked);
+    const boilerStartDisabled = !cm100Active || boilerBusy || !boilerControls || autotuneTaskRunning || boilerTaskRunning || autotuneTaskLocked || boilerPending;
+    const boilerAbortDisabled = boilerBusy || !(boilerTaskRunning || boilerTaskLocked || boilerPending);
     const boilerApplyDisabled = boilerBusy || boilerStartDisabled || !boilerResultReady || autotuneTaskRunning;
-    const autotuneStartDisabled = !cm100Active || autotuneBusy || !autotuneControls || boilerTaskRunning || autotuneTaskRunning || boilerTaskLocked;
-    const autotuneAbortDisabled = autotuneBusy || !(autotuneTaskRunning || autotuneTaskLocked);
+    const autotuneStartDisabled = !cm100Active || autotuneBusy || !autotuneControls || boilerTaskRunning || autotuneTaskRunning || boilerTaskLocked || autotunePending;
+    const autotuneAbortDisabled = autotuneBusy || !(autotuneTaskRunning || autotuneTaskLocked || autotunePending);
     const autotuneApplyDisabled = autotuneBusy || autotuneStartDisabled || !autotuneResultReady || boilerTaskRunning;
 
     if (cm100Pending && cm100Active) {
@@ -1531,11 +1537,11 @@
             </div>
             <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit service-stand">×</button>
           </div>
-          <p class="oq-settings-commissioning-modal-copy oq-settings-commissioning-modal-copy--lead">Open de service-stand om testen en afstelling uit te voeren.</p>
+          <p class="oq-settings-commissioning-modal-copy oq-settings-commissioning-modal-copy--lead">Open de service-stand (controlmode CM100) om testen en afstelling uit te voeren.</p>
           <div class="oq-settings-commissioning-hero">
             <div class="oq-settings-commissioning-hero-actions">
-              ${state.entities.commissioningCm100Start ? renderNamedActionButton("commissioningCm100Start", "CM100 starten", "oq-helper-button oq-helper-button--primary", cm100StartDisabled) : ""}
-              ${state.entities.commissioningCm100Stop ? renderNamedActionButton("commissioningCm100Stop", "CM100 stoppen", "oq-helper-button oq-helper-button--ghost", cm100StopDisabled) : ""}
+              ${state.entities.commissioningCm100Start ? renderNamedActionButton("commissioningCm100Start", "Service starten", "oq-helper-button oq-helper-button--primary", cm100StartDisabled) : ""}
+              ${state.entities.commissioningCm100Stop ? renderNamedActionButton("commissioningCm100Stop", "Service stoppen", "oq-helper-button oq-helper-button--ghost", cm100StopDisabled) : ""}
             </div>
           </div>
 
@@ -1546,9 +1552,11 @@
               copy: "Meet het effectieve boilervermogen bij stabiele flow en schrijf daarna een afgerond voorstel weg naar de boilerinstelling. Boilertest duurt meestal ongeveer 5 tot 10 minuten.",
               subcopy: `Ingesteld boilervermogen: ${escapeHtml(boilerRatedPower)}`,
               status: boilerStatusDisplay,
-              statusCopy: boilerTaskRunning
-                ? "De boiler-test draait op dit moment."
-                : (cm100Active ? "CM100 staat klaar. Start de boiler-test wanneer je wilt." : "Start CM100 eerst en voer daarna de boilervermogentest uit."),
+              statusCopy: boilerTaskWaitingForCm100
+                ? "Wacht totdat CM100 actief is voordat je de boiler-test start."
+                : (boilerTaskRunning
+                  ? "De boiler-test draait op dit moment."
+                  : (cm100Active ? "CM100 staat klaar. Start de boiler-test wanneer je wilt." : "Start CM100 eerst en voer daarna de boilervermogentest uit.")),
               progressTask: "boiler",
               actions: `
                 ${state.entities.boilerPowerTestStart || state.entities.boilerPowerTestAbort ? renderNamedToggleActionButton({
@@ -1573,9 +1581,11 @@
               copy: "Bereken een voorstel voor de flowregeling en pas dat daarna toe in de installatie-instellingen. Autotune duurt meestal ongeveer 5 tot 10 minuten.",
               subcopy: "Na toepassen worden de flow-instellingen bijgewerkt.",
               status: autotuneStatusDisplay,
-              statusCopy: autotuneTaskRunning
-                ? "Autotune draait op dit moment."
-                : (cm100Active ? "CM100 staat klaar. Start de autotune wanneer je wilt." : "Start CM100 eerst en voer daarna autotune uit."),
+              statusCopy: autotuneTaskWaitingForCm100
+                ? "Wacht totdat CM100 actief is voordat je autotune start."
+                : (autotuneTaskRunning
+                  ? "Autotune draait op dit moment."
+                  : (cm100Active ? "CM100 staat klaar. Start de autotune wanneer je wilt." : "Start CM100 eerst en voer daarna autotune uit.")),
               progressTask: "autotune",
               actions: `
                 ${state.entities.flowAutotuneStart || state.entities.flowAutotuneAbort ? renderNamedToggleActionButton({
@@ -1625,7 +1635,7 @@
     return renderSettingsSection(
       "Installatie",
       "Service & commissioning",
-      "Open de service-stand om de installatie klaar te zetten voor testen en afstelling.",
+      "Open de service-stand (controlmode CM100) om de installatie klaar te zetten voor testen en afstelling.",
       `
         <div class="oq-settings-commissioning-teaser">
           <div class="oq-settings-commissioning-teaser-copy">
@@ -1636,7 +1646,7 @@
             <div class="oq-settings-commissioning-teaser-status">
               <span class="oq-settings-commissioning-teaser-status-label">Huidige status</span>
               <strong>${escapeHtml(cm100Status)}</strong>
-              <p>${escapeHtml(cm100Active ? "CM100 staat klaar voor gebruik." : "Start CM100 om de service-stand te openen.")}</p>
+              <p>${escapeHtml(cm100Active ? "De service-stand staat klaar voor gebruik." : "Start de service-stand om deze te openen.")}</p>
             </div>
             <button
               class="oq-helper-button oq-helper-button--primary oq-settings-commissioning-teaser-button"
