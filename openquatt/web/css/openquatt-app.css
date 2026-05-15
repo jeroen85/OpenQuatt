@@ -2719,7 +2719,7 @@ body.oq-surface-native {
 
 .oq-settings-commissioning-card {
   display: grid;
-  gap: 14px;
+  gap: 16px;
   padding: 18px;
   border-radius: var(--oq-helper-radius-lg);
   border: 1px solid var(--oq-helper-line);
@@ -2732,7 +2732,7 @@ body.oq-surface-native {
 
 .oq-settings-commissioning-card-head {
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
 .oq-settings-commissioning-card-copy {
@@ -2761,7 +2761,7 @@ body.oq-surface-native {
   gap: 10px;
   justify-content: flex-start;
   align-items: center;
-  margin-top: 2px;
+  margin-top: 6px;
 }
 
 .oq-settings-commissioning-card-actions .oq-helper-button {
@@ -2770,7 +2770,7 @@ body.oq-surface-native {
 }
 
 .oq-settings-commissioning-card-status {
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 .oq-settings-boiler-shell {

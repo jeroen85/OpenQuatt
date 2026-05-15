@@ -44,6 +44,29 @@
     return text || "—";
   }
 
+  function getSettingsTextStatValue(key, fallback = "—") {
+    const entity = state.entities[key];
+    if (!entity) {
+      return fallback;
+    }
+
+    const text = String(entity.state ?? entity.value ?? "").trim();
+    if (!text || text === "0" || text === "—") {
+      return fallback;
+    }
+
+    return text;
+  }
+
+  function getCommissioningStatusValue() {
+    const rawStatus = getSettingsTextStatValue("commissioningStatus", "");
+    const cm100Active = isEntityActive("cm100Active");
+    if (rawStatus) {
+      return rawStatus;
+    }
+    return cm100Active ? "CM100 READY" : "IDLE";
+  }
+
   function renderSettingsTrendStatsField() {
     if (!isEntityActive("trendHistoryEnabled") || !isEntityActive("trendHistoryFlashEnabled")) {
       return "";
@@ -600,7 +623,7 @@
       const valueNode = commissioningTeaser.querySelector(".oq-settings-quickstart-status-value");
       const copyNode = commissioningTeaser.querySelector(".oq-settings-quickstart-status-copy");
       const button = commissioningTeaser.querySelector('button[data-oq-action="open-cm100-commissioning-modal"]');
-      const cm100Status = getSettingsStatValue("commissioningStatus");
+      const cm100Status = getCommissioningStatusValue();
       const cm100Active = isEntityActive("cm100Active");
       if (valueNode && valueNode.textContent !== cm100Status) {
         valueNode.textContent = cm100Status;
@@ -843,6 +866,16 @@
     };
 
     if (!value || value === "—" || value === "UNKNOWN" || value === "UNAVAILABLE" || value === "NAN") {
+      return { phase: "Wachten", percent: 0 };
+    }
+
+    if (taskType !== "cm100" && (
+      value === "IDLE"
+      || value === "CM0 - STANDBY"
+      || value === "CM100 READY"
+      || value === "CM100 STOPPED"
+      || value === "GEPAUZEERD"
+    )) {
       return { phase: "Wachten", percent: 0 };
     }
 
@@ -1319,17 +1352,17 @@
 
   function renderSettingsCm100CommissioningModal() {
     const hasBoilerAssist = hasEntity("boilerCvAssistEnabled") && isEntityActive("boilerCvAssistEnabled");
-    const cm100Status = getSettingsStatValue("commissioningStatus");
+    const cm100Status = getCommissioningStatusValue();
     const cm100Active = isEntityActive("cm100Active");
     const cm100Busy = state.loadingEntities || state.busyAction === "commissioningCm100Start" || state.busyAction === "commissioningCm100Stop";
-    const boilerStatus = getSettingsStatValue("boilerPowerTestStatus");
+    const boilerStatus = getSettingsTextStatValue("boilerPowerTestStatus", "IDLE");
     const boilerActive = isEntityActive("boilerPowerTestActive");
     const boilerBusy = state.loadingEntities || state.busyAction === "boilerPowerTestStart" || state.busyAction === "boilerPowerTestAbort" || state.busyAction === "boilerPowerTestApply";
     const boilerControls = Boolean(state.entities.boilerPowerTestStart || state.entities.boilerPowerTestAbort || state.entities.boilerPowerTestApply);
     const boilerResult = getSettingsStatValue("boilerPowerTestResult");
     const boilerConfidence = getSettingsStatValue("boilerPowerTestConfidence");
     const boilerRatedPower = getSettingsStatValue("boilerRatedHeatPower");
-    const autotuneStatus = getSettingsStatValue("flowAutotuneStatus");
+    const autotuneStatus = getSettingsTextStatValue("flowAutotuneStatus", "IDLE");
     const autotuneBusy = state.loadingEntities || state.busyAction === "flowAutotuneStart" || state.busyAction === "flowAutotuneAbort" || state.busyAction === "flowAutotuneApply";
     const autotuneControls = Boolean(state.entities.flowAutotuneStart || state.entities.flowAutotuneAbort || state.entities.flowAutotuneApply);
     const flowKpSuggested = getSettingsStatValue("flowKpSuggested");
@@ -1432,7 +1465,7 @@
       return "";
     }
 
-    const cm100Status = getSettingsStatValue("commissioningStatus");
+    const cm100Status = getCommissioningStatusValue();
     const cm100Active = isEntityActive("cm100Active");
     const cm100OpenLabel = cm100Active ? "Service-stand bekijken" : "Service-stand openen";
 

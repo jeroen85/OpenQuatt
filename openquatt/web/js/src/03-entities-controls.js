@@ -2618,7 +2618,35 @@
     if (action === "press-named-button") {
       const buttonKey = String(button.dataset.buttonKey || "").trim();
       if (buttonKey) {
-        void triggerNamedButton(buttonKey);
+        const refreshKeys = [];
+        if (buttonKey === "commissioningCm100Start" || buttonKey === "commissioningCm100Stop") {
+          refreshKeys.push(
+            "commissioningStatus",
+            "cm100Active",
+            "boilerPowerTestStatus",
+            "boilerPowerTestActive",
+            "flowAutotuneStatus",
+          );
+        } else if (buttonKey === "boilerPowerTestStart" || buttonKey === "boilerPowerTestAbort" || buttonKey === "boilerPowerTestApply") {
+          refreshKeys.push(
+            "commissioningStatus",
+            "boilerPowerTestStatus",
+            "boilerPowerTestActive",
+            "boilerPowerTestResult",
+            "boilerPowerTestConfidence",
+            "boilerRatedHeatPower",
+          );
+        } else if (buttonKey === "flowAutotuneStart" || buttonKey === "flowAutotuneAbort" || buttonKey === "flowAutotuneApply") {
+          refreshKeys.push(
+            "commissioningStatus",
+            "flowAutotuneStatus",
+            "flowKpSuggested",
+            "flowKiSuggested",
+            "flowKp",
+            "flowKi",
+          );
+        }
+        void triggerNamedButton(buttonKey, refreshKeys.length ? { refreshKeys } : {});
       }
       return;
     }
@@ -3443,7 +3471,19 @@
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      state.systemModal = "";
+      const keepCommissioningModalOpen = [
+        "commissioningCm100Start",
+        "commissioningCm100Stop",
+        "boilerPowerTestStart",
+        "boilerPowerTestAbort",
+        "boilerPowerTestApply",
+        "flowAutotuneStart",
+        "flowAutotuneAbort",
+        "flowAutotuneApply",
+      ].includes(key);
+      if (!keepCommissioningModalOpen) {
+        state.systemModal = "";
+      }
       state.controlNotice = options.successNotice || `${entity.name} gestart.`;
       if (options.reconnectMode) {
         beginDeviceReconnect(options.reconnectMode);

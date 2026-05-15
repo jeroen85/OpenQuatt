@@ -6141,7 +6141,35 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     if (action === "press-named-button") {
       const buttonKey = String(button.dataset.buttonKey || "").trim();
       if (buttonKey) {
-        void triggerNamedButton(buttonKey);
+        const refreshKeys = [];
+        if (buttonKey === "commissioningCm100Start" || buttonKey === "commissioningCm100Stop") {
+          refreshKeys.push(
+            "commissioningStatus",
+            "cm100Active",
+            "boilerPowerTestStatus",
+            "boilerPowerTestActive",
+            "flowAutotuneStatus",
+          );
+        } else if (buttonKey === "boilerPowerTestStart" || buttonKey === "boilerPowerTestAbort" || buttonKey === "boilerPowerTestApply") {
+          refreshKeys.push(
+            "commissioningStatus",
+            "boilerPowerTestStatus",
+            "boilerPowerTestActive",
+            "boilerPowerTestResult",
+            "boilerPowerTestConfidence",
+            "boilerRatedHeatPower",
+          );
+        } else if (buttonKey === "flowAutotuneStart" || buttonKey === "flowAutotuneAbort" || buttonKey === "flowAutotuneApply") {
+          refreshKeys.push(
+            "commissioningStatus",
+            "flowAutotuneStatus",
+            "flowKpSuggested",
+            "flowKiSuggested",
+            "flowKp",
+            "flowKi",
+          );
+        }
+        void triggerNamedButton(buttonKey, refreshKeys.length ? { refreshKeys } : {});
       }
       return;
     }
@@ -6966,7 +6994,19 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      state.systemModal = "";
+      const keepCommissioningModalOpen = [
+        "commissioningCm100Start",
+        "commissioningCm100Stop",
+        "boilerPowerTestStart",
+        "boilerPowerTestAbort",
+        "boilerPowerTestApply",
+        "flowAutotuneStart",
+        "flowAutotuneAbort",
+        "flowAutotuneApply",
+      ].includes(key);
+      if (!keepCommissioningModalOpen) {
+        state.systemModal = "";
+      }
       state.controlNotice = options.successNotice || `${entity.name} gestart.`;
       if (options.reconnectMode) {
         beginDeviceReconnect(options.reconnectMode);
@@ -8210,6 +8250,29 @@ function renderWebServerLogsModal() {
     return text || "—";
   }
 
+  function getSettingsTextStatValue(key, fallback = "—") {
+    const entity = state.entities[key];
+    if (!entity) {
+      return fallback;
+    }
+
+    const text = String(entity.state ?? entity.value ?? "").trim();
+    if (!text || text === "0" || text === "—") {
+      return fallback;
+    }
+
+    return text;
+  }
+
+  function getCommissioningStatusValue() {
+    const rawStatus = getSettingsTextStatValue("commissioningStatus", "");
+    const cm100Active = isEntityActive("cm100Active");
+    if (rawStatus) {
+      return rawStatus;
+    }
+    return cm100Active ? "CM100 READY" : "IDLE";
+  }
+
   function renderSettingsTrendStatsField() {
     if (!isEntityActive("trendHistoryEnabled") || !isEntityActive("trendHistoryFlashEnabled")) {
       return "";
@@ -8766,7 +8829,7 @@ function renderWebServerLogsModal() {
       const valueNode = commissioningTeaser.querySelector(".oq-settings-quickstart-status-value");
       const copyNode = commissioningTeaser.querySelector(".oq-settings-quickstart-status-copy");
       const button = commissioningTeaser.querySelector('button[data-oq-action="open-cm100-commissioning-modal"]');
-      const cm100Status = getSettingsStatValue("commissioningStatus");
+      const cm100Status = getCommissioningStatusValue();
       const cm100Active = isEntityActive("cm100Active");
       if (valueNode && valueNode.textContent !== cm100Status) {
         valueNode.textContent = cm100Status;
@@ -9009,6 +9072,16 @@ function renderWebServerLogsModal() {
     };
 
     if (!value || value === "—" || value === "UNKNOWN" || value === "UNAVAILABLE" || value === "NAN") {
+      return { phase: "Wachten", percent: 0 };
+    }
+
+    if (taskType !== "cm100" && (
+      value === "IDLE"
+      || value === "CM0 - STANDBY"
+      || value === "CM100 READY"
+      || value === "CM100 STOPPED"
+      || value === "GEPAUZEERD"
+    )) {
       return { phase: "Wachten", percent: 0 };
     }
 
@@ -9485,17 +9558,17 @@ function renderWebServerLogsModal() {
 
   function renderSettingsCm100CommissioningModal() {
     const hasBoilerAssist = hasEntity("boilerCvAssistEnabled") && isEntityActive("boilerCvAssistEnabled");
-    const cm100Status = getSettingsStatValue("commissioningStatus");
+    const cm100Status = getCommissioningStatusValue();
     const cm100Active = isEntityActive("cm100Active");
     const cm100Busy = state.loadingEntities || state.busyAction === "commissioningCm100Start" || state.busyAction === "commissioningCm100Stop";
-    const boilerStatus = getSettingsStatValue("boilerPowerTestStatus");
+    const boilerStatus = getSettingsTextStatValue("boilerPowerTestStatus", "IDLE");
     const boilerActive = isEntityActive("boilerPowerTestActive");
     const boilerBusy = state.loadingEntities || state.busyAction === "boilerPowerTestStart" || state.busyAction === "boilerPowerTestAbort" || state.busyAction === "boilerPowerTestApply";
     const boilerControls = Boolean(state.entities.boilerPowerTestStart || state.entities.boilerPowerTestAbort || state.entities.boilerPowerTestApply);
     const boilerResult = getSettingsStatValue("boilerPowerTestResult");
     const boilerConfidence = getSettingsStatValue("boilerPowerTestConfidence");
     const boilerRatedPower = getSettingsStatValue("boilerRatedHeatPower");
-    const autotuneStatus = getSettingsStatValue("flowAutotuneStatus");
+    const autotuneStatus = getSettingsTextStatValue("flowAutotuneStatus", "IDLE");
     const autotuneBusy = state.loadingEntities || state.busyAction === "flowAutotuneStart" || state.busyAction === "flowAutotuneAbort" || state.busyAction === "flowAutotuneApply";
     const autotuneControls = Boolean(state.entities.flowAutotuneStart || state.entities.flowAutotuneAbort || state.entities.flowAutotuneApply);
     const flowKpSuggested = getSettingsStatValue("flowKpSuggested");
@@ -9598,7 +9671,7 @@ function renderWebServerLogsModal() {
       return "";
     }
 
-    const cm100Status = getSettingsStatValue("commissioningStatus");
+    const cm100Status = getCommissioningStatusValue();
     const cm100Active = isEntityActive("cm100Active");
     const cm100OpenLabel = cm100Active ? "Service-stand bekijken" : "Service-stand openen";
 
