@@ -8334,7 +8334,10 @@ function renderWebServerLogsModal() {
     return renderSettingsFieldCard(fieldKey, title, copy, `<div class="oq-settings-static-value">${escapeHtml(value)}</div>`, className);
   }
 
-  function getSettingsStatValue(key) {
+  function getSettingsStatValue(key, options = {}) {
+    const config = typeof options === "number"
+      ? { decimals: options }
+      : (options || {});
     const entity = state.entities[key];
     if (!entity) {
       return "—";
@@ -8342,8 +8345,14 @@ function renderWebServerLogsModal() {
 
     const numeric = Number(entity.value);
     if (!Number.isNaN(numeric)) {
-      const decimals = Number.isInteger(numeric) ? 0 : 1;
-      return `${numeric.toFixed(decimals)}${entity.uom ? ` ${entity.uom}` : ""}`;
+      const decimals = Number.isInteger(numeric)
+        ? 0
+        : Number.isFinite(config.decimals) ? config.decimals : 1;
+      let formatted = numeric.toFixed(Math.max(0, decimals));
+      if (config.trimTrailingZeros && formatted.includes(".")) {
+        formatted = formatted.replace(/\.?0+$/, "");
+      }
+      return `${formatted}${entity.uom ? ` ${entity.uom}` : ""}`;
     }
 
     const text = String(entity.state ?? entity.value ?? "").trim();
@@ -9231,6 +9240,17 @@ function renderWebServerLogsModal() {
   function getCommissioningProgressModel(statusText = "", task = "") {
     const value = String(statusText || "").trim().toUpperCase();
     const taskType = String(task || "").trim().toLowerCase();
+    const tokens = value.split(/[^A-Z0-9]+/).filter(Boolean);
+    const matchesStatus = (needle) => {
+      const normalizedNeedle = String(needle || "").trim().toUpperCase();
+      if (!normalizedNeedle) {
+        return false;
+      }
+      return value === normalizedNeedle
+        || value.startsWith(`${normalizedNeedle}:`)
+        || value.startsWith(`${normalizedNeedle} `)
+        || tokens.includes(normalizedNeedle);
+    };
 
     const progressMaps = {
       boiler: [
@@ -9245,10 +9265,10 @@ function renderWebServerLogsModal() {
       autotune: [
         { match: ["REQUESTED", "WAITING_FOR_CM100", "REFUSED"], phase: "Voorbereiden", percent: 10 },
         { match: ["WAITING_FOR_FLOW", "SETTLING"], phase: "Flow stabiliseren", percent: 26 },
-        { match: ["STEP", "STEP1"], phase: "Staptest 1", percent: 42 },
         { match: ["STEP2"], phase: "Staptest 2", percent: 56 },
-        { match: ["VALIDATING_SETTLING"], phase: "Validatie stabiliseren", percent: 70 },
-        { match: ["VALIDATING"], phase: "Valideren", percent: 84 },
+        { match: ["STEP", "STEP1"], phase: "Staptest 1", percent: 42 },
+        { match: ["VALIDATING_SETTLING"], phase: "Flow valideren", percent: 70 },
+        { match: ["VALIDATING"], phase: "Flow valideren", percent: 84 },
         { match: ["RECOVERING"], phase: "Herstellen", percent: 92 },
         { match: ["DONE", "APPLIED"], phase: "Klaar", percent: 100 },
         { match: ["ABORTED", "FAILED", "ABORT"], phase: "Afgebroken", percent: 100 },
@@ -9279,11 +9299,11 @@ function renderWebServerLogsModal() {
       return { phase: "Wachten", percent: 0 };
     }
 
-      const selected = progressMaps[taskType] || [];
-      const match = selected.find((item) => item.match.some((needle) => value.includes(needle)));
-      if (match) {
-        return match;
-      }
+    const selected = progressMaps[taskType] || [];
+    const match = selected.find((item) => item.match.some((needle) => matchesStatus(needle)));
+    if (match) {
+      return match;
+    }
 
     if (value.includes("DONE") || value.includes("APPLIED")) {
       return { phase: "Klaar", percent: 100 };
@@ -9750,7 +9770,6 @@ function renderWebServerLogsModal() {
     const boilerControls = Boolean(state.entities.boilerPowerTestStart || state.entities.boilerPowerTestAbort || state.entities.boilerPowerTestApply);
     const boilerPending = Boolean(state.pendingBoilerPowerTestStart);
     const boilerTaskLocked = state.commissioningTaskLock === "boiler";
-    const boilerTaskWaiting = isCommissioningTaskStatusWaitingForCm100(boilerStatus);
     const boilerTaskRunning = boilerActive || boilerPending || boilerTaskLocked || isCommissioningTaskStatusBusy(boilerStatus);
     const boilerRatedPower = getSettingsStatValue("boilerRatedHeatPower");
     const boilerHeatPowerRaw = getSettingsStatValue("boilerHeatPower");
@@ -9767,10 +9786,9 @@ function renderWebServerLogsModal() {
     const autotuneControls = Boolean(state.entities.flowAutotuneStart || state.entities.flowAutotuneAbort || state.entities.flowAutotuneApply);
     const autotunePending = Boolean(state.pendingFlowAutotuneStart);
     const autotuneTaskLocked = state.commissioningTaskLock === "autotune";
-    const autotuneTaskWaiting = isCommissioningTaskStatusWaitingForCm100(autotuneStatus);
     const autotuneTaskRunning = autotunePending || autotuneTaskLocked || isCommissioningTaskStatusBusy(autotuneStatus);
-    const flowKpSuggested = getSettingsStatValue("flowKpSuggested");
-    const flowKiSuggested = getSettingsStatValue("flowKiSuggested");
+    const flowKpSuggested = getSettingsStatValue("flowKpSuggested", { decimals: 5, trimTrailingZeros: true });
+    const flowKiSuggested = getSettingsStatValue("flowKiSuggested", { decimals: 5, trimTrailingZeros: true });
     const boilerResultReady = /DONE|APPLIED/.test(String(boilerStatus || "").toUpperCase());
     const autotuneResultReady = /DONE|APPLIED/.test(String(autotuneStatus || "").toUpperCase());
     const boilerStatusDisplay = cm100Active
