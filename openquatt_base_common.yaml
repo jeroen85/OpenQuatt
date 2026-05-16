@@ -22,6 +22,7 @@ esphome:
     - ${oq_timers_header}
     - ${oq_cic_compatibility_logic_header}
     - ${oq_cic_compatibility_protocol_header}
+    - ${oq_supervisory_logic_header}
   platformio_options:
     extra_scripts:
       - pre:../../../scripts/normalize_factory_merge_inputs.py

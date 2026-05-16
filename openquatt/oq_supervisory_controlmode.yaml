@@ -4,6 +4,7 @@
 #
 # Goal:
 #   Determines the active Control Mode (CM) as central state machine and publishes the system decision to the other packages.
+#   The phase-4 contract for inputs, state, outputs, reasons and timer semantics is documented in docs/supervisory-contract.md.
 #
 # Role in architecture:
 #   Single owner of Control Mode; coordinates subsystems by selecting CM (CM0/CM1/CM2/CM3/CM5/CM98/CM100).
@@ -11,7 +12,7 @@
 # What this package DOES do:
 #   - Determines base mode (idle / heating / cooling / frost) based on demand and conditions
 #   - Applies flow override: with insufficient flow -> CM1 (holding)
-#   - Supports test override: Force CM0/CM1 and Diagnostic Force CM98 (auto-expire)
+#   - Supports test override: Force CM0/CM1/CM98
 #   - Exposes CM100 commissioning when a service task is explicitly requested
 #   - Automatically switches CM2 <-> CM3 based on thermal deficit (`oq_P_deficit_w`) with timers/hysteresis
 #   - Publishes current CM as text_sensor (for example 'CM2', 'CM3', 'CM5', 'CM100')
@@ -131,15 +132,7 @@ globals:
 
   # ----------------------------
   # Supervisory override (test/commissioning)
-  # AUTO / FORCE_CM0 / FORCE_CM1 / FORCE_CM98_DIAG (auto-expire)
-  - id: oq_override_last_mode
-    type: int
-    restore_value: false
-    initial_value: '0'  # 0=AUTO,1=CM0,2=CM1,3=CM98_DIAG
-  - id: oq_override_cm98_since_ms
-    type: uint32_t
-    restore_value: false
-    initial_value: '0'
+  # AUTO / FORCE_CM0 / FORCE_CM1 / FORCE_CM98
   - id: oq_control_mode_code
     type: int
     restore_value: false
@@ -708,26 +701,6 @@ interval:
               last_value = value;
             }
           };
-          auto cm_code_to_id = [](int cm) -> const char* {
-            if (cm == 100) return "CM100";
-            if (cm == 98) return "CM98";
-            if (cm == 5) return "CM5";
-            if (cm == 3) return "CM3";
-            if (cm == 2) return "CM2";
-            if (cm == 1) return "CM1";
-            return "CM0";
-          };
-          auto cm_code_to_label = [&](int cm) -> std::string {
-            const char* cm_id = cm_code_to_id(cm);
-            if (strcmp(cm_id, "CM100") == 0) return std::string("CM100 - Commissioning");
-            if (strcmp(cm_id, "CM0") == 0) return std::string("CM0 - Standby");
-            if (strcmp(cm_id, "CM1") == 0) return std::string("CM1 - Preflow/Postflow");
-            if (strcmp(cm_id, "CM2") == 0) return std::string("CM2 - Heating - Heat Pump Only");
-            if (strcmp(cm_id, "CM3") == 0) return std::string("CM3 - Heating - Heat Pump + Boiler");
-            if (strcmp(cm_id, "CM5") == 0) return std::string("CM5 - Cooling");
-            if (strcmp(cm_id, "CM98") == 0) return std::string("CM98 - Anti-Freeze Protection - Water Circulation");
-            return std::string("Unknown");
-          };
           auto ms_window_active = [&](uint32_t until_ms)->bool {
             if (until_ms == 0) return false;
             return static_cast<uint32_t>(until_ms - now_ms) < 0x80000000UL;
@@ -1049,24 +1022,23 @@ interval:
           // -------------------------------------------------
           const float outside_c = id(outside_temp_selected).state;
 
-          bool frost = false;
-          if (!thermal_req) {
-            if (isnan(outside_c)) {
-              frost = !frost_nan_grace_active; // fail-safe after startup grace
-            } else {
-              if (id(oq_cm_frost_prev)) {
-                frost = (outside_c < ${oq_cm_frost_off_c});
-              } else {
-                frost = (outside_c < ${oq_cm_frost_on_c});
-              }
-            }
-          }
+          const oq_supervisory::FrostConfig frost_cfg{
+            .on_c = ${oq_cm_frost_on_c},
+            .off_c = ${oq_cm_frost_off_c},
+          };
+          const bool frost = oq_supervisory::compute_frost(
+              thermal_req,
+              outside_c,
+              id(oq_cm_frost_prev),
+              frost_nan_grace_active,
+              frost_cfg);
           id(oq_cm_frost_prev) = frost;
 
           // -------------------------------------------------
           // 4) CM selection with CM1 timer (pre/postflow) + flow interlock
           // -------------------------------------------------
           const char* cur_cm = id(oq_control_mode).state.c_str();
+          const int cur_cm_code = oq_supervisory::control_mode_id_to_code(cur_cm);
           std::string cm_transition_reason = "control decision updated";
           auto resolve_desired_cm = [&]() -> int {
             // Helper: start CM1 window
@@ -1083,16 +1055,12 @@ interval:
             };
 
             // Determine base target (without CM1 timer)
-            int base_target = 0; // CM0
-            if (cooling_req) base_target = 5;     // CM5 desired
-            else if (heating_req) base_target = 2; // CM2 desired
-            else if (frost)  base_target = 98;     // CM98 desired
-            else             base_target = 0;      // CM0
-
-            // Apply flow interlock: if thermal output is requested but low-flow fault => hold in CM1.
-            if (thermal_req && (id(oq_lowflow_fault_active) || flow_low)) {
-              base_target = 1; // force CM1 as safe holding state
-            }
+            const int base_target = oq_supervisory::compute_base_target(
+                cooling_req,
+                heating_req,
+                frost,
+                id(oq_lowflow_fault_active),
+                flow_low);
 
             // Handle CM1 window:
             // - If we're currently in CM1 and timer is running, keep CM1 until expiry.
@@ -1102,57 +1070,33 @@ interval:
             // Supervisory override (test/commissioning)
             // - Auto (normal logic)
             // - Force CM0 / Force CM1
-            // - Force CM98 (auto-expire after 30 min)
-            int override_mode = id(oq_cm_override).active_index().value_or(0); // 0=AUTO,1=CM0,2=CM1,3=CM98_DIAG
-            if (override_mode < 0 || override_mode > 3) override_mode = 0;
-            // Track entry into CM98 diagnostic override for auto-expire
-            if (override_mode != id(oq_override_last_mode)) {
-              id(oq_override_last_mode) = override_mode;
-              id(oq_override_cm98_since_ms) = (override_mode == 3) ? now_ms : 0;
-            }
-            // Auto-expire Diagnostic CM98 after 30 minutes
-            if (override_mode == 3) {
-              const uint32_t MAX_MS = (uint32_t)(${oq_cm98_diag_max_s}UL * 1000UL);
-              if (id(oq_override_cm98_since_ms) != 0 && (uint32_t)(now_ms - id(oq_override_cm98_since_ms)) >= MAX_MS) {
-                ESP_LOGI("supervisory", "CM98 diagnostic override expired after %u s; returning to Auto.",
-                         (unsigned int) ${oq_cm98_diag_max_s});
-                auto call = id(oq_cm_override).make_call();
-                call.set_option("Auto");
-                call.perform();
-                override_mode = 0;
-                id(oq_override_last_mode) = 0;
-                id(oq_override_cm98_since_ms) = 0;
-              }
-            }
+            // - Force CM98
+            int override_mode = oq_supervisory::normalize_override_mode(
+                id(oq_cm_override).active_index().value_or(0)); // 0=AUTO,1=CM0,2=CM1,3=CM98
 
-            int desired_local = 0;
-            if (override_mode != 0) {
+            int desired_local = oq_supervisory::CONTROL_MODE_CM0;
+            const bool commissioning_in_progress =
+                id(oq_commissioning_request_pending) || id(oq_commissioning_active);
+            const int override_or_commissioning = oq_supervisory::resolve_override_or_commissioning(
+                override_mode,
+                commissioning_in_progress);
+            if (override_or_commissioning >= 0) {
               // Clear transition timers to avoid surprises when returning to Auto
               id(oq_cm1_until_ms) = 0;
               id(oq_cm1_next_after) = 0;
               id(oq_cm3_need_since_ms) = 0;
               id(oq_cm3_demote_since_ms) = 0;
+              desired_local = override_or_commissioning;
               if (override_mode == 1) {
-                desired_local = 0;       // CM0
                 cm_transition_reason = "supervisory override: Force CM0";
               } else if (override_mode == 2) {
-                desired_local = 1;  // CM1
                 cm_transition_reason = "supervisory override: Force CM1";
               } else if (override_mode == 3) {
-                desired_local = 98; // CM98
                 cm_transition_reason = "supervisory override: Force CM98";
+              } else {
+                cm_transition_reason = "commissioning task active";
               }
             } else {
-              const bool commissioning_in_progress =
-                  id(oq_commissioning_request_pending) || id(oq_commissioning_active);
-              if (commissioning_in_progress) {
-                id(oq_cm1_until_ms) = 0;
-                id(oq_cm1_next_after) = 0;
-                id(oq_cm3_need_since_ms) = 0;
-                id(oq_cm3_demote_since_ms) = 0;
-                desired_local = 100;
-                cm_transition_reason = "commissioning task active";
-              } else {
               // Snapshot CM1 timer state (before we touch globals)
               const bool cm1_timer_active  = (id(oq_cm1_until_ms) != 0);
               const bool cm1_timer_running = cm1_timer_active && now_before_until;
@@ -1160,35 +1104,18 @@ interval:
               const int  cm1_next_after    = id(oq_cm1_next_after);
 
               // 1) If we're in CM1 and timer is still running -> stay CM1
-              if (cm1_timer_running && strcmp(cur_cm, "CM1") == 0) {
-                desired_local = 1;
+              if (cm1_timer_running && cur_cm_code == oq_supervisory::CONTROL_MODE_CM1) {
+                desired_local = oq_supervisory::CONTROL_MODE_CM1;
                 cm_transition_reason = "CM1 hold timer active";
 
                   // 2) If we're in CM1 and timer just expired -> advance to next_after
-                  } else if (cm1_timer_expired && strcmp(cur_cm, "CM1") == 0) {
-                    if (cm1_next_after == 2) {
-                      if (heating_req && base_target == 2) desired_local = 2;
-                      else if (base_target == 98)          desired_local = 98;
-                      else                                 desired_local = 0;
-                    } else if (cm1_next_after == 5) {
-                      if (cooling_req && base_target == 5) desired_local = 5;
-                      else if (base_target == 98)          desired_local = 98;
-                      else                                 desired_local = 0;
-                    } else if (cm1_next_after == 0) {
-                      // Re-evaluate heating/frost when postflow expires.
-                      // If demand recovered during CM1-postflow, resume CM2/CM5 directly
-                      // instead of forcing an avoidable CM0 hop (anti-flip/chatter).
-                      // Scope this behavior to heating-curve strategy only; keep
-                      // Power House behavior unchanged.
-                      if (cooling_req && base_target == 5) desired_local = 5;
-                      else if (strategy_active_code == 2 && heating_req && base_target == 2) desired_local = 2;
-                      else if (base_target == 98)          desired_local = 98;
-                      else                                 desired_local = 0;
-                    } else if (cm1_next_after == 98) {
-                      desired_local = 98;
-                    } else {
-                      desired_local = (base_target == 5) ? 5 : ((base_target == 2) ? 2 : (base_target == 98 ? 98 : 0));
-                    }
+                  } else if (cm1_timer_expired && cur_cm_code == oq_supervisory::CONTROL_MODE_CM1) {
+                    desired_local = oq_supervisory::resolve_cm1_expiry_target(
+                        cm1_next_after,
+                        cooling_req,
+                        heating_req,
+                        base_target,
+                        strategy_active_code);
 
                     cm_transition_reason =
                         (desired_local == 2) ? "CM1 hold expired -> heating" :
@@ -1208,62 +1135,56 @@ interval:
                   id(oq_cm1_next_after) = 0;
                 }
 
+                const auto normal_result = oq_supervisory::resolve_normal_transition(
+                    oq_supervisory::NormalTransitionInput{
+                        .current_mode = cur_cm_code,
+                        .cooling_request_active = cooling_req,
+                        .heating_request_active = heating_req,
+                        .base_target = base_target,
+                    });
+                desired_local = normal_result.desired_mode;
+
+                if (normal_result.start_cm1_next_after >= 0) {
+                  start_cm1(normal_result.start_cm1_next_after);
+                }
+
                 if (cooling_req) {
-                  if (base_target == 5) {
-                    if (strcmp(cur_cm, "CM5") == 0) {
-                      desired_local = 5;
-                      cm_transition_reason = "cooling already active";
-                    } else {
-                      start_cm1(5);
-                      desired_local = 1;
-                      cm_transition_reason = "cooling request waiting for CM1 hold";
-                    }
-                  } else {
-                    desired_local = 1; // flow interlock holding state
-                    cm_transition_reason = "cooling request held by flow interlock";
-                  }
+                  cm_transition_reason =
+                      (base_target == oq_supervisory::CONTROL_MODE_CM5 && cur_cm_code == oq_supervisory::CONTROL_MODE_CM5)
+                          ? "cooling already active"
+                          : (base_target == oq_supervisory::CONTROL_MODE_CM5)
+                                ? "cooling request waiting for CM1 hold"
+                                : "cooling request held by flow interlock";
                 } else if (heating_req) {
-                  if (base_target == 2) {
-                    // Keep active heating transitions inside the heating states. CM3 -> CM2
-                    // should not force an artificial CM1 detour that drops compressor requests.
-                    if (strcmp(cur_cm, "CM2") == 0 || strcmp(cur_cm, "CM3") == 0) {
-                      desired_local = 2;
-                      cm_transition_reason = "heating already active";
-                    } else {
-                      start_cm1(2);
-                      desired_local = 1;
-                      cm_transition_reason = "heating request waiting for CM1 hold";
-                    }
-                  } else {
-                    desired_local = 1; // flow interlock holding state
-                    cm_transition_reason = "heating request held by flow interlock";
-                  }
+                  cm_transition_reason =
+                      (base_target == oq_supervisory::CONTROL_MODE_CM2 &&
+                       (cur_cm_code == oq_supervisory::CONTROL_MODE_CM2 || cur_cm_code == oq_supervisory::CONTROL_MODE_CM3))
+                          ? "heating already active"
+                          : (base_target == oq_supervisory::CONTROL_MODE_CM2)
+                                ? "heating request waiting for CM1 hold"
+                                : "heating request held by flow interlock";
                 } else {
-                  if (strcmp(cur_cm, "CM2") == 0 || strcmp(cur_cm, "CM5") == 0) {
-                    start_cm1(0); // postflow to CM0
-                    desired_local = 1;
-                    cm_transition_reason = "postflow before standby";
-                  } else {
-                    desired_local = (base_target == 98) ? 98 : 0;
-                    cm_transition_reason = (desired_local == 98) ? "frost protection" : "no thermal demand";
-                  }
+                  cm_transition_reason =
+                      (normal_result.start_cm1_next_after == oq_supervisory::CONTROL_MODE_CM0)
+                          ? "postflow before standby"
+                          : (desired_local == oq_supervisory::CONTROL_MODE_CM98)
+                                ? "frost protection"
+                                : "no thermal demand";
                 }
               }
 
               // Safety: never leave CM1 to CM0 while any HP still reports/targets activity.
               // Keep CM1 (pump-on holding state) until both HPs are effectively idle.
-                  if (strcmp(cur_cm, "CM1") == 0 && !thermal_req && base_target == 0 && any_hp_active_guard) {
-                    desired_local = 1;
-                  }
+              desired_local = oq_supervisory::apply_standby_hold_guard(
+                  cur_cm_code,
+                  thermal_req,
+                  base_target,
+                  any_hp_active_guard,
+                  desired_local);
 
               // CM3 (boiler assist) is a Power House-only feature and only applies
               // when the installation has explicit boiler/CV assist enabled.
-              const int cm_now =
-                  (strcmp(cur_cm, "CM3") == 0) ? 3 :
-                  (strcmp(cur_cm, "CM2") == 0) ? 2 :
-                  (strcmp(cur_cm, "CM5") == 0) ? 5 :
-                  (strcmp(cur_cm, "CM1") == 0) ? 1 :
-                  (strcmp(cur_cm, "CM98") == 0) ? 98 : 0;
+              const int cm_now = cur_cm_code;
               const bool boiler_assist_enabled = id(oq_boiler_assist_enabled).state;
               if (power_house_active && boiler_assist_enabled) {
                 // CM3 (boiler assist) auto-switching
@@ -1282,8 +1203,23 @@ interval:
                   if (now_ms - id(oq_cm_last_change_ms) >= MIN_CM2_MS) {
                     if (need_on) {
                       if (id(oq_cm3_need_since_ms) == 0) id(oq_cm3_need_since_ms) = now_ms;
-                      if (now_ms - id(oq_cm3_need_since_ms) >= T_ON_MS) {
-                        desired_local = 3;
+                      const bool promote_elapsed = (now_ms - id(oq_cm3_need_since_ms) >= T_ON_MS);
+                      const int cm3_desired = oq_supervisory::resolve_cm3_transition(
+                          oq_supervisory::Cm3TransitionInput{
+                              .current_mode = cm_now,
+                              .power_house_active = power_house_active,
+                              .boiler_assist_enabled = boiler_assist_enabled,
+                              .heating_request_active = heating_req,
+                              .base_target = base_target,
+                              .need_on = need_on,
+                              .ok_off = ok_off,
+                              .min_cm2_elapsed = true,
+                              .min_cm3_elapsed = false,
+                              .promote_elapsed = promote_elapsed,
+                              .demote_elapsed = false,
+                          });
+                      if (cm3_desired == oq_supervisory::CONTROL_MODE_CM3) {
+                        desired_local = oq_supervisory::CONTROL_MODE_CM3;
                         cm_transition_reason = "power-house deficit promoted to CM3";
                       }
                     } else {
@@ -1294,8 +1230,23 @@ interval:
                   if (now_ms - id(oq_cm_last_change_ms) >= MIN_CM3_MS) {
                     if (ok_off) {
                       if (id(oq_cm3_demote_since_ms) == 0) id(oq_cm3_demote_since_ms) = now_ms;
-                      if (now_ms - id(oq_cm3_demote_since_ms) >= T_OFF_MS) {
-                        desired_local = 2;
+                      const bool demote_elapsed = (now_ms - id(oq_cm3_demote_since_ms) >= T_OFF_MS);
+                      const int cm3_desired = oq_supervisory::resolve_cm3_transition(
+                          oq_supervisory::Cm3TransitionInput{
+                              .current_mode = cm_now,
+                              .power_house_active = power_house_active,
+                              .boiler_assist_enabled = boiler_assist_enabled,
+                              .heating_request_active = heating_req,
+                              .base_target = base_target,
+                              .need_on = need_on,
+                              .ok_off = ok_off,
+                              .min_cm2_elapsed = false,
+                              .min_cm3_elapsed = true,
+                              .promote_elapsed = false,
+                              .demote_elapsed = demote_elapsed,
+                          });
+                      if (cm3_desired == oq_supervisory::CONTROL_MODE_CM2) {
+                        desired_local = oq_supervisory::CONTROL_MODE_CM2;
                         cm_transition_reason = "power-house deficit cleared, demoting to CM2";
                       }
                     } else {
@@ -1309,19 +1260,32 @@ interval:
               } else {
                 id(oq_cm3_need_since_ms) = 0;
                 id(oq_cm3_demote_since_ms) = 0;
-                if (cm_now == 3 && heating_req && base_target == 2) {
-                  desired_local = 2;
+                const int cm3_desired = oq_supervisory::resolve_cm3_transition(
+                    oq_supervisory::Cm3TransitionInput{
+                        .current_mode = cm_now,
+                        .power_house_active = power_house_active,
+                        .boiler_assist_enabled = boiler_assist_enabled,
+                        .heating_request_active = heating_req,
+                        .base_target = base_target,
+                        .need_on = false,
+                        .ok_off = false,
+                        .min_cm2_elapsed = false,
+                        .min_cm3_elapsed = false,
+                        .promote_elapsed = false,
+                        .demote_elapsed = false,
+                    });
+                if (cm3_desired == oq_supervisory::CONTROL_MODE_CM2 && cm_now == oq_supervisory::CONTROL_MODE_CM3) {
+                  desired_local = oq_supervisory::CONTROL_MODE_CM2;
                   cm_transition_reason = boiler_assist_enabled
                       ? "Power House assist disabled, returning to CM2"
                       : "boiler/CV assist disabled, returning to CM2";
                 }
               }
-              }
             }
             return desired_local;
           };
           const int desired = resolve_desired_cm();
-          const char* desired_cm = cm_code_to_id(desired);
+          const char* desired_cm = oq_supervisory::control_mode_code_to_id(desired);
           id(oq_control_mode_code) = desired;
           // -------------------------------------------------
           // 5) Publish CM (writes-only-on-change)
@@ -1340,7 +1304,10 @@ interval:
             }
           }
           static std::string last_control_mode_label;
-          publish_text_if_changed(id(oq_control_mode_label), cm_code_to_label(desired), last_control_mode_label);
+          publish_text_if_changed(
+              id(oq_control_mode_label),
+              std::string(oq_supervisory::control_mode_code_to_label(desired)),
+              last_control_mode_label);
 
           auto apply_silent_window = [&]() -> void {
             // Silent window + diagnostics + low-noise mode selection.
@@ -1461,19 +1428,23 @@ interval:
                 (id(oq_commissioning_task_code) != 0);
             // Pump failsafe: never stop circulation while any HP is still active.
             // CM100 idle is a service stand, not an active circulation mode.
-            const bool pump_on = (strcmp(desired_cm, "CM0") != 0 && strcmp(desired_cm, "CM100") != 0) ||
-                                 cm100_task_active ||
-                                 sticky_active ||
-                                 any_hp_active_guard;
+            const bool pump_on = oq_supervisory::pump_should_run(
+                desired,
+                cm100_task_active,
+                sticky_active,
+                any_hp_active_guard);
             set_select_option(id(hp1_set_pump_mode), pump_on ? "On" : "Off");
             #if OQ_TOPOLOGY_DUO
             set_select_option(id(${supervisory_secondary_set_pump_mode_id}), pump_on ? "On" : "Off");
             #endif
 
-            if (strcmp(desired_cm, "CM0") == 0) {
+            if (desired == oq_supervisory::CONTROL_MODE_CM0) {
               const float stop_pwm = ${oq_cm0_pump_stop_ipwm};
               const float sticky_pwm = ${oq_sticky_pwm};
-              const float target_pwm = sticky_active ? sticky_pwm : stop_pwm;
+              const float target_pwm = oq_supervisory::cm0_pump_target_pwm(
+                  sticky_active,
+                  stop_pwm,
+                  sticky_pwm);
               set_number_value(id(hp1_pump_speed), target_pwm, 1.0f);
               #if OQ_TOPOLOGY_DUO
               set_number_value(id(${supervisory_secondary_pump_speed_id}), target_pwm, 1.0f);

@@ -110,6 +110,32 @@ def cm1_expiry_resume(
     return 0
 
 
+def supervisory_cm1_timer_transition(
+    current_mode: int,
+    *,
+    cm1_timer_running: bool,
+    cm1_timer_expired: bool,
+    cm1_next_after: int,
+    cooling_request_active: bool,
+    heating_request_active: bool,
+    base_target: int,
+    strategy_active_code: int,
+) -> int | None:
+    if current_mode != 1:
+        return None
+    if cm1_timer_running:
+        return 1
+    if cm1_timer_expired:
+        return cm1_expiry_resume(
+            cm1_next_after,
+            cooling_request_active,
+            heating_request_active,
+            base_target,
+            strategy_active_code,
+        )
+    return None
+
+
 def apply_request_guards(
     hp1_request: int,
     hp2_request: int,
@@ -350,6 +376,19 @@ def supervisory_normal_transition(
     return 98 if base_target == 98 else 0
 
 
+def supervisory_cm1_standby_guard(
+    current_mode: int,
+    *,
+    thermal_request_active: bool,
+    base_target: int,
+    any_hp_active_guard: bool,
+    desired_mode: int,
+) -> int:
+    if current_mode == 1 and not thermal_request_active and base_target == 0 and any_hp_active_guard:
+        return 1
+    return desired_mode
+
+
 def supervisory_cm3_transition(
     current_mode: int,
     *,
@@ -373,6 +412,75 @@ def supervisory_cm3_transition(
     elif current_mode == 3 and heating_request_active and base_target == 2:
         desired_mode = 2
     return desired_mode
+
+
+def supervisory_frost_active(
+    *,
+    thermal_request_active: bool,
+    outside_temp_c: float | None,
+    prev_frost: bool,
+    frost_nan_grace_active: bool,
+    frost_on_c: float = 5.0,
+    frost_off_c: float = 6.0,
+) -> bool:
+    if thermal_request_active:
+        return False
+    if outside_temp_c is None:
+        return not frost_nan_grace_active
+    if prev_frost:
+        return outside_temp_c < frost_off_c
+    return outside_temp_c < frost_on_c
+
+
+def supervisory_cm2_idle_exit_heating_request(
+    *,
+    in_cm2: bool,
+    heating_request_active: bool,
+    curve_mode_active: bool,
+    both_levels_off: bool,
+    both_units_idle: bool,
+    startup_grace_active: bool,
+    ph_high_load_idle_exit_block: bool,
+    idle_exit_elapsed: bool,
+    power_house_active: bool,
+    reentry_block_active: bool,
+) -> bool:
+    cm2_idle_exit_trip = (
+        in_cm2
+        and heating_request_active
+        and not curve_mode_active
+        and both_levels_off
+        and both_units_idle
+        and not startup_grace_active
+        and not ph_high_load_idle_exit_block
+        and idle_exit_elapsed
+    )
+    next_heating_request = heating_request_active and not cm2_idle_exit_trip
+    if power_house_active and not in_cm2 and reentry_block_active:
+        return False
+    return next_heating_request
+
+
+def supervisory_pump_on(
+    desired_mode: int,
+    *,
+    commissioning_task_active: bool,
+    sticky_active: bool,
+    any_hp_active_guard: bool,
+) -> bool:
+    return desired_mode not in (0, 100) or commissioning_task_active or sticky_active or any_hp_active_guard
+
+
+def supervisory_cm0_pump_pwm(
+    desired_mode: int,
+    *,
+    sticky_active: bool,
+    stop_pwm: float,
+    sticky_pwm: float,
+) -> float | None:
+    if desired_mode != 0:
+        return None
+    return sticky_pwm if sticky_active else stop_pwm
 
 
 def cooling_request_reason(reason_code: int) -> str:
@@ -558,6 +666,42 @@ def run_scenarios() -> list[ScenarioResult]:
         "CM1 expiry resumes CM5 when cooling demand recovered",
         cm1_expiry_resume(0, True, False, 5, 1) == 5,
         f"cm1_expiry_resume(...) -> {cm1_expiry_resume(0, True, False, 5, 1)}",
+    )
+    add(
+        "CM1 timer running keeps CM1 active",
+        supervisory_cm1_timer_transition(
+            1,
+            cm1_timer_running=True,
+            cm1_timer_expired=False,
+            cm1_next_after=2,
+            cooling_request_active=False,
+            heating_request_active=True,
+            base_target=2,
+            strategy_active_code=2,
+        )
+        == 1,
+        (
+            "supervisory_cm1_timer_transition(...) -> "
+            f"{supervisory_cm1_timer_transition(1, cm1_timer_running=True, cm1_timer_expired=False, cm1_next_after=2, cooling_request_active=False, heating_request_active=True, base_target=2, strategy_active_code=2)}"
+        ),
+    )
+    add(
+        "CM1 timer expiry may resolve directly to frost",
+        supervisory_cm1_timer_transition(
+            1,
+            cm1_timer_running=False,
+            cm1_timer_expired=True,
+            cm1_next_after=2,
+            cooling_request_active=False,
+            heating_request_active=False,
+            base_target=98,
+            strategy_active_code=2,
+        )
+        == 98,
+        (
+            "supervisory_cm1_timer_transition(...) -> "
+            f"{supervisory_cm1_timer_transition(1, cm1_timer_running=False, cm1_timer_expired=True, cm1_next_after=2, cooling_request_active=False, heating_request_active=False, base_target=98, strategy_active_code=2)}"
+        ),
     )
 
     add(
@@ -907,6 +1051,21 @@ def run_scenarios() -> list[ScenarioResult]:
         ),
     )
     add(
+        "CM1 stays active before standby while any HP still reports activity",
+        supervisory_cm1_standby_guard(
+            1,
+            thermal_request_active=False,
+            base_target=0,
+            any_hp_active_guard=True,
+            desired_mode=0,
+        )
+        == 1,
+        (
+            "supervisory_cm1_standby_guard(...) -> "
+            f"{supervisory_cm1_standby_guard(1, thermal_request_active=False, base_target=0, any_hp_active_guard=True, desired_mode=0)}"
+        ),
+    )
+    add(
         "Power House deficit may promote CM2 to CM3 after timers elapse",
         supervisory_cm3_transition(
             2,
@@ -955,6 +1114,125 @@ def run_scenarios() -> list[ScenarioResult]:
         (
             "supervisory_cm3_transition(...) -> "
             f"{supervisory_cm3_transition(3, power_house_active=False, boiler_assist_enabled=False, heating_request_active=True, base_target=2)}"
+        ),
+    )
+    add(
+        "Frost stays off during startup NaN grace and turns on after grace",
+        supervisory_frost_active(
+            thermal_request_active=False,
+            outside_temp_c=None,
+            prev_frost=False,
+            frost_nan_grace_active=True,
+        )
+        is False
+        and supervisory_frost_active(
+            thermal_request_active=False,
+            outside_temp_c=None,
+            prev_frost=False,
+            frost_nan_grace_active=False,
+        )
+        is True,
+        (
+            "supervisory_frost_active(...) -> "
+            f"{supervisory_frost_active(thermal_request_active=False, outside_temp_c=None, prev_frost=False, frost_nan_grace_active=False)}"
+        ),
+    )
+    add(
+        "Frost hysteresis holds CM98 until outside temperature reaches the off threshold",
+        supervisory_frost_active(
+            thermal_request_active=False,
+            outside_temp_c=5.5,
+            prev_frost=True,
+            frost_nan_grace_active=False,
+        )
+        is True
+        and supervisory_frost_active(
+            thermal_request_active=False,
+            outside_temp_c=6.1,
+            prev_frost=True,
+            frost_nan_grace_active=False,
+        )
+        is False,
+        (
+            "supervisory_frost_active(...) -> "
+            f"{supervisory_frost_active(thermal_request_active=False, outside_temp_c=5.5, prev_frost=True, frost_nan_grace_active=False)}"
+        ),
+    )
+    add(
+        "CM2 idle-exit can drop heating demand and re-entry block keeps it suppressed outside CM2",
+        supervisory_cm2_idle_exit_heating_request(
+            in_cm2=True,
+            heating_request_active=True,
+            curve_mode_active=False,
+            both_levels_off=True,
+            both_units_idle=True,
+            startup_grace_active=False,
+            ph_high_load_idle_exit_block=False,
+            idle_exit_elapsed=True,
+            power_house_active=True,
+            reentry_block_active=False,
+        )
+        is False
+        and supervisory_cm2_idle_exit_heating_request(
+            in_cm2=False,
+            heating_request_active=True,
+            curve_mode_active=False,
+            both_levels_off=True,
+            both_units_idle=True,
+            startup_grace_active=False,
+            ph_high_load_idle_exit_block=False,
+            idle_exit_elapsed=False,
+            power_house_active=True,
+            reentry_block_active=True,
+        )
+        is False,
+        (
+            "supervisory_cm2_idle_exit_heating_request(...) -> "
+            f"{supervisory_cm2_idle_exit_heating_request(in_cm2=False, heating_request_active=True, curve_mode_active=False, both_levels_off=True, both_units_idle=True, startup_grace_active=False, ph_high_load_idle_exit_block=False, idle_exit_elapsed=False, power_house_active=True, reentry_block_active=True)}"
+        ),
+    )
+    add(
+        "CM0 sticky run keeps pump on and uses sticky PWM",
+        supervisory_pump_on(
+            0,
+            commissioning_task_active=False,
+            sticky_active=True,
+            any_hp_active_guard=False,
+        )
+        is True
+        and supervisory_cm0_pump_pwm(
+            0,
+            sticky_active=True,
+            stop_pwm=1000.0,
+            sticky_pwm=850.0,
+        )
+        == 850.0,
+        (
+            "supervisory_pump_on/supervisory_cm0_pump_pwm -> "
+            f"{supervisory_pump_on(0, commissioning_task_active=False, sticky_active=True, any_hp_active_guard=False)}, "
+            f"{supervisory_cm0_pump_pwm(0, sticky_active=True, stop_pwm=1000.0, sticky_pwm=850.0)}"
+        ),
+    )
+    add(
+        "CM100 idle may stop the pump while a CM100 task keeps it on",
+        supervisory_pump_on(
+            100,
+            commissioning_task_active=False,
+            sticky_active=False,
+            any_hp_active_guard=False,
+        )
+        is False
+        and supervisory_pump_on(
+            100,
+            commissioning_task_active=True,
+            sticky_active=False,
+            any_hp_active_guard=False,
+        )
+        is True,
+        (
+            "supervisory_pump_on(...) -> "
+            f"{supervisory_pump_on(100, commissioning_task_active=False, sticky_active=False, any_hp_active_guard=False)}, "
+            f"{supervisory_pump_on(100, commissioning_task_active=True, sticky_active=False, any_hp_active_guard=False)}"
         ),
     )
 

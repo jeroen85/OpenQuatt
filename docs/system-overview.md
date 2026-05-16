@@ -247,6 +247,21 @@ compressor level selects. It also owns final actuator-local guards such as
 minimum off-time, mode-confirmation gating, silent/day cap application, defrost
 retain behavior, start/stop bookkeeping and runtime counters.
 
+## 7. Supervisory Control Mode Contract
+
+The Control Mode state machine is documented in
+[`docs/supervisory-contract.md`](supervisory-contract.md). Supervisory owns
+`CM0/CM1/CM2/CM3/CM5/CM98/CM100`, but it does not own compressor request
+generation or flow PI output.
+
+Current CM decision order is part of the contract: base demand resolution,
+Power House low-load/start filters, flow interlock, frost hysteresis, base
+target priority, override, commissioning, CM1 pre/postflow, HP-active standby
+hold, CM2/CM3 hysteresis and finally pump policy publication.
+
+Transition reasons are diagnostics, not control inputs. They should stay stable
+until UI/MQTT consumers are checked.
+
 Demand filter behavior is asymmetric:
 
 - downward path follows demand immediately
@@ -262,7 +277,7 @@ Power House duo request selection works in simple steps:
 - if two single-HP options are equally good, choose the runtime lead HP
 - defrost derating now follows the real `4-Way valve` phase, and extra compensation is only added if the chosen combination would otherwise still underdeliver
 
-## 7. Flow Control Mechanics
+## 8. Flow Control Mechanics
 
 Flow control execution priority:
 
@@ -279,7 +294,7 @@ Key behaviors:
 - validity-based failsafe (`iPWM=850`)
 - stable-flow tracking for `last_good_pwm`
 
-## 8. Safety Model
+## 9. Safety Model
 
 Safety is distributed but coordinated:
 
@@ -289,7 +304,7 @@ Safety is distributed but coordinated:
 - stale feed invalidation in CIC ingest
 - conservative fallback on invalid numeric inputs
 
-## 9. Hardware Profiles and Pin Strategy
+## 10. Hardware Profiles and Pin Strategy
 
 Hardware profile substitutions are split into dedicated files:
 
@@ -305,7 +320,7 @@ Compile-time profile selection is done by choosing the firmware entrypoint:
 - `openquatt_single_waveshare.yaml`
 - `openquatt_single_heatpump_listener.yaml`
 
-## 10. UI and Observability Organization
+## 11. UI and Observability Organization
 
 `oq_webserver.yaml` defines stable sorting groups used across packages:
 
@@ -318,7 +333,7 @@ Compile-time profile selection is done by choosing the firmware entrypoint:
 
 This keeps ESPHome web UI and Home Assistant mapping coherent.
 
-## 11. Engineering Notes
+## 12. Engineering Notes
 
 - Keep ownership boundaries intact when refactoring.
 - Preserve entity IDs unless migration is documented.
