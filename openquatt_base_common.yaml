@@ -21,7 +21,6 @@ esphome:
     - ${oq_strategy_logic_header}
     - ${oq_power_house_logic_header}
     - ${oq_psram_buffer_header}
-    - ${oq_timers_header}
     - ${oq_cic_compatibility_logic_header}
     - ${oq_cic_compatibility_protocol_header}
     - ${oq_supervisory_logic_header}

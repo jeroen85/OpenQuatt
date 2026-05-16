@@ -22,7 +22,6 @@ heating_curve_logic_header: "openquatt/includes/oq_heating_curve_logic.h" # Shar
 oq_strategy_logic_header: "openquatt/includes/oq_strategy_logic.h" # Shared strategy-only helper include for lead-owner and request-state plumbing.
 oq_power_house_logic_header: "openquatt/includes/oq_power_house_logic.h" # Power House-only helper include for pure optimizer/candidate plumbing.
 oq_psram_buffer_header: "components/openquatt_common/PsramBuffer.h" # Shared PSRAM-backed buffer helper for custom components.
-oq_timers_header: "openquatt/includes/oq_timers.h"       # Shared C++ helpers for millis()/elapsed timer patterns.
 oq_cic_compatibility_logic_header: "openquatt/includes/oq_cic_compatibility_logic.h" # Shared helpers for CiC compatibility lambdas.
 oq_cic_compatibility_protocol_header: "openquatt/includes/oq_cic_compatibility_protocol.h" # Shared helpers for CiC compatibility protocol encoding.
 oq_supervisory_logic_header: "openquatt/includes/oq_supervisory_logic.h" # Shared supervisory helpers for CM naming and pure policy decisions.

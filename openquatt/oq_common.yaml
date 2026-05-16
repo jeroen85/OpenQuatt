@@ -281,7 +281,7 @@ select:
                 constexpr uint32_t fw_check_cooldown_ms = 1000UL;
                 const uint32_t now_ms = (uint32_t) millis();
                 const uint32_t last_request_ms = id(oq_fw_check_last_request_ms);
-                if (oq_timers::not_elapsed(now_ms, last_request_ms, fw_check_cooldown_ms)) {
+                if (last_request_ms > 0 && static_cast<uint32_t>(now_ms - last_request_ms) < fw_check_cooldown_ms) {
                   ESP_LOGI("oq_fw", "Firmware update check skipped: cooldown active after a recent request.");
                   return false;
                 }
@@ -372,7 +372,7 @@ button:
               constexpr uint32_t fw_check_cooldown_ms = 1000UL;
               const uint32_t now_ms = (uint32_t) millis();
               const uint32_t last_request_ms = id(oq_fw_check_last_request_ms);
-              if (oq_timers::not_elapsed(now_ms, last_request_ms, fw_check_cooldown_ms)) {
+              if (last_request_ms > 0 && static_cast<uint32_t>(now_ms - last_request_ms) < fw_check_cooldown_ms) {
                 ESP_LOGI("oq_fw", "Firmware update check skipped: cooldown active after a recent request.");
                 return false;
               }

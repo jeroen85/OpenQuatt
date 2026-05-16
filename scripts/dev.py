@@ -584,6 +584,13 @@ def validate_command(args: argparse.Namespace) -> int:
             log_path=log_dir / "docs-consistency.log",
             label="docs consistency",
         )
+        run_logged(
+            [*helper_python, "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py"],
+            cwd=command_root,
+            env=env,
+            log_path=log_dir / "python-unittests.log",
+            label="python unittests",
+        )
 
         for config in args.configs:
             stem = Path(config).stem

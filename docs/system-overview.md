@@ -10,11 +10,12 @@ This document explains the current OpenQuatt architecture as implemented in the 
 - [4. Data Pipeline](#4-data-pipeline)
 - [5. Heating Strategy Mechanics](#5-heating-strategy-mechanics)
 - [6. Thermal Request Control Mechanics](#6-thermal-request-control-mechanics)
-- [7. Flow Control Mechanics](#7-flow-control-mechanics)
-- [8. Safety Model](#8-safety-model)
-- [9. Hardware Profiles and Pin Strategy](#9-hardware-profiles-and-pin-strategy)
-- [10. UI and Observability Organization](#10-ui-and-observability-organization)
-- [11. Engineering Notes](#11-engineering-notes)
+- [7. Supervisory Control Mode Contract](#7-supervisory-control-mode-contract)
+- [8. Flow Control Mechanics](#8-flow-control-mechanics)
+- [9. Safety Model](#9-safety-model)
+- [10. Hardware Profiles and Pin Strategy](#10-hardware-profiles-and-pin-strategy)
+- [11. UI and Observability Organization](#11-ui-and-observability-organization)
+- [12. Engineering Notes](#12-engineering-notes)
 
 ## 1. Top-Level Composition
 
@@ -216,8 +217,8 @@ Heating-curve stability guards around zero-demand edge:
 
 ## 6. Thermal Request Control Mechanics
 
-The thermal chain is documented in more detail in
-[`docs/thermal-contract.md`](thermal-contract.md). The three contract layers are:
+The thermal chain is documented in the shared contract at
+[`docs/control-contract.md`](control-contract.md). The three contract layers are:
 
 - `intent`: what the active strategy wants thermally
 - `guarded`: what shared physical and safety guards allow downstream
@@ -250,7 +251,7 @@ retain behavior, start/stop bookkeeping and runtime counters.
 ## 7. Supervisory Control Mode Contract
 
 The Control Mode state machine is documented in
-[`docs/supervisory-contract.md`](supervisory-contract.md). Supervisory owns
+[`docs/control-contract.md`](control-contract.md). Supervisory owns
 `CM0/CM1/CM2/CM3/CM5/CM98/CM100`, but it does not own compressor request
 generation or flow PI output.
 
@@ -296,8 +297,8 @@ Key behaviors:
 - stable-flow tracking for `last_good_pwm`
 - helper seam for route selection, AUTO start seed and pure PI math
 
-The detailed phase-8 contract is in
-[`docs/flow-control-contract.md`](flow-control-contract.md).
+Flow-control ownership and priority rules are in
+[`docs/control-contract.md`](control-contract.md).
 
 ## 9. Safety Model
 

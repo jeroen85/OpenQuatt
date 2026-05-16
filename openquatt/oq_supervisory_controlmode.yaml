@@ -4,7 +4,7 @@
 #
 # Goal:
 #   Determines the active Control Mode (CM) as central state machine and publishes the system decision to the other packages.
-#   The phase-4 contract for inputs, state, outputs, reasons and timer semantics is documented in docs/supervisory-contract.md.
+#   Inputs, state, outputs, reasons and timer semantics are documented in docs/control-contract.md.
 #
 # Role in architecture:
 #   Single owner of Control Mode; coordinates subsystems by selecting CM (CM0/CM1/CM2/CM3/CM5/CM98/CM100).
