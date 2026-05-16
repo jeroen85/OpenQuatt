@@ -18,6 +18,8 @@ esphome:
     - ${hp_perf_map_v2_high_header}
     - ${thermal_request_logic_header}
     - ${heating_curve_logic_header}
+    - ${oq_strategy_logic_header}
+    - ${oq_power_house_logic_header}
     - ${oq_psram_buffer_header}
     - ${oq_timers_header}
     - ${oq_cic_compatibility_logic_header}

@@ -15,6 +15,32 @@ class ScenarioResult:
     details: str
 
 
+@dataclass(frozen=True)
+class CurveDispatchCandidate:
+    valid: bool = False
+    hp1_level: int = 0
+    hp2_level: int = 0
+    power_w: float = 0.0
+    error_w: float = 1.0e9
+    active_hp_count: int = 0
+    balance_gap: int = 0
+
+
+@dataclass(frozen=True)
+class PhDuoCandidate:
+    valid: bool = False
+    l1: int = 0
+    l2: int = 0
+    p_th_w: float = 0.0
+    p_el_w: float = 0.0
+    err_w: float = 1.0e9
+    over_soft_w: float = 0.0
+    level_moves: int = 0
+    active_hp_count: int = 0
+    balance_steps: int = 0
+    single_on_lead: bool = False
+
+
 def hold_request_mode_code(
     hp1_hold: int,
     hp2_hold: int,
@@ -507,6 +533,101 @@ def cooling_request_reason(reason_code: int) -> str:
     }.get(reason_code, "cooling_idle")
 
 
+def cooling_owner_choice(
+    *,
+    stored_owner: int,
+    demand_active: bool,
+    prev_hp1_on: bool,
+    prev_hp2_on: bool,
+    hp1_can_start: bool,
+    hp2_can_start: bool,
+    recent_owner: int,
+    lead_is_hp1: bool,
+) -> int:
+    owner = stored_owner
+    if not demand_active:
+        return 0
+    if prev_hp1_on and not prev_hp2_on:
+        return 1
+    if prev_hp2_on and not prev_hp1_on:
+        return 2
+
+    owner_ok = (owner == 1 and hp1_can_start) or (owner == 2 and hp2_can_start)
+    if owner_ok:
+        return owner
+    if recent_owner == 1 and hp1_can_start:
+        return 1
+    if recent_owner == 2 and hp2_can_start:
+        return 2
+    if lead_is_hp1 and hp1_can_start:
+        return 1
+    if (not lead_is_hp1) and hp2_can_start:
+        return 2
+    if hp1_can_start and not hp2_can_start:
+        return 1
+    if hp2_can_start and not hp1_can_start:
+        return 2
+    if hp1_can_start and hp2_can_start:
+        return 1 if lead_is_hp1 else 2
+    return 0
+
+
+def curve_pick_single_owner(
+    demand_active: bool,
+    stored_owner_hp: int,
+    prev_hp1_on: bool,
+    prev_hp2_on: bool,
+    lead_is_hp1: bool,
+) -> int:
+    if not demand_active:
+        return 0
+    if prev_hp1_on != prev_hp2_on:
+        return 1 if prev_hp1_on else 2
+    if stored_owner_hp in (1, 2):
+        return stored_owner_hp
+    return 1 if lead_is_hp1 else 2
+
+
+def curve_better_dispatch_candidate(
+    candidate: CurveDispatchCandidate,
+    best: CurveDispatchCandidate,
+    prev_hp1_level: int,
+    prev_hp2_level: int,
+) -> bool:
+    if not candidate.valid:
+        return False
+    if not best.valid:
+        return True
+    if abs(candidate.error_w - best.error_w) > 50.0:
+        return candidate.error_w < best.error_w
+
+    candidate_starts = (
+        (1 if prev_hp1_level == 0 and candidate.hp1_level > 0 else 0)
+        + (1 if prev_hp2_level == 0 and candidate.hp2_level > 0 else 0)
+    )
+    best_starts = (
+        (1 if prev_hp1_level == 0 and best.hp1_level > 0 else 0)
+        + (1 if prev_hp2_level == 0 and best.hp2_level > 0 else 0)
+    )
+    if candidate_starts != best_starts:
+        return candidate_starts < best_starts
+
+    candidate_moves = abs(candidate.hp1_level - prev_hp1_level) + abs(
+        candidate.hp2_level - prev_hp2_level
+    )
+    best_moves = abs(best.hp1_level - prev_hp1_level) + abs(
+        best.hp2_level - prev_hp2_level
+    )
+    if candidate_moves != best_moves:
+        return candidate_moves < best_moves
+
+    if candidate.active_hp_count != best.active_hp_count:
+        return candidate.active_hp_count < best.active_hp_count
+    if candidate.balance_gap != best.balance_gap:
+        return candidate.balance_gap < best.balance_gap
+    return candidate.power_w < best.power_w
+
+
 def optimizer_reason_inactive() -> str:
     return "inactive"
 
@@ -578,6 +699,85 @@ def power_house_optimizer_reason(reason_code: int) -> str | None:
         13: "runtime_lead",
         15: "oil_return_hold",
     }.get(reason_code)
+
+
+def ph_better_duo_candidate(a: PhDuoCandidate, b: PhDuoCandidate) -> bool:
+    soft_eps_w = 1.0
+    pel_eps_w = 1.0
+    err_eps_w = 1.0
+    if abs(a.over_soft_w - b.over_soft_w) > soft_eps_w:
+        return a.over_soft_w < b.over_soft_w
+    if abs(a.p_el_w - b.p_el_w) > pel_eps_w:
+        return a.p_el_w < b.p_el_w
+    if abs(a.err_w - b.err_w) > err_eps_w:
+        return a.err_w < b.err_w
+    if a.level_moves != b.level_moves:
+        return a.level_moves < b.level_moves
+    if a.active_hp_count == 2 and b.active_hp_count == 2 and a.balance_steps != b.balance_steps:
+        return a.balance_steps < b.balance_steps
+    if a.active_hp_count == 1 and b.active_hp_count == 1:
+        a_single = a.l1 if a.l1 > 0 else a.l2
+        b_single = b.l1 if b.l1 > 0 else b.l2
+        if a_single == b_single and a.single_on_lead != b.single_on_lead:
+            return a.single_on_lead
+    if a.l1 != b.l1:
+        return a.l1 < b.l1
+    return a.l2 < b.l2
+
+
+def ph_choose_preferred_candidate(
+    best_single: PhDuoCandidate,
+    have_best_single: bool,
+    best_duo: PhDuoCandidate,
+    have_best_duo: bool,
+    topology_heat_advantage_w: float,
+) -> tuple[bool, PhDuoCandidate]:
+    if have_best_single and have_best_duo:
+        preferred = best_single
+        alternate = best_duo
+        if best_duo.p_el_w < best_single.p_el_w:
+            preferred = best_duo
+            alternate = best_single
+        best_candidate = preferred
+        if alternate.err_w + topology_heat_advantage_w < preferred.err_w:
+            best_candidate = alternate
+        return True, best_candidate
+    if have_best_single:
+        return True, best_single
+    if have_best_duo:
+        return True, best_duo
+    return False, PhDuoCandidate()
+
+
+def ph_request_owner_hp(hp1_req: int, hp2_req: int) -> int:
+    if hp1_req > 0 and hp2_req == 0:
+        return 1
+    if hp2_req > 0 and hp1_req == 0:
+        return 2
+    return 0
+
+
+def ph_runtime_lead_override_allowed(
+    *,
+    single_req: bool,
+    both_idle_prev: bool,
+    hp1_def: bool,
+    hp2_def: bool,
+    hp1_valve_def: bool,
+    hp2_valve_def: bool,
+    lead_can: bool,
+    lag_can: bool,
+) -> bool:
+    return (
+        single_req
+        and both_idle_prev
+        and not hp1_def
+        and not hp2_def
+        and not hp1_valve_def
+        and not hp2_valve_def
+        and lead_can
+        and lag_can
+    )
 
 
 def run_scenarios() -> list[ScenarioResult]:
@@ -825,6 +1025,119 @@ def run_scenarios() -> list[ScenarioResult]:
         f"cooling_request_reason(2) -> {cooling_request_reason(2)}",
     )
     add(
+        "Cooling owner keeps HP1 while it is already active",
+        cooling_owner_choice(
+            stored_owner=2,
+            demand_active=True,
+            prev_hp1_on=True,
+            prev_hp2_on=False,
+            hp1_can_start=True,
+            hp2_can_start=True,
+            recent_owner=2,
+            lead_is_hp1=False,
+        )
+        == 1,
+        (
+            "cooling_owner_choice(...) -> "
+            f"{cooling_owner_choice(stored_owner=2, demand_active=True, prev_hp1_on=True, prev_hp2_on=False, hp1_can_start=True, hp2_can_start=True, recent_owner=2, lead_is_hp1=False)}"
+        ),
+    )
+    add(
+        "Cooling owner prefers recent owner when stored owner is blocked",
+        cooling_owner_choice(
+            stored_owner=1,
+            demand_active=True,
+            prev_hp1_on=False,
+            prev_hp2_on=False,
+            hp1_can_start=False,
+            hp2_can_start=True,
+            recent_owner=2,
+            lead_is_hp1=True,
+        )
+        == 2,
+        (
+            "cooling_owner_choice(...) -> "
+            f"{cooling_owner_choice(stored_owner=1, demand_active=True, prev_hp1_on=False, prev_hp2_on=False, hp1_can_start=False, hp2_can_start=True, recent_owner=2, lead_is_hp1=True)}"
+        ),
+    )
+    add(
+        "Cooling owner falls back to lead HP when neither owner nor recent owner applies",
+        cooling_owner_choice(
+            stored_owner=0,
+            demand_active=True,
+            prev_hp1_on=False,
+            prev_hp2_on=False,
+            hp1_can_start=True,
+            hp2_can_start=True,
+            recent_owner=0,
+            lead_is_hp1=False,
+        )
+        == 2,
+        (
+            "cooling_owner_choice(...) -> "
+            f"{cooling_owner_choice(stored_owner=0, demand_active=True, prev_hp1_on=False, prev_hp2_on=False, hp1_can_start=True, hp2_can_start=True, recent_owner=0, lead_is_hp1=False)}"
+        ),
+    )
+    add(
+        "Cooling owner drops to idle when both HP starts are blocked",
+        cooling_owner_choice(
+            stored_owner=1,
+            demand_active=True,
+            prev_hp1_on=False,
+            prev_hp2_on=False,
+            hp1_can_start=False,
+            hp2_can_start=False,
+            recent_owner=1,
+            lead_is_hp1=True,
+        )
+        == 0,
+        (
+            "cooling_owner_choice(...) -> "
+            f"{cooling_owner_choice(stored_owner=1, demand_active=True, prev_hp1_on=False, prev_hp2_on=False, hp1_can_start=False, hp2_can_start=False, recent_owner=1, lead_is_hp1=True)}"
+        ),
+    )
+    add(
+        "Curve owner keeps previous active HP over lead preference",
+        curve_pick_single_owner(
+            demand_active=True,
+            stored_owner_hp=1,
+            prev_hp1_on=False,
+            prev_hp2_on=True,
+            lead_is_hp1=True,
+        )
+        == 2,
+        (
+            "curve_pick_single_owner(...) -> "
+            f"{curve_pick_single_owner(demand_active=True, stored_owner_hp=1, prev_hp1_on=False, prev_hp2_on=True, lead_is_hp1=True)}"
+        ),
+    )
+    add(
+        "Curve dispatch tie-break prefers fewer starts before lower power",
+        curve_better_dispatch_candidate(
+            CurveDispatchCandidate(
+                valid=True,
+                hp1_level=3,
+                hp2_level=0,
+                power_w=3200.0,
+                error_w=30.0,
+                active_hp_count=1,
+                balance_gap=3,
+            ),
+            CurveDispatchCandidate(
+                valid=True,
+                hp1_level=2,
+                hp2_level=2,
+                power_w=3100.0,
+                error_w=30.0,
+                active_hp_count=2,
+                balance_gap=0,
+            ),
+            prev_hp1_level=3,
+            prev_hp2_level=0,
+        ),
+        "curve_better_dispatch_candidate(...) -> True",
+    )
+    add(
         "Curve request reason maps dual-capacity path consistently",
         curve_request_reason(3, 3, 0, 2) == "curve_dual",
         f"curve_request_reason(...) -> {curve_request_reason(3, 3, 0, 2)}",
@@ -837,11 +1150,126 @@ def run_scenarios() -> list[ScenarioResult]:
             f"{power_house_request_reason(14, duo_topology=False)}"
         ),
     )
+    for code, expected in {
+        0: "ph_idle",
+        1: "ph_fallback_idle",
+        2: "ph_fallback_single_hp1",
+        3: "ph_fallback_single_hp2",
+        4: "ph_fallback_duo",
+        5: "keep_current",
+        6: "hold_active",
+        7: "defrost_hold",
+        8: "better_heat",
+        9: "soft_guard",
+        10: "less_power",
+        11: "no_candidate",
+        12: "defrost_boost",
+        13: "runtime_lead",
+    }.items():
+        actual = power_house_request_reason(code, duo_topology=True)
+        add(
+            f"Duo Power House request reason code {code} stays stable",
+            actual == expected,
+            f"power_house_request_reason({code}, duo_topology=True) -> {actual}",
+        )
     add(
         "Power House optimizer reason maps code 15 consistently",
         power_house_optimizer_reason(15) == "oil_return_hold",
         f"power_house_optimizer_reason(15) -> {power_house_optimizer_reason(15)}",
     )
+    add(
+        "Power House candidate tie-break prefers lower soft-limit overshoot first",
+        ph_better_duo_candidate(
+            PhDuoCandidate(
+                valid=True,
+                l1=3,
+                l2=3,
+                p_el_w=2500.0,
+                err_w=40.0,
+                over_soft_w=10.0,
+                level_moves=2,
+                active_hp_count=2,
+                balance_steps=0,
+            ),
+            PhDuoCandidate(
+                valid=True,
+                l1=4,
+                l2=2,
+                p_el_w=2300.0,
+                err_w=20.0,
+                over_soft_w=30.0,
+                level_moves=2,
+                active_hp_count=2,
+                balance_steps=2,
+            ),
+        ),
+        "ph_better_duo_candidate(...) -> True",
+    )
+    have_best_candidate, best_candidate = ph_choose_preferred_candidate(
+        PhDuoCandidate(valid=True, l1=4, l2=0, p_el_w=1800.0, err_w=600.0, active_hp_count=1),
+        True,
+        PhDuoCandidate(valid=True, l1=2, l2=2, p_el_w=2000.0, err_w=60.0, active_hp_count=2),
+        True,
+        450.0,
+    )
+    add(
+        "Power House topology chooser may prefer better heat when advantage beats margin",
+        have_best_candidate and best_candidate.active_hp_count == 2,
+        (
+            "ph_choose_preferred_candidate(...) -> "
+            f"have_best_candidate={have_best_candidate}, active_hp_count={best_candidate.active_hp_count}"
+        ),
+    )
+    add(
+        "Power House runtime-lead override requires both sides to be startable and no defrost",
+        ph_runtime_lead_override_allowed(
+            single_req=True,
+            both_idle_prev=True,
+            hp1_def=False,
+            hp2_def=False,
+            hp1_valve_def=False,
+            hp2_valve_def=False,
+            lead_can=True,
+            lag_can=True,
+        )
+        and not ph_runtime_lead_override_allowed(
+            single_req=True,
+            both_idle_prev=True,
+            hp1_def=False,
+            hp2_def=False,
+            hp1_valve_def=True,
+            hp2_valve_def=False,
+            lead_can=True,
+            lag_can=True,
+        ),
+        "ph_runtime_lead_override_allowed(...) -> True/False as expected",
+    )
+    add(
+        "Power House request owner stays zero for duo requests",
+        ph_request_owner_hp(3, 3) == 0 and ph_request_owner_hp(4, 0) == 1,
+        (
+            "ph_request_owner_hp(...) -> "
+            f"{ph_request_owner_hp(3, 3)}, {ph_request_owner_hp(4, 0)}"
+        ),
+    )
+    for code, expected in {
+        5: "keep_current",
+        6: "hold_active",
+        7: "defrost_hold",
+        8: "better_heat",
+        9: "soft_guard",
+        10: "less_power",
+        11: "no_candidate",
+        12: "defrost_boost",
+        13: "runtime_lead",
+        15: "oil_return_hold",
+    }.items():
+        actual = power_house_optimizer_reason(code)
+        add(
+            f"Power House optimizer reason code {code} stays stable",
+            actual == expected,
+            f"power_house_optimizer_reason({code}) -> {actual}",
+        )
     add(
         "Shared inactive optimizer reason stays stable",
         optimizer_reason_inactive() == "inactive",

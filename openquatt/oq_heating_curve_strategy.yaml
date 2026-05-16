@@ -890,11 +890,6 @@ interval:
           // curve path must go fully inactive there even when curve mode remains selected.
           const bool active = (id(oq_control_mode_code) != 5) && (id(oq_heat_mode_code) == 1);
           const int demand_max = (int) ${oq_strategy_demand_max_f};
-          auto clamp_demand = [&](int demand)->int {
-            if (demand < 0) return 0;
-            if (demand > demand_max) return demand_max;
-            return demand;
-          };
 
           if (active) {
             const float spw = id(oq_supply_target_temp).state;
@@ -922,7 +917,7 @@ interval:
               }
             }
 
-            int d_out = clamp_demand(id(oq_demand_curve));
+            int d_out = oq_request::clamp_level(id(oq_demand_curve), 0, demand_max);
             if (id(oq_water_temp_hard_trip_active)) d_out = 0;
             id(oq_demand_raw) = d_out;
 
@@ -1025,7 +1020,7 @@ interval:
           constexpr int max_level = 10;
           const int demand_max_f = (int) ${oq_strategy_demand_max_f};
           int raw = id(oq_demand_raw);
-          raw = std::max(0, std::min(demand_max_f, raw));
+          raw = oq_request::clamp_level(raw, 0, demand_max_f);
 
           id(oq_demand_filtered_prev) = id(oq_demand_filtered);
           id(oq_demand_filtered) = raw;
@@ -1033,7 +1028,7 @@ interval:
 
           int f = raw;
           int f_cap = id(oq_power_cap_f);
-          f_cap = std::max(0, std::min(demand_max_f, f_cap));
+          f_cap = oq_request::clamp_level(f_cap, 0, demand_max_f);
           if (f > f_cap) f = f_cap;
 
           #if OQ_TOPOLOGY_DUO
@@ -1041,8 +1036,7 @@ interval:
           #else
           const bool lead_is_hp1 = true;
           #endif
-          const int lead_code = lead_is_hp1 ? 1 : 2;
-          if (id(oq_last_lead_hp) != lead_code) id(oq_last_lead_hp) = lead_code;
+          oq_strategy::update_lead_hp(id(oq_last_lead_hp), lead_is_hp1);
 
           auto excluded_levels = [&](bool is_hp1)->oq_request::ExcludedLevels {
             if (is_hp1) {

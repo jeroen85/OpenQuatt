@@ -339,12 +339,13 @@ interval:
           // Cooling strategy: owns single-owner cooling requests for CM5.
           const int cm_code = id(oq_control_mode_code);
           if (cm_code != 5) {
-            id(oq_cooling_request_last_loop_ms) = 0;
-            id(oq_cooling_request_hp1_level) = 0;
-            id(oq_cooling_request_hp2_level) = 0;
-            id(oq_cooling_request_owner_hp) = 0;
-            id(oq_cooling_owner_hp) = 0;
-            id(oq_cooling_request_reason_code) = 0;
+            oq_cooling::reset_request_state(
+                id(oq_cooling_request_last_loop_ms),
+                id(oq_cooling_request_hp1_level),
+                id(oq_cooling_request_hp2_level),
+                id(oq_cooling_request_owner_hp),
+                id(oq_cooling_owner_hp),
+                id(oq_cooling_request_reason_code));
             return;
           }
 
@@ -359,7 +360,7 @@ interval:
           constexpr int max_level = 10;
           const int demand_max_f = (int) ${oq_strategy_demand_max_f};
           int raw = id(oq_cooling_demand_raw);
-          raw = std::max(0, std::min(demand_max_f, raw));
+          raw = oq_request::clamp_level(raw, 0, demand_max_f);
 
           id(oq_demand_filtered_prev) = id(oq_demand_filtered);
           id(oq_demand_filtered) = raw;
@@ -367,7 +368,7 @@ interval:
 
           int f = raw;
           int f_cap = id(oq_power_cap_f);
-          f_cap = std::max(0, std::min(demand_max_f, f_cap));
+          f_cap = oq_request::clamp_level(f_cap, 0, demand_max_f);
           if (f > f_cap) f = f_cap;
 
           #if OQ_TOPOLOGY_DUO
@@ -375,9 +376,7 @@ interval:
           #else
           const bool lead_is_hp1 = true;
           #endif
-
-          const int lead_code = lead_is_hp1 ? 1 : 2;
-          if (id(oq_last_lead_hp) != lead_code) id(oq_last_lead_hp) = lead_code;
+          oq_strategy::update_lead_hp(id(oq_last_lead_hp), lead_is_hp1);
 
           auto excluded_levels = [&](bool is_hp1)->oq_request::ExcludedLevels {
             if (is_hp1) {
@@ -492,28 +491,15 @@ interval:
               (hp1_last_active_ms > hp2_last_active_ms) ? 1 :
               (hp2_last_active_ms > hp1_last_active_ms) ? 2 : 0;
 
-          owner = id(oq_cooling_owner_hp);
-          if (!demand_active) {
-            owner = 0;
-          } else if (prev_hp1_on && !prev_hp2_on) {
-            owner = 1;
-          } else if (prev_hp2_on && !prev_hp1_on) {
-            owner = 2;
-          } else {
-            const bool owner_ok =
-                (owner == 1 && hp1_can_start_cooling) ||
-                (owner == 2 && hp2_can_start_cooling);
-            if (!owner_ok) {
-              if (recent_owner == 1 && hp1_can_start_cooling) owner = 1;
-              else if (recent_owner == 2 && hp2_can_start_cooling) owner = 2;
-              else if (lead_is_hp1 && hp1_can_start_cooling) owner = 1;
-              else if (!lead_is_hp1 && hp2_can_start_cooling) owner = 2;
-              else if (hp1_can_start_cooling && !hp2_can_start_cooling) owner = 1;
-              else if (hp2_can_start_cooling && !hp1_can_start_cooling) owner = 2;
-              else if (hp1_can_start_cooling && hp2_can_start_cooling) owner = lead_is_hp1 ? 1 : 2;
-              else owner = 0;
-            }
-          }
+          owner = oq_cooling::pick_owner_hp(
+              id(oq_cooling_owner_hp),
+              demand_active,
+              prev_hp1_on,
+              prev_hp2_on,
+              hp1_can_start_cooling,
+              hp2_can_start_cooling,
+              recent_owner,
+              lead_is_hp1);
 
           static bool last_cooling_start_blocked = false;
           const bool cooling_start_blocked = demand_active && owner == 0 && !hp1_can_start_cooling && !hp2_can_start_cooling;
