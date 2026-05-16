@@ -41,6 +41,380 @@ class PhDuoCandidate:
     single_on_lead: bool = False
 
 
+@dataclass(frozen=True)
+class CommissioningActionResult:
+    status: str
+    accepted: bool = False
+    task_code: int = 0
+    request_pending: bool = False
+    active: bool = False
+    abort_requested: bool = False
+    state_code: int = 0
+    flow_autotune_req: bool = False
+    flow_autotune_abort: bool = False
+    flow_autotune_active: bool = False
+    flow_autotune_state: int = 0
+
+
+@dataclass(frozen=True)
+class FlowAutotuneValidationResult:
+    status_family: str
+    kp: float
+    ki: float
+    scale: float
+    clamped: bool
+
+
+@dataclass(frozen=True)
+class BoilerMeasureState:
+    sample_count: int = 0
+    sum_w: float = 0.0
+    min_w: float | None = None
+    max_w: float | None = None
+    peak_w: float | None = None
+    plateau_count: int = 0
+
+
+@dataclass(frozen=True)
+class BoilerMeasureResult:
+    ready: bool
+    avg_w: float | None
+    confidence: float
+    min_w: float | None
+    max_w: float | None
+    spread_w: float | None
+
+
+@dataclass(frozen=True)
+class FlowArmResult:
+    state: str
+    status: str
+    pwm_step: int | None = None
+    pv0: float | None = None
+
+
+@dataclass(frozen=True)
+class FlowValidationSettleResult:
+    settle_ready: bool
+    status: str
+    confirm_cnt: int
+    peak_pv: float
+
+
+def commissioning_cm100_start_result(
+    *,
+    override_auto: bool,
+    active: bool,
+    task_code: int,
+) -> CommissioningActionResult:
+    if not override_auto:
+        return CommissioningActionResult("REFUSED: CM Override must be Auto")
+    if active and task_code != 0:
+        return CommissioningActionResult("REFUSED: BUSY")
+    return CommissioningActionResult(
+        "CM100 REQUESTED",
+        accepted=True,
+        task_code=0,
+        request_pending=True,
+    )
+
+
+def commissioning_stop_result(
+    *,
+    active: bool,
+    task_code: int,
+    flow_autotune_req: bool,
+) -> CommissioningActionResult:
+    if active and task_code != 0:
+        return CommissioningActionResult(
+            "ABORT REQUESTED",
+            task_code=task_code,
+            active=active,
+            abort_requested=task_code != 2,
+            flow_autotune_abort=task_code == 2,
+        )
+    if task_code == 2 or flow_autotune_req:
+        return CommissioningActionResult(
+            "ABORT REQUESTED",
+            task_code=task_code,
+            abort_requested=True,
+            flow_autotune_req=flow_autotune_req,
+            flow_autotune_abort=True,
+        )
+    return CommissioningActionResult("IDLE")
+
+
+def flow_autotune_start_result(
+    *,
+    cm_code: int,
+    task_running: bool,
+    autotune_state: int,
+    autotune_active: bool,
+    autotune_req: bool,
+) -> CommissioningActionResult:
+    if autotune_state != 0 or autotune_active or autotune_req or task_running:
+        return CommissioningActionResult("REFUSED: BUSY")
+    if cm_code != 100:
+        return CommissioningActionResult("REFUSED: not CM100")
+    return CommissioningActionResult(
+        "REQUESTED",
+        accepted=True,
+        task_code=2,
+        active=True,
+        state_code=1,
+        flow_autotune_req=True,
+    )
+
+
+def flow_autotune_idle_tick_result(
+    *,
+    cm_code: int,
+    task_code: int,
+    autotune_req: bool,
+    flow_valid: bool,
+) -> CommissioningActionResult:
+    if task_code != 2 or not autotune_req:
+        return CommissioningActionResult("IDLE")
+    if cm_code != 100:
+        return CommissioningActionResult(
+            "WAITING_FOR_CM100",
+            task_code=2,
+            request_pending=True,
+        )
+    return CommissioningActionResult(
+        "SETTLING" if flow_valid else "WAITING_FOR_FLOW",
+        accepted=True,
+        task_code=2,
+        active=True,
+        state_code=1,
+        flow_autotune_active=True,
+        flow_autotune_state=1,
+    )
+
+
+def flow_autotune_release_result(*, keep_cm100: bool = True) -> CommissioningActionResult:
+    return CommissioningActionResult(
+        "CM100 READY" if keep_cm100 else "IDLE",
+        active=keep_cm100,
+    )
+
+
+def flow_autotune_abort_result(
+    *,
+    saved_kp: float | None,
+    saved_ki: float | None,
+    saved_sp: float | None,
+    current_kp: float,
+    current_ki: float,
+    current_sp: float,
+) -> tuple[CommissioningActionResult, float, float, float]:
+    restored_kp = current_kp if saved_kp is None or saved_ki is None else saved_kp
+    restored_ki = current_ki if saved_kp is None or saved_ki is None else saved_ki
+    restored_sp = current_sp if saved_sp is None else saved_sp
+    return (
+        flow_autotune_release_result(keep_cm100=True),
+        restored_kp,
+        restored_ki,
+        restored_sp,
+    )
+
+
+def flow_autotune_step_gain_status(pv0: float, pv_ss: float, du: float) -> str:
+    gain = (pv_ss - pv0) / du
+    return "OK" if gain > 0.0 else "FAILED: INVALID_GAIN"
+
+
+def flow_autotune_validation_result(
+    *,
+    seed_kp: float,
+    seed_ki: float,
+    overshoot: float,
+    settle_band: float,
+    settled: bool,
+    timed_out: bool,
+    elapsed_s: int,
+    sample_time_s: int,
+    kp_min: float,
+    kp_max: float,
+    ki_min: float,
+    ki_max: float,
+) -> FlowAutotuneValidationResult:
+    scale = 1.0
+    if overshoot > (2.0 * settle_band):
+        scale = 0.80
+    elif overshoot > settle_band:
+        scale = 0.90
+    elif settled and elapsed_s <= (sample_time_s * 3) and overshoot <= (0.5 * settle_band):
+        scale = 1.05
+    if timed_out and not settled:
+        scale = min(scale, 0.95)
+
+    raw_kp = seed_kp * scale
+    raw_ki = seed_ki * scale
+    kp = max(kp_min, min(kp_max, raw_kp))
+    ki = max(ki_min, min(ki_max, raw_ki))
+    clamped = abs(kp - raw_kp) > 1.0e-7 or abs(ki - raw_ki) > 1.0e-7
+    if timed_out and not settled:
+        status_family = "DONE (LIMITED)"
+    elif clamped:
+        status_family = "DONE (CLAMPED)"
+    else:
+        status_family = "DONE (CLOSED-LOOP)"
+    return FlowAutotuneValidationResult(status_family, kp, ki, scale, clamped)
+
+
+def boiler_flow_valid(flow_lph: float | None) -> bool:
+    return flow_lph is not None and flow_lph > 0.0
+
+
+def boiler_flow_on_target(
+    flow_lph: float | None, target_flow_lph: float, band_lph: float
+) -> bool:
+    return boiler_flow_valid(flow_lph) and abs(flow_lph - target_flow_lph) <= band_lph
+
+
+def boiler_next_stable_count(stable_now: bool, stable_count: int) -> int:
+    return stable_count + 1 if stable_now else 0
+
+
+def boiler_settle_window_ready(
+    stable_count: int,
+    required_stable_samples: int,
+    state_age_ms: int,
+    settle_min_ms: int,
+) -> bool:
+    return stable_count >= required_stable_samples and state_age_ms >= settle_min_ms
+
+
+def boiler_reset_measurement() -> BoilerMeasureState:
+    return BoilerMeasureState()
+
+
+def boiler_step_measurement(
+    state: BoilerMeasureState,
+    *,
+    flow_stable_now: bool,
+    heat_valid: bool,
+    heat_w: float,
+    plateau_ratio: float,
+    plateau_confirm_samples: int,
+) -> BoilerMeasureState:
+    if not flow_stable_now or not heat_valid or not (heat_w > 0.0):
+        return state
+
+    peak_w = state.peak_w
+    plateau_count = state.plateau_count
+    if peak_w is None or heat_w > peak_w:
+        peak_w = heat_w
+        plateau_count = 0
+
+    plateau_floor = heat_w if peak_w is None else peak_w * plateau_ratio
+    plateau_count = min(1000, plateau_count + 1) if heat_w >= plateau_floor else 0
+    if plateau_count < plateau_confirm_samples:
+        return BoilerMeasureState(
+            sample_count=state.sample_count,
+            sum_w=state.sum_w,
+            min_w=state.min_w,
+            max_w=state.max_w,
+            peak_w=peak_w,
+            plateau_count=plateau_count,
+        )
+
+    min_w = heat_w if state.min_w is None else min(state.min_w, heat_w)
+    max_w = heat_w if state.max_w is None else max(state.max_w, heat_w)
+    return BoilerMeasureState(
+        sample_count=state.sample_count + 1,
+        sum_w=state.sum_w + heat_w,
+        min_w=min_w,
+        max_w=max_w,
+        peak_w=peak_w,
+        plateau_count=plateau_count,
+    )
+
+
+def boiler_measurement_window_complete(
+    sample_count: int,
+    min_samples: int,
+    state_age_ms: int,
+    measure_min_ms: int,
+) -> bool:
+    return sample_count >= min_samples and state_age_ms >= measure_min_ms
+
+
+def boiler_finalize_measurement(state: BoilerMeasureState) -> BoilerMeasureResult:
+    if state.sample_count <= 0 or state.min_w is None or state.max_w is None:
+        return BoilerMeasureResult(False, None, 0.0, None, None, None)
+
+    avg_w = state.sum_w / state.sample_count
+    spread_w = state.max_w - state.min_w
+    confidence = 100.0
+    if state.sample_count < 10:
+        confidence -= (10 - state.sample_count) * 4.0
+    if spread_w > avg_w * 0.05:
+        confidence -= 15.0
+    if spread_w > avg_w * 0.10:
+        confidence -= 20.0
+    confidence = max(0.0, min(100.0, confidence))
+    return BoilerMeasureResult(True, avg_w, confidence, state.min_w, state.max_w, spread_w)
+
+
+def flow_autotune_arm_result(
+    *,
+    valid_mode: bool,
+    flow_valid: bool,
+    elapsed_s: int,
+    pwm0: int,
+    pwm_min: int,
+    min_step: int,
+    baseline_ready: bool,
+) -> FlowArmResult:
+    if not valid_mode:
+        return FlowArmResult("ABORT", "ABORT: not CM100")
+    if not flow_valid:
+        return FlowArmResult(
+            "ABORT" if elapsed_s >= 60 else "ARM",
+            "ABORT: NO_BASELINE_FLOW" if elapsed_s >= 60 else "WAITING_FOR_FLOW",
+        )
+    if not baseline_ready:
+        return FlowArmResult(
+            "ABORT" if elapsed_s >= 60 else "ARM",
+            "ABORT: NO_BASELINE_FLOW" if elapsed_s >= 60 else "SETTLING",
+        )
+    pwm_headroom = pwm0 - pwm_min
+    if pwm_headroom < min_step:
+        return FlowArmResult("ABORT", "REFUSED: STEP_HEADROOM")
+    u_step = max(10, min(28, round(0.06 * pwm0)))
+    u_step = max(min_step, min(u_step, pwm_headroom))
+    return FlowArmResult("STEP1", "STEP", pwm0 - u_step, 500.0)
+
+
+def flow_autotune_validation_settle_result(
+    *,
+    valid_mode: bool,
+    flow_valid: bool,
+    elapsed_s: int,
+    confirm_cnt: int,
+    peak_pv: float,
+    pv: float,
+    sp1: float,
+    settle_band: float,
+    window_ready: bool,
+    settled_now: bool,
+) -> FlowValidationSettleResult:
+    if not valid_mode:
+        return FlowValidationSettleResult(False, "ABORT: not CM100", confirm_cnt, peak_pv)
+    if not flow_valid:
+        return FlowValidationSettleResult(False, "ABORT: FLOW_INVALID", confirm_cnt, peak_pv)
+    peak_pv = max(peak_pv, pv)
+    if window_ready and elapsed_s >= 20 and settled_now:
+        confirm_cnt = min(255, confirm_cnt + 1)
+    else:
+        confirm_cnt = 0
+    if confirm_cnt >= 2 or elapsed_s >= 60:
+        return FlowValidationSettleResult(True, "VALIDATING", 0, sp1)
+    return FlowValidationSettleResult(False, "VALIDATING_SETTLING", confirm_cnt, peak_pv)
+
+
 def hold_request_mode_code(
     hp1_hold: int,
     hp2_hold: int,
@@ -1691,6 +2065,307 @@ def run_scenarios() -> list[ScenarioResult]:
             f"{supervisory_pump_on(100, commissioning_task_active=False, sticky_active=False, any_hp_active_guard=False)}, "
             f"{supervisory_pump_on(100, commissioning_task_active=True, sticky_active=False, any_hp_active_guard=False)}"
         ),
+    )
+    cm100_start = commissioning_cm100_start_result(
+        override_auto=True,
+        active=False,
+        task_code=0,
+    )
+    add(
+        "Commissioning CM100 start only arms the neutral service container",
+        cm100_start.accepted
+        and cm100_start.request_pending
+        and not cm100_start.active
+        and cm100_start.task_code == 0
+        and cm100_start.status == "CM100 REQUESTED",
+        f"commissioning_cm100_start_result(...) -> {cm100_start}",
+    )
+    add(
+        "Commissioning CM100 start refuses while override is not Auto",
+        commissioning_cm100_start_result(
+            override_auto=False,
+            active=False,
+            task_code=0,
+        ).status
+        == "REFUSED: CM Override must be Auto",
+        (
+            "commissioning_cm100_start_result(...) -> "
+            f"{commissioning_cm100_start_result(override_auto=False, active=False, task_code=0).status}"
+        ),
+    )
+    active_autotune_stop = commissioning_stop_result(
+        active=True,
+        task_code=2,
+        flow_autotune_req=False,
+    )
+    add(
+        "Commissioning stop delegates active flow-autotune abort to the task",
+        active_autotune_stop.status == "ABORT REQUESTED"
+        and active_autotune_stop.flow_autotune_abort
+        and not active_autotune_stop.abort_requested,
+        f"commissioning_stop_result(...) -> {active_autotune_stop}",
+    )
+    pending_autotune_stop = commissioning_stop_result(
+        active=False,
+        task_code=2,
+        flow_autotune_req=True,
+    )
+    add(
+        "Commissioning stop marks both abort flags for a pending flow-autotune request",
+        pending_autotune_stop.status == "ABORT REQUESTED"
+        and pending_autotune_stop.flow_autotune_abort
+        and pending_autotune_stop.abort_requested,
+        f"commissioning_stop_result(...) -> {pending_autotune_stop}",
+    )
+    autotune_start = flow_autotune_start_result(
+        cm_code=100,
+        task_running=False,
+        autotune_state=0,
+        autotune_active=False,
+        autotune_req=False,
+    )
+    add(
+        "Flow autotune start claims commissioning task 2 only when CM100 is ready",
+        autotune_start.accepted
+        and autotune_start.task_code == 2
+        and autotune_start.active
+        and autotune_start.state_code == 1
+        and autotune_start.flow_autotune_req,
+        f"flow_autotune_start_result(...) -> {autotune_start}",
+    )
+    add(
+        "Flow autotune start refuses outside CM100",
+        flow_autotune_start_result(
+            cm_code=2,
+            task_running=False,
+            autotune_state=0,
+            autotune_active=False,
+            autotune_req=False,
+        ).status
+        == "REFUSED: not CM100",
+        (
+            "flow_autotune_start_result(...) -> "
+            f"{flow_autotune_start_result(cm_code=2, task_running=False, autotune_state=0, autotune_active=False, autotune_req=False).status}"
+        ),
+    )
+    autotune_idle = flow_autotune_idle_tick_result(
+        cm_code=100,
+        task_code=2,
+        autotune_req=True,
+        flow_valid=True,
+    )
+    add(
+        "Flow autotune idle tick turns a queued task into baseline settling",
+        autotune_idle.status == "SETTLING"
+        and autotune_idle.active
+        and autotune_idle.flow_autotune_active
+        and autotune_idle.flow_autotune_state == 1,
+        f"flow_autotune_idle_tick_result(...) -> {autotune_idle}",
+    )
+    add(
+        "Flow autotune release keeps CM100 ready and clears the selected task",
+        flow_autotune_release_result(keep_cm100=True).status == "CM100 READY"
+        and flow_autotune_release_result(keep_cm100=True).active
+        and flow_autotune_release_result(keep_cm100=True).task_code == 0,
+        f"flow_autotune_release_result(...) -> {flow_autotune_release_result(keep_cm100=True)}",
+    )
+    abort_result, restored_kp, restored_ki, restored_sp = flow_autotune_abort_result(
+        saved_kp=0.03,
+        saved_ki=0.0008,
+        saved_sp=650.0,
+        current_kp=0.05,
+        current_ki=0.0012,
+        current_sp=690.0,
+    )
+    add(
+        "Flow autotune abort restores saved PI gains and setpoint before releasing CM100",
+        abort_result.status == "CM100 READY"
+        and restored_kp == 0.03
+        and restored_ki == 0.0008
+        and restored_sp == 650.0,
+        (
+            "flow_autotune_abort_result(...) -> "
+            f"{abort_result}, kp={restored_kp}, ki={restored_ki}, sp={restored_sp}"
+        ),
+    )
+    add(
+        "Flow autotune invalid step gain is a FAILED path, not an ABORT path",
+        flow_autotune_step_gain_status(500.0, 490.0, 20.0) == "FAILED: INVALID_GAIN",
+        (
+            "flow_autotune_step_gain_status(...) -> "
+            f"{flow_autotune_step_gain_status(500.0, 490.0, 20.0)}"
+        ),
+    )
+    validation_fast = flow_autotune_validation_result(
+        seed_kp=0.03,
+        seed_ki=0.0008,
+        overshoot=2.0,
+        settle_band=8.0,
+        settled=True,
+        timed_out=False,
+        elapsed_s=5,
+        sample_time_s=5,
+        kp_min=0.001,
+        kp_max=0.2,
+        ki_min=0.0,
+        ki_max=0.01,
+    )
+    add(
+        "Flow autotune successful validation may gently increase fast stable gains",
+        validation_fast.status_family == "DONE (CLOSED-LOOP)"
+        and validation_fast.scale == 1.05
+        and round(validation_fast.kp, 5) == 0.0315
+        and round(validation_fast.ki, 6) == 0.00084,
+        f"flow_autotune_validation_result(...) -> {validation_fast}",
+    )
+    validation_timeout = flow_autotune_validation_result(
+        seed_kp=0.03,
+        seed_ki=0.0008,
+        overshoot=4.0,
+        settle_band=8.0,
+        settled=False,
+        timed_out=True,
+        elapsed_s=180,
+        sample_time_s=5,
+        kp_min=0.001,
+        kp_max=0.2,
+        ki_min=0.0,
+        ki_max=0.01,
+    )
+    add(
+        "Flow autotune validation timeout publishes a limited DONE result",
+        validation_timeout.status_family == "DONE (LIMITED)"
+        and validation_timeout.scale == 0.95,
+        f"flow_autotune_validation_result(...) -> {validation_timeout}",
+    )
+    arm_ready = flow_autotune_arm_result(
+        valid_mode=True,
+        flow_valid=True,
+        elapsed_s=30,
+        pwm0=400,
+        pwm_min=50,
+        min_step=5,
+        baseline_ready=True,
+    )
+    add(
+        "Flow autotune arm helper turns a stable baseline into the first step request",
+        arm_ready.state == "STEP1"
+        and arm_ready.status == "STEP"
+        and arm_ready.pwm_step == 376,
+        f"flow_autotune_arm_result(...) -> {arm_ready}",
+    )
+    arm_wait = flow_autotune_arm_result(
+        valid_mode=True,
+        flow_valid=False,
+        elapsed_s=25,
+        pwm0=400,
+        pwm_min=50,
+        min_step=5,
+        baseline_ready=False,
+    )
+    add(
+        "Flow autotune arm helper stays in waiting-for-flow before the baseline timeout",
+        arm_wait.state == "ARM" and arm_wait.status == "WAITING_FOR_FLOW",
+        f"flow_autotune_arm_result(...) -> {arm_wait}",
+    )
+    validation_settle = flow_autotune_validation_settle_result(
+        valid_mode=True,
+        flow_valid=True,
+        elapsed_s=25,
+        confirm_cnt=1,
+        peak_pv=710.0,
+        pv=705.0,
+        sp1=700.0,
+        settle_band=8.0,
+        window_ready=True,
+        settled_now=True,
+    )
+    add(
+        "Flow autotune validation-settle helper releases into measurement after two confirmations",
+        validation_settle.settle_ready
+        and validation_settle.status == "VALIDATING"
+        and validation_settle.confirm_cnt == 0
+        and validation_settle.peak_pv == 700.0,
+        f"flow_autotune_validation_settle_result(...) -> {validation_settle}",
+    )
+    add(
+        "Boiler task flow-on-target helper accepts stable flow inside the commissioning band",
+        boiler_flow_on_target(782.0, 800.0, 40.0)
+        and not boiler_flow_on_target(855.0, 800.0, 40.0),
+        (
+            "boiler_flow_on_target(...) -> "
+            f"{boiler_flow_on_target(782.0, 800.0, 40.0)}, "
+            f"{boiler_flow_on_target(855.0, 800.0, 40.0)}"
+        ),
+    )
+    add(
+        "Boiler task settle helper keeps only consecutive stable samples",
+        boiler_next_stable_count(True, 3) == 4
+        and boiler_next_stable_count(False, 3) == 0,
+        (
+            "boiler_next_stable_count(...) -> "
+            f"{boiler_next_stable_count(True, 3)}, {boiler_next_stable_count(False, 3)}"
+        ),
+    )
+    add(
+        "Boiler task settle gate requires both enough stable samples and minimum dwell time",
+        boiler_settle_window_ready(4, 4, 120000, 120000)
+        and not boiler_settle_window_ready(3, 4, 120000, 120000)
+        and not boiler_settle_window_ready(4, 4, 119000, 120000),
+        (
+            "boiler_settle_window_ready(...) -> "
+            f"{boiler_settle_window_ready(4, 4, 120000, 120000)}, "
+            f"{boiler_settle_window_ready(3, 4, 120000, 120000)}, "
+            f"{boiler_settle_window_ready(4, 4, 119000, 120000)}"
+        ),
+    )
+    boiler_measure_state = boiler_reset_measurement()
+    for heat_w in (4000.0, 4100.0, 4300.0, 4300.0, 4300.0, 4300.0, 4250.0, 4250.0):
+        boiler_measure_state = boiler_step_measurement(
+            boiler_measure_state,
+            flow_stable_now=True,
+            heat_valid=True,
+            heat_w=heat_w,
+            plateau_ratio=0.95,
+            plateau_confirm_samples=4,
+        )
+    add(
+        "Boiler task measurement helper waits for plateau confirmation before counting samples",
+        boiler_measure_state.sample_count == 3
+        and round(boiler_measure_state.sum_w, 1) == 12800.0
+        and boiler_measure_state.min_w == 4250.0
+        and boiler_measure_state.max_w == 4300.0,
+        f"boiler_step_measurement(...) -> {boiler_measure_state}",
+    )
+    add(
+        "Boiler task measurement window closes only after both sample and runtime thresholds",
+        boiler_measurement_window_complete(8, 8, 180000, 180000)
+        and not boiler_measurement_window_complete(7, 8, 180000, 180000)
+        and not boiler_measurement_window_complete(8, 8, 179000, 180000),
+        (
+            "boiler_measurement_window_complete(...) -> "
+            f"{boiler_measurement_window_complete(8, 8, 180000, 180000)}, "
+            f"{boiler_measurement_window_complete(7, 8, 180000, 180000)}, "
+            f"{boiler_measurement_window_complete(8, 8, 179000, 180000)}"
+        ),
+    )
+    boiler_result = boiler_finalize_measurement(
+        BoilerMeasureState(
+            sample_count=8,
+            sum_w=34000.0,
+            min_w=4200.0,
+            max_w=4300.0,
+            peak_w=4300.0,
+            plateau_count=6,
+        )
+    )
+    add(
+        "Boiler task finalize helper computes average and confidence from the measurement spread",
+        boiler_result.ready
+        and boiler_result.avg_w == 4250.0
+        and boiler_result.spread_w == 100.0
+        and boiler_result.confidence == 92.0,
+        f"boiler_finalize_measurement(...) -> {boiler_result}",
     )
 
     return results

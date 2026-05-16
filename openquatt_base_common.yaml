@@ -26,6 +26,9 @@ esphome:
     - ${oq_cic_compatibility_protocol_header}
     - ${oq_supervisory_logic_header}
     - ${oq_thermal_guard_logic_header}
+    - ${oq_commissioning_logic_header}
+    - ${oq_flow_autotune_logic_header}
+    - ${oq_boiler_task_logic_header}
   platformio_options:
     extra_scripts:
       - pre:../../../scripts/normalize_factory_merge_inputs.py

@@ -141,23 +141,23 @@ button:
                    id(oq_commissioning_task_code),
                    (int) id(oq_commissioning_active),
                    (int) id(oq_commissioning_request_pending));
-          if (id(oq_commissioning_active) && id(oq_commissioning_task_code) != 0) {
+          if (oq_commissioning::task_running(id(oq_commissioning_active), id(oq_commissioning_task_code))) {
             id(oq_commissioning_status).publish_state("REFUSED: BUSY");
             return;
           }
 
-          id(oq_commissioning_task_code) = 0;
+          id(oq_commissioning_task_code) = oq_commissioning::TASK_NONE;
           id(oq_commissioning_request_pending) = true;
           id(oq_commissioning_active) = false;
           id(oq_commissioning_abort_requested) = false;
-          id(oq_commissioning_state_code) = 0;
+          id(oq_commissioning_state_code) = oq_commissioning::TASK_STATE_IDLE;
           id(oq_commissioning_started_ms) = 0;
           id(oq_commissioning_state_since_ms) = 0;
           id(oq_commissioning_boiler_request) = false;
           id(oq_flow_autotune_req) = false;
           id(oq_flow_autotune_abort) = false;
           id(oq_flow_autotune_active) = false;
-          id(oq_flow_autotune_state) = 0;
+          id(oq_flow_autotune_state) = oq_flow_autotune::STATE_IDLE;
           id(oq_commissioning_result_peak_w) = NAN;
           id(oq_commissioning_result_plateau_count) = 0;
           id(oq_commissioning_status).publish_state("CM100 REQUESTED");
@@ -171,18 +171,21 @@ button:
     on_press:
       - lambda: |-
           // Stop CM100 immediately when no task is active; otherwise abort the running task.
-          const int cm_code = id(oq_control_mode_code);
           const int task_code = id(oq_commissioning_task_code);
-          if (id(oq_commissioning_active) && task_code != 0) {
-            if (task_code == 2) {
+          if (oq_commissioning::task_running(id(oq_commissioning_active), task_code)) {
+            if (oq_commissioning::stop_routes_to_autotune_abort(
+                    id(oq_commissioning_active), task_code, id(oq_flow_autotune_req))) {
               id(oq_flow_autotune_abort) = true;
-            } else {
+            }
+            if (oq_commissioning::stop_routes_to_commissioning_abort(
+                    id(oq_commissioning_active), task_code)) {
               id(oq_commissioning_abort_requested) = true;
             }
             id(oq_commissioning_status).publish_state("ABORT REQUESTED");
             return;
           }
-          if (task_code == 2 || id(oq_flow_autotune_req)) {
+          if (oq_commissioning::stop_routes_to_autotune_abort(
+                  id(oq_commissioning_active), task_code, id(oq_flow_autotune_req))) {
             id(oq_flow_autotune_abort) = true;
             id(oq_commissioning_abort_requested) = true;
             id(oq_commissioning_status).publish_state("ABORT REQUESTED");
@@ -191,15 +194,15 @@ button:
           id(oq_commissioning_request_pending) = false;
           id(oq_commissioning_active) = false;
           id(oq_commissioning_abort_requested) = false;
-          id(oq_commissioning_task_code) = 0;
-          id(oq_commissioning_state_code) = 0;
+          id(oq_commissioning_task_code) = oq_commissioning::TASK_NONE;
+          id(oq_commissioning_state_code) = oq_commissioning::TASK_STATE_IDLE;
           id(oq_commissioning_started_ms) = 0;
           id(oq_commissioning_state_since_ms) = 0;
           id(oq_commissioning_boiler_request) = false;
           id(oq_flow_autotune_req) = false;
           id(oq_flow_autotune_abort) = false;
           id(oq_flow_autotune_active) = false;
-          id(oq_flow_autotune_state) = 0;
+          id(oq_flow_autotune_state) = oq_flow_autotune::STATE_IDLE;
           id(oq_commissioning_result_peak_w) = NAN;
           id(oq_commissioning_result_plateau_count) = 0;
           id(oq_commissioning_status).publish_state("IDLE");
@@ -215,8 +218,9 @@ button:
       - lambda: |-
           // Boiler test may only start while the system is already in CM100.
           const int cm_code = id(oq_control_mode_code);
-          const bool cm100_ready = (cm_code == 100);
-          const bool task_running = id(oq_commissioning_active) && id(oq_commissioning_task_code) != 0;
+          const bool cm100_ready = oq_commissioning::is_cm100(cm_code);
+          const bool task_running = oq_commissioning::task_running(
+              id(oq_commissioning_active), id(oq_commissioning_task_code));
           if (!id(oq_boiler_assist_enabled).state) {
             id(oq_boiler_power_test_status).publish_state("REFUSED: boiler/CV assist disabled");
             return;
@@ -245,11 +249,11 @@ button:
                    id(oq_commissioning_task_code),
                    (int) id(oq_commissioning_active));
 
-          id(oq_commissioning_task_code) = 1;
+          id(oq_commissioning_task_code) = oq_commissioning::TASK_BOILER_POWER_TEST;
           id(oq_commissioning_request_pending) = false;
           id(oq_commissioning_active) = true;
           id(oq_commissioning_abort_requested) = false;
-          id(oq_commissioning_state_code) = 2;
+          id(oq_commissioning_state_code) = oq_commissioning::TASK_STATE_FLOW_SETTLE;
           id(oq_commissioning_started_ms) = (uint32_t) millis();
           id(oq_commissioning_state_since_ms) = (uint32_t) millis();
           id(oq_commissioning_boiler_request) = false;
@@ -287,17 +291,22 @@ button:
       - lambda: |-
           // Abort the running commissioning task, or clear a pending CM100 request.
           const int task_code = id(oq_commissioning_task_code);
-          const bool task_running = id(oq_commissioning_active) && task_code != 0;
+          const bool task_running = oq_commissioning::task_running(
+              id(oq_commissioning_active), task_code);
           if (task_running) {
-            if (task_code == 2) {
+            if (oq_commissioning::stop_routes_to_autotune_abort(
+                    id(oq_commissioning_active), task_code, id(oq_flow_autotune_req))) {
               id(oq_flow_autotune_abort) = true;
-            } else {
+            }
+            if (oq_commissioning::stop_routes_to_commissioning_abort(
+                    id(oq_commissioning_active), task_code)) {
               id(oq_commissioning_abort_requested) = true;
             }
             id(oq_commissioning_status).publish_state("ABORT REQUESTED");
             return;
           }
-          if (task_code == 2 || id(oq_flow_autotune_req)) {
+          if (oq_commissioning::stop_routes_to_autotune_abort(
+                  id(oq_commissioning_active), task_code, id(oq_flow_autotune_req))) {
             id(oq_flow_autotune_abort) = true;
             id(oq_commissioning_abort_requested) = true;
             id(oq_commissioning_status).publish_state("ABORT REQUESTED");
@@ -306,15 +315,15 @@ button:
           id(oq_commissioning_request_pending) = false;
           id(oq_commissioning_active) = false;
           id(oq_commissioning_abort_requested) = false;
-          id(oq_commissioning_task_code) = 0;
-          id(oq_commissioning_state_code) = 0;
+          id(oq_commissioning_task_code) = oq_commissioning::TASK_NONE;
+          id(oq_commissioning_state_code) = oq_commissioning::TASK_STATE_IDLE;
           id(oq_commissioning_started_ms) = 0;
           id(oq_commissioning_state_since_ms) = 0;
           id(oq_commissioning_boiler_request) = false;
           id(oq_flow_autotune_req) = false;
           id(oq_flow_autotune_abort) = false;
           id(oq_flow_autotune_active) = false;
-          id(oq_flow_autotune_state) = 0;
+          id(oq_flow_autotune_state) = oq_flow_autotune::STATE_IDLE;
           id(oq_commissioning_status).publish_state("IDLE");
   - platform: template
     id: oq_boiler_power_test_apply
@@ -405,7 +414,10 @@ binary_sensor:
     web_server:
       sorting_group_id: oq_boiler
     lambda: |-
-      return id(oq_commissioning_active) && id(oq_commissioning_task_code) == 1;
+      return oq_commissioning::task_active(
+          id(oq_commissioning_active),
+          id(oq_commissioning_task_code),
+          oq_commissioning::TASK_BOILER_POWER_TEST);
 
 text_sensor:
   - platform: template
@@ -446,14 +458,20 @@ interval:
           const uint32_t now_ms = (uint32_t) millis();
           const int cm_code = id(oq_control_mode_code);
           const bool in_cm3 = (cm_code == 3);
-          const bool in_cm100 = (cm_code == 100);
-          const bool task_is_none = (id(oq_commissioning_task_code) == 0);
-          const bool task_is_boiler = (id(oq_commissioning_task_code) == 1);
-          const bool task_is_flow_autotune = (id(oq_commissioning_task_code) == 2);
-          const bool boiler_test_running = id(oq_commissioning_active) && task_is_boiler;
+          const bool in_cm100 = oq_commissioning::is_cm100(cm_code);
+          const bool task_is_none = oq_commissioning::task_selected(
+              id(oq_commissioning_task_code), oq_commissioning::TASK_NONE);
+          const bool task_is_boiler = oq_commissioning::task_selected(
+              id(oq_commissioning_task_code), oq_commissioning::TASK_BOILER_POWER_TEST);
+          const bool task_is_flow_autotune = oq_commissioning::task_selected(
+              id(oq_commissioning_task_code), oq_commissioning::TASK_FLOW_AUTOTUNE);
+          const bool boiler_test_running = oq_commissioning::task_active(
+              id(oq_commissioning_active),
+              id(oq_commissioning_task_code),
+              oq_commissioning::TASK_BOILER_POWER_TEST);
           const float flow_lph = id(flow_rate_selected).state;
-          const bool flow_valid = !isnan(flow_lph) && flow_lph > 0.0f;
-          const bool flow_on_target = flow_valid && fabsf(flow_lph - kTargetFlowLph) <= kFlowBandLph;
+          const bool flow_on_target = oq_boiler_task::flow_on_target(
+              flow_lph, kTargetFlowLph, kFlowBandLph);
           const bool flow_stable_now = flow_on_target;
           const float heat_w = id(boiler_heat_power).state;
           const bool heat_valid = !isnan(heat_w) && heat_w >= 0.0f;
@@ -515,13 +533,14 @@ interval:
           };
 
           auto reset_measurement = [&]() {
-            id(oq_commissioning_sample_count) = 0;
+            const auto state = oq_boiler_task::reset_measurement();
+            id(oq_commissioning_sample_count) = state.sample_count;
             id(oq_commissioning_flow_stable_count) = 0;
-            id(oq_commissioning_result_sum_w) = 0.0f;
-            id(oq_commissioning_result_min_w) = NAN;
-            id(oq_commissioning_result_max_w) = NAN;
-            id(oq_commissioning_result_peak_w) = NAN;
-            id(oq_commissioning_result_plateau_count) = 0;
+            id(oq_commissioning_result_sum_w) = state.sum_w;
+            id(oq_commissioning_result_min_w) = state.min_w;
+            id(oq_commissioning_result_max_w) = state.max_w;
+            id(oq_commissioning_result_peak_w) = state.peak_w;
+            id(oq_commissioning_result_plateau_count) = state.plateau_count;
           };
 
           auto finish_task = [&](const char *status, int next_state, bool keep_result, bool keep_cm100) {
@@ -530,7 +549,7 @@ interval:
             id(oq_commissioning_request_pending) = false;
             id(oq_commissioning_active) = keep_cm100;
             id(oq_commissioning_abort_requested) = false;
-            id(oq_commissioning_task_code) = 0;
+            id(oq_commissioning_task_code) = oq_commissioning::TASK_NONE;
             id(oq_commissioning_state_code) = next_state;
             if (!keep_result) {
           id(oq_commissioning_result_w) = NAN;
@@ -546,7 +565,7 @@ interval:
             ESP_LOGW("quatt.cm100.boiler", "Boiler test abort requested (state=%d cm=%d active=%d pending=%d)",
                      id(oq_commissioning_state_code), cm_code,
                      (int) id(oq_commissioning_active), (int) id(oq_commissioning_request_pending));
-            finish_task("ABORTED", 7, true, true);
+            finish_task("ABORTED", oq_commissioning::TASK_STATE_ABORT, true, true);
             return;
           }
 
@@ -593,7 +612,7 @@ interval:
                 id(oq_commissioning_request_pending) = false;
                 id(oq_commissioning_started_ms) = now_ms;
                 id(oq_commissioning_state_since_ms) = now_ms;
-                id(oq_commissioning_state_code) = 2;
+                id(oq_commissioning_state_code) = oq_commissioning::TASK_STATE_FLOW_SETTLE;
                 publish_status("FLOW_SETTLING");
               }
             }
@@ -601,7 +620,7 @@ interval:
           }
 
           if (!in_cm100) {
-            finish_task("ABORTED: CM100 exited", 7, true, false);
+            finish_task("ABORTED: CM100 exited", oq_commissioning::TASK_STATE_ABORT, true, false);
             return;
           }
 
@@ -612,34 +631,38 @@ interval:
 
           const uint32_t elapsed_ms = now_ms - id(oq_commissioning_started_ms);
           if (elapsed_ms >= kMaxRuntimeMs) {
-            finish_task("FAILED: timeout", 8, false, true);
+            finish_task("FAILED: timeout", oq_commissioning::TASK_STATE_FAILED, false, true);
             return;
           }
 
           if (id(oq_water_temp_hard_trip_active)) {
             ESP_LOGW("quatt.cm100.boiler", "Boiler test failed: hard trip active");
-            finish_task("FAILED: hard trip active", 8, false, true);
+            finish_task("FAILED: hard trip active", oq_commissioning::TASK_STATE_FAILED, false, true);
             return;
           }
           if (id(oq_water_temp_boiler_inhibit_active)) {
             ESP_LOGW("quatt.cm100.boiler", "Boiler test failed: boiler inhibit active");
-            finish_task("FAILED: boiler inhibit active", 8, false, true);
+            finish_task("FAILED: boiler inhibit active", oq_commissioning::TASK_STATE_FAILED, false, true);
             return;
           }
           if (!id(oq_boiler_assist_enabled).state) {
             ESP_LOGW("quatt.cm100.boiler", "Boiler test failed: boiler/CV assist disabled");
-            finish_task("FAILED: boiler/CV assist disabled", 8, false, true);
+            finish_task("FAILED: boiler/CV assist disabled", oq_commissioning::TASK_STATE_FAILED, false, true);
             return;
           }
 
-          if (id(oq_commissioning_state_code) == 2) {
-            if (flow_stable_now) id(oq_commissioning_flow_stable_count)++;
-            else id(oq_commissioning_flow_stable_count) = 0;
+          if (id(oq_commissioning_state_code) == oq_commissioning::TASK_STATE_FLOW_SETTLE) {
+            const auto flow_settle = oq_boiler_task::evaluate_flow_settle(
+                flow_stable_now,
+                id(oq_commissioning_flow_stable_count),
+                kStableFlowSamples,
+                now_ms - id(oq_commissioning_state_since_ms),
+                kFlowSettleMinMs);
+            id(oq_commissioning_flow_stable_count) = flow_settle.stable_count;
 
-            if (id(oq_commissioning_flow_stable_count) >= kStableFlowSamples &&
-                (now_ms - id(oq_commissioning_state_since_ms)) >= kFlowSettleMinMs) {
+            if (flow_settle.ready) {
               id(oq_commissioning_boiler_request) = true;
-              id(oq_commissioning_state_code) = 3;
+              id(oq_commissioning_state_code) = oq_commissioning::TASK_STATE_BOILER_SETTLE;
               id(oq_commissioning_state_since_ms) = now_ms;
               id(oq_commissioning_flow_stable_count) = 0;
               ESP_LOGI("quatt.cm100.boiler",
@@ -653,27 +676,32 @@ interval:
             return;
           }
 
-          if (id(oq_commissioning_state_code) == 3) {
-            if (flow_stable_now) id(oq_commissioning_flow_stable_count)++;
-            else id(oq_commissioning_flow_stable_count) = 0;
+          if (id(oq_commissioning_state_code) == oq_commissioning::TASK_STATE_BOILER_SETTLE) {
+            const auto boiler_settle = oq_boiler_task::evaluate_boiler_settle(
+                flow_stable_now,
+                id(oq_commissioning_flow_stable_count),
+                id(boiler_active).state,
+                kStableFlowSamples,
+                now_ms - id(oq_commissioning_state_since_ms),
+                kBoilerSettleMinMs);
+            id(oq_commissioning_flow_stable_count) = boiler_settle.stable_count;
 
             if (!id(boiler_active).state) {
-              if ((now_ms - id(oq_commissioning_state_since_ms)) >= kBoilerSettleMinMs) {
+              if (boiler_settle.boiler_timeout) {
                 ESP_LOGW("quatt.cm100.boiler",
                          "Boiler did not start in time (flow=%.0fL/h boiler_req=%d elapsed=%lus)",
                          flow_lph,
                          (int) id(oq_commissioning_boiler_request),
                          (unsigned long) ((now_ms - id(oq_commissioning_state_since_ms)) / 1000UL));
-                finish_task("FAILED: boiler did not start", 8, false, true);
+                finish_task("FAILED: boiler did not start", oq_commissioning::TASK_STATE_FAILED, false, true);
                 return;
               }
               publish_status("BOILER_SETTLING");
               return;
             }
 
-            if (id(oq_commissioning_flow_stable_count) >= kStableFlowSamples &&
-                (now_ms - id(oq_commissioning_state_since_ms)) >= kBoilerSettleMinMs) {
-              id(oq_commissioning_state_code) = 4;
+            if (boiler_settle.ready) {
+              id(oq_commissioning_state_code) = oq_commissioning::TASK_STATE_MEASURE;
               id(oq_commissioning_state_since_ms) = now_ms;
               reset_measurement();
               ESP_LOGI("quatt.cm100.boiler",
@@ -686,63 +714,49 @@ interval:
             return;
           }
 
-          if (id(oq_commissioning_state_code) == 4) {
-            if (flow_stable_now && heat_valid && heat_w > 0.0f) {
-              constexpr float kPlateauRatio = 0.95f;
-              constexpr int kPlateauConfirmSamples = 4;
-              if (isnan(id(oq_commissioning_result_peak_w)) || heat_w > id(oq_commissioning_result_peak_w)) {
-                id(oq_commissioning_result_peak_w) = heat_w;
-                id(oq_commissioning_result_plateau_count) = 0;
+          if (id(oq_commissioning_state_code) == oq_commissioning::TASK_STATE_MEASURE) {
+            constexpr float kPlateauRatio = 0.95f;
+            constexpr int kPlateauConfirmSamples = 4;
+            const auto measure_phase = oq_boiler_task::evaluate_measure_phase(
+                oq_boiler_task::MeasureState{
+                    id(oq_commissioning_sample_count),
+                    id(oq_commissioning_result_sum_w),
+                    id(oq_commissioning_result_min_w),
+                    id(oq_commissioning_result_max_w),
+                    id(oq_commissioning_result_peak_w),
+                    id(oq_commissioning_result_plateau_count),
+                },
+                flow_stable_now,
+                heat_valid,
+                heat_w,
+                kPlateauRatio,
+                kPlateauConfirmSamples,
+                kMeasureMinSamples,
+                now_ms - id(oq_commissioning_state_since_ms),
+                kMeasureMinMs);
+            id(oq_commissioning_sample_count) = measure_phase.state.sample_count;
+            id(oq_commissioning_result_sum_w) = measure_phase.state.sum_w;
+            id(oq_commissioning_result_min_w) = measure_phase.state.min_w;
+            id(oq_commissioning_result_max_w) = measure_phase.state.max_w;
+            id(oq_commissioning_result_peak_w) = measure_phase.state.peak_w;
+            id(oq_commissioning_result_plateau_count) = measure_phase.state.plateau_count;
+            if (measure_phase.window_complete) {
+              if (!measure_phase.result.ready) {
+                finish_task("FAILED: invalid measurement", oq_commissioning::TASK_STATE_FAILED, false, true);
+                return;
               }
-
-              const float plateau_floor = isnan(id(oq_commissioning_result_peak_w))
-                  ? heat_w
-                  : id(oq_commissioning_result_peak_w) * kPlateauRatio;
-              if (heat_w >= plateau_floor) {
-                if (id(oq_commissioning_result_plateau_count) < 1000) {
-                  id(oq_commissioning_result_plateau_count)++;
-                }
-              } else {
-                id(oq_commissioning_result_plateau_count) = 0;
-              }
-
-              if (id(oq_commissioning_result_plateau_count) >= kPlateauConfirmSamples) {
-                id(oq_commissioning_sample_count)++;
-                id(oq_commissioning_result_sum_w) += heat_w;
-                if (isnan(id(oq_commissioning_result_min_w)) || heat_w < id(oq_commissioning_result_min_w)) {
-                  id(oq_commissioning_result_min_w) = heat_w;
-                }
-                if (isnan(id(oq_commissioning_result_max_w)) || heat_w > id(oq_commissioning_result_max_w)) {
-                  id(oq_commissioning_result_max_w) = heat_w;
-                }
-              }
-            }
-
-            const uint32_t measure_age_ms = now_ms - id(oq_commissioning_state_since_ms);
-            const bool enough_samples = id(oq_commissioning_sample_count) >= kMeasureMinSamples;
-            const bool enough_time = measure_age_ms >= kMeasureMinMs;
-
-            if (enough_samples && enough_time) {
-              const float sample_count_f = (float) id(oq_commissioning_sample_count);
-              const float avg_w = id(oq_commissioning_result_sum_w) / sample_count_f;
-              const float min_w = id(oq_commissioning_result_min_w);
-              const float max_w = id(oq_commissioning_result_max_w);
-              const float spread_w = max_w - min_w;
-              float confidence = 100.0f;
-              if (sample_count_f < 10.0f) confidence -= (10.0f - sample_count_f) * 4.0f;
-              if (spread_w > avg_w * 0.05f) confidence -= 15.0f;
-              if (spread_w > avg_w * 0.10f) confidence -= 20.0f;
-              if (confidence < 0.0f) confidence = 0.0f;
-              if (confidence > 100.0f) confidence = 100.0f;
-
-              id(oq_commissioning_result_w) = avg_w;
-              id(oq_commissioning_result_confidence) = confidence;
-              id(oq_commissioning_state_code) = 5;
+              id(oq_commissioning_result_w) = measure_phase.result.avg_w;
+              id(oq_commissioning_result_confidence) = measure_phase.result.confidence;
+              id(oq_commissioning_state_code) = oq_commissioning::TASK_STATE_COOLDOWN;
               id(oq_commissioning_state_since_ms) = now_ms;
               id(oq_commissioning_boiler_request) = false;
               ESP_LOGI("quatt.cm100.boiler",
                        "Measurement complete: avg=%.0fW min=%.0fW max=%.0fW samples=%u conf=%.0f%%",
-                       avg_w, min_w, max_w, (unsigned int) id(oq_commissioning_sample_count), confidence);
+                       measure_phase.result.avg_w,
+                       measure_phase.result.min_w,
+                       measure_phase.result.max_w,
+                       (unsigned int) id(oq_commissioning_sample_count),
+                       measure_phase.result.confidence);
               restore_flow_setpoint();
               publish_status("COOLDOWN");
             } else {
@@ -751,7 +765,7 @@ interval:
             return;
           }
 
-          if (id(oq_commissioning_state_code) == 5) {
+          if (id(oq_commissioning_state_code) == oq_commissioning::TASK_STATE_COOLDOWN) {
             if ((now_ms - id(oq_commissioning_state_since_ms)) >= kCooldownMs) {
               char msg[128];
               snprintf(msg, sizeof(msg), "DONE: %.0fW (conf %.0f%%)",
@@ -759,14 +773,14 @@ interval:
               ESP_LOGI("quatt.cm100.boiler",
                        "Cooldown complete; CM100 idle after boiler test (flow restored, boiler off, %s)",
                        msg);
-              finish_task(msg, 6, true, true);
+              finish_task(msg, oq_commissioning::TASK_STATE_DONE, true, true);
             } else {
               publish_status("COOLDOWN");
             }
             return;
           }
 
-          if (id(oq_commissioning_state_code) == 6) {
+          if (id(oq_commissioning_state_code) == oq_commissioning::TASK_STATE_DONE) {
             char msg[128];
             snprintf(msg, sizeof(msg), "DONE: %.0fW (conf %.0f%%)",
                      id(oq_commissioning_result_w), id(oq_commissioning_result_confidence));

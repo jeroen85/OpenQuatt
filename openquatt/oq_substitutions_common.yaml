@@ -27,6 +27,9 @@ oq_cic_compatibility_logic_header: "openquatt/includes/oq_cic_compatibility_logi
 oq_cic_compatibility_protocol_header: "openquatt/includes/oq_cic_compatibility_protocol.h" # Shared helpers for CiC compatibility protocol encoding.
 oq_supervisory_logic_header: "openquatt/includes/oq_supervisory_logic.h" # Shared supervisory helpers for CM naming and pure policy decisions.
 oq_thermal_guard_logic_header: "openquatt/includes/oq_thermal_guard_logic.h" # Shared thermal guard helper seam for guarded-request shaping.
+oq_commissioning_logic_header: "openquatt/includes/oq_commissioning_logic.h" # Shared commissioning/task helper seam for task codes and abort routing.
+oq_flow_autotune_logic_header: "openquatt/includes/oq_flow_autotune_logic.h" # Shared autotune helper seam for state names and pure validation math.
+oq_boiler_task_logic_header: "openquatt/includes/oq_boiler_task_logic.h" # Shared boiler-task helper seam for settle/measurement/result math.
 oq_timezone: "Europe/Amsterdam"                         # SNTP timezone used by runtime timestamps.
 oq_webserver_css_url: ""                            # Optional external CSS for the ESPHome web UI.
 oq_webserver_js_url: ""                               # Custom OpenQuatt app is primary; load ESPHome fallback lazily on demand.
