@@ -228,8 +228,9 @@ globals:
 # TUNING INPUTS
 # ----------------------------
 number:
+  # Seconds-based runtime floor. Keep the entity name stable for HA/web UI.
   - platform: template
-    id: oq_min_runtime_min
+    id: oq_min_runtime_s
     name: "Minimum runtime"
     icon: mdi:timer-cog-outline
     unit_of_measurement: "s"
@@ -904,7 +905,7 @@ interval:
                 defrost_active, cooling_mode_active, selected_level, prev_applied);
           };
 
-          int min_rt_s = (int) roundf(id(oq_min_runtime_min).state);
+          int min_rt_s = (int) roundf(id(oq_min_runtime_s).state);
           // Keep the runtime floor hard in code as well. Older installs may still
           // restore a pre-migration numeric value such as 60, even though the UI
           // slider now starts at 300 s.
