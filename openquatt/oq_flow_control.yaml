@@ -48,7 +48,7 @@ globals:
   - id: oq_flow_last_mode
     type: int
     restore_value: false
-    initial_value: '0'   # 0=AUTO, 1=MANUAL, 2=FROST
+    initial_value: '0'   # 0=NON_FROST, 2=FROST
   - id: oq_flow_last_good_pwm
     type: int
     # persistent: learned_value - remembers the last stable AUTO seed across reboots.
@@ -336,8 +336,9 @@ interval:
           // Priority (highest -> lowest):
           // 1) CM0 early return (no writes from this loop)
           // 2) AUTOTUNE override (CM100 commissioning task only)
-          // 3) MANUAL / FROST fixed iPWM
-          // 4) AUTO PI path (with startup-hold + failsafe)
+          // 3) CM98 frost fixed iPWM
+          // 4) MANUAL fixed iPWM
+          // 5) AUTO PI path (with startup-hold + failsafe)
           //
           // iPWM semantics:
           // - 50..850 = pump running (lower means harder)
@@ -362,26 +363,7 @@ interval:
           static float sp_f = NAN;
           static float last_pi_e = 0.0f;
 
-          // Explicit execution mode keeps the control flow readable and makes
-          // status publishing deterministic.
-          enum FlowExecMode {
-            FLOW_MODE_CM0 = 0,
-            FLOW_MODE_AUTOTUNE = 1,
-            FLOW_MODE_MANUAL = 2,
-            FLOW_MODE_FROST = 3,
-            FLOW_MODE_AUTO_STARTING = 4,
-            FLOW_MODE_AUTO = 5,
-            FLOW_MODE_AUTO_FAILSAFE = 6
-          };
-
           // --- helpers ---
-          auto clamp_iPWM = [](int value) -> int {
-            constexpr int kMinIpwm = 50;
-            constexpr int kMaxIpwm = 850;
-            if (value < kMinIpwm) return kMinIpwm;
-            if (value > kMaxIpwm) return kMaxIpwm;
-            return value;
-          };
           auto write_pump_pwm_if_changed = [](auto *num, int value) {
             if (num == nullptr) return;
             const float cur = num->state;
@@ -391,145 +373,93 @@ interval:
               c.perform();
             }
           };
-          // Common AUTO-entry init used for CM0->* and MANUAL->AUTO edges.
-          auto start_auto_transition = [&](const char *tag) {
-            int fallback = (int) roundf(id(oq_flow_auto_start_pwm).state);
-            fallback = clamp_iPWM(fallback);
-
-            const int cm_code = id(oq_control_mode_code);
-            const bool commissioning_start = (cm_code == 100) && (id(oq_commissioning_task_code) != 0);
-            int start_pwm = commissioning_start
-              ? clamp_iPWM(id(oq_flow_commissioning_start_pwm))
-              : (int) id(oq_flow_last_good_pwm);
-            if (!commissioning_start && (start_pwm < 50 || start_pwm > 850)) start_pwm = fallback;
-
-            ESP_LOGI("flow", "AUTO start(%s): iPWM=%d (last_good=%d fallback=%d commissioning=%s hold %ds, fixed iPWM)",
-                     tag, start_pwm, (int)id(oq_flow_last_good_pwm), fallback, commissioning_start ? "yes" : "no", STARTUP_HOLD_S);
-
-            id(oq_flow_last_pwm) = start_pwm;
-            id(oq_flow_i) = 0.0f;
-            startup_hold = STARTUP_HOLD_TICKS;
-            sp_f = NAN;
-            last_pi_e = 0.0f;
-            stable_cnt = 0;
+          auto current_auto_state = [&]() -> oq_flow_control::AutoPiState {
+            return oq_flow_control::AutoPiState{
+              id(oq_flow_i),
+              sp_f,
+              last_pi_e,
+              startup_hold,
+              stable_cnt,
+            };
           };
-          // AUTO PI path only: setpoint ramp, PI, startup-hold, and last_good tracking.
-          auto run_auto_pi = [&](int pwm_seed) -> int {
-            int pwm_local = pwm_seed;
-            float sp_target = id(oq_flow_setpoint_lph).state;
-            float pv = id(flow_rate_selected).state;
-
-            // Treat 0 L/h as a valid measurement (no-flow state), not as sensor failure.
-            // This prevents an AUTO(start) deadlock where PI would stay in failsafe and never build flow.
-            const bool flow_signal_valid = !isnan(pv);
-            pi_failsafe = (isnan(sp_target) || sp_target <= 0.0f || !flow_signal_valid);
-
-            if (pi_failsafe) {
-              constexpr int kFailsafeIpwm = 850;
-              pwm_local = kFailsafeIpwm;
-              ESP_LOGW("flow", "Flow PI failsafe engaged: sp=%0.1f pv=%0.1f -> forcing iPWM=%d", sp_target, pv, kFailsafeIpwm);
-              id(oq_flow_i) = 0.0f;
-              last_pi_e = 0.0f;
-              stable_cnt = 0;
-              sp_f = NAN;
-              return pwm_local;
-            }
-
-            const bool in_startup_hold = (startup_hold > 0);
-            if (in_startup_hold) {
-              // True startup settle: keep iPWM fixed for a short hydraulic delay window.
-              // Keep SP filter aligned to PV so PI starts without a large instantaneous kick.
-              sp_f = pv;
-              startup_hold--;
-              stable_cnt = 0;
-              return clamp_iPWM(pwm_local);
-            }
-
-            const float sp_ramp_up = 25.0f;   // L/h per second up
-            const float sp_ramp_dn = 15.0f;   // L/h per second down
-            if (isnan(sp_f)) sp_f = flow_signal_valid ? pv : sp_target;
-
-            float d = sp_target - sp_f;
-            float max_step = ((d >= 0.0f) ? sp_ramp_up : sp_ramp_dn) * dt;
-            if (d >  max_step) d =  max_step;
-            if (d < -max_step) d = -max_step;
-            sp_f += d;
-
-            float e = sp_f - pv;  // positive => more flow needed
-
-            constexpr float deadband_lph = 10.0f;
-            if (fabsf(e) < deadband_lph) e = 0.0f;
-
-            const float kp = id(oq_flow_kp).state;
-            const float ki = id(oq_flow_ki).state;
-
-            // Anti-windup:
-            // - keep I inactive during large setpoint / plant transients
-            // - quickly bleed stored I when we cross the setpoint
-            // - slowly unwind I inside the deadband so it cannot keep pushing past target
-            constexpr float i_active_band_lph = 60.0f;
-            constexpr float i_cross_keep = 0.25f;
-            constexpr float i_deadband_keep = 0.60f;
-            constexpr float i_large_err_keep = 0.35f;
-            const bool have_e = (e > 0.0f) || (e < 0.0f);
-            const bool have_last_e = (last_pi_e > 0.0f) || (last_pi_e < 0.0f);
-            const bool sign_flip = have_e && have_last_e && ((e > 0.0f) != (last_pi_e > 0.0f));
-
-            if (sign_flip) {
-              id(oq_flow_i) *= i_cross_keep;
-            }
-
-            if (!have_e) {
-              id(oq_flow_i) *= i_deadband_keep;
-            } else if (fabsf(e) <= i_active_band_lph) {
-              id(oq_flow_i) += e * dt;
-            } else {
-              id(oq_flow_i) *= i_large_err_keep;
-            }
-
-            id(oq_flow_i) = fmaxf(-4000.0f, fminf(4000.0f, id(oq_flow_i)));
-            last_pi_e = e;
-
-            float u = kp * e + ki * id(oq_flow_i);
-            // Asymmetric action limit: allow faster "pump harder" corrections (u_up)
-            // than "pump softer" corrections (u_down) to recover low-flow sooner.
-            const float u_up_s = 12.0f;
-            const float u_down_s = 8.0f;
-            const float u_up = u_up_s * dt;
-            const float u_down = u_down_s * dt;
-            const float u_lim = (e >= 0.0f) ? u_up : u_down;
-            u = fmaxf(-u_lim, fminf(u_lim, u));
-
-            pwm_local = (int) roundf((float)pwm_local - u);
-            pwm_local = clamp_iPWM(pwm_local);
-
-            const float stable_err_lph = 15.0f;
-            constexpr int stable_time_s = 60;
-            const int stable_time_ticks = (stable_time_s <= 0) ? 0 : (int) roundf((float)stable_time_s / dt);
-            constexpr int good_pwm_step = 10;
-
-            if (startup_hold <= 0 && !pi_failsafe) {
-              const float e_target = sp_target - pv;
-              if (fabsf(e_target) < stable_err_lph) {
-                stable_cnt++;
-              } else {
-                stable_cnt = 0;
-              }
-
-              if (stable_cnt >= stable_time_ticks) {
-                const int prev = id(oq_flow_last_good_pwm);
-                if (abs(prev - pwm_local) >= good_pwm_step) {
-                  id(oq_flow_last_good_pwm) = pwm_local;
-                }
-                stable_cnt = stable_time_ticks;
-              }
-            } else {
-              stable_cnt = 0;
-            }
-            return pwm_local;
+          auto apply_auto_state = [&](const oq_flow_control::AutoPiState &state) {
+            id(oq_flow_i) = state.integral;
+            sp_f = state.setpoint_filtered;
+            last_pi_e = state.last_error;
+            startup_hold = state.startup_hold;
+            stable_cnt = state.stable_count;
+          };
+          const oq_flow_control::AutoPiConfig auto_pi_cfg{
+            dt,
+            50,
+            850,
+            850,
+            25.0f,
+            15.0f,
+            10.0f,
+            60.0f,
+            0.25f,
+            0.60f,
+            0.35f,
+            -4000.0f,
+            4000.0f,
+            12.0f,
+            8.0f,
+            15.0f,
+            (int) roundf(60.0f / dt),
+            10,
           };
 
           const int cm_code = id(oq_control_mode_code);
+          const int commissioning_task_code = id(oq_commissioning_task_code);
+
+          // Common AUTO-entry init used for CM0->* and MANUAL->AUTO edges.
+          auto start_auto_transition = [&](const char *tag) {
+            const auto start_plan = oq_flow_control::compute_auto_start_plan(
+              cm_code,
+              commissioning_task_code,
+              id(oq_flow_commissioning_start_pwm),
+              (int) id(oq_flow_last_good_pwm),
+              (int) roundf(id(oq_flow_auto_start_pwm).state));
+            ESP_LOGI("flow", "AUTO start(%s): iPWM=%d (last_good=%d fallback=%d commissioning=%s hold %ds, fixed iPWM)",
+                     tag,
+                     start_plan.start_pwm,
+                     (int) id(oq_flow_last_good_pwm),
+                     start_plan.fallback_pwm,
+                     start_plan.commissioning_start ? "yes" : "no",
+                     STARTUP_HOLD_S);
+
+            id(oq_flow_last_pwm) = start_plan.start_pwm;
+            apply_auto_state(
+              oq_flow_control::enter_auto_transition(STARTUP_HOLD_TICKS));
+          };
+          auto run_auto_pi = [&](int pwm_seed) -> int {
+            const auto pi_result = oq_flow_control::step_auto_pi(
+              current_auto_state(),
+              oq_flow_control::AutoPiInput{
+                pwm_seed,
+                id(oq_flow_setpoint_lph).state,
+                id(flow_rate_selected).state,
+                id(oq_flow_kp).state,
+                id(oq_flow_ki).state,
+                (int) id(oq_flow_last_good_pwm),
+              },
+              auto_pi_cfg);
+
+            pi_failsafe = pi_result.failsafe;
+            apply_auto_state(pi_result.state);
+            id(oq_flow_last_good_pwm) = pi_result.last_good_pwm;
+
+            if (pi_result.failsafe) {
+              ESP_LOGW("flow", "Flow PI failsafe engaged: sp=%0.1f pv=%0.1f -> forcing iPWM=%d",
+                       id(oq_flow_setpoint_lph).state,
+                       id(flow_rate_selected).state,
+                       pi_result.pwm);
+              return pi_result.pwm;
+            }
+            return pi_result.pwm;
+          };
+
           const bool is_cm0 = (cm_code == 0);
 
           // Flow submode select (within CM1/CM2/CM3): AUTO vs MANUAL PWM
@@ -537,6 +467,11 @@ interval:
           id(oq_flow_control_mode_code) = flow_mode_code;
           const bool want_manual = (flow_mode_code == 1);
           static bool was_manual = false;
+          const auto route = oq_flow_control::select_route(
+            cm_code,
+            want_manual,
+            id(oq_flow_autotune_active),
+            commissioning_task_code);
 
           // Edge 1: entering active control from CM0
           if (was_cm0 && !is_cm0) {
@@ -544,27 +479,22 @@ interval:
           }
           was_cm0 = is_cm0;
 
-          if (is_cm0) {
+          if (route.early_return) {
             // Keep manual-edge memory synchronized while idle.
             was_manual = want_manual;
-            id(oq_flow_mode).publish_state("CM0");
+            id(oq_flow_mode).publish_state(route.mode_text);
             return;
           }
 
-          const bool is_frost = (cm_code == 98);
-
-          int mode = is_frost ? 2 : 0; // 0=AUTO, 2=FROST
-          if (mode != id(oq_flow_last_mode)) {
-            id(oq_flow_i) = 0.0f;
-            sp_f = NAN;
-            last_pi_e = 0.0f;
-            stable_cnt = 0;
+          if (route.runtime_mode_state_code != id(oq_flow_last_mode)) {
+            apply_auto_state(
+              oq_flow_control::reset_pi_tracking_keep_hold(current_auto_state()));
           }
-          id(oq_flow_last_mode) = mode;
+          id(oq_flow_last_mode) = route.runtime_mode_state_code;
 
           // Autotune temporarily overrides PWM (flow_control remains output owner).
-          if (id(oq_flow_autotune_active) && (cm_code == 100) && (id(oq_commissioning_task_code) == 2) && !is_frost) {
-            int at_pwm = clamp_iPWM((int) id(oq_flow_autotune_pwm));
+          if (route.route_kind == oq_flow_control::ROUTE_AUTOTUNE) {
+            int at_pwm = oq_flow_control::clamp_ipwm((int) id(oq_flow_autotune_pwm));
             id(oq_flow_last_pwm) = at_pwm;
             stable_cnt = 0;
             pi_failsafe = false;
@@ -572,9 +502,9 @@ interval:
             if (${flow_secondary_enabled} != 0) {
               write_pump_pwm_if_changed(id(${flow_secondary_pump_speed_id}), at_pwm);
             }
-            if (last_mode != "AUTOTUNE") {
-              id(oq_flow_mode).publish_state("AUTOTUNE");
-              last_mode = "AUTOTUNE";
+            if (last_mode != route.mode_text) {
+              id(oq_flow_mode).publish_state(route.mode_text);
+              last_mode = route.mode_text;
             }
             return;
           }
@@ -585,37 +515,31 @@ interval:
           }
           was_manual = want_manual;
 
-          int pwm = clamp_iPWM((int) id(oq_flow_last_pwm));
-          FlowExecMode exec_mode = FLOW_MODE_AUTO;
+          int pwm = oq_flow_control::clamp_ipwm((int) id(oq_flow_last_pwm));
+          oq_flow_control::ExecMode exec_mode = oq_flow_control::EXEC_MODE_AUTO;
 
           // Fixed-output modes first, AUTO PI as fallback.
-          if (want_manual && !is_frost) {
+          if (route.route_kind == oq_flow_control::ROUTE_MANUAL) {
             pwm = (int) roundf(id(oq_flow_manual_pwm).state);
-            pwm = clamp_iPWM(pwm);
+            pwm = oq_flow_control::clamp_ipwm(pwm);
             stable_cnt = 0;
             pi_failsafe = false;
             sp_f = NAN;
             last_pi_e = 0.0f;
-            exec_mode = FLOW_MODE_MANUAL;
-          } else if (is_frost) {
+            exec_mode = oq_flow_control::finalize_exec_mode(route, false, startup_hold);
+          } else if (route.route_kind == oq_flow_control::ROUTE_FROST) {
             pwm = (int) roundf(id(oq_flow_frost_pwm).state);
-            pwm = clamp_iPWM(pwm);
+            pwm = oq_flow_control::clamp_ipwm(pwm);
             stable_cnt = 0;
             pi_failsafe = false;
             last_pi_e = 0.0f;
-            exec_mode = FLOW_MODE_FROST;
+            exec_mode = oq_flow_control::finalize_exec_mode(route, false, startup_hold);
           } else {
             pwm = run_auto_pi(pwm);
-            if (pi_failsafe) {
-              exec_mode = FLOW_MODE_AUTO_FAILSAFE;
-            } else if (startup_hold > 0) {
-              exec_mode = FLOW_MODE_AUTO_STARTING;
-            } else {
-              exec_mode = FLOW_MODE_AUTO;
-            }
+            exec_mode = oq_flow_control::finalize_exec_mode(route, pi_failsafe, startup_hold);
           }
 
-          pwm = clamp_iPWM(pwm);
+          pwm = oq_flow_control::clamp_ipwm(pwm);
           id(oq_flow_last_pwm) = pwm;
 
           write_pump_pwm_if_changed(id(hp1_pump_speed), pwm);
@@ -624,14 +548,7 @@ interval:
           }
 
           // External mode text has explicit priority and updates only on change.
-          std::string mode_txt;
-          switch (exec_mode) {
-            case FLOW_MODE_FROST: mode_txt = "CM98"; break;
-            case FLOW_MODE_MANUAL: mode_txt = "MANUAL"; break;
-            case FLOW_MODE_AUTO_FAILSAFE: mode_txt = "AUTO (failsafe)"; break;
-            case FLOW_MODE_AUTO_STARTING: mode_txt = "AUTO (starting)"; break;
-            default: mode_txt = "AUTO"; break;
-          }
+          const std::string mode_txt = oq_flow_control::exec_mode_text(exec_mode);
           if (mode_txt != last_mode) {
             id(oq_flow_mode).publish_state(mode_txt.c_str());
             ESP_LOGI("flow", "Flow mode changed: %s (cm=%s manual=%d failsafe=%d hold=%d pwm=%d)",

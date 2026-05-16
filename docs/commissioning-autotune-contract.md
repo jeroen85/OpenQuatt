@@ -235,7 +235,11 @@ the live/persistent flow tuning numbers only when both suggestions are valid.
 
 ## Flow-Control Boundary
 
-Flow control owns pump iPWM in all non-CM0 modes. The autotune override has
+Flow control owns pump iPWM in all non-CM0 modes. The detailed phase-8
+mode-routing and PI boundary is tracked in
+[`docs/flow-control-contract.md`](flow-control-contract.md).
+
+The autotune override has
 priority only when:
 
 - `oq_flow_autotune_active == true`
@@ -296,6 +300,10 @@ Current phase-7 helper status:
 - centralized in `openquatt/includes/oq_boiler_task_logic.h`:
   boiler flow-valid/on-target checks, settle decisions, plateau-filtered
   measurement progression and result/confidence finalization
+- coordinated with `openquatt/includes/oq_flow_control_logic.h`:
+  non-CM0 route selection, AUTO start seed selection and pure flow PI/failsafe
+  decisions, while commissioning/autotune ownership and flow-control side
+  effects remain in YAML
 - still local in YAML:
   task timers, saved-flow ownership, number/entity writes, status publication,
   commissioning release semantics, logging and other side effects

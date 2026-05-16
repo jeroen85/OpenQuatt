@@ -28,6 +28,7 @@ oq_cic_compatibility_protocol_header: "openquatt/includes/oq_cic_compatibility_p
 oq_supervisory_logic_header: "openquatt/includes/oq_supervisory_logic.h" # Shared supervisory helpers for CM naming and pure policy decisions.
 oq_thermal_guard_logic_header: "openquatt/includes/oq_thermal_guard_logic.h" # Shared thermal guard helper seam for guarded-request shaping.
 oq_commissioning_logic_header: "openquatt/includes/oq_commissioning_logic.h" # Shared commissioning/task helper seam for task codes and abort routing.
+oq_flow_control_logic_header: "openquatt/includes/oq_flow_control_logic.h" # Shared flow-control helper seam for route selection and pure PI math.
 oq_flow_autotune_logic_header: "openquatt/includes/oq_flow_autotune_logic.h" # Shared autotune helper seam for state names and pure validation math.
 oq_boiler_task_logic_header: "openquatt/includes/oq_boiler_task_logic.h" # Shared boiler-task helper seam for settle/measurement/result math.
 oq_timezone: "Europe/Amsterdam"                         # SNTP timezone used by runtime timestamps.

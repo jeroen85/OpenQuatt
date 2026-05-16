@@ -283,8 +283,9 @@ Flow control execution priority:
 
 1. CM0 early return
 2. autotune override (CM100 commissioning task only)
-3. manual/frost fixed iPWM
-4. AUTO PI path
+3. CM98 frost fixed iPWM
+4. manual fixed iPWM
+5. AUTO PI path
 
 Key behaviors:
 
@@ -293,6 +294,10 @@ Key behaviors:
 - asymmetric action limits
 - validity-based failsafe (`iPWM=850`)
 - stable-flow tracking for `last_good_pwm`
+- helper seam for route selection, AUTO start seed and pure PI math
+
+The detailed phase-8 contract is in
+[`docs/flow-control-contract.md`](flow-control-contract.md).
 
 ## 9. Safety Model
 

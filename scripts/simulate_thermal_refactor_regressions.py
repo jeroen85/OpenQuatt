@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from dataclasses import asdict, dataclass
 from typing import Sequence
@@ -99,6 +100,191 @@ class FlowValidationSettleResult:
     status: str
     confirm_cnt: int
     peak_pv: float
+
+
+@dataclass(frozen=True)
+class FlowControlRouteResult:
+    mode: str
+    writes_pwm: bool
+    source: str
+
+
+@dataclass(frozen=True)
+class FlowAutoStartResult:
+    start_pwm: int
+    fallback_pwm: int
+    commissioning_start: bool
+
+
+@dataclass(frozen=True)
+class FlowAutoPiState:
+    integral: float = 0.0
+    setpoint_filtered: float | None = None
+    last_error: float = 0.0
+    startup_hold: int = 0
+    stable_count: int = 0
+
+
+@dataclass(frozen=True)
+class FlowAutoPiResult:
+    pwm: int
+    state: FlowAutoPiState
+    failsafe: bool
+    last_good_pwm: int
+
+
+def clamp_ipwm(value: int, min_ipwm: int = 50, max_ipwm: int = 850) -> int:
+    return max(min_ipwm, min(max_ipwm, value))
+
+
+def flow_control_route_result(
+    *,
+    cm_code: int,
+    want_manual: bool,
+    autotune_active: bool,
+    commissioning_task_code: int,
+    pi_failsafe: bool = False,
+    startup_hold_after_tick: int = 0,
+) -> FlowControlRouteResult:
+    if cm_code == 0:
+        return FlowControlRouteResult("CM0", False, "supervisory_cm0_policy")
+
+    is_frost = cm_code == 98
+    if autotune_active and cm_code == 100 and commissioning_task_code == 2 and not is_frost:
+        return FlowControlRouteResult("AUTOTUNE", True, "oq_flow_autotune_pwm")
+
+    if is_frost:
+        return FlowControlRouteResult("CM98", True, "oq_flow_frost_pwm")
+
+    if want_manual:
+        return FlowControlRouteResult("MANUAL", True, "oq_flow_manual_pwm")
+
+    if pi_failsafe:
+        return FlowControlRouteResult("AUTO (failsafe)", True, "auto_failsafe_850")
+
+    if startup_hold_after_tick > 0:
+        return FlowControlRouteResult("AUTO (starting)", True, "auto_start_hold_pwm")
+
+    return FlowControlRouteResult("AUTO", True, "auto_pi")
+
+
+def flow_auto_start_result(
+    *,
+    control_mode_code: int,
+    commissioning_task_code: int,
+    commissioning_start_pwm: int,
+    last_good_pwm: int,
+    fallback_pwm: int,
+) -> FlowAutoStartResult:
+    fallback = clamp_ipwm(fallback_pwm)
+    commissioning_start = control_mode_code == 100 and commissioning_task_code != 0
+    start_pwm = clamp_ipwm(commissioning_start_pwm) if commissioning_start else last_good_pwm
+    if not commissioning_start and not (50 <= start_pwm <= 850):
+        start_pwm = fallback
+    return FlowAutoStartResult(start_pwm, fallback, commissioning_start)
+
+
+def flow_auto_pi_result(
+    *,
+    state: FlowAutoPiState,
+    pwm_seed: int,
+    setpoint_lph: float | None,
+    flow_lph: float | None,
+    kp: float,
+    ki: float,
+    last_good_pwm: int,
+    dt_s: float = 5.0,
+) -> FlowAutoPiResult:
+    failsafe = (
+        setpoint_lph is None
+        or setpoint_lph <= 0.0
+        or flow_lph is None
+        or math.isnan(setpoint_lph)
+        or math.isnan(flow_lph)
+    )
+    if failsafe:
+        return FlowAutoPiResult(
+            pwm=850,
+            state=FlowAutoPiState(
+                integral=0.0,
+                setpoint_filtered=None,
+                last_error=0.0,
+                startup_hold=state.startup_hold,
+                stable_count=0,
+            ),
+            failsafe=True,
+            last_good_pwm=last_good_pwm,
+        )
+
+    if state.startup_hold > 0:
+        return FlowAutoPiResult(
+            pwm=clamp_ipwm(pwm_seed),
+            state=FlowAutoPiState(
+                integral=state.integral,
+                setpoint_filtered=flow_lph,
+                last_error=state.last_error,
+                startup_hold=state.startup_hold - 1,
+                stable_count=0,
+            ),
+            failsafe=False,
+            last_good_pwm=last_good_pwm,
+        )
+
+    sp_f = flow_lph if state.setpoint_filtered is None else state.setpoint_filtered
+    delta = setpoint_lph - sp_f
+    max_step = (25.0 if delta >= 0.0 else 15.0) * dt_s
+    if delta > max_step:
+        delta = max_step
+    if delta < -max_step:
+        delta = -max_step
+    sp_f += delta
+
+    error = sp_f - flow_lph
+    if abs(error) < 10.0:
+        error = 0.0
+
+    integral = state.integral
+    have_error = error > 0.0 or error < 0.0
+    have_last_error = state.last_error > 0.0 or state.last_error < 0.0
+    sign_flip = have_error and have_last_error and ((error > 0.0) != (state.last_error > 0.0))
+
+    if sign_flip:
+        integral *= 0.25
+
+    if not have_error:
+        integral *= 0.60
+    elif abs(error) <= 60.0:
+        integral += error * dt_s
+    else:
+        integral *= 0.35
+
+    integral = max(-4000.0, min(4000.0, integral))
+
+    control = (kp * error) + (ki * integral)
+    limit = (12.0 if error >= 0.0 else 8.0) * dt_s
+    control = max(-limit, min(limit, control))
+
+    pwm = clamp_ipwm(round(pwm_seed - control))
+    stable_count = state.stable_count + 1 if abs(setpoint_lph - flow_lph) < 15.0 else 0
+    stable_time_ticks = round(60.0 / dt_s)
+    next_last_good_pwm = last_good_pwm
+    if stable_count >= stable_time_ticks:
+        if abs(next_last_good_pwm - pwm) >= 10:
+            next_last_good_pwm = pwm
+        stable_count = stable_time_ticks
+
+    return FlowAutoPiResult(
+        pwm=pwm,
+        state=FlowAutoPiState(
+            integral=integral,
+            setpoint_filtered=sp_f,
+            last_error=error,
+            startup_hold=state.startup_hold,
+            stable_count=stable_count,
+        ),
+        failsafe=False,
+        last_good_pwm=next_last_good_pwm,
+    )
 
 
 def commissioning_cm100_start_result(
@@ -2065,6 +2251,194 @@ def run_scenarios() -> list[ScenarioResult]:
             f"{supervisory_pump_on(100, commissioning_task_active=False, sticky_active=False, any_hp_active_guard=False)}, "
             f"{supervisory_pump_on(100, commissioning_task_active=True, sticky_active=False, any_hp_active_guard=False)}"
         ),
+    )
+    flow_cm0 = flow_control_route_result(
+        cm_code=0,
+        want_manual=True,
+        autotune_active=True,
+        commissioning_task_code=2,
+    )
+    add(
+        "Flow control CM0 is a hard early return with no pump iPWM write",
+        flow_cm0.mode == "CM0" and not flow_cm0.writes_pwm,
+        f"flow_control_route_result(...) -> {flow_cm0}",
+    )
+    flow_autotune_manual = flow_control_route_result(
+        cm_code=100,
+        want_manual=True,
+        autotune_active=True,
+        commissioning_task_code=2,
+    )
+    add(
+        "Flow control AUTOTUNE override wins over manual during CM100 task 2",
+        flow_autotune_manual.mode == "AUTOTUNE"
+        and flow_autotune_manual.writes_pwm
+        and flow_autotune_manual.source == "oq_flow_autotune_pwm",
+        f"flow_control_route_result(...) -> {flow_autotune_manual}",
+    )
+    flow_frost_manual = flow_control_route_result(
+        cm_code=98,
+        want_manual=True,
+        autotune_active=True,
+        commissioning_task_code=2,
+    )
+    add(
+        "Flow control CM98 frost fixed PWM has priority over manual selection",
+        flow_frost_manual.mode == "CM98"
+        and flow_frost_manual.source == "oq_flow_frost_pwm",
+        f"flow_control_route_result(...) -> {flow_frost_manual}",
+    )
+    stale_autotune = flow_control_route_result(
+        cm_code=100,
+        want_manual=False,
+        autotune_active=True,
+        commissioning_task_code=0,
+    )
+    add(
+        "Flow control ignores stale autotune-active state outside task 2",
+        stale_autotune.mode == "AUTO" and stale_autotune.source == "auto_pi",
+        f"flow_control_route_result(...) -> {stale_autotune}",
+    )
+    auto_status_priority = flow_control_route_result(
+        cm_code=2,
+        want_manual=False,
+        autotune_active=False,
+        commissioning_task_code=0,
+        pi_failsafe=True,
+        startup_hold_after_tick=3,
+    )
+    add(
+        "Flow control AUTO failsafe status has priority over startup-hold status",
+        auto_status_priority.mode == "AUTO (failsafe)"
+        and auto_status_priority.source == "auto_failsafe_850",
+        f"flow_control_route_result(...) -> {auto_status_priority}",
+    )
+    auto_starting = flow_control_route_result(
+        cm_code=2,
+        want_manual=False,
+        autotune_active=False,
+        commissioning_task_code=0,
+        startup_hold_after_tick=3,
+    )
+    add(
+        "Flow control AUTO startup status is published while hold remains after the tick",
+        auto_starting.mode == "AUTO (starting)"
+        and auto_starting.source == "auto_start_hold_pwm",
+        f"flow_control_route_result(...) -> {auto_starting}",
+    )
+    normal_auto_start = flow_auto_start_result(
+        control_mode_code=2,
+        commissioning_task_code=0,
+        commissioning_start_pwm=400,
+        last_good_pwm=999,
+        fallback_pwm=440,
+    )
+    add(
+        "Flow control normal AUTO start falls back to configured start PWM when last_good is invalid",
+        normal_auto_start.start_pwm == 440
+        and normal_auto_start.fallback_pwm == 440
+        and not normal_auto_start.commissioning_start,
+        f"flow_auto_start_result(...) -> {normal_auto_start}",
+    )
+    commissioning_auto_start = flow_auto_start_result(
+        control_mode_code=100,
+        commissioning_task_code=1,
+        commissioning_start_pwm=20,
+        last_good_pwm=430,
+        fallback_pwm=500,
+    )
+    add(
+        "Flow control commissioning AUTO start uses the commissioning seed and clamps it into iPWM range",
+        commissioning_auto_start.start_pwm == 50
+        and commissioning_auto_start.commissioning_start,
+        f"flow_auto_start_result(...) -> {commissioning_auto_start}",
+    )
+    auto_pi_failsafe = flow_auto_pi_result(
+        state=FlowAutoPiState(
+            integral=120.0,
+            setpoint_filtered=700.0,
+            last_error=25.0,
+            startup_hold=3,
+            stable_count=4,
+        ),
+        pwm_seed=420,
+        setpoint_lph=None,
+        flow_lph=650.0,
+        kp=0.03,
+        ki=0.0008,
+        last_good_pwm=440,
+    )
+    add(
+        "Flow control AUTO PI failsafe resets PI memory but preserves the remaining startup hold",
+        auto_pi_failsafe.failsafe
+        and auto_pi_failsafe.pwm == 850
+        and auto_pi_failsafe.state.integral == 0.0
+        and auto_pi_failsafe.state.setpoint_filtered is None
+        and auto_pi_failsafe.state.startup_hold == 3
+        and auto_pi_failsafe.state.stable_count == 0,
+        f"flow_auto_pi_result(...) -> {auto_pi_failsafe}",
+    )
+    auto_pi_start_hold = flow_auto_pi_result(
+        state=FlowAutoPiState(
+            integral=0.0,
+            setpoint_filtered=None,
+            last_error=0.0,
+            startup_hold=2,
+            stable_count=5,
+        ),
+        pwm_seed=430,
+        setpoint_lph=800.0,
+        flow_lph=520.0,
+        kp=0.03,
+        ki=0.0008,
+        last_good_pwm=440,
+    )
+    add(
+        "Flow control AUTO startup hold keeps the seed PWM, aligns the SP filter to PV and counts down",
+        not auto_pi_start_hold.failsafe
+        and auto_pi_start_hold.pwm == 430
+        and auto_pi_start_hold.state.setpoint_filtered == 520.0
+        and auto_pi_start_hold.state.startup_hold == 1
+        and auto_pi_start_hold.state.stable_count == 0,
+        f"flow_auto_pi_result(...) -> {auto_pi_start_hold}",
+    )
+    auto_pi_zero_flow = flow_auto_pi_result(
+        state=FlowAutoPiState(),
+        pwm_seed=400,
+        setpoint_lph=800.0,
+        flow_lph=0.0,
+        kp=1.0,
+        ki=0.0008,
+        last_good_pwm=440,
+    )
+    add(
+        "Flow control treats 0 L/h as a valid AUTO PI measurement rather than a sensor-failsafe input",
+        not auto_pi_zero_flow.failsafe
+        and auto_pi_zero_flow.pwm == 340
+        and auto_pi_zero_flow.state.last_error == 125.0,
+        f"flow_auto_pi_result(...) -> {auto_pi_zero_flow}",
+    )
+    auto_pi_last_good = flow_auto_pi_result(
+        state=FlowAutoPiState(
+            integral=0.0,
+            setpoint_filtered=790.0,
+            last_error=0.0,
+            startup_hold=0,
+            stable_count=11,
+        ),
+        pwm_seed=410,
+        setpoint_lph=800.0,
+        flow_lph=798.0,
+        kp=0.03,
+        ki=0.0008,
+        last_good_pwm=440,
+    )
+    add(
+        "Flow control updates last_good_pwm only after the stable-flow window closes",
+        not auto_pi_last_good.failsafe
+        and auto_pi_last_good.last_good_pwm == 410
+        and auto_pi_last_good.state.stable_count == 12,
+        f"flow_auto_pi_result(...) -> {auto_pi_last_good}",
     )
     cm100_start = commissioning_cm100_start_result(
         override_auto=True,
