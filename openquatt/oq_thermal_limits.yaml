@@ -56,6 +56,7 @@ number:
     min_value: 25
     max_value: 75
     step: 0.5
+    # persistent: user_setting - retains the installer-selected maximum water temperature.
     restore_value: true
     optimistic: true
     initial_value: 60

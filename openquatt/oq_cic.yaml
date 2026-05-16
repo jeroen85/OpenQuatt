@@ -31,6 +31,7 @@ switch:
     name: "CIC - Enable polling"
     icon: mdi:cloud-sync
     optimistic: true
+    # persistent: user_setting - retains whether CIC polling stays enabled.
     restore_mode: ${oq_cic_restore_mode_default}
     web_server:
       sorting_group_id: oq_cic
@@ -45,6 +46,7 @@ text:
     icon: mdi:link-variant
     mode: text
     optimistic: true
+    # persistent: user_setting - retains the configured CIC feed endpoint.
     restore_value: true
     initial_value: "http://192.168.2.117:8080/beta/feed/data.json"
     web_server:

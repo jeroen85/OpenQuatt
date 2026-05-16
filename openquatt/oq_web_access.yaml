@@ -30,6 +30,7 @@ switch:
     icon: mdi:memory
     entity_category: config
     optimistic: true
+    # persistent: diagnostic_cache - retains whether in-memory log history capture is enabled.
     restore_mode: RESTORE_DEFAULT_ON
     turn_on_action:
       - lambda: |-

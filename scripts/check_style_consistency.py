@@ -35,6 +35,12 @@ PACKAGE_ORDER_PATTERNS = (
     "openquatt/*.yaml",
 )
 
+PERSISTENCE_REASON_PATTERNS = (
+    "openquatt/*.yaml",
+    "openquatt/profiles/*.yaml",
+    "openquatt_*.yaml",
+)
+
 STRICT_TOP_LEVEL_ORDER_RULES = {
     "openquatt_base.yaml": (
         "substitutions",
@@ -180,6 +186,12 @@ TOP_LEVEL_KEY_RE = re.compile(r"^([a-z_][a-z0-9_]*):(?:\s|$)")
 NESTED_KEY_RE = re.compile(r"^(?P<indent>\s+)(?P<key>[a-z_][a-z0-9_]*):(?:\s|$)")
 LAMBDA_LINE_RE = re.compile(r"^(?P<indent>\s*)(?:-\s+)?lambda:(?P<tail>.*)$")
 LAMBDA_BLOCK_RE = re.compile(r"^(?P<indent>\s*)(?:-\s+)?lambda:\s*\|-\s*$")
+PERSISTENCE_REASON_RE = re.compile(
+    r"^\s*#\s*persistent:\s*(user_setting|learned_value|runtime_state|diagnostic_cache)\b"
+)
+PERSISTENCE_REASON_EXCLUDED_FILES = {
+    "openquatt/oq_HP_io.yaml",
+}
 PACKAGE_GROUP_BY_KEY = {
     "logger": 0,
     "api": 0,
@@ -436,6 +448,27 @@ def check_package_group_order(path: Path, findings: list[Finding]) -> None:
         previous_line = current_line
 
 
+def check_persistence_reason_comments(path: Path, findings: list[Finding]) -> None:
+    rel = path.relative_to(REPO_ROOT).as_posix()
+    if rel in PERSISTENCE_REASON_EXCLUDED_FILES:
+        return
+
+    lines = read_lines(path)
+    for idx, line in enumerate(lines, start=1):
+        if "restore_value: true" not in line and "restore_mode: RESTORE_" not in line:
+            continue
+
+        if any(PERSISTENCE_REASON_RE.match(lines[cursor]) for cursor in range(max(0, idx - 3), idx - 1)):
+            continue
+
+        add(
+            findings,
+            rel,
+            idx,
+            "Add `# persistent: <category> - reason` above `restore_value: true`.",
+        )
+
+
 def iter_lambda_blocks(path: Path) -> list[tuple[int, int, int, list[tuple[int, str]]]]:
     lines = read_lines(path)
     blocks: list[tuple[int, int, int, list[tuple[int, str]]]] = []
@@ -532,6 +565,9 @@ def main() -> int:
 
     for path in expand_patterns(PACKAGE_ORDER_PATTERNS):
         check_package_group_order(path, findings)
+
+    for path in expand_patterns(PERSISTENCE_REASON_PATTERNS):
+        check_persistence_reason_comments(path, findings)
 
     for rel_path in sorted(set(STRICT_TOP_LEVEL_ORDER_RULES)):
         check_strict_top_level_order(REPO_ROOT / rel_path, findings)

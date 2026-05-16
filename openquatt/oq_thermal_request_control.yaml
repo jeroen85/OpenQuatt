@@ -238,6 +238,7 @@ number:
     max_value: 3600
     step: 30
     mode: slider
+    # persistent: user_setting - retains the minimum runtime floor.
     restore_value: true
     optimistic: true
     initial_value: 300
@@ -256,6 +257,7 @@ number:
     max_value: 60
     step: 1
     mode: slider
+    # persistent: user_setting - retains the curve-mode dual-HP enable hold.
     restore_value: true
     optimistic: true
     initial_value: 3
@@ -274,6 +276,7 @@ number:
     max_value: 60
     step: 1
     mode: slider
+    # persistent: user_setting - retains the curve-mode dual-HP disable hold.
     restore_value: true
     optimistic: true
     initial_value: 5

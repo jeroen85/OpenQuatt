@@ -132,6 +132,7 @@ number:
     min_value: -25
     max_value: 5
     step: 0.5
+    # persistent: user_setting - retains the cold-end outdoor design point.
     restore_value: true
     optimistic: true
     initial_value: -10
@@ -147,6 +148,7 @@ number:
     min_value: 1000
     max_value: 15000
     step: 10
+    # persistent: user_setting - retains the rated house heat-loss estimate.
     restore_value: true
     optimistic: true
     initial_value: 7020
@@ -162,6 +164,7 @@ number:
     min_value: 5
     max_value: 25
     step: 0.5
+    # persistent: user_setting - retains the no-heat outdoor balance point.
     restore_value: true
     optimistic: true
     initial_value: 16
@@ -177,6 +180,7 @@ number:
     min_value: 0
     max_value: 4000
     step: 10
+    # persistent: user_setting - retains the room-error reaction gain.
     restore_value: true
     optimistic: true
     initial_value: 3000
@@ -192,6 +196,7 @@ number:
     min_value: 0
     max_value: 2.0
     step: 0.05
+    # persistent: user_setting - retains the cold-side comfort band.
     restore_value: true
     optimistic: true
     initial_value: 0.1
@@ -207,6 +212,7 @@ number:
     min_value: 0
     max_value: 2.0
     step: 0.05
+    # persistent: user_setting - retains the warm-side comfort band.
     restore_value: true
     optimistic: true
     initial_value: 0.3
@@ -222,6 +228,7 @@ number:
     min_value: 2
     max_value: 20
     step: 1
+    # persistent: user_setting - retains demand ramp-up response timing.
     restore_value: true
     optimistic: true
     initial_value: 8
@@ -237,6 +244,7 @@ number:
     min_value: 1
     max_value: 10
     step: 1
+    # persistent: user_setting - retains demand ramp-down response timing.
     restore_value: true
     optimistic: true
     initial_value: 3
@@ -254,6 +262,7 @@ number:
     max_value: 20
     step: 1
     mode: slider
+    # persistent: user_setting - retains the demand ramp-up limiter.
     restore_value: true
     optimistic: true
     initial_value: 1

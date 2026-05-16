@@ -79,6 +79,7 @@ number:
     step: 0.5
     mode: slider
     optimistic: true
+    # persistent: user_setting - retains the installer-selected cooling floor.
     restore_value: true
     initial_value: 18.0
     entity_category: config
@@ -95,6 +96,7 @@ number:
     step: 1
     mode: slider
     optimistic: true
+    # persistent: user_setting - retains the cooling demand ceiling.
     restore_value: true
     initial_value: 4
     entity_category: config
@@ -110,6 +112,7 @@ number:
     step: 0.1
     mode: slider
     optimistic: true
+    # persistent: user_setting - retains cooling PID proportional tuning.
     restore_value: true
     initial_value: 3.0
     entity_category: config
@@ -125,6 +128,7 @@ number:
     step: 0.01
     mode: slider
     optimistic: true
+    # persistent: user_setting - retains cooling PID integral tuning.
     restore_value: true
     initial_value: 0.12
     entity_category: config
@@ -140,6 +144,7 @@ number:
     step: 0.01
     mode: slider
     optimistic: true
+    # persistent: user_setting - retains cooling PID derivative tuning.
     restore_value: true
     initial_value: 0.0
     entity_category: config

@@ -262,6 +262,7 @@ select:
       sorting_group_id: oq_system_diagnostics
     entity_category: config
     optimistic: true
+    # persistent: user_setting - retains the preferred firmware release channel.
     restore_value: true
     options: ["main", "dev"]
     initial_option: "${release_channel}"
@@ -298,6 +299,7 @@ select:
       sorting_group_id: oq_heating_strategy
     entity_category: config
     optimistic: true
+    # persistent: user_setting - retains the installed Quatt hardware generation.
     restore_value: true
     options: ["V1", "V1.5", "V2"]
     initial_option: V1.5
@@ -311,6 +313,7 @@ select:
       sorting_group_id: oq_system_diagnostics
     entity_category: diagnostic
     optimistic: true
+    # persistent: diagnostic_cache - keeps the requested runtime log verbosity across reboot.
     restore_value: true
     options: [NONE, ERROR, WARN, INFO, CONFIG, DEBUG]
     initial_option: INFO
@@ -387,6 +390,7 @@ switch:
     icon: mdi:chart-line
     entity_category: config
     optimistic: true
+    # persistent: user_setting - retains whether RAM trend capture stays enabled.
     restore_mode: RESTORE_DEFAULT_ON
     turn_on_action:
       - script.execute: oq_capture_overview_trend_sample
@@ -402,6 +406,7 @@ switch:
     icon: mdi:database
     entity_category: config
     optimistic: true
+    # persistent: user_setting - retains whether trend history is flushed to flash.
     restore_mode: RESTORE_DEFAULT_OFF
     turn_on_action:
       - lambda: |-

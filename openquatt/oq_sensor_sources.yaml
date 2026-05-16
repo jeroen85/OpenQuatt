@@ -74,6 +74,7 @@ select:
     icon: mdi:source-branch
     entity_category: config
     optimistic: true
+    # persistent: user_setting - retains the selected water supply source.
     restore_value: true
     options:
       - Local
@@ -89,6 +90,7 @@ select:
     icon: mdi:source-branch
     entity_category: config
     optimistic: true
+    # persistent: user_setting - retains the selected flow source.
     restore_value: true
     options:
       - Outdoor unit
@@ -104,6 +106,7 @@ select:
     icon: mdi:call-split
     entity_category: config
     optimistic: true
+    # persistent: user_setting - retains the selected duo flow aggregation mode.
     restore_value: true
     options:
       - Flowmeter HP1
@@ -119,6 +122,7 @@ select:
     icon: mdi:source-branch
     entity_category: config
     optimistic: true
+    # persistent: user_setting - retains the selected outside temperature source.
     restore_value: true
     options:
       - Auto
@@ -134,6 +138,7 @@ select:
     icon: mdi:source-branch
     entity_category: config
     optimistic: true
+    # persistent: user_setting - retains the selected room temperature source.
     restore_value: true
     options:
       - CIC
@@ -149,6 +154,7 @@ select:
     icon: mdi:source-branch
     entity_category: config
     optimistic: true
+    # persistent: user_setting - retains the selected room setpoint source.
     restore_value: true
     options:
       - CIC
@@ -164,6 +170,7 @@ select:
     icon: mdi:source-branch
     entity_category: config
     optimistic: true
+    # persistent: user_setting - retains the selected cooling enable source.
     restore_value: true
     options:
       - CIC
@@ -178,6 +185,7 @@ switch:
     id: oq_manual_cooling_enable
     name: "Manual Cooling Enable"
     icon: mdi:snowflake-check
+    # persistent: user_setting - retains the manual cooling enable override.
     restore_mode: RESTORE_DEFAULT_OFF
     optimistic: true
     web_server:

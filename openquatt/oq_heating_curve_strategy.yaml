@@ -118,6 +118,7 @@ select:
     name: "Heating Curve Control Profile"
     icon: mdi:tune-variant
     optimistic: true
+    # persistent: user_setting - retains the chosen curve response profile.
     restore_value: true
     options:
       - Comfort
@@ -171,6 +172,7 @@ number:
     min_value: 20
     max_value: 70
     step: 0.5
+    # persistent: user_setting - retains the heating curve anchor at -20 C.
     restore_value: true
     optimistic: true
     initial_value: 55
@@ -185,6 +187,7 @@ number:
     min_value: 20
     max_value: 70
     step: 0.5
+    # persistent: user_setting - retains the heating curve anchor at -10 C.
     restore_value: true
     optimistic: true
     initial_value: 50
@@ -199,6 +202,7 @@ number:
     min_value: 20
     max_value: 70
     step: 0.5
+    # persistent: user_setting - retains the heating curve anchor at 0 C.
     restore_value: true
     optimistic: true
     initial_value: 45
@@ -213,6 +217,7 @@ number:
     min_value: 20
     max_value: 70
     step: 0.5
+    # persistent: user_setting - retains the heating curve anchor at 5 C.
     restore_value: true
     optimistic: true
     initial_value: 40
@@ -227,6 +232,7 @@ number:
     min_value: 20
     max_value: 70
     step: 0.5
+    # persistent: user_setting - retains the heating curve anchor at 10 C.
     restore_value: true
     optimistic: true
     initial_value: 35
@@ -241,6 +247,7 @@ number:
     min_value: 20
     max_value: 70
     step: 0.5
+    # persistent: user_setting - retains the heating curve anchor at 15 C.
     restore_value: true
     optimistic: true
     initial_value: 30
@@ -255,6 +262,7 @@ number:
     max_value: 0.800
     step: 0.010
     mode: slider
+    # persistent: user_setting - retains curve PID proportional tuning.
     restore_value: true
     optimistic: true
     initial_value: 0.280
@@ -277,6 +285,7 @@ number:
     max_value: 0.00300
     step: 0.00010
     mode: slider
+    # persistent: user_setting - retains curve PID integral tuning.
     restore_value: true
     optimistic: true
     initial_value: 0.00060
@@ -299,6 +308,7 @@ number:
     max_value: 0.400
     step: 0.010
     mode: slider
+    # persistent: user_setting - retains curve PID derivative tuning.
     restore_value: true
     optimistic: true
     initial_value: 0.200
@@ -321,6 +331,7 @@ number:
     min_value: 25
     max_value: 70
     step: 0.5
+    # persistent: user_setting - retains the fallback target without outside temperature.
     restore_value: true
     optimistic: true
     initial_value: 40

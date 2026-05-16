@@ -45,7 +45,9 @@ modbus_controller:
         value_type: U_WORD
         read_lambda: |-
           if (!oq_cic_compat::touch_and_enabled(id(cic_compatibility_last_request_ms), id(cic_compatibility_enable).state, millis())) return 0;
-          return id(${cic_compat_hp_id}_set_pump_mode).current_option() == "On" ? 4096 : 0;
+          return id(${cic_compat_hp_id}_set_pump_mode).current_option() == "On"
+              ? oq_cic_compat_protocol::kPumpModeOnMask
+              : 0;
       - address: 2015
         value_type: U_WORD
         read_lambda: |-
@@ -80,7 +82,7 @@ modbus_controller:
         read_lambda: |-
           if (!oq_cic_compat::touch_and_enabled(id(cic_compatibility_last_request_ms), id(cic_compatibility_enable).state, millis())) return 0;
           const float v = id(${cic_compat_hp_id}_current).state;
-          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf(v * 10.0f));
+          return oq_cic_compat_protocol::encode_deci(v);
       - address: 2102
         value_type: U_WORD
         read_lambda: |-
@@ -139,25 +141,25 @@ modbus_controller:
         read_lambda: |-
           if (!oq_cic_compat::touch_and_enabled(id(cic_compatibility_last_request_ms), id(cic_compatibility_enable).state, millis())) return 0;
           const float v = id(${cic_compat_hp_id}_outside_temp).state;
-          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf((v * 100.0f) + 3000.0f));
+          return oq_cic_compat_protocol::encode_offset_centi_c(v);
       - address: 2111
         value_type: U_WORD
         read_lambda: |-
           if (!oq_cic_compat::touch_and_enabled(id(cic_compatibility_last_request_ms), id(cic_compatibility_enable).state, millis())) return 0;
           const float v = id(${cic_compat_hp_id}_evaporator_coil_temp).state;
-          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf((v * 100.0f) + 3000.0f));
+          return oq_cic_compat_protocol::encode_offset_centi_c(v);
       - address: 2112
         value_type: U_WORD
         read_lambda: |-
           if (!oq_cic_compat::touch_and_enabled(id(cic_compatibility_last_request_ms), id(cic_compatibility_enable).state, millis())) return 0;
           const float v = id(${cic_compat_hp_id}_gas_discharge_temp).state;
-          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf((v * 100.0f) + 3000.0f));
+          return oq_cic_compat_protocol::encode_offset_centi_c(v);
       - address: 2113
         value_type: U_WORD
         read_lambda: |-
           if (!oq_cic_compat::touch_and_enabled(id(cic_compatibility_last_request_ms), id(cic_compatibility_enable).state, millis())) return 0;
           const float v = id(${cic_compat_hp_id}_gas_return_temp).state;
-          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf((v * 100.0f) + 3000.0f));
+          return oq_cic_compat_protocol::encode_offset_centi_c(v);
       - address: 2114
         value_type: U_WORD
         read_lambda: |-
@@ -168,13 +170,13 @@ modbus_controller:
         read_lambda: |-
           if (!oq_cic_compat::touch_and_enabled(id(cic_compatibility_last_request_ms), id(cic_compatibility_enable).state, millis())) return 0;
           const float v = id(${cic_compat_hp_id}_evaporator_pressure).state;
-          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf(v * 10.0f));
+          return oq_cic_compat_protocol::encode_deci(v);
       - address: 2117
         value_type: U_WORD
         read_lambda: |-
           if (!oq_cic_compat::touch_and_enabled(id(cic_compatibility_last_request_ms), id(cic_compatibility_enable).state, millis())) return 0;
           const float v = id(${cic_compat_hp_id}_condenser_pressure).state;
-          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf(v * 10.0f));
+          return oq_cic_compat_protocol::encode_deci(v);
       - address: 2118
         value_type: U_WORD
         read_lambda: |-
@@ -185,37 +187,37 @@ modbus_controller:
         read_lambda: |-
           if (!oq_cic_compat::touch_and_enabled(id(cic_compatibility_last_request_ms), id(cic_compatibility_enable).state, millis())) return 0;
           const float v = id(${cic_compat_hp_id}_pcb_firmware_raw).state;
-          return isnan(v) ? 0x011Eu : static_cast<uint16_t>(lroundf(v));
+          return isnan(v) ? oq_cic_compat_protocol::kFallbackPcbFirmwareRaw : static_cast<uint16_t>(lroundf(v));
       - address: 2131
         value_type: U_WORD
         read_lambda: |-
           if (!oq_cic_compat::touch_and_enabled(id(cic_compatibility_last_request_ms), id(cic_compatibility_enable).state, millis())) return 0;
           const float v = id(${cic_compat_hp_id}_condensing_temp).state;
-          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf((v * 100.0f) + 3000.0f));
+          return oq_cic_compat_protocol::encode_offset_centi_c(v);
       - address: 2132
         value_type: U_WORD
         read_lambda: |-
           if (!oq_cic_compat::touch_and_enabled(id(cic_compatibility_last_request_ms), id(cic_compatibility_enable).state, millis())) return 0;
           const float v = id(${cic_compat_hp_id}_evaporating_temp).state;
-          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf((v * 100.0f) + 3000.0f));
+          return oq_cic_compat_protocol::encode_offset_centi_c(v);
       - address: 2133
         value_type: U_WORD
         read_lambda: |-
           if (!oq_cic_compat::touch_and_enabled(id(cic_compatibility_last_request_ms), id(cic_compatibility_enable).state, millis())) return 0;
           const float v = id(${cic_compat_hp_id}_water_in_temp).state;
-          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf((v * 100.0f) + 3000.0f));
+          return oq_cic_compat_protocol::encode_offset_centi_c(v);
       - address: 2134
         value_type: U_WORD
         read_lambda: |-
           if (!oq_cic_compat::touch_and_enabled(id(cic_compatibility_last_request_ms), id(cic_compatibility_enable).state, millis())) return 0;
           const float v = id(${cic_compat_hp_id}_water_out_temp).state;
-          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf((v * 100.0f) + 3000.0f));
+          return oq_cic_compat_protocol::encode_offset_centi_c(v);
       - address: 2135
         value_type: U_WORD
         read_lambda: |-
           if (!oq_cic_compat::touch_and_enabled(id(cic_compatibility_last_request_ms), id(cic_compatibility_enable).state, millis())) return 0;
           const float v = id(${cic_compat_hp_id}_inner_coil_temp).state;
-          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf((v * 100.0f) + 3000.0f));
+          return oq_cic_compat_protocol::encode_offset_centi_c(v);
       - address: 2136
         value_type: U_WORD
         read_lambda: |-
@@ -226,58 +228,58 @@ modbus_controller:
         read_lambda: |-
           if (!oq_cic_compat::touch_and_enabled(id(cic_compatibility_last_request_ms), id(cic_compatibility_enable).state, millis())) return 0;
           const float v = id(${cic_compat_hp_id}_pump_power).state;
-          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf(v * 10.0f));
+          return oq_cic_compat_protocol::encode_deci(v);
       - address: 2138
         value_type: U_WORD
         read_lambda: |-
           if (!oq_cic_compat::touch_and_enabled(id(cic_compatibility_last_request_ms), id(cic_compatibility_enable).state, millis())) return 0;
           const float v = id(${cic_compat_hp_id}_flow).state;
-          return isnan(v) ? 0 : static_cast<uint16_t>(lroundf(v / 0.618f));
+          return oq_cic_compat_protocol::encode_flow_lph(v);
       - address: 11160
         value_type: U_WORD
         read_lambda: |-
           oq_cic_compat::touch(id(cic_compatibility_last_request_ms), millis());
-          return 0xFFFFu;
+          return oq_cic_compat_protocol::kUnavailableWord;
       - address: 11161
         value_type: U_WORD
         read_lambda: |-
           oq_cic_compat::touch(id(cic_compatibility_last_request_ms), millis());
-          return 0xFFFFu;
+          return oq_cic_compat_protocol::kUnavailableWord;
       - address: 11162
         value_type: U_WORD
         read_lambda: |-
           oq_cic_compat::touch(id(cic_compatibility_last_request_ms), millis());
-          return 0xFFFFu;
+          return oq_cic_compat_protocol::kUnavailableWord;
       - address: 11163
         value_type: U_WORD
         read_lambda: |-
           oq_cic_compat::touch(id(cic_compatibility_last_request_ms), millis());
-          return 0xFFFFu;
+          return oq_cic_compat_protocol::kUnavailableWord;
       - address: 11164
         value_type: U_WORD
         read_lambda: |-
           oq_cic_compat::touch(id(cic_compatibility_last_request_ms), millis());
-          return 0xFFFFu;
+          return oq_cic_compat_protocol::kUnavailableWord;
       - address: 11165
         value_type: U_WORD
         read_lambda: |-
           oq_cic_compat::touch(id(cic_compatibility_last_request_ms), millis());
-          return 0xFFFFu;
+          return oq_cic_compat_protocol::kUnavailableWord;
       - address: 11166
         value_type: U_WORD
         read_lambda: |-
           oq_cic_compat::touch(id(cic_compatibility_last_request_ms), millis());
-          return 0xFFFFu;
+          return oq_cic_compat_protocol::kUnavailableWord;
       - address: 11167
         value_type: U_WORD
         read_lambda: |-
           oq_cic_compat::touch(id(cic_compatibility_last_request_ms), millis());
-          return 0xFFFFu;
+          return oq_cic_compat_protocol::kUnavailableWord;
       - address: 11168
         value_type: U_WORD
         read_lambda: |-
           oq_cic_compat::touch(id(cic_compatibility_last_request_ms), millis());
-          return 0xFFFFu;
+          return oq_cic_compat_protocol::kUnavailableWord;
       - address: 11169
         value_type: U_WORD
         read_lambda: |-

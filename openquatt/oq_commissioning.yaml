@@ -349,6 +349,7 @@ number:
     min_value: 1000
     max_value: 20000
     step: 10
+    # persistent: learned_value - keeps the commissioning-applied boiler rating across reboots.
     restore_value: true
     optimistic: true
     initial_value: 6000

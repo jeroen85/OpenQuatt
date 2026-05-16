@@ -79,6 +79,7 @@ select:
     name: "Heating Control Mode"
     icon: mdi:tune-variant
     optimistic: true
+    # persistent: user_setting - retains the chosen heating strategy.
     restore_value: true
     options:
       - Power House

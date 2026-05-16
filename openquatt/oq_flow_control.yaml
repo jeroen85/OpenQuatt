@@ -51,6 +51,7 @@ globals:
     initial_value: '0'   # 0=AUTO, 1=MANUAL, 2=FROST
   - id: oq_flow_last_good_pwm
     type: int
+    # persistent: learned_value - remembers the last stable AUTO seed across reboots.
     restore_value: true
     initial_value: "440"
   - id: oq_flow_commissioning_start_pwm
@@ -85,6 +86,7 @@ number:
     min_value: 0
     max_value: 1500
     step: 10
+    # persistent: user_setting - retains the selected flow target.
     restore_value: true
     optimistic: true
     initial_value: 800
@@ -99,6 +101,7 @@ number:
     max_value: 850
     step: 1
     initial_value: 400
+    # persistent: user_setting - retains the manual iPWM override.
     restore_value: true
     optimistic: true
     web_server:
@@ -116,6 +119,7 @@ number:
     min_value: 50
     max_value: 850
     step: 10
+    # persistent: user_setting - retains frost circulation tuning.
     restore_value: true
     optimistic: true
     initial_value: 800
@@ -132,6 +136,7 @@ number:
     min_value: 50
     max_value: 850
     step: 1
+    # persistent: user_setting - retains the AUTO restart fallback seed.
     restore_value: true
     optimistic: true
     initial_value: 440
@@ -147,6 +152,7 @@ number:
     min_value: ${oq_flow_kp_min}
     max_value: ${oq_flow_kp_max}
     step: 0.001
+    # persistent: user_setting - retains flow PI proportional tuning.
     restore_value: true
     optimistic: true
     # Default increased for more robust control in the current hydraulic setup.
@@ -162,6 +168,7 @@ number:
     min_value: ${oq_flow_ki_min}
     max_value: ${oq_flow_ki_max}
     step: 0.0001
+    # persistent: user_setting - retains flow PI integral tuning.
     restore_value: true
     optimistic: true
     initial_value: 0.0008
@@ -180,6 +187,7 @@ select:
       - Flow Setpoint
       - Manual PWM
     initial_option: Flow Setpoint
+    # persistent: user_setting - retains the chosen flow operating mode.
     restore_value: true
     optimistic: true
     web_server:

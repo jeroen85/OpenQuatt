@@ -29,10 +29,12 @@ globals:
     initial_value: '-1'
   - id: oq_cooling_fallback_night_min_last_c
     type: float
+    # persistent: learned_value - keeps the last completed fallback night minimum across reboots.
     restore_value: true
     initial_value: 'NAN'
   - id: oq_cooling_fallback_night_min_last_day_key
     type: int
+    # persistent: learned_value - remembers which completed night window produced the cached minimum.
     restore_value: true
     initial_value: '-1'
 
@@ -60,6 +62,7 @@ number:
     step: 0.1
     mode: box
     optimistic: true
+    # persistent: user_setting - retains the configured dew point safety margin.
     restore_value: true
     initial_value: 2.0
     entity_category: config
@@ -77,6 +80,7 @@ number:
     step: 0.1
     mode: slider
     optimistic: true
+    # persistent: user_setting - retains the cooling request on-hysteresis.
     restore_value: true
     initial_value: 0.4
     entity_category: config
@@ -94,6 +98,7 @@ number:
     step: 0.1
     mode: slider
     optimistic: true
+    # persistent: user_setting - retains the cooling request off-hysteresis.
     restore_value: true
     initial_value: 0.1
     entity_category: config
@@ -107,6 +112,7 @@ select:
     icon: mdi:water-alert
     entity_category: config
     optimistic: true
+    # persistent: user_setting - retains whether fallback cooling is allowed without dew point input.
     restore_value: true
     options:
       - Dew point required

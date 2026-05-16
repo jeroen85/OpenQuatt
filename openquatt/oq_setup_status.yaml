@@ -15,6 +15,7 @@
 globals:
   - id: oq_setup_complete
     type: bool
+    # persistent: diagnostic_cache - keeps the local quick-start completion state for the web app.
     restore_value: true
     initial_value: 'false'
 
