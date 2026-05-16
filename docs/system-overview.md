@@ -216,15 +216,36 @@ Heating-curve stability guards around zero-demand edge:
 
 ## 6. Thermal Request Control Mechanics
 
-`oq_thermal_request_control` enforces, in order:
+The thermal chain is documented in more detail in
+[`docs/thermal-contract.md`](thermal-contract.md). The three contract layers are:
+
+- `intent`: what the active strategy wants thermally
+- `guarded`: what shared physical and safety guards allow downstream
+- `applied`: what the actuator actually writes to HP mode/level selects
+
+Current naming is still transitional:
+
+- `oq_request_*` is the explicit intent interface
+- `oq_actuator_hp*_req` is the guarded per-HP actuator request
+- `hp*_last_applied_level` plus HP select writes are actuator-owned applied state
+
+`oq_thermal_request_control` currently enforces or prepares, in order:
 
 1. demand filter and clamp
 2. power cap clamp (`oq_power_cap_f`)
-3. Control Mode gating (CM2/CM3 only)
+3. Control Mode gating (CM2/CM3/CM5 only)
 4. strategy-specific level logic
-5. allowed-level switch constraints
-6. min-runtime stop blocking (all strategies)
-7. write-on-change application and runtime counters
+5. `oq_request_*` intent publication
+6. allowed-level switch constraints
+7. slew limiting for non-Power-House modes
+8. water hard-trip and startup inhibit
+9. min-runtime stop blocking
+10. `oq_actuator_hp*_req` guarded request publication
+
+`oq_thermal_actuator` is the only package that writes HP working mode and
+compressor level selects. It also owns final actuator-local guards such as
+minimum off-time, mode-confirmation gating, silent/day cap application, defrost
+retain behavior, start/stop bookkeeping and runtime counters.
 
 Demand filter behavior is asymmetric:
 

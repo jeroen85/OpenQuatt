@@ -10,6 +10,13 @@
 #   - Consumes `oq_request_mode_code`
 #   - Consumes `oq_actuator_hp1_req` / `oq_actuator_hp2_req`
 #   - Is the only package that writes HP working mode and compressor levels
+#   - Owns applied state such as `hp*_last_applied_level`, start/stop
+#     timestamps, and runtime minute bookkeeping.
+#
+# Phase-3 contract terminology:
+#   - `oq_actuator_hp*_req` is guarded input, not applied state.
+#   - Applied means the write path below has commanded HP mode/level selects or
+#     updated actuator-owned bookkeeping.
 # ==============================================================================
 
 # ----------------------------
@@ -267,7 +274,7 @@ interval:
               block_reason = reason_buf;
               log_hp_block_change(is_hp1, reason_buf);
               apply_active_mode_hold(is_hp1, retained_level);
-              publish_optimizer_reason("defrost_protect_hold");
+              publish_optimizer_reason(oq_request::optimizer_reason_defrost_protect_hold());
               return retained_level;
             }
 
@@ -336,7 +343,7 @@ interval:
 
             if (applied == 0 && retained_level > 0) {
               apply_active_mode_hold(is_hp1, retained_level);
-              publish_optimizer_reason("defrost_protect_hold");
+              publish_optimizer_reason(oq_request::optimizer_reason_defrost_protect_hold());
               return retained_level;
             }
 

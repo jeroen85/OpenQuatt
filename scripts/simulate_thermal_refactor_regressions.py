@@ -179,6 +179,282 @@ def topology_hold_arms(previous_topology_count: int, new_topology_count: int) ->
     )
 
 
+def clamp_level(level: int, min_level: int, max_level: int) -> int:
+    return max(min_level, min(max_level, level))
+
+
+def excluded_option_matches_level(option: str, level: int) -> bool:
+    return {
+        1: "L1 (H30/C30)",
+        2: "L2 (H39/C36)",
+        3: "L3 (H49/C42)",
+        4: "L4 (H55/C47)",
+        5: "L5 (H61/C52)",
+        6: "L6 (H67/C56)",
+        7: "L7 (H72/C61)",
+        8: "L8 (H79/C66)",
+        9: "L9 (H85/C71)",
+        10: "L10 (H90/C74)",
+    }.get(level) == option
+
+
+def level_allowed_for_excluded_levels(excluded: tuple[str, str], level: int) -> bool:
+    if level <= 0 or level > 10:
+        return True
+    return (
+        not excluded_option_matches_level(excluded[0], level)
+        and not excluded_option_matches_level(excluded[1], level)
+    )
+
+
+def pick_allowed_level(
+    request_level: int,
+    min_level: int,
+    max_level: int,
+    excluded: tuple[str, str],
+) -> int:
+    if request_level <= 0:
+        return 0
+    request_level = clamp_level(request_level, min_level, max_level)
+    if request_level <= 0:
+        return 0
+    if level_allowed_for_excluded_levels(excluded, request_level):
+        return request_level
+
+    for level in range(request_level - 1, min_level - 1, -1):
+        if level > 0 and level_allowed_for_excluded_levels(excluded, level):
+            return level
+    for level in range(request_level + 1, max_level + 1):
+        if level > 0 and level_allowed_for_excluded_levels(excluded, level):
+            return level
+    return 0
+
+
+def pick_allowed_capped_level(
+    request_level: int,
+    min_level: int,
+    max_level: int,
+    cap_level: int,
+    excluded: tuple[str, str],
+) -> int:
+    if request_level <= 0:
+        return 0
+    cap_level = clamp_level(cap_level, min_level, max_level)
+    if cap_level <= 0:
+        return 0
+    request_level = clamp_level(request_level, min_level, cap_level)
+    if request_level <= 0:
+        return 0
+    if level_allowed_for_excluded_levels(excluded, request_level):
+        return request_level
+
+    for level in range(request_level - 1, min_level - 1, -1):
+        if level > 0 and level_allowed_for_excluded_levels(excluded, level):
+            return level
+    for level in range(request_level + 1, cap_level + 1):
+        if level > 0 and level_allowed_for_excluded_levels(excluded, level):
+            return level
+    return 0
+
+
+def guarded_request_after_runtime_floor(
+    request_level: int,
+    *,
+    hard_trip_active: bool,
+    startup_inhibit_active: bool,
+    min_runtime_active: bool,
+    cooling_floor_trip: bool,
+    measured_or_previously_active: bool,
+) -> int:
+    guarded_hp1_level, _ = apply_request_guards(
+        request_level,
+        0,
+        hard_trip_active=hard_trip_active,
+        startup_inhibit_active=startup_inhibit_active,
+    )
+    if not hard_trip_active:
+        guarded_hp1_level = runtime_floor_request(
+            guarded_hp1_level,
+            min_runtime_active=min_runtime_active,
+            cooling_floor_trip=cooling_floor_trip,
+            measured_or_previously_active=measured_or_previously_active,
+        )
+    return guarded_hp1_level
+
+
+def topology_guarded_requests(
+    hp1_request: int,
+    hp2_request: int,
+    *,
+    duo_topology: bool,
+) -> tuple[int, int]:
+    return hp1_request, hp2_request if duo_topology else 0
+
+
+def supervisory_base_target(
+    *,
+    cooling_request_active: bool,
+    heating_request_active: bool,
+    frost_active: bool,
+    lowflow_fault_active: bool,
+    flow_low: bool,
+) -> int:
+    thermal_request_active = cooling_request_active or heating_request_active
+    if cooling_request_active:
+        base_target = 5
+    elif heating_request_active:
+        base_target = 2
+    elif frost_active:
+        base_target = 98
+    else:
+        base_target = 0
+
+    if thermal_request_active and (lowflow_fault_active or flow_low):
+        return 1
+    return base_target
+
+
+def supervisory_override_or_commissioning(
+    *,
+    override_mode: int,
+    commissioning_in_progress: bool,
+) -> int | None:
+    if override_mode == 1:
+        return 0
+    if override_mode == 2:
+        return 1
+    if override_mode == 3:
+        return 98
+    if commissioning_in_progress:
+        return 100
+    return None
+
+
+def supervisory_normal_transition(
+    current_mode: int,
+    *,
+    cooling_request_active: bool,
+    heating_request_active: bool,
+    base_target: int,
+) -> int:
+    if cooling_request_active:
+        if base_target == 5:
+            return 5 if current_mode == 5 else 1
+        return 1
+    if heating_request_active:
+        if base_target == 2:
+            return 2 if current_mode in (2, 3) else 1
+        return 1
+    if current_mode in (2, 5):
+        return 1
+    return 98 if base_target == 98 else 0
+
+
+def supervisory_cm3_transition(
+    current_mode: int,
+    *,
+    power_house_active: bool,
+    boiler_assist_enabled: bool,
+    heating_request_active: bool,
+    base_target: int,
+    need_on: bool = False,
+    ok_off: bool = False,
+    min_cm2_elapsed: bool = False,
+    min_cm3_elapsed: bool = False,
+    promote_elapsed: bool = False,
+    demote_elapsed: bool = False,
+) -> int:
+    desired_mode = current_mode
+    if power_house_active and boiler_assist_enabled:
+        if current_mode == 2 and min_cm2_elapsed and need_on and promote_elapsed:
+            desired_mode = 3
+        elif current_mode == 3 and min_cm3_elapsed and ok_off and demote_elapsed:
+            desired_mode = 2
+    elif current_mode == 3 and heating_request_active and base_target == 2:
+        desired_mode = 2
+    return desired_mode
+
+
+def cooling_request_reason(reason_code: int) -> str:
+    return {
+        1: "cooling_owner_hp1",
+        2: "cooling_owner_hp2",
+    }.get(reason_code, "cooling_idle")
+
+
+def optimizer_reason_inactive() -> str:
+    return "inactive"
+
+
+def optimizer_reason_curve_mode() -> str:
+    return "curve_mode"
+
+
+def optimizer_reason_single_topology() -> str:
+    return "single_topology"
+
+
+def optimizer_reason_defrost_protect_hold() -> str:
+    return "defrost_protect_hold"
+
+
+def curve_request_reason(
+    hp1_level: int,
+    hp2_level: int,
+    owner_hp: int,
+    capacity_mode_code: int,
+) -> str:
+    if (hp1_level + hp2_level) <= 0:
+        return "curve_idle"
+    if capacity_mode_code == 2:
+        return "curve_dual"
+    if owner_hp == 1:
+        return "curve_single_hp1"
+    if owner_hp == 2:
+        return "curve_single_hp2"
+    return "curve_single"
+
+
+def power_house_request_reason(reason_code: int, *, duo_topology: bool) -> str:
+    if duo_topology:
+        return {
+            1: "ph_fallback_idle",
+            2: "ph_fallback_single_hp1",
+            3: "ph_fallback_single_hp2",
+            4: "ph_fallback_duo",
+            5: "keep_current",
+            6: "hold_active",
+            7: "defrost_hold",
+            8: "better_heat",
+            9: "soft_guard",
+            10: "less_power",
+            11: "no_candidate",
+            12: "defrost_boost",
+            13: "runtime_lead",
+        }.get(reason_code, "ph_idle")
+
+    return {
+        1: "ph_fallback_idle",
+        2: "ph_fallback_single_hp1",
+        14: "ph_single_topology",
+    }.get(reason_code, "ph_idle")
+
+
+def power_house_optimizer_reason(reason_code: int) -> str | None:
+    return {
+        5: "keep_current",
+        6: "hold_active",
+        7: "defrost_hold",
+        8: "better_heat",
+        9: "soft_guard",
+        10: "less_power",
+        11: "no_candidate",
+        12: "defrost_boost",
+        13: "runtime_lead",
+        15: "oil_return_hold",
+    }.get(reason_code)
+
+
 def run_scenarios() -> list[ScenarioResult]:
     results: list[ScenarioResult] = []
 
@@ -294,6 +570,38 @@ def run_scenarios() -> list[ScenarioResult]:
         apply_request_guards(4, 3, hard_trip_active=False, startup_inhibit_active=True) == (0, 0),
         f"apply_request_guards(...) -> {apply_request_guards(4, 3, hard_trip_active=False, startup_inhibit_active=True)}",
     )
+    add(
+        "Startup inhibit still allows runtime floor re-arm in current order",
+        guarded_request_after_runtime_floor(
+            4,
+            hard_trip_active=False,
+            startup_inhibit_active=True,
+            min_runtime_active=True,
+            cooling_floor_trip=False,
+            measured_or_previously_active=True,
+        )
+        == 1,
+        (
+            "guarded_request_after_runtime_floor(...) -> "
+            f"{guarded_request_after_runtime_floor(4, hard_trip_active=False, startup_inhibit_active=True, min_runtime_active=True, cooling_floor_trip=False, measured_or_previously_active=True)}"
+        ),
+    )
+    add(
+        "Hard trip suppresses runtime floor re-arm",
+        guarded_request_after_runtime_floor(
+            4,
+            hard_trip_active=True,
+            startup_inhibit_active=False,
+            min_runtime_active=True,
+            cooling_floor_trip=False,
+            measured_or_previously_active=True,
+        )
+        == 0,
+        (
+            "guarded_request_after_runtime_floor(...) -> "
+            f"{guarded_request_after_runtime_floor(4, hard_trip_active=True, startup_inhibit_active=False, min_runtime_active=True, cooling_floor_trip=False, measured_or_previously_active=True)}"
+        ),
+    )
 
     add(
         "Runtime floor can keep HP alive at level 1",
@@ -322,6 +630,67 @@ def run_scenarios() -> list[ScenarioResult]:
             "runtime_floor_request(...) -> "
             f"{runtime_floor_request(0, min_runtime_active=True, cooling_floor_trip=True, measured_or_previously_active=True)}"
         ),
+    )
+    add(
+        "Excluded level search prefers lower allowed level first",
+        pick_allowed_level(5, 1, 10, ("L5 (H61/C52)", "None")) == 4,
+        f"pick_allowed_level(...) -> {pick_allowed_level(5, 1, 10, ('L5 (H61/C52)', 'None'))}",
+    )
+    add(
+        "Excluded level search falls upward when no lower level exists",
+        pick_allowed_level(1, 1, 10, ("L1 (H30/C30)", "None")) == 2,
+        f"pick_allowed_level(...) -> {pick_allowed_level(1, 1, 10, ('L1 (H30/C30)', 'None'))}",
+    )
+    add(
+        "Silent or day cap may reduce a guarded request to zero",
+        pick_allowed_capped_level(4, 0, 10, 0, ("None", "None")) == 0,
+        f"pick_allowed_capped_level(...) -> {pick_allowed_capped_level(4, 0, 10, 0, ('None', 'None'))}",
+    )
+    add(
+        "Cooling request reason maps owner code 2 consistently",
+        cooling_request_reason(2) == "cooling_owner_hp2",
+        f"cooling_request_reason(2) -> {cooling_request_reason(2)}",
+    )
+    add(
+        "Curve request reason maps dual-capacity path consistently",
+        curve_request_reason(3, 3, 0, 2) == "curve_dual",
+        f"curve_request_reason(...) -> {curve_request_reason(3, 3, 0, 2)}",
+    )
+    add(
+        "Single-topology Power House request reason maps code 14 consistently",
+        power_house_request_reason(14, duo_topology=False) == "ph_single_topology",
+        (
+            "power_house_request_reason(...) -> "
+            f"{power_house_request_reason(14, duo_topology=False)}"
+        ),
+    )
+    add(
+        "Power House optimizer reason maps code 15 consistently",
+        power_house_optimizer_reason(15) == "oil_return_hold",
+        f"power_house_optimizer_reason(15) -> {power_house_optimizer_reason(15)}",
+    )
+    add(
+        "Shared inactive optimizer reason stays stable",
+        optimizer_reason_inactive() == "inactive",
+        f"optimizer_reason_inactive() -> {optimizer_reason_inactive()}",
+    )
+    add(
+        "Shared curve-mode optimizer reason stays stable",
+        optimizer_reason_curve_mode() == "curve_mode",
+        f"optimizer_reason_curve_mode() -> {optimizer_reason_curve_mode()}",
+    )
+    add(
+        "Shared defrost-protect optimizer reason stays stable",
+        optimizer_reason_defrost_protect_hold() == "defrost_protect_hold",
+        (
+            "optimizer_reason_defrost_protect_hold() -> "
+            f"{optimizer_reason_defrost_protect_hold()}"
+        ),
+    )
+    add(
+        "Shared single-topology optimizer reason stays stable",
+        optimizer_reason_single_topology() == "single_topology",
+        f"optimizer_reason_single_topology() -> {optimizer_reason_single_topology()}",
     )
 
     mode_command, applied_level = actuator_mode_and_level(
@@ -366,6 +735,20 @@ def run_scenarios() -> list[ScenarioResult]:
         applied_level == 5,
         f"mode_command={mode_command}, applied_level={applied_level}",
     )
+    mode_command, applied_level = actuator_mode_and_level(
+        4,
+        request_mode_code=2,
+        previous_applied_level=2,
+        min_off_blocked=False,
+        measured_mode_matches=True,
+        target_mode_matches=True,
+        silent_cap=0,
+    )
+    add(
+        "Actuator may keep heating mode command while cap drops applied level to zero",
+        (mode_command == "Heating") and (applied_level == 0),
+        f"mode_command={mode_command}, applied_level={applied_level}",
+    )
 
     add(
         "Topology hold arms on single-dual transition",
@@ -381,6 +764,198 @@ def run_scenarios() -> list[ScenarioResult]:
         "Topology hold does not arm when topology count is unchanged",
         topology_hold_arms(2, 2) is False,
         f"topology_hold_arms(2, 2) -> {topology_hold_arms(2, 2)}",
+    )
+    add(
+        "Single topology always forces HP2 guarded request to zero",
+        topology_guarded_requests(4, 3, duo_topology=False) == (4, 0),
+        f"topology_guarded_requests(...) -> {topology_guarded_requests(4, 3, duo_topology=False)}",
+    )
+    add(
+        "Duo topology preserves both guarded requests",
+        topology_guarded_requests(4, 3, duo_topology=True) == (4, 3),
+        f"topology_guarded_requests(...) -> {topology_guarded_requests(4, 3, duo_topology=True)}",
+    )
+    add(
+        "Cooling demand wins base target priority over heating demand",
+        supervisory_base_target(
+            cooling_request_active=True,
+            heating_request_active=True,
+            frost_active=False,
+            lowflow_fault_active=False,
+            flow_low=False,
+        )
+        == 5,
+        (
+            "supervisory_base_target(...) -> "
+            f"{supervisory_base_target(cooling_request_active=True, heating_request_active=True, frost_active=False, lowflow_fault_active=False, flow_low=False)}"
+        ),
+    )
+    add(
+        "Frost becomes base target when there is no thermal demand",
+        supervisory_base_target(
+            cooling_request_active=False,
+            heating_request_active=False,
+            frost_active=True,
+            lowflow_fault_active=False,
+            flow_low=False,
+        )
+        == 98,
+        (
+            "supervisory_base_target(...) -> "
+            f"{supervisory_base_target(cooling_request_active=False, heating_request_active=False, frost_active=True, lowflow_fault_active=False, flow_low=False)}"
+        ),
+    )
+    add(
+        "Flow interlock forces CM1 even when heating demand exists",
+        supervisory_base_target(
+            cooling_request_active=False,
+            heating_request_active=True,
+            frost_active=False,
+            lowflow_fault_active=True,
+            flow_low=False,
+        )
+        == 1,
+        (
+            "supervisory_base_target(...) -> "
+            f"{supervisory_base_target(cooling_request_active=False, heating_request_active=True, frost_active=False, lowflow_fault_active=True, flow_low=False)}"
+        ),
+    )
+    add(
+        "Supervisory override beats commissioning when both are present",
+        supervisory_override_or_commissioning(override_mode=3, commissioning_in_progress=True) == 98,
+        (
+            "supervisory_override_or_commissioning(...) -> "
+            f"{supervisory_override_or_commissioning(override_mode=3, commissioning_in_progress=True)}"
+        ),
+    )
+    add(
+        "Commissioning selects CM100 when override is Auto",
+        supervisory_override_or_commissioning(override_mode=0, commissioning_in_progress=True) == 100,
+        (
+            "supervisory_override_or_commissioning(...) -> "
+            f"{supervisory_override_or_commissioning(override_mode=0, commissioning_in_progress=True)}"
+        ),
+    )
+    add(
+        "Heating request from standby waits in CM1 preflow first",
+        supervisory_normal_transition(
+            0,
+            cooling_request_active=False,
+            heating_request_active=True,
+            base_target=2,
+        )
+        == 1,
+        (
+            "supervisory_normal_transition(...) -> "
+            f"{supervisory_normal_transition(0, cooling_request_active=False, heating_request_active=True, base_target=2)}"
+        ),
+    )
+    add(
+        "Active heating can move from CM3 back to CM2 without CM1 detour",
+        supervisory_normal_transition(
+            3,
+            cooling_request_active=False,
+            heating_request_active=True,
+            base_target=2,
+        )
+        == 2,
+        (
+            "supervisory_normal_transition(...) -> "
+            f"{supervisory_normal_transition(3, cooling_request_active=False, heating_request_active=True, base_target=2)}"
+        ),
+    )
+    add(
+        "Cooling request from standby waits in CM1 preflow first",
+        supervisory_normal_transition(
+            0,
+            cooling_request_active=True,
+            heating_request_active=False,
+            base_target=5,
+        )
+        == 1,
+        (
+            "supervisory_normal_transition(...) -> "
+            f"{supervisory_normal_transition(0, cooling_request_active=True, heating_request_active=False, base_target=5)}"
+        ),
+    )
+    add(
+        "No thermal demand from CM2 enters CM1 postflow before standby",
+        supervisory_normal_transition(
+            2,
+            cooling_request_active=False,
+            heating_request_active=False,
+            base_target=0,
+        )
+        == 1,
+        (
+            "supervisory_normal_transition(...) -> "
+            f"{supervisory_normal_transition(2, cooling_request_active=False, heating_request_active=False, base_target=0)}"
+        ),
+    )
+    add(
+        "No thermal demand from standby can resolve directly to frost",
+        supervisory_normal_transition(
+            0,
+            cooling_request_active=False,
+            heating_request_active=False,
+            base_target=98,
+        )
+        == 98,
+        (
+            "supervisory_normal_transition(...) -> "
+            f"{supervisory_normal_transition(0, cooling_request_active=False, heating_request_active=False, base_target=98)}"
+        ),
+    )
+    add(
+        "Power House deficit may promote CM2 to CM3 after timers elapse",
+        supervisory_cm3_transition(
+            2,
+            power_house_active=True,
+            boiler_assist_enabled=True,
+            heating_request_active=True,
+            base_target=2,
+            need_on=True,
+            min_cm2_elapsed=True,
+            promote_elapsed=True,
+        )
+        == 3,
+        (
+            "supervisory_cm3_transition(...) -> "
+            f"{supervisory_cm3_transition(2, power_house_active=True, boiler_assist_enabled=True, heating_request_active=True, base_target=2, need_on=True, min_cm2_elapsed=True, promote_elapsed=True)}"
+        ),
+    )
+    add(
+        "Power House deficit clear may demote CM3 to CM2 after timers elapse",
+        supervisory_cm3_transition(
+            3,
+            power_house_active=True,
+            boiler_assist_enabled=True,
+            heating_request_active=True,
+            base_target=2,
+            ok_off=True,
+            min_cm3_elapsed=True,
+            demote_elapsed=True,
+        )
+        == 2,
+        (
+            "supervisory_cm3_transition(...) -> "
+            f"{supervisory_cm3_transition(3, power_house_active=True, boiler_assist_enabled=True, heating_request_active=True, base_target=2, ok_off=True, min_cm3_elapsed=True, demote_elapsed=True)}"
+        ),
+    )
+    add(
+        "Disabled boiler assist collapses CM3 back to CM2 during heating",
+        supervisory_cm3_transition(
+            3,
+            power_house_active=False,
+            boiler_assist_enabled=False,
+            heating_request_active=True,
+            base_target=2,
+        )
+        == 2,
+        (
+            "supervisory_cm3_transition(...) -> "
+            f"{supervisory_cm3_transition(3, power_house_active=False, boiler_assist_enabled=False, heating_request_active=True, base_target=2)}"
+        ),
     )
 
     return results

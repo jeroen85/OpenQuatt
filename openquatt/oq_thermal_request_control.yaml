@@ -45,6 +45,12 @@
 #     1) shared gating / runtime anchors
 #     2) explicit request-interface publication
 #     3) final actuator-request preparation and safety gating
+#   - Phase-3 contract terminology:
+#     * strategy-local outputs (`oq_cooling_request_*`, `oq_curve_dispatch_*`,
+#       `oq_ph_request_*`) are producer intent.
+#     * `oq_request_*` is the current shared intent interface.
+#     * `oq_actuator_hp*_req` is the current guarded request consumed by
+#       `oq_thermal_actuator`; it is not applied hardware state.
 #
 # ==============================================================================
 
@@ -958,9 +964,11 @@ interval:
                 id(oq_duo_request_hold_until_ms),
                 0);
             #if OQ_TOPOLOGY_DUO
-            publish_optimizer_reason(any_hold ? "keep_current" : "inactive");
+            publish_optimizer_reason(any_hold ? oq_request::power_house_optimizer_reason(5)
+                                              : oq_request::optimizer_reason_inactive());
             #else
-            publish_optimizer_reason(hp1_hold_level > 0 ? "keep_current" : "inactive");
+            publish_optimizer_reason(hp1_hold_level > 0 ? oq_request::power_house_optimizer_reason(5)
+                                                        : oq_request::optimizer_reason_inactive());
             #endif
             const int hold_mode_code = hold_request_mode_code(hp1_hold_level, hp2_hold_level);
             publish_request(
@@ -1061,47 +1069,27 @@ interval:
           #if OQ_TOPOLOGY_DUO
           if (!is_power_house) {
             id(oq_duo_request_hold_until_ms) = 0;
-            publish_optimizer_reason("curve_mode");
+            publish_optimizer_reason(oq_request::optimizer_reason_curve_mode());
             if (is_cooling_mode) {
               hp1_req = id(oq_cooling_request_hp1_level);
               hp2_req = id(oq_cooling_request_hp2_level);
               request_owner_hp = id(oq_cooling_request_owner_hp);
-              switch (id(oq_cooling_request_reason_code)) {
-                case 1: request_reason = "cooling_owner_hp1"; break;
-                case 2: request_reason = "cooling_owner_hp2"; break;
-                default: request_reason = "cooling_idle"; break;
-              }
+              request_reason = oq_request::cooling_request_reason(
+                  id(oq_cooling_request_reason_code));
             } else {
               hp1_req = id(oq_curve_dispatch_hp1_level);
               hp2_req = id(oq_curve_dispatch_hp2_level);
               request_owner_hp = id(oq_curve_request_owner_hp);
-              if ((hp1_req + hp2_req) <= 0) request_reason = "curve_idle";
-              else if (id(oq_curve_capacity_mode_code) == 2) request_reason = "curve_dual";
-              else if (request_owner_hp == 1) request_reason = "curve_single_hp1";
-              else if (request_owner_hp == 2) request_reason = "curve_single_hp2";
-              else request_reason = "curve_single";
+              request_reason = oq_request::curve_request_reason(
+                  hp1_req, hp2_req, request_owner_hp, id(oq_curve_capacity_mode_code));
             }
 
           } else {
             hp1_req = id(oq_ph_request_hp1_level);
             hp2_req = id(oq_ph_request_hp2_level);
             request_owner_hp = id(oq_ph_request_owner_hp);
-            switch (id(oq_ph_request_reason_code)) {
-              case 1: request_reason = "ph_fallback_idle"; break;
-              case 2: request_reason = "ph_fallback_single_hp1"; break;
-              case 3: request_reason = "ph_fallback_single_hp2"; break;
-              case 4: request_reason = "ph_fallback_duo"; break;
-              case 5: request_reason = "keep_current"; break;
-              case 6: request_reason = "hold_active"; break;
-              case 7: request_reason = "defrost_hold"; break;
-              case 8: request_reason = "better_heat"; break;
-              case 9: request_reason = "soft_guard"; break;
-              case 10: request_reason = "less_power"; break;
-              case 11: request_reason = "no_candidate"; break;
-              case 12: request_reason = "defrost_boost"; break;
-              case 13: request_reason = "runtime_lead"; break;
-              default: request_reason = "ph_idle"; break;
-            }
+            request_reason = oq_request::power_house_request_reason(
+                id(oq_ph_request_reason_code), true);
           }
           #else
           oq_request::reset_dual_runtime_state(
@@ -1116,21 +1104,19 @@ interval:
             if (is_cooling_mode) {
               hp1_req = id(oq_cooling_request_hp1_level);
               request_owner_hp = id(oq_cooling_request_owner_hp);
-              request_reason = (request_owner_hp > 0) ? "cooling_owner_hp1" : "cooling_idle";
+              request_reason = oq_request::cooling_request_reason(
+                  id(oq_cooling_request_reason_code));
             } else {
               hp1_req = id(oq_curve_dispatch_hp1_level);
               request_owner_hp = id(oq_curve_request_owner_hp);
-              request_reason = (hp1_req > 0) ? "curve_single_hp1" : "curve_idle";
+              request_reason = oq_request::curve_request_reason(
+                  hp1_req, 0, request_owner_hp, id(oq_curve_capacity_mode_code));
             }
           } else {
             hp1_req = id(oq_ph_request_hp1_level);
             request_owner_hp = id(oq_ph_request_owner_hp);
-            switch (id(oq_ph_request_reason_code)) {
-              case 1: request_reason = "ph_fallback_idle"; break;
-              case 2: request_reason = "ph_fallback_single_hp1"; break;
-              case 14: request_reason = "ph_single_topology"; break;
-              default: request_reason = "ph_idle"; break;
-            }
+            request_reason = oq_request::power_house_request_reason(
+                id(oq_ph_request_reason_code), false);
           }
           hp2_req = 0;
           #endif

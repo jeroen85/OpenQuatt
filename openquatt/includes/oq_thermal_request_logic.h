@@ -217,4 +217,83 @@ inline bool min_runtime_window_active(uint32_t now_ms,
          (uint32_t)(now_ms - last_real_start_ms) < min_runtime_ms;
 }
 
+inline const char *cooling_request_reason(int reason_code) {
+  switch (reason_code) {
+    case 1: return "cooling_owner_hp1";
+    case 2: return "cooling_owner_hp2";
+    default: return "cooling_idle";
+  }
+}
+
+inline const char *optimizer_reason_inactive() {
+  return "inactive";
+}
+
+inline const char *optimizer_reason_curve_mode() {
+  return "curve_mode";
+}
+
+inline const char *optimizer_reason_single_topology() {
+  return "single_topology";
+}
+
+inline const char *optimizer_reason_defrost_protect_hold() {
+  return "defrost_protect_hold";
+}
+
+inline const char *curve_request_reason(int hp1_level,
+                                        int hp2_level,
+                                        int owner_hp,
+                                        int capacity_mode_code) {
+  if ((hp1_level + hp2_level) <= 0) return "curve_idle";
+  if (capacity_mode_code == 2) return "curve_dual";
+  if (owner_hp == 1) return "curve_single_hp1";
+  if (owner_hp == 2) return "curve_single_hp2";
+  return "curve_single";
+}
+
+inline const char *power_house_request_reason(int reason_code, bool duo_topology) {
+  if (duo_topology) {
+    switch (reason_code) {
+      case 1: return "ph_fallback_idle";
+      case 2: return "ph_fallback_single_hp1";
+      case 3: return "ph_fallback_single_hp2";
+      case 4: return "ph_fallback_duo";
+      case 5: return "keep_current";
+      case 6: return "hold_active";
+      case 7: return "defrost_hold";
+      case 8: return "better_heat";
+      case 9: return "soft_guard";
+      case 10: return "less_power";
+      case 11: return "no_candidate";
+      case 12: return "defrost_boost";
+      case 13: return "runtime_lead";
+      default: return "ph_idle";
+    }
+  }
+
+  switch (reason_code) {
+    case 1: return "ph_fallback_idle";
+    case 2: return "ph_fallback_single_hp1";
+    case 14: return "ph_single_topology";
+    default: return "ph_idle";
+  }
+}
+
+inline const char *power_house_optimizer_reason(int reason_code) {
+  switch (reason_code) {
+    case 5: return "keep_current";
+    case 6: return "hold_active";
+    case 7: return "defrost_hold";
+    case 8: return "better_heat";
+    case 9: return "soft_guard";
+    case 10: return "less_power";
+    case 11: return "no_candidate";
+    case 12: return "defrost_boost";
+    case 13: return "runtime_lead";
+    case 15: return "oil_return_hold";
+    default: return nullptr;
+  }
+}
+
 }  // namespace oq_request

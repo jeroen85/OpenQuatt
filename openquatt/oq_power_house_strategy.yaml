@@ -986,16 +986,8 @@ interval:
             hp2_req = chosen_candidate.valid ? chosen_candidate.l2 : 0;
             request_reason_code = optimizer_reason_code;
 
-            switch (optimizer_reason_code) {
-              case 5: publish_optimizer_reason("keep_current"); break;
-              case 6: publish_optimizer_reason("hold_active"); break;
-              case 7: publish_optimizer_reason("defrost_hold"); break;
-              case 8: publish_optimizer_reason("better_heat"); break;
-              case 9: publish_optimizer_reason("soft_guard"); break;
-              case 10: publish_optimizer_reason("less_power"); break;
-              case 11: publish_optimizer_reason("no_candidate"); break;
-              case 15: publish_optimizer_reason("oil_return_hold"); break;
-              default: break;
+            if (const char* optimizer_reason = oq_request::power_house_optimizer_reason(optimizer_reason_code)) {
+              publish_optimizer_reason(optimizer_reason);
             }
 
             int def_comp_min_f = (int) roundf(${oq_defrost_comp_min_f});
@@ -1016,12 +1008,14 @@ interval:
               if (hp1_valve_def && !hp2_valve_def && hp2_req > 0) {
                 hp2_req = std::min(level_cap, hp2_req + def_comp_boost);
                 request_reason_code = 12;
-                publish_optimizer_reason("defrost_boost");
+                publish_optimizer_reason(
+                    oq_request::power_house_optimizer_reason(request_reason_code));
               }
               if (hp2_valve_def && !hp1_valve_def && hp1_req > 0) {
                 hp1_req = std::min(level_cap, hp1_req + def_comp_boost);
                 request_reason_code = 12;
-                publish_optimizer_reason("defrost_boost");
+                publish_optimizer_reason(
+                    oq_request::power_house_optimizer_reason(request_reason_code));
               }
             }
             if (hp1_req > 0 && hp2_req == 0) request_owner_hp = 1;
@@ -1045,12 +1039,13 @@ interval:
                   request_owner_hp = 2;
                 }
                 request_reason_code = 13;
-                publish_optimizer_reason("runtime_lead");
+                publish_optimizer_reason(
+                    oq_request::power_house_optimizer_reason(request_reason_code));
               }
             }
           }
           #else
-          publish_optimizer_reason("single_topology");
+          publish_optimizer_reason(oq_request::optimizer_reason_single_topology());
           const float Pr = id(house_rated_power_w).state;
           float P_req_total = id(oq_phouse_req_w);
           float P_cap = NAN;
