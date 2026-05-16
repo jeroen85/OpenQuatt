@@ -5,17 +5,6 @@ It is intentionally conservative: it documents current behavior and naming
 semantics before later refactors move logic between request control, guards and
 the actuator.
 
-## Model Work Split
-
-`gpt-5.5` owns the semantic contract: intent, guarded and applied definitions,
-current-name mapping, reason taxonomy, PR boundaries and high-risk review.
-
-`gpt-5.4` owns the concrete regression-harness expansion for thermal and
-supervisory scenarios.
-
-`gpt-5.3-codex` is reserved for narrow mechanical edits once names, helpers and
-test expectations are clear.
-
 ## Contract Layers
 
 The thermal chain is:
