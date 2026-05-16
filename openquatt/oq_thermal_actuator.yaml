@@ -7,14 +7,14 @@
 #   runtime bookkeeping.
 #
 # Ownership:
-#   - Consumes `oq_request_mode_code`
-#   - Consumes `oq_actuator_hp1_req` / `oq_actuator_hp2_req`
+#   - Consumes `oq_guarded_mode_code`
+#   - Consumes `oq_guarded_hp1_level` / `oq_guarded_hp2_level`
 #   - Is the only package that writes HP working mode and compressor levels
 #   - Owns applied state such as `hp*_last_applied_level`, start/stop
 #     timestamps, and runtime minute bookkeeping.
 #
-# Phase-3 contract terminology:
-#   - `oq_actuator_hp*_req` is guarded input, not applied state.
+# Phase-5 contract terminology:
+#   - `oq_guarded_*` is guarded input, not applied state.
 #   - Applied means the write path below has commanded HP mode/level selects or
 #     updated actuator-owned bookkeeping.
 # ==============================================================================
@@ -60,37 +60,6 @@ interval:
             #else
             (void) reason;
             #endif
-          };
-
-          auto excluded_levels = [&](bool is_hp1)->oq_request::ExcludedLevels {
-            if (is_hp1) {
-              return oq_request::ExcludedLevels{
-                  id(hp1_excluded_level_a).has_state()
-                      ? id(hp1_excluded_level_a).current_option()
-                      : std::string("None"),
-                  id(hp1_excluded_level_b).has_state()
-                      ? id(hp1_excluded_level_b).current_option()
-                      : std::string("None"),
-              };
-            }
-            #if OQ_TOPOLOGY_DUO
-            return oq_request::ExcludedLevels{
-                id(${ta_secondary_excluded_level_a_id}).has_state()
-                    ? id(${ta_secondary_excluded_level_a_id}).current_option()
-                    : std::string("None"),
-                id(${ta_secondary_excluded_level_b_id}).has_state()
-                    ? id(${ta_secondary_excluded_level_b_id}).current_option()
-                    : std::string("None"),
-            };
-            #else
-            (void) is_hp1;
-            return oq_request::ExcludedLevels{"None", "None"};
-            #endif
-          };
-
-          auto pick_allowed_capped = [&](int req, bool is_hp1, int cap_level)->int {
-            return oq_request::pick_allowed_capped_level(
-                req, min_level, max_level, cap_level, excluded_levels(is_hp1));
           };
 
           auto hp_selected_level = [&](bool is_hp1)->int {
@@ -140,7 +109,7 @@ interval:
                 2);
           };
 
-          const int request_mode_code = id(oq_request_mode_code);
+          const int request_mode_code = id(oq_guarded_mode_code);
           const bool request_thermal_active = (request_mode_code == 1 || request_mode_code == 2);
           const char* request_thermal_mode_opt = oq_request::request_mode_option(request_mode_code);
 
@@ -222,7 +191,9 @@ interval:
           };
 
           auto set_mode = [&](bool is_hp1, bool active) {
-            const char* opt = (active && request_thermal_active) ? request_thermal_mode_opt : oq_request::request_mode_option(0);
+            const char* opt = (active && request_thermal_active)
+                ? request_thermal_mode_opt
+                : oq_request::request_mode_option(0);
             if (is_hp1) {
               if (id(hp1_set_working_mode).current_option() != opt) {
                 auto c = id(hp1_set_working_mode).make_call();
@@ -261,7 +232,9 @@ interval:
           // Note: options must exactly match the options map in oq_HP_io.yaml (levels 0..10)
           const char* lvl_opts[11] = {"0","1","2","3","4","5","6","7","8","9","10"};
 
-          auto apply_level = [&](bool is_hp1, int req_level)->int {
+          auto apply_level = [&](bool is_hp1,
+                                 int req_level,
+                                 bool keep_mode_active_on_zero)->int {
             req_level = std::max(min_level, std::min(max_level, req_level));
             const int requested_level = req_level;
             const int prev_applied = is_hp1 ? id(hp1_last_applied_level) : id(${ta_secondary_last_applied_level_id});
@@ -279,6 +252,8 @@ interval:
             }
 
             // Hard guardrail: after stop, enforce a universal per-HP minimum off-time before restart.
+            bool mode_request_active = oq_guard::mode_should_stay_active_on_guarded_request(
+                request_mode_code, req_level, keep_mode_active_on_zero);
             if (req_level > 0 && prev_applied == 0) {
               int min_off_s = (int) ${oq_hp_min_off_s};
               if (min_off_s < 0) min_off_s = 0;
@@ -289,6 +264,7 @@ interval:
                 const uint32_t min_off_ms = (uint32_t) min_off_s * 1000UL;
                 if (elapsed_off_ms < min_off_ms) req_level = 0;
                 if (req_level == 0) {
+                  mode_request_active = false;
                   const uint32_t remaining_s = (min_off_ms > elapsed_off_ms) ? ((min_off_ms - elapsed_off_ms + 999UL) / 1000UL) : 0;
                   char reason_buf[144];
                   snprintf(reason_buf, sizeof(reason_buf),
@@ -300,18 +276,9 @@ interval:
               }
             }
 
-            if (req_level > 0) set_mode(is_hp1, true);
-            else set_mode(is_hp1, false);
+            set_mode(is_hp1, mode_request_active);
 
             int applied = req_level;
-
-            // Silent/day cap
-            const bool silent_active = id(oq_silent_active).state;
-            int cap = silent_active ? (int) roundf(id(oq_silent_max_level).state)
-                                    : (int) roundf(id(oq_day_max_level).state);
-            cap = std::max(min_level, std::min(max_level, cap));
-            if (applied > cap) applied = cap;
-            applied = pick_allowed_capped(applied, is_hp1, cap);
 
             // Normative rule: compressor >0 only when the active thermal mode is measured
             // or the command target is already on that mode. This avoids losing a full
@@ -323,17 +290,7 @@ interval:
             }
 
             if (applied == 0 && req_level > 0) {
-              if (block_reason.empty() && req_level > cap) {
-                char reason_buf[128];
-                snprintf(reason_buf, sizeof(reason_buf), "silent/day cap limited request to 0 (cap=%d, requested=%d)", cap, requested_level);
-                block_reason = reason_buf;
-                log_hp_block_change(is_hp1, reason_buf);
-              } else if (block_reason.empty() && !oq_request::level_allowed_for_excluded_levels(excluded_levels(is_hp1), requested_level)) {
-                char reason_buf[128];
-                snprintf(reason_buf, sizeof(reason_buf), "excluded compressor levels blocked request %d", requested_level);
-                block_reason = reason_buf;
-                log_hp_block_change(is_hp1, reason_buf);
-              } else if (block_reason.empty() && retained_level == 0) {
+              if (block_reason.empty() && retained_level == 0) {
                 block_reason = "actuator gating held request at 0";
                 log_hp_block_change(is_hp1, "actuator gating held request at 0");
               }
@@ -368,11 +325,13 @@ interval:
             return applied;
           };
 
-          const int hp1_req = id(oq_actuator_hp1_req);
-          const int hp2_req = id(oq_actuator_hp2_req);
-          const int hp1_applied = apply_level(true, hp1_req);
+          const int hp1_req = id(oq_guarded_hp1_level);
+          const int hp2_req = id(oq_guarded_hp2_level);
+          const bool hp1_keep_mode_active_on_zero = id(oq_guarded_hp1_keep_mode_active_on_zero);
+          const bool hp2_keep_mode_active_on_zero = id(oq_guarded_hp2_keep_mode_active_on_zero);
+          const int hp1_applied = apply_level(true, hp1_req, hp1_keep_mode_active_on_zero);
           #if OQ_TOPOLOGY_DUO
-          const int hp2_applied = apply_level(false, hp2_req);
+          const int hp2_applied = apply_level(false, hp2_req, hp2_keep_mode_active_on_zero);
           const int prev_topology_count =
               (id(hp1_last_applied_level) > 0 ? 1 : 0) + (id(${ta_secondary_last_applied_level_id}) > 0 ? 1 : 0);
           const int new_topology_count = (hp1_applied > 0 ? 1 : 0) + (hp2_applied > 0 ? 1 : 0);

@@ -58,19 +58,15 @@ Guarded processing currently covers or prepares:
 
 Current guarded interface:
 
-- `oq_actuator_hp1_req`
-- `oq_actuator_hp2_req`
-- `oq_request_mode_code` as the mode carrier consumed by the actuator
-
-Important: `oq_actuator_hp*_req` is not applied state. It is a guarded request
-that can still be limited by actuator-local checks.
-
-Later naming direction:
-
 - `oq_guarded_mode_code`
 - `oq_guarded_hp1_level`
 - `oq_guarded_hp2_level`
-- optional `oq_guarded_reason`
+- `oq_guarded_hp1_keep_mode_active_on_zero`
+- `oq_guarded_hp2_keep_mode_active_on_zero`
+
+Important: `oq_guarded_*` is not applied state. It is guarded request state
+that can still be limited by actuator-local checks such as minimum off-time,
+mode confirmation and defrost retain.
 
 ### Applied
 
@@ -104,7 +100,9 @@ Later naming direction:
 | `oq_curve_dispatch_*` | strategy-local intent | Heating curve publishes dispatch/owner/topology. |
 | `oq_ph_request_*` | strategy-local intent | Power House publishes optimizer output. |
 | `oq_request_*` | intent | Explicit pre-guard/pre-actuator request interface. |
-| `oq_actuator_hp*_req` | guarded | Request-control output consumed by the actuator. |
+| `oq_guarded_mode_code` | guarded | Guard-owned mode carrier consumed by the actuator. |
+| `oq_guarded_hp*_level` | guarded | Guard-owned per-HP compressor request consumed by the actuator. |
+| `oq_guarded_hp*_keep_mode_active_on_zero` | guarded | Preserves thermal mode command when a guard soft-zeroes a request. |
 | `hp*_set_working_mode` | applied write | Only `oq_thermal_actuator` may write. |
 | `hp*_compressor_level` | applied write | Only `oq_thermal_actuator` may write. |
 | `hp*_last_applied_level` | applied state | Actuator-owned bookkeeping and guard input. |
@@ -122,13 +120,76 @@ order below is the behavior to preserve:
 6. Startup inhibit forces request levels to 0.
 7. Minimum runtime may re-arm a zero request to level 1, except during hard-trip
    and cooling floor trip.
-8. `oq_actuator_hp*_req` publishes guarded levels.
-9. The actuator applies min off-time, mode-confirmation gating, silent/day cap,
-   excluded-level cap and defrost retain around the actual writes.
+8. Silent/day cap is applied after runtime floor, with soft-zero semantics that
+   may keep the thermal mode command active.
+9. `oq_guarded_*` publishes guarded mode and levels.
+10. The actuator applies min off-time, mode-confirmation gating and defrost
+    retain around the actual writes.
 
 This split-location of guards is current semantics. Phase 3 may add tests and
 clarifying names/comments, but must not change this ordering without regression
 coverage.
+
+## Phase 5 Guard Boundary
+
+Phase 5 makes the guard boundary explicit before moving more behavior:
+
+```text
+strategy -> intent -> thermal guards -> guarded request -> actuator -> applied
+```
+
+Thermal guards are strategy-independent physical and safety constraints between
+intent and actuator input. They own the final guarded compressor request and the
+guard diagnostics that explain why intent changed.
+
+Guard-owned behavior:
+
+- final 0..10 level normalization
+- final excluded-level mapping
+- single topology HP2 force-zero
+- curve/cooling slew limiting and one-HP-per-cycle shaping
+- water hard-trip application
+- startup inhibit application
+- minimum runtime hold, including its priority against hard-trip, startup
+  inhibit and cooling floor trip
+- silent/day cap, including soft-zero mode preservation
+
+Strategy-owned behavior remains:
+
+- comfort, demand and target calculation
+- curve dispatch and Power House candidate scoring
+- strategy-specific topology preference
+- demand caps such as `oq_power_cap_f`
+- soft water-temperature limit factor as an input to strategy demand shaping
+
+Actuator-owned behavior remains:
+
+- hardware-facing working-mode and compressor-level writes
+- minimum off-time after a real stop
+- mode-confirmation gate around write latency
+- defrost retain / active mode hold around a zero request
+- applied state and runtime bookkeeping
+
+The first extraction target is a pure helper seam,
+`openquatt/includes/oq_thermal_guard_logic.h`. YAML should keep ESPHome state,
+timestamps, logging and publication while delegating pure guard decisions. A
+later `oq_thermal_guards.yaml` package can own guard wiring once behavior and
+diagnostics are stable.
+
+Current phase-5 implementation status:
+
+- guarded shaping is centralized in `openquatt/includes/oq_thermal_guard_logic.h`
+- `oq_thermal_request_control.yaml` now publishes explicit `oq_guarded_*`
+  actuator inputs after exclusions, slew, hard-trip, startup inhibit,
+  minimum-runtime and cap shaping
+- `oq_thermal_actuator.yaml` now consumes `oq_guarded_*` and focuses on write
+  path behavior, applied bookkeeping and runtime counters
+
+Important phase-5 nuance: current startup inhibit zeroes requests before the
+minimum runtime floor, so a compressor that is already measured active may still
+be re-armed to level 1 by minimum runtime. That behavior is explicitly covered
+and must not change unless the regression harness is updated with an intentional
+contract change.
 
 ## Topology Contract
 
@@ -190,7 +251,7 @@ Thermal scenarios for the regression harness:
 - defrost hold retains last non-zero applied level only outside cooling
 - cooling transition may apply level once target mode matches
 - excluded requested level searches down first, then up
-- silent/day cap can reduce applied level and can block to 0
+- silent/day cap can soft-zero a guarded request while preserving thermal mode intent
 - single topology never produces HP2 guarded/applied level
 - duo topology can arm single/duo hold on non-idle topology transition
 

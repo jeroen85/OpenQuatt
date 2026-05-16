@@ -173,9 +173,8 @@ def actuator_mode_and_level(
     min_off_blocked: bool,
     measured_mode_matches: bool,
     target_mode_matches: bool,
+    keep_mode_active_on_zero: bool = False,
     retained_level: int = 0,
-    silent_cap: int = 10,
-    level_allowed: bool = True,
 ) -> tuple[str, int]:
     request_mode_name = {0: "Standby", 1: "Cooling", 2: "Heating"}[request_mode_code]
     request_thermal_active = request_mode_code in (1, 2)
@@ -183,13 +182,15 @@ def actuator_mode_and_level(
     if request_level == 0 and retained_level > 0:
         return request_mode_name if request_thermal_active else "Hold", retained_level
 
+    mode_request_active = request_thermal_active and (
+        request_level > 0 or keep_mode_active_on_zero
+    )
     if request_level > 0 and previous_applied_level == 0 and min_off_blocked:
         request_level = 0
+        mode_request_active = False
 
-    mode_command = request_mode_name if (request_level > 0 and request_thermal_active) else "Standby"
-    applied_level = min(request_level, silent_cap)
-    if applied_level > 0 and not level_allowed:
-        applied_level = 0
+    mode_command = request_mode_name if mode_request_active else "Standby"
+    applied_level = request_level
     if request_level > 0 and not measured_mode_matches and not target_mode_matches:
         applied_level = 0
     if applied_level == 0 and retained_level > 0:
@@ -281,6 +282,22 @@ def pick_allowed_capped_level(
         if level > 0 and level_allowed_for_excluded_levels(excluded, level):
             return level
     return 0
+
+
+def apply_guard_cap(
+    request_level: int,
+    *,
+    min_level: int,
+    max_level: int,
+    cap_level: int,
+    excluded: tuple[str, str],
+) -> tuple[int, bool]:
+    if request_level <= 0:
+        return request_level, False
+    capped_level = pick_allowed_capped_level(
+        request_level, min_level, max_level, cap_level, excluded
+    )
+    return capped_level, capped_level == 0 and request_level > 0
 
 
 def guarded_request_after_runtime_floor(
@@ -790,6 +807,18 @@ def run_scenarios() -> list[ScenarioResult]:
         pick_allowed_capped_level(4, 0, 10, 0, ("None", "None")) == 0,
         f"pick_allowed_capped_level(...) -> {pick_allowed_capped_level(4, 0, 10, 0, ('None', 'None'))}",
     )
+    guarded_level, keep_mode = apply_guard_cap(
+        4,
+        min_level=0,
+        max_level=10,
+        cap_level=0,
+        excluded=("None", "None"),
+    )
+    add(
+        "Guard cap may soft-zero a request while preserving thermal mode intent",
+        guarded_level == 0 and keep_mode,
+        f"guarded_level={guarded_level}, keep_mode={keep_mode}",
+    )
     add(
         "Cooling request reason maps owner code 2 consistently",
         cooling_request_reason(2) == "cooling_owner_hp2",
@@ -880,16 +909,16 @@ def run_scenarios() -> list[ScenarioResult]:
         f"mode_command={mode_command}, applied_level={applied_level}",
     )
     mode_command, applied_level = actuator_mode_and_level(
-        4,
+        0,
         request_mode_code=2,
         previous_applied_level=2,
         min_off_blocked=False,
         measured_mode_matches=True,
         target_mode_matches=True,
-        silent_cap=0,
+        keep_mode_active_on_zero=True,
     )
     add(
-        "Actuator may keep heating mode command while cap drops applied level to zero",
+        "Actuator preserves heating mode command on guarded soft-zero request",
         (mode_command == "Heating") and (applied_level == 0),
         f"mode_command={mode_command}, applied_level={applied_level}",
     )

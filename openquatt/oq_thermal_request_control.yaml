@@ -16,8 +16,8 @@
 #   - Applies demand filtering to damp noise/jitter in heat demand
 #   - Applies caps/limits on `f` before split
 #   - Publishes `oq_request_*` as the explicit pre-actuator request interface
-#   - Publishes finalized actuator requests for the downstream thermal actuator
-#   - Owns shared request filtering, caps, guards, and actuator input logic
+#   - Publishes finalized guarded requests for the downstream thermal actuator
+#   - Owns shared request filtering, caps, guards, and guarded-request shaping
 #   - Consumes shared HP capacity/deficit (`oq_P_hp_cap_w`, `oq_P_deficit_w`) for supervisory/debug logic
 #
 # What this package DOES NOT do:
@@ -49,7 +49,7 @@
 #     * strategy-local outputs (`oq_cooling_request_*`, `oq_curve_dispatch_*`,
 #       `oq_ph_request_*`) are producer intent.
 #     * `oq_request_*` is the current shared intent interface.
-#     * `oq_actuator_hp*_req` is the current guarded request consumed by
+#     * `oq_guarded_*` is the current guarded request interface consumed by
 #       `oq_thermal_actuator`; it is not applied hardware state.
 #
 # ==============================================================================
@@ -89,16 +89,31 @@ globals:
     restore_value: false
     initial_value: '0'
 
-  # Final per-HP requests consumed by oq_thermal_actuator.
-  - id: oq_actuator_hp1_req
+  # Final per-HP guarded requests consumed by oq_thermal_actuator.
+  - id: oq_guarded_mode_code
     type: int
     restore_value: false
     initial_value: '0'
 
-  - id: oq_actuator_hp2_req
+  - id: oq_guarded_hp1_level
     type: int
     restore_value: false
     initial_value: '0'
+
+  - id: oq_guarded_hp2_level
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_guarded_hp1_keep_mode_active_on_zero
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+  - id: oq_guarded_hp2_keep_mode_active_on_zero
+    type: bool
+    restore_value: false
+    initial_value: 'false'
 
   # Shared filtered demand owned by the active strategy module.
   - id: oq_demand_filtered
@@ -933,6 +948,41 @@ interval:
             return 1;
           };
 
+          auto excluded_levels = [&](bool is_hp1)->oq_request::ExcludedLevels {
+            if (is_hp1) {
+              return oq_request::ExcludedLevels{
+                  id(hp1_excluded_level_a).has_state()
+                      ? id(hp1_excluded_level_a).current_option()
+                      : std::string("None"),
+                  id(hp1_excluded_level_b).has_state()
+                      ? id(hp1_excluded_level_b).current_option()
+                      : std::string("None"),
+              };
+            }
+            #if OQ_TOPOLOGY_DUO
+            return oq_request::ExcludedLevels{
+                id(${hc_secondary_excluded_level_a_id}).has_state()
+                    ? id(${hc_secondary_excluded_level_a_id}).current_option()
+                    : std::string("None"),
+                id(${hc_secondary_excluded_level_b_id}).has_state()
+                    ? id(${hc_secondary_excluded_level_b_id}).current_option()
+                    : std::string("None"),
+            };
+            #else
+            (void) is_hp1;
+            return oq_request::ExcludedLevels{"None", "None"};
+            #endif
+          };
+
+          const int min_level = 0;
+          const int max_level = 10;
+          const int level_cap = oq_guard::clamp_cap_level(
+              id(oq_silent_active).state,
+              id(oq_silent_max_level).state,
+              id(oq_day_max_level).state,
+              min_level,
+              max_level);
+
           // =========================
           // 1d) Inactive-CM fast exit
           // Shared standby/hold behavior runs before any request-selection logic.
@@ -971,6 +1021,22 @@ interval:
                                                         : oq_request::optimizer_reason_inactive());
             #endif
             const int hold_mode_code = hold_request_mode_code(hp1_hold_level, hp2_hold_level);
+            auto hp1_guarded = oq_guard::apply_capped_level(
+                oq_guard::GuardedLevel{hp1_hold_level, false},
+                min_level,
+                max_level,
+                level_cap,
+                excluded_levels(true));
+            #if OQ_TOPOLOGY_DUO
+            auto hp2_guarded = oq_guard::apply_capped_level(
+                oq_guard::GuardedLevel{hp2_hold_level, false},
+                min_level,
+                max_level,
+                level_cap,
+                excluded_levels(false));
+            #else
+            auto hp2_guarded = oq_guard::GuardedLevel{0, false};
+            #endif
             publish_request(
               any_hold ? hold_mode_code : 0,
               hp1_hold_level,
@@ -978,14 +1044,17 @@ interval:
               request_strategy_inactive,
               0,
               any_hold ? "inactive_cm_hold" : "inactive_cm");
-            id(oq_actuator_hp1_req) = hp1_hold_level;
-            id(oq_actuator_hp2_req) = hp2_hold_level;
+            id(oq_guarded_mode_code) = any_hold ? hold_mode_code : 0;
+            id(oq_guarded_hp1_level) = hp1_guarded.level;
+            id(oq_guarded_hp2_level) = hp2_guarded.level;
+            id(oq_guarded_hp1_keep_mode_active_on_zero) = hp1_guarded.keep_mode_active_on_zero;
+            id(oq_guarded_hp2_keep_mode_active_on_zero) = hp2_guarded.keep_mode_active_on_zero;
             #if OQ_TOPOLOGY_DUO
             const int debug_hp2_applied = id(${hc_secondary_last_applied_level_id});
             #else
             const int debug_hp2_applied = 0;
             #endif
-            publish_debug(hp1_hold_level, hp2_hold_level, id(hp1_last_applied_level), debug_hp2_applied);
+            publish_debug(id(oq_guarded_hp1_level), id(oq_guarded_hp2_level), id(hp1_last_applied_level), debug_hp2_applied);
             return;
           }
           // =========================
@@ -1027,38 +1096,6 @@ interval:
           const char* request_reason =
               is_cooling_mode ? "cooling_idle"
                               : (is_power_house ? "ph_idle" : "curve_idle");
-          const int min_level = 0;
-          const int max_level = 10;
-
-          auto excluded_levels = [&](bool is_hp1)->oq_request::ExcludedLevels {
-            if (is_hp1) {
-              return oq_request::ExcludedLevels{
-                  id(hp1_excluded_level_a).has_state()
-                      ? id(hp1_excluded_level_a).current_option()
-                      : std::string("None"),
-                  id(hp1_excluded_level_b).has_state()
-                      ? id(hp1_excluded_level_b).current_option()
-                      : std::string("None"),
-              };
-            }
-            #if OQ_TOPOLOGY_DUO
-            return oq_request::ExcludedLevels{
-                id(${hc_secondary_excluded_level_a_id}).has_state()
-                    ? id(${hc_secondary_excluded_level_a_id}).current_option()
-                    : std::string("None"),
-                id(${hc_secondary_excluded_level_b_id}).has_state()
-                    ? id(${hc_secondary_excluded_level_b_id}).current_option()
-                    : std::string("None"),
-            };
-            #else
-            (void) is_hp1;
-            return oq_request::ExcludedLevels{"None", "None"};
-            #endif
-          };
-          int level_cap = (int) roundf(id(oq_day_max_level).state);
-          if (id(oq_silent_active).state) level_cap = (int) roundf(id(oq_silent_max_level).state);
-          if (level_cap < 0) level_cap = 0;
-          if (level_cap > max_level) level_cap = max_level;
           const bool hp1_valve_def = valve_defrost_active(true);
           #if OQ_TOPOLOGY_DUO
           const bool hp2_valve_def = valve_defrost_active(false);
@@ -1137,26 +1174,13 @@ interval:
           hp1_req = id(oq_request_hp1_level);
           hp2_req = id(oq_request_hp2_level);
 
-          // =========================
-          // 4) Allowed levels after applying up to two explicit exclusions per HP.
-          //    - level 0 always allowed
-          //    - if requested level is excluded: search down first, then up
-          // =========================
-          auto pick_allowed = [&](int req, bool is_hp1)->int {
-            return oq_request::pick_allowed_level(req, 1, max_level, excluded_levels(is_hp1));
-          };
-
-          // Like pick_allowed(), but never returns above cap_level.
-          auto pick_allowed_capped = [&](int req, bool is_hp1, int cap_level)->int {
-            return oq_request::pick_allowed_capped_level(
-                req, min_level, max_level, cap_level, excluded_levels(is_hp1));
-          };
-
-          hp1_req = pick_allowed(hp1_req, true);
+          auto hp1_guarded = oq_guard::from_intent_level(
+              hp1_req, 1, max_level, excluded_levels(true));
           #if OQ_TOPOLOGY_DUO
-          hp2_req = pick_allowed(hp2_req, false);
+          auto hp2_guarded = oq_guard::from_intent_level(
+              hp2_req, 1, max_level, excluded_levels(false));
           #else
-          hp2_req = 0;
+          auto hp2_guarded = oq_guard::GuardedLevel{0, false};
           #endif
 
           // =========================
@@ -1176,54 +1200,32 @@ interval:
             int down_hold_s = tuning.steady_down_hold_s;
             if (curve_regime == 1) up_hold_s = tuning.recovery_up_hold_s;
 
-            auto limit_slew = [&](bool is_hp1, int req_level)->int {
-              const int prev = is_hp1 ? id(hp1_last_applied_level) : id(${hc_secondary_last_applied_level_id});
-              uint32_t &last_change_ms = is_hp1 ? id(hp1_last_level_change_ms) : id(hp2_last_level_change_ms);
-
-              if (req_level == prev) return req_level;
-
-              int limited = req_level;
-              if (limited > prev + 1) limited = prev + 1;
-              if (limited < prev - 1) limited = prev - 1;
-              if (limited == prev) return limited;
-
-              const bool moving_up = limited > prev;
-              const uint32_t hold_ms = (uint32_t) ((moving_up ? up_hold_s : down_hold_s) * 1000UL);
-              if (last_change_ms > 0 && now_ms > last_change_ms) {
-                const uint32_t dt_change_ms = now_ms - last_change_ms;
-                if (dt_change_ms < hold_ms) return prev;
-              }
-              return limited;
-            };
-
-            hp1_req = limit_slew(true, hp1_req);
+            hp1_guarded = oq_guard::limit_slew_level(
+                hp1_guarded,
+                now_ms,
+                id(hp1_last_applied_level),
+                id(hp1_last_level_change_ms),
+                up_hold_s,
+                down_hold_s);
             #if OQ_TOPOLOGY_DUO
-            hp2_req = limit_slew(false, hp2_req);
+            hp2_guarded = oq_guard::limit_slew_level(
+                hp2_guarded,
+                now_ms,
+                id(${hc_secondary_last_applied_level_id}),
+                id(hp2_last_level_change_ms),
+                up_hold_s,
+                down_hold_s);
 
             // Global guardrail: in curve mode allow at most one HP level change per cycle.
             // This avoids tandem jumps like 1+1 -> 2+2 that create thermal overshoot.
-            const int prev1 = id(hp1_last_applied_level);
-            const int prev2 = id(${hc_secondary_last_applied_level_id});
-            const int d_hp1 = hp1_req - prev1;
-            const int d_hp2 = hp2_req - prev2;
-            if (d_hp1 != 0 && d_hp2 != 0) {
-              bool apply_hp1_change = true;
-              if (d_hp1 > 0 && d_hp2 > 0) {
-                // Ramp-up: prioritize runtime lead.
-                apply_hp1_change = lead_is_hp1;
-              } else if (d_hp1 < 0 && d_hp2 < 0) {
-                // Ramp-down: shed lag first.
-                apply_hp1_change = !lead_is_hp1;
-              } else {
-                // Mixed direction: prioritize the downward correction.
-                apply_hp1_change = (d_hp1 < 0);
-              }
-
-              if (apply_hp1_change) hp2_req = prev2;
-              else hp1_req = prev1;
-            }
+            oq_guard::allow_only_one_hp_change(
+                hp1_guarded,
+                hp2_guarded,
+                id(hp1_last_applied_level),
+                id(${hc_secondary_last_applied_level_id}),
+                lead_is_hp1);
             #else
-            hp2_req = 0;
+            hp2_guarded.level = 0;
             #endif
           }
 
@@ -1233,23 +1235,15 @@ interval:
           // higher priority than compressor minimum runtime.
           // =========================
           if (id(oq_water_temp_hard_trip_active)) {
-            hp1_req = 0;
-            #if OQ_TOPOLOGY_DUO
-            hp2_req = 0;
-            #else
-            hp2_req = 0;
-            #endif
+            oq_guard::apply_absolute_zero(hp1_guarded);
+            oq_guard::apply_absolute_zero(hp2_guarded);
           }
 
           // Absolute boot-time startup inhibit: after a controller reboot, keep compressors
           // at level 0 until the configured compressor minimum off-time has elapsed.
           if (startup_inhibit_active) {
-            hp1_req = 0;
-            #if OQ_TOPOLOGY_DUO
-            hp2_req = 0;
-            #else
-            hp2_req = 0;
-            #endif
+            oq_guard::apply_absolute_zero(hp1_guarded);
+            oq_guard::apply_absolute_zero(hp2_guarded);
           }
 
           // =========================
@@ -1274,11 +1268,19 @@ interval:
                 (now_ms > id(hp1_last_real_heat_start_ms)) &&
                 ((uint32_t)(now_ms - id(hp1_last_real_heat_start_ms)) < min_rt_ms);
             const bool hp1_min_runtime_hold =
-                (hp1_req == 0 && !cooling_floor_trip && hp1_min_runtime_active &&
+                (hp1_guarded.level == 0 && !cooling_floor_trip && hp1_min_runtime_active &&
                  (id(hp1_last_applied_level) > 0 || hp1_measured_thermal));
-            if (hp1_min_runtime_hold) {
-              hp1_req = pick_allowed(1, true);
-            }
+            hp1_guarded = oq_guard::apply_min_runtime_floor(
+                hp1_guarded,
+                now_ms,
+                id(hp1_last_real_heat_start_ms),
+                min_rt_ms,
+                cooling_floor_trip,
+                id(hp1_last_applied_level),
+                hp1_measured_thermal,
+                1,
+                max_level,
+                excluded_levels(true));
             static bool last_hp1_min_runtime_hold = false;
             if (hp1_min_runtime_hold != last_hp1_min_runtime_hold) {
               if (hp1_min_runtime_hold) {
@@ -1299,11 +1301,19 @@ interval:
                 (now_ms > id(hp2_last_real_heat_start_ms)) &&
                 ((uint32_t)(now_ms - id(hp2_last_real_heat_start_ms)) < min_rt_ms);
             const bool hp2_min_runtime_hold =
-                (hp2_req == 0 && !cooling_floor_trip && hp2_min_runtime_active &&
+                (hp2_guarded.level == 0 && !cooling_floor_trip && hp2_min_runtime_active &&
                  (id(${hc_secondary_last_applied_level_id}) > 0 || hp2_measured_thermal));
-            if (hp2_min_runtime_hold) {
-              hp2_req = pick_allowed(1, false);
-            }
+            hp2_guarded = oq_guard::apply_min_runtime_floor(
+                hp2_guarded,
+                now_ms,
+                id(hp2_last_real_heat_start_ms),
+                min_rt_ms,
+                cooling_floor_trip,
+                id(${hc_secondary_last_applied_level_id}),
+                hp2_measured_thermal,
+                1,
+                max_level,
+                excluded_levels(false));
             static bool last_hp2_min_runtime_hold = false;
             if (hp2_min_runtime_hold != last_hp2_min_runtime_hold) {
               if (hp2_min_runtime_hold) {
@@ -1318,20 +1328,41 @@ interval:
               last_hp2_min_runtime_hold = hp2_min_runtime_hold;
             }
             #else
-            hp2_req = 0;
+            hp2_guarded.level = 0;
+            hp2_guarded.keep_mode_active_on_zero = false;
             #endif
           }
+
+          hp1_guarded = oq_guard::apply_capped_level(
+              hp1_guarded,
+              min_level,
+              max_level,
+              level_cap,
+              excluded_levels(true));
+          #if OQ_TOPOLOGY_DUO
+          hp2_guarded = oq_guard::apply_capped_level(
+              hp2_guarded,
+              min_level,
+              max_level,
+              level_cap,
+              excluded_levels(false));
+          #else
+          oq_guard::force_single_topology_secondary_off(hp2_guarded);
+          #endif
 
           // =========================
           // 7) Thermal actuator input
           // oq_thermal_actuator is now the only package that writes working mode
           // and compressor levels, and owns the post-apply bookkeeping.
           // =========================
-          id(oq_actuator_hp1_req) = hp1_req;
-          id(oq_actuator_hp2_req) = hp2_req;
+          id(oq_guarded_mode_code) = active_thermal_mode_code;
+          id(oq_guarded_hp1_level) = hp1_guarded.level;
+          id(oq_guarded_hp2_level) = hp2_guarded.level;
+          id(oq_guarded_hp1_keep_mode_active_on_zero) = hp1_guarded.keep_mode_active_on_zero;
+          id(oq_guarded_hp2_keep_mode_active_on_zero) = hp2_guarded.keep_mode_active_on_zero;
           #if OQ_TOPOLOGY_DUO
           const int debug_hp2_applied = id(${hc_secondary_last_applied_level_id});
           #else
           const int debug_hp2_applied = 0;
           #endif
-          publish_debug(hp1_req, hp2_req, id(hp1_last_applied_level), debug_hp2_applied);
+          publish_debug(id(oq_guarded_hp1_level), id(oq_guarded_hp2_level), id(hp1_last_applied_level), debug_hp2_applied);
