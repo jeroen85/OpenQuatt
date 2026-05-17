@@ -19,6 +19,8 @@ hp_perf_map_header: "openquatt/includes/hp_perf_map.h" # C++ performance-map hea
 hp_perf_map_v2_high_header: "openquatt/includes/hp_perf_map_v2_high.h" # C++ V2 high-temperature continuation header.
 thermal_request_logic_header: "openquatt/includes/oq_thermal_request_logic.h" # Shared C++ helper include for request/control glue.
 heating_curve_logic_header: "openquatt/includes/oq_heating_curve_logic.h" # Shared C++ helper include for curve runtime state and naming.
+oq_psram_buffer_header: "components/openquatt_common/PsramBuffer.h" # Shared PSRAM-backed buffer helper for custom components.
+oq_timezone: "Europe/Amsterdam"                         # SNTP timezone used by runtime timestamps.
 oq_webserver_css_url: ""                            # Optional external CSS for the ESPHome web UI.
 oq_webserver_js_url: ""                               # Custom OpenQuatt app is primary; load ESPHome fallback lazily on demand.
 web_auth_bootstrap_username: "admin"                  # Bootstrap username used to keep web auth support compiled in.

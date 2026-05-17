@@ -15,6 +15,8 @@
 namespace esphome {
 namespace openquatt_trends {
 
+using openquatt_common::PsramBuffer;
+
 class ChunkedTextWriter;
 
 class OpenQuattTrends : public Component {

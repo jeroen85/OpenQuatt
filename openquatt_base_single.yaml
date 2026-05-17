@@ -10,6 +10,7 @@
 # ==============================================================================
 substitutions:
   <<: !include openquatt/topology/oq_topology_single.yaml
+  oq_topology_build_flag: "-DOQ_TOPOLOGY_DUO=0"
   main_release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-single-ota.manifest.json"
   dev_release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/download/dev-latest/openquatt-single-ota.manifest.json"
   # Stable OTA channel by default. Dev builds should override both substitutions
@@ -17,57 +18,5 @@ substitutions:
   release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-single-ota.manifest.json"
 
 packages:
+  base_common: !include openquatt_base_common.yaml
   <<: !include openquatt/oq_packages_common.yaml
-
-# ==============================================================================
-# ESPHOME CORE
-# ==============================================================================
-esphome:
-  name: ${device_name}
-  friendly_name: ${friendly_name}
-  project:
-    name: ${project_name}
-    version: ${project_version}
-  min_version: 2026.4.0
-  name_add_mac_suffix: false
-  includes:
-    - ${hp_perf_map_header}
-    - ${hp_perf_map_v2_high_header}
-    - ${thermal_request_logic_header}
-    - ${heating_curve_logic_header}
-  platformio_options:
-    extra_scripts:
-      - pre:../../../scripts/normalize_factory_merge_inputs.py
-    build_flags:
-      # Hard-pinned for Single entrypoints to prevent accidental topology drift.
-      - -DOQ_TOPOLOGY_DUO=0
-  on_boot:
-    priority: -100
-    then:
-      - text_sensor.template.publish:
-          id: oq_project_version_text
-          state: "${project_version}"
-      - text_sensor.template.publish:
-          id: oq_release_channel_text
-          state: "${release_channel}"
-      - lambda: |-
-          if (id(oq_firmware_update_channel).current_option() == "dev") {
-            id(oq_firmware_update).set_source_url("${dev_release_manifest_url}");
-          } else {
-            id(oq_firmware_update).set_source_url("${main_release_manifest_url}");
-          }
-
-# ==============================================================================
-# PLATFORM
-# ==============================================================================
-esp32:
-  board: ${esp_board}
-  flash_size: ${esp_flash_size}
-  variant: ${esp_variant}
-  partitions: openquatt/partitions/openquatt_8mb_trends.csv
-  framework:
-    type: esp-idf
-    version: recommended
-    sdkconfig_options:
-      COMPILER_OPTIMIZATION_SIZE: y
-      CONFIG_BT_ENABLED: n

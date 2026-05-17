@@ -1,0 +1,54 @@
+# ==============================================================================
+# OpenQuatt - Shared ESPHome Runtime Base
+# ==============================================================================
+# Common ESPHome/ESP32 runtime shared by Single/Duo and all hardware profiles.
+# Topology entrypoints provide manifest URLs and `oq_topology_build_flag`.
+# ==============================================================================
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  project:
+    name: ${project_name}
+    version: ${project_version}
+  min_version: 2026.4.0
+  name_add_mac_suffix: false
+  includes:
+    - ${hp_perf_map_header}
+    - ${hp_perf_map_v2_high_header}
+    - ${thermal_request_logic_header}
+    - ${heating_curve_logic_header}
+    - ${oq_psram_buffer_header}
+  platformio_options:
+    extra_scripts:
+      - pre:../../../scripts/normalize_factory_merge_inputs.py
+    build_flags:
+      # Hard-pinned by the topology entrypoint to prevent accidental topology drift.
+      - ${oq_topology_build_flag}
+  on_boot:
+    priority: -100
+    then:
+      - text_sensor.template.publish:
+          id: oq_project_version_text
+          state: "${project_version}"
+      - text_sensor.template.publish:
+          id: oq_release_channel_text
+          state: "${release_channel}"
+      - lambda: |-
+          if (id(oq_firmware_update_channel).current_option() == "dev") {
+            id(oq_firmware_update).set_source_url("${dev_release_manifest_url}");
+          } else {
+            id(oq_firmware_update).set_source_url("${main_release_manifest_url}");
+          }
+
+esp32:
+  board: ${esp_board}
+  flash_size: ${esp_flash_size}
+  variant: ${esp_variant}
+  partitions: openquatt/partitions/openquatt_8mb_trends.csv
+  framework:
+    type: esp-idf
+    version: recommended
+    sdkconfig_options:
+      COMPILER_OPTIMIZATION_SIZE: y
+      CONFIG_BT_ENABLED: n
