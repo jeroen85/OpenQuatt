@@ -39,12 +39,12 @@ STRICT_TOP_LEVEL_ORDER_RULES = {
     "openquatt_base.yaml": (
         "substitutions",
         "packages",
-        "esphome",
-        "esp32",
     ),
     "openquatt_base_single.yaml": (
         "substitutions",
         "packages",
+    ),
+    "openquatt_base_common.yaml": (
         "esphome",
         "esp32",
     ),
@@ -130,11 +130,13 @@ STRICT_TOP_LEVEL_ORDER_RULES = {
 
 NESTED_KEY_ORDER_RULES = {
     ("openquatt_base.yaml", "substitutions"): (
+        "oq_topology_build_flag",
         "main_release_manifest_url",
         "dev_release_manifest_url",
         "release_manifest_url",
     ),
     ("openquatt_base_single.yaml", "substitutions"): (
+        "oq_topology_build_flag",
         "main_release_manifest_url",
         "dev_release_manifest_url",
         "release_manifest_url",

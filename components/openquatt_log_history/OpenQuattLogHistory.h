@@ -15,6 +15,8 @@
 namespace esphome {
 namespace openquatt_log_history {
 
+using openquatt_common::PsramBuffer;
+
 class OpenQuattLogHistory : public Component {
  public:
   void set_enabled_switch(switch_::Switch *enabled_switch) { this->enabled_switch_ = enabled_switch; }

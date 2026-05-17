@@ -1,0 +1,124 @@
+name: ESPHome Build Profiles
+
+on:
+  workflow_call:
+    inputs:
+      artifact_suffix:
+        required: true
+        type: string
+      include_firmware_bin:
+        required: false
+        type: boolean
+        default: false
+      project_version:
+        required: false
+        type: string
+        default: ""
+      release_channel:
+        required: false
+        type: string
+        default: ""
+      release_manifest_tag:
+        required: false
+        type: string
+        default: ""
+
+jobs:
+  compile-profiles:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        profile:
+          - id: duo-waveshare
+            config: openquatt_duo_waveshare.yaml
+            build_path: .esphome/build/openquatt_duo_waveshare
+            manifest_name: openquatt-duo-ota.manifest.json
+          - id: duo-heatpump-listener
+            config: openquatt_duo_heatpump_listener.yaml
+            build_path: .esphome/build/openquatt_duo_heatpump_listener
+            manifest_name: openquatt-duo-ota.manifest.json
+          - id: single-waveshare
+            config: openquatt_single_waveshare.yaml
+            build_path: .esphome/build/openquatt_single_waveshare
+            manifest_name: openquatt-single-ota.manifest.json
+          - id: single-heatpump-listener
+            config: openquatt_single_heatpump_listener.yaml
+            build_path: .esphome/build/openquatt_single_heatpump_listener
+            manifest_name: openquatt-single-ota.manifest.json
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: .github/requirements-esphome.txt
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v5
+        with:
+          path: ~/.platformio
+          key: ${{ runner.os }}-platformio-${{ hashFiles('.github/requirements-esphome.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-platformio-
+
+      - name: Install ESPHome
+        run: |
+          ESPHOME_VERSION="$(cat .github/requirements-esphome.txt | sed 's/^esphome==//')"
+          pip install --upgrade "esphome==${ESPHOME_VERSION}"
+          esphome version
+
+      - name: Validate config
+        run: |
+          EXTRA_ARGS=()
+          if [[ -n "${{ inputs.project_version }}" ]]; then
+            EXTRA_ARGS+=(-s project_version "${{ inputs.project_version }}")
+          fi
+          if [[ -n "${{ inputs.release_channel }}" ]]; then
+            EXTRA_ARGS+=(-s release_channel "${{ inputs.release_channel }}")
+          fi
+          if [[ -n "${{ inputs.release_manifest_tag }}" ]]; then
+            RELEASE_MANIFEST_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${{ inputs.release_manifest_tag }}/${{ matrix.profile.manifest_name }}"
+            EXTRA_ARGS+=(-s release_manifest_url "${RELEASE_MANIFEST_URL}")
+          fi
+          esphome "${EXTRA_ARGS[@]}" config "${{ matrix.profile.config }}"
+
+      - name: Compile firmware
+        run: |
+          EXTRA_ARGS=()
+          if [[ -n "${{ inputs.project_version }}" ]]; then
+            EXTRA_ARGS+=(-s project_version "${{ inputs.project_version }}")
+          fi
+          if [[ -n "${{ inputs.release_channel }}" ]]; then
+            EXTRA_ARGS+=(-s release_channel "${{ inputs.release_channel }}")
+          fi
+          if [[ -n "${{ inputs.release_manifest_tag }}" ]]; then
+            RELEASE_MANIFEST_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${{ inputs.release_manifest_tag }}/${{ matrix.profile.manifest_name }}"
+            EXTRA_ARGS+=(-s release_manifest_url "${RELEASE_MANIFEST_URL}")
+          fi
+          esphome "${EXTRA_ARGS[@]}" compile "${{ matrix.profile.config }}"
+
+      - name: Upload firmware artifacts
+        if: ${{ inputs.include_firmware_bin }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: openquatt-${{ matrix.profile.id }}-${{ inputs.artifact_suffix }}
+          if-no-files-found: error
+          path: |
+            ${{ matrix.profile.build_path }}/.pioenvs/openquatt/firmware.bin
+            ${{ matrix.profile.build_path }}/.pioenvs/openquatt/firmware.ota.bin
+            ${{ matrix.profile.build_path }}/.pioenvs/openquatt/firmware.factory.bin
+
+      - name: Upload OTA/factory artifacts
+        if: ${{ !inputs.include_firmware_bin }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: openquatt-${{ matrix.profile.id }}-${{ inputs.artifact_suffix }}
+          if-no-files-found: error
+          path: |
+            ${{ matrix.profile.build_path }}/.pioenvs/openquatt/firmware.ota.bin
+            ${{ matrix.profile.build_path }}/.pioenvs/openquatt/firmware.factory.bin
