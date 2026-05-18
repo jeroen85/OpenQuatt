@@ -68,9 +68,7 @@ def fallback_candidates(raw_path: str, build_dir: Path, role: str, offset: int) 
         )
     if role == "otadata":
         candidates.append(build_dir / "ota_data_initial.bin")
-    if role == "app":
-        candidates.append(build_dir / "firmware.bin")
-    if not role and offset >= 0x10000:
+    if role == "app" or (not role and is_app_image_name(raw_name)):
         candidates.append(build_dir / "firmware.bin")
 
     return candidates
@@ -84,9 +82,14 @@ def infer_role(offset: int, path: Path) -> str:
         return "partition-table"
     if offset in (0xE000, 0xF000) or "ota_data" in name:
         return "otadata"
-    if name.endswith(".bin") and offset >= 0x10000:
+    if offset >= 0x10000 and is_app_image_name(name):
         return "app"
     return ""
+
+
+def is_app_image_name(name: str) -> bool:
+    normalized = name.lower()
+    return normalized == "firmware.bin" or normalized.startswith("openquatt_")
 
 
 def resolve_flash_file(raw_path: str, build_dir: Path, role: str, offset: int) -> Path:
