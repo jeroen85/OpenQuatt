@@ -657,8 +657,6 @@ def validate_command(args: argparse.Namespace) -> int:
                             check=False,
                             heartbeat_label=label,
                         )
-                        if exit_code == 0:
-                            return config, exit_code, log_path
                         tail = tail_lines(log_path, limit=160)
 
                 if cache_race:
