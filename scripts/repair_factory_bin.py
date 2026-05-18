@@ -82,9 +82,17 @@ def infer_role(offset: int, path: Path) -> str:
         return "partition-table"
     if offset in (0xE000, 0xF000) or "ota_data" in name:
         return "otadata"
-    if offset >= 0x10000 and is_app_image_name(name):
+    if offset >= 0x10000 and has_esp_image_magic(path):
         return "app"
     return ""
+
+
+def has_esp_image_magic(path: Path) -> bool:
+    try:
+        with path.open("rb") as handle:
+            return handle.read(1) == bytes([ESP_IMAGE_MAGIC])
+    except OSError:
+        return False
 
 
 def is_app_image_name(name: str) -> bool:
