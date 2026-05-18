@@ -55,21 +55,6 @@ globals:
     restore_value: false
     initial_value: '0'
 
-  - id: oq_commissioning_boiler_request
-    type: bool
-    restore_value: false
-    initial_value: 'false'
-
-  - id: oq_commissioning_result_w
-    type: float
-    restore_value: false
-    initial_value: 'NAN'
-
-  - id: oq_commissioning_result_confidence
-    type: float
-    restore_value: false
-    initial_value: '0.0'
-
 # ----------------------------
 # CONTROL INPUTS
 # ----------------------------
@@ -155,95 +140,6 @@ button:
           id(oq_flow_autotune_state) = 0;
           id(oq_commissioning_status).publish_state("IDLE");
 
-  - platform: template
-    id: oq_boiler_power_test_start
-    name: "Boiler Power Test Start"
-    icon: mdi:play-circle-outline
-    entity_category: config
-    web_server:
-      sorting_group_id: oq_boiler
-    on_press:
-      - lambda: |-
-          oq_boiler_task::runtime().start(oq_boiler_task::default_config(), (uint32_t) millis());
-
-  - platform: template
-    id: oq_boiler_power_test_abort
-    name: "Boiler Power Test Abort"
-    icon: mdi:stop-circle-outline
-    entity_category: config
-    web_server:
-      sorting_group_id: oq_boiler
-    on_press:
-      - lambda: |-
-          oq_boiler_task::runtime().abort_or_clear();
-  - platform: template
-    id: oq_boiler_power_test_apply
-    name: "Boiler Power Test Apply"
-    icon: mdi:check-circle-outline
-    entity_category: config
-    web_server:
-      sorting_group_id: oq_boiler
-    on_press:
-      - lambda: |-
-          // Round the applied boiler rating to the nearest 100 W for a cleaner persistent setting.
-          const float result = id(oq_commissioning_result_w);
-          if (!isnan(result) && result > 0.0f) {
-            const int rounded_result = (int) roundf(result / 100.0f) * 100;
-            auto call = id(oq_boiler_rated_heat_power).make_call();
-            call.set_value((float) rounded_result);
-            call.perform();
-            char msg[64];
-            snprintf(msg, sizeof(msg), "APPLIED: %dW", rounded_result);
-            id(oq_boiler_power_test_status).publish_state(msg);
-          } else {
-            id(oq_boiler_power_test_status).publish_state("APPLY_FAILED");
-          }
-
-number:
-  - platform: template
-    id: oq_boiler_rated_heat_power
-    name: "Boiler rated heat power"
-    icon: mdi:radiator
-    unit_of_measurement: "W"
-    mode: slider
-    min_value: 1000
-    max_value: 20000
-    step: 10
-    restore_value: true
-    optimistic: true
-    initial_value: 6000
-    entity_category: config
-    web_server:
-      sorting_group_id: oq_boiler
-
-sensor:
-  - platform: template
-    id: oq_boiler_power_test_result
-    name: "Boiler power test result"
-    icon: mdi:chart-line
-    unit_of_measurement: "W"
-    device_class: power
-    state_class: measurement
-    accuracy_decimals: 0
-    update_interval: 5s
-    web_server:
-      sorting_group_id: oq_boiler
-    lambda: |-
-      return id(oq_commissioning_result_w);
-
-  - platform: template
-    id: oq_boiler_power_test_confidence
-    name: "Boiler power test confidence"
-    icon: mdi:percent-outline
-    unit_of_measurement: "%"
-    state_class: measurement
-    accuracy_decimals: 0
-    update_interval: 5s
-    web_server:
-      sorting_group_id: oq_boiler
-    lambda: |-
-      return id(oq_commissioning_result_confidence);
-
 binary_sensor:
   - platform: template
     id: oq_commissioning_cm100_active
@@ -256,16 +152,6 @@ binary_sensor:
       // This is the mode indicator: true whenever Control Mode is CM100.
       return id(oq_control_mode_code) == 100;
 
-  - platform: template
-    id: oq_boiler_power_test_active
-    name: "Boiler power test active"
-    icon: mdi:test-tube
-    entity_category: diagnostic
-    web_server:
-      sorting_group_id: oq_boiler
-    lambda: |-
-      return id(oq_commissioning_active) && id(oq_commissioning_task_code) == 1;
-
 text_sensor:
   - platform: template
     id: oq_commissioning_status
@@ -274,22 +160,3 @@ text_sensor:
     update_interval: never
     web_server:
       sorting_group_id: oq_boiler
-
-  - platform: template
-    id: oq_boiler_power_test_status
-    name: "Boiler power test status"
-    icon: mdi:information-outline
-    update_interval: never
-    web_server:
-      sorting_group_id: oq_boiler
-
-# ----------------------------
-# MAIN LOOP
-# ----------------------------
-interval:
-  - interval: ${oq_boiler_loop_s}s
-    startup_delay: 4600ms
-    then:
-      - lambda: |-
-          // Boiler power-test task runtime: owns flow settle, boiler settle, measurement and cooldown.
-          oq_boiler_task::runtime().tick(oq_boiler_task::default_config(), (uint32_t) millis());
