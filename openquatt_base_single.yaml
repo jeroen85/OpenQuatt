@@ -38,6 +38,7 @@ esphome:
   platformio_options:
     extra_scripts:
       - pre:../../../scripts/normalize_factory_merge_inputs.py
+      - post:../../../scripts/repair_factory_bin.py
     build_flags:
       # Hard-pinned for Single entrypoints to prevent accidental topology drift.
       - -DOQ_TOPOLOGY_DUO=0

@@ -87,6 +87,9 @@ jobs:
             -s release_manifest_url "${DEV_MANIFEST_URL}" \
             compile "${{ matrix.profile.config }}"
 
+      - name: Repair and validate factory binary
+        run: python3 scripts/repair_factory_bin.py "${{ matrix.profile.build_path }}/.pioenvs/openquatt"
+
       - name: Upload firmware artifacts
         uses: actions/upload-artifact@v6
         with:
