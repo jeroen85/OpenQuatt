@@ -10,7 +10,64 @@ permissions:
 
 jobs:
   validate-and-compile:
-    uses: ./.github/workflows/esphome-build.yml
-    with:
-      artifact_suffix: firmware-${{ github.sha }}
-      include_firmware_bin: true
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        profile:
+          - id: duo-waveshare
+            config: openquatt_duo_waveshare.yaml
+            build_path: .esphome/build/openquatt_duo_waveshare
+          - id: duo-heatpump-listener
+            config: openquatt_duo_heatpump_listener.yaml
+            build_path: .esphome/build/openquatt_duo_heatpump_listener
+          - id: single-waveshare
+            config: openquatt_single_waveshare.yaml
+            build_path: .esphome/build/openquatt_single_waveshare
+          - id: single-heatpump-listener
+            config: openquatt_single_heatpump_listener.yaml
+            build_path: .esphome/build/openquatt_single_heatpump_listener
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: .github/requirements-esphome.txt
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v5
+        with:
+          path: ~/.platformio
+          key: ${{ runner.os }}-platformio-${{ hashFiles('.github/requirements-esphome.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-platformio-
+
+      - name: Install ESPHome
+        run: |
+          ESPHOME_VERSION="$(cat .github/requirements-esphome.txt | sed 's/^esphome==//')"
+          pip install --upgrade "esphome==${ESPHOME_VERSION}"
+          esphome version
+
+      - name: Validate config
+        run: esphome config ${{ matrix.profile.config }}
+
+      - name: Compile firmware
+        run: esphome compile ${{ matrix.profile.config }}
+
+      - name: Repair and validate factory binary
+        run: python3 scripts/repair_factory_bin.py "${{ matrix.profile.build_path }}/.pioenvs/openquatt"
+
+      - name: Upload firmware artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: openquatt-${{ matrix.profile.id }}-firmware-${{ github.sha }}
+          if-no-files-found: error
+          path: |
+            ${{ matrix.profile.build_path }}/.pioenvs/openquatt/firmware.bin
+            ${{ matrix.profile.build_path }}/.pioenvs/openquatt/firmware.ota.bin
+            ${{ matrix.profile.build_path }}/.pioenvs/openquatt/firmware.factory.bin
