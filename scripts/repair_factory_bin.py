@@ -9,7 +9,12 @@ from typing import Iterable
 ESP_IMAGE_MAGIC = 0xE9
 PARTITION_TABLE_MAGIC = b"\xaa\x50"
 
-ROLE_ORDER = ("bootloader", "partition-table", "otadata", "app")
+ROLE_KEYS = (
+    ("bootloader", ("bootloader",)),
+    ("partition-table", ("partition-table", "partition_table")),
+    ("otadata", ("otadata",)),
+    ("app", ("app",)),
+)
 
 
 class FactoryBinError(RuntimeError):
@@ -63,10 +68,36 @@ def fallback_candidates(raw_path: str, build_dir: Path, role: str, offset: int) 
         )
     if role == "otadata":
         candidates.append(build_dir / "ota_data_initial.bin")
-    if role == "app":
+    if role == "app" or (not role and is_app_image_name(raw_name)):
         candidates.append(build_dir / "firmware.bin")
 
     return candidates
+
+
+def infer_role(offset: int, path: Path) -> str:
+    name = path.name.lower()
+    if offset in (0x0, 0x1000, 0x2000) or "bootloader" in name:
+        return "bootloader"
+    if offset == 0x8000 or "partition" in name or name == "partitions.bin":
+        return "partition-table"
+    if offset in (0xE000, 0xF000) or "ota_data" in name:
+        return "otadata"
+    if offset >= 0x10000 and has_esp_image_magic(path):
+        return "app"
+    return ""
+
+
+def has_esp_image_magic(path: Path) -> bool:
+    try:
+        with path.open("rb") as handle:
+            return handle.read(1) == bytes([ESP_IMAGE_MAGIC])
+    except OSError:
+        return False
+
+
+def is_app_image_name(name: str) -> bool:
+    normalized = name.lower()
+    return normalized == "firmware.bin" or normalized.startswith("openquatt_")
 
 
 def resolve_flash_file(raw_path: str, build_dir: Path, role: str, offset: int) -> Path:
@@ -85,9 +116,12 @@ def collect_sections(build_dir: Path, flasher_args: dict) -> tuple[list[tuple[in
     sections: dict[int, Path] = {}
     role_offsets: dict[str, int] = {}
 
-    for role in ROLE_ORDER:
-        entry = flasher_args.get(role)
-        if not isinstance(entry, dict):
+    for role, metadata_keys in ROLE_KEYS:
+        entry = next(
+            (flasher_args[key] for key in metadata_keys if isinstance(flasher_args.get(key), dict)),
+            None,
+        )
+        if entry is None:
             continue
         offset = parse_offset(entry.get("offset", ""))
         raw_file = str(entry.get("file", "")).strip()
@@ -99,8 +133,15 @@ def collect_sections(build_dir: Path, flasher_args: dict) -> tuple[list[tuple[in
     for raw_offset, raw_file in flasher_args.get("flash_files", {}).items():
         offset = parse_offset(raw_offset)
         if offset in sections:
+            role = infer_role(offset, sections[offset])
+            if role and role not in role_offsets:
+                role_offsets[role] = offset
             continue
-        sections[offset] = resolve_flash_file(str(raw_file), build_dir, "", offset)
+        path = resolve_flash_file(str(raw_file), build_dir, "", offset)
+        sections[offset] = path
+        role = infer_role(offset, path)
+        if role and role not in role_offsets:
+            role_offsets[role] = offset
 
     if not sections:
         raise FactoryBinError(f"No flash sections found in {build_dir / 'flasher_args.json'}")
