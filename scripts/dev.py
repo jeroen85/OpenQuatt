@@ -674,6 +674,16 @@ def validate_command(args: argparse.Namespace) -> int:
                         check=False,
                         heartbeat_label=label,
                     )
+            if exit_code == 0:
+                build_dir = command_root / ".esphome" / "build" / Path(config).stem / ".pioenvs" / "openquatt"
+                exit_code = run_command(
+                    [*helper_python, str(command_scripts_dir / "repair_factory_bin.py"), str(build_dir)],
+                    cwd=command_root,
+                    env=env,
+                    log_path=log_path,
+                    check=False,
+                    heartbeat_label=f"repair factory {config}",
+                )
             return config, exit_code, log_path
 
         results: list[tuple[str, int, Path]] = []
