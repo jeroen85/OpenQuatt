@@ -215,14 +215,14 @@ def resolve_bootstrap_python(explicit_python: str, root_dir: Path) -> str:
     raise SystemExit("No Python executable found for bootstrap.")
 
 
-def ensure_factory_dir(factory_dir: Path) -> None:
+def ensure_factory_dir(factory_dir: Path) -> list[str]:
     if not factory_dir.is_dir():
         raise SystemExit(f"Factory firmware directory does not exist: {factory_dir}")
 
-    missing = [file_name for file_name in factory_files() if not (factory_dir / file_name).is_file()]
-    if missing:
-        missing_list = ", ".join(missing)
-        raise SystemExit(f"Factory firmware directory is missing files: {missing_list}")
+    files = sorted(path.name for path in factory_dir.glob("*.firmware.factory.bin") if path.is_file())
+    if not files:
+        raise SystemExit(f"Factory firmware directory contains no *.firmware.factory.bin files: {factory_dir}")
+    return files
 
 
 def tail_lines(path: Path, limit: int = 80) -> str:
@@ -471,7 +471,7 @@ def resolve_command_root(root_dir: Path) -> tuple[Path, Path, Path | None]:
 
 def build_pages_site(site_dir: Path, factory_dir: Path, helper_python: Sequence[str]) -> None:
     root_dir = repo_root()
-    ensure_factory_dir(factory_dir)
+    available_factory_files = ensure_factory_dir(factory_dir)
 
     if site_dir.exists():
         shutil.rmtree(site_dir)
@@ -491,8 +491,13 @@ def build_pages_site(site_dir: Path, factory_dir: Path, helper_python: Sequence[
 
     (site_dir / ".nojekyll").touch()
 
-    for file_name in factory_files():
+    for file_name in available_factory_files:
         shutil.copy2(factory_dir / file_name, site_dir / "firmware" / "main" / file_name)
+
+    (site_dir / "firmware" / "main" / "factory_files.json").write_text(
+        json.dumps({"factory_files": available_factory_files}, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
 
 def describe_version(root_dir: Path) -> str:
@@ -750,8 +755,7 @@ def preview_pages_command(args: argparse.Namespace) -> int:
     try:
         if args.firmware_dir:
             source_dir = Path(args.firmware_dir).resolve()
-            ensure_factory_dir(source_dir)
-            for file_name in factory_files():
+            for file_name in ensure_factory_dir(source_dir):
                 shutil.copy2(source_dir / file_name, work_firmware_dir / file_name)
         else:
             for file_name in factory_files():
