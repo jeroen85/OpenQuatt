@@ -6,7 +6,6 @@
 # ==============================================================================
 substitutions:
   <<: !include ../../openquatt/oq_substitutions_common.yaml
-  <<: !include ../../openquatt/profiles/heatpump_controller_q.yaml
   <<: !include ../../openquatt/topology/duo.yaml
   oq_topology_build_flag: "-DOQ_TOPOLOGY_DUO=1"
   main_release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-heatpump-controller-q-duo-eth-ota.manifest.json"
@@ -17,8 +16,8 @@ esphome:
   build_path: ../../../.esphome/build/heatpump_controller_q_duo_eth
 
 packages:
+  openquatt_profile_heatpump_controller_q: !include ../../openquatt/profiles/heatpump_controller_q.yaml
   openquatt_base_common: !include ../../openquatt/base/common.yaml
   openquatt_connection_eth: !include ../../openquatt/connection/eth.yaml
-  oq_heatpump_controller_q_psram: !include ../../openquatt/profiles/heatpump_controller_q_psram.yaml
   <<: !include ../../openquatt/oq_packages_common.yaml
   <<: !include ../../openquatt/topology/duo_packages.yaml

@@ -89,6 +89,7 @@ STRICT_TOP_LEVEL_ORDER_RULES = {
     "openquatt/base/common.yaml": (
         "esphome",
         "esp32",
+        "sensor",
     ),
     "openquatt/oq_packages_common.yaml": (
         "oq_common",

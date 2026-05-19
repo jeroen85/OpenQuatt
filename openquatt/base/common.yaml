@@ -56,3 +56,14 @@ esp32:
     sdkconfig_options:
       COMPILER_OPTIMIZATION_SIZE: y
       CONFIG_BT_ENABLED: n
+
+sensor:
+  - platform: debug
+    psram:
+      name: "PSRAM Free"
+      icon: mdi:memory
+      entity_category: diagnostic
+      disabled_by_default: true
+      accuracy_decimals: 0
+      web_server:
+        sorting_group_id: oq_system_diagnostics

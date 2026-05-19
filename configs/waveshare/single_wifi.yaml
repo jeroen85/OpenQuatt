@@ -3,7 +3,6 @@
 # ==============================================================================
 substitutions:
   <<: !include ../../openquatt/oq_substitutions_common.yaml
-  <<: !include ../../openquatt/profiles/waveshare.yaml
   <<: !include ../../openquatt/topology/single.yaml
   oq_topology_build_flag: "-DOQ_TOPOLOGY_DUO=0"
   main_release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-waveshare-single-wifi-ota.manifest.json"
@@ -14,7 +13,7 @@ esphome:
   build_path: ../../../.esphome/build/waveshare_single_wifi
 
 packages:
+  openquatt_profile_waveshare: !include ../../openquatt/profiles/waveshare.yaml
   openquatt_base_common: !include ../../openquatt/base/common.yaml
   openquatt_connection_wifi: !include ../../openquatt/connection/wifi.yaml
-  oq_waveshare_psram: !include ../../openquatt/profiles/waveshare_psram.yaml
   <<: !include ../../openquatt/oq_packages_common.yaml
