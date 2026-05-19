@@ -338,7 +338,7 @@ interval:
           const float dt = ${oq_flow_loop_s};   // seconds per tick
           static std::string last_mode = "";
 
-          static bool was_cm0 = true;
+          static bool was_flow_idle = true;
 
           // One central hold time for all start transitions.
           // During this window we keep start iPWM fixed to let hydraulics settle.
@@ -530,16 +530,25 @@ interval:
           const bool want_manual = (flow_mode_code == 1);
           static bool was_manual = false;
 
-          // Edge 1: entering active control from CM0
-          if (was_cm0 && !is_cm0) {
-            start_auto_transition("CM0->*");
-          }
-          was_cm0 = is_cm0;
+          const bool is_cm100_idle =
+              (cm_code == 100) &&
+              (id(oq_commissioning_task_code) == oq_commissioning::TASK_NONE);
+          const bool flow_idle = is_cm0 || is_cm100_idle;
 
-          if (is_cm0) {
+          // Edge 1: entering active flow control from an idle mode.
+          if (was_flow_idle && !flow_idle) {
+            start_auto_transition("idle->*");
+          }
+          was_flow_idle = flow_idle;
+
+          if (flow_idle) {
             // Keep manual-edge memory synchronized while idle.
             was_manual = want_manual;
-            id(oq_flow_mode).publish_state("CM0");
+            stable_cnt = 0;
+            startup_hold = 0;
+            sp_f = NAN;
+            last_pi_e = 0.0f;
+            id(oq_flow_mode).publish_state(is_cm100_idle ? "CM100 idle" : "CM0");
             return;
           }
 

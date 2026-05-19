@@ -100,6 +100,7 @@ class FlowAutotuneRuntime {
     validate_peak_pv_ = NAN;
     validate_confirm_cnt_ = 0;
     validate_settle_ready_ = false;
+    validate_pre_overshoot_ = false;
     id(oq_flow_autotune_state) = STATE_IDLE;
   }
 
@@ -207,6 +208,7 @@ class FlowAutotuneRuntime {
   float validate_peak_pv_{NAN};
   int validate_confirm_cnt_{0};
   bool validate_settle_ready_{false};
+  bool validate_pre_overshoot_{false};
 
   template <typename NumberEntity>
   void set_number_value(NumberEntity &number_entity, float value) {
@@ -554,6 +556,7 @@ class FlowAutotuneRuntime {
     validate_peak_pv_ = validate_sp1_;
     validate_confirm_cnt_ = 0;
     validate_settle_ready_ = false;
+    validate_pre_overshoot_ = false;
     t_s_ = 0;
     clear_window();
 
@@ -595,6 +598,9 @@ class FlowAutotuneRuntime {
     push_window(pv);
 
     if (!validate_settle_ready_) {
+      if (pv - sp1 > overshoot_band) {
+        validate_pre_overshoot_ = true;
+      }
       const bool ready_now =
           t_s_ >= 20 &&
           steady_window(settle_band, settle_band) &&
@@ -650,22 +656,25 @@ class FlowAutotuneRuntime {
     const float kp = fminf(fmaxf(raw_kp, cfg.kp_min), cfg.kp_max);
     const float ki = fminf(fmaxf(raw_ki, cfg.ki_min), cfg.ki_max);
     const bool clamped = fabsf(kp - raw_kp) > 1.0e-7f || fabsf(ki - raw_ki) > 1.0e-7f;
-    const char *prefix = timed_out && !settled ? "DONE (LIMITED)" :
+    const bool limited_validation = validate_pre_overshoot_ || (timed_out && !settled);
+    const char *prefix = limited_validation ? "DONE (LIMITED)" :
                          clamped ? "DONE (CLAMPED)" : "DONE (CLOSED-LOOP)";
 
     set_number_value(id(oq_flow_kp_suggested), kp);
     set_number_value(id(oq_flow_ki_suggested), ki);
+    const float peak_pv = validate_peak_pv_;
     restore_live_settings();
-    clear_validation_memory();
     clear_window();
     validate_confirm_cnt_ = 0;
     validate_settle_ready_ = false;
+    validate_pre_overshoot_ = false;
 
     char msg[220];
     snprintf(msg, sizeof(msg),
              "%s: seed=%.3f/%.4f -> Kp=%.3f Ki=%.4f peak=%.1f target=%.1f",
-             prefix, seed_kp, seed_ki, kp, ki, validate_peak_pv_, sp1);
+             prefix, seed_kp, seed_ki, kp, ki, peak_pv, sp1);
     publish(msg);
+    clear_validation_memory();
     release_commissioning();
     reset();
   }
@@ -697,6 +706,7 @@ class FlowAutotuneRuntime {
     ss_confirm_cnt_ = 0;
     validate_confirm_cnt_ = 0;
     validate_settle_ready_ = false;
+    validate_pre_overshoot_ = false;
     ESP_LOGW("quatt.cm100.autotune", "Autotune aborted; restoring last PWM=%d", (int) id(oq_flow_last_pwm));
     release_commissioning();
     publish("ABORTED");
