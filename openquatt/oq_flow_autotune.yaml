@@ -37,7 +37,7 @@ globals:
   - id: oq_flow_autotune_state
     type: int
     restore_value: false
-    initial_value: '0'   # 0=IDLE,1=ARM,2=STEP1,3=RECOVER,4=STEP2,5=VALIDATE,6=ABORT
+    initial_value: '0'   # 0=IDLE,1=ARM,2=STEP1,3=RECOVER,4=STEP2,5=VALIDATE_RECOVER,6=VALIDATE,7=ABORT
   - id: oq_flow_autotune_req
     type: bool
     restore_value: false

@@ -12,8 +12,9 @@ enum StateCode {
   STATE_STEP1 = 2,
   STATE_RECOVER = 3,
   STATE_STEP2 = 4,
-  STATE_VALIDATE = 5,
-  STATE_ABORT = 6,
+  STATE_VALIDATE_RECOVER = 5,
+  STATE_VALIDATE = 6,
+  STATE_ABORT = 7,
 };
 
 struct RuntimeConfig {
@@ -29,6 +30,7 @@ struct RuntimeConfig {
   float validate_seed_ti_frac;
   float validate_seed_min_lambda_s;
   float validate_seed_min_ti_s;
+  int validate_recover_max_s;
   int validate_duration_s;
   int baseline_pwm;
   int baseline_wait_max_s;
@@ -64,7 +66,7 @@ inline RuntimeConfig make_runtime_config(int sample_time_s,
                                          float ki_max) {
   return RuntimeConfig{
       sample_time_s, 120, 0.05f, 15.0f, 40.0f, 8.0f, 0.15f,
-      0.25f, 8.0f, 2.0f, 60.0f, 60.0f, 180, 400, 60,
+      0.25f, 8.0f, 2.0f, 60.0f, 60.0f, 120, 180, 400, 60,
       0.06f, 10, 28, 0.10f, 15, 40, 0.20f,
       pwm_min, pwm_max, min_step, settle_s, stable_band_lph,
       tau_fallback_s, kp_min, kp_max, ki_min, ki_max};
@@ -95,6 +97,8 @@ class FlowAutotuneRuntime {
     ss_confirm_cnt_ = 0;
     saved_kp_ = NAN;
     saved_ki_ = NAN;
+    seed_kp_ = NAN;
+    seed_ki_ = NAN;
     validate_sp0_ = NAN;
     validate_sp1_ = NAN;
     validate_peak_pv_ = NAN;
@@ -175,6 +179,9 @@ class FlowAutotuneRuntime {
       case STATE_STEP2:
         run_open_loop_step(cfg, pv, flow_valid, true);
         break;
+      case STATE_VALIDATE_RECOVER:
+        run_validation_recover(cfg, pv, flow_valid);
+        break;
       case STATE_VALIDATE:
         run_validation(cfg, pv, flow_valid);
         break;
@@ -203,6 +210,8 @@ class FlowAutotuneRuntime {
   int ss_confirm_cnt_{0};
   float saved_kp_{NAN};
   float saved_ki_{NAN};
+  float seed_kp_{NAN};
+  float seed_ki_{NAN};
   float validate_sp0_{NAN};
   float validate_sp1_{NAN};
   float validate_peak_pv_{NAN};
@@ -542,7 +551,7 @@ class FlowAutotuneRuntime {
     kp_seed = fminf(fmaxf(kp_seed, cfg.kp_min), cfg.kp_max);
     ki_seed = fminf(fmaxf(ki_seed, cfg.ki_min), cfg.ki_max);
 
-    float validate_step_lph = roundf(cfg.validate_step_frac * fmaxf(pv0, sp0));
+    float validate_step_lph = roundf(cfg.validate_step_frac * sp0);
     validate_step_lph = fminf(fmaxf(validate_step_lph, cfg.validate_step_min_lph), cfg.validate_step_max_lph);
     if (!(sp0 + validate_step_lph > sp0)) {
       abort_with("FAILED: INVALID_VALIDATION_STEP");
@@ -551,9 +560,11 @@ class FlowAutotuneRuntime {
 
     saved_kp_ = id(oq_flow_kp).state;
     saved_ki_ = id(oq_flow_ki).state;
+    seed_kp_ = kp_seed;
+    seed_ki_ = ki_seed;
     validate_sp0_ = sp0;
     validate_sp1_ = sp0 + validate_step_lph;
-    validate_peak_pv_ = validate_sp1_;
+    validate_peak_pv_ = NAN;
     validate_confirm_cnt_ = 0;
     validate_settle_ready_ = false;
     validate_pre_overshoot_ = false;
@@ -562,14 +573,69 @@ class FlowAutotuneRuntime {
 
     set_number_value(id(oq_flow_kp), kp_seed);
     set_number_value(id(oq_flow_ki), ki_seed);
-    set_number_value(id(oq_flow_setpoint_lph), validate_sp1_);
+    set_number_value(id(oq_flow_setpoint_lph), validate_sp0_);
     id(oq_flow_autotune_active) = false;
     ESP_LOGI("quatt.cm100.autotune",
-             "Step2 captured -> validation (%s) step1 K=%.3f tau=%.0fs step2 K=%.3f tau=%.0fs combined K=%.3f tau=%.0fs seed=%.3f/%.4f sp=%.1f->%.1f",
+             "Step2 captured -> validation recovery (%s) step1 K=%.3f tau=%.0fs step2 K=%.3f tau=%.0fs combined K=%.3f tau=%.0fs seed=%.3f/%.4f sp=%.1f->%.1f",
              consistent ? "2STEP" : "2STEP (LIMITED)",
              k1, tau1, k2, tau2, model_k, model_tau, kp_seed, ki_seed, sp0, validate_sp1_);
-    publish("VALIDATING_SETTLING");
-    state_ = STATE_VALIDATE;
+    publish("VALIDATION_RECOVER");
+    state_ = STATE_VALIDATE_RECOVER;
+  }
+
+  void run_validation_recover(const RuntimeConfig &cfg, float pv, bool flow_valid) {
+    const float sp0 = validate_sp0_;
+    const float sp1 = validate_sp1_;
+    if (isnan(sp0) || isnan(sp1) || !(sp1 > sp0) || isnan(seed_kp_) || isnan(seed_ki_)) {
+      finish_without_suggestion("FAILED: INVALID_VALIDATION_STATE");
+      return;
+    }
+    if (!valid_mode()) {
+      finish_without_suggestion("ABORT: not CM100");
+      return;
+    }
+    if (!flow_valid) {
+      finish_without_suggestion("ABORT: FLOW_INVALID");
+      return;
+    }
+
+    set_number_value(id(oq_flow_setpoint_lph), sp0);
+    const float step_lph = sp1 - sp0;
+    const float recover_band = fmaxf(cfg.validate_band_floor_lph, cfg.validate_band_frac * step_lph);
+    push_window(pv);
+
+    const bool recovered =
+        t_s_ >= 20 &&
+        steady_window(recover_band, recover_band) &&
+        fabsf(window_mean() - sp0) <= recover_band &&
+        pv <= sp1 - recover_band;
+    validate_confirm_cnt_ = recovered ? validate_confirm_cnt_ + 1 : 0;
+    if (validate_confirm_cnt_ >= 2) {
+      clear_window();
+      validate_confirm_cnt_ = 0;
+      validate_settle_ready_ = false;
+      validate_pre_overshoot_ = false;
+      validate_peak_pv_ = sp1;
+      t_s_ = 0;
+      set_number_value(id(oq_flow_setpoint_lph), sp1);
+      ESP_LOGI("quatt.cm100.autotune",
+               "Validation baseline recovered (sp0=%.1f sp1=%.1f pv=%.1f band=%.1f)",
+               sp0, sp1, pv, recover_band);
+      publish("VALIDATING_SETTLING");
+      state_ = STATE_VALIDATE;
+      return;
+    }
+
+    if (t_s_ >= cfg.validate_recover_max_s) {
+      ESP_LOGW("quatt.cm100.autotune",
+               "Validation baseline failed (sp0=%.1f sp1=%.1f pv=%.1f band=%.1f t=%ds)",
+               sp0, sp1, pv, recover_band, t_s_);
+      finish_without_suggestion("FAILED: VALIDATION_BASELINE");
+      return;
+    }
+
+    t_s_ += cfg.sample_time_s;
+    publish("VALIDATION_RECOVER");
   }
 
   void run_validation(const RuntimeConfig &cfg, float pv, bool flow_valid) {
@@ -643,8 +709,12 @@ class FlowAutotuneRuntime {
                          float overshoot,
                          bool settled,
                          bool timed_out) {
-    const float seed_kp = id(oq_flow_kp).state;
-    const float seed_ki = id(oq_flow_ki).state;
+    const float seed_kp = seed_kp_;
+    const float seed_ki = seed_ki_;
+    if (isnan(seed_kp) || isnan(seed_ki)) {
+      finish_without_suggestion("FAILED: INVALID_VALIDATION_STATE");
+      return;
+    }
     float scale = 1.0f;
     if (overshoot > (2.0f * settle_band)) scale = 0.80f;
     else if (overshoot > settle_band) scale = 0.90f;
@@ -692,9 +762,25 @@ class FlowAutotuneRuntime {
   void clear_validation_memory() {
     saved_kp_ = NAN;
     saved_ki_ = NAN;
+    seed_kp_ = NAN;
+    seed_ki_ = NAN;
     validate_sp0_ = NAN;
     validate_sp1_ = NAN;
     validate_peak_pv_ = NAN;
+  }
+
+  void finish_without_suggestion(const char *status) {
+    id(oq_flow_autotune_active) = false;
+    restore_live_settings();
+    clear_validation_memory();
+    clear_window();
+    ss_confirm_cnt_ = 0;
+    validate_confirm_cnt_ = 0;
+    validate_settle_ready_ = false;
+    validate_pre_overshoot_ = false;
+    release_commissioning();
+    publish(status);
+    reset();
   }
 
   void finish_abort(const RuntimeConfig &cfg) {
