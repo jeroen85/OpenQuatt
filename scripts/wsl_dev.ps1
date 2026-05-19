@@ -80,7 +80,7 @@ switch ($Command) {
     }
     "esphome" {
         if (-not $commandArguments -or $commandArguments.Count -eq 0) {
-            throw "Geef ESPHome-argumenten mee, bijvoorbeeld: esphome upload firmware/openquatt-duo-waveshare.yaml."
+            throw "Geef ESPHome-argumenten mee, bijvoorbeeld: esphome upload configs/waveshare/duo_wifi.yaml."
         }
 
         $commandParts = @("$resolvedVenvDir/bin/esphome") + $commandArguments

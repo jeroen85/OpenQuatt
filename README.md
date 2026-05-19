@@ -16,7 +16,7 @@ OpenQuatt is bedoeld voor gebruikers van een Quatt Single of Quatt Duo die:
 - meer inzicht willen in wat de installatie doet;
 - een duidelijk Home Assistant-dashboard willen;
 - meer grip willen op gedrag, metingen en instellingen;
-- willen kunnen kiezen uit de twee ondersteunde OpenQuatt-hardwareprofielen.
+- willen kunnen kiezen uit de ondersteunde OpenQuatt-hardwareprofielen.
 
 Je hoeft voor de eerste installatie niet eerst alle technische achtergronddocumenten te lezen. De hoofdroute is: installeren, koppelen aan Home Assistant en daarna pas verdiepen waar nodig.
 
@@ -26,9 +26,10 @@ OpenQuatt ondersteunt momenteel:
 
 - Quatt `Single` en `Duo` (V1 en V1.5)
 - `Waveshare ESP32-S3-Relay-1CH`
-- `Heatpump Listener`
+- `Electropaultje Heatpump Listener`
+- `Electropaultje Heatpump Controller Q-edition`
 
-Alle combinaties van bovenstaande opstelling en hardware worden ondersteund.
+Alle Wi-Fi-combinaties van bovenstaande opstelling en hardware worden ondersteund. Ethernet is alvast als build-as voorbereid voor de Heatpump Controller Q, maar nog niet vrijgegeven als releasebuild.
 
 ## Snel starten
 
@@ -49,10 +50,11 @@ Voor de volledige installatiestappen en eerste controle:
 
 ## Ondersteunde hardware
 
-OpenQuatt richt zich nu bewust op twee hardwareprofielen:
+OpenQuatt richt zich nu bewust op drie hardwareprofielen:
 
 - [Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm)
-- [Heatpump Listener](https://electropaultje.nl/product/heatpump-listener/)
+- [Electropaultje Heatpump Listener](https://electropaultje.nl/product/heatpump-listener/)
+- Electropaultje Heatpump Controller Q-edition
 
 ## Documentatie
 

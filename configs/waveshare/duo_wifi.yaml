@@ -1,0 +1,20 @@
+# ==============================================================================
+# OpenQuatt - Waveshare ESP32-S3-Relay-1CH / Duo / Wi-Fi
+# ==============================================================================
+substitutions:
+  <<: !include ../../openquatt/oq_substitutions_common.yaml
+  <<: !include ../../openquatt/topology/duo.yaml
+  oq_topology_build_flag: "-DOQ_TOPOLOGY_DUO=1"
+  main_release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-waveshare-duo-wifi-ota.manifest.json"
+  dev_release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/download/dev-latest/openquatt-waveshare-duo-wifi-ota.manifest.json"
+  release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-waveshare-duo-wifi-ota.manifest.json"
+
+esphome:
+  build_path: ../../../.esphome/build/waveshare_duo_wifi
+
+packages:
+  openquatt_profile_waveshare: !include ../../openquatt/profiles/waveshare.yaml
+  openquatt_base_common: !include ../../openquatt/base/common.yaml
+  openquatt_connection_wifi: !include ../../openquatt/connection/wifi.yaml
+  <<: !include ../../openquatt/oq_packages_common.yaml
+  <<: !include ../../openquatt/topology/duo_packages.yaml

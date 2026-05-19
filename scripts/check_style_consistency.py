@@ -12,23 +12,33 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 TEXT_PATTERNS = (
+    "configs/**/*.yaml",
     "openquatt/*.yaml",
+    "openquatt/base/*.yaml",
+    "openquatt/connection/*.yaml",
     "openquatt/profiles/*.yaml",
-    "openquatt_*.yaml",
+    "openquatt/topology/*.yaml",
     "scripts/*.py",
     "scripts/*.sh",
     "scripts/*.ps1",
 )
 
 YAML_BANNER_PATTERNS = (
+    "configs/**/*.yaml",
     "openquatt/*.yaml",
+    "openquatt/base/*.yaml",
+    "openquatt/connection/*.yaml",
     "openquatt/profiles/*.yaml",
-    "openquatt_*.yaml",
+    "openquatt/topology/*.yaml",
 )
 
 LAMBDA_PATTERNS = (
+    "configs/**/*.yaml",
     "openquatt/*.yaml",
-    "openquatt_*.yaml",
+    "openquatt/base/*.yaml",
+    "openquatt/connection/*.yaml",
+    "openquatt/profiles/*.yaml",
+    "openquatt/topology/*.yaml",
 )
 
 PACKAGE_ORDER_PATTERNS = (
@@ -36,37 +46,50 @@ PACKAGE_ORDER_PATTERNS = (
 )
 
 STRICT_TOP_LEVEL_ORDER_RULES = {
-    "openquatt_base.yaml": (
+    "configs/waveshare/single_wifi.yaml": (
         "substitutions",
+        "esphome",
         "packages",
     ),
-    "openquatt_base_single.yaml": (
+    "configs/waveshare/duo_wifi.yaml": (
         "substitutions",
+        "esphome",
         "packages",
     ),
-    "openquatt_base_common.yaml": (
+    "configs/heatpump_listener/single_wifi.yaml": (
+        "substitutions",
+        "esphome",
+        "packages",
+    ),
+    "configs/heatpump_listener/duo_wifi.yaml": (
+        "substitutions",
+        "esphome",
+        "packages",
+    ),
+    "configs/heatpump_controller_q/single_wifi.yaml": (
+        "substitutions",
+        "esphome",
+        "packages",
+    ),
+    "configs/heatpump_controller_q/duo_wifi.yaml": (
+        "substitutions",
+        "esphome",
+        "packages",
+    ),
+    "configs/heatpump_controller_q/single_eth.yaml": (
+        "substitutions",
+        "esphome",
+        "packages",
+    ),
+    "configs/heatpump_controller_q/duo_eth.yaml": (
+        "substitutions",
+        "esphome",
+        "packages",
+    ),
+    "openquatt/base/common.yaml": (
         "esphome",
         "esp32",
-    ),
-    "openquatt_duo_heatpump_listener.yaml": (
-        "substitutions",
-        "esphome",
-        "packages",
-    ),
-    "openquatt_duo_waveshare.yaml": (
-        "substitutions",
-        "esphome",
-        "packages",
-    ),
-    "openquatt_single_heatpump_listener.yaml": (
-        "substitutions",
-        "esphome",
-        "packages",
-    ),
-    "openquatt_single_waveshare.yaml": (
-        "substitutions",
-        "esphome",
-        "packages",
+        "sensor",
     ),
     "openquatt/oq_packages_common.yaml": (
         "oq_common",
@@ -97,7 +120,7 @@ STRICT_TOP_LEVEL_ORDER_RULES = {
         "oq_mqtt",
         "heatpump1",
     ),
-    "openquatt/topology/oq_topology_duo.yaml": (
+    "openquatt/topology/duo.yaml": (
         "secondary_hp_id",
         "secondary_outside_is_distinct",
         "flow_secondary_enabled",
@@ -110,11 +133,11 @@ STRICT_TOP_LEVEL_ORDER_RULES = {
         "sensor_sources_duo_flow_internal",
         "ot_secondary_present",
     ),
-    "openquatt/topology/oq_topology_packages_duo.yaml": (
+    "openquatt/topology/duo_packages.yaml": (
         "heatpump2",
         "oq_cic_compatibility_hp2",
     ),
-    "openquatt/topology/oq_topology_single.yaml": (
+    "openquatt/topology/single.yaml": (
         "secondary_hp_id",
         "secondary_outside_is_distinct",
         "flow_secondary_enabled",
@@ -129,36 +152,7 @@ STRICT_TOP_LEVEL_ORDER_RULES = {
     ),
 }
 
-NESTED_KEY_ORDER_RULES = {
-    ("openquatt_base.yaml", "substitutions"): (
-        "oq_topology_build_flag",
-        "main_release_manifest_url",
-        "dev_release_manifest_url",
-        "release_manifest_url",
-    ),
-    ("openquatt_base_single.yaml", "substitutions"): (
-        "oq_topology_build_flag",
-        "main_release_manifest_url",
-        "dev_release_manifest_url",
-        "release_manifest_url",
-    ),
-    ("openquatt_duo_heatpump_listener.yaml", "packages"): (
-        "openquatt_base",
-        "oq_heatpump_listener_extras",
-    ),
-    ("openquatt_duo_waveshare.yaml", "packages"): (
-        "oq_waveshare_psram",
-        "openquatt_base",
-    ),
-    ("openquatt_single_heatpump_listener.yaml", "packages"): (
-        "openquatt_base",
-        "oq_heatpump_listener_extras",
-    ),
-    ("openquatt_single_waveshare.yaml", "packages"): (
-        "oq_waveshare_psram",
-        "openquatt_base",
-    ),
-}
+NESTED_KEY_ORDER_RULES = {}
 
 SUBSTITUTION_SECTION_ORDER_RULES = {
     "openquatt/oq_substitutions_common.yaml": (
@@ -236,7 +230,8 @@ def expand_patterns(patterns: tuple[str, ...]) -> list[Path]:
     paths: set[Path] = set()
     for pattern in patterns:
         paths.update(REPO_ROOT.glob(pattern))
-    return sorted(path for path in paths if path.is_file())
+    ignored_dirs = {".cache", ".esphome", ".git", ".tmp", ".venv", "__pycache__"}
+    return sorted(path for path in paths if path.is_file() and not ignored_dirs.intersection(path.parts))
 
 
 def read_lines(path: Path) -> list[str]:

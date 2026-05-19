@@ -1,0 +1,29 @@
+# ==============================================================================
+# OpenQuatt - Hardware Profile: Electropaultje Heatpump Controller Q-edition
+# ==============================================================================
+substitutions:
+  esp_board: "esp32-s3-devkitc-1"                       # PlatformIO board shared with the Waveshare S3 build.
+  esp_flash_size: "16MB"                                # Active ESP flash size.
+  esp_variant: "esp32s3"                                # Active ESP variant.
+  esp_partitions: "../../openquatt/partitions/openquatt_16mb.csv" # Active partition table.
+  uart_tx_pin: "GPIO42"                                 # Modbus 1 TX; primary heat-pump bus.
+  uart_rx_pin: "GPIO45"                                 # Modbus 1 RX; primary heat-pump bus.
+  uart_rts_pin: "GPIO41"                                # Modbus 1 DE/RE; primary heat-pump bus.
+  cic_compat_uart_tx_pin: "GPIO40"                      # Modbus 2 TX; CiC compatibility / extra bus.
+  cic_compat_uart_rx_pin: "GPIO39"                      # Modbus 2 RX; CiC compatibility / extra bus.
+  cic_compat_uart_rts_pin: "GPIO38"                     # Modbus 2 DE/RE; CiC compatibility / extra bus.
+  oq_ot_thermostat_in_pin: "GPIO16"                     # OpenTherm thermostat input.
+  oq_ot_thermostat_out_pin: "GPIO15"                    # OpenTherm thermostat output.
+  ds18b20_pin: "GPIO14"                                 # Dallas DS18B20 1-Wire input.
+  oq_boiler_relay_pin: "GPIO7"                          # Relay 1 output.
+  controller_aux_relay_pin: "GPIO8"                     # Relay 2 output reserved for controller logic.
+  web_auth_recovery_pin: "GPIO46"                       # Boot switch / recovery input.
+  eth_mosi_pin: "GPIO10"                                # W5500 SPI MOSI.
+  eth_miso_pin: "GPIO11"                                # W5500 SPI MISO.
+  eth_clk_pin: "GPIO12"                                 # W5500 SPI CLK.
+  eth_cs_pin: "GPIO13"                                  # W5500 SPI CS.
+
+psram:
+  mode: octal
+  speed: 80MHz
+  ignore_not_found: false

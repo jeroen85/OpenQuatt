@@ -18,22 +18,24 @@ This document explains the current OpenQuatt architecture as implemented in the 
 
 ## 1. Top-Level Composition
 
-OpenQuatt is driven from explicit topology/hardware entrypoints:
+OpenQuatt is driven from explicit matrix entrypoints under `configs/`:
 
-- `openquatt_duo_waveshare.yaml`
-- `openquatt_duo_heatpump_listener.yaml`
-- `openquatt_single_waveshare.yaml`
-- `openquatt_single_heatpump_listener.yaml`
+- `configs/waveshare/single_wifi.yaml`
+- `configs/waveshare/duo_wifi.yaml`
+- `configs/heatpump_listener/single_wifi.yaml`
+- `configs/heatpump_listener/duo_wifi.yaml`
+- `configs/heatpump_controller_q/single_wifi.yaml`
+- `configs/heatpump_controller_q/duo_wifi.yaml`
 
 Each entrypoint includes:
 
-- global project/board/framework config
-- package includes via `openquatt/oq_packages.yaml` (Duo) or `openquatt/oq_packages_single.yaml` (Single)
+- global project/board/framework config from `openquatt/base/common.yaml`
+- one connection package from `openquatt/connection/`
+- package includes via `openquatt/oq_packages_common.yaml`
 
 Shared runtime services are loaded from `openquatt/oq_common.yaml`, including:
 
 - logging, API, and OTA
-- Improv Serial Wi-Fi provisioning plus captive portal fallback
 - HTTP client and Modbus transport
 
 Package include order is intentional:
@@ -272,17 +274,14 @@ Safety is distributed but coordinated:
 
 Hardware profile substitutions are split into dedicated files:
 
-- `openquatt/profiles/oq_substitutions_waveshare.yaml` ([Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm))
-- `openquatt/profiles/oq_substitutions_heatpump_listener.yaml` ([Heatpump Listener](https://electropaultje.nl/product/heatpump-listener/))
+- `openquatt/profiles/waveshare.yaml` ([Waveshare ESP32-S3-Relay-1CH](https://www.waveshare.com/esp32-s3-relay-1ch.htm))
+- `openquatt/profiles/heatpump_listener.yaml` ([Electropaultje Heatpump Listener](https://electropaultje.nl/product/heatpump-listener/))
+- `openquatt/profiles/heatpump_controller_q.yaml` (Electropaultje Heatpump Controller Q-edition)
 
 Shared non-hardware constants are in `openquatt/oq_substitutions_common.yaml`.
 
-Compile-time profile selection is done by choosing the firmware entrypoint:
+Compile-time profile selection is done by choosing a matrix entrypoint from `build_targets.yaml`. Ethernet targets for the Heatpump Controller Q are present as planned targets but skipped by the enabled CI/release matrix until hardware validation is complete.
 
-- `openquatt_duo_waveshare.yaml`
-- `openquatt_duo_heatpump_listener.yaml`
-- `openquatt_single_waveshare.yaml`
-- `openquatt_single_heatpump_listener.yaml`
 
 ## 10. UI and Observability Organization
 

@@ -1,0 +1,22 @@
+# ==============================================================================
+# OpenQuatt - Electropaultje Heatpump Controller Q-edition / Single / Ethernet
+# ==============================================================================
+# Planned target: kept out of the enabled compile/release matrix until Ethernet
+# hardware validation is complete.
+# ==============================================================================
+substitutions:
+  <<: !include ../../openquatt/oq_substitutions_common.yaml
+  <<: !include ../../openquatt/topology/single.yaml
+  oq_topology_build_flag: "-DOQ_TOPOLOGY_DUO=0"
+  main_release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-heatpump-controller-q-single-eth-ota.manifest.json"
+  dev_release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/download/dev-latest/openquatt-heatpump-controller-q-single-eth-ota.manifest.json"
+  release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-heatpump-controller-q-single-eth-ota.manifest.json"
+
+esphome:
+  build_path: ../../../.esphome/build/heatpump_controller_q_single_eth
+
+packages:
+  openquatt_profile_heatpump_controller_q: !include ../../openquatt/profiles/heatpump_controller_q.yaml
+  openquatt_base_common: !include ../../openquatt/base/common.yaml
+  openquatt_connection_eth: !include ../../openquatt/connection/eth.yaml
+  <<: !include ../../openquatt/oq_packages_common.yaml

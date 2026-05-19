@@ -29,14 +29,12 @@ jobs:
 
       - name: Validate configs
         run: |
-          esphome config openquatt_duo_waveshare.yaml
-          esphome config openquatt_duo_heatpump_listener.yaml
-          esphome config openquatt_single_waveshare.yaml
-          esphome config openquatt_single_heatpump_listener.yaml
+          while IFS= read -r config; do
+            esphome config "$config"
+          done < <(python3 scripts/build_targets.py list-configs --status enabled)
 
       - name: Compile configs
         run: |
-          esphome compile openquatt_duo_waveshare.yaml
-          esphome compile openquatt_duo_heatpump_listener.yaml
-          esphome compile openquatt_single_waveshare.yaml
-          esphome compile openquatt_single_heatpump_listener.yaml
+          while IFS= read -r config; do
+            esphome compile "$config"
+          done < <(python3 scripts/build_targets.py list-configs --status enabled)

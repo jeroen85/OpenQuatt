@@ -1,11 +1,6 @@
 [CmdletBinding()]
 param(
-    [string[]]$Configs = @(
-        "openquatt_duo_waveshare.yaml",
-        "openquatt_duo_heatpump_listener.yaml",
-        "openquatt_single_waveshare.yaml",
-        "openquatt_single_heatpump_listener.yaml"
-    ),
+    [string[]]$Configs = @(),
     [switch]$ConfigOnly,
     [string]$VenvDir = ".venv",
     [int]$Jobs = 2,

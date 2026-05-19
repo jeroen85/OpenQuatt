@@ -127,11 +127,26 @@
   background: var(--accent-soft);
 }
 
+.choice-card[data-unavailable] {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.choice-card[data-unavailable]:hover {
+  transform: none;
+  border-color: var(--line);
+  background: var(--panel);
+}
+
 .choice-card input {
   position: absolute;
   inset: 0;
   opacity: 0;
   cursor: pointer;
+}
+
+.choice-card input:disabled {
+  cursor: not-allowed;
 }
 
 .choice-card:has(input:checked) {

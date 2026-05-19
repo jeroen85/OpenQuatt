@@ -72,15 +72,10 @@ Use a consistent order per package where applicable:
 
 ## Validation Checklist After Refactor
 
-1. `esphome config openquatt_duo_waveshare.yaml`
-2. `esphome compile openquatt_duo_waveshare.yaml`
-3. `esphome config openquatt_duo_heatpump_listener.yaml`
-4. `esphome compile openquatt_duo_heatpump_listener.yaml`
-5. `esphome config openquatt_single_waveshare.yaml`
-6. `esphome compile openquatt_single_waveshare.yaml`
-7. `esphome config openquatt_single_heatpump_listener.yaml`
-8. `esphome compile openquatt_single_heatpump_listener.yaml`
-9. Verify critical IDs still exist and update:
+1. Run `python3 scripts/build_targets.py list-configs --status enabled` to inspect the active matrix.
+2. Run `./scripts/validate_local.sh --config-only` for style/docs and ESPHome config validation.
+3. Run `./scripts/validate_local.sh` for full local compile parity.
+4. Verify critical IDs still exist and update:
    - `oq_control_mode`
    - `oq_demand_raw`
    - `flow_rate_selected`
@@ -88,5 +83,5 @@ Use a consistent order per package where applicable:
    - `water_supply_temp_selected`
    - `boiler_relay`
    - `hp1_set_working_mode`, `hp2_set_working_mode`
-10. Verify dashboard entity references are still valid.
-11. Run `./scripts/validate_local.sh` for full local gate parity on bash hosts, or `powershell -ExecutionPolicy Bypass -File .\scripts\validate_local.ps1` on Windows.
+5. Verify dashboard entity references are still valid.
+6. On Windows, run `powershell -ExecutionPolicy Bypass -File .\scripts\validate_local.ps1` for the same matrix-driven validation.

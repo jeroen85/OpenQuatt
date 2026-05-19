@@ -1,0 +1,25 @@
+# ==============================================================================
+# OpenQuatt - Hardware Profile: Heatpump Listener
+# ==============================================================================
+substitutions:
+  esp_board: "esp32dev"                                 # Active ESP32 board type.
+  esp_flash_size: "8MB"                                 # Active ESP flash size.
+  esp_variant: "esp32"                                  # Active ESP variant.
+  esp_partitions: "../../openquatt/partitions/openquatt_8mb.csv" # Active partition table.
+  uart_tx_pin: "GPIO33"                                 # Active RS485 TX pin.
+  uart_rx_pin: "GPIO32"                                 # Active RS485 RX pin.
+  uart_rts_pin: "GPIO21"                                # Active RS485 DE/RE (flow control) pin.
+  cic_compat_uart_tx_pin: "GPIO15"                      # Secondary CiC Modbus TX pin.
+  cic_compat_uart_rx_pin: "GPIO16"                      # Secondary CiC Modbus RX pin.
+  cic_compat_uart_rts_pin: "GPIO19"                     # Secondary CiC Modbus DE/RE pin.
+  oq_ot_thermostat_in_pin: "GPIO25"                     # Reserved OT thermostat RX pin placeholder for future wiring.
+  oq_ot_thermostat_out_pin: "GPIO26"                    # Reserved OT thermostat TX pin placeholder for future wiring.
+  listener_temp_t1_pin: "GPIO4"                         # Optional external temperature sensor input T1.
+  listener_temp_t2_pin: "GPIO5"                         # Optional external temperature sensor input T2.
+  ds18b20_pin: "GPIO27"                                 # Active DS18B20 1-Wire pin.
+  oq_boiler_relay_pin: "GPIO22"                         # Active boiler relay output pin.
+  listener_aux_relay_pin: "GPIO23"                      # Optional auxiliary relay output.
+  web_auth_recovery_pin: "GPIO0"                        # Temporary recovery input, wired to a spare button/jumper for setup.
+
+psram:
+  ignore_not_found: false

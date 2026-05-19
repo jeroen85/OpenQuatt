@@ -15,16 +15,16 @@ param(
     [string]$VenvDir = "",
     [string]$Device = "",
     [string]$RunId = "",
-    [string]$ArtifactName = "openquatt-duo-waveshare-dev-release"
+    [string]$ArtifactName = "openquatt-waveshare-duo-wifi-dev-release"
 )
 
 $ErrorActionPreference = "Stop"
 
 $wslDev = Join-Path $PSScriptRoot "wsl_dev.ps1"
-$duoWaveshareConfig = "firmware/openquatt-duo-waveshare.yaml"
+$duoWaveshareConfig = "configs/waveshare/duo_wifi.yaml"
 $ciDownloadDir = Join-Path (Split-Path $PSScriptRoot -Parent) ".tmp\ci-ota"
-$ciFirmwareRelativePath = "firmware/.esphome/build/openquatt-duo-waveshare/.pioenvs/openquatt/firmware.ota.bin"
-$localFirmwareBin = ".esphome/build/openquatt-duo-waveshare/.pioenvs/openquatt/firmware.ota.bin"
+$ciFirmwareRelativePath = "firmware.ota.bin"
+$localFirmwareBin = ".esphome/build/waveshare_duo_wifi/.pioenvs/openquatt/firmware.ota.bin"
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 if (-not $RepoDir) {
     $RepoDir = $repoRoot

@@ -1,8 +1,8 @@
 # ==============================================================================
 # OpenQuatt - Shared ESPHome Runtime Base
 # ==============================================================================
-# Common ESPHome/ESP32 runtime shared by Single/Duo and all hardware profiles.
-# Topology entrypoints provide manifest URLs and `oq_topology_build_flag`.
+# Common ESPHome/ESP32 runtime shared by all build targets.
+# Target entrypoints provide topology, connection and release substitutions.
 # ==============================================================================
 
 esphome:
@@ -49,10 +49,21 @@ esp32:
   board: ${esp_board}
   flash_size: ${esp_flash_size}
   variant: ${esp_variant}
-  partitions: openquatt/partitions/openquatt_8mb_trends.csv
+  partitions: ${esp_partitions}
   framework:
     type: esp-idf
     version: recommended
     sdkconfig_options:
       COMPILER_OPTIMIZATION_SIZE: y
       CONFIG_BT_ENABLED: n
+
+sensor:
+  - platform: debug
+    psram:
+      name: "PSRAM Free"
+      icon: mdi:memory
+      entity_category: diagnostic
+      disabled_by_default: true
+      accuracy_decimals: 0
+      web_server:
+        sorting_group_id: oq_system_diagnostics

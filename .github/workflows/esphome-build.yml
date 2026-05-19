@@ -24,28 +24,26 @@ on:
         default: ""
 
 jobs:
+  target-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.targets.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Build target matrix
+        id: targets
+        run: |
+          MATRIX="$(python3 scripts/build_targets.py github-matrix --status enabled)"
+          echo "matrix=${MATRIX}" >> "$GITHUB_OUTPUT"
+
   compile-profiles:
     runs-on: ubuntu-latest
+    needs: target-matrix
     strategy:
       fail-fast: false
-      matrix:
-        profile:
-          - id: duo-waveshare
-            config: openquatt_duo_waveshare.yaml
-            build_path: .esphome/build/openquatt_duo_waveshare
-            manifest_name: openquatt-duo-ota.manifest.json
-          - id: duo-heatpump-listener
-            config: openquatt_duo_heatpump_listener.yaml
-            build_path: .esphome/build/openquatt_duo_heatpump_listener
-            manifest_name: openquatt-duo-ota.manifest.json
-          - id: single-waveshare
-            config: openquatt_single_waveshare.yaml
-            build_path: .esphome/build/openquatt_single_waveshare
-            manifest_name: openquatt-single-ota.manifest.json
-          - id: single-heatpump-listener
-            config: openquatt_single_heatpump_listener.yaml
-            build_path: .esphome/build/openquatt_single_heatpump_listener
-            manifest_name: openquatt-single-ota.manifest.json
+      matrix: ${{ fromJson(needs.target-matrix.outputs.matrix) }}
 
     steps:
       - name: Checkout
@@ -82,10 +80,10 @@ jobs:
             EXTRA_ARGS+=(-s release_channel "${{ inputs.release_channel }}")
           fi
           if [[ -n "${{ inputs.release_manifest_tag }}" ]]; then
-            RELEASE_MANIFEST_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${{ inputs.release_manifest_tag }}/${{ matrix.profile.manifest_name }}"
+            RELEASE_MANIFEST_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${{ inputs.release_manifest_tag }}/${{ matrix.target.manifest_name }}"
             EXTRA_ARGS+=(-s release_manifest_url "${RELEASE_MANIFEST_URL}")
           fi
-          esphome "${EXTRA_ARGS[@]}" config "${{ matrix.profile.config }}"
+          esphome "${EXTRA_ARGS[@]}" config "${{ matrix.target.config }}"
 
       - name: Compile firmware
         run: |
@@ -97,31 +95,31 @@ jobs:
             EXTRA_ARGS+=(-s release_channel "${{ inputs.release_channel }}")
           fi
           if [[ -n "${{ inputs.release_manifest_tag }}" ]]; then
-            RELEASE_MANIFEST_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${{ inputs.release_manifest_tag }}/${{ matrix.profile.manifest_name }}"
+            RELEASE_MANIFEST_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${{ inputs.release_manifest_tag }}/${{ matrix.target.manifest_name }}"
             EXTRA_ARGS+=(-s release_manifest_url "${RELEASE_MANIFEST_URL}")
           fi
-          esphome "${EXTRA_ARGS[@]}" compile "${{ matrix.profile.config }}"
+          esphome "${EXTRA_ARGS[@]}" compile "${{ matrix.target.config }}"
 
       - name: Repair and validate factory binary
-        run: python3 scripts/repair_factory_bin.py "${{ matrix.profile.build_path }}/.pioenvs/openquatt"
+        run: python3 scripts/repair_factory_bin.py "${{ matrix.target.build_path }}/.pioenvs/openquatt"
 
       - name: Upload firmware artifacts
         if: ${{ inputs.include_firmware_bin }}
         uses: actions/upload-artifact@v6
         with:
-          name: openquatt-${{ matrix.profile.id }}-${{ inputs.artifact_suffix }}
+          name: ${{ matrix.target.artifact_name }}-${{ inputs.artifact_suffix }}
           if-no-files-found: error
           path: |
-            ${{ matrix.profile.build_path }}/.pioenvs/openquatt/firmware.bin
-            ${{ matrix.profile.build_path }}/.pioenvs/openquatt/firmware.ota.bin
-            ${{ matrix.profile.build_path }}/.pioenvs/openquatt/firmware.factory.bin
+            ${{ matrix.target.build_path }}/.pioenvs/openquatt/firmware.bin
+            ${{ matrix.target.build_path }}/.pioenvs/openquatt/firmware.ota.bin
+            ${{ matrix.target.build_path }}/.pioenvs/openquatt/firmware.factory.bin
 
       - name: Upload OTA/factory artifacts
         if: ${{ !inputs.include_firmware_bin }}
         uses: actions/upload-artifact@v6
         with:
-          name: openquatt-${{ matrix.profile.id }}-${{ inputs.artifact_suffix }}
+          name: ${{ matrix.target.artifact_name }}-${{ inputs.artifact_suffix }}
           if-no-files-found: error
           path: |
-            ${{ matrix.profile.build_path }}/.pioenvs/openquatt/firmware.ota.bin
-            ${{ matrix.profile.build_path }}/.pioenvs/openquatt/firmware.factory.bin
+            ${{ matrix.target.build_path }}/.pioenvs/openquatt/firmware.ota.bin
+            ${{ matrix.target.build_path }}/.pioenvs/openquatt/firmware.factory.bin

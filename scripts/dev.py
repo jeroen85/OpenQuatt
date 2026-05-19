@@ -14,19 +14,7 @@ import time
 from pathlib import Path
 from typing import Iterable, Sequence
 
-DEFAULT_CONFIGS = (
-    "openquatt_duo_waveshare.yaml",
-    "openquatt_duo_heatpump_listener.yaml",
-    "openquatt_single_waveshare.yaml",
-    "openquatt_single_heatpump_listener.yaml",
-)
-
-FACTORY_FILES = (
-    "openquatt-duo-waveshare.firmware.factory.bin",
-    "openquatt-duo-heatpump-listener.firmware.factory.bin",
-    "openquatt-single-waveshare.firmware.factory.bin",
-    "openquatt-single-heatpump-listener.firmware.factory.bin",
-)
+from build_targets import filter_targets, load_targets
 
 STAGE_EXCLUDE_DIRS = {
     ".git",
@@ -55,6 +43,27 @@ EFUSE_PATCH_MARKER = (
 
 def repo_root() -> Path:
     return Path(__file__).resolve().parent.parent
+
+
+def enabled_targets() -> list[dict[str, str]]:
+    return filter_targets(load_targets(), "enabled")
+
+
+def default_configs() -> list[str]:
+    return [target["config"] for target in enabled_targets()]
+
+
+def factory_files() -> list[str]:
+    return [f"{target['artifact_name']}.firmware.factory.bin" for target in enabled_targets()]
+
+
+def build_path_by_config() -> dict[str, str]:
+    return {target["config"]: target["build_path"] for target in load_targets()}
+
+
+def config_log_stem(config: str) -> str:
+    path = Path(config)
+    return "_".join((*path.parent.parts, path.stem)) if path.parent.parts else path.stem
 
 
 def is_windows() -> bool:
@@ -206,14 +215,14 @@ def resolve_bootstrap_python(explicit_python: str, root_dir: Path) -> str:
     raise SystemExit("No Python executable found for bootstrap.")
 
 
-def ensure_factory_dir(factory_dir: Path) -> None:
+def ensure_factory_dir(factory_dir: Path) -> list[str]:
     if not factory_dir.is_dir():
         raise SystemExit(f"Factory firmware directory does not exist: {factory_dir}")
 
-    missing = [file_name for file_name in FACTORY_FILES if not (factory_dir / file_name).is_file()]
-    if missing:
-        missing_list = ", ".join(missing)
-        raise SystemExit(f"Factory firmware directory is missing files: {missing_list}")
+    files = sorted(path.name for path in factory_dir.glob("*.firmware.factory.bin") if path.is_file())
+    if not files:
+        raise SystemExit(f"Factory firmware directory contains no *.firmware.factory.bin files: {factory_dir}")
+    return files
 
 
 def tail_lines(path: Path, limit: int = 80) -> str:
@@ -462,7 +471,7 @@ def resolve_command_root(root_dir: Path) -> tuple[Path, Path, Path | None]:
 
 def build_pages_site(site_dir: Path, factory_dir: Path, helper_python: Sequence[str]) -> None:
     root_dir = repo_root()
-    ensure_factory_dir(factory_dir)
+    available_factory_files = ensure_factory_dir(factory_dir)
 
     if site_dir.exists():
         shutil.rmtree(site_dir)
@@ -482,8 +491,13 @@ def build_pages_site(site_dir: Path, factory_dir: Path, helper_python: Sequence[
 
     (site_dir / ".nojekyll").touch()
 
-    for file_name in FACTORY_FILES:
+    for file_name in available_factory_files:
         shutil.copy2(factory_dir / file_name, site_dir / "firmware" / "main" / file_name)
+
+    (site_dir / "firmware" / "main" / "factory_files.json").write_text(
+        json.dumps({"factory_files": available_factory_files}, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
 
 def describe_version(root_dir: Path) -> str:
@@ -554,6 +568,7 @@ def validate_command(args: argparse.Namespace) -> int:
     log_dir = root_dir / ".tmp" / "validate_local_logs"
     helper_python = resolve_helper_python(venv_dir)
     esphome_command = resolve_esphome_command(venv_dir)
+    target_build_paths = build_path_by_config()
 
     log_dir.mkdir(parents=True, exist_ok=True)
 
@@ -586,7 +601,7 @@ def validate_command(args: argparse.Namespace) -> int:
         )
 
         for config in args.configs:
-            stem = Path(config).stem
+            stem = config_log_stem(config)
             run_logged(
                 [*esphome_command, "config", config],
                 cwd=command_root,
@@ -620,7 +635,7 @@ def validate_command(args: argparse.Namespace) -> int:
             shutil.rmtree(espressif_cache_dir, ignore_errors=True)
 
         def compile_one(config: str) -> tuple[str, int, Path]:
-            log_path = log_dir / f"{Path(config).stem}.compile.log"
+            log_path = log_dir / f"{config_log_stem(config)}.compile.log"
             label = f"compile {config}"
             print(f"[run] {label}", flush=True)
             exit_code = run_command(
@@ -648,7 +663,8 @@ def validate_command(args: argparse.Namespace) -> int:
                             f"[retry] compile {config}: resetting build cache after framework-espidf "
                             "efuse duplicate-target failure."
                         )
-                        shutil.rmtree(command_root / ".esphome" / "build" / Path(config).stem, ignore_errors=True)
+                        build_root = command_root / target_build_paths.get(config, f".esphome/build/{Path(config).stem}")
+                        shutil.rmtree(build_root, ignore_errors=True)
                         exit_code = run_command(
                             [*esphome_command, "compile", config],
                             cwd=command_root,
@@ -673,7 +689,7 @@ def validate_command(args: argparse.Namespace) -> int:
                         heartbeat_label=label,
                     )
             if exit_code == 0:
-                build_dir = command_root / ".esphome" / "build" / Path(config).stem / ".pioenvs" / "openquatt"
+                build_dir = command_root / target_build_paths.get(config, f".esphome/build/{Path(config).stem}") / ".pioenvs" / "openquatt"
                 exit_code = run_command(
                     [*helper_python, str(command_scripts_dir / "repair_factory_bin.py"), str(build_dir)],
                     cwd=command_root,
@@ -739,11 +755,10 @@ def preview_pages_command(args: argparse.Namespace) -> int:
     try:
         if args.firmware_dir:
             source_dir = Path(args.firmware_dir).resolve()
-            ensure_factory_dir(source_dir)
-            for file_name in FACTORY_FILES:
+            for file_name in ensure_factory_dir(source_dir):
                 shutil.copy2(source_dir / file_name, work_firmware_dir / file_name)
         else:
-            for file_name in FACTORY_FILES:
+            for file_name in factory_files():
                 (work_firmware_dir / file_name).touch()
 
         build_pages_site(site_dir, work_firmware_dir, helper_python)
@@ -876,7 +891,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = create_parser()
     args = parser.parse_args(argv)
     if getattr(args, "command", None) == "validate" and not args.configs:
-        args.configs = list(DEFAULT_CONFIGS)
+        args.configs = default_configs()
     if getattr(args, "command", None) == "validate" and args.jobs < 1:
         parser.error("--jobs must be a positive integer")
     return args.func(args)

@@ -1,0 +1,13 @@
+# ==============================================================================
+# OpenQuatt - Connection Profile: Ethernet W5500
+# ==============================================================================
+# ESPHome cannot combine `ethernet:` and `wifi:` in one build, so Ethernet
+# targets are intentionally Ethernet-only.
+# ==============================================================================
+
+ethernet:
+  type: W5500
+  clk_pin: ${eth_clk_pin}
+  mosi_pin: ${eth_mosi_pin}
+  miso_pin: ${eth_miso_pin}
+  cs_pin: ${eth_cs_pin}

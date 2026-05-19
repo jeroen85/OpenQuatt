@@ -8,7 +8,7 @@
 external_components:
   - source:
       type: local
-      path: components
+      path: ${external_components_path}
     components:
       - openquatt_mqtt_config
       - openquatt_mqtt_publisher
