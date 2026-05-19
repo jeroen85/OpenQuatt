@@ -18,6 +18,9 @@ esphome:
     - ${hp_perf_map_v2_high_header}
     - ${thermal_request_logic_header}
     - ${heating_curve_logic_header}
+    - ${oq_commissioning_logic_header}
+    - ${oq_flow_autotune_logic_header}
+    - ${oq_boiler_task_logic_header}
     - ${oq_psram_buffer_header}
   platformio_options:
     extra_scripts:

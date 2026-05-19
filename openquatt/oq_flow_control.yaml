@@ -338,7 +338,9 @@ interval:
           const float dt = ${oq_flow_loop_s};   // seconds per tick
           static std::string last_mode = "";
 
-          static bool was_cm0 = true;
+          static bool was_flow_idle = true;
+          static int last_cm_code = 0;
+          static int last_commissioning_task_code = oq_commissioning::TASK_NONE;
 
           // One central hold time for all start transitions.
           // During this window we keep start iPWM fixed to let hydraulics settle.
@@ -523,6 +525,7 @@ interval:
 
           const int cm_code = id(oq_control_mode_code);
           const bool is_cm0 = (cm_code == 0);
+          const int commissioning_task_code = id(oq_commissioning_task_code);
 
           // Flow submode select (within CM1/CM2/CM3): AUTO vs MANUAL PWM
           const int flow_mode_code = (id(oq_flow_control_mode).active_index().value_or(0) == 1) ? 1 : 0;
@@ -530,16 +533,33 @@ interval:
           const bool want_manual = (flow_mode_code == 1);
           static bool was_manual = false;
 
-          // Edge 1: entering active control from CM0
-          if (was_cm0 && !is_cm0) {
-            start_auto_transition("CM0->*");
-          }
-          was_cm0 = is_cm0;
+          const bool is_cm100_idle =
+              (cm_code == 100) &&
+              (commissioning_task_code == oq_commissioning::TASK_NONE);
+          const bool flow_idle = is_cm0 || is_cm100_idle;
+          const bool cm100_task_started =
+              (cm_code == 100) &&
+              (commissioning_task_code != oq_commissioning::TASK_NONE) &&
+              (last_cm_code != 100 ||
+               last_commissioning_task_code == oq_commissioning::TASK_NONE ||
+               last_commissioning_task_code != commissioning_task_code);
 
-          if (is_cm0) {
+          // Edge 1: entering active flow control from an idle mode.
+          if ((was_flow_idle && !flow_idle) || cm100_task_started) {
+            start_auto_transition(cm100_task_started ? "CM100-task" : "idle->*");
+          }
+          was_flow_idle = flow_idle;
+          last_cm_code = cm_code;
+          last_commissioning_task_code = commissioning_task_code;
+
+          if (flow_idle) {
             // Keep manual-edge memory synchronized while idle.
             was_manual = want_manual;
-            id(oq_flow_mode).publish_state("CM0");
+            stable_cnt = 0;
+            startup_hold = 0;
+            sp_f = NAN;
+            last_pi_e = 0.0f;
+            id(oq_flow_mode).publish_state(is_cm100_idle ? "CM100 idle" : "CM0");
             return;
           }
 
