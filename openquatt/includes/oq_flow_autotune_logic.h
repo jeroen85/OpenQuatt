@@ -31,7 +31,9 @@ struct RuntimeConfig {
   float validate_seed_min_lambda_s;
   float validate_seed_min_ti_s;
   int validate_recover_max_s;
+  int validate_min_active_s;
   int validate_duration_s;
+  int validate_max_retries;
   int baseline_pwm;
   int baseline_wait_max_s;
   float step1_frac;
@@ -66,7 +68,7 @@ inline RuntimeConfig make_runtime_config(int sample_time_s,
                                          float ki_max) {
   return RuntimeConfig{
       sample_time_s, 120, 0.05f, 15.0f, 40.0f, 8.0f, 0.15f,
-      0.25f, 8.0f, 2.0f, 60.0f, 60.0f, 120, 180, 400, 60,
+      0.25f, 8.0f, 2.0f, 60.0f, 60.0f, 120, 60, 180, 2, 400, 60,
       0.06f, 10, 28, 0.10f, 15, 40, 0.20f,
       pwm_min, pwm_max, min_step, settle_s, stable_band_lph,
       tau_fallback_s, kp_min, kp_max, ki_min, ki_max};
@@ -105,6 +107,7 @@ class FlowAutotuneRuntime {
     validate_confirm_cnt_ = 0;
     validate_settle_ready_ = false;
     validate_pre_overshoot_ = false;
+    validate_attempt_ = 0;
     id(oq_flow_autotune_state) = STATE_IDLE;
   }
 
@@ -218,6 +221,7 @@ class FlowAutotuneRuntime {
   int validate_confirm_cnt_{0};
   bool validate_settle_ready_{false};
   bool validate_pre_overshoot_{false};
+  int validate_attempt_{0};
 
   template <typename NumberEntity>
   void set_number_value(NumberEntity &number_entity, float value) {
@@ -248,6 +252,15 @@ class FlowAutotuneRuntime {
     pv0_ = NAN;
     pv_ss_ = NAN;
     pv63_time_s_ = NAN;
+  }
+
+  void clear_validation_run_memory() {
+    t_s_ = 0;
+    clear_window();
+    validate_peak_pv_ = NAN;
+    validate_confirm_cnt_ = 0;
+    validate_settle_ready_ = false;
+    validate_pre_overshoot_ = false;
   }
 
   void push_window(float sample) {
@@ -564,12 +577,8 @@ class FlowAutotuneRuntime {
     seed_ki_ = ki_seed;
     validate_sp0_ = sp0;
     validate_sp1_ = sp0 + validate_step_lph;
-    validate_peak_pv_ = NAN;
-    validate_confirm_cnt_ = 0;
-    validate_settle_ready_ = false;
-    validate_pre_overshoot_ = false;
-    t_s_ = 0;
-    clear_window();
+    validate_attempt_ = 0;
+    clear_validation_run_memory();
 
     set_number_value(id(oq_flow_kp), kp_seed);
     set_number_value(id(oq_flow_ki), ki_seed);
@@ -615,7 +624,7 @@ class FlowAutotuneRuntime {
       validate_confirm_cnt_ = 0;
       validate_settle_ready_ = false;
       validate_pre_overshoot_ = false;
-      validate_peak_pv_ = sp1;
+      validate_peak_pv_ = NAN;
       t_s_ = 0;
       set_number_value(id(oq_flow_setpoint_lph), sp1);
       ESP_LOGI("quatt.cm100.autotune",
@@ -659,8 +668,8 @@ class FlowAutotuneRuntime {
 
     const float step_lph = sp1 - sp0;
     const float settle_band = fmaxf(cfg.validate_band_floor_lph, cfg.validate_band_frac * step_lph);
+    const float target_band = fmaxf(settle_band, 10.0f);
     const float overshoot_band = fmaxf(settle_band, cfg.validate_overshoot_frac * step_lph);
-    validate_peak_pv_ = fmaxf(validate_peak_pv_, pv);
     push_window(pv);
 
     if (!validate_settle_ready_) {
@@ -676,7 +685,7 @@ class FlowAutotuneRuntime {
         t_s_ = 0;
         clear_window();
         validate_confirm_cnt_ = 0;
-        validate_peak_pv_ = sp1;
+        validate_peak_pv_ = NAN;
         validate_settle_ready_ = true;
         publish("VALIDATING");
       } else {
@@ -686,13 +695,19 @@ class FlowAutotuneRuntime {
       return;
     }
 
+    validate_peak_pv_ = isnan(validate_peak_pv_) ? pv : fmaxf(validate_peak_pv_, pv);
     const bool settled_now =
-        steady_window(settle_band, settle_band) &&
-        fabsf(pv - sp1) <= settle_band;
+        steady_window(target_band, target_band) &&
+        fabsf(window_mean() - sp1) <= target_band;
     validate_confirm_cnt_ = settled_now ? validate_confirm_cnt_ + 1 : 0;
-    const float overshoot = validate_peak_pv_ - sp1;
+    const float overshoot = isnan(validate_peak_pv_) ? 0.0f : validate_peak_pv_ - sp1;
     const bool overshot = overshoot > overshoot_band;
-    const bool settled = validate_confirm_cnt_ >= 2 && !overshot && fabsf(pv - sp1) <= settle_band;
+    const bool active_long_enough = t_s_ >= cfg.validate_min_active_s;
+    const bool settled = active_long_enough &&
+                         validate_confirm_cnt_ >= 3 &&
+                         !overshot &&
+                         window_ready() &&
+                         fabsf(window_mean() - sp1) <= target_band;
     const bool timed_out = t_s_ >= cfg.validate_duration_s;
     if (!settled && !timed_out) {
       t_s_ += cfg.sample_time_s;
@@ -700,12 +715,34 @@ class FlowAutotuneRuntime {
       return;
     }
 
-    finish_validation(cfg, sp1, settle_band, overshoot, settled, timed_out);
+    finish_validation(cfg, sp1, target_band, overshoot, settled, timed_out);
+  }
+
+  bool retry_validation(const RuntimeConfig &cfg,
+                        const char *reason,
+                        float kp_scale,
+                        float ki_scale) {
+    if (validate_attempt_ >= cfg.validate_max_retries) return false;
+    const float raw_kp = seed_kp_ * kp_scale;
+    const float raw_ki = seed_ki_ * ki_scale;
+    seed_kp_ = fminf(fmaxf(raw_kp, cfg.kp_min), cfg.kp_max);
+    seed_ki_ = fminf(fmaxf(raw_ki, cfg.ki_min), cfg.ki_max);
+    validate_attempt_++;
+    clear_validation_run_memory();
+    set_number_value(id(oq_flow_kp), seed_kp_);
+    set_number_value(id(oq_flow_ki), seed_ki_);
+    set_number_value(id(oq_flow_setpoint_lph), validate_sp0_);
+    ESP_LOGI("quatt.cm100.autotune",
+             "%s -> validation retry %d/%d with Kp=%.3f Ki=%.4f",
+             reason, validate_attempt_, cfg.validate_max_retries, seed_kp_, seed_ki_);
+    publish(reason);
+    state_ = STATE_VALIDATE_RECOVER;
+    return true;
   }
 
   void finish_validation(const RuntimeConfig &cfg,
                          float sp1,
-                         float settle_band,
+                         float target_band,
                          float overshoot,
                          bool settled,
                          bool timed_out) {
@@ -715,10 +752,23 @@ class FlowAutotuneRuntime {
       finish_without_suggestion("FAILED: INVALID_VALIDATION_STATE");
       return;
     }
+    const float final_pv = window_ready() ? window_mean() :
+                           isnan(validate_peak_pv_) ? NAN : validate_peak_pv_;
+    const float final_error = isnan(final_pv) ? NAN : sp1 - final_pv;
+    if (!settled && timed_out && !isnan(final_error)) {
+      if ((final_error > target_band) &&
+          retry_validation(cfg, "VALIDATION_RETRY: UNDER_TARGET", 1.05f, 1.35f)) {
+        return;
+      }
+      if ((final_error < -target_band || overshoot > target_band || validate_pre_overshoot_) &&
+          retry_validation(cfg, "VALIDATION_RETRY: OVERSHOOT", 0.85f, 0.85f)) {
+        return;
+      }
+    }
+
     float scale = 1.0f;
-    if (overshoot > (2.0f * settle_band)) scale = 0.80f;
-    else if (overshoot > settle_band) scale = 0.90f;
-    else if (settled && t_s_ <= (cfg.sample_time_s * 3) && overshoot <= (0.5f * settle_band)) scale = 1.05f;
+    if (overshoot > (2.0f * target_band)) scale = 0.80f;
+    else if (overshoot > target_band) scale = 0.90f;
     if (timed_out && !settled && scale > 0.95f) scale = 0.95f;
 
     const float raw_kp = seed_kp * scale;
@@ -726,7 +776,7 @@ class FlowAutotuneRuntime {
     const float kp = fminf(fmaxf(raw_kp, cfg.kp_min), cfg.kp_max);
     const float ki = fminf(fmaxf(raw_ki, cfg.ki_min), cfg.ki_max);
     const bool clamped = fabsf(kp - raw_kp) > 1.0e-7f || fabsf(ki - raw_ki) > 1.0e-7f;
-    const bool limited_validation = validate_pre_overshoot_ || (timed_out && !settled);
+    const bool limited_validation = validate_pre_overshoot_ || !settled;
     const char *prefix = limited_validation ? "DONE (LIMITED)" :
                          clamped ? "DONE (CLAMPED)" : "DONE (CLOSED-LOOP)";
 
@@ -739,10 +789,10 @@ class FlowAutotuneRuntime {
     validate_settle_ready_ = false;
     validate_pre_overshoot_ = false;
 
-    char msg[220];
+    char msg[260];
     snprintf(msg, sizeof(msg),
-             "%s: seed=%.3f/%.4f -> Kp=%.3f Ki=%.4f peak=%.1f target=%.1f",
-             prefix, seed_kp, seed_ki, kp, ki, peak_pv, sp1);
+             "%s: seed=%.3f/%.4f -> Kp=%.3f Ki=%.4f peak=%.1f target=%.1f band=%.1f",
+             prefix, seed_kp, seed_ki, kp, ki, peak_pv, sp1, target_band);
     publish(msg);
     clear_validation_memory();
     release_commissioning();
@@ -767,6 +817,7 @@ class FlowAutotuneRuntime {
     validate_sp0_ = NAN;
     validate_sp1_ = NAN;
     validate_peak_pv_ = NAN;
+    validate_attempt_ = 0;
   }
 
   void finish_without_suggestion(const char *status) {
