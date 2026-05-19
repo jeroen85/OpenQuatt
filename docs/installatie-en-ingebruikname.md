@@ -10,7 +10,8 @@ Voor een eerste installatie gebruik je bij voorkeur de web installer uit de [REA
 
 - een ondersteund ESP32-bord:
   - Waveshare ESP32-S3-Relay-1CH
-  - Heatpump Listener
+  - Electropaultje Heatpump Listener
+  - Electropaultje Heatpump Controller Q-edition
 - een USB-kabel voor de eerste flash
 - een werkend wifi-netwerk
 - Chrome of Edge voor de web installer
@@ -22,10 +23,14 @@ Kies altijd exact de combinatie van je opstelling en je hardware:
 
 | Opstelling | Hardware | Bestand |
 |---|---|---|
-| Duo | Waveshare | `openquatt_duo_waveshare.yaml` |
-| Duo | Heatpump Listener | `openquatt_duo_heatpump_listener.yaml` |
-| Single | Waveshare | `openquatt_single_waveshare.yaml` |
-| Single | Heatpump Listener | `openquatt_single_heatpump_listener.yaml` |
+| Single | Waveshare | `configs/waveshare/single_wifi.yaml` |
+| Duo | Waveshare | `configs/waveshare/duo_wifi.yaml` |
+| Single | Heatpump Listener | `configs/heatpump_listener/single_wifi.yaml` |
+| Duo | Heatpump Listener | `configs/heatpump_listener/duo_wifi.yaml` |
+| Single | Heatpump Controller Q | `configs/heatpump_controller_q/single_wifi.yaml` |
+| Duo | Heatpump Controller Q | `configs/heatpump_controller_q/duo_wifi.yaml` |
+
+De Ethernet-configs voor de Heatpump Controller Q staan al in de matrix als planned targets, maar worden nog niet door CI/release gebouwd.
 
 ## Installatie via de web installer
 

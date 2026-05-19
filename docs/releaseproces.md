@@ -17,27 +17,20 @@ Firmware should expose its channel explicitly via `release_channel` so Home Assi
 - `/.github/workflows/ci-build.yml`
   - Trigger: push to `main` or `dev`, pull requests
   - Actions:
-    - `esphome config openquatt_duo_waveshare.yaml`
-    - `esphome compile openquatt_duo_waveshare.yaml`
-    - `esphome config openquatt_duo_heatpump_listener.yaml`
-    - `esphome compile openquatt_duo_heatpump_listener.yaml`
-    - `esphome config openquatt_single_waveshare.yaml`
-    - `esphome compile openquatt_single_waveshare.yaml`
-    - `esphome config openquatt_single_heatpump_listener.yaml`
-    - `esphome compile openquatt_single_heatpump_listener.yaml`
-    - Upload compiled firmware artifacts per profile
+    - validate and compile every enabled target from `build_targets.yaml`
+    - upload compiled firmware artifacts per enabled target
 - `/.github/workflows/release-build.yml`
   - Trigger: tag push `v*` and manual dispatch
   - Actions:
-    - validate + compile all four topology/hardware profiles
-    - publish explicit Duo and Single release assets for both hardware targets
-    - generate `openquatt-duo-ota.manifest.json` and `openquatt-single-ota.manifest.json` for OTA update checks
+    - validate + compile every enabled target from `build_targets.yaml`
+    - publish target-specific OTA/factory release assets
+    - generate target-specific `*-ota.manifest.json` files for OTA update checks
     - create/update GitHub Release
     - attach release firmware binaries and OTA manifests to the release
 - `/.github/workflows/dev-build.yml`
   - Trigger: push to `dev`, manual dispatch
   - Actions:
-    - compile all four profiles with `release_channel=dev`
+    - compile every enabled target with `release_channel=dev`
     - override `project_version` to `${base_version}-dev.<run_number>+<shortsha>`
     - move the mutable `dev-latest` tag to the newest `dev` commit
     - publish/update a prerelease that contains binaries + OTA manifests for the dev channel
@@ -82,7 +75,7 @@ The running firmware exposes both `OpenQuatt Version` and `OpenQuatt Release Cha
 
 ## Building a Dev Channel Firmware
 
-Reuse the existing topology/hardware entrypoints and override channel-specific substitutions at build time:
+Reuse a matrix entrypoint and override channel-specific substitutions at build time:
 
 ```bash
 BASE_VERSION="$(awk -F'\"' '/^project_version: / { print $2 }' openquatt/oq_substitutions_common.yaml)"
@@ -92,17 +85,11 @@ DEV_VERSION="${BASE_VERSION}-dev.${DEV_STAMP}+local"
 esphome \
   -s project_version "${DEV_VERSION}" \
   -s release_channel dev \
-  -s release_manifest_url https://github.com/jeroen85/OpenQuatt/releases/download/dev-latest/openquatt-duo-ota.manifest.json \
-  compile openquatt_duo_waveshare.yaml
+  -s release_manifest_url https://github.com/jeroen85/OpenQuatt/releases/download/dev-latest/openquatt-waveshare-duo-wifi-ota.manifest.json \
+  compile configs/waveshare/duo_wifi.yaml
 ```
 
-Equivalent Single builds should use:
-
-```text
-https://github.com/jeroen85/OpenQuatt/releases/download/dev-latest/openquatt-single-ota.manifest.json
-```
-
-This keeps the topology/hardware matrix independent from release channel selection.
+Use `python3 scripts/build_targets.py list-configs --status enabled` to inspect the enabled target list. This keeps the topology/hardware/connection matrix independent from release channel selection.
 
 The repository now backs that URL with `/.github/workflows/dev-build.yml`, which publishes a mutable prerelease/tag named `dev-latest`.
 
@@ -135,16 +122,9 @@ git push origin v0.13.0
    - CI should be green.
    - Release workflow should publish artifacts.
 7. Verify GitHub Release contains:
-   - `openquatt-duo-ota.manifest.json`
-   - `openquatt-single-ota.manifest.json`
-   - `openquatt-duo-waveshare.firmware.ota.bin`
-   - `openquatt-duo-waveshare.firmware.factory.bin`
-   - `openquatt-duo-heatpump-listener.firmware.ota.bin`
-   - `openquatt-duo-heatpump-listener.firmware.factory.bin`
-   - `openquatt-single-waveshare.firmware.ota.bin`
-   - `openquatt-single-waveshare.firmware.factory.bin`
-   - `openquatt-single-heatpump-listener.firmware.ota.bin`
-   - `openquatt-single-heatpump-listener.firmware.factory.bin`
+   - one `*-ota.manifest.json` per enabled target
+   - one `*.firmware.ota.bin` per enabled target
+   - one `*.firmware.factory.bin` per enabled target
 8. If `main` and `dev` no longer point to the same release content, realign `dev` with the released `main` commit before bumping to the next development version:
 
 ```bash
@@ -160,9 +140,9 @@ If you used the recommended fast-forward promotion and did not add extra `main`-
 
 ## Notes
 
-- The baseline `openquatt_duo_waveshare.yaml` is secrets-free and suitable for CI builds.
+- Enabled target configs under `configs/` are secrets-free and suitable for CI builds.
 - First-install UX now lives on the GitHub Pages installer at `https://jeroen85.github.io/OpenQuatt/install/`, which builds ESP Web Tools manifests dynamically in the browser against same-origin stable factory binaries mirrored onto Pages.
-- `openquatt-duo-ota.manifest.json` and `openquatt-single-ota.manifest.json` are intended for OTA update flows.
-- Duo firmware reads `${release_manifest_url}` from `openquatt_base.yaml`, Single firmware reads it from `openquatt_base_single.yaml`.
+- Target-specific `*-ota.manifest.json` files are intended for OTA update flows.
+- Each firmware reads `${release_manifest_url}` from its selected config entrypoint.
 - OTA manifests and OTA binaries remain on GitHub Releases; only first-install factory binaries are mirrored onto Pages for Web Serial/CORS compatibility.
 - Workflow files must remain directly under `.github/workflows/` (GitHub does not load workflows from nested subfolders).

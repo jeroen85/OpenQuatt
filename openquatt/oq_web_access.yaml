@@ -8,7 +8,7 @@
 external_components:
   - source:
       type: local
-      path: components
+      path: ${external_components_path}
     components: [openquatt_web_auth, openquatt_trends, openquatt_log_history]
 
 openquatt_web_auth:

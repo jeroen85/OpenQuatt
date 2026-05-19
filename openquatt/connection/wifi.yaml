@@ -1,0 +1,41 @@
+# ==============================================================================
+# OpenQuatt - Connection Profile: Wi-Fi
+# ==============================================================================
+# Wi-Fi targets keep ESP Web Tools provisioning and AP fallback enabled.
+# ==============================================================================
+
+wifi:
+  min_auth_mode: wpa2
+  ap:
+    ssid: "OpenQuatt"
+    password: "openquatt"
+
+captive_portal:
+
+# Enable ESP Web Tools Wi-Fi provisioning while keeping AP fallback available.
+improv_serial:
+  next_url: "http://{{ip_address}}/"
+
+sensor:
+  - platform: wifi_signal
+    name: WiFi Signal
+    icon: mdi:wifi-arrow-left-right
+    update_interval: 300s
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_system_diagnostics
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: IP Address
+      icon: mdi:ip-network-outline
+      entity_category: diagnostic
+      web_server:
+        sorting_group_id: oq_system_diagnostics
+    ssid:
+      name: WiFi SSID
+      icon: mdi:wifi
+      entity_category: diagnostic
+      web_server:
+        sorting_group_id: oq_system_diagnostics

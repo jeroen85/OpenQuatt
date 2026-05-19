@@ -16,7 +16,7 @@
 external_components:
   - source:
       type: local
-      path: components
+      path: ${external_components_path}
     components: [openquatt_ot_slave]
 
 openquatt_ot_slave:

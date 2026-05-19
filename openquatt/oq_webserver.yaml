@@ -11,8 +11,8 @@ web_server:
   auth:
     username: ${web_auth_bootstrap_username}
     password: ${web_auth_bootstrap_password}
-  css_include: openquatt/web/css/openquatt-app.css
-  js_include: openquatt/web/js/openquatt-app.js
+  css_include: ${oq_webserver_css_include}
+  js_include: ${oq_webserver_js_include}
   js_url: "${oq_webserver_js_url}"
   sorting_groups:
     - id: oq_setup

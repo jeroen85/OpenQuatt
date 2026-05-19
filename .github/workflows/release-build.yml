@@ -23,29 +23,11 @@ jobs:
       - name: Checkout scripts
         uses: actions/checkout@v6
 
-      - name: Download Duo Waveshare artifacts
+      - name: Download firmware artifacts
         uses: actions/download-artifact@v7
         with:
-          name: openquatt-duo-waveshare-release
-          path: dist/openquatt-duo-waveshare
-
-      - name: Download Duo Heatpump Listener artifacts
-        uses: actions/download-artifact@v7
-        with:
-          name: openquatt-duo-heatpump-listener-release
-          path: dist/openquatt-duo-heatpump-listener
-
-      - name: Download Single Waveshare artifacts
-        uses: actions/download-artifact@v7
-        with:
-          name: openquatt-single-waveshare-release
-          path: dist/openquatt-single-waveshare
-
-      - name: Download Single Heatpump Listener artifacts
-        uses: actions/download-artifact@v7
-        with:
-          name: openquatt-single-heatpump-listener-release
-          path: dist/openquatt-single-heatpump-listener
+          pattern: openquatt-*-release
+          path: dist
 
       - name: Prepare release assets and manifests
         run: |
@@ -68,14 +50,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release upload "${GITHUB_REF_NAME}" \
-            openquatt-duo-ota.manifest.json \
-            openquatt-single-ota.manifest.json \
-            dist/openquatt-duo-waveshare.firmware.ota.bin \
-            dist/openquatt-duo-waveshare.firmware.factory.bin \
-            dist/openquatt-duo-heatpump-listener.firmware.ota.bin \
-            dist/openquatt-duo-heatpump-listener.firmware.factory.bin \
-            dist/openquatt-single-waveshare.firmware.ota.bin \
-            dist/openquatt-single-waveshare.firmware.factory.bin \
-            dist/openquatt-single-heatpump-listener.firmware.ota.bin \
-            dist/openquatt-single-heatpump-listener.firmware.factory.bin \
+            ./*-ota.manifest.json \
+            dist/*.firmware.ota.bin \
+            dist/*.firmware.factory.bin \
             --clobber

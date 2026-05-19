@@ -15,21 +15,23 @@ friendly_name: OpenQuatt                              # Display name in Home Ass
 project_name: "openquatt.openquatt"                   # ESPHome project identifier shown in firmware metadata.
 project_version: "v0.31.1"                            # ESPHome project version shown in firmware metadata.
 release_channel: "main"                               # Firmware release channel shown in diagnostics (`main` or `dev`).
-hp_perf_map_header: "openquatt/includes/hp_perf_map.h" # C++ performance-map header include path.
-hp_perf_map_v2_high_header: "openquatt/includes/hp_perf_map_v2_high.h" # C++ V2 high-temperature continuation header.
-thermal_request_logic_header: "openquatt/includes/oq_thermal_request_logic.h" # Shared C++ helper include for request/control glue.
-heating_curve_logic_header: "openquatt/includes/oq_heating_curve_logic.h" # Shared C++ helper include for curve runtime state and naming.
-oq_commissioning_logic_header: "openquatt/includes/oq_commissioning_logic.h" # Shared commissioning task/state contract.
-oq_flow_autotune_logic_header: "openquatt/includes/oq_flow_autotune_logic.h" # Flow autotune runtime controller.
-oq_boiler_task_logic_header: "openquatt/includes/oq_boiler_task_logic.h" # Boiler power-test runtime controller.
-oq_psram_buffer_header: "components/openquatt_common/PsramBuffer.h" # Shared PSRAM-backed buffer helper for custom components.
+hp_perf_map_header: "../../openquatt/includes/hp_perf_map.h" # C++ performance-map header include path.
+hp_perf_map_v2_high_header: "../../openquatt/includes/hp_perf_map_v2_high.h" # C++ V2 high-temperature continuation header.
+thermal_request_logic_header: "../../openquatt/includes/oq_thermal_request_logic.h" # Shared C++ helper include for request/control glue.
+heating_curve_logic_header: "../../openquatt/includes/oq_heating_curve_logic.h" # Shared C++ helper include for curve runtime state and naming.
+oq_commissioning_logic_header: "../../openquatt/includes/oq_commissioning_logic.h" # Shared commissioning task/state contract.
+oq_flow_autotune_logic_header: "../../openquatt/includes/oq_flow_autotune_logic.h" # Flow autotune runtime controller.
+oq_boiler_task_logic_header: "../../openquatt/includes/oq_boiler_task_logic.h" # Boiler power-test runtime controller.
+oq_psram_buffer_header: "../../components/openquatt_common/PsramBuffer.h" # Shared PSRAM-backed buffer helper for custom components.
+external_components_path: "../../components"              # Local custom component directory from nested config entrypoints.
 oq_timezone: "Europe/Amsterdam"                         # SNTP timezone used by runtime timestamps.
+oq_webserver_css_include: "../../openquatt/web/css/openquatt-app.css" # Bundled OpenQuatt web UI stylesheet.
+oq_webserver_js_include: "../../openquatt/web/js/openquatt-app.js" # Bundled OpenQuatt web UI script.
 oq_webserver_css_url: ""                            # Optional external CSS for the ESPHome web UI.
 oq_webserver_js_url: ""                               # Custom OpenQuatt app is primary; load ESPHome fallback lazily on demand.
 web_auth_bootstrap_username: "admin"                  # Bootstrap username used to keep web auth support compiled in.
 web_auth_bootstrap_password: "openquatt"              # Bootstrap password used to keep web auth support compiled in.
 web_auth_default_enabled: false                       # Web auth is opt-in by default for new installs.
-web_auth_recovery_pin: "GPIO0"                        # Temporary recovery input pin used to arm the setup window.
 mqtt_bootstrap_broker: ""                             # Bootstrap MQTT broker kept empty until the web app stores one.
 mqtt_bootstrap_port: "1883"                           # Default MQTT broker port used for bootstrap/runtime storage.
 mqtt_bootstrap_username: ""                           # Bootstrap MQTT username.
@@ -46,8 +48,9 @@ mqtt_retain_snapshots: "true"                         # Retain schema/state/heat
 # HARDWARE
 # ----------------------------
 # Hardware-specific substitutions are provided by per-profile files:
-# - openquatt/profiles/oq_substitutions_waveshare.yaml
-# - openquatt/profiles/oq_substitutions_heatpump_listener.yaml
+# - openquatt/profiles/waveshare.yaml
+# - openquatt/profiles/heatpump_listener.yaml
+# - openquatt/profiles/heatpump_controller_q.yaml
 
 # ----------------------------
 # SUPERVISORY CONTROL MODE
@@ -162,9 +165,6 @@ oq_cic_restore_mode_default: "RESTORE_DEFAULT_OFF"    # Default CIC polling stat
 # ----------------------------
 # CIC COMPATIBILITY
 # ----------------------------
-cic_compat_uart_tx_pin: "GPIO15"                      # Placeholder TX pin for the secondary CiC Modbus port.
-cic_compat_uart_rx_pin: "GPIO16"                      # Placeholder RX pin for the secondary CiC Modbus port.
-cic_compat_uart_rts_pin: "GPIO19"                     # Placeholder DE/RE pin for the secondary CiC Modbus port.
 cic_compat_modbus_address_hp1: "0x01"                 # CiC-facing Modbus address for HP1 compatibility data.
 cic_compat_modbus_address_hp2: "0x02"                 # CiC-facing Modbus address for HP2 compatibility data.
 oq_cic_compat_restore_mode_default: "RESTORE_DEFAULT_OFF" # Default CiC compatibility mode state.

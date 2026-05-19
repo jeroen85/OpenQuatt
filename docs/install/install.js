@@ -6,31 +6,43 @@ const PROFILES = {
   duo: {
     label: "Duo",
     waveshare: {
-      title: "OpenQuatt Duo / Waveshare",
+      title: "OpenQuatt Duo / Waveshare / Wi-Fi",
       chipFamily: "ESP32-S3",
       hardwareLabel: "Waveshare ESP32-S3-Relay-1CH",
-      fileName: "openquatt-duo-waveshare.firmware.factory.bin",
+      fileName: "openquatt-waveshare-duo-wifi.firmware.factory.bin",
     },
-    "heatpump-listener": {
-      title: "OpenQuatt Duo / Heatpump Listener",
+    heatpump_listener: {
+      title: "OpenQuatt Duo / Heatpump Listener / Wi-Fi",
       chipFamily: "ESP32",
-      hardwareLabel: "Heatpump Listener",
-      fileName: "openquatt-duo-heatpump-listener.firmware.factory.bin",
+      hardwareLabel: "Electropaultje Heatpump Listener",
+      fileName: "openquatt-heatpump-listener-duo-wifi.firmware.factory.bin",
+    },
+    heatpump_controller_q: {
+      title: "OpenQuatt Duo / Heatpump Controller Q / Wi-Fi",
+      chipFamily: "ESP32-S3",
+      hardwareLabel: "Electropaultje Heatpump Controller Q-edition",
+      fileName: "openquatt-heatpump-controller-q-duo-wifi.firmware.factory.bin",
     },
   },
   single: {
     label: "Single",
     waveshare: {
-      title: "OpenQuatt Single / Waveshare",
+      title: "OpenQuatt Single / Waveshare / Wi-Fi",
       chipFamily: "ESP32-S3",
       hardwareLabel: "Waveshare ESP32-S3-Relay-1CH",
-      fileName: "openquatt-single-waveshare.firmware.factory.bin",
+      fileName: "openquatt-waveshare-single-wifi.firmware.factory.bin",
     },
-    "heatpump-listener": {
-      title: "OpenQuatt Single / Heatpump Listener",
+    heatpump_listener: {
+      title: "OpenQuatt Single / Heatpump Listener / Wi-Fi",
       chipFamily: "ESP32",
-      hardwareLabel: "Heatpump Listener",
-      fileName: "openquatt-single-heatpump-listener.firmware.factory.bin",
+      hardwareLabel: "Electropaultje Heatpump Listener",
+      fileName: "openquatt-heatpump-listener-single-wifi.firmware.factory.bin",
+    },
+    heatpump_controller_q: {
+      title: "OpenQuatt Single / Heatpump Controller Q / Wi-Fi",
+      chipFamily: "ESP32-S3",
+      hardwareLabel: "Electropaultje Heatpump Controller Q-edition",
+      fileName: "openquatt-heatpump-controller-q-single-wifi.firmware.factory.bin",
     },
   },
 };

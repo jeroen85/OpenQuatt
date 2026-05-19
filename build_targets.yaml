@@ -1,0 +1,99 @@
+# OpenQuatt build-target matrix.
+# `enabled` targets are built and released; `planned` targets are tracked but skipped.
+targets:
+  - id: waveshare_single_wifi
+    status: enabled
+    hardware: waveshare
+    hardware_label: Waveshare ESP32-S3-Relay-1CH
+    topology: single
+    connection: wifi
+    config: configs/waveshare/single_wifi.yaml
+    build_path: .esphome/build/waveshare_single_wifi
+    artifact_name: openquatt-waveshare-single-wifi
+    manifest_name: openquatt-waveshare-single-wifi-ota.manifest.json
+    display_name: OpenQuatt Waveshare Single Wi-Fi
+    chip_family: ESP32-S3
+  - id: waveshare_duo_wifi
+    status: enabled
+    hardware: waveshare
+    hardware_label: Waveshare ESP32-S3-Relay-1CH
+    topology: duo
+    connection: wifi
+    config: configs/waveshare/duo_wifi.yaml
+    build_path: .esphome/build/waveshare_duo_wifi
+    artifact_name: openquatt-waveshare-duo-wifi
+    manifest_name: openquatt-waveshare-duo-wifi-ota.manifest.json
+    display_name: OpenQuatt Waveshare Duo Wi-Fi
+    chip_family: ESP32-S3
+  - id: heatpump_listener_single_wifi
+    status: enabled
+    hardware: heatpump_listener
+    hardware_label: Electropaultje Heatpump Listener
+    topology: single
+    connection: wifi
+    config: configs/heatpump_listener/single_wifi.yaml
+    build_path: .esphome/build/heatpump_listener_single_wifi
+    artifact_name: openquatt-heatpump-listener-single-wifi
+    manifest_name: openquatt-heatpump-listener-single-wifi-ota.manifest.json
+    display_name: OpenQuatt Heatpump Listener Single Wi-Fi
+    chip_family: ESP32
+  - id: heatpump_listener_duo_wifi
+    status: enabled
+    hardware: heatpump_listener
+    hardware_label: Electropaultje Heatpump Listener
+    topology: duo
+    connection: wifi
+    config: configs/heatpump_listener/duo_wifi.yaml
+    build_path: .esphome/build/heatpump_listener_duo_wifi
+    artifact_name: openquatt-heatpump-listener-duo-wifi
+    manifest_name: openquatt-heatpump-listener-duo-wifi-ota.manifest.json
+    display_name: OpenQuatt Heatpump Listener Duo Wi-Fi
+    chip_family: ESP32
+  - id: heatpump_controller_q_single_wifi
+    status: enabled
+    hardware: heatpump_controller_q
+    hardware_label: Electropaultje Heatpump Controller Q-edition
+    topology: single
+    connection: wifi
+    config: configs/heatpump_controller_q/single_wifi.yaml
+    build_path: .esphome/build/heatpump_controller_q_single_wifi
+    artifact_name: openquatt-heatpump-controller-q-single-wifi
+    manifest_name: openquatt-heatpump-controller-q-single-wifi-ota.manifest.json
+    display_name: OpenQuatt Heatpump Controller Q Single Wi-Fi
+    chip_family: ESP32-S3
+  - id: heatpump_controller_q_duo_wifi
+    status: enabled
+    hardware: heatpump_controller_q
+    hardware_label: Electropaultje Heatpump Controller Q-edition
+    topology: duo
+    connection: wifi
+    config: configs/heatpump_controller_q/duo_wifi.yaml
+    build_path: .esphome/build/heatpump_controller_q_duo_wifi
+    artifact_name: openquatt-heatpump-controller-q-duo-wifi
+    manifest_name: openquatt-heatpump-controller-q-duo-wifi-ota.manifest.json
+    display_name: OpenQuatt Heatpump Controller Q Duo Wi-Fi
+    chip_family: ESP32-S3
+  - id: heatpump_controller_q_single_eth
+    status: planned
+    hardware: heatpump_controller_q
+    hardware_label: Electropaultje Heatpump Controller Q-edition
+    topology: single
+    connection: eth
+    config: configs/heatpump_controller_q/single_eth.yaml
+    build_path: .esphome/build/heatpump_controller_q_single_eth
+    artifact_name: openquatt-heatpump-controller-q-single-eth
+    manifest_name: openquatt-heatpump-controller-q-single-eth-ota.manifest.json
+    display_name: OpenQuatt Heatpump Controller Q Single Ethernet
+    chip_family: ESP32-S3
+  - id: heatpump_controller_q_duo_eth
+    status: planned
+    hardware: heatpump_controller_q
+    hardware_label: Electropaultje Heatpump Controller Q-edition
+    topology: duo
+    connection: eth
+    config: configs/heatpump_controller_q/duo_eth.yaml
+    build_path: .esphome/build/heatpump_controller_q_duo_eth
+    artifact_name: openquatt-heatpump-controller-q-duo-eth
+    manifest_name: openquatt-heatpump-controller-q-duo-eth-ota.manifest.json
+    display_name: OpenQuatt Heatpump Controller Q Duo Ethernet
+    chip_family: ESP32-S3

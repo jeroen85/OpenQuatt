@@ -3,7 +3,7 @@
 # ==============================================================================
 # Shared, board-independent runtime blocks:
 # - Core runtime services (logging/API/OTA)
-# - Network fallback + HTTP client
+# - HTTP client
 # - RS485 Modbus transport
 # - Generic diagnostics entities
 # - Runtime debug level controls
@@ -114,21 +114,6 @@ ota:
             ESP_LOGI("oq_fw", "Runtime polling resumed after OTA abort.");
             id(oq_ota_phase_code) = 6;
             id(oq_firmware_update_status).publish_state("Aborted");
-
-# ==============================================================================
-# NETWORK + RECOVERY
-# ==============================================================================
-wifi:
-  min_auth_mode: wpa2
-  ap:
-    ssid: "OpenQuatt"
-    password: "openquatt"
-
-captive_portal:
-
-# Enable ESP Web Tools Wi-Fi provisioning while keeping AP fallback available.
-improv_serial:
-  next_url: "http://{{ip_address}}/"
 
 # ==============================================================================
 # HTTP REQUEST (shared CIC + OTA update)
@@ -507,14 +492,6 @@ sensor:
     web_server:
       sorting_group_id: oq_system_diagnostics
 
-  - platform: wifi_signal
-    name: WiFi Signal
-    icon: mdi:wifi-arrow-left-right
-    update_interval: 300s
-    entity_category: diagnostic
-    web_server:
-      sorting_group_id: oq_system_diagnostics
-
   - platform: template
     id: oq_trend_history_flash_size
     name: Trendhistorie grootte
@@ -543,19 +520,6 @@ sensor:
       sorting_group_id: oq_system_diagnostics
 
 text_sensor:
-  - platform: wifi_info
-    ip_address:
-      name: IP Address
-      icon: mdi:ip-network-outline
-      entity_category: diagnostic
-      web_server:
-        sorting_group_id: oq_system_diagnostics
-    ssid:
-      name: WiFi SSID
-      icon: mdi:wifi
-      entity_category: diagnostic
-      web_server:
-        sorting_group_id: oq_system_diagnostics
   - platform: template
     id: oq_firmware_update_status
     name: Firmware Update Status

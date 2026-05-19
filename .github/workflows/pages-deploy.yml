@@ -5,8 +5,10 @@ on:
     branches: [main]
     paths:
       - "README.md"
+      - "build_targets.yaml"
       - "docs/**"
       - "scripts/dev.py"
+      - "scripts/build_targets.py"
       - "scripts/build_pages_docs.py"
       - "scripts/prepare_pages_site.sh"
       - ".github/workflows/pages-deploy.yml"
