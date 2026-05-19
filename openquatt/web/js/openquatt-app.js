@@ -9775,7 +9775,10 @@ function renderWebServerLogsModal() {
     const boilerPending = Boolean(state.pendingBoilerPowerTestStart);
     const boilerTaskLocked = state.commissioningTaskLock === "boiler";
     const boilerTaskWaitingForCm100 = isCommissioningTaskStatusWaitingForCm100(boilerStatus);
-    const boilerTaskRunning = (boilerActive || boilerPending || boilerTaskLocked || isCommissioningTaskStatusActive(boilerStatus)) && !boilerTaskWaitingForCm100;
+    const boilerTaskTerminal = isCommissioningTaskStatusTerminal(boilerStatus);
+    const boilerTaskRunning = !boilerTaskTerminal &&
+      (boilerActive || boilerPending || boilerTaskLocked || isCommissioningTaskStatusActive(boilerStatus)) &&
+      !boilerTaskWaitingForCm100;
     const boilerRatedPower = getSettingsStatValue("boilerRatedHeatPower");
     const boilerHeatPowerRaw = getSettingsStatValue("boilerHeatPower");
     const boilerHeatPowerNumeric = getEntityNumericValue("boilerHeatPower");
@@ -9792,7 +9795,10 @@ function renderWebServerLogsModal() {
     const autotunePending = Boolean(state.pendingFlowAutotuneStart);
     const autotuneTaskLocked = state.commissioningTaskLock === "autotune";
     const autotuneTaskWaitingForCm100 = isCommissioningTaskStatusWaitingForCm100(autotuneStatus);
-    const autotuneTaskRunning = (autotunePending || autotuneTaskLocked || isCommissioningTaskStatusActive(autotuneStatus)) && !autotuneTaskWaitingForCm100;
+    const autotuneTaskTerminal = isCommissioningTaskStatusTerminal(autotuneStatus);
+    const autotuneTaskRunning = !autotuneTaskTerminal &&
+      (autotunePending || autotuneTaskLocked || isCommissioningTaskStatusActive(autotuneStatus)) &&
+      !autotuneTaskWaitingForCm100;
     const flowKpSuggested = getSettingsStatValue("flowKpSuggested", { decimals: 5, trimTrailingZeros: true });
     const flowKiSuggested = getSettingsStatValue("flowKiSuggested", { decimals: 5, trimTrailingZeros: true });
     const boilerResultReady = /DONE|APPLIED/.test(String(boilerStatus || "").toUpperCase());
