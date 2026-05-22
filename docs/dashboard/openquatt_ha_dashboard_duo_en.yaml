@@ -2687,7 +2687,7 @@ views:
               <summary><strong>Parameter explanation</strong></summary>
 
 
-              - **Cooling Minimum Supply Temp** sets the lower limit for cooling supply temperature.
+              - **Cooling Minimum Supply Temp** limits the cooling target; OpenQuatt uses the higher value of this setting and the dew-point-safe supply limit.
               - **Cooling Demand Max** limits the maximum cooling demand the controller may build.
               - **Cooling Restart Delta** sets how far supply temperature must rise above target before the water cycle restarts.
               - **Cooling Request On Delta** sets how far room temperature must rise above setpoint before cooling demand starts.

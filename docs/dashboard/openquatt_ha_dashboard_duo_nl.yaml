@@ -2832,8 +2832,9 @@ views:
 
 
 
-              - **Cooling Minimum Supply Temp** begrenst de minimale
-              koel-aanvoertemperatuur.
+              - **Cooling Minimum Supply Temp** begrenst het koeldoel;
+              OpenQuatt gebruikt de hoogste waarde van deze instelling en de
+              dauwpuntveilige aanvoergrens.
 
               - **Cooling Demand Max** begrenst de maximale koelvraag.
 

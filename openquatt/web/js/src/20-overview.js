@@ -754,7 +754,7 @@
     if (isCoolingOverviewActive()) {
       return {
         title: "Koeltemperaturen",
-        copy: "De belangrijkste temperaturen voor koeldoel, dauwpuntveiligheid en comfort.",
+        copy: "De belangrijkste temperaturen voor kamercomfort, koeldoel en dauwpuntveiligheid.",
         rows: [
           { label: "Kamertemperatuur", key: "roomTemp" },
           { label: "Kamer setpoint", key: "roomSetpoint" },

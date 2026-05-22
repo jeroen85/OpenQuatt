@@ -178,30 +178,13 @@ sensor:
     accuracy_decimals: 1
     update_interval: 5s
     lambda: |-
-      // Cooling uses a simple cascade:
-      // - the configured floor and dew-point-safe floor define the lowest allowed target
-      // - room overshoot adds a fixed comfort offset above that floor
-      // This keeps strong cooling possible when the room is clearly too warm,
-      // but favors warmer water and calmer modulation near setpoint.
+      // Keep room comfort in the room-demand hysteresis. The water target is only
+      // the coldest allowed supply target from configuration and dew-point safety.
       float base_floor_c = id(cooling_min_supply_temp).state;
       if (id(cooling_effective_min_supply_temp).has_state() && !isnan(id(cooling_effective_min_supply_temp).state)) {
         base_floor_c = fmaxf(base_floor_c, id(cooling_effective_min_supply_temp).state);
       }
-
-      float comfort_offset_c = 0.8f;
-      if (id(room_temp_selected).has_state() && !isnan(id(room_temp_selected).state) &&
-          id(room_setpoint_selected).has_state() && !isnan(id(room_setpoint_selected).state)) {
-        const float room_error_c = id(room_temp_selected).state - id(room_setpoint_selected).state;
-        if (room_error_c > 1.2f) comfort_offset_c = 0.0f;
-        else if (room_error_c > 0.8f) comfort_offset_c = 0.4f;
-        else if (room_error_c > 0.4f) comfort_offset_c = 0.8f;
-        else if (room_error_c > 0.2f) comfort_offset_c = 1.2f;
-        else comfort_offset_c = 1.6f;
-      }
-
-      float target_c = base_floor_c + comfort_offset_c;
-      if (target_c < base_floor_c) target_c = base_floor_c;
-      return target_c;
+      return base_floor_c;
     web_server:
       sorting_group_id: oq_cooling
 

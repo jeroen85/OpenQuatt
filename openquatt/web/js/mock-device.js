@@ -796,7 +796,7 @@
       ["Cooling Effective Minimum Supply Temp", 18.1, "°C"],
       ["Cooling Fallback Night Minimum Outdoor Temp", 14.3, "°C"],
       ["Cooling Fallback Minimum Supply Temp", 19.0, "°C"],
-      ["Cooling Supply Target", 18.6, "°C"],
+      ["Cooling Supply Target", 18.0, "°C"],
       ["Cooling Supply Error", 0.9, "°C"],
       ["Cooling Demand (raw)", 2, ""],
       ["HP1 - Power Input", 0, "W"],
@@ -1333,7 +1333,7 @@
       setNumber("Cooling Effective Minimum Supply Temp", wave(18.0, 0.15), "°C");
       setNumber("Cooling Fallback Night Minimum Outdoor Temp", wave(15.4, 0.1), "°C");
       setNumber("Cooling Fallback Minimum Supply Temp", wave(19.0, 0.1), "°C");
-      setNumber("Cooling Supply Target", wave(18.6, 0.12), "°C");
+      setNumber("Cooling Supply Target", wave(18.0, 0.12), "°C");
       setNumber("Cooling Supply Error", wave(1.0, 0.2), "°C");
       setNumber("Cooling Demand (raw)", waveInt(2.2, 0.6), "");
       setNumber("Cooling Power Input", wave(455, 18), "W");

@@ -2461,7 +2461,7 @@ views:
               <summary><strong>Uitleg parameters</strong></summary>
 
 
-              - **Cooling Minimum Supply Temp** begrenst de minimale koel-aanvoertemperatuur.
+              - **Cooling Minimum Supply Temp** begrenst het koeldoel; OpenQuatt gebruikt de hoogste waarde van deze instelling en de dauwpuntveilige aanvoergrens.
               - **Cooling Demand Max** begrenst de maximale koelvraag.
               - **Cooling Restart Delta** bepaalt hoeveel de aanvoer boven target moet liggen voordat de watercyclus opnieuw start.
               - **Cooling Request On Delta** bepaalt hoeveel de kamer boven setpoint moet zitten voordat koelvraag start.
