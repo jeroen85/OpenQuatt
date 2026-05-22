@@ -763,22 +763,33 @@ const LOGO_MARKUP = `
     ...COMPRESSOR_SETTING_KEYS,
     ...SILENT_SETTING_KEYS,
   ];
+  const SETTINGS_BACKUP_WRITABLE_DOMAINS = new Set(["number", "select", "switch", "time", "datetime"]);
+  const SETTINGS_BACKUP_EXPECTED_EXTRA_KEYS = new Set(["setupComplete", "openquattResumeAt", "firmwareUpdateChannel"]);
+  const SETTINGS_BACKUP_EXCLUDED_KEYS = new Set([
+    "installationTopology",
+    ...COMMISSIONING_STATE_KEYS,
+    "trendHistoryFlashAvailable",
+    "trendHistoryFlashOldest",
+    "trendHistoryFlashNewest",
+    "trendHistoryFlashLastFlush",
+    "trendHistoryFlashSize",
+    "trendHistoryFlashWrites",
+    "coolingGuardMode",
+    "coolingFallbackNightMinOutdoorTemp",
+    "coolingFallbackMinSupplyTemp",
+    "coolingEffectiveMinSupplyTemp",
+  ]);
+  // Keep this aligned with persisted UI settings. The build checks that new
+  // writable settings are backed up or explicitly excluded above.
   const SETTINGS_BACKUP_SECTIONS = [
     {
       id: "installation",
       label: "Installatie",
       keys: [
         "setupComplete",
-        "installationTopology",
         "hpGeneration",
         "boilerCvAssistEnabled",
         "boilerRatedHeatPower",
-        "flowControlMode",
-        "flowSetpoint",
-        "manualIpwm",
-        "flowKp",
-        "flowKi",
-        "firmwareUpdateChannel",
       ],
     },
     {
@@ -787,26 +798,21 @@ const LOGO_MARKUP = `
       keys: [
         "strategy",
         "openquattEnabled",
-        "boilerCvAssistEnabled",
         "manualCoolingEnable",
         "cicCompatibilityMode",
-        "trendHistoryEnabled",
-        "trendHistoryFlashEnabled",
-        "webServerLogHistoryEnabled",
         "silentModeOverride",
         "openquattResumeAt",
       ],
     },
     {
-      id: "limits",
-      label: "Limieten",
+      id: "comfort",
+      label: "Comfort",
       keys: [
         "silentStartTime",
         "silentEndTime",
         "dayMax",
         "silentMax",
         "maxWater",
-        "minRuntime",
       ],
     },
     {
@@ -836,17 +842,34 @@ const LOGO_MARKUP = `
     {
       id: "flow",
       label: "Flow",
-      keys: ["flowControlMode", "flowSetpoint", "manualIpwm"],
+      keys: ["flowControlMode", "flowSetpoint", "manualIpwm", "flowKp", "flowKi"],
     },
     {
       id: "cooling",
       label: "Koeling",
-      keys: ["coolingWithoutDewPointMode"],
+      keys: [
+        "coolingMinimumSupplyTemp",
+        "coolingDemandMax",
+        "coolingRequestOnDelta",
+        "coolingRequestOffDelta",
+        "coolingSafetyMargin",
+        "coolingWithoutDewPointMode",
+      ],
     },
     {
       id: "compressor",
       label: "Compressor",
-      keys: ["hp1ExcludedA", "hp1ExcludedB", "hp2ExcludedA", "hp2ExcludedB"],
+      keys: ["minRuntime", "hp1ExcludedA", "hp1ExcludedB", "hp2ExcludedA", "hp2ExcludedB"],
+    },
+    {
+      id: "system",
+      label: "Systeem",
+      keys: [
+        "trendHistoryEnabled",
+        "trendHistoryFlashEnabled",
+        "webServerLogHistoryEnabled",
+        "firmwareUpdateChannel",
+      ],
     },
   ];
   const SETTINGS_BACKUP_SCHEMA_VERSION = 1;

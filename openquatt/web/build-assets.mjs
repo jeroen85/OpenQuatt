@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { checkSettingsBackupConfig } from "./check-settings-backup.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -84,4 +85,5 @@ async function buildBundle(bundle) {
   console.log(`${bundle.label} bundle rebuilt: ${path.relative(__dirname, bundle.output)}`);
 }
 
+await checkSettingsBackupConfig();
 await Promise.all(bundles.map(buildBundle));
