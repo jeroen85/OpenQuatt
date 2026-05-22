@@ -916,6 +916,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     deviceReconnectLastError: "",
     entitySyncFailureCount: 0,
     lastEntitySyncAt: 0,
+    lastEntityResponseAt: 0,
     overviewMetadataHydrated: false,
     overviewMetadataHydrating: false,
     busyAction: "",
@@ -2525,14 +2526,16 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
   }
 
   function getConnectivityStatus() {
+    const lastEntityResponseAt = Math.max(Number(state.lastEntityResponseAt || 0), Number(state.lastEntitySyncAt || 0));
+    const reconnectStartedAt = Number(state.deviceReconnectStartedAt || 0);
+    if (lastEntityResponseAt > 0 && (!state.deviceReconnectMode || lastEntityResponseAt >= reconnectStartedAt)) {
+      return "Verbonden";
+    }
     if (state.deviceReconnectMode) {
       if (isDeviceReconnectRecovering()) {
         return "Verbonden";
       }
       return state.deviceReconnectMode === "reconnect" ? "Offline" : "Bezig";
-    }
-    if (Number(state.lastEntitySyncAt || 0) > 0 && !state.entitySyncFailureCount) {
-      return "Verbonden";
     }
     if (hasEntity("status") && !isEntityActive("status")) {
       return "Offline";
@@ -4207,6 +4210,10 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
         batch.map(async (key) => ({ key, payload: await fetchEntityPayload(key, detail) }))
       );
       results.push(...batchResults);
+    }
+
+    if (results.some((result) => result.status === "fulfilled")) {
+      state.lastEntityResponseAt = Date.now();
     }
 
     let firstError = "";

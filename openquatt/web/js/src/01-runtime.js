@@ -44,6 +44,7 @@
     deviceReconnectLastError: "",
     entitySyncFailureCount: 0,
     lastEntitySyncAt: 0,
+    lastEntityResponseAt: 0,
     overviewMetadataHydrated: false,
     overviewMetadataHydrating: false,
     busyAction: "",

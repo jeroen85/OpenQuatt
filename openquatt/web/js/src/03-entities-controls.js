@@ -624,6 +624,10 @@
       results.push(...batchResults);
     }
 
+    if (results.some((result) => result.status === "fulfilled")) {
+      state.lastEntityResponseAt = Date.now();
+    }
+
     let firstError = "";
     results.forEach((result, index) => {
       const key = keys[index];
