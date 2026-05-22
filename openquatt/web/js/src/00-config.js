@@ -141,6 +141,7 @@ const LOGO_MARKUP = `
     coolingDemandRaw: { domain: "sensor", name: "Cooling Demand (raw)", optional: true },
     coolingMinimumSupplyTemp: { domain: "number", name: "Cooling Minimum Supply Temp", optional: true },
     coolingDemandMax: { domain: "number", name: "Cooling Demand Max", optional: true },
+    coolingRestartDelta: { domain: "number", name: "Cooling Restart Delta", optional: true },
     coolingSafetyMargin: { domain: "number", name: "Cooling Safety Margin", optional: true },
     coolingRequestOnDelta: { domain: "number", name: "Cooling Request On Delta", optional: true },
     coolingRequestOffDelta: { domain: "number", name: "Cooling Request Off Delta", optional: true },
@@ -422,6 +423,7 @@ const LOGO_MARKUP = `
   const COOLING_SETTING_KEYS = [
     "coolingMinimumSupplyTemp",
     "coolingDemandMax",
+    "coolingRestartDelta",
     "coolingRequestOnDelta",
     "coolingRequestOffDelta",
     "coolingSafetyMargin",

@@ -145,6 +145,7 @@ const LOGO_MARKUP = `
     coolingDemandRaw: { domain: "sensor", name: "Cooling Demand (raw)", optional: true },
     coolingMinimumSupplyTemp: { domain: "number", name: "Cooling Minimum Supply Temp", optional: true },
     coolingDemandMax: { domain: "number", name: "Cooling Demand Max", optional: true },
+    coolingRestartDelta: { domain: "number", name: "Cooling Restart Delta", optional: true },
     coolingSafetyMargin: { domain: "number", name: "Cooling Safety Margin", optional: true },
     coolingRequestOnDelta: { domain: "number", name: "Cooling Request On Delta", optional: true },
     coolingRequestOffDelta: { domain: "number", name: "Cooling Request Off Delta", optional: true },
@@ -426,6 +427,7 @@ const LOGO_MARKUP = `
   const COOLING_SETTING_KEYS = [
     "coolingMinimumSupplyTemp",
     "coolingDemandMax",
+    "coolingRestartDelta",
     "coolingRequestOnDelta",
     "coolingRequestOffDelta",
     "coolingSafetyMargin",
@@ -10827,6 +10829,7 @@ function renderWebServerLogsModal() {
     const tuningFields = [
       renderSettingsNumberField("coolingMinimumSupplyTemp", "Minimale koel-aanvoer", "Ondergrens voor de aanvoertemperatuur waar de koelregeling op mag mikken."),
       renderSettingsNumberField("coolingDemandMax", "Maximale koelvraag", "Bovengrens voor de koelvraag die de regelaar mag opbouwen."),
+      renderSettingsNumberField("coolingRestartDelta", "Herstartmarge watertemperatuur", "Na het bereiken van het koel-aanvoerdoel start de watercyclus pas opnieuw zodra de aanvoer deze marge boven het doel ligt."),
       renderSettingsNumberField("coolingRequestOnDelta", "Koelvraag start boven setpoint", "Koelvraag wordt actief zodra de kamer warmer is dan setpoint plus deze marge."),
       renderSettingsNumberField("coolingRequestOffDelta", "Koelvraag stopt boven setpoint", "Koelvraag valt weer af zodra de kamer koeler is dan setpoint plus deze marge."),
       renderSettingsNumberField("coolingSafetyMargin", "Dauwpunt veiligheidsmarge", "Extra marge boven het geselecteerde dauwpunt voor de minimale veilige watertemperatuur."),

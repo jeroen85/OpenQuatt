@@ -717,6 +717,7 @@
       ["Power House demand fall time", 3, 1, 10, 1, "min"],
       ["Cooling Minimum Supply Temp", 18, 5, 24, 0.5, "°C"],
       ["Cooling Demand Max", 4, 0, 20, 1, "step"],
+      ["Cooling Restart Delta", 1.0, 0, 2, 0.1, "°C"],
       ["Cooling Request On Delta", 0.4, 0, 2, 0.1, "°C"],
       ["Cooling Request Off Delta", 0.1, 0, 2, 0.1, "°C"],
       ["Cooling Safety Margin", 2, 0, 4, 0.1, "°C"],
