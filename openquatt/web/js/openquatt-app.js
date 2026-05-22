@@ -2525,15 +2525,17 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
   }
 
   function getConnectivityStatus() {
+    if (state.deviceReconnectMode) {
+      if (isDeviceReconnectRecovering()) {
+        return "Verbonden";
+      }
+      return state.deviceReconnectMode === "reconnect" ? "Offline" : "Bezig";
+    }
+    if (Number(state.lastEntitySyncAt || 0) > 0 && !state.entitySyncFailureCount) {
+      return "Verbonden";
+    }
     if (hasEntity("status") && !isEntityActive("status")) {
       return "Offline";
-    }
-    if (state.deviceReconnectMode) {
-      return isDeviceReconnectRecovering() ? "Verbonden" : "Bezig";
-    }
-    const ip = getDeviceIpAddress();
-    if (ip && ip !== "—") {
-      return "Verbonden";
     }
     return "Bezig";
   }
