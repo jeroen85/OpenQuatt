@@ -2492,65 +2492,65 @@
             ${tuningFields.join("")}
           </div>
         ` : ""}
-        ${hasFallbackSettings ? `
-          <details class="oq-settings-callout oq-settings-callout--cooling">
-          <summary>Fallback-regel bekijken</summary>
-          <div class="oq-settings-callout-body">
-            <p>Onder de 20°C buiten blijft fallback-cooling uit. Daarboven gebruikt OpenQuatt 19/20/21/22°C als minimum water, met extra correctie voor warme nachten.</p>
-            <div class="oq-settings-rule-groups">
-              <section class="oq-settings-rule-group">
-                <h4>Buitentemperatuur</h4>
-                <div class="oq-settings-rule-table">
-                  <div class="oq-settings-rule-row">
-                    <span class="oq-settings-rule-key">Onder 20°C</span>
-                    <span class="oq-settings-rule-value">Uit</span>
-                  </div>
-                  <div class="oq-settings-rule-row">
-                    <span class="oq-settings-rule-key">20-24°C</span>
-                    <span class="oq-settings-rule-value">Min. water 19°C</span>
-                  </div>
-                  <div class="oq-settings-rule-row">
-                    <span class="oq-settings-rule-key">24-28°C</span>
-                    <span class="oq-settings-rule-value">Min. water 20°C</span>
-                  </div>
-                  <div class="oq-settings-rule-row">
-                    <span class="oq-settings-rule-key">28-32°C</span>
-                    <span class="oq-settings-rule-value">Min. water 21°C</span>
-                  </div>
-                  <div class="oq-settings-rule-row">
-                    <span class="oq-settings-rule-key">Boven 32°C</span>
-                    <span class="oq-settings-rule-value">Min. water 22°C</span>
-                  </div>
-                </div>
-              </section>
-              <section class="oq-settings-rule-group">
-                <h4>Nachtcorrectie</h4>
-                <div class="oq-settings-rule-table">
-                  <div class="oq-settings-rule-row">
-                    <span class="oq-settings-rule-key">Onder 18°C</span>
-                    <span class="oq-settings-rule-value">+0°C</span>
-                  </div>
-                  <div class="oq-settings-rule-row">
-                    <span class="oq-settings-rule-key">18-19°C</span>
-                    <span class="oq-settings-rule-value">+1°C</span>
-                  </div>
-                  <div class="oq-settings-rule-row">
-                    <span class="oq-settings-rule-key">19-20°C</span>
-                    <span class="oq-settings-rule-value">+2°C</span>
-                  </div>
-                  <div class="oq-settings-rule-row">
-                    <span class="oq-settings-rule-key">Vanaf 20°C</span>
-                    <span class="oq-settings-rule-value">Fallback uit</span>
-                  </div>
-                </div>
-              </section>
-            </div>
-          </div>
-        </details>
-        ` : ""}
         ${(hasFallbackSettings || fallbackStatusFields.length) ? `
           <div class="oq-settings-grid">
             ${hasFallbackSettings ? renderSettingsOptionCardsField("coolingWithoutDewPointMode", "Koeling zonder dauwpuntbeveiliging", "Kies of OpenQuatt zonder dauwpuntbron volledig moet blokkeren, of een conservatieve fallback mag gebruiken.", fallbackModeCopy, "oq-settings-field--span-2") : ""}
+            ${hasFallbackSettings ? `
+              <details class="oq-settings-callout oq-settings-callout--cooling oq-settings-callout--inline">
+              <summary>Fallback-regel bekijken</summary>
+              <div class="oq-settings-callout-body">
+                <p>Onder de 20°C buiten blijft fallback-cooling uit. Daarboven gebruikt OpenQuatt 19/20/21/22°C als minimum water, met extra correctie voor warme nachten.</p>
+                <div class="oq-settings-rule-groups">
+                  <section class="oq-settings-rule-group">
+                    <h4>Buitentemperatuur</h4>
+                    <div class="oq-settings-rule-table">
+                      <div class="oq-settings-rule-row">
+                        <span class="oq-settings-rule-key">Onder 20°C</span>
+                        <span class="oq-settings-rule-value">Uit</span>
+                      </div>
+                      <div class="oq-settings-rule-row">
+                        <span class="oq-settings-rule-key">20-24°C</span>
+                        <span class="oq-settings-rule-value">Min. water 19°C</span>
+                      </div>
+                      <div class="oq-settings-rule-row">
+                        <span class="oq-settings-rule-key">24-28°C</span>
+                        <span class="oq-settings-rule-value">Min. water 20°C</span>
+                      </div>
+                      <div class="oq-settings-rule-row">
+                        <span class="oq-settings-rule-key">28-32°C</span>
+                        <span class="oq-settings-rule-value">Min. water 21°C</span>
+                      </div>
+                      <div class="oq-settings-rule-row">
+                        <span class="oq-settings-rule-key">Boven 32°C</span>
+                        <span class="oq-settings-rule-value">Min. water 22°C</span>
+                      </div>
+                    </div>
+                  </section>
+                  <section class="oq-settings-rule-group">
+                    <h4>Nachtcorrectie</h4>
+                    <div class="oq-settings-rule-table">
+                      <div class="oq-settings-rule-row">
+                        <span class="oq-settings-rule-key">Onder 18°C</span>
+                        <span class="oq-settings-rule-value">+0°C</span>
+                      </div>
+                      <div class="oq-settings-rule-row">
+                        <span class="oq-settings-rule-key">18-19°C</span>
+                        <span class="oq-settings-rule-value">+1°C</span>
+                      </div>
+                      <div class="oq-settings-rule-row">
+                        <span class="oq-settings-rule-key">19-20°C</span>
+                        <span class="oq-settings-rule-value">+2°C</span>
+                      </div>
+                      <div class="oq-settings-rule-row">
+                        <span class="oq-settings-rule-key">Vanaf 20°C</span>
+                        <span class="oq-settings-rule-value">Fallback uit</span>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+              </div>
+            </details>
+            ` : ""}
             ${fallbackStatusFields.join("")}
           </div>
         ` : ""}
