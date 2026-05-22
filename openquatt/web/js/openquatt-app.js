@@ -11319,7 +11319,7 @@ function renderWebServerLogsModal() {
 
   function renderSettingsCoolingSection() {
     const tuningFields = [
-      renderSettingsNumberField("coolingMinimumSupplyTemp", "Minimale koel-aanvoer", "Ondergrens voor de aanvoertemperatuur waar de koelregeling op mag mikken."),
+      renderSettingsNumberField("coolingMinimumSupplyTemp", "Minimale koel-aanvoer", "Ondergrens voor het koeldoel. OpenQuatt gebruikt de hoogste waarde van deze instelling en de dauwpuntveilige grens."),
       renderSettingsNumberField("coolingDemandMax", "Maximale koelvraag", "Bovengrens voor de koelvraag die de regelaar mag opbouwen."),
       renderSettingsNumberField("coolingRestartDelta", "Herstartmarge watertemperatuur", "Na het bereiken van het koel-aanvoerdoel start de watercyclus pas opnieuw zodra de aanvoer deze marge boven het doel ligt."),
       renderSettingsNumberField("coolingRequestOnDelta", "Koelvraag start boven setpoint", "Koelvraag wordt actief zodra de kamer warmer is dan setpoint plus deze marge."),
@@ -11346,7 +11346,7 @@ function renderWebServerLogsModal() {
     return renderSettingsSection(
       "Koeling",
       "Koelingsinstellingen",
-      "Stel hier in wanneer koelvraag ontstaat, hoe ver de regeling mag koelen en welke dauwpuntmarge gebruikt wordt.",
+      "Stel hier in wanneer koelvraag ontstaat, hoe koud het water mag worden en hoeveel het water mag opwarmen voor herstart.",
       `
         ${tuningFields.length ? `
           <div class="oq-settings-grid">
@@ -12637,7 +12637,7 @@ function renderWebServerLogsModal() {
     if (isCoolingOverviewActive()) {
       return {
         title: "Koeltemperaturen",
-        copy: "De belangrijkste temperaturen voor koeldoel, dauwpuntveiligheid en comfort.",
+        copy: "De belangrijkste temperaturen voor kamercomfort, koeldoel en dauwpuntveiligheid.",
         rows: [
           { label: "Kamertemperatuur", key: "roomTemp" },
           { label: "Kamer setpoint", key: "roomSetpoint" },
