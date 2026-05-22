@@ -2837,6 +2837,9 @@ views:
 
               - **Cooling Demand Max** begrenst de maximale koelvraag.
 
+              - **Cooling Restart Delta** bepaalt hoeveel de aanvoer boven
+              target moet liggen voordat de watercyclus opnieuw start.
+
               - **Cooling Request On Delta** bepaalt hoeveel de kamer boven
               setpoint moet zitten voordat koelvraag start.
 
@@ -2860,6 +2863,8 @@ views:
                 name: Cooling minimum supply temp
               - entity: number.openquatt_cooling_demand_max
                 name: Cooling demand max
+              - entity: number.openquatt_cooling_restart_delta
+                name: Cooling restart delta
               - entity: number.openquatt_cooling_request_on_delta
                 name: Cooling request on delta
               - entity: number.openquatt_cooling_request_off_delta

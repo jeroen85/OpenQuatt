@@ -37,6 +37,11 @@ globals:
     restore_value: false
     initial_value: '0'
 
+  - id: oq_cooling_water_cycle_active
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
   - id: oq_cooling_request_last_loop_ms
     type: uint32_t
     restore_value: false
@@ -97,6 +102,22 @@ number:
     optimistic: true
     restore_value: true
     initial_value: 4
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_cooling
+
+  - platform: template
+    id: cooling_restart_delta
+    name: "Cooling Restart Delta"
+    icon: mdi:thermometer-lines
+    unit_of_measurement: "°C"
+    min_value: 0.0
+    max_value: 2.0
+    step: 0.1
+    mode: slider
+    optimistic: true
+    restore_value: true
+    initial_value: 1.0
     entity_category: config
     web_server:
       sorting_group_id: oq_cooling
@@ -243,11 +264,28 @@ interval:
             id(oq_cooling_demand_raw) = 0;
             id(oq_cooling_pid_integral) = 0.0f;
             id(oq_cooling_pid_last_error_c) = 0.0f;
+            id(oq_cooling_water_cycle_active) = false;
             return;
           }
 
           // Cooling PI(D): positive error means the system supply is still warmer than target.
           const float error_c = id(oq_system_supply_temp).state - id(cooling_supply_target).state;
+          float restart_delta_c = id(cooling_restart_delta).state;
+          if (isnan(restart_delta_c) || restart_delta_c < 0.0f) restart_delta_c = 1.0f;
+          if (restart_delta_c > 2.0f) restart_delta_c = 2.0f;
+
+          // Add water-side restart hysteresis. Once the supply has reached target,
+          // wait until it warms above target by the configured delta before allowing
+          // a new compressor request. This keeps room demand latched while avoiding
+          // short water-temperature cycles around the target.
+          bool water_cycle_active = id(oq_cooling_water_cycle_active);
+          if (error_c <= 0.0f) {
+            water_cycle_active = false;
+          } else if (!water_cycle_active && error_c >= restart_delta_c) {
+            water_cycle_active = true;
+          }
+          id(oq_cooling_water_cycle_active) = water_cycle_active;
+
           float kp = id(cooling_pid_kp).state;
           float ki = id(cooling_pid_ki).state;
           float kd = id(cooling_pid_kd).state;
@@ -268,6 +306,13 @@ interval:
               id(room_setpoint_selected).has_state() && !isnan(id(room_setpoint_selected).state)) {
             room_error_c = id(room_temp_selected).state - id(room_setpoint_selected).state;
             room_error_valid = true;
+          }
+
+          if (!water_cycle_active) {
+            id(oq_cooling_demand_raw) = 0;
+            id(oq_cooling_pid_integral) = 0.0f;
+            id(oq_cooling_pid_last_error_c) = error_c;
+            return;
           }
 
           int demand_max = (int) lroundf(id(cooling_demand_max_f).state);
@@ -305,6 +350,7 @@ interval:
             if (safe_gap_c <= stop_safe_floor_limit_c) {
               demand = 0;
               integral = 0.0f;
+              id(oq_cooling_water_cycle_active) = false;
             } else if (safe_gap_c <= near_safe_floor_limit_c) {
               if (demand > 1) demand = 1;
               integral = fminf(integral, 1.0f);
