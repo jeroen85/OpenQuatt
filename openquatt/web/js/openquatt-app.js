@@ -861,6 +861,7 @@ const LOGO_MARKUP = `
   const FAST_POLL_INTERVAL_MS = 5000;
   const BULK_POLL_INTERVAL_MS = 10000;
   const STATIC_POLL_INTERVAL_MS = 60000;
+  const CONNECTIVITY_PROBE_TIMEOUT_MS = 1500;
   const SUPPLEMENTARY_STATUS_REFRESH_INTERVAL_MS = 30000;
   const LOGIN_MODAL_AUTH_STATUS_REFRESH_INTERVAL_MS = 1000;
   const HIDDEN_POLL_INTERVAL_MS = 30000;
@@ -2524,12 +2525,16 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       getEntitySignatureFragment("hpGeneration"),
       getEntitySignatureFragment("projectVersionText"),
       getEntitySignatureFragment("releaseChannelText"),
+      getConnectivityStatus(),
     ].join("|");
   }
 
   function getConnectivityStatus() {
     const lastEntityResponseAt = Math.max(Number(state.lastEntityResponseAt || 0), Number(state.lastEntitySyncAt || 0));
     const reconnectStartedAt = Number(state.deviceReconnectStartedAt || 0);
+    if (state.entitySyncFailureCount > 0 && !state.deviceReconnectMode) {
+      return "Bezig";
+    }
     if (lastEntityResponseAt > 0 && (!state.deviceReconnectMode || lastEntityResponseAt >= reconnectStartedAt)) {
       return "Verbonden";
     }
@@ -4200,6 +4205,48 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     }
   }
 
+  async function refreshConnectivityProbe() {
+    const entity = ENTITY_DEFS.status || ENTITY_DEFS.setupComplete;
+    if (!entity) {
+      return { ok: true, message: "" };
+    }
+    const timeoutMs = state.deviceReconnectMode ? RECONNECT_ENTITY_REQUEST_TIMEOUT_MS : CONNECTIVITY_PROBE_TIMEOUT_MS;
+    const url = buildEntityPath(entity.domain, entity.name);
+
+    if (typeof AbortController === "function") {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(url, { cache: "no-store", signal: controller.signal });
+        state.lastEntityResponseAt = Date.now();
+        return {
+          ok: response.ok || response.status === 404,
+          message: response.ok || response.status === 404 ? "" : `${entity.name} HTTP ${response.status}`,
+        };
+      } catch (error) {
+        return {
+          ok: false,
+          message: controller.signal.aborted
+            ? `${entity.name} request timed out after ${timeoutMs}ms`
+            : error.message || String(error),
+        };
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
+    }
+
+    try {
+      const response = await fetch(url, { cache: "no-store" });
+      state.lastEntityResponseAt = Date.now();
+      return {
+        ok: response.ok || response.status === 404,
+        message: response.ok || response.status === 404 ? "" : `${entity.name} HTTP ${response.status}`,
+      };
+    } catch (error) {
+      return { ok: false, message: error.message || String(error) };
+    }
+  }
+
   async function refreshEntities(keys, detail = "state", options = {}) {
     const requestedConcurrency = Number(options.concurrency);
     const concurrency = Number.isFinite(requestedConcurrency) && requestedConcurrency > 0
@@ -5623,6 +5670,14 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     state.lastEntitySyncAttemptAt = now;
     try {
       const reconnectModeBefore = state.deviceReconnectMode;
+      const probe = await refreshConnectivityProbe();
+      if (!probe.ok) {
+        noteEntityRefreshFailure(probe.message);
+        if (!isPrefetchOverview) {
+          render();
+        }
+        return;
+      }
       await refreshEntities([...new Set(keys)], isPrefetchOverview ? "state" : appView === "settings" ? "all" : "state", {
         concurrency: forceFast && isOverviewLike ? FAST_VIEW_ENTITY_REFRESH_CONCURRENCY : ENTITY_REFRESH_CONCURRENCY,
       });

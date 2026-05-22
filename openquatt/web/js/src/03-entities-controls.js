@@ -610,6 +610,48 @@
     }
   }
 
+  async function refreshConnectivityProbe() {
+    const entity = ENTITY_DEFS.status || ENTITY_DEFS.setupComplete;
+    if (!entity) {
+      return { ok: true, message: "" };
+    }
+    const timeoutMs = state.deviceReconnectMode ? RECONNECT_ENTITY_REQUEST_TIMEOUT_MS : CONNECTIVITY_PROBE_TIMEOUT_MS;
+    const url = buildEntityPath(entity.domain, entity.name);
+
+    if (typeof AbortController === "function") {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(url, { cache: "no-store", signal: controller.signal });
+        state.lastEntityResponseAt = Date.now();
+        return {
+          ok: response.ok || response.status === 404,
+          message: response.ok || response.status === 404 ? "" : `${entity.name} HTTP ${response.status}`,
+        };
+      } catch (error) {
+        return {
+          ok: false,
+          message: controller.signal.aborted
+            ? `${entity.name} request timed out after ${timeoutMs}ms`
+            : error.message || String(error),
+        };
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
+    }
+
+    try {
+      const response = await fetch(url, { cache: "no-store" });
+      state.lastEntityResponseAt = Date.now();
+      return {
+        ok: response.ok || response.status === 404,
+        message: response.ok || response.status === 404 ? "" : `${entity.name} HTTP ${response.status}`,
+      };
+    } catch (error) {
+      return { ok: false, message: error.message || String(error) };
+    }
+  }
+
   async function refreshEntities(keys, detail = "state", options = {}) {
     const requestedConcurrency = Number(options.concurrency);
     const concurrency = Number.isFinite(requestedConcurrency) && requestedConcurrency > 0
@@ -2033,6 +2075,14 @@
     state.lastEntitySyncAttemptAt = now;
     try {
       const reconnectModeBefore = state.deviceReconnectMode;
+      const probe = await refreshConnectivityProbe();
+      if (!probe.ok) {
+        noteEntityRefreshFailure(probe.message);
+        if (!isPrefetchOverview) {
+          render();
+        }
+        return;
+      }
       await refreshEntities([...new Set(keys)], isPrefetchOverview ? "state" : appView === "settings" ? "all" : "state", {
         concurrency: forceFast && isOverviewLike ? FAST_VIEW_ENTITY_REFRESH_CONCURRENCY : ENTITY_REFRESH_CONCURRENCY,
       });
