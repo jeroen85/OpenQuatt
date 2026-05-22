@@ -785,6 +785,58 @@
     }
   }
 
+  function shouldPollLoginAuthStatus() {
+    if (state.nativeOpen || state.systemModal !== "login") {
+      return false;
+    }
+    const status = state.authStatus || {};
+    return status.setup_window_active !== true;
+  }
+
+  function stopLoginAuthStatusPolling() {
+    if (!state.loginAuthStatusPollTimer) {
+      return;
+    }
+    window.clearTimeout(state.loginAuthStatusPollTimer);
+    state.loginAuthStatusPollTimer = null;
+  }
+
+  function scheduleLoginAuthStatusPolling(delayMs = LOGIN_MODAL_AUTH_STATUS_REFRESH_INTERVAL_MS) {
+    if (state.loginAuthStatusPollTimer || !shouldPollLoginAuthStatus()) {
+      return;
+    }
+
+    state.loginAuthStatusPollTimer = window.setTimeout(async () => {
+      state.loginAuthStatusPollTimer = null;
+      if (!shouldPollLoginAuthStatus()) {
+        return;
+      }
+      const previousAuthError = state.authError;
+      const changed = await refreshAuthStatus({ force: true });
+      if ((changed || state.authError !== previousAuthError) && state.systemModal === "login") {
+        render();
+      }
+      if (shouldPollLoginAuthStatus()) {
+        scheduleLoginAuthStatusPolling();
+      }
+    }, Math.max(0, Number(delayMs) || 0));
+  }
+
+  async function refreshLoginModalAuthStatus(options = {}) {
+    if (state.systemModal !== "login") {
+      return false;
+    }
+    const previousAuthError = state.authError;
+    const changed = await refreshAuthStatus({ force: true });
+    if ((changed || state.authError !== previousAuthError) && state.systemModal === "login") {
+      render();
+    }
+    if (options.poll !== false && shouldPollLoginAuthStatus()) {
+      scheduleLoginAuthStatusPolling();
+    }
+    return changed;
+  }
+
   async function refreshApiSecurityStatus(options = {}) {
     if (!shouldRefreshSupplementaryStatus(state.lastApiSecurityStatusRefreshAt, options)) {
       return false;
@@ -2387,6 +2439,7 @@
         }
         if (state.systemModal) {
           clearSettingsBackupDraft();
+          stopLoginAuthStatusPolling();
           state.systemModal = "";
           shouldRender = true;
         }
@@ -2470,7 +2523,7 @@
       state.authNotice = "";
       state.authError = "";
       render();
-      void refreshAuthStatus({ force: true });
+      void refreshLoginModalAuthStatus({ poll: true });
       return;
     }
 
@@ -2691,6 +2744,7 @@
     }
 
     if (action === "close-system-modal") {
+      stopLoginAuthStatusPolling();
       state.systemModal = "";
       state.authDraftCurrentPassword = "";
       state.authDraftNewPassword = "";
@@ -2745,6 +2799,7 @@
       state.controlNotice = "";
       state.settingsInfoOpen = "";
       state.updateModalOpen = false;
+      stopLoginAuthStatusPolling();
       state.systemModal = "";
       if (state.nativeOpen) {
         void ensureNativeFrontendLoaded();
@@ -3521,6 +3576,7 @@
         "flowAutotuneApply",
       ].includes(key);
       if (!keepCommissioningModalOpen) {
+        stopLoginAuthStatusPolling();
         state.systemModal = "";
       }
       state.controlNotice = options.successNotice || `${entity.name} gestart.`;

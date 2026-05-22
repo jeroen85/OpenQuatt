@@ -15,6 +15,7 @@
     lastBulkEntitySyncAt: 0,
     lastStaticEntitySyncAt: 0,
     lastAuthStatusRefreshAt: 0,
+    loginAuthStatusPollTimer: null,
     lastApiSecurityStatusRefreshAt: 0,
     lastMqttStatusRefreshAt: 0,
     summary: "",
