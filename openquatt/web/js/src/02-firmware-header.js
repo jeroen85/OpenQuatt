@@ -913,14 +913,16 @@
   }
 
   function getConnectivityStatus() {
+    const lastEntityResponseAt = Math.max(Number(state.lastEntityResponseAt || 0), Number(state.lastEntitySyncAt || 0));
+    const reconnectStartedAt = Number(state.deviceReconnectStartedAt || 0);
+    if (lastEntityResponseAt > 0 && (!state.deviceReconnectMode || lastEntityResponseAt >= reconnectStartedAt)) {
+      return "Verbonden";
+    }
     if (state.deviceReconnectMode) {
       if (isDeviceReconnectRecovering()) {
         return "Verbonden";
       }
       return state.deviceReconnectMode === "reconnect" ? "Offline" : "Bezig";
-    }
-    if (Number(state.lastEntitySyncAt || 0) > 0 && !state.entitySyncFailureCount) {
-      return "Verbonden";
     }
     if (hasEntity("status") && !isEntityActive("status")) {
       return "Offline";
