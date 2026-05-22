@@ -59,6 +59,32 @@
     return Number.isNaN(value) ? NaN : value;
   }
 
+  function isEfficiencyKey(key) {
+    const normalized = String(key || "").toLowerCase();
+    return normalized.includes("cop") || normalized.includes("eer");
+  }
+
+  function getDerivedEfficiencyValue(key) {
+    const normalized = String(key || "");
+    if (normalized === "totalEer") {
+      const output = getEntityNumericValue("totalCoolingPower");
+      const input = getEntityNumericValue("coolingPowerInput");
+      const fallbackInput = Number.isNaN(input) ? getEntityNumericValue("totalPower") : input;
+      return (!Number.isNaN(output) && !Number.isNaN(fallbackInput) && fallbackInput >= 5.0)
+        ? output / fallbackInput
+        : NaN;
+    }
+    if (normalized === "totalCop") {
+      const output = getEntityNumericValue("totalHeat");
+      const input = getEntityNumericValue("heatingPowerInput");
+      const fallbackInput = Number.isNaN(input) ? getEntityNumericValue("totalPower") : input;
+      return (!Number.isNaN(output) && !Number.isNaN(fallbackInput) && fallbackInput >= 5.0)
+        ? output / fallbackInput
+        : NaN;
+    }
+    return NaN;
+  }
+
   function getEntityDisplayUnit(key, fallbackUnit = "") {
     const entityUnit = String(state.entities[key]?.uom || "").trim();
     if (entityUnit) {
@@ -108,15 +134,20 @@
 
   function formatOverviewStatValue(key) {
     const entity = state.entities[key];
+    const derived = getDerivedEfficiencyValue(key);
     if (!entity) {
-      return "—";
+      return Number.isNaN(derived) ? "—" : formatNumericState(derived, 1, getEntityDisplayUnit(key));
     }
     const numeric = getEntityNumericValue(key);
     if (Number.isNaN(numeric)) {
+      if (!Number.isNaN(derived)) {
+        return formatNumericState(derived, 1, getEntityDisplayUnit(key));
+      }
       return getEntityStateText(key);
     }
-    const decimals = key.toLowerCase().includes("cop") ? 1 : 0;
-    return formatNumericState(numeric, decimals, getEntityDisplayUnit(key));
+    const value = numeric > 0 || Number.isNaN(derived) ? numeric : derived;
+    const decimals = isEfficiencyKey(key) ? 1 : 0;
+    return formatNumericState(value, decimals, getEntityDisplayUnit(key));
   }
 
   function isEntityActive(key) {
