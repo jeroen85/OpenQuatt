@@ -139,6 +139,11 @@ const LOGO_MARKUP = `
     coolingSupplyTarget: { domain: "sensor", name: "Cooling Supply Target", optional: true },
     coolingSupplyError: { domain: "sensor", name: "Cooling Supply Error", optional: true },
     coolingDemandRaw: { domain: "sensor", name: "Cooling Demand (raw)", optional: true },
+    coolingMinimumSupplyTemp: { domain: "number", name: "Cooling Minimum Supply Temp", optional: true },
+    coolingDemandMax: { domain: "number", name: "Cooling Demand Max", optional: true },
+    coolingSafetyMargin: { domain: "number", name: "Cooling Safety Margin", optional: true },
+    coolingRequestOnDelta: { domain: "number", name: "Cooling Request On Delta", optional: true },
+    coolingRequestOffDelta: { domain: "number", name: "Cooling Request Off Delta", optional: true },
     coolingWithoutDewPointMode: { domain: "select", name: "Cooling Without Dew Point", optional: true },
     flowControlMode: { domain: "select", name: "Flow Control Mode" },
     flowSetpoint: { domain: "number", name: "Flow Setpoint" },
@@ -415,6 +420,11 @@ const LOGO_MARKUP = `
   ];
   const CIC_COMPATIBILITY_KEYS = ["cicCompatibilityMode"];
   const COOLING_SETTING_KEYS = [
+    "coolingMinimumSupplyTemp",
+    "coolingDemandMax",
+    "coolingRequestOnDelta",
+    "coolingRequestOffDelta",
+    "coolingSafetyMargin",
     "coolingWithoutDewPointMode",
     "coolingGuardMode",
     "coolingFallbackNightMinOutdoorTemp",

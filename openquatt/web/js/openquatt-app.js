@@ -143,6 +143,11 @@ const LOGO_MARKUP = `
     coolingSupplyTarget: { domain: "sensor", name: "Cooling Supply Target", optional: true },
     coolingSupplyError: { domain: "sensor", name: "Cooling Supply Error", optional: true },
     coolingDemandRaw: { domain: "sensor", name: "Cooling Demand (raw)", optional: true },
+    coolingMinimumSupplyTemp: { domain: "number", name: "Cooling Minimum Supply Temp", optional: true },
+    coolingDemandMax: { domain: "number", name: "Cooling Demand Max", optional: true },
+    coolingSafetyMargin: { domain: "number", name: "Cooling Safety Margin", optional: true },
+    coolingRequestOnDelta: { domain: "number", name: "Cooling Request On Delta", optional: true },
+    coolingRequestOffDelta: { domain: "number", name: "Cooling Request Off Delta", optional: true },
     coolingWithoutDewPointMode: { domain: "select", name: "Cooling Without Dew Point", optional: true },
     flowControlMode: { domain: "select", name: "Flow Control Mode" },
     flowSetpoint: { domain: "number", name: "Flow Setpoint" },
@@ -419,6 +424,11 @@ const LOGO_MARKUP = `
   ];
   const CIC_COMPATIBILITY_KEYS = ["cicCompatibilityMode"];
   const COOLING_SETTING_KEYS = [
+    "coolingMinimumSupplyTemp",
+    "coolingDemandMax",
+    "coolingRequestOnDelta",
+    "coolingRequestOffDelta",
+    "coolingSafetyMargin",
     "coolingWithoutDewPointMode",
     "coolingGuardMode",
     "coolingFallbackNightMinOutdoorTemp",
@@ -10814,7 +10824,22 @@ function renderWebServerLogsModal() {
   }
 
   function renderSettingsCoolingSection() {
-    if (!hasEntity("coolingWithoutDewPointMode")) {
+    const tuningFields = [
+      renderSettingsNumberField("coolingMinimumSupplyTemp", "Minimale koel-aanvoer", "Ondergrens voor de aanvoertemperatuur waar de koelregeling op mag mikken."),
+      renderSettingsNumberField("coolingDemandMax", "Maximale koelvraag", "Bovengrens voor de koelvraag die de regelaar mag opbouwen."),
+      renderSettingsNumberField("coolingRequestOnDelta", "Koelvraag start boven setpoint", "Koelvraag wordt actief zodra de kamer warmer is dan setpoint plus deze marge."),
+      renderSettingsNumberField("coolingRequestOffDelta", "Koelvraag stopt boven setpoint", "Koelvraag valt weer af zodra de kamer koeler is dan setpoint plus deze marge."),
+      renderSettingsNumberField("coolingSafetyMargin", "Dauwpunt veiligheidsmarge", "Extra marge boven het geselecteerde dauwpunt voor de minimale veilige watertemperatuur."),
+    ].filter(Boolean);
+    const hasFallbackSettings = hasEntity("coolingWithoutDewPointMode");
+    const fallbackStatusFields = [
+      hasEntity("coolingGuardMode") ? renderSettingsStaticField("coolingGuardMode", "Actieve beveiligingsroute", "Laat zien of koeling nu via dauwpunt of via de fallback wordt begrensd.", getEntityStateText("coolingGuardMode", "Onbekend")) : "",
+      hasEntity("coolingFallbackNightMinOutdoorTemp") ? renderSettingsStaticField("coolingFallbackNightMinOutdoorTemp", "Nachtminimum buitentemperatuur", "Minimum buitentemperatuur van de afgelopen nacht. Warme nachten maken fallback-cooling conservatiever of blokkeren die helemaal.", getEntityStateText("coolingFallbackNightMinOutdoorTemp", "—")) : "",
+      hasEntity("coolingFallbackMinSupplyTemp") ? renderSettingsStaticField("coolingFallbackMinSupplyTemp", "Fallback minimum watertemperatuur", "De conservatieve ondergrens die OpenQuatt gebruikt als er geen dauwpuntbron beschikbaar is en fallback is toegestaan.", getEntityStateText("coolingFallbackMinSupplyTemp", "—")) : "",
+      hasEntity("coolingEffectiveMinSupplyTemp") ? renderSettingsStaticField("coolingEffectiveMinSupplyTemp", "Actieve minimum ondergrens", "De ondergrens die de koeling nu daadwerkelijk gebruikt: dauwpunt plus marge, of de fallback-ondergrens.", getEntityStateText("coolingEffectiveMinSupplyTemp", "—")) : "",
+    ].filter(Boolean);
+
+    if (!tuningFields.length && !hasFallbackSettings && !fallbackStatusFields.length) {
       return "";
     }
 
@@ -10823,17 +10848,18 @@ function renderWebServerLogsModal() {
       "Allow without dew point": "Sta een conservatieve fallback toe op basis van buitentemperatuur en de minimum buitentemperatuur van de afgelopen nacht.",
     };
 
-    const guardMode = getEntityStateText("coolingGuardMode", "Onbekend");
-    const fallbackFloor = getEntityStateText("coolingFallbackMinSupplyTemp", "—");
-    const nightMin = getEntityStateText("coolingFallbackNightMinOutdoorTemp", "—");
-    const effectiveFloor = getEntityStateText("coolingEffectiveMinSupplyTemp", "—");
-
     return renderSettingsSection(
       "Koeling",
-      "Dauwpuntbeveiliging",
-      "Standaard blijft koeling zonder dauwpuntbron geblokkeerd. Met deze opt-in mag OpenQuatt een conservatieve fallback gebruiken op basis van buitentemperatuur en de afgelopen nacht.",
+      "Koelingsinstellingen",
+      "Stel hier in wanneer koelvraag ontstaat, hoe ver de regeling mag koelen en welke dauwpuntmarge gebruikt wordt.",
       `
-        <details class="oq-settings-callout oq-settings-callout--cooling">
+        ${tuningFields.length ? `
+          <div class="oq-settings-grid">
+            ${tuningFields.join("")}
+          </div>
+        ` : ""}
+        ${hasFallbackSettings ? `
+          <details class="oq-settings-callout oq-settings-callout--cooling">
           <summary>Fallback-regel bekijken</summary>
           <div class="oq-settings-callout-body">
             <p>Onder de 20°C buiten blijft fallback-cooling uit. Daarboven gebruikt OpenQuatt 19/20/21/22°C als minimum water, met extra correctie voor warme nachten.</p>
@@ -10887,13 +10913,13 @@ function renderWebServerLogsModal() {
             </div>
           </div>
         </details>
-        <div class="oq-settings-grid">
-          ${renderSettingsOptionCardsField("coolingWithoutDewPointMode", "Koeling zonder dauwpuntbeveiliging", "Kies of OpenQuatt zonder dauwpuntbron volledig moet blokkeren, of een conservatieve fallback mag gebruiken.", fallbackModeCopy, "oq-settings-field--span-2")}
-          ${renderSettingsStaticField("coolingGuardMode", "Actieve beveiligingsroute", "Laat zien of koeling nu via dauwpunt of via de fallback wordt begrensd.", guardMode)}
-          ${renderSettingsStaticField("coolingFallbackNightMinOutdoorTemp", "Nachtminimum buitentemperatuur", "Minimum buitentemperatuur van de afgelopen nacht. Warme nachten maken fallback-cooling conservatiever of blokkeren die helemaal.", nightMin)}
-          ${renderSettingsStaticField("coolingFallbackMinSupplyTemp", "Fallback minimum watertemperatuur", "De conservatieve ondergrens die OpenQuatt gebruikt als er geen dauwpuntbron beschikbaar is en fallback is toegestaan.", fallbackFloor)}
-          ${renderSettingsStaticField("coolingEffectiveMinSupplyTemp", "Actieve minimum ondergrens", "De ondergrens die de koeling nu daadwerkelijk gebruikt: dauwpunt plus marge, of de fallback-ondergrens.", effectiveFloor)}
-        </div>
+        ` : ""}
+        ${(hasFallbackSettings || fallbackStatusFields.length) ? `
+          <div class="oq-settings-grid">
+            ${hasFallbackSettings ? renderSettingsOptionCardsField("coolingWithoutDewPointMode", "Koeling zonder dauwpuntbeveiliging", "Kies of OpenQuatt zonder dauwpuntbron volledig moet blokkeren, of een conservatieve fallback mag gebruiken.", fallbackModeCopy, "oq-settings-field--span-2") : ""}
+            ${fallbackStatusFields.join("")}
+          </div>
+        ` : ""}
       `,
     );
   }
@@ -11568,6 +11594,17 @@ function renderWebServerLogsModal() {
     return isCoolingControlMode();
   }
 
+  function isCoolingWaitingForRoomRequest(reason, requestActive) {
+    const normalized = String(reason || "").trim().toLowerCase();
+    if (normalized === "waiting for room request" || normalized === "wacht op kamervraag") {
+      return true;
+    }
+    if (requestActive) {
+      return false;
+    }
+    return normalized === "flow too low" || normalized === "flow te laag" || normalized === "flow unavailable";
+  }
+
   function getOverviewStrategyLabel() {
     return isCoolingOverviewActive() ? "Koeling" : isCurveMode() ? "Stooklijn" : "Power House";
   }
@@ -11660,12 +11697,17 @@ function renderWebServerLogsModal() {
     const rawDemand = getEntityNumericValue("coolingDemandRaw");
     const permitted = isEntityActive("coolingPermitted");
     const requestActive = isEntityActive("coolingRequestActive");
-    const blockReason = formatCoolingBlockReason(getEntityStateText("coolingBlockReason", "Onbekend"));
+    const blockReasonRaw = getEntityStateText("coolingBlockReason", "Onbekend");
+    const blockReason = formatCoolingBlockReason(blockReasonRaw);
+    const waitingForRoomRequest = isCoolingWaitingForRoomRequest(blockReasonRaw, requestActive);
 
     let statusTitle = "Wacht op koelvraag";
     let statusCopy = "Zodra er koelvraag is, zie je hier hoe de regeling de aanvoer richting het koeldoel stuurt.";
 
-    if (!permitted) {
+    if (waitingForRoomRequest) {
+      statusTitle = "Wacht op koelvraag";
+      statusCopy = "Koeling staat aan en wacht nog op actieve koelvraag vanuit de kamerregeling.";
+    } else if (!permitted) {
       statusTitle = "Koeling geblokkeerd";
       statusCopy = `Blokkade: ${blockReason}.`;
     } else if (!requestActive) {
@@ -11697,6 +11739,7 @@ function renderWebServerLogsModal() {
       permitted,
       requestActive,
       blockReason,
+      waitingForRoomRequest,
     };
   }
 
@@ -11780,7 +11823,9 @@ function renderWebServerLogsModal() {
     }
     if (isCoolingOverviewActive()) {
       const model = getCoolingOverviewModel();
-      const tone = !model.permitted
+      const tone = model.waitingForRoomRequest
+        ? "neutral"
+        : !model.permitted
         ? "orange"
         : model.statusTitle === "Koelt rustig door" || model.statusTitle === "Houdt temperatuur vast"
           ? "green"
@@ -11907,15 +11952,20 @@ function renderWebServerLogsModal() {
     const coolingBlocked = !isEntityActive("coolingPermitted");
     const coolingRequestActive = isEntityActive("coolingRequestActive");
     const coolingModeActive = isCoolingControlMode();
+    const coolingBlockReasonRaw = getEntityStateText("coolingBlockReason", "");
+    const coolingWaitingForRoomRequest = isCoolingWaitingForRoomRequest(coolingBlockReasonRaw, coolingRequestActive);
 
     let coolingStatus = "Uit";
     let coolingCopy = "Koeling staat uit.";
     if (manualCoolingEnabled && coolingModeActive) {
       coolingStatus = "Actief";
       coolingCopy = "Koeling draait nu.";
+    } else if (manualCoolingEnabled && coolingWaitingForRoomRequest) {
+      coolingStatus = "Aan";
+      coolingCopy = "Koeling staat aan en wacht op koelvraag.";
     } else if (manualCoolingEnabled && coolingBlocked) {
       coolingStatus = "Geblokkeerd";
-      coolingCopy = formatCoolingBlockReason(getEntityStateText("coolingBlockReason", "Koeling wacht nog op veilige condities."));
+      coolingCopy = formatCoolingBlockReason(coolingBlockReasonRaw || "Koeling wacht nog op veilige condities.");
     } else if (manualCoolingEnabled && coolingRequestActive) {
       coolingStatus = "Start bijna";
       coolingCopy = "Er is koelvraag. Koeling start zodra dat kan.";

@@ -105,6 +105,13 @@ Daarom werkt OpenQuatt bij koeling terughoudend:
 - de minimale veilige watertemperatuur moet bewaakt worden;
 - dauwpuntinformatie is normaal gesproken nodig.
 
+Koelvraag heeft een kleine hysterese rond het kamer-setpoint. Standaard start koelvraag pas wanneer de kamertemperatuur meer dan `0,4°C` boven het setpoint zit. De koelvraag stopt weer zodra de kamer onder `setpoint + 0,1°C` komt. Dit voorkomt dat koeling steeds kort aan en uit schakelt rond het setpoint.
+
+Deze marges zijn runtime-instellingen:
+
+- `Cooling Request On Delta`
+- `Cooling Request Off Delta`
+
 ### Waarom is dauwpunt zo belangrijk?
 
 Bij vloerkoeling of andere watergedragen koeling wil je voorkomen dat oppervlakken te koud worden en vocht uit de lucht erop condenseert.

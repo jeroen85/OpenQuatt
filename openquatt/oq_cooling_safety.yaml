@@ -69,7 +69,6 @@ number:
   - platform: template
     id: cooling_request_on_delta
     name: "Cooling Request On Delta"
-    disabled_by_default: true
     icon: mdi:thermometer-plus
     unit_of_measurement: "°C"
     min_value: 0.0
@@ -86,7 +85,6 @@ number:
   - platform: template
     id: cooling_request_off_delta
     name: "Cooling Request Off Delta"
-    disabled_by_default: true
     icon: mdi:thermometer-minus
     unit_of_measurement: "°C"
     min_value: 0.0
@@ -243,6 +241,12 @@ text_sensor:
     update_interval: 5s
     lambda: |-
       // Report the first blocking condition in operator-friendly terms.
+      if (!id(cooling_enable_selected).has_state() || !id(cooling_enable_selected).state) {
+        return {"Cooling disabled"};
+      }
+      if (!id(oq_enabled).state) {
+        return {"OpenQuatt paused"};
+      }
       if (!id(cooling_dew_point_available).state) {
         if (!id(cooling_without_dew_point_enabled).state) {
           return {"No dew point source"};
@@ -275,6 +279,9 @@ text_sensor:
       }
       if (!id(cooling_permitted_core).has_state() || !id(cooling_permitted_core).state) {
         return {"Safe supply floor unavailable"};
+      }
+      if (!id(cooling_request_active).has_state() || !id(cooling_request_active).state) {
+        return {"Waiting for room request"};
       }
       if (!id(flow_rate_selected).has_state() || isnan(id(flow_rate_selected).state)) {
         return {"Flow unavailable"};

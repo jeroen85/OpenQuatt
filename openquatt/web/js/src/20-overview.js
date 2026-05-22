@@ -206,6 +206,17 @@
     return isCoolingControlMode();
   }
 
+  function isCoolingWaitingForRoomRequest(reason, requestActive) {
+    const normalized = String(reason || "").trim().toLowerCase();
+    if (normalized === "waiting for room request" || normalized === "wacht op kamervraag") {
+      return true;
+    }
+    if (requestActive) {
+      return false;
+    }
+    return normalized === "flow too low" || normalized === "flow te laag" || normalized === "flow unavailable";
+  }
+
   function getOverviewStrategyLabel() {
     return isCoolingOverviewActive() ? "Koeling" : isCurveMode() ? "Stooklijn" : "Power House";
   }
@@ -298,12 +309,17 @@
     const rawDemand = getEntityNumericValue("coolingDemandRaw");
     const permitted = isEntityActive("coolingPermitted");
     const requestActive = isEntityActive("coolingRequestActive");
-    const blockReason = formatCoolingBlockReason(getEntityStateText("coolingBlockReason", "Onbekend"));
+    const blockReasonRaw = getEntityStateText("coolingBlockReason", "Onbekend");
+    const blockReason = formatCoolingBlockReason(blockReasonRaw);
+    const waitingForRoomRequest = isCoolingWaitingForRoomRequest(blockReasonRaw, requestActive);
 
     let statusTitle = "Wacht op koelvraag";
     let statusCopy = "Zodra er koelvraag is, zie je hier hoe de regeling de aanvoer richting het koeldoel stuurt.";
 
-    if (!permitted) {
+    if (waitingForRoomRequest) {
+      statusTitle = "Wacht op koelvraag";
+      statusCopy = "Koeling staat aan en wacht nog op actieve koelvraag vanuit de kamerregeling.";
+    } else if (!permitted) {
       statusTitle = "Koeling geblokkeerd";
       statusCopy = `Blokkade: ${blockReason}.`;
     } else if (!requestActive) {
@@ -335,6 +351,7 @@
       permitted,
       requestActive,
       blockReason,
+      waitingForRoomRequest,
     };
   }
 
@@ -418,7 +435,9 @@
     }
     if (isCoolingOverviewActive()) {
       const model = getCoolingOverviewModel();
-      const tone = !model.permitted
+      const tone = model.waitingForRoomRequest
+        ? "neutral"
+        : !model.permitted
         ? "orange"
         : model.statusTitle === "Koelt rustig door" || model.statusTitle === "Houdt temperatuur vast"
           ? "green"
@@ -545,15 +564,20 @@
     const coolingBlocked = !isEntityActive("coolingPermitted");
     const coolingRequestActive = isEntityActive("coolingRequestActive");
     const coolingModeActive = isCoolingControlMode();
+    const coolingBlockReasonRaw = getEntityStateText("coolingBlockReason", "");
+    const coolingWaitingForRoomRequest = isCoolingWaitingForRoomRequest(coolingBlockReasonRaw, coolingRequestActive);
 
     let coolingStatus = "Uit";
     let coolingCopy = "Koeling staat uit.";
     if (manualCoolingEnabled && coolingModeActive) {
       coolingStatus = "Actief";
       coolingCopy = "Koeling draait nu.";
+    } else if (manualCoolingEnabled && coolingWaitingForRoomRequest) {
+      coolingStatus = "Aan";
+      coolingCopy = "Koeling staat aan en wacht op koelvraag.";
     } else if (manualCoolingEnabled && coolingBlocked) {
       coolingStatus = "Geblokkeerd";
-      coolingCopy = formatCoolingBlockReason(getEntityStateText("coolingBlockReason", "Koeling wacht nog op veilige condities."));
+      coolingCopy = formatCoolingBlockReason(coolingBlockReasonRaw || "Koeling wacht nog op veilige condities.");
     } else if (manualCoolingEnabled && coolingRequestActive) {
       coolingStatus = "Start bijna";
       coolingCopy = "Er is koelvraag. Koeling start zodra dat kan.";

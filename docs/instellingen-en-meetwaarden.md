@@ -79,6 +79,14 @@ Voor beide strategieën blijft belangrijk:
 
 - `Maximum water temperature`
 
+Voor koeling zijn vooral belangrijk:
+
+- `Cooling Minimum Supply Temp`
+- `Cooling Demand Max`
+- `Cooling Request On Delta`
+- `Cooling Request Off Delta`
+- `Cooling Safety Margin`
+
 ### 3. Duo en looptijdgedrag
 
 Deze groep speelt vooral mee als je twee warmtepompen gebruikt of onrustig compressorgedrag ziet.

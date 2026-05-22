@@ -2689,6 +2689,8 @@ views:
 
               - **Cooling Minimum Supply Temp** sets the lower limit for cooling supply temperature.
               - **Cooling Demand Max** limits the maximum cooling demand the controller may build.
+              - **Cooling Request On Delta** sets how far room temperature must rise above setpoint before cooling demand starts.
+              - **Cooling Request Off Delta** sets when cooling demand stops again.
               - **Cooling Safety Margin** sets the margin above the selected dew point.
               - **Cooling PID Kp/Ki/Kd** tune the cooling PID:
                 - Kp: direct reaction.
@@ -2704,6 +2706,10 @@ views:
                 name: Cooling minimum supply temp
               - entity: number.openquatt_cooling_demand_max
                 name: Cooling demand max
+              - entity: number.openquatt_cooling_request_on_delta
+                name: Cooling request on delta
+              - entity: number.openquatt_cooling_request_off_delta
+                name: Cooling request off delta
               - entity: number.openquatt_cooling_safety_margin
                 name: Cooling safety margin
               - entity: number.openquatt_cooling_pid_kp

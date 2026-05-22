@@ -2463,6 +2463,8 @@ views:
 
               - **Cooling Minimum Supply Temp** begrenst de minimale koel-aanvoertemperatuur.
               - **Cooling Demand Max** begrenst de maximale koelvraag.
+              - **Cooling Request On Delta** bepaalt hoeveel de kamer boven setpoint moet zitten voordat koelvraag start.
+              - **Cooling Request Off Delta** bepaalt wanneer koelvraag weer stopt.
               - **Cooling Safety Margin** bepaalt de marge boven het geselecteerde dauwpunt.
               - **Cooling PID Kp/Ki/Kd** stuurt de koel-PID:
                 - Kp: directe reactie.
@@ -2478,6 +2480,10 @@ views:
                 name: Cooling minimum supply temp
               - entity: number.openquatt_cooling_demand_max
                 name: Cooling demand max
+              - entity: number.openquatt_cooling_request_on_delta
+                name: Cooling request on delta
+              - entity: number.openquatt_cooling_request_off_delta
+                name: Cooling request off delta
               - entity: number.openquatt_cooling_safety_margin
                 name: Cooling safety margin
               - entity: number.openquatt_cooling_pid_kp
