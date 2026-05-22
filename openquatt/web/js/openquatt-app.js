@@ -9322,13 +9322,16 @@ function renderWebServerLogsModal() {
     return renderSettingsFieldCard(key, title, copy, controlMarkup, className, options.footerMarkup || "");
   }
 
-  function renderSettingsSliderField(key, title, copy, className = "") {
+  function renderSettingsSliderField(key, title, copy, className = "", options = {}) {
     if (!hasEntity(key)) {
       return "";
     }
     const meta = getNumberMeta(key);
     const value = normalizeNumber(key, getEntityValue(key));
-    return renderSettingsFieldCard(key, title, copy, `<label class="oq-helper-slider-field"><div class="oq-helper-slider-meta"><span>${escapeHtml(meta.min)}${escapeHtml(meta.uom || "")}</span><strong>${escapeHtml(formatValue(key, value))}</strong><span>${escapeHtml(meta.max)}${escapeHtml(meta.uom || "")}</span></div><input class="oq-helper-range" type="range" data-oq-field="${escapeHtml(key)}" min="${meta.min}" max="${meta.max}" step="${meta.step}" value="${value}" ${state.loadingEntities ? "disabled" : ""}></label>`, className);
+    const minLabel = options.minLabel || `${meta.min}${meta.uom || ""}`;
+    const maxLabel = options.maxLabel || `${meta.max}${meta.uom || ""}`;
+    const valueLabel = options.valueLabel || formatValue(key, value);
+    return renderSettingsFieldCard(key, title, copy, `<label class="oq-helper-slider-field"><div class="oq-helper-slider-meta"><span>${escapeHtml(minLabel)}</span><strong>${escapeHtml(valueLabel)}</strong><span>${escapeHtml(maxLabel)}</span></div><input class="oq-helper-range" type="range" data-oq-field="${escapeHtml(key)}" min="${meta.min}" max="${meta.max}" step="${meta.step}" value="${value}" ${state.loadingEntities ? "disabled" : ""}></label>`, className);
   }
 
   function renderSettingsMiniNumberField(key, title, copy, options = {}) {
@@ -11320,7 +11323,11 @@ function renderWebServerLogsModal() {
   function renderSettingsCoolingSection() {
     const tuningFields = [
       renderSettingsNumberField("coolingMinimumSupplyTemp", "Minimale koel-aanvoer", "Ondergrens voor het koeldoel. OpenQuatt gebruikt de hoogste waarde van deze instelling en de dauwpuntveilige grens."),
-      renderSettingsNumberField("coolingDemandMax", "Maximale koelvraag", "Bovengrens voor de koelvraag die de regelaar mag opbouwen."),
+      renderSettingsSliderField("coolingDemandMax", "Maximale koelsterkte", "Bepaalt hoe krachtig OpenQuatt mag koelen. Lager geeft langere, rustigere runs; hoger geeft meer koelvermogen bij warm weer.", "", {
+        minLabel: "Rustig",
+        maxLabel: "Krachtig",
+        valueLabel: `${formatValue("coolingDemandMax")} max`,
+      }),
       renderSettingsNumberField("coolingRestartDelta", "Herstartmarge watertemperatuur", "Na het bereiken van het koel-aanvoerdoel start de watercyclus pas opnieuw zodra de aanvoer deze marge boven het doel ligt."),
       renderSettingsNumberField("coolingRequestOnDelta", "Koelvraag start boven setpoint", "Koelvraag wordt actief zodra de kamer warmer is dan setpoint plus deze marge."),
       renderSettingsNumberField("coolingRequestOffDelta", "Koelvraag stopt boven setpoint", "Koelvraag valt weer af zodra de kamer koeler is dan setpoint plus deze marge."),
