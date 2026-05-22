@@ -145,6 +145,11 @@
   background: linear-gradient(180deg, rgba(255, 247, 237, 0.72), rgba(255, 255, 255, 0.98));
 }
 
+.oq-settings-callout--inline {
+  grid-column: 1 / -1;
+  margin-top: 0;
+}
+
 .oq-helper-shell--dark .oq-settings-callout {
   background: linear-gradient(180deg, rgba(66, 32, 14, 0.34), rgba(22, 33, 49, 0.94));
 }
