@@ -330,15 +330,19 @@
     const powerValue = getEntityNumericValue(keys.power);
     const heatValue = getEntityNumericValue(keys.heat);
     const coolingValue = getEntityNumericValue(keys.cooling);
+    const flowValue = getEntityNumericValue(keys.flow);
     const thermalValue = mode === "Koelen" ? coolingValue : heatValue;
     const animated = running || (!Number.isNaN(freqValue) && freqValue > 0) || (!Number.isNaN(powerValue) && powerValue > 80) || (!Number.isNaN(heatValue) && heatValue > 150);
+    const waterFlowActive = !Number.isNaN(flowValue) && flowValue > 0;
     const statusText = getHeatPumpPanelStatusLabel(mode, animated);
     const failureText = failures === "Geen actieve storingen" ? "Geen storingen" : failures;
     const warningActive = failureText !== "Geen storingen";
     const defrostText = defrostActive ? "Actief" : "Uit";
     const waterOutText = formatHeatPumpReading(keys.waterOut, 1, "°C");
     const waterInText = formatHeatPumpReading(keys.waterIn, 1, "°C");
-    const flowText = formatHeatPumpReading(keys.flow, 0, "L/h");
+    const flowText = Number.isNaN(flowValue)
+      ? getEntityStateText(keys.flow)
+      : formatNumericState(flowValue, 0, getEntityDisplayUnit(keys.flow, "L/h"));
     const evaporatorCoilTempText = formatHeatPumpReading(keys.evaporatorCoilTemp, 1, "°C");
     const innerCoilTempText = formatHeatPumpReading(keys.innerCoilTemp, 1, "°C");
     const outsideTempText = formatHeatPumpReading(keys.outsideTemp, 1, "°C");
@@ -390,6 +394,7 @@
       "oq-hp-schematic-board",
       `oq-hp-schematic-board--${accent}`,
       animated ? "is-running" : "",
+      waterFlowActive ? "is-water-flowing" : "",
       fanRunning ? "is-fan-running" : "",
       reverseCycle ? "is-reversed" : "",
       defrostActive ? "is-defrost" : "",
@@ -401,6 +406,7 @@
       statusText,
       failureText,
       warningActive,
+      waterFlowActive,
       defrostActive,
       defrostText,
       mode,
@@ -738,6 +744,7 @@
       : (!Number.isNaN(heatValue) && heatValue > 20);
     const flowActive = !Number.isNaN(flowValue) && flowValue > 0;
     const heatText = formatNumericState(heatValue, 0, "W");
+    const flowText = formatNumericState(flowValue, 0, "L/h");
     const returnTempText = formatNumericState(getEntityNumericValue(getBoilerReturnTemperatureKey()), 1, "°C");
     const supplyTempText = formatNumericState(getEntityNumericValue("supplyTemp"), 1, "°C");
     const statusText = active ? "Aan" : "Uit";
@@ -753,6 +760,7 @@
       active,
       flowActive,
       heatText,
+      flowText,
       returnTempText,
       supplyTempText,
       statusText,
@@ -764,7 +772,8 @@
 
   function getBoilerPanelRenderSignature(model = getBoilerPanelModel()) {
     return getRenderSignature({
-      version: "hp-pipe-colors-v1",
+      version: "boiler-visual-mode-v1",
+      visualMode: state.hpVisualMode,
       boardClass: "oq-boiler-card",
     });
   }
@@ -798,6 +807,11 @@
     if (heatValue && heatValue.textContent !== model.heatText) {
       heatValue.textContent = model.heatText;
     }
+    panel.querySelectorAll("[data-oq-boiler-flow-value]").forEach((flowValue) => {
+      if (flowValue.textContent !== model.flowText) {
+        flowValue.textContent = model.flowText;
+      }
+    });
     const statusValue = panel.querySelector("[data-oq-boiler-status-value]");
     if (statusValue && statusValue.textContent !== model.statusCopy) {
       statusValue.textContent = model.statusCopy;
@@ -812,12 +826,46 @@
     }
   }
 
+  function renderBoilerCompactPanel(model) {
+    return `
+      <section class="oq-overview-hp oq-overview-boiler oq-overview-boiler--compact" data-oq-boiler-panel data-render-signature="${escapeHtml(getBoilerPanelRenderSignature(model))}">
+        <div class="oq-overview-hp-head">
+          <div>
+            <h3>CV-ketel / boiler</h3>
+          </div>
+          <span class="oq-overview-chip oq-overview-chip--${model.active ? "active" : "neutral"}">${escapeHtml(model.statusText)}</span>
+        </div>
+        <div class="oq-overview-hp-stats">
+          <article class="oq-overview-stat oq-overview-stat--orange">
+            <p>Warmteafgifte</p>
+            <strong data-oq-boiler-heat-value>${escapeHtml(model.heatText)}</strong>
+            <span>afgegeven warmte</span>
+          </article>
+          <article class="oq-overview-stat oq-overview-stat--blue">
+            <p>Water in</p>
+            <strong data-oq-bind="boiler-return-value">${escapeHtml(model.returnTempText)}</strong>
+            <span>retour naar boiler</span>
+          </article>
+          <article class="oq-overview-stat oq-overview-stat--sky">
+            <p>Water out</p>
+            <strong data-oq-bind="boiler-supply-value">${escapeHtml(model.supplyTempText)}</strong>
+            <span>naar het systeem</span>
+          </article>
+        </div>
+      </section>
+    `;
+  }
+
   function renderBoilerPanel() {
     if (!shouldRenderBoilerPanel()) {
       return "";
     }
 
     const model = getBoilerPanelModel();
+    if (state.hpVisualMode !== "schematic") {
+      return renderBoilerCompactPanel(model);
+    }
+
     return `
       <section class="oq-overview-hp oq-overview-boiler" data-oq-boiler-panel data-render-signature="${escapeHtml(getBoilerPanelRenderSignature(model))}">
         <div class="${escapeHtml([model.boardClass, model.flowPathClass].filter(Boolean).join(" "))}">

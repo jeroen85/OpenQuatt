@@ -673,6 +673,13 @@
       });
     });
 
+    const waterFlowBoards = state.root.querySelectorAll(".oq-hp-schematic-board.is-water-flowing:not(.is-running)");
+    waterFlowBoards.forEach((board) => {
+      board.querySelectorAll('.oq-hp-tech-pipe-flow[data-oq-flow-variant="water"]').forEach((node) => {
+        state.motionTargets.pipeFlows.push(node);
+      });
+    });
+
     const fanBoards = state.root.querySelectorAll(".oq-hp-schematic-board.is-fan-running");
     fanBoards.forEach((board) => {
       board.querySelectorAll(".oq-hp-tech-fan-blades").forEach((node) => {
