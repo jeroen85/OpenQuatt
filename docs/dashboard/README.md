@@ -85,14 +85,16 @@ Per kamer heb je twee keuzes.
 Gebruik bij voorkeur een directe dauwpuntentity:
 
 ```text
-input_text.openquatt_source_cooling_room_1_dew_point = sensor.woonkamer_dauwpunt
+sensor.woonkamer_dauwpunt
 ```
 
-Heb je geen directe dauwpuntentity, gebruik dan temperatuur plus relatieve luchtvochtigheid:
+Vul die waarde in bij `input_text.openquatt_source_cooling_room_1_dew_point`.
+
+Heb je geen directe dauwpuntentity, gebruik dan temperatuur plus relatieve luchtvochtigheid. Vul bijvoorbeeld `sensor.woonkamer_temperatuur` in bij `input_text.openquatt_source_cooling_room_1_temperature` en `sensor.woonkamer_luchtvochtigheid` bij `input_text.openquatt_source_cooling_room_1_humidity`:
 
 ```text
-input_text.openquatt_source_cooling_room_1_temperature = sensor.woonkamer_temperatuur
-input_text.openquatt_source_cooling_room_1_humidity = sensor.woonkamer_luchtvochtigheid
+sensor.woonkamer_temperatuur
+sensor.woonkamer_luchtvochtigheid
 ```
 
 Ook hier mag een attribuut:

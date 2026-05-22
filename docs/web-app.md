@@ -17,6 +17,17 @@ Gebruik de web-app voor alles wat direct op OpenQuatt zelf hoort:
 
 Home Assistant blijft de prettigste plek voor dagelijks meekijken en dashboards. De web-app is de plek waar je de module zelf inricht, beheert en veilig terugvindt als er iets niet klopt.
 
+## Wat doe je waar?
+
+| Plek | Gebruik je vooral voor |
+|---|---|
+| Installer | Eerste flash, keuze voor `Single` of `Duo`, hardwareprofiel en verbinding. |
+| Web-app | Quick Start, installatiekeuzes, instellingen, updates, backup, beveiliging en MQTT. |
+| Home Assistant | Dagelijks meekijken, dashboards, bronselectie en optionele dynamische bronnen. |
+| MQTT | Extra publish-only telemetrie voor Node-RED, logging, scripts of eigen dashboards. |
+
+De normale volgorde is dus: installer, web-app, daarna Home Assistant. MQTT komt alleen erbij als je naast Home Assistant nog een extra datastroom nodig hebt.
+
 ## Openen
 
 Probeer eerst:

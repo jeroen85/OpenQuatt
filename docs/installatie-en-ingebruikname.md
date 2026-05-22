@@ -10,13 +10,23 @@ De route is:
 
 1. installer openen;
 2. opstelling en hardware kiezen;
-3. firmware flashen;
-4. Wi-Fi instellen;
-5. `openquatt.local` openen;
-6. Quick Start afronden;
-7. Home Assistant-dashboard importeren.
+3. verbinding kiezen;
+4. firmware flashen;
+5. Wi-Fi instellen;
+6. `openquatt.local` openen;
+7. Quick Start afronden;
+8. Home Assistant-dashboard importeren.
 
 Gebruik [Handmatige installatie](handmatige-installatie.md) alleen als fallback.
+
+## Wat zie je onderweg?
+
+| Moment | Wat zie je? | Volgende actie |
+|---|---|---|
+| Installer | Keuzes voor `Single` of `Duo`, ESP-module en verbinding | Kies nu `Wi-Fi`; Ethernet verschijnt pas zodra er een stabiele releasebuild is. |
+| ESP Web Tools | Browserdialoog voor verbinden, wissen en flashen | Laat het tabblad open tot de Wi-Fi-configuratie is afgerond. |
+| Web-app | `http://openquatt.local` met Quick Start | Kies Quatt Hybrid V1, V1.5 of V2 en rond de basisinstellingen af. |
+| Home Assistant | ESPHome-apparaat en dashboard | Voeg OpenQuatt toe en importeer daarna het juiste `Single`- of `Duo`-dashboard. |
 
 ## Benodigdheden
 
@@ -31,16 +41,18 @@ Gebruik [Handmatige installatie](handmatige-installatie.md) alleen als fallback.
 
 ## Kies het juiste profiel in de installer
 
-Kies in de installer altijd exact de combinatie van je opstelling en je hardware. Voor nieuwe installaties is de Heatpump Controller Q-edition de voorkeursmodule.
+Kies in de installer altijd exact de combinatie van je opstelling, hardware en verbinding. Voor nieuwe installaties is de Heatpump Controller Q-edition de voorkeursmodule.
+
+OpenQuatt ondersteunt Quatt Hybrid V1, V1.5 en V2. Die versie kies je na het flashen in de Quick Start van de web-app.
 
 | Opstelling | Hardware | Verbinding | Installerkeuze |
 |---|---|---|---|
-| Single | Heatpump Controller Q | Wi-Fi | `Single` + `Heatpump Controller Q` |
-| Duo | Heatpump Controller Q | Wi-Fi | `Duo` + `Heatpump Controller Q` |
-| Single | Heatpump Listener | Wi-Fi | `Single` + `Heatpump Listener` |
-| Duo | Heatpump Listener | Wi-Fi | `Duo` + `Heatpump Listener` |
-| Single | Waveshare | Wi-Fi | `Single` + `Waveshare` |
-| Duo | Waveshare | Wi-Fi | `Duo` + `Waveshare` |
+| Single | Heatpump Controller Q | Wi-Fi | `Single` + `Heatpump Controller Q` + `Wi-Fi` |
+| Duo | Heatpump Controller Q | Wi-Fi | `Duo` + `Heatpump Controller Q` + `Wi-Fi` |
+| Single | Heatpump Listener | Wi-Fi | `Single` + `Heatpump Listener` + `Wi-Fi` |
+| Duo | Heatpump Listener | Wi-Fi | `Duo` + `Heatpump Listener` + `Wi-Fi` |
+| Single | Waveshare | Wi-Fi | `Single` + `Waveshare` + `Wi-Fi` |
+| Duo | Waveshare | Wi-Fi | `Duo` + `Waveshare` + `Wi-Fi` |
 
 De Ethernet-configs voor de Heatpump Controller Q staan al in de matrix als planned targets, maar worden nog niet door CI/release gebouwd. Voor gewone gebruikers is Wi-Fi voorlopig de duidelijke route.
 
@@ -51,7 +63,7 @@ Zodra er een stabiele Ethernet-factorybuild voor de Heatpump Controller Q wordt 
 > Let op: gebruik van OpenQuatt kan gevolgen hebben voor je Quatt-garantie. De standaard commerciële Quatt-garantie vervalt in principe bij gebruik van externe aansturing zoals OpenQuatt. De wettelijke garantie blijft bestaan, maar een garantieclaim kan daardoor in de praktijk wel ingewikkelder worden.
 
 1. Open de [OpenQuatt installer](https://jeroen85.github.io/OpenQuatt/install/).
-2. Kies de combinatie die past bij je opstelling en hardware.
+2. Kies de combinatie die past bij je opstelling, hardware en verbinding.
 3. Sluit het ESP32-bord via USB aan.
 4. Flash de firmware.
 5. Laat het browsertabblad open, zodat de Wi-Fi-configuratie direct daarna kan worden aangeboden.
