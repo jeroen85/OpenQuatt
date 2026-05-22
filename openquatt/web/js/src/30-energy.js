@@ -1,11 +1,13 @@
   function renderOverviewEnergyRow([label, key]) {
-    if (!hasEntity(key)) {
+    const derived = getDerivedEfficiencyValue(key);
+    if (!hasEntity(key) && Number.isNaN(derived)) {
       return "";
     }
+    const value = isEfficiencyKey(key) ? formatOverviewStatValue(key) : getEntityStateText(key);
     return `
       <div class="oq-overview-energy-row">
         <span>${escapeHtml(label)}</span>
-        <strong>${escapeHtml(getEntityStateText(key))}</strong>
+        <strong>${escapeHtml(value)}</strong>
       </div>
     `;
   }
