@@ -1052,7 +1052,7 @@
     return `
       <div class="${escapeHtml(className)}">
         ${renderSettingsNumberField("houseOutdoorMax", "Maximum heating outdoor temperature", "Bij deze buitentemperatuur is verwarmen meestal niet meer nodig.")}
-        ${renderSettingsNumberField("housePower", "Rated maximum house power", "Hoeveel warmte je woning ongeveer nodig heeft op een koude dag.")}
+        ${renderSettingsNumberField("housePower", "Rated maximum house power", "Hoeveel warmte je woning ongeveer nodig heeft wanneer het -10°C buiten is.")}
         ${renderPowerHouseResponseProfilesField()}
       </div>
     `;
