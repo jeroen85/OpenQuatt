@@ -36,8 +36,10 @@ Gebruik `openquatt_ha_dynamic_sources_package.yaml` alleen als je tijdens runtim
 Dat pakket maakt extra helper-entiteiten aan, zoals:
 
 - `input_text.openquatt_source_outdoor_temperature`
+- `input_text.openquatt_source_water_supply_temperature`
 - `input_text.openquatt_source_room_setpoint`
 - `input_text.openquatt_source_room_temperature`
+- `input_text.openquatt_source_cooling_enable`
 
 Installatie in Home Assistant:
 
@@ -45,8 +47,72 @@ Installatie in Home Assistant:
 2. Kopieer het pakket naar `/config/packages/openquatt_dynamic_sources.yaml`.
 3. Herlaad de template-entiteiten of herstart Home Assistant.
 
+Vul in de helpers de entiteit in die je wilt gebruiken. Een gewone sensor ziet er zo uit:
+
+```text
+sensor.buitentemperatuur
+```
+
+Als de waarde in een attribuut van een entiteit zit, gebruik je:
+
+```text
+climate.woonkamer|current_temperature
+```
+
+De algemene dynamische bronnen publiceren stabiele proxy-entiteiten, bijvoorbeeld `sensor.openquatt_ext_outdoor_temperature` en `binary_sensor.openquatt_ext_cooling_enable`. OpenQuatt kan die vervolgens als Home Assistant-bron gebruiken.
+
+## Optioneel: dynamische koelbronnen via Home Assistant
+
+Gebruik `openquatt_ha_dynamic_cooling_package.yaml` als je voor koeling een of meer dauwpuntbronnen vanuit Home Assistant wilt gebruiken.
+
+Dit pakket is vooral nuttig als:
+
+- je in meerdere kamers wilt koelen;
+- je per kamer een eigen dauwpunt, temperatuur of luchtvochtigheid hebt;
+- je OpenQuatt het hoogste geldige dauwpunt wilt laten gebruiken;
+- je dauwpuntbronnen wilt aanpassen zonder opnieuw te flashen.
+
+Installatie in Home Assistant:
+
+1. Zet packages aan in `/config/configuration.yaml`.
+2. Kopieer het pakket naar `/config/packages/openquatt_dynamic_cooling.yaml`.
+3. Herlaad de template-entiteiten of herstart Home Assistant.
+4. Zet `input_number.openquatt_cooling_room_count` op het aantal kamers dat je wilt gebruiken.
+5. Vul per kamer de bronhelpers in.
+
+Per kamer heb je twee keuzes.
+
+Gebruik bij voorkeur een directe dauwpuntentity:
+
+```text
+input_text.openquatt_source_cooling_room_1_dew_point = sensor.woonkamer_dauwpunt
+```
+
+Heb je geen directe dauwpuntentity, gebruik dan temperatuur plus relatieve luchtvochtigheid:
+
+```text
+input_text.openquatt_source_cooling_room_1_temperature = sensor.woonkamer_temperatuur
+input_text.openquatt_source_cooling_room_1_humidity = sensor.woonkamer_luchtvochtigheid
+```
+
+Ook hier mag een attribuut:
+
+```text
+climate.woonkamer|current_temperature
+climate.woonkamer|current_humidity
+```
+
+Het pakket publiceert daarna:
+
+- `sensor.openquatt_ext_cooling_dew_point`
+- `binary_sensor.openquatt_ext_cooling_dew_point_valid`
+- `sensor.openquatt_ha_cooling_room_1_dew_point_effective` tot en met room 6
+
+OpenQuatt gebruikt het hoogste geldige dauwpunt als veilige grens. Als er geen geldige dauwpuntbron is, blijft koeling standaard geblokkeerd tenzij je in OpenQuatt bewust de fallback zonder dauwpunt toestaat.
+
 ## Belangrijk om te onthouden
 
 - De dashboards gaan uit van de entiteitsnamen uit deze repository.
 - Als je zelf entiteitsnamen wijzigt, moet je ook het dashboard aanpassen.
 - Het Nederlandstalige dashboard is voor de meeste gebruikers de beste start.
+- De dynamische bronpakketten zijn optioneel. Zonder package werken de normale OpenQuatt-entiteiten en dashboards nog steeds.

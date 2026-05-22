@@ -182,4 +182,4 @@ Controleer daarna pas of de PID of `Duo`-grenzen te scherp staan.
 - [Power House](power-house.md)
 - [Regelgedrag van OpenQuatt](regelgedrag-van-openquatt.md)
 - [Instellingen en meetwaarden](instellingen-en-meetwaarden.md)
-- [Problemen oplossen en afstellen](diagnose-en-afstelling.md)
+- [Problemen oplossen](problemen-oplossen.md)

@@ -190,9 +190,10 @@ Als je te veel tegelijk wijzigt, wordt het juist moeilijker om te begrijpen wat 
 
 ## Verder lezen
 
-- MQTT-integratie: [MQTT integratie](mqtt.md)
+- Web-app gebruiken: [Web-app gebruiken](web-app.md)
+- MQTT gebruiken: [MQTT gebruiken](mqtt.md)
 - [Verwarmen en koelen uitgelegd](verwarmen-en-koelen.md)
 - [Power House](power-house.md)
 - [Water Temperature Control](water-temperature-control.md)
 - [Regelgedrag van OpenQuatt](regelgedrag-van-openquatt.md)
-- [Problemen oplossen en afstellen](diagnose-en-afstelling.md)
+- [Problemen oplossen](problemen-oplossen.md)

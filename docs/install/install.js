@@ -3,51 +3,100 @@ const VERSION_URL = new URL("../firmware/main/version.json", window.location.hre
 const FACTORY_FILES_URL = new URL("../firmware/main/factory_files.json", window.location.href).toString();
 const FALLBACK_RELEASE_URL = "https://github.com/jeroen85/OpenQuatt/releases/latest";
 
+const HARDWARE_LABELS = {
+  waveshare: "Waveshare ESP32-S3-Relay-1CH",
+  heatpump_listener: "Electropaultje Heatpump Listener",
+  heatpump_controller_q: "Electropaultje Heatpump Controller Q-edition",
+};
+
+const CONNECTION_LABELS = {
+  wifi: "Wi-Fi",
+  eth: "Ethernet",
+};
+
 const PROFILES = {
   duo: {
     label: "Duo",
     waveshare: {
-      title: "OpenQuatt Duo / Waveshare / Wi-Fi",
-      chipFamily: "ESP32-S3",
-      hardwareLabel: "Waveshare ESP32-S3-Relay-1CH",
-      fileName: "openquatt-waveshare-duo-wifi.firmware.factory.bin",
-      legacyFileNames: ["openquatt-duo-waveshare.firmware.factory.bin"],
+      wifi: {
+        title: "OpenQuatt Duo / Waveshare / Wi-Fi",
+        chipFamily: "ESP32-S3",
+        hardwareLabel: HARDWARE_LABELS.waveshare,
+        connectionLabel: CONNECTION_LABELS.wifi,
+        fileName: "openquatt-waveshare-duo-wifi.firmware.factory.bin",
+        legacyFileNames: ["openquatt-duo-waveshare.firmware.factory.bin"],
+        releaseFallback: true,
+      },
     },
     heatpump_listener: {
-      title: "OpenQuatt Duo / Heatpump Listener / Wi-Fi",
-      chipFamily: "ESP32",
-      hardwareLabel: "Electropaultje Heatpump Listener",
-      fileName: "openquatt-heatpump-listener-duo-wifi.firmware.factory.bin",
-      legacyFileNames: ["openquatt-duo-heatpump-listener.firmware.factory.bin"],
+      wifi: {
+        title: "OpenQuatt Duo / Heatpump Listener / Wi-Fi",
+        chipFamily: "ESP32",
+        hardwareLabel: HARDWARE_LABELS.heatpump_listener,
+        connectionLabel: CONNECTION_LABELS.wifi,
+        fileName: "openquatt-heatpump-listener-duo-wifi.firmware.factory.bin",
+        legacyFileNames: ["openquatt-duo-heatpump-listener.firmware.factory.bin"],
+        releaseFallback: true,
+      },
     },
     heatpump_controller_q: {
-      title: "OpenQuatt Duo / Heatpump Controller Q / Wi-Fi",
-      chipFamily: "ESP32-S3",
-      hardwareLabel: "Electropaultje Heatpump Controller Q-edition",
-      fileName: "openquatt-heatpump-controller-q-duo-wifi.firmware.factory.bin",
+      wifi: {
+        title: "OpenQuatt Duo / Heatpump Controller Q / Wi-Fi",
+        chipFamily: "ESP32-S3",
+        hardwareLabel: HARDWARE_LABELS.heatpump_controller_q,
+        connectionLabel: CONNECTION_LABELS.wifi,
+        fileName: "openquatt-heatpump-controller-q-duo-wifi.firmware.factory.bin",
+        releaseFallback: true,
+      },
+      eth: {
+        title: "OpenQuatt Duo / Heatpump Controller Q / Ethernet",
+        chipFamily: "ESP32-S3",
+        hardwareLabel: HARDWARE_LABELS.heatpump_controller_q,
+        connectionLabel: CONNECTION_LABELS.eth,
+        fileName: "openquatt-heatpump-controller-q-duo-eth.firmware.factory.bin",
+      },
     },
   },
   single: {
     label: "Single",
     waveshare: {
-      title: "OpenQuatt Single / Waveshare / Wi-Fi",
-      chipFamily: "ESP32-S3",
-      hardwareLabel: "Waveshare ESP32-S3-Relay-1CH",
-      fileName: "openquatt-waveshare-single-wifi.firmware.factory.bin",
-      legacyFileNames: ["openquatt-single-waveshare.firmware.factory.bin"],
+      wifi: {
+        title: "OpenQuatt Single / Waveshare / Wi-Fi",
+        chipFamily: "ESP32-S3",
+        hardwareLabel: HARDWARE_LABELS.waveshare,
+        connectionLabel: CONNECTION_LABELS.wifi,
+        fileName: "openquatt-waveshare-single-wifi.firmware.factory.bin",
+        legacyFileNames: ["openquatt-single-waveshare.firmware.factory.bin"],
+        releaseFallback: true,
+      },
     },
     heatpump_listener: {
-      title: "OpenQuatt Single / Heatpump Listener / Wi-Fi",
-      chipFamily: "ESP32",
-      hardwareLabel: "Electropaultje Heatpump Listener",
-      fileName: "openquatt-heatpump-listener-single-wifi.firmware.factory.bin",
-      legacyFileNames: ["openquatt-single-heatpump-listener.firmware.factory.bin"],
+      wifi: {
+        title: "OpenQuatt Single / Heatpump Listener / Wi-Fi",
+        chipFamily: "ESP32",
+        hardwareLabel: HARDWARE_LABELS.heatpump_listener,
+        connectionLabel: CONNECTION_LABELS.wifi,
+        fileName: "openquatt-heatpump-listener-single-wifi.firmware.factory.bin",
+        legacyFileNames: ["openquatt-single-heatpump-listener.firmware.factory.bin"],
+        releaseFallback: true,
+      },
     },
     heatpump_controller_q: {
-      title: "OpenQuatt Single / Heatpump Controller Q / Wi-Fi",
-      chipFamily: "ESP32-S3",
-      hardwareLabel: "Electropaultje Heatpump Controller Q-edition",
-      fileName: "openquatt-heatpump-controller-q-single-wifi.firmware.factory.bin",
+      wifi: {
+        title: "OpenQuatt Single / Heatpump Controller Q / Wi-Fi",
+        chipFamily: "ESP32-S3",
+        hardwareLabel: HARDWARE_LABELS.heatpump_controller_q,
+        connectionLabel: CONNECTION_LABELS.wifi,
+        fileName: "openquatt-heatpump-controller-q-single-wifi.firmware.factory.bin",
+        releaseFallback: true,
+      },
+      eth: {
+        title: "OpenQuatt Single / Heatpump Controller Q / Ethernet",
+        chipFamily: "ESP32-S3",
+        hardwareLabel: HARDWARE_LABELS.heatpump_controller_q,
+        connectionLabel: CONNECTION_LABELS.eth,
+        fileName: "openquatt-heatpump-controller-q-single-eth.firmware.factory.bin",
+      },
     },
   },
 };
@@ -57,6 +106,7 @@ const selectionCopy = document.getElementById("selection-copy");
 const selectionVersion = document.getElementById("selection-version");
 const selectionTopology = document.getElementById("selection-topology");
 const selectionHardware = document.getElementById("selection-hardware");
+const selectionConnection = document.getElementById("selection-connection");
 const selectionChip = document.getElementById("selection-chip");
 const selectionFile = document.getElementById("selection-file");
 const releaseLink = document.getElementById("release-link");
@@ -75,18 +125,31 @@ function getStableVersionLabel() {
   return releaseInfo.version === "latest" ? "Nieuwste stabiele" : releaseInfo.version;
 }
 
-function getSelectedProfile() {
-  const topology = document.querySelector('input[name="topology"]:checked')?.value;
-  const hardware = document.querySelector('input[name="hardware"]:checked')?.value;
+function getSelectedValues() {
+  return {
+    topology: document.querySelector('input[name="topology"]:checked')?.value || "",
+    hardware: document.querySelector('input[name="hardware"]:checked')?.value || "",
+    connection: document.querySelector('input[name="connection"]:checked')?.value || "",
+  };
+}
 
-  if (!topology || !hardware) {
+function getProfile(topology, hardware, connection) {
+  return PROFILES[topology]?.[hardware]?.[connection] || null;
+}
+
+function getSelectedProfile() {
+  const { topology, hardware, connection } = getSelectedValues();
+  const profile = getProfile(topology, hardware, connection);
+
+  if (!topology || !hardware || !connection || !profile) {
     return null;
   }
 
   return {
     topology,
     hardware,
-    ...PROFILES[topology][hardware],
+    connection,
+    ...profile,
   };
 }
 
@@ -97,13 +160,13 @@ function getProfileFileCandidates(profile) {
 function resolveFactoryFile(profile) {
   const candidates = getProfileFileCandidates(profile);
   if (!availableFactoryFiles) {
-    return candidates[0];
+    return profile.releaseFallback ? candidates[0] : "";
   }
   return candidates.find((fileName) => availableFactoryFiles.has(fileName)) || "";
 }
 
 function isProfileAvailable(profile) {
-  return Boolean(resolveFactoryFile(profile));
+  return Boolean(profile && resolveFactoryFile(profile));
 }
 
 function buildManifest(profile) {
@@ -140,6 +203,32 @@ function updateInstallManifest(profile) {
   installButton.manifest = activeManifestUrl;
 }
 
+function updateEmptySummary() {
+  const { topology, hardware, connection } = getSelectedValues();
+  const stableVersionLabel = getStableVersionLabel();
+
+  selectionTitle.textContent = "Kies eerst je opstelling, module en verbinding";
+  selectionCopy.textContent =
+    "Deze installatiehulp maakt automatisch een eenmalig ESP Web Tools-manifest voor het profiel dat je hier kiest.";
+  selectionVersion.textContent = stableVersionLabel;
+  selectionTopology.textContent = topology ? PROFILES[topology]?.label || topology : "Niet gekozen";
+  selectionHardware.textContent = hardware ? HARDWARE_LABELS[hardware] || hardware : "Niet gekozen";
+  selectionConnection.textContent = connection ? CONNECTION_LABELS[connection] || connection : "Niet gekozen";
+  selectionChip.textContent = "Niet gekozen";
+  selectionFile.textContent = "Niet gekozen";
+  installPanel.dataset.ready = "false";
+  installState.textContent = "Kies opstelling, module en verbinding om de installatieknop te activeren.";
+  installButton.manifest = "";
+}
+
+function getReadyStateText(profile) {
+  if (profile.connection === "eth") {
+    return "Klaar om te flashen. Sluit na de herstart Ethernet aan en open daarna http://openquatt.local voor de Quick Start.";
+  }
+
+  return "Klaar om te flashen. Laat deze pagina na de herstart open zodat ESP Web Tools Wi-Fi-instelling via USB kan aanbieden. Open daarna http://openquatt.local voor de Quick Start.";
+}
+
 function updateSummary() {
   const profile = getSelectedProfile();
   const stableVersionLabel = getStableVersionLabel();
@@ -147,17 +236,7 @@ function updateSummary() {
   releaseLink.href = releaseInfo.releaseUrl;
 
   if (!profile) {
-    selectionTitle.textContent = "Kies eerst je opstelling en hardware";
-    selectionCopy.textContent =
-      "Deze installatiehulp maakt automatisch een eenmalig ESP Web Tools-manifest voor het profiel dat je hier kiest.";
-    selectionVersion.textContent = stableVersionLabel;
-    selectionTopology.textContent = "Niet gekozen";
-    selectionHardware.textContent = "Niet gekozen";
-    selectionChip.textContent = "Niet gekozen";
-    selectionFile.textContent = "Niet gekozen";
-    installPanel.dataset.ready = "false";
-    installState.textContent = "Kies eerst beide opties om de installatieknop te activeren.";
-    installButton.manifest = "";
+    updateEmptySummary();
     return;
   }
 
@@ -169,6 +248,7 @@ function updateSummary() {
     selectionVersion.textContent = stableVersionLabel;
     selectionTopology.textContent = PROFILES[profile.topology].label;
     selectionHardware.textContent = profile.hardwareLabel;
+    selectionConnection.textContent = profile.connectionLabel;
     selectionChip.textContent = profile.chipFamily;
     selectionFile.textContent = "Nog niet gepubliceerd";
     installPanel.dataset.ready = "false";
@@ -186,35 +266,61 @@ function updateSummary() {
   selectionVersion.textContent = stableVersionLabel;
   selectionTopology.textContent = PROFILES[profile.topology].label;
   selectionHardware.textContent = profile.hardwareLabel;
+  selectionConnection.textContent = profile.connectionLabel;
   selectionChip.textContent = profile.chipFamily;
   selectionFile.textContent = factoryFile;
   installPanel.dataset.ready = "true";
-  installState.textContent =
-    "Klaar om te flashen. Laat deze pagina na de herstart open zodat ESP Web Tools wifi-instelling via USB kan aanbieden; anders kun je terugvallen op het OpenQuatt access point.";
+  installState.textContent = getReadyStateText(profile);
 }
 
-document.querySelectorAll('input[name="topology"], input[name="hardware"]').forEach((input) => {
+document.querySelectorAll('input[name="topology"], input[name="hardware"], input[name="connection"]').forEach((input) => {
   input.addEventListener("change", () => {
     updateAvailability();
     updateSummary();
   });
 });
 
-function updateAvailability() {
-  const topology = document.querySelector('input[name="topology"]:checked')?.value;
+function getHardwareProfiles(topology, hardware) {
+  if (topology) {
+    return Object.values(PROFILES[topology]?.[hardware] || {});
+  }
+
+  return Object.values(PROFILES).flatMap((topologyProfiles) => Object.values(topologyProfiles[hardware] || {}));
+}
+
+function updateHardwareAvailability() {
+  const { topology } = getSelectedValues();
   const hardwareOptions = document.querySelectorAll('input[name="hardware"]');
 
   hardwareOptions.forEach((input) => {
-    const profiles = topology
-      ? [PROFILES[topology][input.value]]
-      : Object.values(PROFILES).map((topologyProfiles) => topologyProfiles[input.value]);
-    const available = profiles.some((profile) => profile && isProfileAvailable(profile));
+    const profiles = getHardwareProfiles(topology, input.value);
+    const available = profiles.some((profile) => isProfileAvailable(profile));
     input.disabled = !available;
     input.closest(".choice-card")?.toggleAttribute("data-unavailable", !available);
     if (!available && input.checked) {
       input.checked = false;
     }
   });
+}
+
+function updateConnectionAvailability() {
+  const { topology, hardware } = getSelectedValues();
+  const connectionOptions = document.querySelectorAll('input[name="connection"]');
+
+  connectionOptions.forEach((input) => {
+    const profile = topology && hardware ? getProfile(topology, hardware, input.value) : null;
+    const available = isProfileAvailable(profile);
+    input.disabled = !available;
+    input.closest(".choice-card")?.toggleAttribute("data-unavailable", !available);
+    if (!available && input.checked) {
+      input.checked = false;
+    }
+  });
+}
+
+function updateAvailability() {
+  updateHardwareAvailability();
+  updateConnectionAvailability();
 }
 
 async function loadReleaseInfo() {
@@ -256,4 +362,5 @@ window.addEventListener("beforeunload", () => {
 });
 
 updateSummary();
+updateAvailability();
 loadReleaseInfo();

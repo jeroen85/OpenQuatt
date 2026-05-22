@@ -1,4 +1,4 @@
-# MQTT integratie
+# MQTT gebruiken
 
 MQTT in OpenQuatt is momenteel **experimenteel**.
 
@@ -122,9 +122,21 @@ De basisregel is:
 - `standard` voegt warmtepompdetails toe;
 - `diagnostic` voegt de interne diagnostiek toe.
 
-## Web-app configuratie
+## Instellen via de web-app
 
-In de web-app stel je minimaal in:
+Open de web-app via:
+
+```text
+http://openquatt.local
+```
+
+Ga daarna naar:
+
+```text
+Instellingen -> Systeem -> MQTT
+```
+
+Daar stel je minimaal in:
 
 - broker;
 - poort;
@@ -136,6 +148,8 @@ In de web-app stel je minimaal in:
 - intervals per profiel.
 
 MQTT start standaard uit. Pas na opslaan en expliciet inschakelen probeert OpenQuatt verbinding te maken.
+
+Gebruik voor normaal meekijken liever Home Assistant. MQTT is bedoeld voor extra systemen die een compacte JSON-stroom willen lezen.
 
 ## Waarom experimenteel?
 
@@ -150,6 +164,7 @@ De focus ligt nu op:
 
 ## Verder lezen
 
+- [Web-app gebruiken](web-app.md)
 - [Instellingen en meetwaarden](instellingen-en-meetwaarden.md)
-- [Problemen oplossen en afstellen](diagnose-en-afstelling.md)
+- [Problemen oplossen](problemen-oplossen.md)
 - [Verwarmen en koelen uitgelegd](verwarmen-en-koelen.md)

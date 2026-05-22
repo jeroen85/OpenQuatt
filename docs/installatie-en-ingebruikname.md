@@ -1,36 +1,50 @@
 # Installatie en ingebruikname
 
-Deze handleiding beschrijft de eerste installatie van OpenQuatt en de eerste controle daarna. Voor de meeste gebruikers is de web installer de juiste route.
+Deze handleiding beschrijft de eerste installatie van OpenQuatt. Voor de meeste gebruikers is de web installer de juiste en enige normale route. Na het flashen ga je eerst naar de lokale web-app via `http://openquatt.local`; Home Assistant komt daarna.
 
 ## Installatieroute
 
-Voor een eerste installatie gebruik je bij voorkeur de web installer uit de [README](../README.md). Daarmee flash je de juiste firmware en kun je direct daarna de wifi-configuratie afronden.
+Voor een eerste installatie gebruik je de web installer uit de [README](../README.md). Daarmee flash je de juiste firmware en kun je direct daarna de Wi-Fi-configuratie afronden.
+
+De route is:
+
+1. installer openen;
+2. opstelling en hardware kiezen;
+3. firmware flashen;
+4. Wi-Fi instellen;
+5. `openquatt.local` openen;
+6. Quick Start afronden;
+7. Home Assistant-dashboard importeren.
+
+Gebruik [Handmatige installatie](handmatige-installatie.md) alleen als fallback.
 
 ## Benodigdheden
 
 - een ondersteund ESP32-bord:
+  - Electropaultje Heatpump Controller Q-edition, aanbevolen voor nieuwe installaties
   - Waveshare ESP32-S3-Relay-1CH
   - Electropaultje Heatpump Listener
-  - Electropaultje Heatpump Controller Q-edition
 - een USB-kabel voor de eerste flash
-- een werkend wifi-netwerk
+- een werkend Wi-Fi-netwerk
 - Chrome of Edge voor de web installer
 - Home Assistant wordt sterk aanbevolen
 
-## Kies het juiste firmwareprofiel
+## Kies het juiste profiel in de installer
 
-Kies altijd exact de combinatie van je opstelling en je hardware:
+Kies in de installer altijd exact de combinatie van je opstelling en je hardware. Voor nieuwe installaties is de Heatpump Controller Q-edition de voorkeursmodule.
 
-| Opstelling | Hardware | Bestand |
-|---|---|---|
-| Single | Waveshare | `configs/waveshare/single_wifi.yaml` |
-| Duo | Waveshare | `configs/waveshare/duo_wifi.yaml` |
-| Single | Heatpump Listener | `configs/heatpump_listener/single_wifi.yaml` |
-| Duo | Heatpump Listener | `configs/heatpump_listener/duo_wifi.yaml` |
-| Single | Heatpump Controller Q | `configs/heatpump_controller_q/single_wifi.yaml` |
-| Duo | Heatpump Controller Q | `configs/heatpump_controller_q/duo_wifi.yaml` |
+| Opstelling | Hardware | Verbinding | Installerkeuze |
+|---|---|---|---|
+| Single | Heatpump Controller Q | Wi-Fi | `Single` + `Heatpump Controller Q` |
+| Duo | Heatpump Controller Q | Wi-Fi | `Duo` + `Heatpump Controller Q` |
+| Single | Heatpump Listener | Wi-Fi | `Single` + `Heatpump Listener` |
+| Duo | Heatpump Listener | Wi-Fi | `Duo` + `Heatpump Listener` |
+| Single | Waveshare | Wi-Fi | `Single` + `Waveshare` |
+| Duo | Waveshare | Wi-Fi | `Duo` + `Waveshare` |
 
-De Ethernet-configs voor de Heatpump Controller Q staan al in de matrix als planned targets, maar worden nog niet door CI/release gebouwd.
+De Ethernet-configs voor de Heatpump Controller Q staan al in de matrix als planned targets, maar worden nog niet door CI/release gebouwd. Voor gewone gebruikers is Wi-Fi voorlopig de duidelijke route.
+
+Zodra er een stabiele Ethernet-factorybuild voor de Heatpump Controller Q wordt gepubliceerd, toont de installer `Ethernet` als extra verbindingskeuze bij die module.
 
 ## Installatie via de web installer
 
@@ -40,19 +54,47 @@ De Ethernet-configs voor de Heatpump Controller Q staan al in de matrix als plan
 2. Kies de combinatie die past bij je opstelling en hardware.
 3. Sluit het ESP32-bord via USB aan.
 4. Flash de firmware.
-5. Laat het browsertabblad open, zodat de wifi-configuratie direct daarna kan worden aangeboden.
-6. Voeg het apparaat na de eerste start toe in Home Assistant.
+5. Laat het browsertabblad open, zodat de Wi-Fi-configuratie direct daarna kan worden aangeboden.
+6. Open na de eerste start `http://openquatt.local`.
+7. Rond de Quick Start in de web-app af.
+8. Voeg het apparaat daarna toe in Home Assistant.
 
 Praktisch voor een DS18B20: sluit die sensor bij voorkeur aan voordat OpenQuatt opstart. De 1-Wire sensor wordt tijdens het opstarten gedetecteerd; als je hem later aansluit, moet je het bord eerst herstarten voordat de sensor zichtbaar wordt.
 
-Als de browserflow voor wifi niet werkt, start OpenQuatt een fallback access point:
+Als de browserflow voor Wi-Fi niet werkt, start OpenQuatt een fallback access point:
 
 - SSID: `OpenQuatt`
 - wachtwoord: `openquatt`
 
-## Eerste controle in Home Assistant
+## Eerste start: openquatt.local
 
-Controleer na de eerste start bij voorkeur in deze volgorde:
+De eerste plek na het flashen is de web-app:
+
+```text
+http://openquatt.local
+```
+
+Als die naam niet werkt, zoek dan het IP-adres van OpenQuatt in je router en open `http://<ip-adres>`.
+
+De web-app toont Quick Start zolang de basisinstellingen nog niet zijn afgerond. Loop die eerst rustig door. Quick Start zet de belangrijkste keuzes klaar:
+
+1. Quatt Hybrid-versie;
+2. verwarmingsstrategie;
+3. instellingen voor de gekozen strategie;
+4. flowregeling;
+5. watertemperatuurbeveiliging;
+6. stille uren;
+7. bevestigen en afronden.
+
+Gebruik daarna pas Home Assistant voor dashboard, dagelijkse controle en optionele dynamische bronselectie.
+
+Zie voor de lokale web-app:
+
+- [Web-app gebruiken](web-app.md)
+
+## Daarna: Home Assistant
+
+Controleer na Quick Start bij voorkeur in deze volgorde:
 
 1. Het apparaat is online en zichtbaar in Home Assistant.
 2. De firmwareversie is zichtbaar.
@@ -62,7 +104,7 @@ Controleer na de eerste start bij voorkeur in deze volgorde:
    - flow
    - buitentemperatuur
 5. `CM override` staat op `Auto`.
-6. Het juiste dashboard is geimporteerd.
+6. Het juiste dashboard is geïmporteerd.
 
 Zie voor het dashboard:
 
@@ -73,7 +115,7 @@ Zie voor het dashboard:
 
 ### Het apparaat verschijnt niet in Home Assistant
 
-- Controleer of wifi echt is ingesteld.
+- Controleer of Wi-Fi echt is ingesteld.
 - Kijk of het apparaat nog op het fallback access point zit.
 - Herstart het bord een keer.
 
@@ -96,3 +138,7 @@ Controleer in Home Assistant eerst welke bron is geselecteerd voor flow, buitent
 
 - Gebruik de ruwe YAML-editor in Home Assistant.
 - Controleer of je het juiste dashboardbestand voor `Single` of `Duo` hebt gekozen.
+
+## Als de installer niet werkt
+
+Gebruik dan pas de fallbackroute: [Handmatige installatie](handmatige-installatie.md).

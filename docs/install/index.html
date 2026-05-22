@@ -53,7 +53,7 @@
           <section class="sidebar-overview">
             <p class="sidebar-kicker">Installatiehulp</p>
             <p class="sidebar-copy">
-              Flash de stabiele OpenQuatt-firmware voor Single of Duo via USB en ga daarna verder met dashboard en diagnose.
+              Flash de stabiele OpenQuatt-firmware voor Single of Duo via USB en ga daarna verder met de web-app en het dashboard.
             </p>
             <a class="sidebar-utility" href="../verwarmen-en-koelen.html">Naar uitleg</a>
           </section>
@@ -80,7 +80,8 @@
               <ul class="nav-list">
                 <li><a class="sidebar-link" href="../dashboard/index.html" data-sidebar-link>Dashboard installeren</a></li>
                 <li><a class="sidebar-link" href="../dashboardoverzicht.html" data-sidebar-link>Dashboard gebruiken</a></li>
-                <li><a class="sidebar-link" href="../diagnose-en-afstelling.html" data-sidebar-link>Problemen oplossen en afstellen</a></li>
+                <li><a class="sidebar-link" href="../web-app.html" data-sidebar-link>Web-app gebruiken</a></li>
+                <li><a class="sidebar-link" href="../problemen-oplossen.html" data-sidebar-link>Problemen oplossen</a></li>
                 <li><a class="sidebar-link" href="../verwarmen-en-koelen.html" data-sidebar-link>Verwarmen en koelen uitgelegd</a></li>
               </ul>
             </div>
@@ -107,7 +108,7 @@
           <ul class="install-quicklist">
             <li>Gebruik Chrome of Edge op desktop.</li>
             <li>Sluit een USB-datakabel aan.</li>
-            <li>Laat de pagina na het flashen open voor wifi-configuratie via USB.</li>
+            <li>Kies Wi-Fi of Ethernet zodra die releasebuild beschikbaar is.</li>
           </ul>
         </section>
 
@@ -149,17 +150,40 @@
                 <label class="choice-card">
                   <input type="radio" name="hardware" value="waveshare" />
                   <span class="choice-title">Waveshare</span>
-                  <span class="choice-body">ESP32-S3-Relay-1CH-bord met de ESP32-S3-build.</span>
+                  <span class="choice-body">Waveshare ESP32-S3-Relay-1CH voor OpenQuatt.</span>
                 </label>
                 <label class="choice-card">
                   <input type="radio" name="hardware" value="heatpump_listener" />
                   <span class="choice-title">Heatpump Listener</span>
-                  <span class="choice-body">Electropaultje Heatpump Listener met de ESP32 N8R8 Wi-Fi-build.</span>
+                  <span class="choice-body">Electropaultje Heatpump Listener voor OpenQuatt.</span>
                 </label>
                 <label class="choice-card">
                   <input type="radio" name="hardware" value="heatpump_controller_q" />
                   <span class="choice-title">Heatpump Controller Q</span>
-                  <span class="choice-body">Electropaultje Heatpump Controller Q-edition met de ESP32-S3R8 Wi-Fi-build.</span>
+                  <span class="choice-body">Electropaultje Heatpump Controller Q-edition, de voorkeursmodule voor nieuwe installaties.</span>
+                </label>
+              </div>
+            </section>
+
+            <section class="install-step" id="connection-step">
+              <div class="install-step-head">
+                <p class="install-step-number">3</p>
+                <div>
+                  <h2>Kies je verbinding</h2>
+                  <p class="install-step-copy">De installer activeert alleen verbindingen waarvoor in de stabiele release een factory-image beschikbaar is.</p>
+                </div>
+              </div>
+
+              <div class="choice-grid" id="connection-grid">
+                <label class="choice-card" data-unavailable>
+                  <input type="radio" name="connection" value="wifi" disabled />
+                  <span class="choice-title">Wi-Fi</span>
+                  <span class="choice-body">De huidige standaardroute voor OpenQuatt-installaties.</span>
+                </label>
+                <label class="choice-card" data-unavailable>
+                  <input type="radio" name="connection" value="eth" disabled />
+                  <span class="choice-title">Ethernet</span>
+                  <span class="choice-body">Voor Heatpump Controller Q met netwerkkabel, zodra een Ethernet-releasebuild beschikbaar is.</span>
                 </label>
               </div>
             </section>
@@ -168,7 +192,7 @@
           <aside class="install-summary-wrap">
             <section class="install-card install-summary-card" id="flash-step">
               <p class="install-section-label">Gekozen firmware</p>
-              <h2 id="selection-title">Kies eerst je opstelling en hardware</h2>
+              <h2 id="selection-title">Kies eerst je opstelling, module en verbinding</h2>
               <p class="summary-copy" id="selection-copy">
                 Deze installatiehulp maakt automatisch een eenmalig ESP Web Tools-manifest voor het profiel dat je hier kiest.
               </p>
@@ -187,6 +211,10 @@
                   <dd id="selection-hardware">Niet gekozen</dd>
                 </div>
                 <div>
+                  <dt>Verbinding</dt>
+                  <dd id="selection-connection">Niet gekozen</dd>
+                </div>
+                <div>
                   <dt>Chipfamilie</dt>
                   <dd id="selection-chip">Niet gekozen</dd>
                 </div>
@@ -197,7 +225,7 @@
               </dl>
 
               <div class="install-panel" id="install-panel" data-ready="false">
-                <p class="install-state" id="install-state">Kies eerst beide opties om de installatieknop te activeren.</p>
+                <p class="install-state" id="install-state">Kies eerst opstelling, module en verbinding om de installatieknop te activeren.</p>
                 <esp-web-install-button id="install-button">
                   <button class="install-cta" slot="activate">Installeer OpenQuatt</button>
                   <span class="install-fallback" slot="unsupported">
@@ -226,16 +254,16 @@
           <h2>Na het flashen</h2>
           <div class="install-follow-up-grid">
             <article class="install-follow-up-item">
-              <h3>Wifi instellen</h3>
-              <p>Laat deze pagina open na de eerste herstart zodat ESP Web Tools wifi-configuratie via USB kan aanbieden.</p>
+              <h3>Netwerk afronden</h3>
+              <p>Bij Wi-Fi laat je deze pagina open voor configuratie via USB. Bij Ethernet sluit je de netwerkkabel aan.</p>
+            </article>
+            <article class="install-follow-up-item">
+              <h3>Web-app openen</h3>
+              <p>Open daarna <code>http://openquatt.local</code> en rond de Quick Start af voordat je verdergaat in Home Assistant.</p>
             </article>
             <article class="install-follow-up-item">
               <h3>Fallback route</h3>
-              <p>Lukt dat niet, dan blijft het OpenQuatt access point beschikbaar om wifi alsnog handmatig in te stellen.</p>
-            </article>
-            <article class="install-follow-up-item">
-              <h3>Ga verder in de docs</h3>
-              <p>Importeer daarna het juiste dashboard en loop de documentatieroute door voor controle en diagnose.</p>
+              <p>Lukt Wi-Fi instellen niet, dan blijft het OpenQuatt access point beschikbaar om Wi-Fi alsnog handmatig in te stellen.</p>
             </article>
           </div>
         </section>

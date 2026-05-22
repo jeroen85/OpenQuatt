@@ -89,6 +89,31 @@ Belangrijk:
 - de bronkeuze doe je meestal op `Sensorconfiguratie`;
 - de `Koeling`-tab laat vooral de actuele toestand en beveiliging zien.
 
+### Dynamische koelbronnen
+
+In de Nederlandstalige dashboards staat onder `Sensorconfiguratie` ook een blok voor dynamische koelbronnen. Dat blok gebruikt het optionele Home Assistant package `openquatt_ha_dynamic_cooling_package.yaml`.
+
+Daarmee kun je per kamer aangeven waar Home Assistant het dauwpunt vandaan haalt:
+
+- direct uit een dauwpuntsensor;
+- of berekend uit temperatuur plus relatieve luchtvochtigheid.
+
+Stel eerst `OpenQuatt cooling room count` in. Vul daarna per kamer de bronvelden in. Voor een directe sensor gebruik je bijvoorbeeld:
+
+```text
+sensor.woonkamer_dauwpunt
+```
+
+Voor een attribuut van een klimaatentiteit gebruik je:
+
+```text
+climate.woonkamer|current_temperature
+```
+
+Het package berekent daarna het hoogste geldige dauwpunt en publiceert dat als `sensor.openquatt_ext_cooling_dew_point`. De geldigheid staat in `binary_sensor.openquatt_ext_cooling_dew_point_valid`.
+
+Zie [Dashboard installeren](dashboard/README.md#optioneel-dynamische-koelbronnen-via-home-assistant) voor de installatie van het package.
+
 ## Gebruik `Instellingen` met beleid
 
 De tab `Instellingen` is niet bedoeld als dagelijkse bedieningspagina. Gebruik hem alleen als je:
@@ -124,6 +149,7 @@ Dat is belangrijk, omdat er meerdere bronnen mogelijk zijn voor dezelfde meting.
 ## Verder lezen
 
 - Uitleg van verwarmen en koelen: [Verwarmen en koelen uitgelegd](verwarmen-en-koelen.md)
-- Problemen oplossen: [Problemen oplossen en afstellen](diagnose-en-afstelling.md)
-- MQTT-integratie: [MQTT integratie](mqtt.md)
+- Web-app gebruiken: [Web-app gebruiken](web-app.md)
+- Problemen oplossen: [Problemen oplossen](problemen-oplossen.md)
+- MQTT gebruiken: [MQTT gebruiken](mqtt.md)
 - Technische verdieping: [Instellingen en meetwaarden](instellingen-en-meetwaarden.md)

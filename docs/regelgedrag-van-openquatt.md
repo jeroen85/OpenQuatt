@@ -137,4 +137,4 @@ Als deze bronnen niet kloppen, gaat OpenQuatt logisch reageren op verkeerde info
 - [Power House](power-house.md)
 - [Water Temperature Control](water-temperature-control.md)
 - [Instellingen en meetwaarden](instellingen-en-meetwaarden.md)
-- [Problemen oplossen en afstellen](diagnose-en-afstelling.md)
+- [Problemen oplossen](problemen-oplossen.md)

@@ -211,4 +211,4 @@ Controleer daarna pas of de afstelling zelf te scherp of te slap is.
 - [Water Temperature Control](water-temperature-control.md)
 - [Regelgedrag van OpenQuatt](regelgedrag-van-openquatt.md)
 - [Instellingen en meetwaarden](instellingen-en-meetwaarden.md)
-- [Problemen oplossen en afstellen](diagnose-en-afstelling.md)
+- [Problemen oplossen](problemen-oplossen.md)

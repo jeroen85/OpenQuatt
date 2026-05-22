@@ -34,15 +34,19 @@ class RenderedPage:
 
 PAGES = [
     Page(PurePosixPath("README.md"), PurePosixPath("index.html"), "OpenQuatt", "Project", "Projectoverzicht, snelle start en hoofdroute."),
-    Page(PurePosixPath("docs/installatie-en-ingebruikname.md"), PurePosixPath("installatie-en-ingebruikname.html"), "Installatie en ingebruikname", "Docs", "Eerste installatie en controle na de eerste start."),
+    Page(PurePosixPath("docs/installatie-en-ingebruikname.md"), PurePosixPath("installatie-en-ingebruikname.html"), "Installatie en ingebruikname", "Docs", "Installeren via de installer en daarna Quick Start in de web-app."),
+    Page(PurePosixPath("docs/web-app.md"), PurePosixPath("web-app.html"), "Web-app gebruiken", "Handleiding", "Quick Start, instellingen, updates, backup, beveiliging en MQTT via openquatt.local."),
+    Page(PurePosixPath("docs/dashboard/README.md"), PurePosixPath("dashboard/index.html"), "Dashboard installeren", "Docs", "Importeer het juiste dashboardbestand voor Single of Duo."),
+    Page(PurePosixPath("docs/dashboardoverzicht.md"), PurePosixPath("dashboardoverzicht.html"), "Dashboard gebruiken", "Handleiding", "Dagelijkse controle en diagnosevolgorde in Home Assistant."),
     Page(PurePosixPath("docs/verwarmen-en-koelen.md"), PurePosixPath("verwarmen-en-koelen.html"), "Verwarmen en koelen uitgelegd", "Uitleg", "Heldere uitleg van Power House, stooklijnregeling, koeling, Single en Duo."),
+    Page(PurePosixPath("docs/mqtt.md"), PurePosixPath("mqtt.html"), "MQTT gebruiken", "Integratie", "Experimentele publish-only MQTT-export instellen via de web-app."),
+    Page(PurePosixPath("docs/problemen-oplossen.md"), PurePosixPath("problemen-oplossen.html"), "Problemen oplossen", "Handleiding", "Rustige diagnosevolgorde bij installatie- en regelproblemen."),
     Page(PurePosixPath("docs/power-house.md"), PurePosixPath("power-house.html"), "Power House", "Docs", "Uitleg van huismodel, comfortlogica en Single/Duo-gedrag."),
     Page(PurePosixPath("docs/water-temperature-control.md"), PurePosixPath("water-temperature-control.html"), "Water Temperature Control", "Docs", "Uitleg van stooklijn, PID en Single/Duo-gedrag in curve-modus."),
-    Page(PurePosixPath("docs/dashboardoverzicht.md"), PurePosixPath("dashboardoverzicht.html"), "Dashboard gebruiken", "Handleiding", "Dagelijkse controle en diagnosevolgorde in Home Assistant."),
-    Page(PurePosixPath("docs/dashboard/README.md"), PurePosixPath("dashboard/index.html"), "Dashboard installeren", "Docs", "Importeer het juiste dashboardbestand voor Single of Duo."),
-    Page(PurePosixPath("docs/diagnose-en-afstelling.md"), PurePosixPath("diagnose-en-afstelling.html"), "Problemen oplossen en afstellen", "Handleiding", "Werkvolgorde bij klachten, onrustig gedrag en kleine aanpassingen."),
     Page(PurePosixPath("docs/regelgedrag-van-openquatt.md"), PurePosixPath("regelgedrag-van-openquatt.html"), "Regelgedrag van OpenQuatt", "Naslag", "Technische runtime-uitleg over systeemstanden, flowregeling en bronkeuze."),
     Page(PurePosixPath("docs/instellingen-en-meetwaarden.md"), PurePosixPath("instellingen-en-meetwaarden.html"), "Instellingen en meetwaarden", "Naslag", "Praktische naslag voor runtime- en compile-time instellingen."),
+    Page(PurePosixPath("docs/handmatige-installatie.md"), PurePosixPath("handmatige-installatie.html"), "Handmatige installatie", "Naslag", "Fallbackroute voor handmatig flashen buiten de normale installer om."),
+    Page(PurePosixPath("docs/diagnose-en-afstelling.md"), PurePosixPath("diagnose-en-afstelling.html"), "Problemen oplossen en afstellen", "Doorverwijzing", "Oude link naar de nieuwe probleemoplos-pagina."),
 ]
 
 PAGE_BY_SOURCE = {page.source: page for page in PAGES}
@@ -53,25 +57,35 @@ SIDEBAR_GROUPS = [
         [
             PurePosixPath("README.md"),
             PurePosixPath("docs/installatie-en-ingebruikname.md"),
+            PurePosixPath("docs/web-app.md"),
+            PurePosixPath("docs/dashboard/README.md"),
         ],
     ),
     (
         "Dagelijks gebruik",
         "Begrijpen, volgen en rustig bijsturen.",
         [
-            PurePosixPath("docs/verwarmen-en-koelen.md"),
             PurePosixPath("docs/dashboardoverzicht.md"),
-            PurePosixPath("docs/diagnose-en-afstelling.md"),
+            PurePosixPath("docs/verwarmen-en-koelen.md"),
+            PurePosixPath("docs/mqtt.md"),
         ],
     ),
     (
-        "Verdieping",
-        "Technische uitleg en aanvullende naslag wanneer je verder wilt kijken.",
+        "Afstellen en problemen",
+        "Rustig onderzoeken voordat je instellingen verandert.",
         [
+            PurePosixPath("docs/problemen-oplossen.md"),
             PurePosixPath("docs/power-house.md"),
             PurePosixPath("docs/water-temperature-control.md"),
             PurePosixPath("docs/regelgedrag-van-openquatt.md"),
             PurePosixPath("docs/instellingen-en-meetwaarden.md"),
+        ],
+    ),
+    (
+        "Naslag",
+        "Fallbacks en technische routes die je meestal niet dagelijks nodig hebt.",
+        [
+            PurePosixPath("docs/handmatige-installatie.md"),
         ],
     ),
 ]

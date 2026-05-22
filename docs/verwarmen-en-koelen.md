@@ -156,5 +156,5 @@ Voor de meeste gebruikers is deze volgorde beter:
 
 - Installeren en eerste controle: [Installatie en ingebruikname](installatie-en-ingebruikname.md)
 - Dashboard begrijpen: [Dashboard gebruiken](dashboardoverzicht.md)
-- Problemen oplossen: [Problemen oplossen en afstellen](diagnose-en-afstelling.md)
+- Problemen oplossen: [Problemen oplossen](problemen-oplossen.md)
 - Technische verdieping: [Power House](power-house.md) en [Water Temperature Control](water-temperature-control.md)
