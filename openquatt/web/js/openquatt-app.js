@@ -862,6 +862,7 @@ const LOGO_MARKUP = `
   const BULK_POLL_INTERVAL_MS = 10000;
   const STATIC_POLL_INTERVAL_MS = 60000;
   const SUPPLEMENTARY_STATUS_REFRESH_INTERVAL_MS = 30000;
+  const LOGIN_MODAL_AUTH_STATUS_REFRESH_INTERVAL_MS = 1000;
   const HIDDEN_POLL_INTERVAL_MS = 30000;
   const POLL_JITTER_MIN_MS = 250;
   const POLL_JITTER_MAX_MS = 750;
@@ -888,6 +889,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     lastBulkEntitySyncAt: 0,
     lastStaticEntitySyncAt: 0,
     lastAuthStatusRefreshAt: 0,
+    loginAuthStatusPollTimer: null,
     lastApiSecurityStatusRefreshAt: 0,
     lastMqttStatusRefreshAt: 0,
     summary: "",
@@ -4368,6 +4370,58 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     }
   }
 
+  function shouldPollLoginAuthStatus() {
+    if (state.nativeOpen || state.systemModal !== "login") {
+      return false;
+    }
+    const status = state.authStatus || {};
+    return status.setup_window_active !== true;
+  }
+
+  function stopLoginAuthStatusPolling() {
+    if (!state.loginAuthStatusPollTimer) {
+      return;
+    }
+    window.clearTimeout(state.loginAuthStatusPollTimer);
+    state.loginAuthStatusPollTimer = null;
+  }
+
+  function scheduleLoginAuthStatusPolling(delayMs = LOGIN_MODAL_AUTH_STATUS_REFRESH_INTERVAL_MS) {
+    if (state.loginAuthStatusPollTimer || !shouldPollLoginAuthStatus()) {
+      return;
+    }
+
+    state.loginAuthStatusPollTimer = window.setTimeout(async () => {
+      state.loginAuthStatusPollTimer = null;
+      if (!shouldPollLoginAuthStatus()) {
+        return;
+      }
+      const previousAuthError = state.authError;
+      const changed = await refreshAuthStatus({ force: true });
+      if ((changed || state.authError !== previousAuthError) && state.systemModal === "login") {
+        render();
+      }
+      if (shouldPollLoginAuthStatus()) {
+        scheduleLoginAuthStatusPolling();
+      }
+    }, Math.max(0, Number(delayMs) || 0));
+  }
+
+  async function refreshLoginModalAuthStatus(options = {}) {
+    if (state.systemModal !== "login") {
+      return false;
+    }
+    const previousAuthError = state.authError;
+    const changed = await refreshAuthStatus({ force: true });
+    if ((changed || state.authError !== previousAuthError) && state.systemModal === "login") {
+      render();
+    }
+    if (options.poll !== false && shouldPollLoginAuthStatus()) {
+      scheduleLoginAuthStatusPolling();
+    }
+    return changed;
+  }
+
   async function refreshApiSecurityStatus(options = {}) {
     if (!shouldRefreshSupplementaryStatus(state.lastApiSecurityStatusRefreshAt, options)) {
       return false;
@@ -5970,6 +6024,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
         }
         if (state.systemModal) {
           clearSettingsBackupDraft();
+          stopLoginAuthStatusPolling();
           state.systemModal = "";
           shouldRender = true;
         }
@@ -6053,7 +6108,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       state.authNotice = "";
       state.authError = "";
       render();
-      void refreshAuthStatus({ force: true });
+      void refreshLoginModalAuthStatus({ poll: true });
       return;
     }
 
@@ -6274,6 +6329,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     }
 
     if (action === "close-system-modal") {
+      stopLoginAuthStatusPolling();
       state.systemModal = "";
       state.authDraftCurrentPassword = "";
       state.authDraftNewPassword = "";
@@ -6328,6 +6384,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       state.controlNotice = "";
       state.settingsInfoOpen = "";
       state.updateModalOpen = false;
+      stopLoginAuthStatusPolling();
       state.systemModal = "";
       if (state.nativeOpen) {
         void ensureNativeFrontendLoaded();
@@ -7104,6 +7161,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
         "flowAutotuneApply",
       ].includes(key);
       if (!keepCommissioningModalOpen) {
+        stopLoginAuthStatusPolling();
         state.systemModal = "";
       }
       state.controlNotice = options.successNotice || `${entity.name} gestart.`;
