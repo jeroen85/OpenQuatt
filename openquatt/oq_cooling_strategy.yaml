@@ -135,6 +135,11 @@ globals:
     restore_value: false
     initial_value: '0'
 
+  - id: oq_cooling_stop_candidate_since_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
   - id: oq_cooling_water_cycle_active
     type: bool
     restore_value: false
@@ -334,9 +339,11 @@ interval:
           const float buffer_hard_stop_gap_c = -0.70f;
           const float trend_safe_rate_c_per_min = -0.25f;
           const float trend_unsafe_rate_c_per_min = -0.35f;
+          const float limiter_soft_stop_gap_c = -0.10f;
           const float fallback_full_gap_c = 1.00f;
           const float fallback_cap1_gap_c = 0.30f;
           const float fallback_stop_gap_c = 0.00f;
+          const uint32_t limiter_stop_confirm_ms = 45000UL;
           const uint32_t upscale_dwell_ms = 90000UL;
           const uint32_t downscale_dwell_ms = 30000UL;
           const float simmer_room_error_min_c = 0.20f;
@@ -373,6 +380,7 @@ interval:
             id(oq_cooling_stop_reason_code) = 0;
             id(oq_cooling_buffer_gap_rate_ref_ms) = 0;
             id(oq_cooling_last_demand_change_ms) = 0;
+            id(oq_cooling_stop_candidate_since_ms) = 0;
             return;
           }
 
@@ -554,6 +562,33 @@ interval:
           allowed_max = std::min(allowed_max, fallback_cap);
           allowed_max = std::min(allowed_max, mode_cap);
           if (allowed_max < 0) allowed_max = 0;
+
+          // Soft-stop near target: avoid an immediate drop to 0 from limiter logic
+          // while raw gap is still positive or only slightly negative. Hard dew and
+          // fallback floor stops remain immediate safety exits.
+          const bool immediate_stop = (reason_code == 6 || reason_code == 7);
+          if (!immediate_stop && allowed_max <= 0) {
+            if (buffer_gap_c > 0.0f) {
+              allowed_max = 1;
+              reason_code = 11;
+              id(oq_cooling_stop_candidate_since_ms) = 0;
+            } else if (filtered_gap_c > limiter_soft_stop_gap_c) {
+              uint32_t candidate_since_ms = id(oq_cooling_stop_candidate_since_ms);
+              if (candidate_since_ms == 0 || now_ms <= candidate_since_ms) {
+                id(oq_cooling_stop_candidate_since_ms) = now_ms;
+                candidate_since_ms = now_ms;
+              }
+              if ((uint32_t) (now_ms - candidate_since_ms) < limiter_stop_confirm_ms) {
+                allowed_max = 1;
+                reason_code = 11;
+              }
+            } else {
+              id(oq_cooling_stop_candidate_since_ms) = 0;
+            }
+          } else {
+            id(oq_cooling_stop_candidate_since_ms) = 0;
+          }
+
           id(oq_cooling_limiter_allowed_max) = allowed_max;
 
           // Restart hysteresis is only for water-side stops. If cooling stopped
