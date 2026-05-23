@@ -112,6 +112,22 @@ Deze marges zijn runtime-instellingen:
 - `Cooling Request On Delta`
 - `Cooling Request Off Delta`
 
+Als er koelvraag is, stuurt OpenQuatt niet rechtstreeks op de kamertemperatuur. De kamerlaag bepaalt alleen of koeling nodig is. Daarna kijkt de waterregeling naar de aanvoertemperatuur.
+
+Daarbij gebruikt OpenQuatt twee afstanden:
+
+- `buffer gap`: hoeveel de aanvoer nog boven het koeldoel zit;
+- `dew gap`: hoeveel de aanvoer nog boven het echte dauwpunt zit.
+
+Het koeldoel is de hoogste waarde van:
+
+- `Cooling Minimum Supply Temp`;
+- de dauwpuntveilige of fallback-ondergrens.
+
+Zolang het water nog duidelijk warmer is dan dit doel, mag de regelaar meer koelvraag opbouwen tot `Cooling Demand Max`. Dicht bij het doel bouwt OpenQuatt terug. Als de ruimte nog koelvraag heeft en de veiligheidsruimte voldoende stabiel is, mag level 1 blijven draaien als rustige onderhoudsstand. Dat voorkomt dat de compressor telkens uitgaat zodra het water precies het target raakt.
+
+Als level 1 nog steeds te veel koelt, of als de aanvoer te snel richting de veilige ondergrens zakt, stopt OpenQuatt alsnog. Na zo'n waterzijde-stop gebruikt `Cooling Restart Delta` hoeveel de aanvoer eerst weer boven het doel moet opwarmen voordat de watercyclus opnieuw mag starten.
+
 ### Waarom is dauwpunt zo belangrijk?
 
 Bij vloerkoeling of andere watergedragen koeling wil je voorkomen dat oppervlakken te koud worden en vocht uit de lucht erop condenseert.
