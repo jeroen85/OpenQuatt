@@ -467,7 +467,7 @@ body.oq-surface-native {
 .oq-helper-devdock-toggle:focus-visible,
 .oq-helper-hub-dev-button:hover,
 .oq-helper-hub-dev-button:focus-visible {
-  transform: translateY(-1px);
+  border-color: rgba(234, 88, 12, 0.22);
 }
 
 .oq-helper-hub-chip.is-active {
@@ -664,7 +664,6 @@ body.oq-surface-native {
 .oq-helper-status-item--button:hover {
   border-color: rgba(249, 115, 22, 0.35);
   box-shadow: 0 6px 18px rgba(249, 115, 22, 0.08);
-  transform: translateY(-1px);
 }
 
 .oq-helper-status-item--button:focus-visible {
@@ -1535,7 +1534,6 @@ body.oq-surface-native {
 }
 
 .oq-helper-button:hover {
-  transform: translateY(-1px);
   border-color: rgba(234, 88, 12, 0.3);
   background: var(--oq-helper-accent-soft);
   color: var(--oq-helper-accent-deep);
@@ -1610,7 +1608,7 @@ body.oq-surface-native {
 }
 
 .oq-helper-app-tab:hover {
-  transform: translateY(-1px);
+  border-color: rgba(234, 88, 12, 0.24);
 }
 
 .oq-helper-app-tab.is-active {
@@ -1796,7 +1794,6 @@ body.oq-surface-native {
 .oq-helper-field--step:focus-visible {
   border-color: rgba(37, 99, 235, 0.18);
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
-  transform: translateY(-1px);
 }
 
 .oq-helper-shell--dark .oq-helper-field--step:hover,

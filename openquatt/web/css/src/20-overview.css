@@ -448,7 +448,7 @@
 .oq-overview-controlpanel-segment:hover,
 .oq-overview-controlpanel-toggle:hover,
 .oq-overview-controlpanel-icon:hover {
-  transform: translateY(-1px);
+  border-color: rgba(37, 99, 235, 0.22);
 }
 
 .oq-overview-controlpanel-segment.is-selected {

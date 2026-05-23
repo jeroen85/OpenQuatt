@@ -5910,11 +5910,20 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
         render();
         return;
       }
+      const hasOpenOverlay = Boolean(state.updateModalOpen || state.systemModal || state.interfacePanelOpen);
       if (nextHeaderSignature !== state.headerRenderSignature) {
-        render();
+        if (hasOpenOverlay && patchHeaderDom()) {
+          state.headerRenderSignature = nextHeaderSignature;
+        } else {
+          render();
+          return;
+        }
+      } else {
+        patchHeaderDom();
+      }
+      if (hasOpenOverlay) {
         return;
       }
-      patchHeaderDom();
       if (state.appView === "settings") {
         const nextSettingsSignature = getSettingsRenderSignature();
         if (nextSettingsSignature !== state.settingsRenderSignature) {

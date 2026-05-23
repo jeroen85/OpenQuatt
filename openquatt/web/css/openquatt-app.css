@@ -471,7 +471,7 @@ body.oq-surface-native {
 .oq-helper-devdock-toggle:focus-visible,
 .oq-helper-hub-dev-button:hover,
 .oq-helper-hub-dev-button:focus-visible {
-  transform: translateY(-1px);
+  border-color: rgba(234, 88, 12, 0.22);
 }
 
 .oq-helper-hub-chip.is-active {
@@ -668,7 +668,6 @@ body.oq-surface-native {
 .oq-helper-status-item--button:hover {
   border-color: rgba(249, 115, 22, 0.35);
   box-shadow: 0 6px 18px rgba(249, 115, 22, 0.08);
-  transform: translateY(-1px);
 }
 
 .oq-helper-status-item--button:focus-visible {
@@ -1539,7 +1538,6 @@ body.oq-surface-native {
 }
 
 .oq-helper-button:hover {
-  transform: translateY(-1px);
   border-color: rgba(234, 88, 12, 0.3);
   background: var(--oq-helper-accent-soft);
   color: var(--oq-helper-accent-deep);
@@ -1614,7 +1612,7 @@ body.oq-surface-native {
 }
 
 .oq-helper-app-tab:hover {
-  transform: translateY(-1px);
+  border-color: rgba(234, 88, 12, 0.24);
 }
 
 .oq-helper-app-tab.is-active {
@@ -1800,7 +1798,6 @@ body.oq-surface-native {
 .oq-helper-field--step:focus-visible {
   border-color: rgba(37, 99, 235, 0.18);
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
-  transform: translateY(-1px);
 }
 
 .oq-helper-shell--dark .oq-helper-field--step:hover,
@@ -2328,7 +2325,6 @@ body.oq-surface-native {
 
 .oq-settings-group-button:hover,
 .oq-settings-group-button:focus-visible {
-  transform: translateY(-1px);
   border-color: rgba(234, 88, 12, 0.18);
 }
 
@@ -2524,7 +2520,6 @@ body.oq-surface-native {
 .oq-settings-strategy-card:focus-visible {
   border-color: rgba(234, 88, 12, 0.18);
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
-  transform: translateY(-1px);
 }
 
 .oq-settings-strategy-card:disabled {
@@ -3530,7 +3525,6 @@ body.oq-surface-native {
 .oq-settings-choice-card:focus-visible {
   border-color: rgba(234, 88, 12, 0.18);
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
-  transform: translateY(-1px);
 }
 
 .oq-settings-choice-card.is-active {
@@ -5112,7 +5106,7 @@ body.oq-surface-native {
 .oq-overview-controlpanel-segment:hover,
 .oq-overview-controlpanel-toggle:hover,
 .oq-overview-controlpanel-icon:hover {
-  transform: translateY(-1px);
+  border-color: rgba(37, 99, 235, 0.22);
 }
 
 .oq-overview-controlpanel-segment.is-selected {
@@ -6059,7 +6053,6 @@ body.oq-surface-native {
 }
 
 .oq-overview-hp-tool-chip:hover {
-  transform: translateY(-1px);
   border-color: rgba(234, 88, 12, 0.28);
   color: var(--oq-helper-accent-deep);
 }
@@ -6162,7 +6155,6 @@ body.oq-surface-native {
 }
 
 .oq-overview-hp-card-action:hover {
-  transform: translateY(-1px);
   border-color: rgba(234, 88, 12, 0.28);
   background: rgba(255, 237, 213, 0.38);
   color: var(--oq-helper-accent-deep);
