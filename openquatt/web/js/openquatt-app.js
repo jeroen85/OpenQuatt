@@ -1024,6 +1024,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     updateInstallProgressHint: Number.NaN,
     updateInstallMode: "",
     updateInstallTargetConnection: "",
+    firmwareConnectionSwitchOpen: false,
     firmwareConnectionSwitchConfirmed: false,
     updateInstallCompleted: false,
     updateInstallCompletedVersion: "",
@@ -2603,7 +2604,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
 
   function renderFirmwareConnectionSwitchSection() {
     const model = getFirmwareConnectionSwitchModel();
-    if (!model) {
+    if (!model || !state.firmwareConnectionSwitchOpen) {
       return "";
     }
 
@@ -3483,6 +3484,8 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     const channelOptions = channelEntity
       ? (Array.isArray(channelEntity.option) ? channelEntity.option : Array.isArray(channelEntity.options) ? channelEntity.options : [])
       : [];
+    const connectionSwitchModel = getFirmwareConnectionSwitchModel();
+    const showConnectionSwitchAction = Boolean(connectionSwitchModel && !justCompleted);
 
     return `
       <div class="oq-helper-modal-backdrop${checking || installing || progress ? " is-busy" : ""}${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="firmware-update">
@@ -3541,7 +3544,6 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
             </label>
           ` : ""}
           <p class="oq-helper-modal-note">Laat deze pagina open tijdens de OTA-update. Het device kan na installatie kort herstarten en daarna vanzelf weer terugkomen.</p>
-          ${renderFirmwareConnectionSwitchSection()}
           <div class="oq-helper-modal-actions">
             <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="run-firmware-check" ${checking || installing || progress ? "disabled" : ""}>
               ${checking ? "Controleren..." : "Controleer opnieuw"}
@@ -3554,8 +3556,14 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
             <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="toggle-firmware-upload" ${checking || installing || progress ? "disabled" : ""}>
               ${state.updateManualUploadOpen ? "Handmatige upload verbergen" : "Handmatige upload"}
             </button>
+            ${showConnectionSwitchAction ? `
+              <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="toggle-firmware-connection-switch" ${checking || installing || progress ? "disabled" : ""}>
+                ${state.firmwareConnectionSwitchOpen ? "Verbinding wisselen verbergen" : `Verbinding wisselen naar ${escapeHtml(connectionSwitchModel.targetLabel)}`}
+              </button>
+            ` : ""}
             ${releaseUrl ? `<a class="oq-helper-button oq-helper-button--ghost oq-helper-modal-link" href="${escapeHtml(releaseUrl)}" target="_blank" rel="noreferrer">Release notes</a>` : ""}
           </div>
+          ${renderFirmwareConnectionSwitchSection()}
           ${renderFirmwareManualUploadSection()}
         </section>
       </div>
@@ -6483,6 +6491,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       state.updateModalOpen = false;
       state.updateInstallCompleted = false;
       state.updateInstallCompletedVersion = "";
+      state.firmwareConnectionSwitchOpen = false;
       state.updateManualUploadOpen = false;
       state.firmwareConnectionSwitchConfirmed = false;
       resetFirmwareManualUploadSelection();
@@ -6744,12 +6753,25 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       return;
     }
 
+    if (action === "toggle-firmware-connection-switch") {
+      state.firmwareConnectionSwitchOpen = !state.firmwareConnectionSwitchOpen;
+      state.firmwareConnectionSwitchConfirmed = false;
+      if (state.firmwareConnectionSwitchOpen) {
+        state.updateManualUploadOpen = false;
+        resetFirmwareManualUploadSelection();
+      }
+      render();
+      return;
+    }
+
     if (action === "toggle-firmware-upload") {
       if (state.updateManualUploadOpen) {
         state.updateManualUploadOpen = false;
         resetFirmwareManualUploadSelection();
       } else {
         state.updateManualUploadOpen = true;
+        state.firmwareConnectionSwitchOpen = false;
+        state.firmwareConnectionSwitchConfirmed = false;
         state.updateManualUploadError = "";
       }
       render();
@@ -6985,6 +7007,8 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     }
 
     state.updateManualUploadOpen = false;
+    state.firmwareConnectionSwitchOpen = false;
+    state.firmwareConnectionSwitchConfirmed = false;
     resetFirmwareManualUploadSelection();
     state.updateInstallCompleted = false;
     state.updateInstallCompletedVersion = "";

@@ -1061,6 +1061,13 @@
     state.boiler = boilerControl.value === "on" ? "on" : "off";
   }
 
+  function setConnectionMode(value) {
+    state.connection = value === "eth" ? "eth" : "wifi";
+    setText("text_sensor", "OpenQuatt Connection", state.connection);
+    setText("select", "Firmware Update Target", "current build");
+    syncDevMeta();
+  }
+
   function applyScenario(name) {
     if (state.installation === "single" && name === "dual") {
       name = "heating";
@@ -2017,17 +2024,19 @@
     return `
       <section class="oq-helper-hub-block oq-helper-hub-dev" data-oq-dev-controls>
         <p class="oq-helper-hub-kicker">Preview en test</p>
-        <div class="oq-helper-hub-dev-meta">
-          <span class="oq-helper-hub-dev-badge">Login ${state.auth.enabled ? "aan" : "uit"}</span>
-          <span class="oq-helper-hub-dev-badge">${isAuthRecoveryWindowActive() ? "Herstelvenster open" : "Herstelvenster dicht"}</span>
-          <span class="oq-helper-hub-dev-badge">CM100 ${state.commissioning.cm100Active ? "aan" : "uit"}</span>
-        </div>
         <div class="oq-helper-hub-dev-grid">
           <label class="oq-helper-hub-dev-row">
             <span class="oq-helper-hub-dev-label">Installatie</span>
             <select class="oq-helper-hub-dev-select" data-oq-dev-control="installation">
               <option value="single">Quatt Single</option>
               <option value="duo">Quatt Duo</option>
+            </select>
+          </label>
+          <label class="oq-helper-hub-dev-row">
+            <span class="oq-helper-hub-dev-label">Verbinding</span>
+            <select class="oq-helper-hub-dev-select" data-oq-dev-control="connection">
+              <option value="wifi">Wi-Fi</option>
+              <option value="eth">Ethernet</option>
             </select>
           </label>
           <label class="oq-helper-hub-dev-row">
@@ -2048,21 +2057,6 @@
             </select>
           </label>
         </div>
-        <div class="oq-helper-hub-dev-actions">
-          <button class="oq-helper-hub-dev-button" type="button" data-oq-dev-control="boiler-off" data-oq-action="set-mock-boiler" data-boiler-mode="off">CV uit</button>
-          <button class="oq-helper-hub-dev-button" type="button" data-oq-dev-control="boiler-on" data-oq-action="set-mock-boiler" data-boiler-mode="on">CV aan</button>
-          <button class="oq-helper-hub-dev-button" type="button" data-oq-dev-control="arm-auth">Login herstelvenster</button>
-        </div>
-        <div class="oq-helper-hub-dev-actions">
-          <button class="oq-helper-hub-dev-button" type="button" data-oq-dev-control="toggle-animate">${state.autoAnimate ? "Pauzeer mockdata" : "Start mockdata"}</button>
-          <button class="oq-helper-hub-dev-button" type="button" data-oq-dev-control="step">1 tick</button>
-        </div>
-        <div class="oq-helper-hub-dev-meta">
-          <span class="oq-helper-hub-dev-badge">Quick Start ${state.complete ? "afgerond" : "actief"}</span>
-          <span class="oq-helper-hub-dev-badge">Datastroom ${state.autoAnimate ? "live mock" : "gepauzeerd"}</span>
-          <span class="oq-helper-hub-dev-badge">CV-ketel ${state.boiler === "on" ? "aan" : "uit"}</span>
-          <span class="oq-helper-hub-dev-badge">CM100 ${state.commissioning.globalStatus || "CM0 - Standby"}</span>
-        </div>
       </section>
     `;
   }
@@ -2081,6 +2075,16 @@
         setInstallationMode(installation.value);
         applyScenario(state.scenario);
         updateSummary();
+        notifyMockUpdated();
+        notifyDevControlsChanged();
+      };
+    }
+
+    const connection = controlsRoot.querySelector('[data-oq-dev-control="connection"]');
+    if (connection) {
+      connection.value = state.connection;
+      connection.onchange = () => {
+        setConnectionMode(connection.value);
         notifyMockUpdated();
         notifyDevControlsChanged();
       };
@@ -2112,58 +2116,6 @@
       boiler.oninput = handleBoilerChange;
     }
 
-    const boilerOff = controlsRoot.querySelector('[data-oq-dev-control="boiler-off"]');
-    if (boilerOff) {
-      boilerOff.onclick = () => {
-        state.boiler = "off";
-        if (boiler) {
-          boiler.value = "off";
-        }
-        applyScenario(state.scenario);
-        updateSummary();
-        notifyMockUpdated();
-        notifyDevControlsChanged();
-      };
-    }
-
-    const boilerOn = controlsRoot.querySelector('[data-oq-dev-control="boiler-on"]');
-    if (boilerOn) {
-      boilerOn.onclick = () => {
-        state.boiler = "on";
-        if (boiler) {
-          boiler.value = "on";
-        }
-        applyScenario(state.scenario);
-        updateSummary();
-        notifyMockUpdated();
-        notifyDevControlsChanged();
-      };
-    }
-
-    const toggle = controlsRoot.querySelector('[data-oq-dev-control="toggle-animate"]');
-    if (toggle) {
-      toggle.onclick = () => {
-        state.autoAnimate = !state.autoAnimate;
-        notifyDevControlsChanged();
-      };
-    }
-
-    const step = controlsRoot.querySelector('[data-oq-dev-control="step"]');
-    if (step) {
-      step.onclick = () => {
-        stepSimulation(true);
-        notifyDevControlsChanged();
-      };
-    }
-
-    const armAuth = controlsRoot.querySelector('[data-oq-dev-control="arm-auth"]');
-    if (armAuth) {
-      armAuth.onclick = () => {
-        armAuthRecoveryWindow();
-        notifyMockUpdated();
-        notifyDevControlsChanged();
-      };
-    }
   }
 
   window.__OQ_DEV_CONTROLS__ = {

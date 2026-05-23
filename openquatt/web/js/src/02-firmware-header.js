@@ -957,7 +957,7 @@
 
   function renderFirmwareConnectionSwitchSection() {
     const model = getFirmwareConnectionSwitchModel();
-    if (!model) {
+    if (!model || !state.firmwareConnectionSwitchOpen) {
       return "";
     }
 
@@ -1837,6 +1837,8 @@
     const channelOptions = channelEntity
       ? (Array.isArray(channelEntity.option) ? channelEntity.option : Array.isArray(channelEntity.options) ? channelEntity.options : [])
       : [];
+    const connectionSwitchModel = getFirmwareConnectionSwitchModel();
+    const showConnectionSwitchAction = Boolean(connectionSwitchModel && !justCompleted);
 
     return `
       <div class="oq-helper-modal-backdrop${checking || installing || progress ? " is-busy" : ""}${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="firmware-update">
@@ -1895,7 +1897,6 @@
             </label>
           ` : ""}
           <p class="oq-helper-modal-note">Laat deze pagina open tijdens de OTA-update. Het device kan na installatie kort herstarten en daarna vanzelf weer terugkomen.</p>
-          ${renderFirmwareConnectionSwitchSection()}
           <div class="oq-helper-modal-actions">
             <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="run-firmware-check" ${checking || installing || progress ? "disabled" : ""}>
               ${checking ? "Controleren..." : "Controleer opnieuw"}
@@ -1908,8 +1909,14 @@
             <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="toggle-firmware-upload" ${checking || installing || progress ? "disabled" : ""}>
               ${state.updateManualUploadOpen ? "Handmatige upload verbergen" : "Handmatige upload"}
             </button>
+            ${showConnectionSwitchAction ? `
+              <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="toggle-firmware-connection-switch" ${checking || installing || progress ? "disabled" : ""}>
+                ${state.firmwareConnectionSwitchOpen ? "Verbinding wisselen verbergen" : `Verbinding wisselen naar ${escapeHtml(connectionSwitchModel.targetLabel)}`}
+              </button>
+            ` : ""}
             ${releaseUrl ? `<a class="oq-helper-button oq-helper-button--ghost oq-helper-modal-link" href="${escapeHtml(releaseUrl)}" target="_blank" rel="noreferrer">Release notes</a>` : ""}
           </div>
+          ${renderFirmwareConnectionSwitchSection()}
           ${renderFirmwareManualUploadSection()}
         </section>
       </div>

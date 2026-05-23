@@ -2711,6 +2711,7 @@
       state.updateModalOpen = false;
       state.updateInstallCompleted = false;
       state.updateInstallCompletedVersion = "";
+      state.firmwareConnectionSwitchOpen = false;
       state.updateManualUploadOpen = false;
       state.firmwareConnectionSwitchConfirmed = false;
       resetFirmwareManualUploadSelection();
@@ -2972,12 +2973,25 @@
       return;
     }
 
+    if (action === "toggle-firmware-connection-switch") {
+      state.firmwareConnectionSwitchOpen = !state.firmwareConnectionSwitchOpen;
+      state.firmwareConnectionSwitchConfirmed = false;
+      if (state.firmwareConnectionSwitchOpen) {
+        state.updateManualUploadOpen = false;
+        resetFirmwareManualUploadSelection();
+      }
+      render();
+      return;
+    }
+
     if (action === "toggle-firmware-upload") {
       if (state.updateManualUploadOpen) {
         state.updateManualUploadOpen = false;
         resetFirmwareManualUploadSelection();
       } else {
         state.updateManualUploadOpen = true;
+        state.firmwareConnectionSwitchOpen = false;
+        state.firmwareConnectionSwitchConfirmed = false;
         state.updateManualUploadError = "";
       }
       render();
@@ -3213,6 +3227,8 @@
     }
 
     state.updateManualUploadOpen = false;
+    state.firmwareConnectionSwitchOpen = false;
+    state.firmwareConnectionSwitchConfirmed = false;
     resetFirmwareManualUploadSelection();
     state.updateInstallCompleted = false;
     state.updateInstallCompletedVersion = "";

@@ -122,6 +122,7 @@
     updateInstallProgressHint: Number.NaN,
     updateInstallMode: "",
     updateInstallTargetConnection: "",
+    firmwareConnectionSwitchOpen: false,
     firmwareConnectionSwitchConfirmed: false,
     updateInstallCompleted: false,
     updateInstallCompletedVersion: "",
