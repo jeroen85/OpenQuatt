@@ -5,6 +5,9 @@
 # targets are intentionally Ethernet-only.
 # ==============================================================================
 
+substitutions:
+  oq_connection: "eth"
+
 ethernet:
   type: W5500
   clk_pin: ${eth_clk_pin}

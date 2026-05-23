@@ -104,9 +104,11 @@ const LOGO_MARKUP = `
     status: { domain: "binary_sensor", name: "Status", optional: true },
     firmwareUpdate: { domain: "update", name: "Firmware Update", optional: true },
     firmwareUpdateChannel: { domain: "select", name: "Firmware Update Channel", optional: true },
+    firmwareUpdateTarget: { domain: "select", name: "Firmware Update Target", optional: true },
     firmwareUpdateProgress: { domain: "sensor", name: "Firmware Update Progress", optional: true },
     firmwareUpdateStatus: { domain: "text_sensor", name: "Firmware Update Status", optional: true },
     checkFirmwareUpdates: { domain: "button", name: "Check Firmware Updates", optional: true },
+    installFirmwareUpdateTarget: { domain: "button", name: "Install Firmware Update Target", optional: true },
     restartAction: { domain: "button", name: "Restart", optional: true },
     uptime: { domain: "sensor", name: "Uptime", optional: true },
     uptimeReadable: { domain: "text_sensor", name: "Uptime readable", optional: true },
@@ -117,6 +119,8 @@ const LOGO_MARKUP = `
     projectVersionText: { domain: "text_sensor", name: "OpenQuatt Version", optional: true },
     releaseChannelText: { domain: "text_sensor", name: "OpenQuatt Release Channel", optional: true },
     installationTopology: { domain: "text_sensor", name: "OpenQuatt Installation Topology", optional: true },
+    hardwareProfileText: { domain: "text_sensor", name: "OpenQuatt Hardware Profile", optional: true },
+    connectionText: { domain: "text_sensor", name: "OpenQuatt Connection", optional: true },
     wifiSignal: { domain: "sensor", name: "WiFi Signal", optional: true },
     espInternalTemp: { domain: "sensor", name: "ESP Internal Temperature", optional: true },
     hpGeneration: { domain: "select", name: "Quatt Hybrid version" },
@@ -434,8 +438,8 @@ const LOGO_MARKUP = `
   const CURVE_SETTING_KEYS = [...CURVE_POINTS.map((point) => point.key), "curveFallbackSupply", "curveControlProfile"];
   const COMPRESSOR_SETTING_KEYS = ["minRuntime", "hp1ExcludedA", "hp1ExcludedB", "hp2ExcludedA", "hp2ExcludedB"];
   const SILENT_SETTING_KEYS = ["silentStartTime", "silentEndTime", "silentMax", "dayMax"];
-  const FIRMWARE_ENTITY_KEYS = ["firmwareUpdate", "firmwareUpdateChannel", "firmwareUpdateProgress", "firmwareUpdateStatus"];
-  const FIRMWARE_MODAL_KEYS = [...FIRMWARE_ENTITY_KEYS, "projectVersionText", "releaseChannelText"];
+  const FIRMWARE_ENTITY_KEYS = ["firmwareUpdate", "firmwareUpdateChannel", "firmwareUpdateTarget", "firmwareUpdateProgress", "firmwareUpdateStatus"];
+  const FIRMWARE_MODAL_KEYS = [...FIRMWARE_ENTITY_KEYS, "installFirmwareUpdateTarget", "projectVersionText", "releaseChannelText", "installationTopology", "hardwareProfileText", "connectionText"];
   const TOPOLOGY_HINT_KEYS = ["hp2ExcludedA", "hp2ExcludedB", "hp2Power", "hp2WaterOut"];
   const HEADER_ENTITY_KEYS = [
     "status",
@@ -447,6 +451,8 @@ const LOGO_MARKUP = `
     "wifiSsid",
     "wifiSignal",
     "installationTopology",
+    "hardwareProfileText",
+    "connectionText",
     "hpGeneration",
     "projectVersionText",
     "releaseChannelText",

@@ -1392,6 +1392,23 @@ body.oq-surface-native {
   margin-top: 2px;
 }
 
+.oq-helper-modal-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 12px;
+  color: var(--oq-helper-muted);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.oq-helper-modal-check input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+}
+
 .oq-mqtt-setting-card.oq-helper-modal-channel--toggle,
 .oq-mqtt-setting-card {
   display: grid;

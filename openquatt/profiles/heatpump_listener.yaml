@@ -2,6 +2,7 @@
 # OpenQuatt - Hardware Profile: Heatpump Listener
 # ==============================================================================
 substitutions:
+  oq_hardware_profile: "heatpump_listener"             # Compile-time hardware profile id.
   esp_board: "esp32dev"                                 # Active ESP32 board type.
   esp_flash_size: "8MB"                                 # Active ESP flash size.
   esp_variant: "esp32"                                  # Active ESP variant.

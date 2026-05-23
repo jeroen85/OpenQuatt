@@ -2,6 +2,7 @@
 # OpenQuatt - Hardware Profile: Waveshare ESP32-S3-Relay-1CH
 # ==============================================================================
 substitutions:
+  oq_hardware_profile: "waveshare"                     # Compile-time hardware profile id.
   esp_board: "esp32-s3-devkitc-1"                       # Active ESP32 board type.
   esp_flash_size: "16MB"                                # Active ESP flash size.
   esp_variant: "esp32s3"                                # Active ESP variant.

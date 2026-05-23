@@ -253,15 +253,77 @@ select:
     on_value:
       then:
         - lambda: |-
+            // Keep the update source aligned with the selected channel and target.
+            const bool alternate_update_target =
+              id(oq_firmware_update_target).current_option() == "alternate connection";
             if (x == "dev") {
-              id(oq_firmware_update).set_source_url("${dev_release_manifest_url}");
+              const char *alternate_url = "${alternate_dev_release_manifest_url}";
+              id(oq_firmware_update).set_source_url(
+                alternate_update_target && alternate_url[0] != '\0'
+                  ? alternate_url
+                  : "${dev_release_manifest_url}"
+              );
             } else {
-              id(oq_firmware_update).set_source_url("${main_release_manifest_url}");
+              const char *alternate_url = "${alternate_main_release_manifest_url}";
+              id(oq_firmware_update).set_source_url(
+                alternate_update_target && alternate_url[0] != '\0'
+                  ? alternate_url
+                  : "${main_release_manifest_url}"
+              );
             }
         - if:
             condition:
               lambda: |-
                 // Prevent duplicate update checks when the channel changes repeatedly.
+                constexpr uint32_t fw_check_cooldown_ms = 1000UL;
+                const uint32_t now_ms = (uint32_t) millis();
+                const uint32_t last_request_ms = id(oq_fw_check_last_request_ms);
+                if (last_request_ms > 0 && now_ms >= last_request_ms &&
+                    (now_ms - last_request_ms) < fw_check_cooldown_ms) {
+                  ESP_LOGI("oq_fw", "Firmware update check skipped: cooldown active after a recent request.");
+                  return false;
+                }
+                id(oq_fw_check_last_request_ms) = now_ms;
+                return true;
+            then:
+              - update.check:
+                  id: oq_firmware_update
+
+  - platform: template
+    name: "Firmware Update Target"
+    id: oq_firmware_update_target
+    icon: mdi:swap-horizontal
+    disabled_by_default: true
+    web_server:
+      sorting_group_id: oq_system_diagnostics
+    entity_category: config
+    optimistic: true
+    restore_value: false
+    options: ["current build", "alternate connection"]
+    initial_option: "current build"
+    on_value:
+      then:
+        - lambda: |-
+            // Switch between the current-build manifest and the alternate connection manifest.
+            const bool alternate_update_target = x == "alternate connection";
+            if (id(oq_firmware_update_channel).current_option() == "dev") {
+              const char *alternate_url = "${alternate_dev_release_manifest_url}";
+              id(oq_firmware_update).set_source_url(
+                alternate_update_target && alternate_url[0] != '\0'
+                  ? alternate_url
+                  : "${dev_release_manifest_url}"
+              );
+            } else {
+              const char *alternate_url = "${alternate_main_release_manifest_url}";
+              id(oq_firmware_update).set_source_url(
+                alternate_update_target && alternate_url[0] != '\0'
+                  ? alternate_url
+                  : "${main_release_manifest_url}"
+              );
+            }
+        - if:
+            condition:
+              lambda: |-
                 constexpr uint32_t fw_check_cooldown_ms = 1000UL;
                 const uint32_t now_ms = (uint32_t) millis();
                 const uint32_t last_request_ms = id(oq_fw_check_last_request_ms);
@@ -365,6 +427,19 @@ button:
           then:
             - update.check:
                 id: oq_firmware_update
+
+  - platform: template
+    id: oq_install_firmware_update_target
+    name: Install Firmware Update Target
+    disabled_by_default: true
+    icon: mdi:swap-horizontal-bold
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_system_diagnostics
+    on_press:
+      - update.perform:
+          id: oq_firmware_update
+          force_update: true
 
 switch:
   - platform: template
@@ -617,6 +692,26 @@ text_sensor:
       #else
       return {"single"};
       #endif
+    web_server:
+      sorting_group_id: oq_system_diagnostics
+  - platform: template
+    id: oq_hardware_profile_text
+    name: OpenQuatt Hardware Profile
+    icon: mdi:developer-board
+    entity_category: diagnostic
+    update_interval: 60s
+    lambda: |-
+      return {"${oq_hardware_profile}"};
+    web_server:
+      sorting_group_id: oq_system_diagnostics
+  - platform: template
+    id: oq_connection_text
+    name: OpenQuatt Connection
+    icon: mdi:lan-connect
+    entity_category: diagnostic
+    update_interval: 60s
+    lambda: |-
+      return {"${oq_connection}"};
     web_server:
       sorting_group_id: oq_system_diagnostics
   - platform: template

@@ -105,6 +105,81 @@
     return "OpenQuatt";
   }
 
+  function normalizeFirmwareConnection(value) {
+    const normalized = String(value || "").trim().toLowerCase();
+    if (normalized === "wifi" || normalized === "wi-fi" || normalized.includes("wifi") || normalized.includes("wi-fi")) {
+      return "wifi";
+    }
+    if (normalized === "eth" || normalized === "ethernet" || normalized.includes("ethernet")) {
+      return "eth";
+    }
+    return "";
+  }
+
+  function getFirmwareConnectionLabel(connection = getFirmwareBuildConnection()) {
+    if (connection === "wifi") {
+      return "Wi-Fi";
+    }
+    if (connection === "eth") {
+      return "Ethernet";
+    }
+    return "Onbekend";
+  }
+
+  function getFirmwareHardwareProfile() {
+    return String(getEntityValue("hardwareProfileText") || "").trim().toLowerCase();
+  }
+
+  function getFirmwareBuildConnection() {
+    return normalizeFirmwareConnection(getEntityValue("connectionText"));
+  }
+
+  function getFirmwareAlternateConnection() {
+    const current = getFirmwareBuildConnection();
+    if (current === "wifi") {
+      return "eth";
+    }
+    if (current === "eth") {
+      return "wifi";
+    }
+    return "";
+  }
+
+  function getFirmwareBuildLabel(connection = getFirmwareBuildConnection()) {
+    const topology = getInstallationTopology();
+    const topologyLabel = topology === "duo" ? "Duo" : topology === "single" ? "Single" : "Onbekende opstelling";
+    if (getFirmwareHardwareProfile() === "heatpump_controller_q") {
+      return `Heatpump Controller Q ${topologyLabel} ${getFirmwareConnectionLabel(connection)}`;
+    }
+    return `${getFirmwareDeviceLabel()} ${topologyLabel} ${getFirmwareConnectionLabel(connection)}`;
+  }
+
+  function getFirmwareConnectionSwitchModel() {
+    const hardware = getFirmwareHardwareProfile();
+    const topology = getInstallationTopology();
+    const currentConnection = getFirmwareBuildConnection();
+    const targetConnection = getFirmwareAlternateConnection();
+    if (
+      hardware !== "heatpump_controller_q"
+      || (topology !== "single" && topology !== "duo")
+      || (currentConnection !== "wifi" && currentConnection !== "eth")
+      || !targetConnection
+      || !hasEntity("firmwareUpdateTarget")
+      || !hasEntity("installFirmwareUpdateTarget")
+    ) {
+      return null;
+    }
+
+    return {
+      currentConnection,
+      targetConnection,
+      currentLabel: getFirmwareConnectionLabel(currentConnection),
+      targetLabel: getFirmwareConnectionLabel(targetConnection),
+      currentBuildLabel: getFirmwareBuildLabel(currentConnection),
+      targetBuildLabel: getFirmwareBuildLabel(targetConnection),
+    };
+  }
+
   function formatDeviceClock() {
     const timeValid = isEntityActive("timeValid");
     const deviceClock = String(getEntityValue("timeNowHhmm") || "").trim();
@@ -326,6 +401,8 @@
     state.updateInstallTargetVersion = "";
     state.updateInstallPhaseHint = "";
     state.updateInstallProgressHint = Number.NaN;
+    state.updateInstallMode = "";
+    state.updateInstallTargetConnection = "";
   }
 
   function resetFirmwareManualUploadSelection() {
@@ -387,7 +464,9 @@
       return {
         phaseLabel: "Herstarten",
         percent: Math.max(basePercent, 100),
-        copy: "Firmware is geplaatst. Het device start nu opnieuw op en komt daarna vanzelf terug.",
+        copy: state.updateInstallMode === "connection-switch"
+          ? "Firmware is geplaatst. Het device start opnieuw op en komt daarna via de gekozen verbinding terug."
+          : "Firmware is geplaatst. Het device start nu opnieuw op en komt daarna vanzelf terug.",
       };
     }
 
@@ -395,14 +474,18 @@
       return {
         phaseLabel: "Uploaden",
         percent: basePercent,
-        copy: `Firmware wordt nu naar ${getFirmwareDeviceLabel()} verzonden.`,
+        copy: state.updateInstallMode === "connection-switch"
+          ? `De ${getFirmwareConnectionLabel(state.updateInstallTargetConnection)}-build wordt nu naar ${getFirmwareDeviceLabel()} verzonden.`
+          : `Firmware wordt nu naar ${getFirmwareDeviceLabel()} verzonden.`,
       };
     }
 
     return {
       phaseLabel: "Installeren",
       percent: basePercent,
-      copy: `OTA-update is gestart voor ${getFirmwareDeviceLabel()}.`,
+      copy: state.updateInstallMode === "connection-switch"
+        ? `Verbindingswissel naar ${getFirmwareConnectionLabel(state.updateInstallTargetConnection)} is gestart.`
+        : `OTA-update is gestart voor ${getFirmwareDeviceLabel()}.`,
     };
   }
 
@@ -818,12 +901,22 @@
         }
         render();
 
-        if (
+        if (state.updateInstallMode === "connection-switch") {
+          const expectedConnection = normalizeFirmwareConnection(state.updateInstallTargetConnection);
+          if (
+            expectedConnection
+            && getFirmwareBuildConnection() === expectedConnection
+            && !isFirmwareProgressActive()
+            && !isFirmwareUpdateInstalling()
+          ) {
+            return true;
+          }
+        } else if (
           hasInstalledFirmwareTargetVersion()
           || isFirmwareInstallSettled()
           || (isFirmwareEffectivelyCurrent() && !isFirmwareProgressActive() && !isFirmwareUpdateInstalling())
         ) {
-          return true;
+            return true;
         }
       } catch (error) {
         if (!waitingForReconnect) {
@@ -861,6 +954,53 @@
       return `Je draait al de nieuwste firmware op kanaal ${channel}.`;
     }
     return "Kies een kanaal en controleer of er een nieuwere firmware klaarstaat.";
+  }
+
+  function renderFirmwareConnectionSwitchSection() {
+    const model = getFirmwareConnectionSwitchModel();
+    if (!model) {
+      return "";
+    }
+
+    const progress = getFirmwareProgressModel();
+    const busy = Boolean(progress || state.updateInstallBusy || isFirmwareUpdateChecking());
+    const confirmed = Boolean(state.firmwareConnectionSwitchConfirmed);
+    const targetIsEthernet = model.targetConnection === "eth";
+    const warning = targetIsEthernet
+      ? "Sluit eerst de netwerkkabel aan. Na de herstart verdwijnt Wi-Fi uit deze firmware."
+      : "Na de herstart verdwijnt Ethernet uit deze firmware. Als er geen Wi-Fi-gegevens bekend zijn, start het OpenQuatt fallback access point.";
+
+    return `
+      <div class="oq-helper-modal-callout oq-helper-modal-callout--subtle">
+        <strong>Verbinding wisselen</strong>
+        <span>Installeer dezelfde ${escapeHtml(getFirmwareChannelLabel())}-build voor de andere netwerkverbinding.</span>
+        <div class="oq-helper-modal-grid">
+          <div class="oq-helper-modal-row">
+            <span class="oq-helper-modal-label">Huidige build</span>
+            <strong class="oq-helper-modal-value">${escapeHtml(model.currentBuildLabel)}</strong>
+          </div>
+          <div class="oq-helper-modal-row">
+            <span class="oq-helper-modal-label">Alternatief</span>
+            <strong class="oq-helper-modal-value">${escapeHtml(model.targetBuildLabel)}</strong>
+          </div>
+        </div>
+        <p class="oq-helper-modal-note">${escapeHtml(warning)}</p>
+        <label class="oq-helper-modal-check">
+          <input type="checkbox" data-oq-firmware-connection-confirm="true" ${confirmed ? "checked" : ""} ${busy ? "disabled" : ""}>
+          <span>${escapeHtml(targetIsEthernet ? "De netwerkkabel is aangesloten." : "Ik begrijp dat Ethernet na reboot verdwijnt.")}</span>
+        </label>
+        <div class="oq-helper-modal-actions">
+          <button
+            class="oq-helper-button oq-helper-button--ghost"
+            type="button"
+            data-oq-action="install-firmware-connection-switch"
+            ${busy || !confirmed ? "disabled" : ""}
+          >
+            ${escapeHtml(`Wissel naar ${model.targetLabel}`)}
+          </button>
+        </div>
+      </div>
+    `;
   }
 
   function renderFirmwareManualUploadSection() {
@@ -906,6 +1046,8 @@
       state.overviewTheme,
       state.hpVisualMode,
       getEntitySignatureFragment("installationTopology"),
+      getEntitySignatureFragment("hardwareProfileText"),
+      getEntitySignatureFragment("connectionText"),
       getEntitySignatureFragment("hpGeneration"),
       getEntitySignatureFragment("projectVersionText"),
       getEntitySignatureFragment("releaseChannelText"),
@@ -1749,6 +1891,7 @@
             </label>
           ` : ""}
           <p class="oq-helper-modal-note">Laat deze pagina open tijdens de OTA-update. Het device kan na installatie kort herstarten en daarna vanzelf weer terugkomen.</p>
+          ${renderFirmwareConnectionSwitchSection()}
           <div class="oq-helper-modal-actions">
             <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="run-firmware-check" ${checking || installing || progress ? "disabled" : ""}>
               ${checking ? "Controleren..." : "Controleer opnieuw"}

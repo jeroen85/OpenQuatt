@@ -2276,6 +2276,12 @@
   }
 
   function handleInput(event) {
+    if (event.target.dataset.oqFirmwareConnectionConfirm) {
+      state.firmwareConnectionSwitchConfirmed = Boolean(event.target.checked);
+      render();
+      return;
+    }
+
     const field = event.target.dataset.oqField;
     if (!field) {
       const authField = event.target.dataset.oqAuthField;
@@ -2704,6 +2710,7 @@
       state.updateInstallCompleted = false;
       state.updateInstallCompletedVersion = "";
       state.updateManualUploadOpen = false;
+      state.firmwareConnectionSwitchConfirmed = false;
       resetFirmwareManualUploadSelection();
       render();
       return;
@@ -2958,6 +2965,11 @@
       return;
     }
 
+    if (action === "install-firmware-connection-switch") {
+      void installFirmwareConnectionSwitch();
+      return;
+    }
+
     if (action === "toggle-firmware-upload") {
       if (state.updateManualUploadOpen) {
         state.updateManualUploadOpen = false;
@@ -3128,10 +3140,11 @@
     state.updateCheckBusy = true;
     state.controlError = "";
     state.controlNotice = "";
-    primeFirmwareUpdateState();
     render();
 
     try {
+      await setFirmwareUpdateTarget("current build", { poll: false });
+      primeFirmwareUpdateState();
       const response = await fetch(buildEntityPath(entity.domain, entity.name, "press"), {
         method: "POST",
       });
@@ -3148,6 +3161,38 @@
     }
   }
 
+  async function setFirmwareUpdateTarget(option, options = {}) {
+    const entity = ENTITY_DEFS.firmwareUpdateTarget;
+    if (!entity || !hasEntity("firmwareUpdateTarget")) {
+      return false;
+    }
+
+    const value = String(option || "").trim();
+    if (!value) {
+      return false;
+    }
+
+    state.entities.firmwareUpdateTarget = {
+      ...(state.entities.firmwareUpdateTarget || {}),
+      state: value,
+      value,
+    };
+
+    const response = await fetch(
+      `${buildEntityPath(entity.domain, entity.name, "set")}?option=${encodeURIComponent(value)}`,
+      { method: "POST" }
+    );
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    if (options.poll !== false) {
+      primeFirmwareUpdateState();
+      await pollFirmwareUpdateState();
+    }
+    return true;
+  }
+
   async function installFirmwareUpdate() {
     const entity = getFirmwareUpdateEntity();
     if (!entity) {
@@ -3162,11 +3207,15 @@
     state.updateInstallTargetVersion = getFirmwareLatestVersion(entity);
     state.updateInstallPhaseHint = "starting";
     state.updateInstallProgressHint = 0;
+    state.updateInstallMode = "normal";
+    state.updateInstallTargetConnection = "";
     state.controlError = "";
     state.controlNotice = "";
     render();
 
     try {
+      await setFirmwareUpdateTarget("current build");
+      state.updateInstallTargetVersion = getFirmwareLatestVersion(getFirmwareUpdateEntity() || {}) || state.updateInstallTargetVersion;
       const response = await fetch(buildEntityPath("update", "Firmware Update", "install"), {
         method: "POST",
       });
@@ -3183,6 +3232,64 @@
       }
     } catch (error) {
       state.controlError = `OTA-update kon niet worden gestart. ${error.message}`;
+    } finally {
+      resetFirmwareInstallUiState();
+      render();
+    }
+  }
+
+  async function installFirmwareConnectionSwitch() {
+    const model = getFirmwareConnectionSwitchModel();
+    const buttonEntity = ENTITY_DEFS.installFirmwareUpdateTarget;
+    if (!model || !buttonEntity) {
+      return;
+    }
+    if (!state.firmwareConnectionSwitchConfirmed) {
+      state.controlError = "Bevestig eerst de waarschuwing voor de verbindingswissel.";
+      render();
+      return;
+    }
+
+    state.updateManualUploadOpen = false;
+    resetFirmwareManualUploadSelection();
+    state.updateInstallCompleted = false;
+    state.updateInstallCompletedVersion = "";
+    state.updateInstallBusy = true;
+    state.updateInstallMode = "connection-switch";
+    state.updateInstallTargetConnection = model.targetConnection;
+    state.updateInstallTargetVersion = getFirmwareCurrentVersion() || "";
+    state.updateInstallPhaseHint = "starting";
+    state.updateInstallProgressHint = 0;
+    state.controlError = "";
+    state.controlNotice = "";
+    render();
+
+    try {
+      await setFirmwareUpdateTarget("alternate connection");
+      state.updateInstallTargetVersion = getFirmwareLatestVersion(getFirmwareUpdateEntity() || {}) || getFirmwareCurrentVersion() || "";
+      state.updateInstallPhaseHint = "starting";
+      state.updateInstallProgressHint = 0;
+      render();
+
+      const response = await fetch(buildEntityPath(buttonEntity.domain, buttonEntity.name, "press"), {
+        method: "POST",
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const completed = await pollFirmwareInstallState();
+      if (completed) {
+        state.updateInstallCompleted = true;
+        state.updateInstallCompletedVersion = getFirmwareCurrentVersion() || state.updateInstallTargetVersion || "";
+        state.firmwareConnectionSwitchConfirmed = false;
+        state.controlNotice = "";
+      } else {
+        const targetLabel = getFirmwareConnectionLabel(model.targetConnection);
+        state.controlNotice = `Verbindingswissel naar ${targetLabel} is gestart. Wacht tot het device via die verbinding terugkomt.`;
+      }
+    } catch (error) {
+      state.controlError = `Verbindingswissel kon niet worden gestart. ${error.message}`;
     } finally {
       resetFirmwareInstallUiState();
       render();

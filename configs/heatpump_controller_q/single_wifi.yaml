@@ -8,6 +8,9 @@ substitutions:
   main_release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-heatpump-controller-q-single-wifi-ota.manifest.json"
   dev_release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/download/dev-latest/openquatt-heatpump-controller-q-single-wifi-ota.manifest.json"
   release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-heatpump-controller-q-single-wifi-ota.manifest.json"
+  alternate_connection: "eth"
+  alternate_main_release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-heatpump-controller-q-single-eth-ota.manifest.json"
+  alternate_dev_release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/download/dev-latest/openquatt-heatpump-controller-q-single-eth-ota.manifest.json"
 
 esphome:
   build_path: ../../../.esphome/build/heatpump_controller_q_single_wifi

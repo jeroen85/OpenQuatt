@@ -4,6 +4,9 @@
 # Wi-Fi targets keep ESP Web Tools provisioning and AP fallback enabled.
 # ==============================================================================
 
+substitutions:
+  oq_connection: "wifi"
+
 wifi:
   min_auth_mode: wpa2
   ap:
