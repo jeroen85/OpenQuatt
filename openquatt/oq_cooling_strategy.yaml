@@ -193,7 +193,7 @@ number:
     name: "Cooling Demand Max"
     icon: mdi:gauge
     unit_of_measurement: "step"
-    min_value: 0
+    min_value: 1
     max_value: 10
     step: 1
     mode: slider
@@ -457,7 +457,7 @@ interval:
           }
 
           int demand_max = (int) lroundf(id(cooling_demand_max_f).state);
-          if (demand_max < 0) demand_max = 0;
+          if (demand_max < 1) demand_max = 1;
           if (demand_max > 10) demand_max = 10;
           bool room_cap_active = false;
           if (room_error_valid) {
