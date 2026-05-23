@@ -1471,26 +1471,66 @@ views:
                       font-size: 0.75em
                       transform: none
                     prefix: 'PowerInput: '
-                  - type: state-label
-                    entity: sensor.openquatt_hp1_heat_power
-                    style:
-                      top: 14%
-                      left: 8%
-                      font-weight: bold
-                      color: white
-                      font-size: 0.75em
-                      transform: none
-                    prefix: 'Heat Power: '
-                  - type: state-label
-                    entity: sensor.openquatt_hp1_cop
-                    style:
-                      top: 17%
-                      left: 8%
-                      font-weight: bold
-                      color: white
-                      font-size: 0.75em
-                      transform: none
-                    prefix: 'COP: '
+                  - type: conditional
+                    conditions:
+                      - entity: sensor.openquatt_hp1_working_mode_label
+                        state: Cooling
+                    elements:
+                      - type: state-label
+                        entity: sensor.openquatt_hp1_cooling_power
+                        style:
+                          top: 14%
+                          left: 8%
+                          font-weight: bold
+                          color: white
+                          font-size: 0.75em
+                          transform: none
+                        prefix: 'Cooling Power: '
+                  - type: conditional
+                    conditions:
+                      - entity: sensor.openquatt_hp1_working_mode_label
+                        state_not: Cooling
+                    elements:
+                      - type: state-label
+                        entity: sensor.openquatt_hp1_heat_power
+                        style:
+                          top: 14%
+                          left: 8%
+                          font-weight: bold
+                          color: white
+                          font-size: 0.75em
+                          transform: none
+                        prefix: 'Heat Power: '
+                  - type: conditional
+                    conditions:
+                      - entity: sensor.openquatt_hp1_working_mode_label
+                        state: Cooling
+                    elements:
+                      - type: state-label
+                        entity: sensor.openquatt_hp1_eer
+                        style:
+                          top: 17%
+                          left: 8%
+                          font-weight: bold
+                          color: white
+                          font-size: 0.75em
+                          transform: none
+                        prefix: 'EER: '
+                  - type: conditional
+                    conditions:
+                      - entity: sensor.openquatt_hp1_working_mode_label
+                        state_not: Cooling
+                    elements:
+                      - type: state-label
+                        entity: sensor.openquatt_hp1_cop
+                        style:
+                          top: 17%
+                          left: 8%
+                          font-weight: bold
+                          color: white
+                          font-size: 0.75em
+                          transform: none
+                        prefix: 'COP: '
                   - type: conditional
                     conditions:
                       - entity: binary_sensor.openquatt_hp1_defrost
@@ -1568,8 +1608,12 @@ views:
                     name: PowerInput
                   - entity: sensor.openquatt_hp1_heat_power
                     name: Heat Power
+                  - entity: sensor.openquatt_hp1_cooling_power
+                    name: Cooling Power
                   - entity: sensor.openquatt_hp1_cop
                     name: COP
+                  - entity: sensor.openquatt_hp1_eer
+                    name: EER
                   - entity: sensor.openquatt_hp1_flow
                     name: Flow
                   - entity: sensor.openquatt_hp1_water_in_temperature

@@ -858,6 +858,27 @@ sensor:
 
       return p_th_w / p_el_w;
 
+  - platform: template
+    id: ${hp_id}_eer
+    name: "${prefix}EER"
+    icon: mdi:chart-bell-curve
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 10s
+    web_server:
+      sorting_group_id: oq_performance
+    lambda: |-
+      const float p_el_w = id(${hp_id}_power_input).state;
+      const float p_cool_w = id(${hp_id}_cooling_power).state;
+      const float min_valid_input_w = 5.0f;
+
+      if (isnan(p_el_w) || isnan(p_cool_w)) return NAN;
+
+      // Avoid extreme EER values at (near) 0 W electrical input.
+      if (fabsf(p_el_w) < min_valid_input_w) return NAN;
+
+      return p_cool_w / p_el_w;
+
   # Internal raw diagnostic words. We keep these hidden and derive the compact
   # diagnostics we actually use from them instead of exposing dozens of
   # individual Modbus bit entities per heat pump.
