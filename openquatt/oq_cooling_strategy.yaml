@@ -27,9 +27,9 @@
 #      normal modulation.
 #   5. The safe-floor limiter caps the PI output before it reaches the compressor:
 #      full range far above target, short level-2 boost only while level 1 is not
-#      pulling the water down enough, optional level-1 simmer around target, and
-#      stop when the water keeps falling or gets too close to the real/fallback
-#      floor.
+#      pulling the water down enough, level-1 hold while positive gap remains,
+#      optional level-1 simmer around target, and stop only at/under target or
+#      too close to the real/fallback floor.
 #   6. `Cooling Restart Delta` only applies after a real water-side stop. Normal
 #      room-demand stops can restart from the current limiter state.
 #
@@ -527,7 +527,12 @@ interval:
             } else {
               const bool dew_gap_allows_simmer =
                   !dew_mode || isnan(dew_gap_c) || dew_gap_c > hard_dew_restart_gap_c;
-              if (trend_safe && dew_gap_allows_simmer &&
+              if (!trend_safe && filtered_gap_c > 0.0f && dew_gap_allows_simmer) {
+                // A falling trend is a brake, not a stop, while supply is still
+                // above target. Hold level 1 and let the water coast down.
+                safe_floor_cap = std::min(safe_floor_cap, 1);
+                reason_code = 4;
+              } else if (trend_safe && dew_gap_allows_simmer &&
                   (simmer_allowed || (dew_mode && filtered_gap_c >= buffer_hard_stop_gap_c))) {
                 safe_floor_cap = std::min(safe_floor_cap, 1);
                 reason_code = 3;
@@ -539,7 +544,7 @@ interval:
           }
 
           if (!trend_safe && filtered_gap_c <= cap2_gap_c) {
-            trend_cap = 0;
+            trend_cap = filtered_gap_c > 0.0f ? std::min(trend_cap, 1) : 0;
             reason_code = 4;
           }
 
@@ -626,10 +631,10 @@ interval:
           const bool can_simmer =
               (!room_error_valid || room_error_c > simmer_room_error_min_c) &&
               allowed_max >= 1 &&
-              (reason_code == 3 || fallback_mode);
+              (reason_code == 3 || reason_code == 4 || fallback_mode);
           if (can_simmer && demand_candidate < 1) {
             demand_candidate = 1;
-            if (reason_code != 10) reason_code = 3;
+            if (reason_code != 4 && reason_code != 10) reason_code = 3;
           }
 
           // Slow upward changes for comfort and compressor calmness; allow
