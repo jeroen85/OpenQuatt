@@ -26,9 +26,10 @@
 #      stop cooling immediately, while filtered buffer_gap and its trend drive
 #      normal modulation.
 #   5. The safe-floor limiter caps the PI output before it reaches the compressor:
-#      full range far above target, max level 2 near target, optional level-1
-#      simmer around target, and stop when the water keeps falling or gets too
-#      close to the real/fallback floor.
+#      full range far above target, short level-2 boost only while level 1 is not
+#      pulling the water down enough, optional level-1 simmer around target, and
+#      stop when the water keeps falling or gets too close to the real/fallback
+#      floor.
 #   6. `Cooling Restart Delta` only applies after a real water-side stop. Normal
 #      room-demand stops can restart from the current limiter state.
 #
@@ -106,7 +107,8 @@ globals:
     initial_value: '0'
 
   # 0=inactive, 1=full, 2=cap2, 3=simmer, 4=falling_gap, 5=buffer_stop,
-  # 6=dew_stop, 7=fallback_floor, 8=restart_wait, 9=room_cap, 10=fallback_cap1
+  # 6=dew_stop, 7=fallback_floor, 8=restart_wait, 9=room_cap, 10=fallback_cap1,
+  # 11=level1_hold
   - id: oq_cooling_limiter_reason_code
     type: int
     restore_value: false
@@ -326,6 +328,7 @@ interval:
           const float hard_dew_restart_gap_c = 0.60f;
           const float full_gap_c = 1.50f;
           const float cap2_gap_c = 0.60f;
+          const float level2_release_rate_c_per_min = -0.12f;
           const float simmer_enable_gap_c = -0.20f;
           const float simmer_disable_gap_c = -0.30f;
           const float buffer_hard_stop_gap_c = -0.70f;
@@ -477,6 +480,7 @@ interval:
               case 8: return "restart_wait";
               case 9: return "room_cap";
               case 10: return "fallback_cap1";
+              case 11: return "level1_hold";
               default: return "inactive";
             }
           };
@@ -514,8 +518,12 @@ interval:
               safe_floor_cap = demand_max;
               if (!room_cap_active) reason_code = 1;
             } else if (filtered_gap_c > cap2_gap_c) {
-              safe_floor_cap = std::min(safe_floor_cap, 2);
-              reason_code = room_cap_active ? 9 : 2;
+              // Level 2 is a boost, not the default near-target balance point.
+              // If the filtered gap is already falling, hold level 1 and let the
+              // water coast toward target instead of driving through it.
+              const bool level2_still_needed = gap_rate_c_per_min > level2_release_rate_c_per_min;
+              safe_floor_cap = std::min(safe_floor_cap, level2_still_needed ? 2 : 1);
+              reason_code = room_cap_active ? 9 : (level2_still_needed ? 2 : 11);
             } else {
               const bool dew_gap_allows_simmer =
                   !dew_mode || isnan(dew_gap_c) || dew_gap_c > hard_dew_restart_gap_c;
@@ -634,7 +642,11 @@ interval:
           if (prev_limited > 0 && allowed_max < prev_limited) {
             demand = std::min(demand_candidate, allowed_max);
           } else if (demand_candidate > prev_limited) {
-            if (prev_limited == 0 || last_change_ms == 0 || elapsed_change_ms >= upscale_dwell_ms) {
+            if (prev_limited == 0) {
+              // Start every new cooling run at level 1. If level 1 cannot pull
+              // the water gap down, the normal up-dwell can still promote it.
+              demand = std::min(demand_candidate, 1);
+            } else if (last_change_ms == 0 || elapsed_change_ms >= upscale_dwell_ms) {
               demand = demand_candidate;
             } else {
               demand = prev_limited;
@@ -916,6 +928,7 @@ interval:
               case 8: return "restart_wait";
               case 9: return "room_cap";
               case 10: return "fallback_cap1";
+              case 11: return "level1_hold";
               default: return "inactive";
             }
           };

@@ -126,6 +126,8 @@ Het koeldoel is de hoogste waarde van:
 
 Zolang het water nog duidelijk warmer is dan dit doel, mag de regelaar meer koelvraag opbouwen tot `Cooling Demand Max`. Dicht bij het doel bouwt OpenQuatt terug. Als de ruimte nog koelvraag heeft en de veiligheidsruimte voldoende stabiel is, mag level 1 blijven draaien als rustige onderhoudsstand. Dat voorkomt dat de compressor telkens uitgaat zodra het water precies het target raakt.
 
+Een hogere `Cooling Demand Max` betekent niet dat OpenQuatt meteen hard gaat koelen. Een nieuwe koelrun start rustig op level 1. Pas als level 1 de aanvoer onvoldoende richting target trekt, mag de regelaar tijdelijk opschalen. Zodra de aanvoer duidelijk daalt, houdt OpenQuatt weer level 1 vast om doorschieten onder het target te voorkomen.
+
 Als level 1 nog steeds te veel koelt, of als de aanvoer te snel richting de veilige ondergrens zakt, stopt OpenQuatt alsnog. Na zo'n waterzijde-stop gebruikt `Cooling Restart Delta` hoeveel de aanvoer eerst weer boven het doel moet opwarmen voordat de watercyclus opnieuw mag starten.
 
 ### Waarom is dauwpunt zo belangrijk?
