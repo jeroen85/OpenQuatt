@@ -694,7 +694,10 @@ interval:
           }
 
           const uint32_t now_ms = (uint32_t) millis();
-          const uint32_t loop_target_ms = (uint32_t) (${oq_heat_loop_curve_s} * 1000UL);
+          // Cooling demand is already filtered and dwell-limited upstream. Keep
+          // the HP owner/request bridge on the 5s tick so level changes do not
+          // wait for the slower heating-curve cadence.
+          const uint32_t loop_target_ms = (uint32_t) (${oq_heat_loop_tick_s} * 1000UL);
           if (id(oq_cooling_request_last_loop_ms) > 0 && now_ms > id(oq_cooling_request_last_loop_ms)) {
             const uint32_t elapsed_ms = now_ms - id(oq_cooling_request_last_loop_ms);
             if (elapsed_ms < loop_target_ms) return;
