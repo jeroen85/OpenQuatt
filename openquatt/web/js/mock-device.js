@@ -892,6 +892,8 @@
     );
     window.__OQ_DEV_META = {
       installation: state.installation,
+      hardwareProfile: "heatpump_controller_q",
+      connection: state.connection,
       ipAddress: "192.168.2.123",
       bootedAt: state.bootedAt,
       updateAvailable,

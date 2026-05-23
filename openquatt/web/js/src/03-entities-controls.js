@@ -2566,9 +2566,11 @@
     if (action === "open-update-modal") {
       state.updateModalOpen = true;
       render();
-      if (!hasKnownFirmwareTargetVersion() && !state.updateCheckBusy && !state.updateInstallBusy) {
-        triggerFirmwareUpdateCheck();
-      }
+      void hydrateFirmwareUpdateModal().then(() => {
+        if (state.updateModalOpen && !hasKnownFirmwareTargetVersion() && !state.updateCheckBusy && !state.updateInstallBusy) {
+          void triggerFirmwareUpdateCheck();
+        }
+      });
       return;
     }
 
@@ -3161,6 +3163,17 @@
     }
   }
 
+  async function hydrateFirmwareUpdateModal() {
+    try {
+      await refreshEntities(FIRMWARE_MODAL_KEYS, "all", { concurrency: ENTITY_REFRESH_CONCURRENCY });
+      if (state.updateModalOpen) {
+        render();
+      }
+    } catch (_error) {
+      // Keep the modal usable with known state; OTA actions still show detailed failures.
+    }
+  }
+
   async function setFirmwareUpdateTarget(option, options = {}) {
     const entity = ENTITY_DEFS.firmwareUpdateTarget;
     if (!entity || !hasEntity("firmwareUpdateTarget")) {
@@ -3241,7 +3254,7 @@
   async function installFirmwareConnectionSwitch() {
     const model = getFirmwareConnectionSwitchModel();
     const buttonEntity = ENTITY_DEFS.installFirmwareUpdateTarget;
-    if (!model || !buttonEntity) {
+    if (!model || !model.canSwitch || !buttonEntity) {
       return;
     }
     if (!state.firmwareConnectionSwitchConfirmed) {

@@ -127,11 +127,11 @@
   }
 
   function getFirmwareHardwareProfile() {
-    return String(getEntityValue("hardwareProfileText") || "").trim().toLowerCase();
+    return String(getEntityValue("hardwareProfileText") || getDeviceMeta().hardwareProfile || "").trim().toLowerCase();
   }
 
   function getFirmwareBuildConnection() {
-    return normalizeFirmwareConnection(getEntityValue("connectionText"));
+    return normalizeFirmwareConnection(getEntityValue("connectionText") || getDeviceMeta().connection);
   }
 
   function getFirmwareAlternateConnection() {
@@ -164,13 +164,12 @@
       || (topology !== "single" && topology !== "duo")
       || (currentConnection !== "wifi" && currentConnection !== "eth")
       || !targetConnection
-      || !hasEntity("firmwareUpdateTarget")
-      || !hasEntity("installFirmwareUpdateTarget")
     ) {
       return null;
     }
 
     return {
+      canSwitch: hasEntity("firmwareUpdateTarget") && hasEntity("installFirmwareUpdateTarget"),
       currentConnection,
       targetConnection,
       currentLabel: getFirmwareConnectionLabel(currentConnection),
@@ -966,9 +965,13 @@
     const busy = Boolean(progress || state.updateInstallBusy || isFirmwareUpdateChecking());
     const confirmed = Boolean(state.firmwareConnectionSwitchConfirmed);
     const targetIsEthernet = model.targetConnection === "eth";
+    const unavailable = !model.canSwitch;
     const warning = targetIsEthernet
       ? "Sluit eerst de netwerkkabel aan. Na de herstart verdwijnt Wi-Fi uit deze firmware."
       : "Na de herstart verdwijnt Ethernet uit deze firmware. Als er geen Wi-Fi-gegevens bekend zijn, start het OpenQuatt fallback access point.";
+    const statusNote = unavailable
+      ? '<p class="oq-helper-modal-note oq-helper-modal-note--muted">Verbindingswissel wordt geladen. Open deze modal opnieuw of wacht een moment als de knop disabled blijft.</p>'
+      : "";
 
     return `
       <div class="oq-helper-modal-callout oq-helper-modal-callout--subtle">
@@ -985,8 +988,9 @@
           </div>
         </div>
         <p class="oq-helper-modal-note">${escapeHtml(warning)}</p>
+        ${statusNote}
         <label class="oq-helper-modal-check">
-          <input type="checkbox" data-oq-firmware-connection-confirm="true" ${confirmed ? "checked" : ""} ${busy ? "disabled" : ""}>
+          <input type="checkbox" data-oq-firmware-connection-confirm="true" ${confirmed ? "checked" : ""} ${busy || unavailable ? "disabled" : ""}>
           <span>${escapeHtml(targetIsEthernet ? "De netwerkkabel is aangesloten." : "Ik begrijp dat Ethernet na reboot verdwijnt.")}</span>
         </label>
         <div class="oq-helper-modal-actions">
@@ -994,7 +998,7 @@
             class="oq-helper-button oq-helper-button--ghost"
             type="button"
             data-oq-action="install-firmware-connection-switch"
-            ${busy || !confirmed ? "disabled" : ""}
+            ${busy || unavailable || !confirmed ? "disabled" : ""}
           >
             ${escapeHtml(`Wissel naar ${model.targetLabel}`)}
           </button>

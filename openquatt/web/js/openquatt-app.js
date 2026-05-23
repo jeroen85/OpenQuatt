@@ -1773,11 +1773,11 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
   }
 
   function getFirmwareHardwareProfile() {
-    return String(getEntityValue("hardwareProfileText") || "").trim().toLowerCase();
+    return String(getEntityValue("hardwareProfileText") || getDeviceMeta().hardwareProfile || "").trim().toLowerCase();
   }
 
   function getFirmwareBuildConnection() {
-    return normalizeFirmwareConnection(getEntityValue("connectionText"));
+    return normalizeFirmwareConnection(getEntityValue("connectionText") || getDeviceMeta().connection);
   }
 
   function getFirmwareAlternateConnection() {
@@ -1810,13 +1810,12 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       || (topology !== "single" && topology !== "duo")
       || (currentConnection !== "wifi" && currentConnection !== "eth")
       || !targetConnection
-      || !hasEntity("firmwareUpdateTarget")
-      || !hasEntity("installFirmwareUpdateTarget")
     ) {
       return null;
     }
 
     return {
+      canSwitch: hasEntity("firmwareUpdateTarget") && hasEntity("installFirmwareUpdateTarget"),
       currentConnection,
       targetConnection,
       currentLabel: getFirmwareConnectionLabel(currentConnection),
@@ -2612,9 +2611,13 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     const busy = Boolean(progress || state.updateInstallBusy || isFirmwareUpdateChecking());
     const confirmed = Boolean(state.firmwareConnectionSwitchConfirmed);
     const targetIsEthernet = model.targetConnection === "eth";
+    const unavailable = !model.canSwitch;
     const warning = targetIsEthernet
       ? "Sluit eerst de netwerkkabel aan. Na de herstart verdwijnt Wi-Fi uit deze firmware."
       : "Na de herstart verdwijnt Ethernet uit deze firmware. Als er geen Wi-Fi-gegevens bekend zijn, start het OpenQuatt fallback access point.";
+    const statusNote = unavailable
+      ? '<p class="oq-helper-modal-note oq-helper-modal-note--muted">Verbindingswissel wordt geladen. Open deze modal opnieuw of wacht een moment als de knop disabled blijft.</p>'
+      : "";
 
     return `
       <div class="oq-helper-modal-callout oq-helper-modal-callout--subtle">
@@ -2631,8 +2634,9 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
           </div>
         </div>
         <p class="oq-helper-modal-note">${escapeHtml(warning)}</p>
+        ${statusNote}
         <label class="oq-helper-modal-check">
-          <input type="checkbox" data-oq-firmware-connection-confirm="true" ${confirmed ? "checked" : ""} ${busy ? "disabled" : ""}>
+          <input type="checkbox" data-oq-firmware-connection-confirm="true" ${confirmed ? "checked" : ""} ${busy || unavailable ? "disabled" : ""}>
           <span>${escapeHtml(targetIsEthernet ? "De netwerkkabel is aangesloten." : "Ik begrijp dat Ethernet na reboot verdwijnt.")}</span>
         </label>
         <div class="oq-helper-modal-actions">
@@ -2640,7 +2644,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
             class="oq-helper-button oq-helper-button--ghost"
             type="button"
             data-oq-action="install-firmware-connection-switch"
-            ${busy || !confirmed ? "disabled" : ""}
+            ${busy || unavailable || !confirmed ? "disabled" : ""}
           >
             ${escapeHtml(`Wissel naar ${model.targetLabel}`)}
           </button>
@@ -6334,9 +6338,11 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     if (action === "open-update-modal") {
       state.updateModalOpen = true;
       render();
-      if (!hasKnownFirmwareTargetVersion() && !state.updateCheckBusy && !state.updateInstallBusy) {
-        triggerFirmwareUpdateCheck();
-      }
+      void hydrateFirmwareUpdateModal().then(() => {
+        if (state.updateModalOpen && !hasKnownFirmwareTargetVersion() && !state.updateCheckBusy && !state.updateInstallBusy) {
+          void triggerFirmwareUpdateCheck();
+        }
+      });
       return;
     }
 
@@ -6929,6 +6935,17 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     }
   }
 
+  async function hydrateFirmwareUpdateModal() {
+    try {
+      await refreshEntities(FIRMWARE_MODAL_KEYS, "all", { concurrency: ENTITY_REFRESH_CONCURRENCY });
+      if (state.updateModalOpen) {
+        render();
+      }
+    } catch (_error) {
+      // Keep the modal usable with known state; OTA actions still show detailed failures.
+    }
+  }
+
   async function setFirmwareUpdateTarget(option, options = {}) {
     const entity = ENTITY_DEFS.firmwareUpdateTarget;
     if (!entity || !hasEntity("firmwareUpdateTarget")) {
@@ -7009,7 +7026,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
   async function installFirmwareConnectionSwitch() {
     const model = getFirmwareConnectionSwitchModel();
     const buttonEntity = ENTITY_DEFS.installFirmwareUpdateTarget;
-    if (!model || !buttonEntity) {
+    if (!model || !model.canSwitch || !buttonEntity) {
       return;
     }
     if (!state.firmwareConnectionSwitchConfirmed) {
