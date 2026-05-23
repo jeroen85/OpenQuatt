@@ -9,7 +9,17 @@ permissions:
   contents: read
 
 jobs:
+  validate-web-settings-backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Run settings-backup consistency check
+        run: node openquatt/web/check-settings-backup.mjs
+
   validate-and-compile:
+    needs: validate-web-settings-backup
     uses: ./.github/workflows/esphome-build.yml
     with:
       artifact_suffix: firmware-${{ github.sha }}
