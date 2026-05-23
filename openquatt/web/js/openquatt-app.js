@@ -15106,8 +15106,38 @@ function renderSettingsView() {
     `;
   }
 
+  function getActiveDevControlSelect() {
+    const active = typeof document !== "undefined" ? document.activeElement : null;
+    if (!active || typeof active.matches !== "function") {
+      return null;
+    }
+    return active.matches('select[data-oq-dev-control]') ? active : null;
+  }
+
+  function deferRenderUntilDevControlSelectSettles(select) {
+    if (!select || state.deferDevControlSelectRender) {
+      return;
+    }
+
+    state.deferDevControlSelectRender = true;
+    const flush = () => {
+      select.removeEventListener("blur", flush);
+      select.removeEventListener("change", flush);
+      state.deferDevControlSelectRender = false;
+      window.setTimeout(() => render(), 0);
+    };
+    select.addEventListener("blur", flush, { once: true });
+    select.addEventListener("change", flush, { once: true });
+  }
+
   function render() {
     if (!state.root) {
+      return;
+    }
+
+    const activeDevControlSelect = getActiveDevControlSelect();
+    if (activeDevControlSelect) {
+      deferRenderUntilDevControlSelectSettles(activeDevControlSelect);
       return;
     }
 

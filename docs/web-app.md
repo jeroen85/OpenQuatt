@@ -44,6 +44,8 @@ http://<ip-adres>
 
 De web-app draait lokaal op je eigen netwerk. Je gebruikt dus geen cloudaccount en hoeft niets externs open te zetten.
 
+Wil je de interface eerst rustig bekijken zonder echte hardware, open dan de [web-app demo op GitHub Pages](demo/). Die gebruikt dezelfde look-and-feel in mockmodus.
+
 ## Eerste keer: Quick Start
 
 Na de eerste installatie opent de web-app Quick Start zolang de basisinstallatie nog niet is afgerond.

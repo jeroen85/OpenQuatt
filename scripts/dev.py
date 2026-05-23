@@ -477,6 +477,8 @@ def build_pages_site(site_dir: Path, factory_dir: Path, helper_python: Sequence[
         shutil.rmtree(site_dir)
 
     (site_dir / "firmware" / "main").mkdir(parents=True, exist_ok=True)
+    (site_dir / "css").mkdir(parents=True, exist_ok=True)
+    (site_dir / "js").mkdir(parents=True, exist_ok=True)
     shutil.copytree(root_dir / "docs", site_dir, dirs_exist_ok=True)
 
     for stale_file in ("onderhoudsgids.md", "releaseproces.md"):
@@ -488,6 +490,19 @@ def build_pages_site(site_dir: Path, factory_dir: Path, helper_python: Sequence[
         [*helper_python, str(root_dir / "scripts" / "build_pages_docs.py"), str(site_dir)],
         cwd=root_dir,
     )
+
+    shutil.copy2(root_dir / "openquatt" / "web" / "css" / "openquatt-app.css", site_dir / "css" / "openquatt-app.css")
+    shutil.copy2(root_dir / "openquatt" / "web" / "js" / "mock-device.js", site_dir / "js" / "mock-device.js")
+    shutil.copy2(root_dir / "openquatt" / "web" / "js" / "openquatt-app.js", site_dir / "js" / "openquatt-app.js")
+
+    demo_html = (root_dir / "openquatt" / "web" / "dev.html").read_text(encoding="utf-8")
+    demo_html = demo_html.replace("<title>OpenQuatt UI Preview</title>", "<title>OpenQuatt web-app demo</title>")
+    demo_html = demo_html.replace("./css/openquatt-app.css?v=q-connection-switch-v3", "../css/openquatt-app.css?v=q-pages-demo")
+    demo_html = demo_html.replace("./js/mock-device.js?v=q-connection-switch-v3", "../js/mock-device.js?v=q-pages-demo")
+    demo_html = demo_html.replace("./js/openquatt-app.js?v=q-connection-switch-v3", "../js/openquatt-app.js?v=q-pages-demo")
+    demo_dir = site_dir / "demo"
+    demo_dir.mkdir(parents=True, exist_ok=True)
+    (demo_dir / "index.html").write_text(demo_html, encoding="utf-8")
 
     (site_dir / ".nojekyll").touch()
 

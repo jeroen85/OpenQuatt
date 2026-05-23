@@ -47,6 +47,7 @@ Voor de volledige installatiestappen en eerste controle:
 
 - [Installatie en ingebruikname](docs/installatie-en-ingebruikname.md)
 - [Web-app gebruiken](docs/web-app.md)
+- [Web-app demo](demo/)
 - [Dashboard installeren](docs/dashboard/README.md)
 - [Dashboard gebruiken](docs/dashboardoverzicht.md)
 - [Problemen oplossen](docs/problemen-oplossen.md)

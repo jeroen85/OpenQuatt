@@ -7,6 +7,7 @@ on:
       - "README.md"
       - "build_targets.yaml"
       - "docs/**"
+      - "openquatt/web/**"
       - "scripts/dev.py"
       - "scripts/build_targets.py"
       - "scripts/build_pages_docs.py"
