@@ -1,8 +1,7 @@
 # ==============================================================================
 # OpenQuatt - Electropaultje Heatpump Controller Q-edition / Single / Ethernet
 # ==============================================================================
-# Planned target: kept out of the enabled compile/release matrix until Ethernet
-# hardware validation is complete.
+# Ethernet-only target for the Heatpump Controller Q W5500 port.
 # ==============================================================================
 substitutions:
   <<: !include ../../openquatt/oq_substitutions_common.yaml

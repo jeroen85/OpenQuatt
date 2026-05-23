@@ -30,14 +30,14 @@ OpenQuatt ondersteunt momenteel:
 - `Waveshare ESP32-S3-Relay-1CH`
 - `Electropaultje Heatpump Listener`
 
-Alle Wi-Fi-combinaties van bovenstaande opstelling en hardware worden ondersteund. Ethernet is alvast als build-as voorbereid voor de Heatpump Controller Q, maar nog niet vrijgegeven als releasebuild. De installer toont alleen verbindingen waarvoor in de stabiele release een factory-image beschikbaar is.
+Alle Wi-Fi-combinaties van bovenstaande opstelling en hardware worden ondersteund. Voor de Heatpump Controller Q zijn daarnaast Ethernet-builds beschikbaar voor `Single` en `Duo`. De installer toont alleen verbindingen waarvoor in de stabiele release een factory-image beschikbaar is.
 
 ## Snel starten
 
 1. Open de [OpenQuatt installer](https://jeroen85.github.io/OpenQuatt/install/).
 2. Kies exact de combinatie die past bij jouw Quatt-opstelling, hardware en verbinding.
 3. Flash de firmware via USB in Chrome of Edge.
-4. Rond Wi-Fi-configuratie af.
+4. Rond Wi-Fi-configuratie af, of sluit bij een Ethernet-build de netwerkkabel aan.
 5. Open `http://openquatt.local` en loop de Quick Start door.
 6. Voeg OpenQuatt daarna toe in Home Assistant en importeer het dashboard.
 

@@ -171,11 +171,10 @@ function isProfileAvailable(profile) {
 
 function buildManifest(profile) {
   const factoryFile = resolveFactoryFile(profile);
-  return {
+  const manifest = {
     name: profile.title,
     version: releaseInfo.version,
     new_install_prompt_erase: true,
-    new_install_improv_wait_time: 30,
     builds: [
       {
         chipFamily: profile.chipFamily,
@@ -188,6 +187,12 @@ function buildManifest(profile) {
       },
     ],
   };
+
+  if (profile.connection === "wifi") {
+    manifest.new_install_improv_wait_time = 30;
+  }
+
+  return manifest;
 }
 
 function updateInstallManifest(profile) {

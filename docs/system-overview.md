@@ -280,7 +280,7 @@ Hardware profile substitutions are split into dedicated files:
 
 Shared non-hardware constants are in `openquatt/oq_substitutions_common.yaml`.
 
-Compile-time profile selection is done by choosing a matrix entrypoint from `build_targets.yaml`. Ethernet targets for the Heatpump Controller Q are present as planned targets but skipped by the enabled CI/release matrix until hardware validation is complete.
+Compile-time profile selection is done by choosing a matrix entrypoint from `build_targets.yaml`. Ethernet targets are enabled for the Heatpump Controller Q as separate Ethernet-only builds.
 
 
 ## 10. UI and Observability Organization
