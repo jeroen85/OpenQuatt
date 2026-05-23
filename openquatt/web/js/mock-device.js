@@ -7,6 +7,7 @@
   const state = {
     scenario: "heating",
     installation: "duo",
+    connection: "wifi",
     boiler: "off",
     complete: true,
     tick: 0,
@@ -582,7 +583,10 @@
     syncDevMeta();
     setEntity("text_sensor", "Summary", { state: "" });
     setEntity("text_sensor", "OpenQuatt Installation Topology", { state: state.installation, value: state.installation });
+    setEntity("text_sensor", "OpenQuatt Hardware Profile", { state: "heatpump_controller_q", value: "heatpump_controller_q" });
+    setEntity("text_sensor", "OpenQuatt Connection", { state: state.connection, value: state.connection });
     setEntity("button", "Check Firmware Updates", { state: "" });
+    setEntity("button", "Install Firmware Update Target", { state: "" });
     setEntity("button", "Restart", { state: "" });
     setEntity("text_sensor", "OpenQuatt Version", { state: "v0.26.0", value: "v0.26.0" });
     setEntity("text_sensor", "OpenQuatt Release Channel", { state: "dev", value: "dev" });
@@ -680,6 +684,11 @@
       value: "dev",
       state: "dev",
       option: ["main", "dev"],
+    });
+    setEntity("select", "Firmware Update Target", {
+      value: "current build",
+      state: "current build",
+      option: ["current build", "alternate connection"],
     });
     setEntity("select", "Preset", {
       value: "Balanced",
@@ -1546,6 +1555,22 @@
           updateEntity.summary = "Het dev-kanaal heeft een nieuwere OTA-build beschikbaar voor deze preview.";
         }
       }
+    } else if (name === "Firmware Update Target") {
+      clearOtaSimulation();
+      setText("text_sensor", "Firmware Update Status", "Idle");
+      setNumber("Firmware Update Progress", 0, "%");
+      const updateEntity = getEntity("update", "Firmware Update");
+      const currentVersion = String(getEntity("text_sensor", "OpenQuatt Version")?.value || "v0.26.0");
+      if (updateEntity) {
+        updateEntity.current_version = currentVersion;
+        updateEntity.latest_version = value === "alternate connection" ? currentVersion : "v0.26.1-dev3";
+        updateEntity.release_url = getMockReleaseUrl(String(getEntity("select", "Firmware Update Channel")?.value || "dev"));
+        updateEntity.state = value === "alternate connection" ? "up_to_date" : "available";
+        updateEntity.value = updateEntity.state;
+        updateEntity.summary = value === "alternate connection"
+          ? "Alternatieve verbindingsbuild geselecteerd voor deze preview."
+          : "Normale firmware-update geselecteerd voor deze preview.";
+      }
     } else if (name === "Power House response profile") {
       if (value === "Calm") {
         setNumber("Power House demand rise time", 12);
@@ -1781,9 +1806,10 @@
       state.complete = false;
     } else if (name === "Check Firmware Updates") {
       const channel = String(getEntity("select", "Firmware Update Channel")?.value || "dev");
+      const target = String(getEntity("select", "Firmware Update Target")?.value || "current build");
       const updateEntity = getEntity("update", "Firmware Update");
       const currentVersion = String(getEntity("text_sensor", "OpenQuatt Version")?.value || "v0.26.0");
-      const latestVersion = channel === "main" ? "v0.26.0" : "v0.26.1-dev3";
+      const latestVersion = target === "alternate connection" ? currentVersion : channel === "main" ? "v0.26.0" : "v0.26.1-dev3";
       clearOtaSimulation();
       setText("text_sensor", "Firmware Update Status", "Idle");
       setNumber("Firmware Update Progress", 0, "%");
@@ -1794,6 +1820,8 @@
         updateEntity.state = currentVersion === latestVersion ? "up_to_date" : "available";
         updateEntity.value = updateEntity.state;
       }
+    } else if (name === "Install Firmware Update Target") {
+      handleUpdateInstall("Firmware Update");
     } else if (name === "Trendhistorie nu opslaan") {
       state.trendFlashLastFlushAt = Date.now();
       state.trendFlashNewestAt = Date.now() - (2 * 60 * 1000);
@@ -1819,6 +1847,10 @@
     }
     clearOtaSimulation();
 
+    const updateTarget = String(getEntity("select", "Firmware Update Target")?.value || "current build");
+    const targetConnection = updateTarget === "alternate connection"
+      ? state.connection === "wifi" ? "eth" : "wifi"
+      : state.connection;
     const targetVersion = String(updateEntity.latest_version || updateEntity.current_version || "v0.26.0");
     const scheduleStep = (delay, callback) => {
       const timer = window.setTimeout(() => {
@@ -1863,6 +1895,9 @@
       updateEntity.latest_version = targetVersion;
       updateEntity.summary = "De preview draait nu op de nieuwste firmware.";
       setText("text_sensor", "OpenQuatt Version", targetVersion);
+      state.connection = targetConnection;
+      setText("text_sensor", "OpenQuatt Connection", state.connection);
+      setText("select", "Firmware Update Target", "current build");
       setText("text_sensor", "Firmware Update Status", "Idle");
       setNumber("Firmware Update Progress", 0, "%");
       clearOtaSimulation();
