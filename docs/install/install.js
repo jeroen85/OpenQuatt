@@ -188,9 +188,7 @@ function buildManifest(profile) {
     ],
   };
 
-  if (profile.connection === "wifi") {
-    manifest.new_install_improv_wait_time = 30;
-  }
+  manifest.new_install_improv_wait_time = profile.connection === "wifi" ? 30 : 0;
 
   return manifest;
 }
