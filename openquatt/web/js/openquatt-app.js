@@ -862,6 +862,7 @@ const LOGO_MARKUP = `
       keys: [
         "coolingMinimumSupplyTemp",
         "coolingDemandMax",
+        "coolingRestartDelta",
         "coolingRequestOnDelta",
         "coolingRequestOffDelta",
         "coolingSafetyMargin",
