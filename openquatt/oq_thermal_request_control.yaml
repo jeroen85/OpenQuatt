@@ -1171,10 +1171,10 @@ interval:
 
           // =========================
           // 4b) Explicit per-HP slew-rate limiting for non-Power-House modes.
-          //    - max 1 level step per change
-          //    - asymmetrical hold: slower up, faster down
-          //    - the strategy owns curve dispatch semantics; this block only
-          //      shapes physical actuator movement
+          //    - Heating Curve keeps its profile hold times here.
+          //    - Cooling already has water-side dwell/limiter timing upstream, so
+          //      this layer only prevents multi-level upward jumps and lets
+          //      downward corrections pass immediately.
           // =========================
           if (!is_power_house) {
             const int curve_regime = id(oq_curve_regime_code);
@@ -1194,8 +1194,10 @@ interval:
 
               int limited = req_level;
               if (limited > prev + 1) limited = prev + 1;
-              if (limited < prev - 1) limited = prev - 1;
+              if (!is_cooling_mode && limited < prev - 1) limited = prev - 1;
               if (limited == prev) return limited;
+
+              if (is_cooling_mode) return limited;
 
               const bool moving_up = limited > prev;
               const uint32_t hold_ms = (uint32_t) ((moving_up ? up_hold_s : down_hold_s) * 1000UL);
