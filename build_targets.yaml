@@ -74,7 +74,7 @@ targets:
     display_name: OpenQuatt Heatpump Controller Q Duo Wi-Fi
     chip_family: ESP32-S3
   - id: heatpump_controller_q_single_eth
-    status: planned
+    status: enabled
     hardware: heatpump_controller_q
     hardware_label: Electropaultje Heatpump Controller Q-edition
     topology: single
@@ -86,7 +86,7 @@ targets:
     display_name: OpenQuatt Heatpump Controller Q Single Ethernet
     chip_family: ESP32-S3
   - id: heatpump_controller_q_duo_eth
-    status: planned
+    status: enabled
     hardware: heatpump_controller_q
     hardware_label: Electropaultje Heatpump Controller Q-edition
     topology: duo

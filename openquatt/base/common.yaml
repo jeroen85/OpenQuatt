@@ -39,10 +39,23 @@ esphome:
           id: oq_release_channel_text
           state: "${release_channel}"
       - lambda: |-
+          // Pick the OTA manifest for the active channel and selected update target.
+          const bool alternate_update_target =
+            id(oq_firmware_update_target).current_option() == "alternate connection";
           if (id(oq_firmware_update_channel).current_option() == "dev") {
-            id(oq_firmware_update).set_source_url("${dev_release_manifest_url}");
+            const char *alternate_url = "${alternate_dev_release_manifest_url}";
+            id(oq_firmware_update).set_source_url(
+              alternate_update_target && alternate_url[0] != '\0'
+                ? alternate_url
+                : "${dev_release_manifest_url}"
+            );
           } else {
-            id(oq_firmware_update).set_source_url("${main_release_manifest_url}");
+            const char *alternate_url = "${alternate_main_release_manifest_url}";
+            id(oq_firmware_update).set_source_url(
+              alternate_update_target && alternate_url[0] != '\0'
+                ? alternate_url
+                : "${main_release_manifest_url}"
+            );
           }
 
 esp32:

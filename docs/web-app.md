@@ -180,6 +180,8 @@ De web-app toont update-informatie via de firmware-updatefunctie. Normaal volg j
 
 Gebruik een dev-kanaal alleen als je bewust test en weet dat de firmware nog kan veranderen. Voor releasegebruik is het stabiele kanaal de route.
 
+Bij de Heatpump Controller Q kan de OTA-modal ook de verbinding wisselen tussen Wi-Fi en Ethernet. Dat is geen gewone update: de web-app installeert dan dezelfde `Single`- of `Duo`-build voor de andere netwerkverbinding. Controleer bij `Wi-Fi -> Ethernet` eerst of de netwerkkabel is aangesloten. Bij `Ethernet -> Wi-Fi` verdwijnt Ethernet na de herstart; als er geen Wi-Fi-gegevens bekend zijn, start de Wi-Fi-build het OpenQuatt fallback access point.
+
 ## MQTT instellen
 
 MQTT stel je in via:

@@ -15,6 +15,11 @@ friendly_name: OpenQuatt                              # Display name in Home Ass
 project_name: "openquatt.openquatt"                   # ESPHome project identifier shown in firmware metadata.
 project_version: "v0.31.1"                            # ESPHome project version shown in firmware metadata.
 release_channel: "main"                               # Firmware release channel shown in diagnostics (`main` or `dev`).
+oq_hardware_profile: "unknown"                        # Compile-time hardware profile id.
+oq_connection: "unknown"                              # Compile-time connection profile id (`wifi` or `eth`).
+alternate_connection: ""                              # Optional connection target used for controlled Wi-Fi/Ethernet switching.
+alternate_main_release_manifest_url: ""               # Optional main-channel OTA manifest for the alternate connection target.
+alternate_dev_release_manifest_url: ""                # Optional dev-channel OTA manifest for the alternate connection target.
 hp_perf_map_header: "../../openquatt/includes/hp_perf_map.h" # C++ performance-map header include path.
 hp_perf_map_v2_high_header: "../../openquatt/includes/hp_perf_map_v2_high.h" # C++ V2 high-temperature continuation header.
 thermal_request_logic_header: "../../openquatt/includes/oq_thermal_request_logic.h" # Shared C++ helper include for request/control glue.

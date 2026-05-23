@@ -7,6 +7,7 @@
   const state = {
     scenario: "heating",
     installation: "duo",
+    connection: "wifi",
     boiler: "off",
     complete: true,
     tick: 0,
@@ -582,7 +583,10 @@
     syncDevMeta();
     setEntity("text_sensor", "Summary", { state: "" });
     setEntity("text_sensor", "OpenQuatt Installation Topology", { state: state.installation, value: state.installation });
+    setEntity("text_sensor", "OpenQuatt Hardware Profile", { state: "heatpump_controller_q", value: "heatpump_controller_q" });
+    setEntity("text_sensor", "OpenQuatt Connection", { state: state.connection, value: state.connection });
     setEntity("button", "Check Firmware Updates", { state: "" });
+    setEntity("button", "Install Firmware Update Target", { state: "" });
     setEntity("button", "Restart", { state: "" });
     setEntity("text_sensor", "OpenQuatt Version", { state: "v0.26.0", value: "v0.26.0" });
     setEntity("text_sensor", "OpenQuatt Release Channel", { state: "dev", value: "dev" });
@@ -680,6 +684,11 @@
       value: "dev",
       state: "dev",
       option: ["main", "dev"],
+    });
+    setEntity("select", "Firmware Update Target", {
+      value: "current build",
+      state: "current build",
+      option: ["current build", "alternate connection"],
     });
     setEntity("select", "Preset", {
       value: "Balanced",
@@ -883,6 +892,8 @@
     );
     window.__OQ_DEV_META = {
       installation: state.installation,
+      hardwareProfile: "heatpump_controller_q",
+      connection: state.connection,
       ipAddress: "192.168.2.123",
       bootedAt: state.bootedAt,
       updateAvailable,
@@ -1048,6 +1059,13 @@
       return;
     }
     state.boiler = boilerControl.value === "on" ? "on" : "off";
+  }
+
+  function setConnectionMode(value) {
+    state.connection = value === "eth" ? "eth" : "wifi";
+    setText("text_sensor", "OpenQuatt Connection", state.connection);
+    setText("select", "Firmware Update Target", "current build");
+    syncDevMeta();
   }
 
   function applyScenario(name) {
@@ -1546,6 +1564,22 @@
           updateEntity.summary = "Het dev-kanaal heeft een nieuwere OTA-build beschikbaar voor deze preview.";
         }
       }
+    } else if (name === "Firmware Update Target") {
+      clearOtaSimulation();
+      setText("text_sensor", "Firmware Update Status", "Idle");
+      setNumber("Firmware Update Progress", 0, "%");
+      const updateEntity = getEntity("update", "Firmware Update");
+      const currentVersion = String(getEntity("text_sensor", "OpenQuatt Version")?.value || "v0.26.0");
+      if (updateEntity) {
+        updateEntity.current_version = currentVersion;
+        updateEntity.latest_version = value === "alternate connection" ? currentVersion : "v0.26.1-dev3";
+        updateEntity.release_url = getMockReleaseUrl(String(getEntity("select", "Firmware Update Channel")?.value || "dev"));
+        updateEntity.state = value === "alternate connection" ? "up_to_date" : "available";
+        updateEntity.value = updateEntity.state;
+        updateEntity.summary = value === "alternate connection"
+          ? "Alternatieve verbindingsbuild geselecteerd voor deze preview."
+          : "Normale firmware-update geselecteerd voor deze preview.";
+      }
     } else if (name === "Power House response profile") {
       if (value === "Calm") {
         setNumber("Power House demand rise time", 12);
@@ -1781,9 +1815,10 @@
       state.complete = false;
     } else if (name === "Check Firmware Updates") {
       const channel = String(getEntity("select", "Firmware Update Channel")?.value || "dev");
+      const target = String(getEntity("select", "Firmware Update Target")?.value || "current build");
       const updateEntity = getEntity("update", "Firmware Update");
       const currentVersion = String(getEntity("text_sensor", "OpenQuatt Version")?.value || "v0.26.0");
-      const latestVersion = channel === "main" ? "v0.26.0" : "v0.26.1-dev3";
+      const latestVersion = target === "alternate connection" ? currentVersion : channel === "main" ? "v0.26.0" : "v0.26.1-dev3";
       clearOtaSimulation();
       setText("text_sensor", "Firmware Update Status", "Idle");
       setNumber("Firmware Update Progress", 0, "%");
@@ -1794,6 +1829,8 @@
         updateEntity.state = currentVersion === latestVersion ? "up_to_date" : "available";
         updateEntity.value = updateEntity.state;
       }
+    } else if (name === "Install Firmware Update Target") {
+      handleUpdateInstall("Firmware Update");
     } else if (name === "Trendhistorie nu opslaan") {
       state.trendFlashLastFlushAt = Date.now();
       state.trendFlashNewestAt = Date.now() - (2 * 60 * 1000);
@@ -1819,6 +1856,10 @@
     }
     clearOtaSimulation();
 
+    const updateTarget = String(getEntity("select", "Firmware Update Target")?.value || "current build");
+    const targetConnection = updateTarget === "alternate connection"
+      ? state.connection === "wifi" ? "eth" : "wifi"
+      : state.connection;
     const targetVersion = String(updateEntity.latest_version || updateEntity.current_version || "v0.26.0");
     const scheduleStep = (delay, callback) => {
       const timer = window.setTimeout(() => {
@@ -1863,6 +1904,9 @@
       updateEntity.latest_version = targetVersion;
       updateEntity.summary = "De preview draait nu op de nieuwste firmware.";
       setText("text_sensor", "OpenQuatt Version", targetVersion);
+      state.connection = targetConnection;
+      setText("text_sensor", "OpenQuatt Connection", state.connection);
+      setText("select", "Firmware Update Target", "current build");
       setText("text_sensor", "Firmware Update Status", "Idle");
       setNumber("Firmware Update Progress", 0, "%");
       clearOtaSimulation();
@@ -1980,17 +2024,19 @@
     return `
       <section class="oq-helper-hub-block oq-helper-hub-dev" data-oq-dev-controls>
         <p class="oq-helper-hub-kicker">Preview en test</p>
-        <div class="oq-helper-hub-dev-meta">
-          <span class="oq-helper-hub-dev-badge">Login ${state.auth.enabled ? "aan" : "uit"}</span>
-          <span class="oq-helper-hub-dev-badge">${isAuthRecoveryWindowActive() ? "Herstelvenster open" : "Herstelvenster dicht"}</span>
-          <span class="oq-helper-hub-dev-badge">CM100 ${state.commissioning.cm100Active ? "aan" : "uit"}</span>
-        </div>
         <div class="oq-helper-hub-dev-grid">
           <label class="oq-helper-hub-dev-row">
             <span class="oq-helper-hub-dev-label">Installatie</span>
             <select class="oq-helper-hub-dev-select" data-oq-dev-control="installation">
               <option value="single">Quatt Single</option>
               <option value="duo">Quatt Duo</option>
+            </select>
+          </label>
+          <label class="oq-helper-hub-dev-row">
+            <span class="oq-helper-hub-dev-label">Verbinding</span>
+            <select class="oq-helper-hub-dev-select" data-oq-dev-control="connection">
+              <option value="wifi">Wi-Fi</option>
+              <option value="eth">Ethernet</option>
             </select>
           </label>
           <label class="oq-helper-hub-dev-row">
@@ -2011,21 +2057,6 @@
             </select>
           </label>
         </div>
-        <div class="oq-helper-hub-dev-actions">
-          <button class="oq-helper-hub-dev-button" type="button" data-oq-dev-control="boiler-off" data-oq-action="set-mock-boiler" data-boiler-mode="off">CV uit</button>
-          <button class="oq-helper-hub-dev-button" type="button" data-oq-dev-control="boiler-on" data-oq-action="set-mock-boiler" data-boiler-mode="on">CV aan</button>
-          <button class="oq-helper-hub-dev-button" type="button" data-oq-dev-control="arm-auth">Login herstelvenster</button>
-        </div>
-        <div class="oq-helper-hub-dev-actions">
-          <button class="oq-helper-hub-dev-button" type="button" data-oq-dev-control="toggle-animate">${state.autoAnimate ? "Pauzeer mockdata" : "Start mockdata"}</button>
-          <button class="oq-helper-hub-dev-button" type="button" data-oq-dev-control="step">1 tick</button>
-        </div>
-        <div class="oq-helper-hub-dev-meta">
-          <span class="oq-helper-hub-dev-badge">Quick Start ${state.complete ? "afgerond" : "actief"}</span>
-          <span class="oq-helper-hub-dev-badge">Datastroom ${state.autoAnimate ? "live mock" : "gepauzeerd"}</span>
-          <span class="oq-helper-hub-dev-badge">CV-ketel ${state.boiler === "on" ? "aan" : "uit"}</span>
-          <span class="oq-helper-hub-dev-badge">CM100 ${state.commissioning.globalStatus || "CM0 - Standby"}</span>
-        </div>
       </section>
     `;
   }
@@ -2044,6 +2075,16 @@
         setInstallationMode(installation.value);
         applyScenario(state.scenario);
         updateSummary();
+        notifyMockUpdated();
+        notifyDevControlsChanged();
+      };
+    }
+
+    const connection = controlsRoot.querySelector('[data-oq-dev-control="connection"]');
+    if (connection) {
+      connection.value = state.connection;
+      connection.onchange = () => {
+        setConnectionMode(connection.value);
         notifyMockUpdated();
         notifyDevControlsChanged();
       };
@@ -2075,58 +2116,6 @@
       boiler.oninput = handleBoilerChange;
     }
 
-    const boilerOff = controlsRoot.querySelector('[data-oq-dev-control="boiler-off"]');
-    if (boilerOff) {
-      boilerOff.onclick = () => {
-        state.boiler = "off";
-        if (boiler) {
-          boiler.value = "off";
-        }
-        applyScenario(state.scenario);
-        updateSummary();
-        notifyMockUpdated();
-        notifyDevControlsChanged();
-      };
-    }
-
-    const boilerOn = controlsRoot.querySelector('[data-oq-dev-control="boiler-on"]');
-    if (boilerOn) {
-      boilerOn.onclick = () => {
-        state.boiler = "on";
-        if (boiler) {
-          boiler.value = "on";
-        }
-        applyScenario(state.scenario);
-        updateSummary();
-        notifyMockUpdated();
-        notifyDevControlsChanged();
-      };
-    }
-
-    const toggle = controlsRoot.querySelector('[data-oq-dev-control="toggle-animate"]');
-    if (toggle) {
-      toggle.onclick = () => {
-        state.autoAnimate = !state.autoAnimate;
-        notifyDevControlsChanged();
-      };
-    }
-
-    const step = controlsRoot.querySelector('[data-oq-dev-control="step"]');
-    if (step) {
-      step.onclick = () => {
-        stepSimulation(true);
-        notifyDevControlsChanged();
-      };
-    }
-
-    const armAuth = controlsRoot.querySelector('[data-oq-dev-control="arm-auth"]');
-    if (armAuth) {
-      armAuth.onclick = () => {
-        armAuthRecoveryWindow();
-        notifyMockUpdated();
-        notifyDevControlsChanged();
-      };
-    }
   }
 
   window.__OQ_DEV_CONTROLS__ = {

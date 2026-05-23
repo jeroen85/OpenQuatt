@@ -4,7 +4,7 @@ Deze handleiding beschrijft de eerste installatie van OpenQuatt. Voor de meeste 
 
 ## Installatieroute
 
-Voor een eerste installatie gebruik je de web installer uit de [README](../README.md). Daarmee flash je de juiste firmware en kun je direct daarna de Wi-Fi-configuratie afronden.
+Voor een eerste installatie gebruik je de web installer uit de [README](../README.md). Daarmee flash je de juiste firmware en kun je bij Wi-Fi direct daarna de Wi-Fi-configuratie afronden. Bij Ethernet sluit je na het flashen de netwerkkabel aan.
 
 De route is:
 
@@ -12,7 +12,7 @@ De route is:
 2. opstelling en hardware kiezen;
 3. verbinding kiezen;
 4. firmware flashen;
-5. Wi-Fi instellen;
+5. netwerk verbinden;
 6. `openquatt.local` openen;
 7. Quick Start afronden;
 8. Home Assistant-dashboard importeren.
@@ -23,8 +23,8 @@ Gebruik [Handmatige installatie](handmatige-installatie.md) alleen als fallback.
 
 | Moment | Wat zie je? | Volgende actie |
 |---|---|---|
-| Installer | Keuzes voor `Single` of `Duo`, ESP-module en verbinding | Kies nu `Wi-Fi`; Ethernet verschijnt pas zodra er een stabiele releasebuild is. |
-| ESP Web Tools | Browserdialoog voor verbinden, wissen en flashen | Laat het tabblad open tot de Wi-Fi-configuratie is afgerond. |
+| Installer | Keuzes voor `Single` of `Duo`, ESP-module en verbinding | Kies de exacte combinatie die bij je hardware past. |
+| ESP Web Tools | Browserdialoog voor verbinden, wissen en flashen | Laat het tabblad bij Wi-Fi open tot de Wi-Fi-configuratie is afgerond. Bij Ethernet sluit je na de flash de netwerkkabel aan. |
 | Web-app | `http://openquatt.local` met Quick Start | Kies Quatt Hybrid V1, V1.5 of V2 en rond de basisinstellingen af. |
 | Home Assistant | ESPHome-apparaat en dashboard | Voeg OpenQuatt toe en importeer daarna het juiste `Single`- of `Duo`-dashboard. |
 
@@ -35,7 +35,7 @@ Gebruik [Handmatige installatie](handmatige-installatie.md) alleen als fallback.
   - Waveshare ESP32-S3-Relay-1CH
   - Electropaultje Heatpump Listener
 - een USB-kabel voor de eerste flash
-- een werkend Wi-Fi-netwerk
+- een werkend Wi-Fi-netwerk of, bij Heatpump Controller Q Ethernet, een aangesloten netwerkkabel
 - Chrome of Edge voor de web installer
 - Home Assistant wordt sterk aanbevolen
 
@@ -49,14 +49,14 @@ OpenQuatt ondersteunt Quatt Hybrid V1, V1.5 en V2. Die versie kies je na het fla
 |---|---|---|---|
 | Single | Heatpump Controller Q | Wi-Fi | `Single` + `Heatpump Controller Q` + `Wi-Fi` |
 | Duo | Heatpump Controller Q | Wi-Fi | `Duo` + `Heatpump Controller Q` + `Wi-Fi` |
+| Single | Heatpump Controller Q | Ethernet | `Single` + `Heatpump Controller Q` + `Ethernet` |
+| Duo | Heatpump Controller Q | Ethernet | `Duo` + `Heatpump Controller Q` + `Ethernet` |
 | Single | Heatpump Listener | Wi-Fi | `Single` + `Heatpump Listener` + `Wi-Fi` |
 | Duo | Heatpump Listener | Wi-Fi | `Duo` + `Heatpump Listener` + `Wi-Fi` |
 | Single | Waveshare | Wi-Fi | `Single` + `Waveshare` + `Wi-Fi` |
 | Duo | Waveshare | Wi-Fi | `Duo` + `Waveshare` + `Wi-Fi` |
 
-De Ethernet-configs voor de Heatpump Controller Q staan al in de matrix als planned targets, maar worden nog niet door CI/release gebouwd. Voor gewone gebruikers is Wi-Fi voorlopig de duidelijke route.
-
-Zodra er een stabiele Ethernet-factorybuild voor de Heatpump Controller Q wordt gepubliceerd, toont de installer `Ethernet` als extra verbindingskeuze bij die module.
+Ethernet is alleen beschikbaar voor de Heatpump Controller Q. ESPHome ondersteunt Wi-Fi en Ethernet niet samen in dezelfde build, dus een Ethernet-installatie heeft geen Wi-Fi fallback of captive portal.
 
 ## Installatie via de web installer
 
@@ -66,14 +66,14 @@ Zodra er een stabiele Ethernet-factorybuild voor de Heatpump Controller Q wordt 
 2. Kies de combinatie die past bij je opstelling, hardware en verbinding.
 3. Sluit het ESP32-bord via USB aan.
 4. Flash de firmware.
-5. Laat het browsertabblad open, zodat de Wi-Fi-configuratie direct daarna kan worden aangeboden.
+5. Laat bij Wi-Fi het browsertabblad open, zodat de Wi-Fi-configuratie direct daarna kan worden aangeboden. Sluit bij Ethernet na de flash de netwerkkabel aan.
 6. Open na de eerste start `http://openquatt.local`.
 7. Rond de Quick Start in de web-app af.
 8. Voeg het apparaat daarna toe in Home Assistant.
 
 Praktisch voor een DS18B20: sluit die sensor bij voorkeur aan voordat OpenQuatt opstart. De 1-Wire sensor wordt tijdens het opstarten gedetecteerd; als je hem later aansluit, moet je het bord eerst herstarten voordat de sensor zichtbaar wordt.
 
-Als de browserflow voor Wi-Fi niet werkt, start OpenQuatt een fallback access point:
+Als de browserflow voor Wi-Fi niet werkt, start een Wi-Fi-build het OpenQuatt fallback access point:
 
 - SSID: `OpenQuatt`
 - wachtwoord: `openquatt`
@@ -128,6 +128,7 @@ Zie voor het dashboard:
 ### Het apparaat verschijnt niet in Home Assistant
 
 - Controleer of Wi-Fi echt is ingesteld.
+- Gebruik je Ethernet, controleer dan of de netwerkkabel is aangesloten en DHCP een IP-adres heeft gegeven.
 - Kijk of het apparaat nog op het fallback access point zit.
 - Herstart het bord een keer.
 

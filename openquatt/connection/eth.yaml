@@ -5,9 +5,21 @@
 # targets are intentionally Ethernet-only.
 # ==============================================================================
 
+substitutions:
+  oq_connection: "eth"
+
 ethernet:
   type: W5500
   clk_pin: ${eth_clk_pin}
   mosi_pin: ${eth_mosi_pin}
   miso_pin: ${eth_miso_pin}
   cs_pin: ${eth_cs_pin}
+
+text_sensor:
+  - platform: ethernet_info
+    ip_address:
+      name: IP Address
+      icon: mdi:ip-network-outline
+      entity_category: diagnostic
+      web_server:
+        sorting_group_id: oq_system_diagnostics

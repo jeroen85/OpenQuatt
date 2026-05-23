@@ -30,7 +30,7 @@ De bestandsnaam bevat normaal:
 - `openquatt`;
 - het hardwareprofiel;
 - `single` of `duo`;
-- `wifi`;
+- `wifi` of, alleen voor Heatpump Controller Q, `eth`;
 - `firmware.factory.bin`.
 
 Voorbeelden:
@@ -38,6 +38,8 @@ Voorbeelden:
 ```text
 openquatt-heatpump-controller-q-single-wifi.firmware.factory.bin
 openquatt-heatpump-controller-q-duo-wifi.firmware.factory.bin
+openquatt-heatpump-controller-q-single-eth.firmware.factory.bin
+openquatt-heatpump-controller-q-duo-eth.firmware.factory.bin
 ```
 
 Gebruik geen `ota.bin` voor een eerste installatie via USB. Voor de eerste flash heb je een factory-binary nodig.
@@ -50,11 +52,11 @@ Gebruik geen `ota.bin` voor een eerste installatie via USB. Voor de eerste flash
 4. Kies `Connect`.
 5. Kies het gedownloade factory-bestand.
 6. Flash de module.
-7. Stel daarna Wi-Fi in via de browserflow of via het fallback access point.
+7. Stel bij een Wi-Fi-build daarna Wi-Fi in via de browserflow of via het fallback access point. Sluit bij een Ethernet-build de netwerkkabel aan.
 
 ## Na het flashen
 
-Als Wi-Fi niet direct via de browserflow lukt, gebruikt OpenQuatt het fallback access point:
+Als Wi-Fi niet direct via de browserflow lukt, gebruikt een Wi-Fi-build het OpenQuatt fallback access point:
 
 - SSID: `OpenQuatt`
 - wachtwoord: `openquatt`
@@ -73,6 +75,6 @@ Loop vervolgens de Quick Start in de web-app door.
 - Een firmwarebestand voor het verkeerde hardwareprofiel kiezen.
 - Een OTA-bestand gebruiken voor de eerste USB-installatie.
 - De browser sluiten voordat Wi-Fi is ingesteld.
-- Verwachten dat Ethernet-builds beschikbaar zijn terwijl die nog niet als releasebuild zijn vrijgegeven.
+- Een Ethernet-bestand gebruiken op hardware zonder W5500 Ethernet-poort.
 
 Als je twijfelt, ga terug naar [Installatie en ingebruikname](installatie-en-ingebruikname.md) en gebruik de normale installer.

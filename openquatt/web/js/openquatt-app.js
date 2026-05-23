@@ -108,9 +108,11 @@ const LOGO_MARKUP = `
     status: { domain: "binary_sensor", name: "Status", optional: true },
     firmwareUpdate: { domain: "update", name: "Firmware Update", optional: true },
     firmwareUpdateChannel: { domain: "select", name: "Firmware Update Channel", optional: true },
+    firmwareUpdateTarget: { domain: "select", name: "Firmware Update Target", optional: true },
     firmwareUpdateProgress: { domain: "sensor", name: "Firmware Update Progress", optional: true },
     firmwareUpdateStatus: { domain: "text_sensor", name: "Firmware Update Status", optional: true },
     checkFirmwareUpdates: { domain: "button", name: "Check Firmware Updates", optional: true },
+    installFirmwareUpdateTarget: { domain: "button", name: "Install Firmware Update Target", optional: true },
     restartAction: { domain: "button", name: "Restart", optional: true },
     uptime: { domain: "sensor", name: "Uptime", optional: true },
     uptimeReadable: { domain: "text_sensor", name: "Uptime readable", optional: true },
@@ -121,6 +123,8 @@ const LOGO_MARKUP = `
     projectVersionText: { domain: "text_sensor", name: "OpenQuatt Version", optional: true },
     releaseChannelText: { domain: "text_sensor", name: "OpenQuatt Release Channel", optional: true },
     installationTopology: { domain: "text_sensor", name: "OpenQuatt Installation Topology", optional: true },
+    hardwareProfileText: { domain: "text_sensor", name: "OpenQuatt Hardware Profile", optional: true },
+    connectionText: { domain: "text_sensor", name: "OpenQuatt Connection", optional: true },
     wifiSignal: { domain: "sensor", name: "WiFi Signal", optional: true },
     espInternalTemp: { domain: "sensor", name: "ESP Internal Temperature", optional: true },
     hpGeneration: { domain: "select", name: "Quatt Hybrid version" },
@@ -438,8 +442,8 @@ const LOGO_MARKUP = `
   const CURVE_SETTING_KEYS = [...CURVE_POINTS.map((point) => point.key), "curveFallbackSupply", "curveControlProfile"];
   const COMPRESSOR_SETTING_KEYS = ["minRuntime", "hp1ExcludedA", "hp1ExcludedB", "hp2ExcludedA", "hp2ExcludedB"];
   const SILENT_SETTING_KEYS = ["silentStartTime", "silentEndTime", "silentMax", "dayMax"];
-  const FIRMWARE_ENTITY_KEYS = ["firmwareUpdate", "firmwareUpdateChannel", "firmwareUpdateProgress", "firmwareUpdateStatus"];
-  const FIRMWARE_MODAL_KEYS = [...FIRMWARE_ENTITY_KEYS, "projectVersionText", "releaseChannelText"];
+  const FIRMWARE_ENTITY_KEYS = ["firmwareUpdate", "firmwareUpdateChannel", "firmwareUpdateTarget", "firmwareUpdateProgress", "firmwareUpdateStatus"];
+  const FIRMWARE_MODAL_KEYS = [...FIRMWARE_ENTITY_KEYS, "installFirmwareUpdateTarget", "projectVersionText", "releaseChannelText", "installationTopology", "hardwareProfileText", "connectionText"];
   const TOPOLOGY_HINT_KEYS = ["hp2ExcludedA", "hp2ExcludedB", "hp2Power", "hp2WaterOut"];
   const HEADER_ENTITY_KEYS = [
     "status",
@@ -451,6 +455,8 @@ const LOGO_MARKUP = `
     "wifiSsid",
     "wifiSignal",
     "installationTopology",
+    "hardwareProfileText",
+    "connectionText",
     "hpGeneration",
     "projectVersionText",
     "releaseChannelText",
@@ -1016,6 +1022,10 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     updateInstallTargetVersion: "",
     updateInstallPhaseHint: "",
     updateInstallProgressHint: Number.NaN,
+    updateInstallMode: "",
+    updateInstallTargetConnection: "",
+    firmwareConnectionSwitchOpen: false,
+    firmwareConnectionSwitchConfirmed: false,
     updateInstallCompleted: false,
     updateInstallCompletedVersion: "",
     updateManualUploadOpen: false,
@@ -1742,6 +1752,80 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     return "OpenQuatt";
   }
 
+  function normalizeFirmwareConnection(value) {
+    const normalized = String(value || "").trim().toLowerCase();
+    if (normalized === "wifi" || normalized === "wi-fi" || normalized.includes("wifi") || normalized.includes("wi-fi")) {
+      return "wifi";
+    }
+    if (normalized === "eth" || normalized === "ethernet" || normalized.includes("ethernet")) {
+      return "eth";
+    }
+    return "";
+  }
+
+  function getFirmwareConnectionLabel(connection = getFirmwareBuildConnection()) {
+    if (connection === "wifi") {
+      return "Wi-Fi";
+    }
+    if (connection === "eth") {
+      return "Ethernet";
+    }
+    return "Onbekend";
+  }
+
+  function getFirmwareHardwareProfile() {
+    return String(getEntityValue("hardwareProfileText") || getDeviceMeta().hardwareProfile || "").trim().toLowerCase();
+  }
+
+  function getFirmwareBuildConnection() {
+    return normalizeFirmwareConnection(getEntityValue("connectionText") || getDeviceMeta().connection);
+  }
+
+  function getFirmwareAlternateConnection() {
+    const current = getFirmwareBuildConnection();
+    if (current === "wifi") {
+      return "eth";
+    }
+    if (current === "eth") {
+      return "wifi";
+    }
+    return "";
+  }
+
+  function getFirmwareBuildLabel(connection = getFirmwareBuildConnection()) {
+    const topology = getInstallationTopology();
+    const topologyLabel = topology === "duo" ? "Duo" : topology === "single" ? "Single" : "Onbekende opstelling";
+    if (getFirmwareHardwareProfile() === "heatpump_controller_q") {
+      return `Heatpump Controller Q ${topologyLabel} ${getFirmwareConnectionLabel(connection)}`;
+    }
+    return `${getFirmwareDeviceLabel()} ${topologyLabel} ${getFirmwareConnectionLabel(connection)}`;
+  }
+
+  function getFirmwareConnectionSwitchModel() {
+    const hardware = getFirmwareHardwareProfile();
+    const topology = getInstallationTopology();
+    const currentConnection = getFirmwareBuildConnection();
+    const targetConnection = getFirmwareAlternateConnection();
+    if (
+      hardware !== "heatpump_controller_q"
+      || (topology !== "single" && topology !== "duo")
+      || (currentConnection !== "wifi" && currentConnection !== "eth")
+      || !targetConnection
+    ) {
+      return null;
+    }
+
+    return {
+      canSwitch: hasEntity("firmwareUpdateTarget") && hasEntity("installFirmwareUpdateTarget"),
+      currentConnection,
+      targetConnection,
+      currentLabel: getFirmwareConnectionLabel(currentConnection),
+      targetLabel: getFirmwareConnectionLabel(targetConnection),
+      currentBuildLabel: getFirmwareBuildLabel(currentConnection),
+      targetBuildLabel: getFirmwareBuildLabel(targetConnection),
+    };
+  }
+
   function formatDeviceClock() {
     const timeValid = isEntityActive("timeValid");
     const deviceClock = String(getEntityValue("timeNowHhmm") || "").trim();
@@ -1963,6 +2047,8 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     state.updateInstallTargetVersion = "";
     state.updateInstallPhaseHint = "";
     state.updateInstallProgressHint = Number.NaN;
+    state.updateInstallMode = "";
+    state.updateInstallTargetConnection = "";
   }
 
   function resetFirmwareManualUploadSelection() {
@@ -2024,7 +2110,9 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       return {
         phaseLabel: "Herstarten",
         percent: Math.max(basePercent, 100),
-        copy: "Firmware is geplaatst. Het device start nu opnieuw op en komt daarna vanzelf terug.",
+        copy: state.updateInstallMode === "connection-switch"
+          ? "Firmware is geplaatst. Het device start opnieuw op en komt daarna via de gekozen verbinding terug."
+          : "Firmware is geplaatst. Het device start nu opnieuw op en komt daarna vanzelf terug.",
       };
     }
 
@@ -2032,14 +2120,18 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       return {
         phaseLabel: "Uploaden",
         percent: basePercent,
-        copy: `Firmware wordt nu naar ${getFirmwareDeviceLabel()} verzonden.`,
+        copy: state.updateInstallMode === "connection-switch"
+          ? `De ${getFirmwareConnectionLabel(state.updateInstallTargetConnection)}-build wordt nu naar ${getFirmwareDeviceLabel()} verzonden.`
+          : `Firmware wordt nu naar ${getFirmwareDeviceLabel()} verzonden.`,
       };
     }
 
     return {
       phaseLabel: "Installeren",
       percent: basePercent,
-      copy: `OTA-update is gestart voor ${getFirmwareDeviceLabel()}.`,
+      copy: state.updateInstallMode === "connection-switch"
+        ? `Verbindingswissel naar ${getFirmwareConnectionLabel(state.updateInstallTargetConnection)} is gestart.`
+        : `OTA-update is gestart voor ${getFirmwareDeviceLabel()}.`,
     };
   }
 
@@ -2455,12 +2547,22 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
         }
         render();
 
-        if (
+        if (state.updateInstallMode === "connection-switch") {
+          const expectedConnection = normalizeFirmwareConnection(state.updateInstallTargetConnection);
+          if (
+            expectedConnection
+            && getFirmwareBuildConnection() === expectedConnection
+            && !isFirmwareProgressActive()
+            && !isFirmwareUpdateInstalling()
+          ) {
+            return true;
+          }
+        } else if (
           hasInstalledFirmwareTargetVersion()
           || isFirmwareInstallSettled()
           || (isFirmwareEffectivelyCurrent() && !isFirmwareProgressActive() && !isFirmwareUpdateInstalling())
         ) {
-          return true;
+            return true;
         }
       } catch (error) {
         if (!waitingForReconnect) {
@@ -2498,6 +2600,58 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       return `Je draait al de nieuwste firmware op kanaal ${channel}.`;
     }
     return "Kies een kanaal en controleer of er een nieuwere firmware klaarstaat.";
+  }
+
+  function renderFirmwareConnectionSwitchSection() {
+    const model = getFirmwareConnectionSwitchModel();
+    if (!model || !state.firmwareConnectionSwitchOpen) {
+      return "";
+    }
+
+    const progress = getFirmwareProgressModel();
+    const busy = Boolean(progress || state.updateInstallBusy || isFirmwareUpdateChecking());
+    const confirmed = Boolean(state.firmwareConnectionSwitchConfirmed);
+    const targetIsEthernet = model.targetConnection === "eth";
+    const unavailable = !model.canSwitch;
+    const warning = targetIsEthernet
+      ? "Sluit eerst de netwerkkabel aan. Na de herstart verdwijnt Wi-Fi uit deze firmware."
+      : "Na de herstart verdwijnt Ethernet uit deze firmware. Als er geen Wi-Fi-gegevens bekend zijn, start het OpenQuatt fallback access point.";
+    const statusNote = unavailable
+      ? '<p class="oq-helper-modal-note oq-helper-modal-note--muted">Verbindingswissel wordt geladen. Open deze modal opnieuw of wacht een moment als de knop disabled blijft.</p>'
+      : "";
+
+    return `
+      <div class="oq-helper-modal-callout oq-helper-modal-callout--subtle">
+        <strong>Verbinding wisselen</strong>
+        <span>Installeer dezelfde ${escapeHtml(getFirmwareChannelLabel())}-build voor de andere netwerkverbinding.</span>
+        <div class="oq-helper-modal-grid">
+          <div class="oq-helper-modal-row">
+            <span class="oq-helper-modal-label">Huidige build</span>
+            <strong class="oq-helper-modal-value">${escapeHtml(model.currentBuildLabel)}</strong>
+          </div>
+          <div class="oq-helper-modal-row">
+            <span class="oq-helper-modal-label">Alternatief</span>
+            <strong class="oq-helper-modal-value">${escapeHtml(model.targetBuildLabel)}</strong>
+          </div>
+        </div>
+        <p class="oq-helper-modal-note">${escapeHtml(warning)}</p>
+        ${statusNote}
+        <label class="oq-helper-modal-check">
+          <input type="checkbox" data-oq-firmware-connection-confirm="true" ${confirmed ? "checked" : ""} ${busy || unavailable ? "disabled" : ""}>
+          <span>${escapeHtml(targetIsEthernet ? "De netwerkkabel is aangesloten." : "Ik begrijp dat Ethernet na reboot verdwijnt.")}</span>
+        </label>
+        <div class="oq-helper-modal-actions">
+          <button
+            class="oq-helper-button oq-helper-button--ghost"
+            type="button"
+            data-oq-action="install-firmware-connection-switch"
+            ${busy || unavailable || !confirmed ? "disabled" : ""}
+          >
+            ${escapeHtml(`Wissel naar ${model.targetLabel}`)}
+          </button>
+        </div>
+      </div>
+    `;
   }
 
   function renderFirmwareManualUploadSection() {
@@ -2543,6 +2697,8 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       state.overviewTheme,
       state.hpVisualMode,
       getEntitySignatureFragment("installationTopology"),
+      getEntitySignatureFragment("hardwareProfileText"),
+      getEntitySignatureFragment("connectionText"),
       getEntitySignatureFragment("hpGeneration"),
       getEntitySignatureFragment("projectVersionText"),
       getEntitySignatureFragment("releaseChannelText"),
@@ -3328,6 +3484,8 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     const channelOptions = channelEntity
       ? (Array.isArray(channelEntity.option) ? channelEntity.option : Array.isArray(channelEntity.options) ? channelEntity.options : [])
       : [];
+    const connectionSwitchModel = getFirmwareConnectionSwitchModel();
+    const showConnectionSwitchAction = Boolean(connectionSwitchModel && !justCompleted);
 
     return `
       <div class="oq-helper-modal-backdrop${checking || installing || progress ? " is-busy" : ""}${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="firmware-update">
@@ -3398,8 +3556,14 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
             <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="toggle-firmware-upload" ${checking || installing || progress ? "disabled" : ""}>
               ${state.updateManualUploadOpen ? "Handmatige upload verbergen" : "Handmatige upload"}
             </button>
+            ${showConnectionSwitchAction ? `
+              <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="toggle-firmware-connection-switch" ${checking || installing || progress ? "disabled" : ""}>
+                ${state.firmwareConnectionSwitchOpen ? "Verbinding wisselen verbergen" : `Verbinding wisselen naar ${escapeHtml(connectionSwitchModel.targetLabel)}`}
+              </button>
+            ` : ""}
             ${releaseUrl ? `<a class="oq-helper-button oq-helper-button--ghost oq-helper-modal-link" href="${escapeHtml(releaseUrl)}" target="_blank" rel="noreferrer">Release notes</a>` : ""}
           </div>
+          ${renderFirmwareConnectionSwitchSection()}
           ${renderFirmwareManualUploadSection()}
         </section>
       </div>
@@ -5892,6 +6056,12 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
   }
 
   function handleInput(event) {
+    if (event.target.dataset.oqFirmwareConnectionConfirm) {
+      state.firmwareConnectionSwitchConfirmed = Boolean(event.target.checked);
+      render();
+      return;
+    }
+
     const field = event.target.dataset.oqField;
     if (!field) {
       const authField = event.target.dataset.oqAuthField;
@@ -6176,9 +6346,11 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     if (action === "open-update-modal") {
       state.updateModalOpen = true;
       render();
-      if (!hasKnownFirmwareTargetVersion() && !state.updateCheckBusy && !state.updateInstallBusy) {
-        triggerFirmwareUpdateCheck();
-      }
+      void hydrateFirmwareUpdateModal().then(() => {
+        if (state.updateModalOpen && !hasKnownFirmwareTargetVersion() && !state.updateCheckBusy && !state.updateInstallBusy) {
+          void triggerFirmwareUpdateCheck();
+        }
+      });
       return;
     }
 
@@ -6319,7 +6491,9 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       state.updateModalOpen = false;
       state.updateInstallCompleted = false;
       state.updateInstallCompletedVersion = "";
+      state.firmwareConnectionSwitchOpen = false;
       state.updateManualUploadOpen = false;
+      state.firmwareConnectionSwitchConfirmed = false;
       resetFirmwareManualUploadSelection();
       render();
       return;
@@ -6574,12 +6748,30 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       return;
     }
 
+    if (action === "install-firmware-connection-switch") {
+      void installFirmwareConnectionSwitch();
+      return;
+    }
+
+    if (action === "toggle-firmware-connection-switch") {
+      state.firmwareConnectionSwitchOpen = !state.firmwareConnectionSwitchOpen;
+      state.firmwareConnectionSwitchConfirmed = false;
+      if (state.firmwareConnectionSwitchOpen) {
+        state.updateManualUploadOpen = false;
+        resetFirmwareManualUploadSelection();
+      }
+      render();
+      return;
+    }
+
     if (action === "toggle-firmware-upload") {
       if (state.updateManualUploadOpen) {
         state.updateManualUploadOpen = false;
         resetFirmwareManualUploadSelection();
       } else {
         state.updateManualUploadOpen = true;
+        state.firmwareConnectionSwitchOpen = false;
+        state.firmwareConnectionSwitchConfirmed = false;
         state.updateManualUploadError = "";
       }
       render();
@@ -6744,10 +6936,11 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     state.updateCheckBusy = true;
     state.controlError = "";
     state.controlNotice = "";
-    primeFirmwareUpdateState();
     render();
 
     try {
+      await setFirmwareUpdateTarget("current build", { poll: false });
+      primeFirmwareUpdateState();
       const response = await fetch(buildEntityPath(entity.domain, entity.name, "press"), {
         method: "POST",
       });
@@ -6764,6 +6957,49 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     }
   }
 
+  async function hydrateFirmwareUpdateModal() {
+    try {
+      await refreshEntities(FIRMWARE_MODAL_KEYS, "all", { concurrency: ENTITY_REFRESH_CONCURRENCY });
+      if (state.updateModalOpen) {
+        render();
+      }
+    } catch (_error) {
+      // Keep the modal usable with known state; OTA actions still show detailed failures.
+    }
+  }
+
+  async function setFirmwareUpdateTarget(option, options = {}) {
+    const entity = ENTITY_DEFS.firmwareUpdateTarget;
+    if (!entity || !hasEntity("firmwareUpdateTarget")) {
+      return false;
+    }
+
+    const value = String(option || "").trim();
+    if (!value) {
+      return false;
+    }
+
+    state.entities.firmwareUpdateTarget = {
+      ...(state.entities.firmwareUpdateTarget || {}),
+      state: value,
+      value,
+    };
+
+    const response = await fetch(
+      `${buildEntityPath(entity.domain, entity.name, "set")}?option=${encodeURIComponent(value)}`,
+      { method: "POST" }
+    );
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    if (options.poll !== false) {
+      primeFirmwareUpdateState();
+      await pollFirmwareUpdateState();
+    }
+    return true;
+  }
+
   async function installFirmwareUpdate() {
     const entity = getFirmwareUpdateEntity();
     if (!entity) {
@@ -6771,6 +7007,8 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     }
 
     state.updateManualUploadOpen = false;
+    state.firmwareConnectionSwitchOpen = false;
+    state.firmwareConnectionSwitchConfirmed = false;
     resetFirmwareManualUploadSelection();
     state.updateInstallCompleted = false;
     state.updateInstallCompletedVersion = "";
@@ -6778,11 +7016,15 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     state.updateInstallTargetVersion = getFirmwareLatestVersion(entity);
     state.updateInstallPhaseHint = "starting";
     state.updateInstallProgressHint = 0;
+    state.updateInstallMode = "normal";
+    state.updateInstallTargetConnection = "";
     state.controlError = "";
     state.controlNotice = "";
     render();
 
     try {
+      await setFirmwareUpdateTarget("current build");
+      state.updateInstallTargetVersion = getFirmwareLatestVersion(getFirmwareUpdateEntity() || {}) || state.updateInstallTargetVersion;
       const response = await fetch(buildEntityPath("update", "Firmware Update", "install"), {
         method: "POST",
       });
@@ -6799,6 +7041,64 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       }
     } catch (error) {
       state.controlError = `OTA-update kon niet worden gestart. ${error.message}`;
+    } finally {
+      resetFirmwareInstallUiState();
+      render();
+    }
+  }
+
+  async function installFirmwareConnectionSwitch() {
+    const model = getFirmwareConnectionSwitchModel();
+    const buttonEntity = ENTITY_DEFS.installFirmwareUpdateTarget;
+    if (!model || !model.canSwitch || !buttonEntity) {
+      return;
+    }
+    if (!state.firmwareConnectionSwitchConfirmed) {
+      state.controlError = "Bevestig eerst de waarschuwing voor de verbindingswissel.";
+      render();
+      return;
+    }
+
+    state.updateManualUploadOpen = false;
+    resetFirmwareManualUploadSelection();
+    state.updateInstallCompleted = false;
+    state.updateInstallCompletedVersion = "";
+    state.updateInstallBusy = true;
+    state.updateInstallMode = "connection-switch";
+    state.updateInstallTargetConnection = model.targetConnection;
+    state.updateInstallTargetVersion = getFirmwareCurrentVersion() || "";
+    state.updateInstallPhaseHint = "starting";
+    state.updateInstallProgressHint = 0;
+    state.controlError = "";
+    state.controlNotice = "";
+    render();
+
+    try {
+      await setFirmwareUpdateTarget("alternate connection");
+      state.updateInstallTargetVersion = getFirmwareLatestVersion(getFirmwareUpdateEntity() || {}) || getFirmwareCurrentVersion() || "";
+      state.updateInstallPhaseHint = "starting";
+      state.updateInstallProgressHint = 0;
+      render();
+
+      const response = await fetch(buildEntityPath(buttonEntity.domain, buttonEntity.name, "press"), {
+        method: "POST",
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const completed = await pollFirmwareInstallState();
+      if (completed) {
+        state.updateInstallCompleted = true;
+        state.updateInstallCompletedVersion = getFirmwareCurrentVersion() || state.updateInstallTargetVersion || "";
+        state.firmwareConnectionSwitchConfirmed = false;
+        state.controlNotice = "";
+      } else {
+        const targetLabel = getFirmwareConnectionLabel(model.targetConnection);
+        state.controlNotice = `Verbindingswissel naar ${targetLabel} is gestart. Wacht tot het device via die verbinding terugkomt.`;
+      }
+    } catch (error) {
+      state.controlError = `Verbindingswissel kon niet worden gestart. ${error.message}`;
     } finally {
       resetFirmwareInstallUiState();
       render();
