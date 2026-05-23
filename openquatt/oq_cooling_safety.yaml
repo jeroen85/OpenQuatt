@@ -341,6 +341,13 @@ sensor:
       }
 
       return NAN;
+    filters:
+      # Conservative smoothing for dew-point noise: rising values pass through
+      # immediately, short downward dips are held for a few template updates.
+      - max:
+          window_size: 3
+          send_every: 1
+          send_first_at: 1
     web_server:
       sorting_group_id: oq_cooling
 
