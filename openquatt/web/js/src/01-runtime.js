@@ -60,6 +60,7 @@
     webServerLogHistoryLoaded: false,
     webServerLogScrollRestoreToken: 0,
     cm100CommissioningScrollRestoreToken: 0,
+    quickStartScrollRestoreToken: 0,
     webServerLogCopyMessage: "",
     webServerLogCopyError: "",
     webServerLogRecentTail: [],

@@ -26,8 +26,21 @@ const LOGO_MARKUP = `
       ],
     },
     {
-      id: "strategy",
+      id: "boiler",
       kicker: "Stap 2",
+      title: "CV-ketel of boiler",
+      copy: "Geef aan of OpenQuatt ondersteuning via een CV-ketel of boiler mag gebruiken.",
+      optionalEntity: "boilerCvAssistEnabled",
+      fields: [
+        {
+          title: "CV-ketel / boiler aanwezig",
+          copy: "Kies of er ondersteuning beschikbaar is en vul eventueel het vermogen in.",
+        },
+      ],
+    },
+    {
+      id: "strategy",
+      kicker: "Stap 3",
       title: "Kies de verwarmingsstrategie",
       copy: "Kies hier hoe OpenQuatt je verwarming regelt. Daarna lopen we samen de belangrijkste instellingen langs.",
       fields: [
@@ -39,7 +52,7 @@ const LOGO_MARKUP = `
     },
     {
       id: "heating",
-      kicker: "Stap 3",
+      kicker: "Stap 4",
       title: "Werk de regeling uit",
       copy: "Stel nu de gekozen regeling verder in. De inhoud hieronder past zich aan aan je keuze.",
       fields: [
@@ -51,7 +64,7 @@ const LOGO_MARKUP = `
     },
     {
       id: "flow",
-      kicker: "Stap 4",
+      kicker: "Stap 5",
       title: "Flowregeling en afstelling",
       copy: "Leg daarna vast hoe de pomp geregeld moet worden en welke waarden daarbij horen. De autotune staat later onder Instellingen → Installatie → Service & commissioning.",
       fields: [
@@ -63,7 +76,7 @@ const LOGO_MARKUP = `
     },
     {
       id: "water",
-      kicker: "Stap 5",
+      kicker: "Stap 6",
       title: "Watertemperatuur beveiligen",
       copy: "Controleer de normale bovengrens en de tripgrens voor het watercircuit.",
       fields: [
@@ -75,7 +88,7 @@ const LOGO_MARKUP = `
     },
     {
       id: "silent",
-      kicker: "Stap 6",
+      kicker: "Stap 7",
       title: "Stille uren en niveaus",
       copy: "Stel daarna het stille venster en de compressorlimieten voor dag en nacht in.",
       fields: [
@@ -87,7 +100,7 @@ const LOGO_MARKUP = `
     },
     {
       id: "confirm",
-      kicker: "Stap 7",
+      kicker: "Stap 8",
       title: "Bevestigen en afronden",
       copy: "Controleer nog één keer je keuzes. Met afronden markeer je Quick Start als voltooid.",
       fields: [
@@ -153,8 +166,8 @@ const LOGO_MARKUP = `
     flowControlMode: { domain: "select", name: "Flow Control Mode" },
     flowSetpoint: { domain: "number", name: "Flow Setpoint" },
     manualIpwm: { domain: "number", name: "Manual iPWM" },
-    flowKp: { domain: "number", name: "Flow Kp", optional: true },
-    flowKi: { domain: "number", name: "Flow Ki", optional: true },
+    flowKp: { domain: "number", name: "Flow PI Kp", optional: true },
+    flowKi: { domain: "number", name: "Flow PI Ki", optional: true },
     boilerRatedHeatPower: { domain: "number", name: "Boiler rated heat power", optional: true },
     commissioningCm100Start: { domain: "button", name: "CM100 Start", optional: true },
     commissioningCm100Stop: { domain: "button", name: "CM100 Stop", optional: true },

@@ -30,8 +30,21 @@ const LOGO_MARKUP = `
       ],
     },
     {
-      id: "strategy",
+      id: "boiler",
       kicker: "Stap 2",
+      title: "CV-ketel of boiler",
+      copy: "Geef aan of OpenQuatt ondersteuning via een CV-ketel of boiler mag gebruiken.",
+      optionalEntity: "boilerCvAssistEnabled",
+      fields: [
+        {
+          title: "CV-ketel / boiler aanwezig",
+          copy: "Kies of er ondersteuning beschikbaar is en vul eventueel het vermogen in.",
+        },
+      ],
+    },
+    {
+      id: "strategy",
+      kicker: "Stap 3",
       title: "Kies de verwarmingsstrategie",
       copy: "Kies hier hoe OpenQuatt je verwarming regelt. Daarna lopen we samen de belangrijkste instellingen langs.",
       fields: [
@@ -43,7 +56,7 @@ const LOGO_MARKUP = `
     },
     {
       id: "heating",
-      kicker: "Stap 3",
+      kicker: "Stap 4",
       title: "Werk de regeling uit",
       copy: "Stel nu de gekozen regeling verder in. De inhoud hieronder past zich aan aan je keuze.",
       fields: [
@@ -55,7 +68,7 @@ const LOGO_MARKUP = `
     },
     {
       id: "flow",
-      kicker: "Stap 4",
+      kicker: "Stap 5",
       title: "Flowregeling en afstelling",
       copy: "Leg daarna vast hoe de pomp geregeld moet worden en welke waarden daarbij horen. De autotune staat later onder Instellingen → Installatie → Service & commissioning.",
       fields: [
@@ -67,7 +80,7 @@ const LOGO_MARKUP = `
     },
     {
       id: "water",
-      kicker: "Stap 5",
+      kicker: "Stap 6",
       title: "Watertemperatuur beveiligen",
       copy: "Controleer de normale bovengrens en de tripgrens voor het watercircuit.",
       fields: [
@@ -79,7 +92,7 @@ const LOGO_MARKUP = `
     },
     {
       id: "silent",
-      kicker: "Stap 6",
+      kicker: "Stap 7",
       title: "Stille uren en niveaus",
       copy: "Stel daarna het stille venster en de compressorlimieten voor dag en nacht in.",
       fields: [
@@ -91,7 +104,7 @@ const LOGO_MARKUP = `
     },
     {
       id: "confirm",
-      kicker: "Stap 7",
+      kicker: "Stap 8",
       title: "Bevestigen en afronden",
       copy: "Controleer nog één keer je keuzes. Met afronden markeer je Quick Start als voltooid.",
       fields: [
@@ -157,8 +170,8 @@ const LOGO_MARKUP = `
     flowControlMode: { domain: "select", name: "Flow Control Mode" },
     flowSetpoint: { domain: "number", name: "Flow Setpoint" },
     manualIpwm: { domain: "number", name: "Manual iPWM" },
-    flowKp: { domain: "number", name: "Flow Kp", optional: true },
-    flowKi: { domain: "number", name: "Flow Ki", optional: true },
+    flowKp: { domain: "number", name: "Flow PI Kp", optional: true },
+    flowKi: { domain: "number", name: "Flow PI Ki", optional: true },
     boilerRatedHeatPower: { domain: "number", name: "Boiler rated heat power", optional: true },
     commissioningCm100Start: { domain: "button", name: "CM100 Start", optional: true },
     commissioningCm100Stop: { domain: "button", name: "CM100 Stop", optional: true },
@@ -966,6 +979,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     webServerLogHistoryLoaded: false,
     webServerLogScrollRestoreToken: 0,
     cm100CommissioningScrollRestoreToken: 0,
+    quickStartScrollRestoreToken: 0,
     webServerLogCopyMessage: "",
     webServerLogCopyError: "",
     webServerLogRecentTail: [],
@@ -9847,8 +9861,8 @@ function renderWebServerLogsModal() {
 
   function renderFlowTuningFields(className = "oq-settings-grid") {
     const fields = [
-      renderSettingsNumberField("flowKp", "Flow Kp", "Hoe sterk de regeling direct reageert op een afwijking."),
-      renderSettingsNumberField("flowKi", "Flow Ki", "Hoe snel de regeling kleine restfouten wegwerkt."),
+      renderSettingsNumberField("flowKp", "Flow PI Kp", "Hoe sterk de regeling direct reageert op een afwijking."),
+      renderSettingsNumberField("flowKi", "Flow PI Ki", "Hoe snel de regeling kleine restfouten wegwerkt."),
     ].filter(Boolean);
     if (!fields.length) {
       return "";
@@ -10687,7 +10701,7 @@ function renderWebServerLogsModal() {
     );
   }
 
-  function renderSettingsBoilerCvSection() {
+  function renderBoilerCvFields(className = "oq-settings-grid oq-settings-boiler-simple-grid") {
     if (!hasEntity("boilerCvAssistEnabled")) {
       return "";
     }
@@ -10721,12 +10735,8 @@ function renderWebServerLogsModal() {
         </div>
       `;
 
-    return renderSettingsSection(
-      "Basis",
-      "CV-ketel of boiler",
-      "Geef aan of OpenQuatt een CV-ketel of boiler als ondersteuning mag gebruiken en hoeveel effectief vermogen die functie heeft.",
-      `
-        <div class="oq-settings-grid oq-settings-boiler-simple-grid">
+    return `
+        <div class="${escapeHtml(className)}">
           ${renderSettingsFieldCard(
             "boilerCvAssistEnabled",
             "CV-ketel / boiler aanwezig",
@@ -10779,7 +10789,19 @@ function renderWebServerLogsModal() {
             )}</p>`,
           )}
         </div>
-      `,
+      `;
+  }
+
+  function renderSettingsBoilerCvSection() {
+    if (!hasEntity("boilerCvAssistEnabled")) {
+      return "";
+    }
+
+    return renderSettingsSection(
+      "Basis",
+      "CV-ketel of boiler",
+      "Geef aan of OpenQuatt een CV-ketel of boiler als ondersteuning mag gebruiken en hoeveel effectief vermogen die functie heeft.",
+      renderBoilerCvFields(),
     );
   }
 
@@ -11581,7 +11603,7 @@ function renderWebServerLogsModal() {
 
     return `
       <section class="oq-helper-panel">
-        <p class="oq-helper-label">Stap 1</p>
+        <p class="oq-helper-label">${escapeHtml(getQuickStepKicker("generation"))}</p>
         <h2 class="oq-helper-section-title">Kies je Quatt Hybrid</h2>
         <p class="oq-helper-section-copy">Geef hier aan welke Quatt Hybrid je hebt. Dan zet OpenQuatt de juiste regeling klaar.</p>
         ${renderHpGenerationField()}
@@ -11598,7 +11620,7 @@ function renderWebServerLogsModal() {
     if (state.quickStartModalMode === "generation") {
       return `
         <div class="oq-helper-modal-backdrop oq-helper-modal-backdrop--quickstart" data-oq-modal="quickstart-forced">
-          <section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--quickstart oq-helper-modal--generation" role="dialog" aria-modal="true" aria-labelledby="oq-generation-modal-title">
+          <section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--quickstart oq-helper-modal--generation" data-oq-quickstart-scroller data-oq-quickstart-step="generation" role="dialog" aria-modal="true" aria-labelledby="oq-generation-modal-title">
             <div class="oq-helper-modal-head">
               <div>
                 <p class="oq-helper-modal-kicker">Installatie</p>
@@ -11615,7 +11637,7 @@ function renderWebServerLogsModal() {
 
     return `
       <div class="oq-helper-modal-backdrop oq-helper-modal-backdrop--quickstart" data-oq-modal="quickstart-forced">
-        <section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--quickstart" role="dialog" aria-modal="true" aria-labelledby="oq-quickstart-modal-title">
+        <section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--quickstart" data-oq-quickstart-scroller data-oq-quickstart-step="${escapeHtml(getCurrentQuickStep().id)}" role="dialog" aria-modal="true" aria-labelledby="oq-quickstart-modal-title">
           <div class="oq-helper-modal-head">
             <div>
               <p class="oq-helper-modal-kicker">Quick Start</p>
@@ -11633,10 +11655,72 @@ function renderWebServerLogsModal() {
     `;
   }
 
+  function getQuickStartModalScrollerElement() {
+    if (!state.root) {
+      return null;
+    }
+    return state.root.querySelector("[data-oq-quickstart-scroller]");
+  }
+
+  function captureQuickStartScrollState() {
+    const scroller = getQuickStartModalScrollerElement();
+    if (!scroller) {
+      return null;
+    }
+
+    return {
+      stepId: String(scroller.dataset.oqQuickstartStep || ""),
+      scrollHeight: scroller.scrollHeight,
+      scrollTop: scroller.scrollTop,
+      stickToBottom: isWebServerLogScrollerNearBottom(scroller),
+    };
+  }
+
+  function restoreQuickStartScrollState(scrollState) {
+    if (!scrollState) {
+      return;
+    }
+
+    const scroller = getQuickStartModalScrollerElement();
+    if (!scroller || String(scroller.dataset.oqQuickstartStep || "") !== scrollState.stepId) {
+      return;
+    }
+
+    if (scrollState.stickToBottom) {
+      scroller.scrollTop = scroller.scrollHeight;
+      return;
+    }
+
+    const restoredScrollTop = scrollState.scrollTop + (scroller.scrollHeight - scrollState.scrollHeight);
+    scroller.scrollTop = Math.max(0, restoredScrollTop);
+  }
+
+  function queueQuickStartScrollRestore(scrollState, defer = true) {
+    if (!scrollState) {
+      return;
+    }
+
+    const restoreToken = Number(state.quickStartScrollRestoreToken || 0) + 1;
+    state.quickStartScrollRestoreToken = restoreToken;
+    const applyScrollState = () => {
+      if (state.quickStartScrollRestoreToken !== restoreToken || !state.quickStartModalOpen) {
+        return;
+      }
+      restoreQuickStartScrollState(scrollState);
+    };
+
+    if (defer) {
+      window.requestAnimationFrame(applyScrollState);
+      return;
+    }
+
+    applyScrollState();
+  }
+
   function renderStrategyWorkspace() {
     return `
       <section class="oq-helper-panel">
-        <p class="oq-helper-label">Stap 2</p>
+        <p class="oq-helper-label">${escapeHtml(getQuickStepKicker("strategy"))}</p>
         <h2 class="oq-helper-section-title">Kies de verwarmingsstrategie</h2>
         <p class="oq-helper-section-copy">Kies hier hoe OpenQuatt je verwarming regelt. Daarna lopen we samen de belangrijkste instellingen langs.</p>
         ${renderHeatingStrategyExplainCards()}
@@ -11646,24 +11730,25 @@ function renderWebServerLogsModal() {
     `;
   }
 
-  function renderFlowWorkspace() {
-    const flowTuning = renderFlowTuningFields("oq-settings-grid oq-settings-grid--quickstart");
+  function renderBoilerWorkspace() {
     return `
       <section class="oq-helper-panel">
-        <p class="oq-helper-label">Stap 4</p>
+        <p class="oq-helper-label">${escapeHtml(getQuickStepKicker("boiler"))}</p>
+        <h2 class="oq-helper-section-title">CV-ketel of boiler</h2>
+        <p class="oq-helper-section-copy">Geef aan of OpenQuatt ondersteuning via een CV-ketel of boiler mag gebruiken. Als die aanwezig is, kun je meteen het vermogen als startpunt invullen.</p>
+        ${renderBoilerCvFields("oq-settings-grid oq-settings-grid--quickstart oq-settings-boiler-simple-grid")}
+        ${renderQuickStartStepNav()}
+      </section>
+    `;
+  }
+
+  function renderFlowWorkspace() {
+    return `
+      <section class="oq-helper-panel">
+        <p class="oq-helper-label">${escapeHtml(getQuickStepKicker("flow"))}</p>
         <h2 class="oq-helper-section-title">Flowregeling en afstelling</h2>
-        <p class="oq-helper-section-copy">Kies hier hoe OpenQuatt de pomp regelt en stel meteen de Kp- en Ki-waarden in. De autotune vind je later terug onder Instellingen → Installatie → Service & commissioning.</p>
+        <p class="oq-helper-section-copy">Kies hier hoe OpenQuatt de pomp regelt. De Kp- en Ki-waarden en autotune vind je later terug onder Instellingen → Installatie → Flowregeling en Service & commissioning.</p>
         ${renderFlowSettingsFields("oq-settings-grid oq-settings-grid--quickstart")}
-        ${flowTuning ? `
-          <div class="oq-settings-subpanel oq-settings-subpanel--nested">
-            <div class="oq-settings-subpanel-head">
-              <p class="oq-helper-label">Flow afstelling</p>
-              <h4>Kp en Ki</h4>
-              <p>Deze waarden bepalen hoe stevig de flowregeling corrigeert. Quick Start toont ze hier al, zodat je de installatie direct af kunt stemmen.</p>
-            </div>
-            ${flowTuning}
-          </div>
-        ` : ""}
         ${renderQuickStartStepNav()}
       </section>
     `;
@@ -11672,7 +11757,7 @@ function renderWebServerLogsModal() {
   function renderHeatingWorkspace() {
     return `
       <section class="oq-helper-panel">
-        <p class="oq-helper-label">Stap 3</p>
+        <p class="oq-helper-label">${escapeHtml(getQuickStepKicker("heating"))}</p>
         <h2 class="oq-helper-section-title">${escapeHtml(isCurveMode() ? "Stooklijn instellen" : "Power House instellen")}</h2>
         <p class="oq-helper-section-copy">
           ${escapeHtml(
@@ -11701,7 +11786,7 @@ function renderWebServerLogsModal() {
   function renderWaterWorkspace() {
     return `
       <section class="oq-helper-panel">
-        <p class="oq-helper-label">Stap 5</p>
+        <p class="oq-helper-label">${escapeHtml(getQuickStepKicker("water"))}</p>
         <h2 class="oq-helper-section-title">Watertemperatuur beveiligen</h2>
         <p class="oq-helper-section-copy">Hier stel je de veilige bovengrens voor de watertemperatuur in. OpenQuatt regelt richting deze grens terug en grijpt 5°C erboven hard in.</p>
         ${renderWaterSettingsFields("oq-settings-grid oq-settings-grid--quickstart")}
@@ -11713,7 +11798,7 @@ function renderWebServerLogsModal() {
   function renderSilentWorkspace() {
     return `
       <section class="oq-helper-panel">
-        <p class="oq-helper-label">Stap 6</p>
+        <p class="oq-helper-label">${escapeHtml(getQuickStepKicker("silent"))}</p>
         <h2 class="oq-helper-section-title">Stille uren en niveaus</h2>
         <p class="oq-helper-section-copy">Kies hier wanneer het systeem stiller moet werken, en hoe ver het dan nog mag opschalen.</p>
         ${renderSilentSettingsGrid("oq-settings-grid oq-settings-grid--quickstart")}
@@ -11725,7 +11810,7 @@ function renderWebServerLogsModal() {
   function renderConfirmWorkspace() {
     return `
       <section class="oq-helper-panel">
-        <p class="oq-helper-label">Stap 7</p>
+        <p class="oq-helper-label">${escapeHtml(getQuickStepKicker("confirm"))}</p>
         <h2 class="oq-helper-section-title">Bevestigen en afronden</h2>
         <p class="oq-helper-section-copy">Controleer nog één keer je keuzes. Met afronden markeer je Quick Start als voltooid.</p>
         ${renderConfirmReviewCards()}
@@ -11752,6 +11837,9 @@ function renderWebServerLogsModal() {
     if (state.currentStep === "generation") {
       return renderGenerationWorkspace();
     }
+    if (state.currentStep === "boiler") {
+      return hasEntity("boilerCvAssistEnabled") ? renderBoilerWorkspace() : renderStrategyWorkspace();
+    }
     if (state.currentStep === "flow") {
       return renderFlowWorkspace();
     }
@@ -11770,6 +11858,15 @@ function renderWebServerLogsModal() {
     return renderStrategyWorkspace();
   }
 
+  function getQuickSteps() {
+    return QUICK_STEPS.filter((step) => !step.optionalEntity || hasEntity(step.optionalEntity));
+  }
+
+  function getQuickStepKicker(stepId) {
+    const index = getQuickSteps().findIndex((step) => step.id === stepId);
+    return `Stap ${Math.max(0, index) + 1}`;
+  }
+
   function getQuickStepStatus(index) {
     const currentIndex = getCurrentQuickStepIndex();
     const isSelected = index === currentIndex;
@@ -11782,7 +11879,7 @@ function renderWebServerLogsModal() {
   }
 
   function renderStepOverview(compact = false) {
-    return QUICK_STEPS.map((step, index) => {
+    return getQuickSteps().map((step, index) => {
       const stepStatus = getQuickStepStatus(index);
       return `
         <button
@@ -11803,27 +11900,30 @@ function renderWebServerLogsModal() {
   }
 
   function getCurrentQuickStep() {
-    return QUICK_STEPS.find((step) => step.id === state.currentStep) || QUICK_STEPS[0];
+    const steps = getQuickSteps();
+    return steps.find((step) => step.id === state.currentStep) || steps[0] || QUICK_STEPS[0];
   }
 
   function getCurrentQuickStepIndex() {
-    return Math.max(0, QUICK_STEPS.findIndex((step) => step.id === state.currentStep));
+    return Math.max(0, getQuickSteps().findIndex((step) => step.id === state.currentStep));
   }
 
   function selectQuickStepByOffset(offset) {
-    const nextIndex = Math.min(QUICK_STEPS.length - 1, Math.max(0, getCurrentQuickStepIndex() + offset));
-    state.currentStep = QUICK_STEPS[nextIndex]?.id || QUICK_STEPS[0].id;
+    const steps = getQuickSteps();
+    const nextIndex = Math.min(steps.length - 1, Math.max(0, getCurrentQuickStepIndex() + offset));
+    state.currentStep = steps[nextIndex]?.id || QUICK_STEPS[0].id;
   }
 
   function renderQuickStartStepNav() {
     const index = getCurrentQuickStepIndex();
-    const previousStep = index > 0 ? QUICK_STEPS[index - 1] : null;
-    const nextStep = index < QUICK_STEPS.length - 1 ? QUICK_STEPS[index + 1] : null;
+    const steps = getQuickSteps();
+    const previousStep = index > 0 ? steps[index - 1] : null;
+    const nextStep = index < steps.length - 1 ? steps[index + 1] : null;
 
     return `
       <div class="oq-helper-step-nav">
         <div class="oq-helper-step-nav-meta">
-          <strong>Stap ${index + 1} van ${QUICK_STEPS.length}</strong>
+          <strong>Stap ${index + 1} van ${steps.length}</strong>
           <span>${escapeHtml(nextStep ? `Hierna: ${nextStep.title}` : "Je bent bij de laatste stap")}</span>
         </div>
         <div class="oq-helper-actions oq-helper-actions--step">
@@ -11840,12 +11940,13 @@ function renderWebServerLogsModal() {
 
   function renderQuickStartSidebar() {
     const stepIndex = getCurrentQuickStepIndex();
+    const steps = getQuickSteps();
     return `
       <section class="oq-helper-panel oq-helper-panel--aside">
         <p class="oq-helper-label">Quick Start</p>
         <h2 class="oq-helper-section-title">Snel van start, stap voor stap</h2>
         <p class="oq-helper-panel-note">Quick Start helpt je op weg met de belangrijkste keuzes. Later kun je alles verder verfijnen onder Instellingen.</p>
-        <h3 class="oq-helper-aside-title">Stap ${stepIndex + 1} van ${QUICK_STEPS.length}</h3>
+        <h3 class="oq-helper-aside-title">Stap ${stepIndex + 1} van ${steps.length}</h3>
         <div class="oq-helper-fields oq-helper-fields--compact">
           ${renderStepOverview(true)}
         </div>
@@ -11888,8 +11989,6 @@ function renderWebServerLogsModal() {
       flowMode === "Manual PWM"
         ? ["Vaste pompstand", formatValue("manualIpwm")]
         : ["Gewenste flow", formatValue("flowSetpoint")],
-      ["Flow Kp", formatValue("flowKp")],
-      ["Flow Ki", formatValue("flowKi")],
     ];
 
     const boilerLines = hasEntity("boilerCvAssistEnabled")
@@ -15254,6 +15353,9 @@ function renderSettingsView() {
     const cm100CommissioningScrollState = state.systemModal === "cm100-commissioning"
       ? captureCm100CommissioningScrollState()
       : null;
+    const quickStartScrollState = state.quickStartModalOpen
+      ? captureQuickStartScrollState()
+      : null;
 
     if (state.nativeOpen) {
       state.root.innerHTML = `
@@ -15270,6 +15372,7 @@ function renderSettingsView() {
       syncDocumentTitle();
       queueWebServerLogScrollRestore(webServerLogScrollState);
       queueCm100CommissioningScrollRestore(cm100CommissioningScrollState);
+      queueQuickStartScrollRestore(quickStartScrollState);
       return;
     }
 
@@ -15322,6 +15425,7 @@ function renderSettingsView() {
     syncDocumentTitle();
     queueWebServerLogScrollRestore(webServerLogScrollState);
     queueCm100CommissioningScrollRestore(cm100CommissioningScrollState);
+    queueQuickStartScrollRestore(quickStartScrollState);
   }
 
   function escapeHtml(value) {

@@ -922,8 +922,8 @@
 
   function renderFlowTuningFields(className = "oq-settings-grid") {
     const fields = [
-      renderSettingsNumberField("flowKp", "Flow Kp", "Hoe sterk de regeling direct reageert op een afwijking."),
-      renderSettingsNumberField("flowKi", "Flow Ki", "Hoe snel de regeling kleine restfouten wegwerkt."),
+      renderSettingsNumberField("flowKp", "Flow PI Kp", "Hoe sterk de regeling direct reageert op een afwijking."),
+      renderSettingsNumberField("flowKi", "Flow PI Ki", "Hoe snel de regeling kleine restfouten wegwerkt."),
     ].filter(Boolean);
     if (!fields.length) {
       return "";
@@ -1762,7 +1762,7 @@
     );
   }
 
-  function renderSettingsBoilerCvSection() {
+  function renderBoilerCvFields(className = "oq-settings-grid oq-settings-boiler-simple-grid") {
     if (!hasEntity("boilerCvAssistEnabled")) {
       return "";
     }
@@ -1796,12 +1796,8 @@
         </div>
       `;
 
-    return renderSettingsSection(
-      "Basis",
-      "CV-ketel of boiler",
-      "Geef aan of OpenQuatt een CV-ketel of boiler als ondersteuning mag gebruiken en hoeveel effectief vermogen die functie heeft.",
-      `
-        <div class="oq-settings-grid oq-settings-boiler-simple-grid">
+    return `
+        <div class="${escapeHtml(className)}">
           ${renderSettingsFieldCard(
             "boilerCvAssistEnabled",
             "CV-ketel / boiler aanwezig",
@@ -1854,7 +1850,19 @@
             )}</p>`,
           )}
         </div>
-      `,
+      `;
+  }
+
+  function renderSettingsBoilerCvSection() {
+    if (!hasEntity("boilerCvAssistEnabled")) {
+      return "";
+    }
+
+    return renderSettingsSection(
+      "Basis",
+      "CV-ketel of boiler",
+      "Geef aan of OpenQuatt een CV-ketel of boiler als ondersteuning mag gebruiken en hoeveel effectief vermogen die functie heeft.",
+      renderBoilerCvFields(),
     );
   }
 
