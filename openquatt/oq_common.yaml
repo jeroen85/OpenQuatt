@@ -19,6 +19,19 @@ esphome:
       - lambda: |-
           // Always start from a clean paused state after reboot or OTA.
           id(oq_runtime_polling_paused).publish_state(false);
+          id(oq_ota_phase_code) = 0;
+          id(oq_ota_progress_pct) = 0.0f;
+          id(oq_firmware_update_status).publish_state("Idle");
+          id(oq_firmware_update_progress).publish_state(0.0f);
+          id(oq_project_version_text).publish_state("${project_version}");
+          id(oq_release_channel_text).publish_state("${release_channel}");
+          #if OQ_TOPOLOGY_DUO
+          id(oq_installation_topology_text).publish_state("duo");
+          #else
+          id(oq_installation_topology_text).publish_state("single");
+          #endif
+          id(oq_hardware_profile_text).publish_state("${oq_hardware_profile}");
+          id(oq_connection_text).publish_state("${oq_connection}");
 
 logger:
   level: DEBUG
@@ -600,7 +613,7 @@ text_sensor:
     name: Firmware Update Status
     icon: mdi:upload-network-outline
     entity_category: diagnostic
-    update_interval: 1s
+    update_interval: never
     lambda: |-
       // Expose a compact OTA phase label for dashboards and the local web UI.
       switch (id(oq_ota_phase_code)) {
@@ -675,7 +688,7 @@ text_sensor:
     name: OpenQuatt Version
     icon: mdi:tag-text-outline
     entity_category: diagnostic
-    update_interval: 60s
+    update_interval: never
     lambda: |-
       return {"${project_version}"};
     web_server:
@@ -685,7 +698,7 @@ text_sensor:
     name: OpenQuatt Installation Topology
     icon: mdi:home-analytics
     entity_category: diagnostic
-    update_interval: 60s
+    update_interval: never
     lambda: |-
       #if OQ_TOPOLOGY_DUO
       return {"duo"};
@@ -699,7 +712,7 @@ text_sensor:
     name: OpenQuatt Hardware Profile
     icon: mdi:developer-board
     entity_category: diagnostic
-    update_interval: 60s
+    update_interval: never
     lambda: |-
       return {"${oq_hardware_profile}"};
     web_server:
@@ -709,7 +722,7 @@ text_sensor:
     name: OpenQuatt Connection
     icon: mdi:lan-connect
     entity_category: diagnostic
-    update_interval: 60s
+    update_interval: never
     lambda: |-
       return {"${oq_connection}"};
     web_server:
@@ -719,7 +732,7 @@ text_sensor:
     name: OpenQuatt Release Channel
     icon: mdi:source-branch
     entity_category: diagnostic
-    update_interval: 60s
+    update_interval: never
     lambda: |-
       return {"${release_channel}"};
     web_server:

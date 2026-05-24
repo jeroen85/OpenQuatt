@@ -220,7 +220,7 @@ text_sensor:
     disabled_by_default: true
     icon: mdi:shield-half-full
     entity_category: diagnostic
-    update_interval: 10s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     lambda: |-
       if (id(cooling_dew_point_available).state) {
         return {"Dew point"};
@@ -238,7 +238,7 @@ text_sensor:
     disabled_by_default: true
     icon: mdi:information-outline
     entity_category: diagnostic
-    update_interval: 5s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     lambda: |-
       // Report the first blocking condition in operator-friendly terms.
       if (!id(cooling_enable_selected).has_state() || !id(cooling_enable_selected).state) {

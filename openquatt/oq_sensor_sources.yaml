@@ -266,7 +266,7 @@ text_sensor:
     disabled_by_default: true
     icon: mdi:timer-sand
     entity_category: diagnostic
-    update_interval: 5s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     lambda: |-
       // Report which selected-source inputs are currently being held through source dropouts.
       std::string active;

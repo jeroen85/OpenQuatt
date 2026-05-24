@@ -1160,12 +1160,21 @@ text_sensor:
       sorting_group_id: oq_hp_diagnostics
     icon: mdi:alert-circle-outline
     lambda: |-
-      std::string s;
-      s.reserve(384);
+      char s[384];
+      size_t used = 0;
+      s[0] = '\0';
 
       auto add = [&](const char *name) -> void {
-        if (!s.empty()) s += ", ";
-        s += name;
+        if (name == nullptr || name[0] == '\0' || used >= (sizeof(s) - 1)) {
+          return;
+        }
+        const char *separator = used == 0 ? "" : ", ";
+        const int written = snprintf(s + used, sizeof(s) - used, "%s%s", separator, name);
+        if (written <= 0) {
+          return;
+        }
+        const size_t appended = static_cast<size_t>(written);
+        used = appended >= (sizeof(s) - used) ? (sizeof(s) - 1) : (used + appended);
       };
 
       auto has_bit = [](float raw, uint16_t bitmask) -> bool {
@@ -1224,7 +1233,7 @@ text_sensor:
       if (has_bit(status_2121, 0x1000u)) add("Reserved temp sensor failure");
       if (has_bit(status_2121, 0x2000u)) add("DC water pump failure");
 
-      return s.empty() ? std::string("None") : s;
+      return std::string(used == 0 ? "None" : s);
 
 
   - platform: template

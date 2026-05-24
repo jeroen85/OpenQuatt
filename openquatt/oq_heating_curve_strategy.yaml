@@ -831,7 +831,7 @@ text_sensor:
     id: oq_curve_phase_sensor
     name: "Curve Phase"
     icon: mdi:state-machine
-    update_interval: 5s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     entity_category: diagnostic
     disabled_by_default: true
     web_server:
@@ -844,7 +844,7 @@ text_sensor:
     id: oq_curve_regime_sensor
     name: "Curve operating regime"
     icon: mdi:state-machine
-    update_interval: 5s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     entity_category: diagnostic
     disabled_by_default: true
     web_server:
@@ -860,7 +860,7 @@ text_sensor:
     id: oq_curve_capacity_mode_sensor
     name: "Curve capacity mode"
     icon: mdi:state-machine
-    update_interval: 5s
+    update_interval: ${oq_diagnostic_update_interval_s}s
     entity_category: diagnostic
     disabled_by_default: true
     web_server:
