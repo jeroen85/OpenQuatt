@@ -195,6 +195,7 @@ const LOGO_MARKUP = `
     trendHistoryEnabled: { domain: "switch", name: "Trendopslag", optional: true },
     trendHistoryFlashEnabled: { domain: "switch", name: "Trendhistorie opslaan in flash", optional: true },
     webServerLogHistoryEnabled: { domain: "switch", name: "RAM log history", optional: true },
+    debugLevel: { domain: "select", name: "Debug Level", optional: true },
     trendHistoryFlush: { domain: "button", name: "Trendhistorie nu opslaan", optional: true },
     trendHistoryFlashAvailable: { domain: "text_sensor", name: "Trendhistorie beschikbaar", optional: true },
     trendHistoryFlashOldest: { domain: "text_sensor", name: "Trendhistorie oudste punt", optional: true },

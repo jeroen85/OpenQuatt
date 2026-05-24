@@ -128,6 +128,25 @@ function getWebServerLogHistoryInfoCopy() {
   return "Slaat de laatste firmwarelogs tijdelijk op in RAM. De viewer leest die buffer bij openen en blijft daarna live /events volgen.";
 }
 
+function getWebServerLoggerLevelEntity() {
+  return state.entities?.debugLevel || null;
+}
+
+function getWebServerLoggerLevelOptions(entity = getWebServerLoggerLevelEntity()) {
+  const options = Array.isArray(entity?.option)
+    ? entity.option
+    : Array.isArray(entity?.options)
+      ? entity.options
+      : [];
+  return options.length ? options : ["NONE", "ERROR", "WARN", "INFO", "CONFIG", "DEBUG"];
+}
+
+function getWebServerLoggerLevelValue(entity = getWebServerLoggerLevelEntity()) {
+  const value = String(entity?.value ?? entity?.state ?? "").trim();
+  const options = getWebServerLoggerLevelOptions(entity);
+  return options.includes(value) ? value : (options.includes("INFO") ? "INFO" : options[0] || "");
+}
+
 function getWebServerLogEntryKey(entry) {
   if (!entry || typeof entry !== "object") {
     return "";
@@ -463,6 +482,7 @@ function openWebServerLogsModal() {
   state.webServerLogCopyError = "";
   state.systemModal = "webserver-logs";
   render();
+  void refreshEntities(["webServerLogHistoryEnabled", "debugLevel"], "all", { forceFast: true });
   scrollWebServerLogToBottom();
   if (!state.webServerLogHistoryLoaded || state.webServerLogEntries.length === 0) {
     void refreshWebServerLogHistory();
@@ -835,6 +855,7 @@ function renderWebServerLogHistoryControls() {
   const busy = state.loadingEntities || state.busyAction === "switch-webServerLogHistoryEnabled";
   const label = getWebServerLogHistoryStatusLabel();
   const copy = getWebServerLogHistoryInfoCopy();
+  const loggerLevelControl = renderWebServerLoggerLevelControl();
 
   return `
     <div class="oq-webserver-log-history-shell">
@@ -856,6 +877,34 @@ function renderWebServerLogHistoryControls() {
           ${enabled ? "Uitschakelen" : "Inschakelen"}
         </button>
       </div>
+      ${loggerLevelControl}
+    </div>
+  `;
+}
+
+function renderWebServerLoggerLevelControl() {
+  const entity = getWebServerLoggerLevelEntity();
+  if (!entity) {
+    return "";
+  }
+
+  const options = getWebServerLoggerLevelOptions(entity);
+  const value = getWebServerLoggerLevelValue(entity);
+  const busy = state.loadingEntities || state.busyAction === "save-debugLevel";
+
+  return `
+    <div class="oq-settings-system-row oq-settings-system-row--with-action" data-oq-diagnostics-row="debugLevel">
+      <div class="oq-settings-system-row-copy">
+        <p class="oq-settings-system-row-label">Logger level</p>
+        <strong class="oq-settings-system-row-value">${escapeHtml(value || "Onbekend")}</strong>
+        <p class="oq-settings-system-row-note">Past het runtime logniveau aan voor nieuwe firmwaremeldingen.</p>
+      </div>
+      <label class="oq-webserver-log-level-control" aria-label="Logger level">
+        <select class="oq-helper-select" data-oq-field="debugLevel" ${busy ? "disabled" : ""}>
+          ${options.map((option) => `<option value="${escapeHtml(option)}" ${option === value ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}
+        </select>
+        <span class="oq-settings-select-caret" aria-hidden="true"></span>
+      </label>
     </div>
   `;
 }

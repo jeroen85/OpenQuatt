@@ -178,6 +178,13 @@
     state.logHistoryEntries = source.map((entry, index) => parseDemoLogEntry(entry, index, source.length));
   }
 
+  function appendLogHistoryEntry(raw) {
+    const entry = parseDemoLogEntry(raw, state.logHistoryEntries.length, state.logHistoryEntries.length + 1);
+    entry.seq = state.logHistoryEntries.length + 1;
+    entry.ts = Date.now();
+    state.logHistoryEntries = [...state.logHistoryEntries, entry].slice(-250);
+  }
+
   function isSwitchEnabled(name) {
     return Boolean(getEntity("switch", name)?.value);
   }
@@ -624,6 +631,11 @@
     setEntity("switch", "Trendopslag", { value: true, state: true });
     setEntity("switch", "Trendhistorie opslaan in flash", { value: true, state: true });
     setEntity("switch", "RAM log history", { value: true, state: true });
+    setEntity("select", "Debug Level", {
+      value: "INFO",
+      state: "INFO",
+      option: ["NONE", "ERROR", "WARN", "INFO", "CONFIG", "DEBUG"],
+    });
     setEntity("select", "Silent Mode Override", {
       value: "Schedule",
       state: "Schedule",
@@ -1581,6 +1593,8 @@
           ? "Alternatieve verbindingsbuild geselecteerd voor deze preview."
           : "Normale firmware-update geselecteerd voor deze preview.";
       }
+    } else if (name === "Debug Level") {
+      appendLogHistoryEntry(`[I][oq_fw:376]: Runtime logger level updated to ${value}`);
     } else if (name === "Power House response profile") {
       if (value === "Calm") {
         setNumber("Power House demand rise time", 12);

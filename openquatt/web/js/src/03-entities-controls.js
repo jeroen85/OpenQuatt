@@ -320,6 +320,7 @@
       "trendHistoryEnabled",
       "trendHistoryFlashEnabled",
       "webServerLogHistoryEnabled",
+      "debugLevel",
       "trendHistoryFlashAvailable",
       "trendHistoryFlashOldest",
       "trendHistoryFlashNewest",
@@ -3087,6 +3088,11 @@
         render();
         await pollFirmwareUpdateState();
         state.controlNotice = "Releasekanaal bijgewerkt.";
+      } else if (key === "debugLevel") {
+        state.controlNotice = "Logger level bijgewerkt.";
+        if (state.systemModal === "webserver-logs") {
+          void refreshWebServerLogHistory();
+        }
       } else if (key === "webServerLogHistoryEnabled") {
         if (enabled) {
           state.webServerLogHistoryLoaded = false;

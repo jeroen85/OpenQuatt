@@ -223,6 +223,11 @@ esp-app.oq-native-app.oq-native-app--collapsed {
     width: 100%;
   }
 
+  .oq-webserver-log-level-control {
+    flex-basis: auto;
+    width: 100%;
+  }
+
   .oq-helper-hub-switches,
   .oq-helper-hub-actions,
   .oq-helper-hub-dev-grid,

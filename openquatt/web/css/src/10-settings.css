@@ -1058,6 +1058,25 @@
   flex: 1;
 }
 
+.oq-webserver-log-history-shell {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  align-items: stretch;
+  gap: 12px;
+}
+
+.oq-webserver-log-level-control {
+  position: relative;
+  display: block;
+  flex: 0 0 220px;
+  width: min(220px, 100%);
+}
+
+.oq-webserver-log-level-control .oq-helper-select {
+  min-height: 46px;
+  padding-right: 40px;
+}
+
 .oq-webserver-log-modal .oq-helper-modal-copy code,
 .oq-webserver-log-modal .oq-helper-modal-note code {
   padding: 0 0.35em;
