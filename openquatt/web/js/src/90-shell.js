@@ -74,6 +74,9 @@ function renderSettingsView() {
     const cm100CommissioningScrollState = state.systemModal === "cm100-commissioning"
       ? captureCm100CommissioningScrollState()
       : null;
+    const quickStartScrollState = state.quickStartModalOpen
+      ? captureQuickStartScrollState()
+      : null;
 
     if (state.nativeOpen) {
       state.root.innerHTML = `
@@ -90,6 +93,7 @@ function renderSettingsView() {
       syncDocumentTitle();
       queueWebServerLogScrollRestore(webServerLogScrollState);
       queueCm100CommissioningScrollRestore(cm100CommissioningScrollState);
+      queueQuickStartScrollRestore(quickStartScrollState);
       return;
     }
 
@@ -142,6 +146,7 @@ function renderSettingsView() {
     syncDocumentTitle();
     queueWebServerLogScrollRestore(webServerLogScrollState);
     queueCm100CommissioningScrollRestore(cm100CommissioningScrollState);
+    queueQuickStartScrollRestore(quickStartScrollState);
   }
 
   function escapeHtml(value) {
