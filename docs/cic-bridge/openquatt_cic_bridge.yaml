@@ -24,7 +24,7 @@ logger:
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
-  min_version: 2026.4.0
+  min_version: 2026.5.0
   name_add_mac_suffix: false
   on_boot:
     priority: -100
@@ -392,17 +392,15 @@ binary_sensor:
     entity_id: binary_sensor.${ha_entity_prefix}_hp2_defrost
     internal: true
 
-modbus_controller:
+modbus_server:
   - id: hp1_server
     address: 1
     modbus_id: modbus1
-    setup_priority: -100
-    update_interval: never
-    server_courtesy_response:
+    courtesy_response:
       enabled: true
       register_last_address: 5000
       register_value: 0
-    server_registers:
+    registers:
       - address: 1999
         value_type: U_WORD
         read_lambda: |-

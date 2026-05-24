@@ -32,7 +32,7 @@ De automatische style-check is bewust smal, maar geldt nu volledig voor alle ESP
 Gebruik deze groepsvolgorde wanneer een package deze blokken bevat:
 
 1. banner + verantwoordelijkheidsblok
-2. infrastructuur zoals `logger:`, `api:`, `ota:`, `wifi:`, `http_request:`, `uart:`, `modbus:`, `modbus_controller:`, `one_wire:`, `time:`, `web_server:`
+2. infrastructuur zoals `logger:`, `api:`, `ota:`, `wifi:`, `http_request:`, `uart:`, `modbus:`, `modbus_controller:`, `modbus_server:`, `one_wire:`, `time:`, `web_server:`
 3. interne state via `globals:`
 4. control/helper-blokken zoals `script:`, `output:`, `climate:`, `switch:`, `select:`, `number:`, `datetime:`, `text:`, `button:`
 5. gepubliceerde entities via `binary_sensor:`, `sensor:`, `text_sensor:`, `update:`
