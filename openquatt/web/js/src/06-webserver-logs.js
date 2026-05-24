@@ -482,7 +482,14 @@ function openWebServerLogsModal() {
   state.webServerLogCopyError = "";
   state.systemModal = "webserver-logs";
   render();
-  void refreshEntities(["webServerLogHistoryEnabled", "debugLevel"], "all", { forceFast: true });
+  void refreshEntities(["webServerLogHistoryEnabled", "debugLevel"], "all", { forceFast: true }).then(() => {
+    if (state.systemModal !== "webserver-logs") {
+      return;
+    }
+    const scrollState = captureWebServerLogScrollState();
+    render();
+    queueWebServerLogScrollRestore(scrollState);
+  });
   scrollWebServerLogToBottom();
   if (!state.webServerLogHistoryLoaded || state.webServerLogEntries.length === 0) {
     void refreshWebServerLogHistory();
