@@ -188,6 +188,7 @@ PACKAGE_GROUP_BY_KEY = {
     "uart": 0,
     "modbus": 0,
     "modbus_controller": 0,
+    "modbus_server": 0,
     "one_wire": 0,
     "time": 0,
     "globals": 1,
