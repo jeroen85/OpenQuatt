@@ -1335,7 +1335,7 @@
       updatePipeGroup(board, id.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`), pipe.tone, pipe.d);
     });
     ensureTechTooltipLayering(board);
-    startMotionLoop();
+    refreshMotionTargets();
   }
 
   function patchOverviewDom() {

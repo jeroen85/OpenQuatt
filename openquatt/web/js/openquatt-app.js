@@ -14076,7 +14076,7 @@ Object.entries(model.pipes).forEach(([id, pipe]) => {
 updatePipeGroup(board, id.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`), pipe.tone, pipe.d);
 });
 ensureTechTooltipLayering(board);
-startMotionLoop();
+refreshMotionTargets();
 }
 function patchOverviewDom() {
 if (!state.root || state.appView !== "overview") {
