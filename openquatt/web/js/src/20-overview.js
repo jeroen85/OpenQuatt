@@ -1550,7 +1550,39 @@
     return true;
   }
 
-  function updateOverviewTrendHoverCard(card, model, pointIndex) {
+  function getOverviewTrendHoverNodes(card) {
+    if (!card) {
+      return null;
+    }
+
+    const cached = card.__oqTrendHoverNodes;
+    if (cached && cached.chart && cached.hoverLayer && cached.hoverPanel) {
+      return cached;
+    }
+
+    const hoverLayer = card.querySelector("[data-oq-trend-hover-layer]");
+    const nodes = {
+      chart: card.querySelector(".oq-overview-trend-chart"),
+      hoverLayer,
+      hoverPanel: card.querySelector("[data-oq-trend-hover]"),
+      hoverTime: card.querySelector("[data-oq-trend-hover-time]"),
+      hoverNote: card.querySelector("[data-oq-trend-hover-note]"),
+      hoverValues: card.querySelector("[data-oq-trend-hover-values]"),
+      hoverLine: hoverLayer ? hoverLayer.querySelector(".oq-overview-trend-hover-line") : null,
+      hoverDots: {},
+    };
+
+    if (hoverLayer) {
+      hoverLayer.querySelectorAll("[data-oq-trend-hover-dot]").forEach((dot) => {
+        nodes.hoverDots[dot.getAttribute("data-oq-trend-hover-dot")] = dot;
+      });
+    }
+
+    card.__oqTrendHoverNodes = nodes;
+    return nodes;
+  }
+
+  function updateOverviewTrendHoverCard(card, model, pointIndex, nodes = getOverviewTrendHoverNodes(card)) {
     if (!card || !model || !Array.isArray(model.points) || model.points.length === 0) {
       return;
     }
@@ -1561,34 +1593,31 @@
       return;
     }
 
-    const chart = card.querySelector(".oq-overview-trend-chart");
-    const hoverLayer = card.querySelector("[data-oq-trend-hover-layer]");
-    const hoverPanel = card.querySelector("[data-oq-trend-hover]");
-    const hoverTime = card.querySelector("[data-oq-trend-hover-time]");
-    const hoverNote = card.querySelector("[data-oq-trend-hover-note]");
-    const hoverValues = card.querySelector("[data-oq-trend-hover-values]");
+    if (!nodes || !nodes.chart || !nodes.hoverLayer || !nodes.hoverPanel || !nodes.hoverTime || !nodes.hoverNote || !nodes.hoverValues) {
+      return;
+    }
 
-    if (!chart || !hoverLayer || !hoverPanel || !hoverTime || !hoverNote || !hoverValues) {
+    const indexText = String(index);
+    if (!nodes.hoverPanel.hidden && card.dataset.oqTrendHoverIndex === indexText) {
       return;
     }
 
     const timeLabel = formatOverviewTrendPointTime(point.sample.t, model.endTime);
-    hoverPanel.hidden = false;
-    hoverLayer.removeAttribute("hidden");
-    hoverTime.textContent = timeLabel.value;
-    hoverNote.textContent = timeLabel.note;
+    nodes.hoverPanel.hidden = false;
+    nodes.hoverLayer.removeAttribute("hidden");
+    nodes.hoverTime.textContent = timeLabel.value;
+    nodes.hoverNote.textContent = timeLabel.note;
 
-    const hoverLine = hoverLayer.querySelector(".oq-overview-trend-hover-line");
-    if (hoverLine) {
-      hoverLine.setAttribute("x1", point.x.toFixed(1));
-      hoverLine.setAttribute("x2", point.x.toFixed(1));
+    if (nodes.hoverLine) {
+      nodes.hoverLine.setAttribute("x1", point.x.toFixed(1));
+      nodes.hoverLine.setAttribute("x2", point.x.toFixed(1));
     }
 
     const rows = [];
     model.series.forEach((series) => {
       const value = getOverviewTrendSeriesValue(series, point.sample);
       const seriesId = series.id || series.sampleKey || series.label;
-      const dot = hoverLayer.querySelector(`[data-oq-trend-hover-dot="${seriesId}"]`);
+      const dot = nodes.hoverDots[seriesId];
       if (!Number.isFinite(value)) {
         if (dot) {
           dot.setAttribute("display", "none");
@@ -1609,21 +1638,20 @@
       `);
     });
 
-    hoverValues.innerHTML = rows.join("");
-    card.dataset.oqTrendHoverIndex = String(index);
+    nodes.hoverValues.innerHTML = rows.join("");
+    card.dataset.oqTrendHoverIndex = indexText;
   }
 
   function clearOverviewTrendHoverCard(card) {
     if (!card) {
       return;
     }
-    const hoverPanel = card.querySelector("[data-oq-trend-hover]");
-    const hoverLayer = card.querySelector("[data-oq-trend-hover-layer]");
-    if (hoverPanel) {
-      hoverPanel.hidden = true;
+    const nodes = getOverviewTrendHoverNodes(card);
+    if (nodes?.hoverPanel) {
+      nodes.hoverPanel.hidden = true;
     }
-    if (hoverLayer) {
-      hoverLayer.setAttribute("hidden", "");
+    if (nodes?.hoverLayer) {
+      nodes.hoverLayer.setAttribute("hidden", "");
     }
     delete card.dataset.oqTrendHoverIndex;
   }
@@ -1639,6 +1667,10 @@
       if (card.__oqTrendBoundSignature === signature) {
         return;
       }
+      if (typeof card.__oqTrendCleanup === "function") {
+        card.__oqTrendCleanup();
+      }
+      card.__oqTrendHoverNodes = null;
       card.__oqTrendBoundSignature = signature;
 
       const chart = card.querySelector(".oq-overview-trend-chart");
@@ -1653,24 +1685,44 @@
       const model = getOverviewTrendChartModel(cardModel.samples, cardModel.series, { mockData: cardModel.mock });
 
       card.__oqTrendModel = model;
+      const nodes = getOverviewTrendHoverNodes(card);
+      let hoverFrame = 0;
+      let latestEvent = null;
 
-      const handleMove = (event) => {
+      const applyMove = () => {
+        const event = latestEvent;
+        latestEvent = null;
+        hoverFrame = 0;
         const rect = chart.getBoundingClientRect();
         if (!rect.width || !rect.height) {
           return;
         }
-        const clientX = Number(event.clientX);
+        const clientX = Number(event?.clientX);
         if (!Number.isFinite(clientX)) {
-          updateOverviewTrendHoverCard(card, model, model.points.length - 1);
+          updateOverviewTrendHoverCard(card, model, model.points.length - 1, nodes);
           return;
         }
         const localX = Math.min(rect.width, Math.max(0, clientX - rect.left));
         const svgX = (localX / rect.width) * model.width;
         const pointIndex = getNearestOverviewTrendPointIndex(model, svgX);
-        updateOverviewTrendHoverCard(card, model, pointIndex);
+        updateOverviewTrendHoverCard(card, model, pointIndex, nodes);
       };
 
-      const handleLeave = () => clearOverviewTrendHoverCard(card);
+      const handleMove = (event) => {
+        latestEvent = event;
+        if (!hoverFrame) {
+          hoverFrame = window.requestAnimationFrame(applyMove);
+        }
+      };
+
+      const handleLeave = () => {
+        if (hoverFrame) {
+          window.cancelAnimationFrame(hoverFrame);
+          hoverFrame = 0;
+        }
+        latestEvent = null;
+        clearOverviewTrendHoverCard(card);
+      };
 
       chart.addEventListener("pointermove", handleMove);
       chart.addEventListener("pointerenter", handleMove);
@@ -1678,5 +1730,18 @@
       chart.addEventListener("focus", handleMove);
       chart.addEventListener("blur", handleLeave);
       chart.addEventListener("touchstart", handleMove, { passive: true });
+      card.__oqTrendCleanup = () => {
+        if (hoverFrame) {
+          window.cancelAnimationFrame(hoverFrame);
+          hoverFrame = 0;
+        }
+        latestEvent = null;
+        chart.removeEventListener("pointermove", handleMove);
+        chart.removeEventListener("pointerenter", handleMove);
+        chart.removeEventListener("pointerleave", handleLeave);
+        chart.removeEventListener("focus", handleMove);
+        chart.removeEventListener("blur", handleLeave);
+        chart.removeEventListener("touchstart", handleMove);
+      };
     });
   }
