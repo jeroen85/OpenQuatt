@@ -1339,13 +1339,18 @@
   }
 
   function patchOverviewDom() {
-    if (!state.root || state.appView !== "overview" || state.hpVisualMode !== "schematic") {
+    if (!state.root || state.appView !== "overview") {
       return false;
     }
 
     const board = state.root.querySelector(".oq-overview-board");
     if (!board) {
       return false;
+    }
+
+    const nextBoardClass = `oq-overview-board oq-overview-board--${state.overviewTheme}`;
+    if (board.className !== nextBoardClass) {
+      board.className = nextBoardClass;
     }
 
     const strategyLabel = getOverviewStrategyLabel();
@@ -1414,6 +1419,34 @@
       return false;
     }
 
+    const hpLayoutMode = getEffectiveHpLayoutMode(heatPumpPanels);
+    const hpGridLayout = getHeatPumpGridLayoutVariant(heatPumpPanels);
+    patchHeatPumpControls(hpTools, heatPumpPanels);
+    setVariantClass(hpGrid, "oq-overview-hp-grid--", hpGridLayout, ["single", "equal", "focus-hp1", "focus-hp2"]);
+
+    if (state.hpVisualMode !== "schematic") {
+      const nextGridMarkup = [
+        ...heatPumpPanels.map((panel, index) => renderHeatPumpPanel(
+          panel.title,
+          panel.keys,
+          panel.accent,
+          getHeatPumpPanelEmphasis(index, heatPumpPanels, hpLayoutMode),
+          getHeatPumpPanelLayoutAction(index, heatPumpPanels, hpLayoutMode),
+        )),
+        renderBoilerPanel(),
+      ].join("");
+      const nextGridSignature = getRenderSignature({
+        visualMode: state.hpVisualMode,
+        layout: hpGridLayout,
+        markup: nextGridMarkup,
+      });
+      if (hpGrid.dataset.renderSignature !== nextGridSignature) {
+        setInnerHtmlIfChanged(hpGrid, nextGridMarkup);
+        hpGrid.dataset.renderSignature = nextGridSignature;
+      }
+      return true;
+    }
+
     const nextBoilerModel = shouldRenderBoilerPanel() ? getBoilerPanelModel() : null;
     const nextBoilerMarkup = nextBoilerModel ? renderBoilerPanel() : "";
     const nextBoilerSignature = nextBoilerModel ? getBoilerPanelRenderSignature(nextBoilerModel) : "";
@@ -1426,15 +1459,11 @@
       patchBoilerPanelRuntime(boilerPanel, nextBoilerModel);
     }
 
-    patchHeatPumpControls(hpTools, heatPumpPanels);
-
     const renderedPanels = hpGrid.querySelectorAll("[data-oq-hp-panel]");
     if (renderedPanels.length !== heatPumpPanels.length) {
       return false;
     }
 
-    const hpLayoutMode = getEffectiveHpLayoutMode(heatPumpPanels);
-    setVariantClass(hpGrid, "oq-overview-hp-grid--", getHeatPumpGridLayoutVariant(heatPumpPanels), ["single", "equal", "focus-hp1", "focus-hp2"]);
     heatPumpPanels.forEach((panel, index) => {
       const panelNode = board.querySelector(`[data-oq-hp-panel="${panel.title}"]`);
       if (panelNode) {

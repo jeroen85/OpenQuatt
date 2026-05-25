@@ -841,3 +841,21 @@ esp-app.oq-native-app.oq-native-app--collapsed {
     grid-template-columns: 1fr;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  #oq-helper-root *,
+  #oq-helper-root *::before,
+  #oq-helper-root *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  #oq-helper-root .oq-hp-tech-pipe-flow,
+  #oq-helper-root .oq-hp-tech-condensor-ref-flow,
+  #oq-helper-root .oq-boiler-card-pipe-flow,
+  #oq-helper-root .oq-hp-tech-fan-blades {
+    will-change: auto;
+  }
+}
