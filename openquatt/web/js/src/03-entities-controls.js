@@ -2162,6 +2162,12 @@
         }
         return;
       }
+      if (state.appView === "energy") {
+        if (!patchEnergyDom()) {
+          render();
+        }
+        return;
+      }
       if (!patchOverviewDom()) {
         render();
       }

@@ -61,7 +61,7 @@
     `;
   }
 
-  function renderEnergyView() {
+  function getEnergySectionModel() {
     const renderedColumns = OVERVIEW_ENERGY_COLUMN_CONFIGS.map(renderOverviewEnergyColumn).filter(Boolean);
     const gridClassName = [
       "oq-overview-energy-grid",
@@ -69,6 +69,24 @@
       renderedColumns.length === 2 ? "oq-overview-energy-grid--two" : "",
     ].filter(Boolean).join(" ");
 
+    return { renderedColumns, gridClassName };
+  }
+
+  function getEnergySectionRenderSignature(model = getEnergySectionModel()) {
+    return getRenderSignature(model);
+  }
+
+  function renderEnergySection(model = getEnergySectionModel()) {
+    return `
+      <section class="oq-overview-energy oq-overview-energy--solo" data-render-signature="${escapeHtml(getEnergySectionRenderSignature(model))}">
+        <div class="${escapeHtml(model.gridClassName)}">
+          ${model.renderedColumns.join("")}
+        </div>
+      </section>
+    `;
+  }
+
+  function renderEnergyView() {
     return `
       <section class="oq-helper-panel oq-helper-panel--flush">
         <div class="oq-overview-board oq-overview-board--${escapeHtml(state.overviewTheme)}">
@@ -79,12 +97,32 @@
             <p class="oq-helper-section-copy">Bekijk hier verbruik, warmte of koeling en rendement voor nu, vandaag en cumulatief.</p>
           </div>
           </div>
-          <section class="oq-overview-energy oq-overview-energy--solo">
-            <div class="${escapeHtml(gridClassName)}">
-              ${renderedColumns.join("")}
-            </div>
-          </section>
+          ${renderEnergySection()}
         </div>
       </section>
     `;
+  }
+
+  function patchEnergyDom() {
+    if (!state.root || state.appView !== "energy") {
+      return false;
+    }
+
+    const board = state.root.querySelector(".oq-overview-board");
+    const energy = board ? board.querySelector(".oq-overview-energy") : null;
+    if (!board || !energy) {
+      return false;
+    }
+
+    const nextBoardClass = `oq-overview-board oq-overview-board--${state.overviewTheme}`;
+    if (board.className !== nextBoardClass) {
+      board.className = nextBoardClass;
+    }
+
+    const model = getEnergySectionModel();
+    return replaceOuterHtmlIfSignatureChanged(
+      energy,
+      getEnergySectionRenderSignature(model),
+      renderEnergySection(model),
+    ) || true;
   }

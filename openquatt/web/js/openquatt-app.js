@@ -5976,6 +5976,12 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
         }
         return;
       }
+      if (state.appView === "energy") {
+        if (!patchEnergyDom()) {
+          render();
+        }
+        return;
+      }
       if (!patchOverviewDom()) {
         render();
       }
@@ -13814,7 +13820,7 @@ function renderWebServerLogsModal() {
     `;
   }
 
-  function renderEnergyView() {
+  function getEnergySectionModel() {
     const renderedColumns = OVERVIEW_ENERGY_COLUMN_CONFIGS.map(renderOverviewEnergyColumn).filter(Boolean);
     const gridClassName = [
       "oq-overview-energy-grid",
@@ -13822,6 +13828,24 @@ function renderWebServerLogsModal() {
       renderedColumns.length === 2 ? "oq-overview-energy-grid--two" : "",
     ].filter(Boolean).join(" ");
 
+    return { renderedColumns, gridClassName };
+  }
+
+  function getEnergySectionRenderSignature(model = getEnergySectionModel()) {
+    return getRenderSignature(model);
+  }
+
+  function renderEnergySection(model = getEnergySectionModel()) {
+    return `
+      <section class="oq-overview-energy oq-overview-energy--solo" data-render-signature="${escapeHtml(getEnergySectionRenderSignature(model))}">
+        <div class="${escapeHtml(model.gridClassName)}">
+          ${model.renderedColumns.join("")}
+        </div>
+      </section>
+    `;
+  }
+
+  function renderEnergyView() {
     return `
       <section class="oq-helper-panel oq-helper-panel--flush">
         <div class="oq-overview-board oq-overview-board--${escapeHtml(state.overviewTheme)}">
@@ -13832,14 +13856,34 @@ function renderWebServerLogsModal() {
             <p class="oq-helper-section-copy">Bekijk hier verbruik, warmte of koeling en rendement voor nu, vandaag en cumulatief.</p>
           </div>
           </div>
-          <section class="oq-overview-energy oq-overview-energy--solo">
-            <div class="${escapeHtml(gridClassName)}">
-              ${renderedColumns.join("")}
-            </div>
-          </section>
+          ${renderEnergySection()}
         </div>
       </section>
     `;
+  }
+
+  function patchEnergyDom() {
+    if (!state.root || state.appView !== "energy") {
+      return false;
+    }
+
+    const board = state.root.querySelector(".oq-overview-board");
+    const energy = board ? board.querySelector(".oq-overview-energy") : null;
+    if (!board || !energy) {
+      return false;
+    }
+
+    const nextBoardClass = `oq-overview-board oq-overview-board--${state.overviewTheme}`;
+    if (board.className !== nextBoardClass) {
+      board.className = nextBoardClass;
+    }
+
+    const model = getEnergySectionModel();
+    return replaceOuterHtmlIfSignatureChanged(
+      energy,
+      getEnergySectionRenderSignature(model),
+      renderEnergySection(model),
+    ) || true;
   }
 
 /* --- js/src/40-heatpump.js --- */
@@ -15184,13 +15228,18 @@ function renderWebServerLogsModal() {
   }
 
   function patchOverviewDom() {
-    if (!state.root || state.appView !== "overview" || state.hpVisualMode !== "schematic") {
+    if (!state.root || state.appView !== "overview") {
       return false;
     }
 
     const board = state.root.querySelector(".oq-overview-board");
     if (!board) {
       return false;
+    }
+
+    const nextBoardClass = `oq-overview-board oq-overview-board--${state.overviewTheme}`;
+    if (board.className !== nextBoardClass) {
+      board.className = nextBoardClass;
     }
 
     const strategyLabel = getOverviewStrategyLabel();
@@ -15259,6 +15308,34 @@ function renderWebServerLogsModal() {
       return false;
     }
 
+    const hpLayoutMode = getEffectiveHpLayoutMode(heatPumpPanels);
+    const hpGridLayout = getHeatPumpGridLayoutVariant(heatPumpPanels);
+    patchHeatPumpControls(hpTools, heatPumpPanels);
+    setVariantClass(hpGrid, "oq-overview-hp-grid--", hpGridLayout, ["single", "equal", "focus-hp1", "focus-hp2"]);
+
+    if (state.hpVisualMode !== "schematic") {
+      const nextGridMarkup = [
+        ...heatPumpPanels.map((panel, index) => renderHeatPumpPanel(
+          panel.title,
+          panel.keys,
+          panel.accent,
+          getHeatPumpPanelEmphasis(index, heatPumpPanels, hpLayoutMode),
+          getHeatPumpPanelLayoutAction(index, heatPumpPanels, hpLayoutMode),
+        )),
+        renderBoilerPanel(),
+      ].join("");
+      const nextGridSignature = getRenderSignature({
+        visualMode: state.hpVisualMode,
+        layout: hpGridLayout,
+        markup: nextGridMarkup,
+      });
+      if (hpGrid.dataset.renderSignature !== nextGridSignature) {
+        setInnerHtmlIfChanged(hpGrid, nextGridMarkup);
+        hpGrid.dataset.renderSignature = nextGridSignature;
+      }
+      return true;
+    }
+
     const nextBoilerModel = shouldRenderBoilerPanel() ? getBoilerPanelModel() : null;
     const nextBoilerMarkup = nextBoilerModel ? renderBoilerPanel() : "";
     const nextBoilerSignature = nextBoilerModel ? getBoilerPanelRenderSignature(nextBoilerModel) : "";
@@ -15271,15 +15348,11 @@ function renderWebServerLogsModal() {
       patchBoilerPanelRuntime(boilerPanel, nextBoilerModel);
     }
 
-    patchHeatPumpControls(hpTools, heatPumpPanels);
-
     const renderedPanels = hpGrid.querySelectorAll("[data-oq-hp-panel]");
     if (renderedPanels.length !== heatPumpPanels.length) {
       return false;
     }
 
-    const hpLayoutMode = getEffectiveHpLayoutMode(heatPumpPanels);
-    setVariantClass(hpGrid, "oq-overview-hp-grid--", getHeatPumpGridLayoutVariant(heatPumpPanels), ["single", "equal", "focus-hp1", "focus-hp2"]);
     heatPumpPanels.forEach((panel, index) => {
       const panelNode = board.querySelector(`[data-oq-hp-panel="${panel.title}"]`);
       if (panelNode) {
