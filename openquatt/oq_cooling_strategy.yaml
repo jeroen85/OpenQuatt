@@ -343,7 +343,8 @@ interval:
           const float fallback_full_gap_c = 1.00f;
           const float fallback_cap1_gap_c = 0.30f;
           const float fallback_stop_gap_c = 0.00f;
-          const uint32_t limiter_stop_confirm_ms = 45000UL;
+          const uint32_t limiter_stop_confirm_ms =
+              (uint32_t) (${oq_cooling_limiter_stop_confirm_s} * 1000UL);
           const uint32_t upscale_dwell_ms = 90000UL;
           const uint32_t downscale_dwell_ms = 30000UL;
           const float simmer_room_error_min_c = 0.20f;
