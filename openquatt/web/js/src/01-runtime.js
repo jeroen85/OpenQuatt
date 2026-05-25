@@ -44,6 +44,7 @@
     deviceReconnectLastError: "",
     entitySyncFailureCount: 0,
     lastEntitySyncAt: 0,
+    lastEntitySyncSuccessAt: 0,
     lastEntityResponseAt: 0,
     overviewMetadataHydrated: false,
     overviewMetadataHydrating: false,
@@ -359,7 +360,7 @@
     stopEntityPolling();
     startEntityPolling();
     if (!document.hidden) {
-      void syncEntities();
+      void syncEntities({ forceProbe: true });
     }
   }
 
