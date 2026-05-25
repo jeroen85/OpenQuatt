@@ -140,6 +140,11 @@ globals:
     restore_value: false
     initial_value: '0'
 
+  - id: oq_cooling_dew_stop_candidate_since_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
   - id: oq_cooling_water_cycle_active
     type: bool
     restore_value: false
@@ -329,8 +334,9 @@ interval:
           // enough shape to behave across low-mass and high-mass water systems.
           const float filter_tau_s = 60.0f;
           const uint32_t rate_window_ms = 60000UL;
-          const float hard_dew_stop_gap_c = 0.30f;
-          const float hard_dew_restart_gap_c = 0.60f;
+          const float hard_dew_stop_base_gap_c = 0.15f;
+          const float hard_dew_stop_margin_gain_c = 0.30f;
+          const float hard_dew_restart_hyst_c = 0.20f;
           const float full_gap_c = 1.50f;
           const float cap2_gap_c = 0.60f;
           const float level2_release_rate_c_per_min = -0.12f;
@@ -343,7 +349,8 @@ interval:
           const float fallback_full_gap_c = 1.00f;
           const float fallback_cap1_gap_c = 0.30f;
           const float fallback_stop_gap_c = 0.00f;
-          const uint32_t limiter_stop_confirm_ms = 45000UL;
+          const uint32_t limiter_stop_confirm_ms =
+              (uint32_t) (${oq_cooling_limiter_stop_confirm_s} * 1000UL);
           const uint32_t upscale_dwell_ms = 90000UL;
           const uint32_t downscale_dwell_ms = 30000UL;
           const float simmer_room_error_min_c = 0.20f;
@@ -381,6 +388,7 @@ interval:
             id(oq_cooling_buffer_gap_rate_ref_ms) = 0;
             id(oq_cooling_last_demand_change_ms) = 0;
             id(oq_cooling_stop_candidate_since_ms) = 0;
+            id(oq_cooling_dew_stop_candidate_since_ms) = 0;
             return;
           }
 
@@ -431,6 +439,15 @@ interval:
               !dew_mode && id(cooling_fallback_active).has_state() && id(cooling_fallback_active).state;
           const float dew_gap_c = dew_mode ? (supply_c - id(cooling_dew_point_selected).state) : NAN;
           id(oq_cooling_dew_gap_c) = dew_gap_c;
+          float safety_margin_c = 0.0f;
+          if (id(cooling_safety_margin_selected).has_state() && !isnan(id(cooling_safety_margin_selected).state)) {
+            safety_margin_c = id(cooling_safety_margin_selected).state;
+          }
+          if (safety_margin_c < 0.0f) safety_margin_c = 0.0f;
+          if (safety_margin_c > 2.0f) safety_margin_c = 2.0f;
+          const float hard_dew_stop_gap_c =
+              hard_dew_stop_base_gap_c + (hard_dew_stop_margin_gain_c * safety_margin_c);
+          const float hard_dew_restart_gap_c = hard_dew_stop_gap_c + hard_dew_restart_hyst_c;
 
           bool trend_safe = id(oq_cooling_trend_safe);
           if (gap_rate_c_per_min > trend_safe_rate_c_per_min) trend_safe = true;
@@ -498,7 +515,19 @@ interval:
           int fallback_cap = demand_max;
           int mode_cap = demand_max;
           int reason_code = room_cap_active ? 9 : 1;
-          const bool dew_hard_stop = dew_mode && !isnan(dew_gap_c) && dew_gap_c <= hard_dew_stop_gap_c;
+          const bool dew_hard_stop_candidate =
+              dew_mode && !isnan(dew_gap_c) && dew_gap_c <= hard_dew_stop_gap_c;
+          bool dew_hard_stop = false;
+          if (dew_hard_stop_candidate) {
+            uint32_t dew_candidate_since_ms = id(oq_cooling_dew_stop_candidate_since_ms);
+            if (dew_candidate_since_ms == 0 || now_ms <= dew_candidate_since_ms) {
+              id(oq_cooling_dew_stop_candidate_since_ms) = now_ms;
+              dew_candidate_since_ms = now_ms;
+            }
+            dew_hard_stop = (uint32_t)(now_ms - dew_candidate_since_ms) >= limiter_stop_confirm_ms;
+          } else {
+            id(oq_cooling_dew_stop_candidate_since_ms) = 0;
+          }
 
           // Build the limiter as independent caps and take the strictest one.
           // This keeps fallback, dew safety, trend and room overshoot from

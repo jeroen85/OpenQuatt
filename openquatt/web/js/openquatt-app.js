@@ -894,9 +894,10 @@ const SETTINGS_BACKUP_SCHEMA_VERSION = 1;
 const SETTINGS_BACKUP_KEYS = [...new Set(SETTINGS_BACKUP_SECTIONS.flatMap((section) => section.keys))];
 const SETTINGS_BACKUP_KEY_SET = new Set(SETTINGS_BACKUP_KEYS);
 const FAST_POLL_INTERVAL_MS = 5000;
-const BULK_POLL_INTERVAL_MS = 10000;
+const BULK_POLL_INTERVAL_MS = 30000;
 const STATIC_POLL_INTERVAL_MS = 60000;
 const CONNECTIVITY_PROBE_TIMEOUT_MS = 1500;
+const CONNECTIVITY_PROBE_SUCCESS_TTL_MS = 30000;
 const SUPPLEMENTARY_STATUS_REFRESH_INTERVAL_MS = 30000;
 const LOGIN_MODAL_AUTH_STATUS_REFRESH_INTERVAL_MS = 1000;
 const HIDDEN_POLL_INTERVAL_MS = 30000;
@@ -951,6 +952,7 @@ deviceReconnectRecoveryTimer: null,
 deviceReconnectLastError: "",
 entitySyncFailureCount: 0,
 lastEntitySyncAt: 0,
+lastEntitySyncSuccessAt: 0,
 lastEntityResponseAt: 0,
 overviewMetadataHydrated: false,
 overviewMetadataHydrating: false,
@@ -1269,7 +1271,7 @@ return;
 stopEntityPolling();
 startEntityPolling();
 if (!document.hidden) {
-void syncEntities();
+void syncEntities({ forceProbe: true });
 }
 }
 function syncSurfaceRuntime(options = {}) {
@@ -3764,6 +3766,9 @@ return getOpenQuattPausePresetValue("2h");
 function getSettingsRefreshKeys() {
 return [...new Set(["setupComplete", ...SETTINGS_KEYS])];
 }
+function isSystemSettingsGroupActive() {
+return state.appView === "settings" && state.settingsGroup === "system";
+}
 function getDevInitialLoadDelayMs() {
 const raw = typeof window !== "undefined" ? Number(window.__OQ_DEV_LOAD_DELAY_MS || 0) : 0;
 return Number.isFinite(raw) && raw > 0 ? raw : 0;
@@ -4088,7 +4093,10 @@ return normalized.includes("failed to fetch")
 || normalized.includes("timeout");
 }
 function noteEntityRefreshSuccess() {
-state.lastEntitySyncAt = Date.now();
+const now = Date.now();
+state.lastEntitySyncAt = now;
+state.lastEntitySyncSuccessAt = now;
+state.entitySyncFailureCount = 0;
 const wasReconnectActive = Boolean(state.deviceReconnectMode);
 const reconnectRecovered = wasReconnectActive && typeof markDeviceReconnectRecovered === "function"
 ? markDeviceReconnectRecovered()
@@ -4132,6 +4140,26 @@ state.updateInstallBusy || state.updateInstallPhaseHint ? "ota" : state.busyActi
 message,
 );
 }
+}
+function shouldRefreshConnectivityProbe(now = Date.now(), options = {}) {
+if (options.forceProbe === true) {
+return true;
+}
+if (
+state.deviceReconnectMode
+|| state.busyAction === "restartAction"
+|| state.updateInstallBusy
+|| state.updateInstallPhaseHint
+|| Number(state.entitySyncFailureCount || 0) > 0
+) {
+return true;
+}
+const lastSuccessAt = Number(state.lastEntitySyncSuccessAt || state.lastEntitySyncAt || state.lastEntityResponseAt || 0);
+if (!lastSuccessAt) {
+return true;
+}
+const ttlMs = document.hidden ? HIDDEN_POLL_INTERVAL_MS : CONNECTIVITY_PROBE_SUCCESS_TTL_MS;
+return (now - lastSuccessAt) >= ttlMs;
 }
 async function refreshConnectivityProbe() {
 const entity = ENTITY_DEFS.status || ENTITY_DEFS.setupComplete;
@@ -4284,12 +4312,21 @@ state.mqttDraftRetainSnapshots = status.retain_snapshots !== false;
 state.mqttNotice = "";
 state.mqttError = "";
 }
-function shouldRefreshSupplementaryStatus(lastRefreshAt, options = {}) {
+function shouldRefreshSupplementaryStatus(lastRefreshAt, options = {}, intervalMs = SUPPLEMENTARY_STATUS_REFRESH_INTERVAL_MS) {
 if (options.force === true) {
 return true;
 }
 const lastAt = Number(lastRefreshAt || 0);
-return !lastAt || (Date.now() - lastAt) >= SUPPLEMENTARY_STATUS_REFRESH_INTERVAL_MS;
+return !lastAt || (Date.now() - lastAt) >= intervalMs;
+}
+function shouldRefreshAuthStatusForCurrentSurface() {
+return state.systemModal === "login" || state.systemModal === "api-security" || isSystemSettingsGroupActive();
+}
+function shouldRefreshApiSecurityStatusForCurrentSurface() {
+return state.systemModal === "api-security" || isSystemSettingsGroupActive();
+}
+function shouldRefreshMqttStatusForCurrentSurface() {
+return state.systemModal === "mqtt" || isSystemSettingsGroupActive();
 }
 function formatMqttPublishProfile(profile) {
 const normalized = String(profile || "").trim().toLowerCase();
@@ -5367,6 +5404,12 @@ return;
 }
 window.setTimeout(run, 0);
 }
+function isBulkEntitySyncDue(now = Date.now(), options = {}) {
+if (options.forceBulk === true) {
+return true;
+}
+return (now - Number(state.lastBulkEntitySyncAt || 0)) >= BULK_POLL_INTERVAL_MS;
+}
 async function primeSupplementaryData() {
 if (state.nativeOpen) {
 return;
@@ -5379,7 +5422,7 @@ if (state.appView === "overview" || state.appView === "trends") {
 await refreshTrendHistoryData({ force: true });
 }
 await refreshAuthStatus({ force: true });
-if (state.appView === "settings") {
+if (isSystemSettingsGroupActive()) {
 await refreshApiSecurityStatus({ force: true });
 await refreshMqttStatus({ force: true });
 }
@@ -5439,7 +5482,7 @@ const isPrefetchOverview = options.prefetchView === "overview" && !options.force
 const syncView = isPrefetchOverview ? "overview" : appView;
 const isOverviewLike = syncView === "overview" || syncView === "trends" || syncView === "energy";
 const forceFast = options.forceFast === true && !options.forceBulk;
-const isBulkDue = !forceFast && !isPrefetchOverview && (options.forceBulk === true || (now - Number(state.lastBulkEntitySyncAt || 0)) >= BULK_POLL_INTERVAL_MS);
+const isBulkDue = !forceFast && !isPrefetchOverview && isBulkEntitySyncDue(now, options);
 const isStaticDue = (now - Number(state.lastStaticEntitySyncAt || 0)) >= STATIC_POLL_INTERVAL_MS;
 const staticKeys = isStaticDue || state.updateInstallBusy || state.updateInstallPhaseHint
 ? FIRMWARE_ENTITY_KEYS
@@ -5459,7 +5502,7 @@ const keys = isPrefetchOverview
 ...staticKeys,
 ]
 : appView === "settings"
-? ["setupComplete", ...staticKeys, ...HEADER_ENTITY_KEYS, ...SETTINGS_KEYS]
+? [...new Set([...getSettingsGroupHydrationKeys(), ...staticKeys])]
 : isBulkDue
 ? [
 "setupComplete",
@@ -5475,7 +5518,9 @@ state.entitySyncInFlight = true;
 state.lastEntitySyncAttemptAt = now;
 try {
 const reconnectModeBefore = state.deviceReconnectMode;
-const probe = await refreshConnectivityProbe();
+const probe = shouldRefreshConnectivityProbe(now, options)
+? await refreshConnectivityProbe()
+: { ok: true, message: "" };
 if (!probe.ok) {
 noteEntityRefreshFailure(probe.message);
 if (!isPrefetchOverview) {
@@ -5506,9 +5551,9 @@ const trendChanged = shouldDeferSupplementary
 : isOverviewLike
 ? await refreshTrendHistoryData()
 : false;
-const authChanged = shouldDeferSupplementary ? false : await refreshAuthStatus();
-const apiSecurityChanged = shouldDeferSupplementary || state.appView !== "settings" ? false : await refreshApiSecurityStatus();
-const mqttChanged = shouldDeferSupplementary || state.appView !== "settings" ? false : await refreshMqttStatus();
+const authChanged = shouldDeferSupplementary || !shouldRefreshAuthStatusForCurrentSurface() ? false : await refreshAuthStatus();
+const apiSecurityChanged = shouldDeferSupplementary || !shouldRefreshApiSecurityStatusForCurrentSurface() ? false : await refreshApiSecurityStatus();
+const mqttChanged = shouldDeferSupplementary || !shouldRefreshMqttStatusForCurrentSurface() ? false : await refreshMqttStatus();
 const nextHeaderSignature = getHeaderRenderSignature();
 if (reconnectChanged) {
 render();
@@ -5518,7 +5563,7 @@ if (trendChanged && state.appView === "trends" && !state.root?.querySelector(".o
 render();
 return;
 }
-if (authChanged && state.systemModal === "login") {
+if (authChanged && (state.systemModal === "login" || isSystemSettingsGroupActive())) {
 render();
 return;
 }
@@ -5589,7 +5634,7 @@ window.setTimeout(() => {
 void syncEntities(pendingOptions);
 }, 0);
 }
-if (forceFast && isOverviewLike && !isPrefetchOverview && !state.nativeOpen && !pendingOptions) {
+if (forceFast && isOverviewLike && !isPrefetchOverview && !state.nativeOpen && !pendingOptions && isBulkEntitySyncDue(Date.now())) {
 window.setTimeout(() => {
 void syncEntities({ forceBulk: true });
 }, 0);
