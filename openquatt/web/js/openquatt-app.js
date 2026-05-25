@@ -1042,6 +1042,9 @@ pauseResumeDraft: "",
 draggingCurveKey: "",
 motionFrame: 0,
 motionStartedAt: 0,
+reducedMotion: getPrefersReducedMotion(),
+motionPreferenceMedia: null,
+motionPreferenceListener: null,
 motionTargets: {
 pipeFlows: [],
 fanBlades: [],
@@ -1185,6 +1188,41 @@ window.localStorage.setItem("oq-trend-window-hours", String(state.trendWindowHou
 }
 function getDefaultAppView() {
 return "overview";
+}
+function getReducedMotionMedia() {
+if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+return null;
+}
+try {
+return window.matchMedia("(prefers-reduced-motion: reduce)");
+} catch (_error) {
+return null;
+}
+}
+function getPrefersReducedMotion() {
+return Boolean(getReducedMotionMedia()?.matches);
+}
+function handleReducedMotionPreferenceChange(event) {
+state.reducedMotion = Boolean(event?.matches);
+if (state.reducedMotion) {
+stopMotionLoop();
+return;
+}
+startMotionLoop();
+}
+function bindReducedMotionPreference() {
+const media = getReducedMotionMedia();
+if (!media || state.motionPreferenceMedia === media) {
+return;
+}
+state.motionPreferenceMedia = media;
+state.motionPreferenceListener = handleReducedMotionPreferenceChange;
+if (typeof media.addEventListener === "function") {
+media.addEventListener("change", state.motionPreferenceListener);
+} else if (typeof media.addListener === "function") {
+media.addListener(state.motionPreferenceListener);
+}
+state.reducedMotion = Boolean(media.matches);
 }
 function hasLoadedEntities() {
 return Object.keys(state.entities).length > 0;
@@ -1414,6 +1452,7 @@ root.addEventListener("mouseover", handleSettingsInteractionStart);
 root.addEventListener("mouseout", handleSettingsInteractionEnd);
 root.addEventListener("pointerdown", handlePointerDown);
 state.root = root;
+bindReducedMotionPreference();
 const initialUrlView = getUrlAppView();
 const initialUrlSettingsGroup = initialUrlView === "settings" ? getUrlSettingsGroup() : "";
 if (initialUrlSettingsGroup) {
@@ -1529,7 +1568,7 @@ function hasMotionTargets() {
 return state.motionTargets.pipeFlows.length > 0 || state.motionTargets.fanBlades.length > 0;
 }
 function syncMotionVariables(now = performance.now()) {
-if (!state.root) {
+if (!state.root || state.reducedMotion) {
 return false;
 }
 if (!hasMotionTargets() && refreshMotionTargets() === 0) {
@@ -1559,7 +1598,7 @@ return;
 state.motionFrame = window.requestAnimationFrame(tickMotion);
 }
 function startMotionLoop() {
-if (state.motionFrame) {
+if (state.motionFrame || state.reducedMotion) {
 return;
 }
 if (refreshMotionTargets() === 0) {
