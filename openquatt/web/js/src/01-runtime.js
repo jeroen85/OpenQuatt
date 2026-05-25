@@ -578,7 +578,6 @@
       setAppView(initialUrlView, { syncMode: "replace", forceSync: true });
     }
     clearLegacyMotionVariables();
-    startMotionLoop();
     render();
   }
 
@@ -670,7 +669,7 @@
     };
 
     if (!state.root) {
-      return;
+      return 0;
     }
 
     const runningBoards = state.root.querySelectorAll(".oq-hp-schematic-board.is-running");
@@ -693,16 +692,21 @@
         state.motionTargets.fanBlades.push(node);
       });
     });
+
+    return state.motionTargets.pipeFlows.length + state.motionTargets.fanBlades.length;
+  }
+
+  function hasMotionTargets() {
+    return state.motionTargets.pipeFlows.length > 0 || state.motionTargets.fanBlades.length > 0;
   }
 
   function syncMotionVariables(now = performance.now()) {
     if (!state.root) {
-      return;
+      return false;
     }
 
-    if (state.motionTargets.pipeFlows.length === 0
-      && state.motionTargets.fanBlades.length === 0) {
-      refreshMotionTargets();
+    if (!hasMotionTargets() && refreshMotionTargets() === 0) {
+      return false;
     }
 
     if (!state.motionStartedAt) {
@@ -720,10 +724,15 @@
     state.motionTargets.fanBlades.forEach((node) => {
       node.style.transform = `rotate(${fanRotation.toFixed(3)}deg)`;
     });
+    return true;
   }
 
   function tickMotion(now) {
-    syncMotionVariables(now);
+    if (!syncMotionVariables(now)) {
+      state.motionFrame = 0;
+      state.motionStartedAt = 0;
+      return;
+    }
     state.motionFrame = window.requestAnimationFrame(tickMotion);
   }
 
@@ -732,9 +741,16 @@
       return;
     }
 
+    if (refreshMotionTargets() === 0) {
+      return;
+    }
+
     const now = performance.now();
     state.motionStartedAt = now;
-    syncMotionVariables(now);
+    if (!syncMotionVariables(now)) {
+      state.motionStartedAt = 0;
+      return;
+    }
     state.motionFrame = window.requestAnimationFrame(tickMotion);
   }
 

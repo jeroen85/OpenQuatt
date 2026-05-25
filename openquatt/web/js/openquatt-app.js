@@ -1497,7 +1497,6 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       setAppView(initialUrlView, { syncMode: "replace", forceSync: true });
     }
     clearLegacyMotionVariables();
-    startMotionLoop();
     render();
   }
 
@@ -1589,7 +1588,7 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     };
 
     if (!state.root) {
-      return;
+      return 0;
     }
 
     const runningBoards = state.root.querySelectorAll(".oq-hp-schematic-board.is-running");
@@ -1612,16 +1611,21 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
         state.motionTargets.fanBlades.push(node);
       });
     });
+
+    return state.motionTargets.pipeFlows.length + state.motionTargets.fanBlades.length;
+  }
+
+  function hasMotionTargets() {
+    return state.motionTargets.pipeFlows.length > 0 || state.motionTargets.fanBlades.length > 0;
   }
 
   function syncMotionVariables(now = performance.now()) {
     if (!state.root) {
-      return;
+      return false;
     }
 
-    if (state.motionTargets.pipeFlows.length === 0
-      && state.motionTargets.fanBlades.length === 0) {
-      refreshMotionTargets();
+    if (!hasMotionTargets() && refreshMotionTargets() === 0) {
+      return false;
     }
 
     if (!state.motionStartedAt) {
@@ -1639,10 +1643,15 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
     state.motionTargets.fanBlades.forEach((node) => {
       node.style.transform = `rotate(${fanRotation.toFixed(3)}deg)`;
     });
+    return true;
   }
 
   function tickMotion(now) {
-    syncMotionVariables(now);
+    if (!syncMotionVariables(now)) {
+      state.motionFrame = 0;
+      state.motionStartedAt = 0;
+      return;
+    }
     state.motionFrame = window.requestAnimationFrame(tickMotion);
   }
 
@@ -1651,9 +1660,16 @@ const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
       return;
     }
 
+    if (refreshMotionTargets() === 0) {
+      return;
+    }
+
     const now = performance.now();
     state.motionStartedAt = now;
-    syncMotionVariables(now);
+    if (!syncMotionVariables(now)) {
+      state.motionStartedAt = 0;
+      return;
+    }
     state.motionFrame = window.requestAnimationFrame(tickMotion);
   }
 
@@ -15164,7 +15180,7 @@ function renderWebServerLogsModal() {
       updatePipeGroup(board, id.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`), pipe.tone, pipe.d);
     });
     ensureTechTooltipLayering(board);
-    refreshMotionTargets();
+    startMotionLoop();
   }
 
   function patchOverviewDom() {
@@ -15417,7 +15433,7 @@ function renderSettingsView() {
     clearLegacyMotionVariables();
     syncTechTooltipLayers();
     syncWebServerLogStream();
-    refreshMotionTargets();
+    startMotionLoop();
     syncOverviewTrendInteractions();
     syncNativeVisibility();
     bindHeaderDevControls();

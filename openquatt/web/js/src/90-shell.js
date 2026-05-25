@@ -138,7 +138,7 @@ function renderSettingsView() {
     clearLegacyMotionVariables();
     syncTechTooltipLayers();
     syncWebServerLogStream();
-    refreshMotionTargets();
+    startMotionLoop();
     syncOverviewTrendInteractions();
     syncNativeVisibility();
     bindHeaderDevControls();
