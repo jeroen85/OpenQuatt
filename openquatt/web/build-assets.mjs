@@ -39,6 +39,86 @@ const bundles = [
   },
 ];
 
+function minifyJavaScript(source) {
+  const output = [];
+  let state = "normal";
+  let quote = "";
+  let escaped = false;
+
+  for (let index = 0; index < source.length; index += 1) {
+    const char = source[index];
+    const next = source[index + 1] || "";
+
+    if (state === "line-comment") {
+      if (char === "\n" || char === "\r") {
+        state = "normal";
+        output.push(char);
+      }
+      continue;
+    }
+
+    if (state === "block-comment") {
+      if (char === "*" && next === "/") {
+        index += 1;
+        state = "normal";
+        output.push("\n");
+      }
+      continue;
+    }
+
+    if (state === "string" || state === "template") {
+      output.push(char);
+      if (escaped) {
+        escaped = false;
+      } else if (char === "\\") {
+        escaped = true;
+      } else if (char === quote) {
+        state = "normal";
+      }
+      continue;
+    }
+
+    if (char === "/" && next === "/") {
+      state = "line-comment";
+      index += 1;
+      continue;
+    }
+
+    if (char === "/" && next === "*") {
+      state = "block-comment";
+      index += 1;
+      continue;
+    }
+
+    if (char === "'" || char === '"' || char === "`") {
+      output.push(char);
+      quote = char;
+      escaped = false;
+      state = char === "`" ? "template" : "string";
+      continue;
+    }
+
+    output.push(char);
+  }
+
+  return output
+    .join("")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join("\n")
+    .trim();
+}
+
+function minifyCss(source) {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\s+/g, " ")
+    .replace(/\s*([{}:;,>+~])\s*/g, "$1")
+    .replace(/;}/g, "}")
+    .trim();
+}
+
 async function buildEmbeddedAssetBlock() {
   const assets = [
     ["HP_GENERATION_IMAGE_V1", path.join(__dirname, "assets", "quatt-hybrid-v1.webp")],
@@ -70,18 +150,17 @@ async function buildBundle(bundle) {
   );
 
   const header = [
-    `/* Generated bundle: ${toBundlePath(path.relative(__dirname, bundle.output))} */`,
-    "/* Source files are in ./js/src and ./css/src. */",
-    "/* Rebuild with: node openquatt/web/build-assets.mjs */",
-    "",
+    `/* Generated minified bundle: ${toBundlePath(path.relative(__dirname, bundle.output))}. */`,
+    "/* Source files are in ./js/src and ./css/src. Rebuild with: node openquatt/web/build-assets.mjs */",
   ].join("\n");
-  const bodySegments = parts.map(({ source, content }) => `/* --- ${toBundlePath(path.relative(__dirname, source))} --- */\n${content.trimEnd()}`);
+  const bodySegments = parts.map(({ content }) => content.trimEnd());
   if (bundle.label === "JS") {
     bodySegments.splice(5, 0, await buildEmbeddedAssetBlock());
   }
-  const body = bodySegments.join("\n\n");
+  const body = bodySegments.join("\n");
+  const minified = bundle.label === "JS" ? minifyJavaScript(body) : minifyCss(body);
   await mkdir(path.dirname(bundle.output), { recursive: true });
-  await writeFile(bundle.output, `${header}${body}\n`, "utf8");
+  await writeFile(bundle.output, `${header}\n${minified}\n`, "utf8");
   console.log(`${bundle.label} bundle rebuilt: ${path.relative(__dirname, bundle.output)}`);
 }
 
