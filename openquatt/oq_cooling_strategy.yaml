@@ -629,11 +629,9 @@ interval:
             allowed_max = std::min(allowed_max, 1);
             if (allowed_max <= 0) {
               allowed_max = 1;
-              reason_code = 12;
               id(oq_cooling_stop_candidate_since_ms) = 0;
-            } else if (reason_code == 5 || reason_code == 6 || reason_code == 7) {
-              reason_code = 12;
             }
+            reason_code = 12;
           }
 
           // Soft-stop near target: avoid an immediate drop to 0 from limiter logic
@@ -739,13 +737,15 @@ interval:
           // may hold level 1 when the PI would round to zero, but only if the
           // limiter says level 1 is safe and the room still has meaningful demand.
           int demand_candidate = std::min(base_demand, allowed_max);
+          const bool oil_return_level1_hold = (reason_code == 12) && allowed_max >= 1;
           const bool can_simmer =
-              (!room_error_valid || room_error_c > simmer_room_error_min_c) &&
-              allowed_max >= 1 &&
-              (reason_code == 3 || reason_code == 4 || fallback_mode);
+              oil_return_level1_hold ||
+              ((!room_error_valid || room_error_c > simmer_room_error_min_c) &&
+               allowed_max >= 1 &&
+               (reason_code == 3 || reason_code == 4 || fallback_mode));
           if (can_simmer && demand_candidate < 1) {
             demand_candidate = 1;
-            if (reason_code != 4 && reason_code != 10) reason_code = 3;
+            if (reason_code != 4 && reason_code != 10 && reason_code != 12) reason_code = 3;
           }
 
           // Slow upward changes for comfort and compressor calmness; allow
