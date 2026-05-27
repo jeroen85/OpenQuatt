@@ -258,7 +258,8 @@ Key behaviors:
 - setpoint ramping
 - asymmetric action limits
 - validity-based failsafe (`iPWM=850`)
-- stable-flow tracking for `last_good_pwm`
+- automatic selection between the normal flow setpoint and the cooling flow setpoint in CM5
+- separate stable-flow tracking for normal and cooling `last_good_pwm`
 
 ## 8. Safety Model
 

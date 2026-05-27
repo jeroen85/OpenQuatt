@@ -165,6 +165,7 @@ coolingRequestOffDelta: { domain: "number", name: "Cooling Request Off Delta", o
 coolingWithoutDewPointMode: { domain: "select", name: "Cooling Without Dew Point", optional: true },
 flowControlMode: { domain: "select", name: "Flow Control Mode" },
 flowSetpoint: { domain: "number", name: "Flow Setpoint" },
+coolingFlowSetpoint: { domain: "number", name: "Cooling Flow Setpoint", optional: true },
 manualIpwm: { domain: "number", name: "Manual iPWM" },
 flowKp: { domain: "number", name: "Flow PI Kp", optional: true },
 flowKi: { domain: "number", name: "Flow PI Ki", optional: true },
@@ -413,7 +414,7 @@ const POWER_HOUSE_KEYS = [
 "phDemandFallTime",
 ];
 const LIMIT_KEYS = ["dayMax", "silentMax", "maxWater"];
-const FLOW_SETTING_KEYS = ["flowControlMode", "flowSetpoint", "manualIpwm"];
+const FLOW_SETTING_KEYS = ["flowControlMode", "flowSetpoint", "coolingFlowSetpoint", "manualIpwm"];
 const FLOW_TUNING_KEYS = ["flowKp", "flowKi"];
 const COMMISSIONING_STATE_KEYS = [
 "commissioningStatus",
@@ -859,7 +860,7 @@ keys: [
 {
 id: "flow",
 label: "Flow",
-keys: ["flowControlMode", "flowSetpoint", "manualIpwm", "flowKp", "flowKi"],
+keys: ["flowControlMode", "flowSetpoint", "coolingFlowSetpoint", "manualIpwm", "flowKp", "flowKi"],
 },
 {
 id: "cooling",
@@ -9104,12 +9105,16 @@ ${renderSettingsSelectField("strategy", "Verwarmingsstrategie", "Kies tussen aut
 `;
 }
 function renderFlowSettingsFields(className = "oq-settings-grid") {
+const autoFields = [
+renderSettingsNumberField("flowSetpoint", "Gewenste flow verwarmen", "De flow die OpenQuatt zoveel mogelijk probeert vast te houden buiten koeling."),
+renderSettingsNumberField("coolingFlowSetpoint", "Gewenste flow koelen", "De flow die OpenQuatt gebruikt tijdens actieve koeling."),
+].filter(Boolean).join("");
 return `
 <div class="${escapeHtml(className)}">
 ${renderSettingsSelectField("flowControlMode", "Regelmodus", "Kies tussen automatische flowregeling en een vaste pompstand.")}
 ${isManualFlowMode()
 ? renderSettingsNumberField("manualIpwm", "Vaste pompstand", "Deze pompstand wordt gebruikt zolang de regeling op handmatig staat.")
-: renderSettingsNumberField("flowSetpoint", "Gewenste flow", "De flow die OpenQuatt zoveel mogelijk probeert vast te houden.")}
+: autoFields}
 </div>
 `;
 }

@@ -23,7 +23,7 @@
 #   - Pump output is correctly configured for PWM
 #
 # Interaction with Control Modes:
-#   - Active in CM1/CM2/CM3/CM100 (AUTO=PI, MANUAL=fixed iPWM)
+#   - Active in CM1/CM2/CM3/CM5/CM100 (AUTO=PI, MANUAL=fixed iPWM)
 #   - CM0: early return (supervisory owns pump state in idle)
 #   - CM98: fixed frost PWM path
 #
@@ -53,6 +53,14 @@ globals:
     type: int
     restore_value: true
     initial_value: "440"
+  - id: oq_flow_last_good_pwm_cooling
+    type: int
+    restore_value: true
+    initial_value: "440"
+  - id: oq_flow_cooling_settings_migrated
+    type: bool
+    restore_value: true
+    initial_value: 'false'
   - id: oq_flow_commissioning_start_pwm
     type: int
     restore_value: false
@@ -78,6 +86,21 @@ number:
     id: oq_flow_setpoint_lph
     name: "Flow Setpoint"
     icon: mdi:waves-arrow-right
+    unit_of_measurement: "L/h"
+    mode: slider
+    web_server:
+      sorting_group_id: oq_control
+    min_value: 0
+    max_value: 1500
+    step: 10
+    restore_value: true
+    optimistic: true
+    initial_value: 800
+
+  - platform: template
+    id: oq_cooling_flow_setpoint_lph
+    name: "Cooling Flow Setpoint"
+    icon: mdi:snowflake-thermometer
     unit_of_measurement: "L/h"
     mode: slider
     web_server:
@@ -341,6 +364,7 @@ interval:
           static bool was_flow_idle = true;
           static int last_cm_code = 0;
           static int last_commissioning_task_code = oq_commissioning::TASK_NONE;
+          static bool last_auto_target_is_cooling = false;
 
           // One central hold time for all start transitions.
           // During this window we keep start iPWM fixed to let hydraulics settle.
@@ -385,20 +409,39 @@ interval:
               c.perform();
             }
           };
+          if (!id(oq_flow_cooling_settings_migrated) && !isnan(id(oq_flow_setpoint_lph).state)) {
+            const float current_flow_setpoint = id(oq_flow_setpoint_lph).state;
+            if (!isnan(current_flow_setpoint)) {
+              auto c = id(oq_cooling_flow_setpoint_lph).make_call();
+              c.set_value(current_flow_setpoint);
+              c.perform();
+            }
+            id(oq_flow_last_good_pwm_cooling) = id(oq_flow_last_good_pwm);
+            id(oq_flow_cooling_settings_migrated) = true;
+            ESP_LOGI(
+                "flow",
+                "Initialized cooling flow settings from current flow setpoint: sp=%.0f L/h last_good=%d",
+                current_flow_setpoint,
+                id(oq_flow_last_good_pwm_cooling));
+          }
           // Common AUTO-entry init used for CM0->* and MANUAL->AUTO edges.
           auto start_auto_transition = [&](const char *tag) {
             int fallback = (int) roundf(id(oq_flow_auto_start_pwm).state);
             fallback = clamp_iPWM(fallback);
 
             const int cm_code = id(oq_control_mode_code);
+            const bool cooling_target = (cm_code == 5);
             const bool commissioning_start = (cm_code == 100) && (id(oq_commissioning_task_code) != 0);
+            const int last_good_pwm =
+              cooling_target ? id(oq_flow_last_good_pwm_cooling) : id(oq_flow_last_good_pwm);
             int start_pwm = commissioning_start
               ? clamp_iPWM(id(oq_flow_commissioning_start_pwm))
-              : (int) id(oq_flow_last_good_pwm);
+              : last_good_pwm;
             if (!commissioning_start && (start_pwm < 50 || start_pwm > 850)) start_pwm = fallback;
 
-            ESP_LOGI("flow", "AUTO start(%s): iPWM=%d (last_good=%d fallback=%d commissioning=%s hold %ds, fixed iPWM)",
-                     tag, start_pwm, (int)id(oq_flow_last_good_pwm), fallback, commissioning_start ? "yes" : "no", STARTUP_HOLD_S);
+            ESP_LOGI("flow", "AUTO start(%s): iPWM=%d (last_good=%d bank=%s fallback=%d commissioning=%s hold %ds, fixed iPWM)",
+                     tag, start_pwm, last_good_pwm, cooling_target ? "cooling" : "normal",
+                     fallback, commissioning_start ? "yes" : "no", STARTUP_HOLD_S);
 
             id(oq_flow_last_pwm) = start_pwm;
             id(oq_flow_i) = 0.0f;
@@ -410,7 +453,10 @@ interval:
           // AUTO PI path only: setpoint ramp, PI, startup-hold, and last_good tracking.
           auto run_auto_pi = [&](int pwm_seed) -> int {
             int pwm_local = pwm_seed;
-            float sp_target = id(oq_flow_setpoint_lph).state;
+            const bool cooling_target = (id(oq_control_mode_code) == 5);
+            float sp_target = cooling_target
+              ? id(oq_cooling_flow_setpoint_lph).state
+              : id(oq_flow_setpoint_lph).state;
             float pv = id(flow_rate_selected).state;
 
             // Treat 0 L/h as a valid measurement (no-flow state), not as sensor failure.
@@ -511,9 +557,15 @@ interval:
               }
 
               if (stable_cnt >= stable_time_ticks) {
-                const int prev = id(oq_flow_last_good_pwm);
+                const int prev = cooling_target
+                  ? id(oq_flow_last_good_pwm_cooling)
+                  : id(oq_flow_last_good_pwm);
                 if (abs(prev - pwm_local) >= good_pwm_step) {
-                  id(oq_flow_last_good_pwm) = pwm_local;
+                  if (cooling_target) {
+                    id(oq_flow_last_good_pwm_cooling) = pwm_local;
+                  } else {
+                    id(oq_flow_last_good_pwm) = pwm_local;
+                  }
                 }
                 stable_cnt = stable_time_ticks;
               }
@@ -532,6 +584,7 @@ interval:
           id(oq_flow_control_mode_code) = flow_mode_code;
           const bool want_manual = (flow_mode_code == 1);
           static bool was_manual = false;
+          const bool auto_target_is_cooling = (cm_code == 5);
 
           const bool is_cm100_idle =
               (cm_code == 100) &&
@@ -555,6 +608,7 @@ interval:
           if (flow_idle) {
             // Keep manual-edge memory synchronized while idle.
             was_manual = want_manual;
+            last_auto_target_is_cooling = auto_target_is_cooling;
             stable_cnt = 0;
             startup_hold = 0;
             sp_f = NAN;
@@ -572,6 +626,11 @@ interval:
             last_pi_e = 0.0f;
             stable_cnt = 0;
           }
+          if (!want_manual && !is_frost && auto_target_is_cooling != last_auto_target_is_cooling) {
+            ESP_LOGI("flow", "AUTO target switched to %s flow setpoint", auto_target_is_cooling ? "cooling" : "normal");
+            start_auto_transition(auto_target_is_cooling ? "AUTO->cooling" : "AUTO->normal");
+          }
+          last_auto_target_is_cooling = auto_target_is_cooling;
           id(oq_flow_last_mode) = mode;
 
           // Autotune temporarily overrides PWM (flow_control remains output owner).

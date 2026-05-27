@@ -837,7 +837,8 @@ views:
               Main flow-control settings:
 
               - `Flow control mode`: choose automatic flow control or manual behavior.
-              - `Flow setpoint`: target flow in L/h for automatic control.
+              - `Flow setpoint`: target flow in L/h for automatic control outside cooling.
+              - `Cooling flow setpoint`: target flow in L/h during cooling.
               - `Manual iPWM`: set iPWM value for manual control.
               </details>
             text_only: true
@@ -852,6 +853,16 @@ views:
             features_position: inline
           - type: tile
             entity: number.openquatt_flow_setpoint
+            name:
+              type: entity
+            hide_state: false
+            vertical: false
+            features:
+              - style: slider
+                type: numeric-input
+            features_position: inline
+          - type: tile
+            entity: number.openquatt_cooling_flow_setpoint
             name:
               type: entity
             hide_state: false
@@ -900,6 +911,8 @@ views:
                 name: Flowrate
               - entity: number.openquatt_flow_setpoint
                 name: Flow setpoint
+              - entity: number.openquatt_cooling_flow_setpoint
+                name: Cooling flow setpoint
             grid_options:
               columns: full
           - type: history-graph

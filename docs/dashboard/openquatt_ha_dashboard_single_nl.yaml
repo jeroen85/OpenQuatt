@@ -865,7 +865,10 @@ views:
               - `Flow control mode`: kies automatische flowregeling of
               handmatige werking.
 
-              - `Flow setpoint`: doel-flow in L/h voor automatische regeling.
+              - `Flow setpoint`: doel-flow in L/h voor automatische regeling
+              buiten koelen.
+
+              - `Cooling flow setpoint`: doel-flow in L/h tijdens koelen.
 
               - `Handmatige iPWM`: stel iPWM waarde in voor handbediening.
 
@@ -882,6 +885,16 @@ views:
             features_position: inline
           - type: tile
             entity: number.openquatt_flow_setpoint
+            name:
+              type: entity
+            hide_state: false
+            vertical: false
+            features:
+              - style: slider
+                type: numeric-input
+            features_position: inline
+          - type: tile
+            entity: number.openquatt_cooling_flow_setpoint
             name:
               type: entity
             hide_state: false
@@ -929,6 +942,8 @@ views:
                 name: Flow
               - entity: number.openquatt_flow_setpoint
                 name: Flow setpoint
+              - entity: number.openquatt_cooling_flow_setpoint
+                name: Cooling flow setpoint
             grid_options:
               columns: full
           - type: history-graph

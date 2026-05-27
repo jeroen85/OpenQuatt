@@ -108,12 +108,15 @@ Deze groep bepaalt hoe de circulatiepomp wordt aangestuurd.
 Belangrijke instellingen:
 
 - `Flow Setpoint`
+- `Cooling Flow Setpoint`
 - `Flow Control Mode`
 - `Manual iPWM`
 - `Frost Circulation iPWM`
 - `Flow AUTO start iPWM`
 - `Flow PI Kp`
 - `Flow PI Ki`
+
+`Flow Setpoint` geldt voor verwarmen en normaal automatisch bedrijf. `Cooling Flow Setpoint` geldt alleen tijdens koelen, zodat koeling een eigen hydraulisch werkpunt kan hebben zonder de verwarmingsflow te veranderen.
 
 Gebruik deze groep voorzichtig. Bij verkeerde bronwaarden of hydraulische problemen maak je hier snel meer ruis dan winst.
 

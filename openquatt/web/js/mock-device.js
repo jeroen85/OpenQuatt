@@ -720,6 +720,7 @@
 
     [
       ["Flow Setpoint", 800, 0, 1500, 10, "L/h"],
+      ["Cooling Flow Setpoint", 800, 0, 1500, 10, "L/h"],
       ["Manual iPWM", 400, 50, 850, 1, "iPWM"],
       ["Flow PI Kp", 0.35, 0, 5, 0.01, ""],
       ["Flow PI Ki", 0.05, 0, 5, 0.01, ""],

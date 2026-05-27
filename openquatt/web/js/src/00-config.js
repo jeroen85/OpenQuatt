@@ -165,6 +165,7 @@ const LOGO_MARKUP = `
     coolingWithoutDewPointMode: { domain: "select", name: "Cooling Without Dew Point", optional: true },
     flowControlMode: { domain: "select", name: "Flow Control Mode" },
     flowSetpoint: { domain: "number", name: "Flow Setpoint" },
+    coolingFlowSetpoint: { domain: "number", name: "Cooling Flow Setpoint", optional: true },
     manualIpwm: { domain: "number", name: "Manual iPWM" },
     flowKp: { domain: "number", name: "Flow PI Kp", optional: true },
     flowKi: { domain: "number", name: "Flow PI Ki", optional: true },
@@ -416,7 +417,7 @@ const LOGO_MARKUP = `
     "phDemandFallTime",
   ];
   const LIMIT_KEYS = ["dayMax", "silentMax", "maxWater"];
-  const FLOW_SETTING_KEYS = ["flowControlMode", "flowSetpoint", "manualIpwm"];
+  const FLOW_SETTING_KEYS = ["flowControlMode", "flowSetpoint", "coolingFlowSetpoint", "manualIpwm"];
   const FLOW_TUNING_KEYS = ["flowKp", "flowKi"];
   const COMMISSIONING_STATE_KEYS = [
     "commissioningStatus",
@@ -864,7 +865,7 @@ const LOGO_MARKUP = `
     {
       id: "flow",
       label: "Flow",
-      keys: ["flowControlMode", "flowSetpoint", "manualIpwm", "flowKp", "flowKi"],
+      keys: ["flowControlMode", "flowSetpoint", "coolingFlowSetpoint", "manualIpwm", "flowKp", "flowKi"],
     },
     {
       id: "cooling",

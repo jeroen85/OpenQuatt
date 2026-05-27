@@ -910,12 +910,16 @@
   }
 
   function renderFlowSettingsFields(className = "oq-settings-grid") {
+    const autoFields = [
+      renderSettingsNumberField("flowSetpoint", "Gewenste flow verwarmen", "De flow die OpenQuatt zoveel mogelijk probeert vast te houden buiten koeling."),
+      renderSettingsNumberField("coolingFlowSetpoint", "Gewenste flow koelen", "De flow die OpenQuatt gebruikt tijdens actieve koeling."),
+    ].filter(Boolean).join("");
     return `
       <div class="${escapeHtml(className)}">
         ${renderSettingsSelectField("flowControlMode", "Regelmodus", "Kies tussen automatische flowregeling en een vaste pompstand.")}
         ${isManualFlowMode()
           ? renderSettingsNumberField("manualIpwm", "Vaste pompstand", "Deze pompstand wordt gebruikt zolang de regeling op handmatig staat.")
-          : renderSettingsNumberField("flowSetpoint", "Gewenste flow", "De flow die OpenQuatt zoveel mogelijk probeert vast te houden.")}
+          : autoFields}
       </div>
     `;
   }
