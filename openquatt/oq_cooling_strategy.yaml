@@ -108,7 +108,7 @@ globals:
 
   # 0=inactive, 1=full, 2=cap2, 3=simmer, 4=falling_gap, 5=buffer_stop,
   # 6=dew_stop, 7=fallback_floor, 8=restart_wait, 9=room_cap, 10=fallback_cap1,
-  # 11=level1_hold
+  # 11=level1_hold, 12=oil_return_hold
   - id: oq_cooling_limiter_reason_code
     type: int
     restore_value: false
@@ -141,6 +141,11 @@ globals:
     initial_value: '0'
 
   - id: oq_cooling_dew_stop_candidate_since_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_cooling_oil_return_hold_until_ms
     type: uint32_t
     restore_value: false
     initial_value: '0'
@@ -351,6 +356,8 @@ interval:
           const float fallback_stop_gap_c = 0.00f;
           const uint32_t limiter_stop_confirm_ms =
               (uint32_t) (${oq_cooling_limiter_stop_confirm_s} * 1000UL);
+          const uint32_t oil_return_hold_ms =
+              (uint32_t) (${oq_cooling_oil_return_hold_s} * 1000UL);
           const uint32_t upscale_dwell_ms = 90000UL;
           const uint32_t downscale_dwell_ms = 30000UL;
           const float simmer_room_error_min_c = 0.20f;
@@ -364,6 +371,26 @@ interval:
           if (dt_s < 0.1f) dt_s = 0.1f;
           if (dt_s > 15.0f) dt_s = 15.0f;
           id(oq_cooling_last_loop_ms) = now_ms;
+
+          bool oil_return_active = id(hp1_prot_oil_return).state;
+          #if OQ_TOPOLOGY_DUO
+          oil_return_active = oil_return_active || id(${cc_secondary_oil_return_id}).state;
+          #endif
+          if (oil_return_active) {
+            id(oq_cooling_oil_return_hold_until_ms) = now_ms + oil_return_hold_ms;
+          }
+          const bool oil_return_mask_active =
+              oil_return_active ||
+              (id(oq_cooling_oil_return_hold_until_ms) > 0 &&
+               now_ms < id(oq_cooling_oil_return_hold_until_ms));
+          static bool last_oil_return_mask_active = false;
+          if (oil_return_mask_active != last_oil_return_mask_active) {
+            ESP_LOGI(
+                "quatt.cool",
+                "Cooling oil-return hold %s",
+                oil_return_mask_active ? "active" : "cleared");
+            last_oil_return_mask_active = oil_return_mask_active;
+          }
 
           const bool active =
               id(cooling_enable_selected).state &&
@@ -506,6 +533,7 @@ interval:
               case 9: return "room_cap";
               case 10: return "fallback_cap1";
               case 11: return "level1_hold";
+              case 12: return "oil_return_hold";
               default: return "inactive";
             }
           };
@@ -516,6 +544,7 @@ interval:
           int mode_cap = demand_max;
           int reason_code = room_cap_active ? 9 : 1;
           const bool dew_hard_stop_candidate =
+              !oil_return_mask_active &&
               dew_mode && !isnan(dew_gap_c) && dew_gap_c <= hard_dew_stop_gap_c;
           bool dew_hard_stop = false;
           if (dew_hard_stop_candidate) {
@@ -592,6 +621,19 @@ interval:
           allowed_max = std::min(allowed_max, mode_cap);
           if (allowed_max < 0) allowed_max = 0;
 
+          // During oil-return and recovery hold we keep cooling alive at level 1.
+          // Oil-return forces a temporary compressor behavior that can dip water
+          // temperature below the normal floor. Mask the dew/floor stop here so
+          // we do not trigger an avoidable stop/restart cycle.
+          if (oil_return_mask_active) {
+            allowed_max = std::min(allowed_max, 1);
+            if (allowed_max <= 0) {
+              allowed_max = 1;
+              id(oq_cooling_stop_candidate_since_ms) = 0;
+            }
+            reason_code = 12;
+          }
+
           // Soft-stop near target: avoid an immediate drop to 0 from limiter logic
           // while raw gap is still positive or only slightly negative. Hard dew and
           // fallback floor stops remain immediate safety exits.
@@ -633,7 +675,10 @@ interval:
             const bool dew_recovered = !dew_mode || isnan(dew_gap_c) || dew_gap_c > hard_dew_restart_gap_c;
             const bool fallback_recovered =
                 !fallback_mode || !restart_after_water_stop || filtered_gap_c > restart_threshold_c;
-            if (restart_gap_recovered && dew_recovered && fallback_recovered && allowed_max > 0) {
+            const bool restart_recovered =
+                oil_return_mask_active ||
+                (restart_gap_recovered && dew_recovered && fallback_recovered);
+            if (restart_recovered && allowed_max > 0) {
               water_cycle_active = true;
               id(oq_cooling_stop_reason_code) = 0;
             } else {
@@ -692,13 +737,15 @@ interval:
           // may hold level 1 when the PI would round to zero, but only if the
           // limiter says level 1 is safe and the room still has meaningful demand.
           int demand_candidate = std::min(base_demand, allowed_max);
+          const bool oil_return_level1_hold = (reason_code == 12) && allowed_max >= 1;
           const bool can_simmer =
-              (!room_error_valid || room_error_c > simmer_room_error_min_c) &&
-              allowed_max >= 1 &&
-              (reason_code == 3 || reason_code == 4 || fallback_mode);
+              oil_return_level1_hold ||
+              ((!room_error_valid || room_error_c > simmer_room_error_min_c) &&
+               allowed_max >= 1 &&
+               (reason_code == 3 || reason_code == 4 || fallback_mode));
           if (can_simmer && demand_candidate < 1) {
             demand_candidate = 1;
-            if (reason_code != 4 && reason_code != 10) reason_code = 3;
+            if (reason_code != 4 && reason_code != 10 && reason_code != 12) reason_code = 3;
           }
 
           // Slow upward changes for comfort and compressor calmness; allow
