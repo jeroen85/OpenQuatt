@@ -248,6 +248,7 @@
       "silentEndTime",
       "maxWater",
     ],
+    service: ["commissioningStatus", "cm100Active"],
     heating: ["strategy"],
     cooling: ["manualCoolingEnable", "coolingWithoutDewPointMode"],
     advanced: ["minRuntime"],
@@ -275,25 +276,16 @@
       "boilerRatedHeatPower",
       ...FLOW_SETTING_KEYS,
       ...FLOW_TUNING_KEYS,
-      "commissioningStatus",
-      "cm100Active",
-      "commissioningCm100Start",
-      "commissioningCm100Stop",
-      "boilerPowerTestStart",
-      "boilerPowerTestAbort",
-      "boilerPowerTestApply",
-      "boilerPowerTestStatus",
-      "boilerPowerTestResult",
-      "boilerPowerTestActive",
-      "boilerHeatPower",
-      "flowAutotuneStart",
-      "flowAutotuneAbort",
-      "flowAutotuneApply",
-      "flowAutotuneStatus",
-      "flowKpSuggested",
-      "flowKiSuggested",
       ...SILENT_SETTING_KEYS,
       "maxWater",
+    ],
+    service: [
+      ...COMMISSIONING_STATE_KEYS,
+      "boilerCvAssistEnabled",
+      "boilerRatedHeatPower",
+      "flowSelected",
+      "flowKp",
+      "flowKi",
     ],
     heating: [
       "strategy",
@@ -2809,8 +2801,11 @@
     }
 
     if (action === "open-cm100-commissioning-modal") {
-      state.systemModal = "cm100-commissioning";
+      state.systemModal = "";
+      setAppView("settings");
+      setSettingsGroup("service");
       render();
+      syncEntities({ forceBulk: true });
       return;
     }
 
@@ -2825,11 +2820,13 @@
           state.pendingCommissioningCm100Start = false;
           state.pendingBoilerPowerTestStart = false;
           state.pendingFlowAutotuneStart = false;
+          state.pendingAirPurgeStart = false;
           state.commissioningTaskLock = "";
           state.commissioningBoilerHeatPowerDisplay = "";
         } else if (buttonKey === "boilerPowerTestStart") {
           state.pendingBoilerPowerTestStart = true;
           state.pendingFlowAutotuneStart = false;
+          state.pendingAirPurgeStart = false;
           state.commissioningTaskLock = "boiler";
           state.commissioningBoilerHeatPowerDisplay = "";
         } else if (buttonKey === "boilerPowerTestAbort" || buttonKey === "boilerPowerTestApply") {
@@ -2837,9 +2834,17 @@
         } else if (buttonKey === "flowAutotuneStart") {
           state.pendingFlowAutotuneStart = true;
           state.pendingBoilerPowerTestStart = false;
+          state.pendingAirPurgeStart = false;
           state.commissioningTaskLock = "autotune";
         } else if (buttonKey === "flowAutotuneAbort" || buttonKey === "flowAutotuneApply") {
           state.commissioningTaskLock = "autotune";
+        } else if (buttonKey === "airPurgeStart") {
+          state.pendingAirPurgeStart = true;
+          state.pendingBoilerPowerTestStart = false;
+          state.pendingFlowAutotuneStart = false;
+          state.commissioningTaskLock = "purge";
+        } else if (buttonKey === "airPurgeAbort") {
+          state.commissioningTaskLock = "purge";
         }
         const refreshKeys = [];
         if (buttonKey === "commissioningCm100Start" || buttonKey === "commissioningCm100Stop") {
@@ -2849,6 +2854,8 @@
             "boilerPowerTestStatus",
             "boilerPowerTestActive",
             "flowAutotuneStatus",
+            "airPurgeStatus",
+            "airPurgeActive",
           );
         } else if (buttonKey === "boilerPowerTestStart" || buttonKey === "boilerPowerTestAbort" || buttonKey === "boilerPowerTestApply") {
           refreshKeys.push(
@@ -2867,6 +2874,16 @@
             "flowKiSuggested",
             "flowKp",
             "flowKi",
+          );
+        } else if (buttonKey === "airPurgeStart" || buttonKey === "airPurgeAbort") {
+          refreshKeys.push(
+            "commissioningStatus",
+            "airPurgeStatus",
+            "airPurgeActive",
+            "airPurgeRemaining",
+            "airPurgePhase",
+            "airPurgeTargetIpwm",
+            "flowMode",
           );
         }
         void triggerNamedButton(buttonKey, refreshKeys.length ? { refreshKeys } : {});
@@ -3836,6 +3853,8 @@
         "flowAutotuneStart",
         "flowAutotuneAbort",
         "flowAutotuneApply",
+        "airPurgeStart",
+        "airPurgeAbort",
       ].includes(key);
       if (!keepCommissioningModalOpen) {
         stopLoginAuthStatusPolling();
@@ -3857,6 +3876,9 @@
         state.commissioningTaskLock = "";
       } else if (key === "flowAutotuneStart") {
         state.pendingFlowAutotuneStart = false;
+        state.commissioningTaskLock = "";
+      } else if (key === "airPurgeStart") {
+        state.pendingAirPurgeStart = false;
         state.commissioningTaskLock = "";
       }
       state.controlError = `${options.errorPrefix || `Actie mislukt voor "${entity.name}"`}. ${error.message}`;

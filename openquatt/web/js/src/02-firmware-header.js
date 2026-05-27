@@ -1973,10 +1973,6 @@
       return renderSettingsBackupImportModal();
     }
 
-    if (state.systemModal === "cm100-commissioning") {
-      return renderSettingsCm100CommissioningModal();
-    }
-
     if (state.systemModal === "settings-backup-success") {
       const notice = state.controlNotice || "Backup hersteld.";
       return `

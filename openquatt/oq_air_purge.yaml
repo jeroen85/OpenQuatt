@@ -1,0 +1,161 @@
+# ==============================================================================
+# OpenQuatt - Air Purge
+# ==============================================================================
+#
+# Goal:
+#   Run a fixed 5-minute, pump-only purge routine inside the shared CM100
+#   service container. Flow-control remains the sole writer of pump iPWM.
+#
+# ==============================================================================
+
+# ----------------------------
+# INTERNAL STATE
+# ----------------------------
+globals:
+  - id: oq_air_purge_active
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+  - id: oq_air_purge_abort
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+  - id: oq_air_purge_state
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_air_purge_phase
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_air_purge_target_ipwm
+    type: int
+    restore_value: false
+    initial_value: '1000'
+
+  - id: oq_air_purge_started_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_air_purge_remaining_s
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+# ----------------------------
+# CONTROL INPUTS
+# ----------------------------
+button:
+  - platform: template
+    id: oq_air_purge_start
+    name: "Air Purge Start"
+    icon: mdi:water-pump
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_hydraulics
+    on_press:
+      - lambda: |-
+          oq_air_purge::runtime().start(
+              oq_air_purge::make_runtime_config(${oq_flow_loop_s}),
+              (uint32_t) millis());
+
+  - platform: template
+    id: oq_air_purge_abort_btn
+    name: "Air Purge Abort"
+    icon: mdi:stop-circle-outline
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_hydraulics
+    on_press:
+      - lambda: |-
+          oq_air_purge::runtime().abort_or_clear();
+
+switch:
+  - platform: template
+    id: oq_air_purge_return_to_auto
+    name: "Air purge return to Auto"
+    icon: mdi:backup-restore
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    web_server:
+      sorting_group_id: oq_hydraulics
+
+# ----------------------------
+# STATUS
+# ----------------------------
+binary_sensor:
+  - platform: template
+    id: oq_air_purge_active_sensor
+    name: "Air purge active"
+    icon: mdi:water-pump
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_hydraulics
+    lambda: |-
+      return id(oq_air_purge_active);
+
+sensor:
+  - platform: template
+    id: oq_air_purge_remaining_sensor
+    name: "Air purge remaining"
+    icon: mdi:timer-outline
+    unit_of_measurement: "s"
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_hydraulics
+    lambda: |-
+      return (float) id(oq_air_purge_remaining_s);
+
+  - platform: template
+    id: oq_air_purge_phase_sensor
+    name: "Air purge phase"
+    icon: mdi:timeline-clock-outline
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_hydraulics
+    lambda: |-
+      return (float) id(oq_air_purge_phase);
+
+  - platform: template
+    id: oq_air_purge_target_ipwm_sensor
+    name: "Air purge target iPWM"
+    icon: mdi:fan-speed-3
+    unit_of_measurement: "iPWM"
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_hydraulics
+    lambda: |-
+      return (float) id(oq_air_purge_target_ipwm);
+
+text_sensor:
+  - platform: template
+    id: oq_air_purge_status
+    name: "Air purge status"
+    icon: mdi:information-outline
+    update_interval: never
+    web_server:
+      sorting_group_id: oq_hydraulics
+
+# ----------------------------
+# MAIN LOOP
+# ----------------------------
+interval:
+  - interval: ${oq_flow_loop_s}s
+    startup_delay: 5200ms
+    then:
+      - lambda: |-
+          oq_air_purge::runtime().tick(
+              oq_air_purge::make_runtime_config(${oq_flow_loop_s}),
+              (uint32_t) millis());

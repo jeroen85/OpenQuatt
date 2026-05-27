@@ -82,6 +82,7 @@
     pendingCommissioningCm100Start: false,
     pendingBoilerPowerTestStart: false,
     pendingFlowAutotuneStart: false,
+    pendingAirPurgeStart: false,
     commissioningTaskLock: "",
     commissioningBoilerHeatPowerDisplay: "",
     headerRenderSignature: "",

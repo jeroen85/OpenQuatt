@@ -496,6 +496,26 @@
   margin-top: 0;
 }
 
+.oq-settings-service-shell {
+  display: grid;
+  gap: 16px;
+}
+
+.oq-settings-service-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+  padding: 16px;
+  border-radius: var(--oq-helper-radius-lg);
+  border: 1px solid var(--oq-helper-line);
+  background: var(--oq-helper-card-muted);
+}
+
+.oq-settings-service-toolbar-actions {
+  justify-content: flex-end;
+}
+
 .oq-helper-modal-head--cm100 {
   align-items: flex-start;
   margin-bottom: 6px;
@@ -538,6 +558,10 @@
 
 .oq-settings-commissioning-grid--single {
   grid-template-columns: minmax(0, 1fr);
+}
+
+.oq-settings-commissioning-card--span-2 {
+  grid-column: 1 / -1;
 }
 
 .oq-settings-commissioning-card {
@@ -594,6 +618,10 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   margin-top: 2px;
+}
+
+.oq-settings-commissioning-card--span-2 .oq-settings-commissioning-card-actions {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .oq-settings-commissioning-card-actions .oq-helper-button {
@@ -823,8 +851,13 @@
 @media (max-width: 960px) {
   .oq-settings-commissioning-teaser,
   .oq-settings-boiler-grid,
-  .oq-settings-commissioning-grid {
+  .oq-settings-commissioning-grid,
+  .oq-settings-service-toolbar {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .oq-settings-service-toolbar-actions {
+    justify-content: stretch;
   }
 
   .oq-settings-commissioning-card-head {

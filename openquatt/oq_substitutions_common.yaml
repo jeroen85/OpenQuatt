@@ -26,6 +26,7 @@ thermal_request_logic_header: "../../openquatt/includes/oq_thermal_request_logic
 heating_curve_logic_header: "../../openquatt/includes/oq_heating_curve_logic.h" # Shared C++ helper include for curve runtime state and naming.
 oq_commissioning_logic_header: "../../openquatt/includes/oq_commissioning_logic.h" # Shared commissioning task/state contract.
 oq_flow_autotune_logic_header: "../../openquatt/includes/oq_flow_autotune_logic.h" # Flow autotune runtime controller.
+oq_air_purge_logic_header: "../../openquatt/includes/oq_air_purge_logic.h" # Air purge runtime controller.
 oq_boiler_task_logic_header: "../../openquatt/includes/oq_boiler_task_logic.h" # Boiler power-test runtime controller.
 oq_psram_buffer_header: "../../components/openquatt_common/PsramBuffer.h" # Shared PSRAM-backed buffer helper for custom components.
 external_components_path: "../../components"              # Local custom component directory from nested config entrypoints.

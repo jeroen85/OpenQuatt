@@ -10,6 +10,7 @@ namespace oq_boiler_task {
 static constexpr int TASK_NONE = oq_commissioning::TASK_NONE;
 static constexpr int TASK_BOILER_POWER_TEST = oq_commissioning::TASK_BOILER_POWER_TEST;
 static constexpr int TASK_FLOW_AUTOTUNE = oq_commissioning::TASK_FLOW_AUTOTUNE;
+static constexpr int TASK_AIR_PURGE = oq_commissioning::TASK_AIR_PURGE;
 
 static constexpr int STATE_IDLE = oq_commissioning::TASK_STATE_IDLE;
 static constexpr int STATE_FLOW_SETTLE = oq_commissioning::TASK_STATE_FLOW_SETTLE;
@@ -137,12 +138,17 @@ class BoilerPowerTestRuntime {
     const bool task_is_none = task_code == TASK_NONE;
     const bool task_is_boiler = task_code == TASK_BOILER_POWER_TEST;
     const bool task_is_flow_autotune = task_code == TASK_FLOW_AUTOTUNE;
+    const bool task_is_air_purge = task_code == TASK_AIR_PURGE;
     const bool boiler_test_running = id(oq_commissioning_active) && task_is_boiler;
     const float flow_lph = id(flow_rate_selected).state;
     const bool flow_stable_now = flow_on_target(flow_lph, cfg);
     const float heat_w = id(boiler_heat_power).state;
     const bool heat_valid = !isnan(heat_w) && heat_w >= 0.0f;
     log_heartbeat(task_is_boiler, cm_code, flow_lph, heat_w, now_ms, cfg);
+
+    if (task_is_air_purge) {
+      return;
+    }
 
     if (id(oq_commissioning_abort_requested)) {
       ESP_LOGW("quatt.cm100.boiler", "Boiler test abort requested (state=%d cm=%d active=%d pending=%d)",

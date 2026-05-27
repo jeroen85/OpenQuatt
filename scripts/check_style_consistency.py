@@ -104,6 +104,7 @@ STRICT_TOP_LEVEL_ORDER_RULES = {
         "oq_thermal_actuator",
         "oq_flow_control",
         "oq_flow_autotune",
+        "oq_air_purge",
         "oq_boiler_test",
         "oq_boiler_control",
         "oq_energy",

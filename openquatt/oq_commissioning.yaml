@@ -8,6 +8,7 @@
 # Current tasks:
 #   - Boiler power test: measure effective boiler heat output at stable flow.
 #   - Flow autotune: use the same CM100 container for the step-test flow tuning routine.
+#   - Air purge: fixed 5-minute pump-only purge routine.
 #
 # Safety:
 #   - CM100 is only entered by an explicit request.
@@ -38,7 +39,7 @@ globals:
   - id: oq_commissioning_task_code
     type: int
     restore_value: false
-    initial_value: '0'   # 0=NONE, 1=BOILER_POWER_TEST, 2=FLOW_AUTOTUNE
+    initial_value: '0'   # 0=NONE, 1=BOILER_POWER_TEST, 2=FLOW_AUTOTUNE, 3=AIR_PURGE
 
   - id: oq_commissioning_state_code
     type: int
@@ -98,6 +99,13 @@ button:
           id(oq_flow_autotune_abort) = false;
           id(oq_flow_autotune_active) = false;
           id(oq_flow_autotune_state) = 0;
+          id(oq_air_purge_active) = false;
+          id(oq_air_purge_abort) = false;
+          id(oq_air_purge_state) = 0;
+          id(oq_air_purge_phase) = 0;
+          id(oq_air_purge_target_ipwm) = 1000;
+          id(oq_air_purge_started_ms) = 0;
+          id(oq_air_purge_remaining_s) = 0;
           id(oq_commissioning_status).publish_state("CM100 REQUESTED");
   - platform: template
     id: oq_commissioning_cm100_stop
@@ -111,8 +119,8 @@ button:
           // Stop CM100 immediately when no task is active; otherwise abort the running task.
           const int cm_code = id(oq_control_mode_code);
           const int task_code = id(oq_commissioning_task_code);
-          if (id(oq_commissioning_active) && task_code != 0) {
-            if (task_code == 2) {
+          if (id(oq_commissioning_active) && task_code != oq_commissioning::TASK_NONE) {
+            if (task_code == oq_commissioning::TASK_FLOW_AUTOTUNE) {
               id(oq_flow_autotune_abort) = true;
             } else {
               id(oq_commissioning_abort_requested) = true;
@@ -138,6 +146,13 @@ button:
           id(oq_flow_autotune_abort) = false;
           id(oq_flow_autotune_active) = false;
           id(oq_flow_autotune_state) = 0;
+          id(oq_air_purge_active) = false;
+          id(oq_air_purge_abort) = false;
+          id(oq_air_purge_state) = 0;
+          id(oq_air_purge_phase) = 0;
+          id(oq_air_purge_target_ipwm) = 1000;
+          id(oq_air_purge_started_ms) = 0;
+          id(oq_air_purge_remaining_s) = 0;
           id(oq_commissioning_status).publish_state("IDLE");
 
 binary_sensor:

@@ -85,6 +85,10 @@
       || normalized.includes("VALIDATING")
       || normalized.includes("STARTED")
       || normalized.includes("RECOVER")
+      || normalized.includes("PHASE")
+      || normalized.includes("STEADY")
+      || normalized.includes("PULSE")
+      || normalized.includes("STABILIZE")
       || normalized.includes("STEP");
   }
 
@@ -543,10 +547,11 @@
           renderSettingsGenerationSection(),
           renderSettingsBoilerCvSection(),
           renderSettingsFlowSection(),
-          renderSettingsCommissioningSection(),
           renderSettingsSilentSection(),
           renderSettingsWaterSection(),
         ]
+      : activeGroup === "service"
+        ? [renderSettingsServiceSection()]
       : activeGroup === "heating"
         ? [renderSettingsHeatingSection()]
         : activeGroup === "cooling"
@@ -584,6 +589,10 @@
     }
 
     const activeGroup = SETTINGS_GROUP_IDS.has(state.settingsGroup) ? state.settingsGroup : SETTINGS_GROUPS[0].id;
+    if (activeGroup === "service") {
+      return false;
+    }
+
     const navButtons = nav.querySelectorAll(".oq-settings-group-button");
     if (navButtons.length !== SETTINGS_GROUPS.length) {
       return false;
@@ -973,6 +982,14 @@
         { match: ["VALIDATING"], phase: "Flow valideren", percent: 84 },
         { match: ["RECOVERING"], phase: "Herstellen", percent: 92 },
         { match: ["DONE", "APPLIED"], phase: "Klaar", percent: 100 },
+        { match: ["ABORTED", "FAILED", "ABORT"], phase: "Afgebroken", percent: 100 },
+      ],
+      purge: [
+        { match: ["REQUESTED", "STARTED", "REFUSED"], phase: "Voorbereiden", percent: 8 },
+        { match: ["PHASE1", "STEADY"], phase: "Rustige doorstroming", percent: 22 },
+        { match: ["PHASE2", "PULSE"], phase: "Pulsen", percent: 62 },
+        { match: ["PHASE3", "STABILIZE"], phase: "Stabiliseren", percent: 90 },
+        { match: ["DONE"], phase: "Klaar", percent: 100 },
         { match: ["ABORTED", "FAILED", "ABORT"], phase: "Afgebroken", percent: 100 },
       ],
       cm100: [
@@ -1456,15 +1473,17 @@
     );
   }
 
-  function renderSettingsCm100CommissioningModal() {
+  function renderSettingsServiceSection() {
     const hasBoilerAssist = hasEntity("boilerCvAssistEnabled") && isEntityActive("boilerCvAssistEnabled");
     const cm100Status = getCommissioningStatusValue();
     const cm100Active = isEntityActive("cm100Active");
+    const cm100StatusUpper = String(cm100Status || "").trim().toUpperCase();
+    const cm100Ready = cm100Active || cm100StatusUpper === "CM100 READY";
     const cm100TaskLocked = state.commissioningTaskLock === "cm100";
     const cm100Busy = state.loadingEntities || state.busyAction === "commissioningCm100Start" || state.busyAction === "commissioningCm100Stop" || cm100TaskLocked;
     const cm100Pending = Boolean(state.pendingCommissioningCm100Start);
-    const cm100StartDisabled = cm100Busy || cm100Active;
-    const cm100StopDisabled = cm100Busy || !cm100Active;
+    const cm100StartDisabled = cm100Busy || cm100Ready;
+    const cm100StopDisabled = cm100Busy || !cm100Ready;
     const boilerStatus = getStatusTextValue("boilerPowerTestStatus", "IDLE");
     const boilerProgress = getCommissioningProgressModel(boilerStatus, "boiler");
     const boilerActive = isEntityActive("boilerPowerTestActive");
@@ -1497,35 +1516,64 @@
     const autotuneTaskRunning = !autotuneTaskTerminal &&
       (autotunePending || autotuneTaskLocked || isCommissioningTaskStatusActive(autotuneStatus)) &&
       !autotuneTaskWaitingForCm100;
+    const airPurgeStatus = getStatusTextValue("airPurgeStatus", "IDLE");
+    const airPurgeProgress = getCommissioningProgressModel(airPurgeStatus, "purge");
+    const airPurgeActive = isEntityActive("airPurgeActive");
+    const airPurgeBusy = state.loadingEntities || state.busyAction === "airPurgeStart" || state.busyAction === "airPurgeAbort";
+    const airPurgeControls = Boolean(state.entities.airPurgeStart || state.entities.airPurgeAbort);
+    const airPurgePending = Boolean(state.pendingAirPurgeStart);
+    const airPurgeTaskLocked = state.commissioningTaskLock === "purge";
+    const airPurgeTaskTerminal = isCommissioningTaskStatusTerminal(airPurgeStatus);
+    const airPurgeTaskRunning = !airPurgeTaskTerminal &&
+      (airPurgeActive || airPurgePending || airPurgeTaskLocked || isCommissioningTaskStatusActive(airPurgeStatus));
+    const airPurgeResultReady = /DONE/.test(String(airPurgeStatus || "").toUpperCase());
+    const airPurgeAvailable = Boolean(airPurgeControls || state.entities.airPurgeStatus || state.entities.airPurgeReturnToAuto);
+    const airPurgeRemaining = getSettingsStatValue("airPurgeRemaining", { decimals: 0 });
+    const airPurgePhaseCode = getEntityNumericValue("airPurgePhase");
+    const airPurgePhase = airPurgePhaseCode === 1
+      ? "Rustig"
+      : airPurgePhaseCode === 2
+        ? "Pulsen"
+        : airPurgePhaseCode === 3
+          ? "Stabiliseren"
+          : airPurgeProgress.phase;
+    const airPurgeTargetIpwm = getSettingsStatValue("airPurgeTargetIpwm", { decimals: 0 });
     const flowKpSuggested = getSettingsStatValue("flowKpSuggested", { decimals: 5, trimTrailingZeros: true });
     const flowKiSuggested = getSettingsStatValue("flowKiSuggested", { decimals: 5, trimTrailingZeros: true });
     const boilerResultReady = /DONE|APPLIED/.test(String(boilerStatus || "").toUpperCase());
     const autotuneResultReady = /DONE|APPLIED/.test(String(autotuneStatus || "").toUpperCase());
-    const boilerStatusDisplay = cm100Active
+    const boilerStatusDisplay = cm100Ready
       ? (boilerTaskWaitingForCm100
         ? "Wachten op CM100"
         : (boilerTaskRunning
           ? boilerProgress.phase
           : (boilerResultReady ? "Klaar om toe te passen" : "Klaar om te starten")))
       : "Wachten op CM100";
-    const autotuneStatusDisplay = cm100Active
+    const autotuneStatusDisplay = cm100Ready
       ? (autotuneTaskWaitingForCm100
         ? "Wachten op CM100"
         : (autotuneTaskRunning
           ? autotuneProgress.phase
           : (autotuneResultReady ? "Klaar om toe te passen" : "Klaar om te starten")))
       : "Wachten op CM100";
-    const boilerStartDisabled = !cm100Active || boilerBusy || !boilerControls || autotuneTaskRunning || boilerTaskRunning || autotuneTaskLocked || boilerPending;
+    const airPurgeStatusDisplay = cm100Ready
+      ? (airPurgeTaskRunning
+        ? airPurgeProgress.phase
+        : (airPurgeResultReady ? "Klaar" : "Klaar om te starten"))
+      : "Wachten op CM100";
+    const boilerStartDisabled = !cm100Ready || boilerBusy || !boilerControls || autotuneTaskRunning || airPurgeTaskRunning || boilerTaskRunning || autotuneTaskLocked || airPurgeTaskLocked || boilerPending;
     const boilerAbortDisabled = boilerBusy || !(boilerTaskRunning || boilerTaskLocked || boilerPending);
-    const boilerApplyDisabled = boilerBusy || boilerStartDisabled || !boilerResultReady || autotuneTaskRunning;
-    const autotuneStartDisabled = !cm100Active || autotuneBusy || !autotuneControls || boilerTaskRunning || autotuneTaskRunning || boilerTaskLocked || autotunePending;
+    const boilerApplyDisabled = boilerBusy || boilerStartDisabled || !boilerResultReady || autotuneTaskRunning || airPurgeTaskRunning;
+    const autotuneStartDisabled = !cm100Ready || autotuneBusy || !autotuneControls || boilerTaskRunning || airPurgeTaskRunning || autotuneTaskRunning || boilerTaskLocked || airPurgeTaskLocked || autotunePending;
     const autotuneAbortDisabled = autotuneBusy || !(autotuneTaskRunning || autotuneTaskLocked || autotunePending);
-    const autotuneApplyDisabled = autotuneBusy || autotuneStartDisabled || !autotuneResultReady || boilerTaskRunning;
+    const autotuneApplyDisabled = autotuneBusy || autotuneStartDisabled || !autotuneResultReady || boilerTaskRunning || airPurgeTaskRunning;
+    const airPurgeStartDisabled = !cm100Ready || airPurgeBusy || !airPurgeControls || boilerTaskRunning || autotuneTaskRunning || airPurgeTaskRunning || boilerTaskLocked || autotuneTaskLocked || airPurgePending;
+    const airPurgeAbortDisabled = airPurgeBusy || !(airPurgeTaskRunning || airPurgeTaskLocked || airPurgePending);
 
-    if (cm100Pending && cm100Active) {
+    if (cm100Pending && cm100Ready) {
       state.pendingCommissioningCm100Start = false;
     }
-    if (cm100TaskLocked && (cm100Active || /READY|STOPPED|DONE|FAILED|ABORT|APPLIED|REFUSED/.test(String(cm100Status || "").toUpperCase()))) {
+    if (cm100TaskLocked && (cm100Ready || /READY|STOPPED|DONE|FAILED|ABORT|APPLIED|REFUSED/.test(cm100StatusUpper))) {
       state.commissioningTaskLock = "";
     }
     if (boilerPending && (boilerActive || isCommissioningTaskStatusTerminal(boilerStatus))) {
@@ -1540,20 +1588,30 @@
     if (autotuneTaskLocked && isCommissioningTaskStatusTerminal(autotuneStatus)) {
       state.commissioningTaskLock = "";
     }
+    if (airPurgePending && (airPurgeActive || isCommissioningTaskStatusTerminal(airPurgeStatus))) {
+      state.pendingAirPurgeStart = false;
+    }
+    if (airPurgeTaskLocked && isCommissioningTaskStatusTerminal(airPurgeStatus)) {
+      state.commissioningTaskLock = "";
+    }
 
-    return `
-      <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
-        <section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--scrollable oq-helper-modal--cm100" data-oq-cm100-commissioning-scroller role="dialog" aria-modal="true" aria-labelledby="oq-cm100-commissioning-modal-title">
-          <div class="oq-helper-modal-head oq-helper-modal-head--cm100">
-            <div>
-              <p class="oq-helper-modal-kicker">Installatie</p>
-              <h2 class="oq-helper-modal-title" id="oq-cm100-commissioning-modal-title">Service-stand</h2>
+    const serviceStatusCopy = cm100Ready
+      ? "CM100 is actief en klaar voor service-taken."
+      : "Start de service-stand voordat je een taak uitvoert.";
+
+    return renderSettingsSection(
+      "Service",
+      "Service & commissioning",
+      "Gebruik de service-stand (controlmode CM100) voor testen, afstelling en onderhoudstaken.",
+      `
+        <div class="oq-settings-service-shell">
+          <div class="oq-settings-service-toolbar">
+            <div class="oq-settings-commissioning-teaser-status">
+              <span class="oq-settings-commissioning-teaser-status-label">Huidige status</span>
+              <strong>${escapeHtml(cm100Status)}</strong>
+              <p>${escapeHtml(serviceStatusCopy)}</p>
             </div>
-            <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit service-stand">×</button>
-          </div>
-          <p class="oq-settings-commissioning-modal-copy oq-settings-commissioning-modal-copy--lead">Open de service-stand (controlmode CM100) om testen en afstelling uit te voeren.</p>
-          <div class="oq-settings-commissioning-hero">
-            <div class="oq-settings-commissioning-hero-actions">
+            <div class="oq-settings-commissioning-hero-actions oq-settings-service-toolbar-actions">
               ${state.entities.commissioningCm100Start ? renderNamedActionButton("commissioningCm100Start", "Service starten", "oq-helper-button oq-helper-button--primary", cm100StartDisabled) : ""}
               ${state.entities.commissioningCm100Stop ? renderNamedActionButton("commissioningCm100Stop", "Service stoppen", "oq-helper-button oq-helper-button--ghost", cm100StopDisabled) : ""}
             </div>
@@ -1570,7 +1628,7 @@
                 ? "Wacht totdat CM100 actief is voordat je autotune start."
                 : (autotuneTaskRunning
                   ? "Autotune draait op dit moment."
-                  : (cm100Active ? "CM100 staat klaar. Start de autotune wanneer je wilt." : "Start CM100 eerst en voer daarna autotune uit.")),
+                  : (cm100Ready ? "CM100 staat klaar. Start de autotune wanneer je wilt." : "Start CM100 eerst en voer daarna autotune uit.")),
               progressTask: "autotune",
               actions: `
                 ${state.entities.flowAutotuneStart || state.entities.flowAutotuneAbort ? renderNamedToggleActionButton({
@@ -1599,7 +1657,7 @@
                 ? "Wacht totdat CM100 actief is voordat je de boiler-test start."
                 : (boilerTaskRunning
                   ? "De boiler-test draait op dit moment."
-                  : (cm100Active ? "CM100 staat klaar. Start de boiler-test wanneer je wilt." : "Start CM100 eerst en voer daarna de boilervermogentest uit.")),
+                  : (cm100Ready ? "CM100 staat klaar. Start de boiler-test wanneer je wilt." : "Start CM100 eerst en voer daarna de boilervermogentest uit.")),
               progressTask: "boiler",
               actions: `
                 ${state.entities.boilerPowerTestStart || state.entities.boilerPowerTestAbort ? renderNamedToggleActionButton({
@@ -1618,57 +1676,43 @@
                 ${renderSettingsStaticField("boilerPowerTestResult", "Gemeten testresultaat", "Afgerond resultaat van de laatste boiler-test.", getSettingsStatValue("boilerPowerTestResult"))}
               `,
             }) : ""}
-          </div>
-
-          <div class="oq-helper-modal-actions">
-            <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="close-system-modal">Sluiten</button>
-          </div>
-        </section>
-      </div>
-    `;
-  }
-
-  function renderSettingsCommissioningSection() {
-    const hasCommissioning = Boolean(
-      state.entities.commissioningStatus
-      || state.entities.commissioningCm100Start
-      || state.entities.flowAutotuneStart
-      || state.entities.boilerPowerTestStart,
-    );
-    if (!hasCommissioning) {
-      return "";
-    }
-
-    const cm100Status = getCommissioningStatusValue();
-    const cm100Active = isEntityActive("cm100Active");
-    if (cm100Active || /READY|STOPPED|DONE|FAILED|ABORT|APPLIED/.test(String(cm100Status || "").toUpperCase())) {
-      state.pendingCommissioningCm100Start = false;
-    }
-    const cm100OpenLabel = cm100Active ? "Service-stand bekijken" : "Service-stand openen";
-
-    return renderSettingsSection(
-      "Installatie",
-      "Service & commissioning",
-      "Open de service-stand (controlmode CM100) om de installatie klaar te zetten voor testen en afstelling.",
-      `
-        <div class="oq-settings-commissioning-teaser">
-          <div class="oq-settings-commissioning-teaser-copy">
-            <h4>Service-stand</h4>
-            <p>Open deze werkstand wanneer je wilt testen, afstellen of een meting wilt starten.</p>
-          </div>
-          <div class="oq-settings-commissioning-teaser-panel">
-            <div class="oq-settings-commissioning-teaser-status">
-              <span class="oq-settings-commissioning-teaser-status-label">Huidige status</span>
-              <strong>${escapeHtml(cm100Status)}</strong>
-              <p>${escapeHtml(cm100Active ? "De service-stand staat klaar voor gebruik." : "Start de service-stand om deze te openen.")}</p>
-            </div>
-            <button
-              class="oq-helper-button oq-helper-button--primary oq-settings-commissioning-teaser-button"
-              type="button"
-              data-oq-action="open-cm100-commissioning-modal"
-            >
-              ${escapeHtml(cm100OpenLabel)}
-            </button>
+            ${airPurgeAvailable ? renderCommissioningTaskCard({
+              taskKey: "purge",
+              title: "Ontluchten",
+              copy: "Draait een vaste purge van 5 minuten met rustige doorstroming, pulsen op iPWM 300 en een korte stabilisatie.",
+              subcopy: "Na afloop kun je automatisch terug naar Auto of in de service-stand blijven.",
+              status: airPurgeStatusDisplay,
+              statusCopy: airPurgeTaskRunning
+                ? "Ontluchten draait nu."
+                : (cm100Ready ? "CM100 staat klaar. Start ontluchten wanneer het circuit open staat." : "Start CM100 eerst en voer daarna ontluchten uit."),
+              progressTask: "purge",
+              className: "oq-settings-commissioning-card--span-2",
+              actions: `
+                ${state.entities.airPurgeStart || state.entities.airPurgeAbort ? renderNamedToggleActionButton({
+                  active: airPurgeTaskRunning,
+                  startKey: "airPurgeStart",
+                  stopKey: "airPurgeAbort",
+                  startLabel: "Ontluchten starten",
+                  stopLabel: "Ontluchten stoppen",
+                  startDisabled: airPurgeBusy || airPurgeStartDisabled,
+                  stopDisabled: airPurgeBusy || airPurgeAbortDisabled,
+                }) : ""}
+              `,
+              metrics: `
+                ${renderSettingsStaticField("airPurgeRemaining", "Resterende tijd", "Purge is bewust vast op 5 minuten gehouden.", airPurgeRemaining, "oq-settings-field--compact")}
+                ${renderSettingsStaticField("airPurgePhase", "Fase", "Laat zien welk deel van de purge nu actief is.", airPurgePhase, "oq-settings-field--compact")}
+                ${renderSettingsStaticField("airPurgeTargetIpwm", "Doel iPWM", "Tijdens pulsen gaat de pomp hard naar iPWM 300.", airPurgeTargetIpwm, "oq-settings-field--compact")}
+                ${renderSettingsStaticField("flowSelected", "Actuele flow", "Gemeten flow tijdens het ontluchten.", getSettingsStatValue("flowSelected"), "oq-settings-field--compact")}
+                ${renderSettingsSwitchField(
+                  "airPurgeReturnToAuto",
+                  "Na afloop terug naar Auto",
+                  "Kies of CM100 automatisch wordt verlaten wanneer ontluchten klaar is.",
+                  "OpenQuatt schakelt na purge terug naar Auto.",
+                  "OpenQuatt blijft na purge in service-stand.",
+                  "oq-settings-field--span-2"
+                )}
+              `,
+            }) : ""}
           </div>
         </div>
       `,

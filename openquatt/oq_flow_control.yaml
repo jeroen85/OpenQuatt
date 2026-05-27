@@ -650,6 +650,26 @@ interval:
             return;
           }
 
+          // Air purge owns the temporary iPWM target, flow_control remains output owner.
+          if (id(oq_air_purge_active) &&
+              (cm_code == 100) &&
+              (id(oq_commissioning_task_code) == oq_commissioning::TASK_AIR_PURGE) &&
+              !is_frost) {
+            int purge_pwm = clamp_iPWM((int) id(oq_air_purge_target_ipwm));
+            id(oq_flow_last_pwm) = purge_pwm;
+            stable_cnt = 0;
+            pi_failsafe = false;
+            write_pump_pwm_if_changed(id(hp1_pump_speed), purge_pwm);
+            if (${flow_secondary_enabled} != 0) {
+              write_pump_pwm_if_changed(id(${flow_secondary_pump_speed_id}), purge_pwm);
+            }
+            if (last_mode != "AIR PURGE") {
+              id(oq_flow_mode).publish_state("AIR PURGE");
+              last_mode = "AIR PURGE";
+            }
+            return;
+          }
+
           // Edge 2: leaving MANUAL to AUTO
           if (was_manual && !want_manual) {
             start_auto_transition("MANUAL->AUTO");
