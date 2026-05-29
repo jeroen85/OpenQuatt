@@ -1607,6 +1607,7 @@
         summary: "Berekent een voorstel voor de flowregeling en kan Kp/Ki daarna toepassen.",
         status: autotuneStatusDisplay,
         available: true,
+        openDisabled: isCommissioningTaskStatusWaitingForCm100(autotuneStatusDisplay),
         cardMarkup: renderCommissioningTaskCard({
           taskKey: "autotune",
           title: "Flow autotune",
@@ -1644,6 +1645,7 @@
         summary: "Meet het effectieve boilervermogen bij stabiele flow en kan het resultaat toepassen.",
         status: boilerStatusDisplay,
         available: hasBoilerAssist,
+        openDisabled: isCommissioningTaskStatusWaitingForCm100(boilerStatusDisplay),
         cardMarkup: renderCommissioningTaskCard({
           taskKey: "boiler",
           title: "Boiler power test",
@@ -1681,6 +1683,7 @@
         summary: "Draait een vaste purge van 5 minuten met rustige flow, iPWM 300 pulsen en stabilisatie.",
         status: airPurgeStatusDisplay,
         available: airPurgeAvailable,
+        openDisabled: isCommissioningTaskStatusWaitingForCm100(airPurgeStatusDisplay),
         cardMarkup: renderCommissioningTaskCard({
           taskKey: "purge",
           title: "Ontluchten",
@@ -1742,6 +1745,7 @@
           type="button"
           data-oq-action="open-service-task-modal"
           data-service-task="${escapeHtml(task.key)}"
+          ${task.openDisabled ? "disabled" : ""}
         >
           Openen
         </button>
