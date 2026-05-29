@@ -3,7 +3,7 @@ function renderSettingsView() {
       <section class="oq-helper-panel">
         <p class="oq-helper-label">Instellingen</p>
         <h2 class="oq-helper-section-title">Kies een onderdeel</h2>
-        <p class="oq-helper-section-copy">Werk installatie, regeling, koeling en systeem apart bij. Wijzigingen worden direct toegepast.</p>
+        <p class="oq-helper-section-copy">Werk installatie, service, regeling, koeling en systeem apart bij. Wijzigingen worden direct toegepast.</p>
         ${renderSettingsGroupNav()}
         ${renderSettingsGroupContent()}
       </section>

@@ -20,6 +20,7 @@ esphome:
     - ${heating_curve_logic_header}
     - ${oq_commissioning_logic_header}
     - ${oq_flow_autotune_logic_header}
+    - ${oq_air_purge_logic_header}
     - ${oq_boiler_task_logic_header}
     - ${oq_psram_buffer_header}
   platformio_options:

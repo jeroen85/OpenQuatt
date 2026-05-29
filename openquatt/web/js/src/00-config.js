@@ -186,6 +186,14 @@ const LOGO_MARKUP = `
     flowAutotuneStatus: { domain: "text_sensor", name: "Flow Autotune status", optional: true },
     flowKpSuggested: { domain: "number", name: "Flow Autotune Kp suggested", optional: true },
     flowKiSuggested: { domain: "number", name: "Flow Autotune Ki suggested", optional: true },
+    airPurgeStart: { domain: "button", name: "Air Purge Start", optional: true },
+    airPurgeAbort: { domain: "button", name: "Air Purge Abort", optional: true },
+    airPurgeReturnToAuto: { domain: "switch", name: "Air purge return to Auto", optional: true },
+    airPurgeActive: { domain: "binary_sensor", name: "Air purge active", optional: true },
+    airPurgeStatus: { domain: "text_sensor", name: "Air purge status", optional: true },
+    airPurgeRemaining: { domain: "sensor", name: "Air purge remaining", optional: true },
+    airPurgePhase: { domain: "sensor", name: "Air purge phase", optional: true },
+    airPurgeTargetIpwm: { domain: "sensor", name: "Air purge target iPWM", optional: true },
     controlModeLabel: { domain: "text_sensor", name: "Control Mode (Label)" },
     flowMode: { domain: "text_sensor", name: "Flow Mode" },
     dayMax: { domain: "number", name: "Day max level" },
@@ -329,6 +337,7 @@ const LOGO_MARKUP = `
   const APP_VIEW_IDS = new Set(APP_VIEWS.map((view) => view.id));
   const SETTINGS_GROUPS = [
     { id: "installation", label: "Installatie" },
+    { id: "service", label: "Service" },
     { id: "heating", label: "Verwarmen" },
     { id: "cooling", label: "Koelen" },
     { id: "advanced", label: "Geavanceerd" },
@@ -437,6 +446,14 @@ const LOGO_MARKUP = `
     "flowAutotuneStatus",
     "flowKpSuggested",
     "flowKiSuggested",
+    "airPurgeStart",
+    "airPurgeAbort",
+    "airPurgeReturnToAuto",
+    "airPurgeActive",
+    "airPurgeStatus",
+    "airPurgeRemaining",
+    "airPurgePhase",
+    "airPurgeTargetIpwm",
   ];
   const CIC_COMPATIBILITY_KEYS = ["cicCompatibilityMode"];
   const COOLING_SETTING_KEYS = [

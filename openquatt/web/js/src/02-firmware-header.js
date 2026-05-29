@@ -1973,8 +1973,8 @@
       return renderSettingsBackupImportModal();
     }
 
-    if (state.systemModal === "cm100-commissioning") {
-      return renderSettingsCm100CommissioningModal();
+    if (String(state.systemModal || "").startsWith("service-task-")) {
+      return renderSettingsServiceTaskModal();
     }
 
     if (state.systemModal === "settings-backup-success") {

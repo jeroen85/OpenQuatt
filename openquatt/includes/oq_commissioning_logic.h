@@ -6,6 +6,7 @@ enum TaskCode {
   TASK_NONE = 0,
   TASK_BOILER_POWER_TEST = 1,
   TASK_FLOW_AUTOTUNE = 2,
+  TASK_AIR_PURGE = 3,
 };
 
 enum TaskStateCode {
@@ -53,6 +54,11 @@ inline bool stop_routes_to_commissioning_abort(bool commissioning_active,
 inline bool flow_autotune_mode_valid(int control_mode_code, int task_code) {
   return is_cm100(control_mode_code) &&
          task_selected(task_code, TASK_FLOW_AUTOTUNE);
+}
+
+inline bool air_purge_mode_valid(int control_mode_code, int task_code) {
+  return is_cm100(control_mode_code) &&
+         task_selected(task_code, TASK_AIR_PURGE);
 }
 
 inline bool neutral_cm100_requested(bool request_pending, int task_code) {
