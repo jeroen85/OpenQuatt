@@ -2185,6 +2185,13 @@
       } else {
         patchHeaderDom();
       }
+      if (state.appView === "settings" && String(state.systemModal || "").startsWith("service-task-")) {
+        const nextSettingsSignature = getSettingsRenderSignature();
+        if (nextSettingsSignature !== state.settingsRenderSignature) {
+          render();
+        }
+        return;
+      }
       if (hasOpenOverlay) {
         return;
       }

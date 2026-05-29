@@ -5607,6 +5607,13 @@ return;
 } else {
 patchHeaderDom();
 }
+if (state.appView === "settings" && String(state.systemModal || "").startsWith("service-task-")) {
+const nextSettingsSignature = getSettingsRenderSignature();
+if (nextSettingsSignature !== state.settingsRenderSignature) {
+render();
+}
+return;
+}
 if (hasOpenOverlay) {
 return;
 }
@@ -8632,6 +8639,34 @@ ${renderToggleCard("Aan", enabled, "on", enabledCopy)}
 className,
 );
 }
+function renderSettingsCheckboxSwitchField(key, title, copy, label, className = "") {
+if (!hasEntity(key)) {
+return "";
+}
+const enabled = Boolean(getEntityValue(key));
+const busy = state.loadingEntities || state.busyAction === `switch-${key}`;
+return renderSettingsFieldCard(
+key,
+title,
+copy,
+`
+<button
+class="oq-settings-checkbox-switch${enabled ? " is-active" : ""}"
+type="button"
+role="checkbox"
+aria-checked="${enabled ? "true" : "false"}"
+data-oq-action="toggle-overview-control"
+data-control-key="${escapeHtml(key)}"
+data-control-state="${enabled ? "off" : "on"}"
+${busy ? "disabled" : ""}
+>
+<span class="oq-settings-checkbox-switch-box" aria-hidden="true"></span>
+<span>${escapeHtml(label)}</span>
+</button>
+`,
+className,
+);
+}
 function renderSettingsButtonField(key, title, copy, buttonLabel, action, className = "", options = {}) {
 const busy = state.loadingEntities || state.busyAction === key;
 const disabled = options.disabled === true;
@@ -9742,7 +9777,6 @@ const airPurgePhase = airPurgePhaseCode === 1
 : airPurgePhaseCode === 3
 ? "Stabiliseren"
 : airPurgeProgress.phase;
-const airPurgeTargetIpwm = getSettingsStatValue("airPurgeTargetIpwm", { decimals: 0 });
 const flowKpSuggested = getSettingsStatValue("flowKpSuggested", { decimals: 5, trimTrailingZeros: true });
 const flowKiSuggested = getSettingsStatValue("flowKiSuggested", { decimals: 5, trimTrailingZeros: true });
 const boilerResultReady = /DONE|APPLIED/.test(String(boilerStatus || "").toUpperCase());
@@ -9882,20 +9916,21 @@ ${renderSettingsStaticField("boilerPowerTestResult", "Gemeten testresultaat", "A
 key: "purge",
 title: "Ontluchten",
 label: "Ontluchten",
-summary: "Draait een vaste purge van 5 minuten met rustige flow, iPWM 300 pulsen en stabilisatie.",
+summary: "Draait een vaste ontluchtingsrun van 5 minuten met rustige flow, pomp-pulsen en stabilisatie.",
 status: airPurgeStatusDisplay,
 available: airPurgeAvailable,
 openDisabled: isCommissioningTaskStatusWaitingForCm100(airPurgeStatusDisplay),
 cardMarkup: renderCommissioningTaskCard({
 taskKey: "purge",
 title: "Ontluchten",
-copy: "Draait een vaste purge van 5 minuten met rustige doorstroming, pulsen op iPWM 300 en een korte stabilisatie.",
-subcopy: "Na afloop kun je automatisch terug naar Auto of in de service-stand blijven.",
+copy: "Draait 5 minuten met rustige doorstroming, korte pomp-pulsen en een stabilisatiefase.",
+subcopy: "Na afloop kan OpenQuatt de service mode (CM100) afsluiten of actief laten.",
 status: airPurgeStatusDisplay,
 statusCopy: airPurgeTaskRunning
-? "Ontluchten draait nu."
+? "Ontluchten loopt vast 5 minuten door en stopt daarna automatisch."
 : (cm100Ready ? "CM100 staat klaar. Start ontluchten wanneer het circuit open staat." : "Start CM100 eerst en voer daarna ontluchten uit."),
 progressTask: "purge",
+className: "oq-settings-commissioning-card--air-purge",
 actions: `
 ${state.entities.airPurgeStart || state.entities.airPurgeAbort ? renderNamedToggleActionButton({
 active: airPurgeTaskRunning,
@@ -9908,17 +9943,15 @@ stopDisabled: airPurgeBusy || airPurgeAbortDisabled,
 }) : ""}
 `,
 metrics: `
-${renderSettingsStaticField("airPurgeRemaining", "Resterende tijd", "Purge is bewust vast op 5 minuten gehouden.", airPurgeRemaining, "oq-settings-field--compact")}
-${renderSettingsStaticField("airPurgePhase", "Fase", "Laat zien welk deel van de purge nu actief is.", airPurgePhase, "oq-settings-field--compact")}
-${renderSettingsStaticField("airPurgeTargetIpwm", "Doel iPWM", "Tijdens pulsen gaat de pomp hard naar iPWM 300.", airPurgeTargetIpwm, "oq-settings-field--compact")}
+${renderSettingsStaticField("airPurgeRemaining", "Resterende tijd", "Ontluchten loopt maximaal 5 minuten.", airPurgeRemaining, "oq-settings-field--compact")}
+${renderSettingsStaticField("airPurgePhase", "Fase", "Laat zien welk deel van het ontluchten nu actief is.", airPurgePhase, "oq-settings-field--compact")}
 ${renderSettingsStaticField("flowSelected", "Actuele flow", "Gemeten flow tijdens het ontluchten.", getSettingsStatValue("flowSelected"), "oq-settings-field--compact")}
-${renderSettingsSwitchField(
+${renderSettingsCheckboxSwitchField(
 "airPurgeReturnToAuto",
-"Na afloop terug naar Auto",
-"Kies of CM100 automatisch wordt verlaten wanneer ontluchten klaar is.",
-"OpenQuatt schakelt na purge terug naar Auto.",
-"OpenQuatt blijft na purge in service-stand.",
-"oq-settings-field--span-2"
+"Na afloop",
+"",
+"Service mode (CM100) afsluiten",
+"oq-settings-field--span-2 oq-settings-field--compact"
 )}
 `,
 }),
@@ -9947,7 +9980,7 @@ data-oq-action="open-service-task-modal"
 data-service-task="${escapeHtml(task.key)}"
 ${task.openDisabled ? "disabled" : ""}
 >
-Openen
+${task.openDisabled ? "Wachten op CM100" : "Openen"}
 </button>
 </div>
 `;
