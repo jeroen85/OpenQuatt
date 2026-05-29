@@ -9718,11 +9718,12 @@ const hasBoilerAssist = hasEntity("boilerCvAssistEnabled") && isEntityActive("bo
 const cm100Status = getCommissioningStatusValue();
 const cm100Active = isEntityActive("cm100Active");
 const cm100StatusUpper = String(cm100Status || "").trim().toUpperCase();
-const cm100Ready = cm100Active || cm100StatusUpper === "CM100 READY";
+const cm100WaitingForCm100 = isCommissioningTaskStatusWaitingForCm100(cm100Status);
+const cm100Ready = !cm100WaitingForCm100 && (cm100Active || cm100StatusUpper === "CM100 READY");
 const cm100TaskLocked = state.commissioningTaskLock === "cm100";
 const cm100Busy = state.loadingEntities || state.busyAction === "commissioningCm100Start" || state.busyAction === "commissioningCm100Stop" || cm100TaskLocked;
 const cm100Pending = Boolean(state.pendingCommissioningCm100Start);
-const cm100StartDisabled = cm100Busy || cm100Ready;
+const cm100StartDisabled = cm100Busy || cm100Ready || cm100WaitingForCm100;
 const cm100StopDisabled = cm100Busy || !cm100Ready;
 const boilerStatus = getStatusTextValue("boilerPowerTestStatus", "IDLE");
 const boilerProgress = getCommissioningProgressModel(boilerStatus, "boiler");
@@ -9832,9 +9833,10 @@ state.pendingAirPurgeStart = false;
 if (airPurgeTaskLocked && isCommissioningTaskStatusTerminal(airPurgeStatus)) {
 state.commissioningTaskLock = "";
 }
-const serviceStatusCopy = cm100Ready
-? "CM100 is actief en klaar voor service-taken."
-: "Start de service-stand voordat je een taak uitvoert.";
+const cm100StatusDisplay = cm100WaitingForCm100 ? "Wachten op CM100" : cm100Status;
+const serviceStatusCopy = cm100WaitingForCm100
+? "Service-stand wordt geopend. Wacht tot CM100 klaar staat."
+: (cm100Ready ? "CM100 is actief en klaar voor service-taken." : "Start de service-stand voordat je een taak uitvoert.");
 const tasks = [
 {
 key: "autotune",
@@ -9958,7 +9960,7 @@ ${renderSettingsCheckboxSwitchField(
 },
 ].filter((task) => task.available);
 return {
-cm100Status,
+cm100Status: cm100StatusDisplay,
 cm100StartDisabled,
 cm100StopDisabled,
 serviceStatusCopy,
