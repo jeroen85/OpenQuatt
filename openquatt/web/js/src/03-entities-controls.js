@@ -2809,6 +2809,16 @@
       return;
     }
 
+    if (action === "open-service-task-modal") {
+      const taskKey = String(button.dataset.serviceTask || "").trim();
+      if (["autotune", "boiler", "purge"].includes(taskKey)) {
+        state.systemModal = `service-task-${taskKey}`;
+        render();
+        syncEntities({ forceBulk: true });
+      }
+      return;
+    }
+
     if (action === "press-named-button") {
       const buttonKey = String(button.dataset.oqButtonKey || button.dataset.buttonKey || button.getAttribute("data-oq-button-key") || "").trim();
       if (buttonKey) {

@@ -1973,6 +1973,10 @@
       return renderSettingsBackupImportModal();
     }
 
+    if (String(state.systemModal || "").startsWith("service-task-")) {
+      return renderSettingsServiceTaskModal();
+    }
+
     if (state.systemModal === "settings-backup-success") {
       const notice = state.controlNotice || "Backup hersteld.";
       return `

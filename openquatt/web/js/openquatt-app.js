@@ -3464,6 +3464,9 @@ return renderSettingsBackupRestoreModal();
 if (state.systemModal === "settings-backup-import") {
 return renderSettingsBackupImportModal();
 }
+if (String(state.systemModal || "").startsWith("service-task-")) {
+return renderSettingsServiceTaskModal();
+}
 if (state.systemModal === "settings-backup-success") {
 const notice = state.controlNotice || "Backup hersteld.";
 return `
@@ -6159,6 +6162,15 @@ setAppView("settings");
 setSettingsGroup("service");
 render();
 syncEntities({ forceBulk: true });
+return;
+}
+if (action === "open-service-task-modal") {
+const taskKey = String(button.dataset.serviceTask || "").trim();
+if (["autotune", "boiler", "purge"].includes(taskKey)) {
+state.systemModal = `service-task-${taskKey}`;
+render();
+syncEntities({ forceBulk: true });
+}
 return;
 }
 if (action === "press-named-button") {
@@ -9666,7 +9678,7 @@ ${flowTuning}
 `,
 );
 }
-function renderSettingsServiceSection() {
+function getSettingsServiceModel() {
 const hasBoilerAssist = hasEntity("boilerCvAssistEnabled") && isEntityActive("boilerCvAssistEnabled");
 const cm100Status = getCommissioningStatusValue();
 const cm100Active = isEntityActive("cm100Active");
@@ -9789,25 +9801,15 @@ state.commissioningTaskLock = "";
 const serviceStatusCopy = cm100Ready
 ? "CM100 is actief en klaar voor service-taken."
 : "Start de service-stand voordat je een taak uitvoert.";
-return renderSettingsSection(
-"Service",
-"Service & commissioning",
-"Gebruik de service-stand (controlmode CM100) voor testen, afstelling en onderhoudstaken.",
-`
-<div class="oq-settings-service-shell">
-<div class="oq-settings-service-toolbar">
-<div class="oq-settings-commissioning-teaser-status">
-<span class="oq-settings-commissioning-teaser-status-label">Huidige status</span>
-<strong>${escapeHtml(cm100Status)}</strong>
-<p>${escapeHtml(serviceStatusCopy)}</p>
-</div>
-<div class="oq-settings-commissioning-hero-actions oq-settings-service-toolbar-actions">
-${state.entities.commissioningCm100Start ? renderNamedActionButton("commissioningCm100Start", "Service starten", "oq-helper-button oq-helper-button--primary", cm100StartDisabled) : ""}
-${state.entities.commissioningCm100Stop ? renderNamedActionButton("commissioningCm100Stop", "Service stoppen", "oq-helper-button oq-helper-button--ghost", cm100StopDisabled) : ""}
-</div>
-</div>
-<div class="oq-settings-commissioning-grid${hasBoilerAssist ? "" : " oq-settings-commissioning-grid--single"}">
-${renderCommissioningTaskCard({
+const tasks = [
+{
+key: "autotune",
+title: "Flow autotune",
+label: "Autotune",
+summary: "Berekent een voorstel voor de flowregeling en kan Kp/Ki daarna toepassen.",
+status: autotuneStatusDisplay,
+available: true,
+cardMarkup: renderCommissioningTaskCard({
 taskKey: "autotune",
 title: "Flow autotune",
 copy: "Bereken een voorstel voor de flowregeling en pas dat daarna toe in de installatie-instellingen. Autotune duurt meestal ongeveer 5 tot 10 minuten.",
@@ -9835,8 +9837,16 @@ metrics: `
 ${renderSettingsStaticField("flowKpSuggested", "Voorgestelde Kp", "Kp bepaalt hoe sterk de regeling meteen corrigeert.", flowKpSuggested, "oq-settings-field--compact")}
 ${renderSettingsStaticField("flowKiSuggested", "Voorgestelde Ki", "Ki corrigeert kleine afwijkingen langzaam weg.", flowKiSuggested, "oq-settings-field--compact")}
 `,
-})}
-${hasBoilerAssist ? renderCommissioningTaskCard({
+}),
+},
+{
+key: "boiler",
+title: "Boiler power test",
+label: "Boiler test",
+summary: "Meet het effectieve boilervermogen bij stabiele flow en kan het resultaat toepassen.",
+status: boilerStatusDisplay,
+available: hasBoilerAssist,
+cardMarkup: renderCommissioningTaskCard({
 taskKey: "boiler",
 title: "Boiler power test",
 copy: "Meet het effectieve boilervermogen bij stabiele flow en schrijf daarna een afgerond voorstel weg naar de boilerinstelling. Boilertest duurt meestal ongeveer 5 tot 10 minuten.",
@@ -9864,8 +9874,16 @@ metrics: `
 ${renderSettingsStaticField("boilerHeatPower", "Actueel vermogen", "Live meting tijdens de boiler-test.", boilerHeatPower)}
 ${renderSettingsStaticField("boilerPowerTestResult", "Gemeten testresultaat", "Afgerond resultaat van de laatste boiler-test.", getSettingsStatValue("boilerPowerTestResult"))}
 `,
-}) : ""}
-${airPurgeAvailable ? renderCommissioningTaskCard({
+}),
+},
+{
+key: "purge",
+title: "Ontluchten",
+label: "Ontluchten",
+summary: "Draait een vaste purge van 5 minuten met rustige flow, iPWM 300 pulsen en stabilisatie.",
+status: airPurgeStatusDisplay,
+available: airPurgeAvailable,
+cardMarkup: renderCommissioningTaskCard({
 taskKey: "purge",
 title: "Ontluchten",
 copy: "Draait een vaste purge van 5 minuten met rustige doorstroming, pulsen op iPWM 300 en een korte stabilisatie.",
@@ -9875,7 +9893,6 @@ statusCopy: airPurgeTaskRunning
 ? "Ontluchten draait nu."
 : (cm100Ready ? "CM100 staat klaar. Start ontluchten wanneer het circuit open staat." : "Start CM100 eerst en voer daarna ontluchten uit."),
 progressTask: "purge",
-className: "oq-settings-commissioning-card--span-2",
 actions: `
 ${state.entities.airPurgeStart || state.entities.airPurgeAbort ? renderNamedToggleActionButton({
 active: airPurgeTaskRunning,
@@ -9901,11 +9918,89 @@ ${renderSettingsSwitchField(
 "oq-settings-field--span-2"
 )}
 `,
-}) : ""}
+}),
+},
+].filter((task) => task.available);
+return {
+cm100Status,
+cm100StartDisabled,
+cm100StopDisabled,
+serviceStatusCopy,
+tasks,
+};
+}
+function renderSettingsServiceTaskRow(task) {
+return `
+<div class="oq-settings-system-row oq-settings-system-row--with-action oq-settings-service-row" data-oq-service-task="${escapeHtml(task.key)}">
+<div class="oq-settings-system-row-copy">
+<p class="oq-settings-system-row-label">${escapeHtml(task.label)}</p>
+<strong class="oq-settings-system-row-value">${escapeHtml(task.status)}</strong>
+<p class="oq-settings-system-row-note">${escapeHtml(task.summary)}</p>
+</div>
+<button
+class="oq-helper-button oq-helper-button--ghost"
+type="button"
+data-oq-action="open-service-task-modal"
+data-service-task="${escapeHtml(task.key)}"
+>
+Openen
+</button>
+</div>
+`;
+}
+function renderSettingsServiceSection() {
+const service = getSettingsServiceModel();
+return renderSettingsSection(
+"Service",
+"Service & commissioning",
+"Gebruik de service-stand (controlmode CM100) voor testen, afstelling en onderhoudstaken.",
+`
+<div class="oq-settings-service-shell">
+<div class="oq-settings-service-toolbar">
+<div class="oq-settings-commissioning-teaser-status">
+<span class="oq-settings-commissioning-teaser-status-label">Huidige status</span>
+<strong>${escapeHtml(service.cm100Status)}</strong>
+<p>${escapeHtml(service.serviceStatusCopy)}</p>
+</div>
+<div class="oq-settings-commissioning-hero-actions oq-settings-service-toolbar-actions">
+${state.entities.commissioningCm100Start ? renderNamedActionButton("commissioningCm100Start", "Service starten", "oq-helper-button oq-helper-button--primary", service.cm100StartDisabled) : ""}
+${state.entities.commissioningCm100Stop ? renderNamedActionButton("commissioningCm100Stop", "Service stoppen", "oq-helper-button oq-helper-button--ghost", service.cm100StopDisabled) : ""}
+</div>
+</div>
+<div class="oq-settings-system-summary oq-settings-service-task-list">
+${service.tasks.map((task) => renderSettingsServiceTaskRow(task)).join("")}
 </div>
 </div>
 `,
 );
+}
+function renderSettingsServiceTaskModal() {
+const taskKey = String(state.systemModal || "").replace(/^service-task-/, "");
+const service = getSettingsServiceModel();
+const task = service.tasks.find((item) => item.key === taskKey);
+if (!task) {
+return "";
+}
+return `
+<div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
+<section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--scrollable oq-helper-modal--service-task" role="dialog" aria-modal="true" aria-labelledby="oq-service-task-modal-title">
+<div class="oq-helper-modal-head">
+<div>
+<p class="oq-helper-modal-kicker">Service</p>
+<h2 class="oq-helper-modal-title" id="oq-service-task-modal-title">${escapeHtml(task.title)}</h2>
+</div>
+<button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit ${escapeHtml(task.title)}">×</button>
+</div>
+<p class="oq-helper-modal-copy">${escapeHtml(task.summary)}</p>
+<div class="oq-settings-service-task-modal-body">
+${task.cardMarkup}
+</div>
+<div class="oq-helper-modal-actions">
+<button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="close-system-modal">Sluiten</button>
+</div>
+</section>
+</div>
+`;
 }
 function renderHpGenerationField() {
 if (!hasEntity("hpGeneration")) {

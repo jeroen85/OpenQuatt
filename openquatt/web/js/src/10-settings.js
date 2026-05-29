@@ -1473,7 +1473,7 @@
     );
   }
 
-  function renderSettingsServiceSection() {
+  function getSettingsServiceModel() {
     const hasBoilerAssist = hasEntity("boilerCvAssistEnabled") && isEntityActive("boilerCvAssistEnabled");
     const cm100Status = getCommissioningStatusValue();
     const cm100Active = isEntityActive("cm100Active");
@@ -1599,6 +1599,159 @@
       ? "CM100 is actief en klaar voor service-taken."
       : "Start de service-stand voordat je een taak uitvoert.";
 
+    const tasks = [
+      {
+        key: "autotune",
+        title: "Flow autotune",
+        label: "Autotune",
+        summary: "Berekent een voorstel voor de flowregeling en kan Kp/Ki daarna toepassen.",
+        status: autotuneStatusDisplay,
+        available: true,
+        cardMarkup: renderCommissioningTaskCard({
+          taskKey: "autotune",
+          title: "Flow autotune",
+          copy: "Bereken een voorstel voor de flowregeling en pas dat daarna toe in de installatie-instellingen. Autotune duurt meestal ongeveer 5 tot 10 minuten.",
+          subcopy: "Na toepassen worden de flow-instellingen bijgewerkt.",
+          status: autotuneStatusDisplay,
+          statusCopy: autotuneTaskWaitingForCm100
+            ? "Wacht totdat CM100 actief is voordat je autotune start."
+            : (autotuneTaskRunning
+              ? "Autotune draait op dit moment."
+              : (cm100Ready ? "CM100 staat klaar. Start de autotune wanneer je wilt." : "Start CM100 eerst en voer daarna autotune uit.")),
+          progressTask: "autotune",
+          actions: `
+            ${state.entities.flowAutotuneStart || state.entities.flowAutotuneAbort ? renderNamedToggleActionButton({
+              active: autotuneTaskRunning,
+              startKey: "flowAutotuneStart",
+              stopKey: "flowAutotuneAbort",
+              startLabel: "Autotune starten",
+              stopLabel: "Autotune stoppen",
+              startDisabled: autotuneBusy || autotuneStartDisabled,
+              stopDisabled: autotuneBusy || autotuneAbortDisabled,
+            }) : ""}
+            ${state.entities.flowAutotuneApply ? renderNamedActionButton("flowAutotuneApply", "Toepassen", "oq-helper-button oq-helper-button--ghost", autotuneBusy || autotuneApplyDisabled) : ""}
+          `,
+          metrics: `
+            ${renderSettingsStaticField("flowKpSuggested", "Voorgestelde Kp", "Kp bepaalt hoe sterk de regeling meteen corrigeert.", flowKpSuggested, "oq-settings-field--compact")}
+            ${renderSettingsStaticField("flowKiSuggested", "Voorgestelde Ki", "Ki corrigeert kleine afwijkingen langzaam weg.", flowKiSuggested, "oq-settings-field--compact")}
+          `,
+        }),
+      },
+      {
+        key: "boiler",
+        title: "Boiler power test",
+        label: "Boiler test",
+        summary: "Meet het effectieve boilervermogen bij stabiele flow en kan het resultaat toepassen.",
+        status: boilerStatusDisplay,
+        available: hasBoilerAssist,
+        cardMarkup: renderCommissioningTaskCard({
+          taskKey: "boiler",
+          title: "Boiler power test",
+          copy: "Meet het effectieve boilervermogen bij stabiele flow en schrijf daarna een afgerond voorstel weg naar de boilerinstelling. Boilertest duurt meestal ongeveer 5 tot 10 minuten.",
+          subcopy: `Ingesteld boilervermogen: ${escapeHtml(boilerRatedPower)}`,
+          status: boilerStatusDisplay,
+          statusCopy: boilerTaskWaitingForCm100
+            ? "Wacht totdat CM100 actief is voordat je de boiler-test start."
+            : (boilerTaskRunning
+              ? "De boiler-test draait op dit moment."
+              : (cm100Ready ? "CM100 staat klaar. Start de boiler-test wanneer je wilt." : "Start CM100 eerst en voer daarna de boilervermogentest uit.")),
+          progressTask: "boiler",
+          actions: `
+            ${state.entities.boilerPowerTestStart || state.entities.boilerPowerTestAbort ? renderNamedToggleActionButton({
+              active: boilerTaskRunning,
+              startKey: "boilerPowerTestStart",
+              stopKey: "boilerPowerTestAbort",
+              startLabel: "Boiler test starten",
+              stopLabel: "Boiler test stoppen",
+              startDisabled: boilerBusy || boilerStartDisabled,
+              stopDisabled: boilerBusy || boilerAbortDisabled,
+            }) : ""}
+            ${state.entities.boilerPowerTestApply ? renderNamedActionButton("boilerPowerTestApply", "Toepassen", "oq-helper-button oq-helper-button--ghost", boilerBusy || boilerApplyDisabled) : ""}
+          `,
+          metrics: `
+            ${renderSettingsStaticField("boilerHeatPower", "Actueel vermogen", "Live meting tijdens de boiler-test.", boilerHeatPower)}
+            ${renderSettingsStaticField("boilerPowerTestResult", "Gemeten testresultaat", "Afgerond resultaat van de laatste boiler-test.", getSettingsStatValue("boilerPowerTestResult"))}
+          `,
+        }),
+      },
+      {
+        key: "purge",
+        title: "Ontluchten",
+        label: "Ontluchten",
+        summary: "Draait een vaste purge van 5 minuten met rustige flow, iPWM 300 pulsen en stabilisatie.",
+        status: airPurgeStatusDisplay,
+        available: airPurgeAvailable,
+        cardMarkup: renderCommissioningTaskCard({
+          taskKey: "purge",
+          title: "Ontluchten",
+          copy: "Draait een vaste purge van 5 minuten met rustige doorstroming, pulsen op iPWM 300 en een korte stabilisatie.",
+          subcopy: "Na afloop kun je automatisch terug naar Auto of in de service-stand blijven.",
+          status: airPurgeStatusDisplay,
+          statusCopy: airPurgeTaskRunning
+            ? "Ontluchten draait nu."
+            : (cm100Ready ? "CM100 staat klaar. Start ontluchten wanneer het circuit open staat." : "Start CM100 eerst en voer daarna ontluchten uit."),
+          progressTask: "purge",
+          actions: `
+            ${state.entities.airPurgeStart || state.entities.airPurgeAbort ? renderNamedToggleActionButton({
+              active: airPurgeTaskRunning,
+              startKey: "airPurgeStart",
+              stopKey: "airPurgeAbort",
+              startLabel: "Ontluchten starten",
+              stopLabel: "Ontluchten stoppen",
+              startDisabled: airPurgeBusy || airPurgeStartDisabled,
+              stopDisabled: airPurgeBusy || airPurgeAbortDisabled,
+            }) : ""}
+          `,
+          metrics: `
+            ${renderSettingsStaticField("airPurgeRemaining", "Resterende tijd", "Purge is bewust vast op 5 minuten gehouden.", airPurgeRemaining, "oq-settings-field--compact")}
+            ${renderSettingsStaticField("airPurgePhase", "Fase", "Laat zien welk deel van de purge nu actief is.", airPurgePhase, "oq-settings-field--compact")}
+            ${renderSettingsStaticField("airPurgeTargetIpwm", "Doel iPWM", "Tijdens pulsen gaat de pomp hard naar iPWM 300.", airPurgeTargetIpwm, "oq-settings-field--compact")}
+            ${renderSettingsStaticField("flowSelected", "Actuele flow", "Gemeten flow tijdens het ontluchten.", getSettingsStatValue("flowSelected"), "oq-settings-field--compact")}
+            ${renderSettingsSwitchField(
+              "airPurgeReturnToAuto",
+              "Na afloop terug naar Auto",
+              "Kies of CM100 automatisch wordt verlaten wanneer ontluchten klaar is.",
+              "OpenQuatt schakelt na purge terug naar Auto.",
+              "OpenQuatt blijft na purge in service-stand.",
+              "oq-settings-field--span-2"
+            )}
+          `,
+        }),
+      },
+    ].filter((task) => task.available);
+
+    return {
+      cm100Status,
+      cm100StartDisabled,
+      cm100StopDisabled,
+      serviceStatusCopy,
+      tasks,
+    };
+  }
+
+  function renderSettingsServiceTaskRow(task) {
+    return `
+      <div class="oq-settings-system-row oq-settings-system-row--with-action oq-settings-service-row" data-oq-service-task="${escapeHtml(task.key)}">
+        <div class="oq-settings-system-row-copy">
+          <p class="oq-settings-system-row-label">${escapeHtml(task.label)}</p>
+          <strong class="oq-settings-system-row-value">${escapeHtml(task.status)}</strong>
+          <p class="oq-settings-system-row-note">${escapeHtml(task.summary)}</p>
+        </div>
+        <button
+          class="oq-helper-button oq-helper-button--ghost"
+          type="button"
+          data-oq-action="open-service-task-modal"
+          data-service-task="${escapeHtml(task.key)}"
+        >
+          Openen
+        </button>
+      </div>
+    `;
+  }
+
+  function renderSettingsServiceSection() {
+    const service = getSettingsServiceModel();
+
     return renderSettingsSection(
       "Service",
       "Service & commissioning",
@@ -1608,115 +1761,51 @@
           <div class="oq-settings-service-toolbar">
             <div class="oq-settings-commissioning-teaser-status">
               <span class="oq-settings-commissioning-teaser-status-label">Huidige status</span>
-              <strong>${escapeHtml(cm100Status)}</strong>
-              <p>${escapeHtml(serviceStatusCopy)}</p>
+              <strong>${escapeHtml(service.cm100Status)}</strong>
+              <p>${escapeHtml(service.serviceStatusCopy)}</p>
             </div>
             <div class="oq-settings-commissioning-hero-actions oq-settings-service-toolbar-actions">
-              ${state.entities.commissioningCm100Start ? renderNamedActionButton("commissioningCm100Start", "Service starten", "oq-helper-button oq-helper-button--primary", cm100StartDisabled) : ""}
-              ${state.entities.commissioningCm100Stop ? renderNamedActionButton("commissioningCm100Stop", "Service stoppen", "oq-helper-button oq-helper-button--ghost", cm100StopDisabled) : ""}
+              ${state.entities.commissioningCm100Start ? renderNamedActionButton("commissioningCm100Start", "Service starten", "oq-helper-button oq-helper-button--primary", service.cm100StartDisabled) : ""}
+              ${state.entities.commissioningCm100Stop ? renderNamedActionButton("commissioningCm100Stop", "Service stoppen", "oq-helper-button oq-helper-button--ghost", service.cm100StopDisabled) : ""}
             </div>
           </div>
 
-          <div class="oq-settings-commissioning-grid${hasBoilerAssist ? "" : " oq-settings-commissioning-grid--single"}">
-            ${renderCommissioningTaskCard({
-              taskKey: "autotune",
-              title: "Flow autotune",
-              copy: "Bereken een voorstel voor de flowregeling en pas dat daarna toe in de installatie-instellingen. Autotune duurt meestal ongeveer 5 tot 10 minuten.",
-              subcopy: "Na toepassen worden de flow-instellingen bijgewerkt.",
-              status: autotuneStatusDisplay,
-              statusCopy: autotuneTaskWaitingForCm100
-                ? "Wacht totdat CM100 actief is voordat je autotune start."
-                : (autotuneTaskRunning
-                  ? "Autotune draait op dit moment."
-                  : (cm100Ready ? "CM100 staat klaar. Start de autotune wanneer je wilt." : "Start CM100 eerst en voer daarna autotune uit.")),
-              progressTask: "autotune",
-              actions: `
-                ${state.entities.flowAutotuneStart || state.entities.flowAutotuneAbort ? renderNamedToggleActionButton({
-                  active: autotuneTaskRunning,
-                  startKey: "flowAutotuneStart",
-                  stopKey: "flowAutotuneAbort",
-                  startLabel: "Autotune starten",
-                  stopLabel: "Autotune stoppen",
-                  startDisabled: autotuneBusy || autotuneStartDisabled,
-                  stopDisabled: autotuneBusy || autotuneAbortDisabled,
-                }) : ""}
-                ${state.entities.flowAutotuneApply ? renderNamedActionButton("flowAutotuneApply", "Toepassen", "oq-helper-button oq-helper-button--ghost", autotuneBusy || autotuneApplyDisabled) : ""}
-              `,
-              metrics: `
-                ${renderSettingsStaticField("flowKpSuggested", "Voorgestelde Kp", "Kp bepaalt hoe sterk de regeling meteen corrigeert.", flowKpSuggested, "oq-settings-field--compact")}
-                ${renderSettingsStaticField("flowKiSuggested", "Voorgestelde Ki", "Ki corrigeert kleine afwijkingen langzaam weg.", flowKiSuggested, "oq-settings-field--compact")}
-              `,
-            })}
-            ${hasBoilerAssist ? renderCommissioningTaskCard({
-              taskKey: "boiler",
-              title: "Boiler power test",
-              copy: "Meet het effectieve boilervermogen bij stabiele flow en schrijf daarna een afgerond voorstel weg naar de boilerinstelling. Boilertest duurt meestal ongeveer 5 tot 10 minuten.",
-              subcopy: `Ingesteld boilervermogen: ${escapeHtml(boilerRatedPower)}`,
-              status: boilerStatusDisplay,
-              statusCopy: boilerTaskWaitingForCm100
-                ? "Wacht totdat CM100 actief is voordat je de boiler-test start."
-                : (boilerTaskRunning
-                  ? "De boiler-test draait op dit moment."
-                  : (cm100Ready ? "CM100 staat klaar. Start de boiler-test wanneer je wilt." : "Start CM100 eerst en voer daarna de boilervermogentest uit.")),
-              progressTask: "boiler",
-              actions: `
-                ${state.entities.boilerPowerTestStart || state.entities.boilerPowerTestAbort ? renderNamedToggleActionButton({
-                  active: boilerTaskRunning,
-                  startKey: "boilerPowerTestStart",
-                  stopKey: "boilerPowerTestAbort",
-                  startLabel: "Boiler test starten",
-                  stopLabel: "Boiler test stoppen",
-                  startDisabled: boilerBusy || boilerStartDisabled,
-                  stopDisabled: boilerBusy || boilerAbortDisabled,
-                }) : ""}
-                ${state.entities.boilerPowerTestApply ? renderNamedActionButton("boilerPowerTestApply", "Toepassen", "oq-helper-button oq-helper-button--ghost", boilerBusy || boilerApplyDisabled) : ""}
-              `,
-              metrics: `
-                ${renderSettingsStaticField("boilerHeatPower", "Actueel vermogen", "Live meting tijdens de boiler-test.", boilerHeatPower)}
-                ${renderSettingsStaticField("boilerPowerTestResult", "Gemeten testresultaat", "Afgerond resultaat van de laatste boiler-test.", getSettingsStatValue("boilerPowerTestResult"))}
-              `,
-            }) : ""}
-            ${airPurgeAvailable ? renderCommissioningTaskCard({
-              taskKey: "purge",
-              title: "Ontluchten",
-              copy: "Draait een vaste purge van 5 minuten met rustige doorstroming, pulsen op iPWM 300 en een korte stabilisatie.",
-              subcopy: "Na afloop kun je automatisch terug naar Auto of in de service-stand blijven.",
-              status: airPurgeStatusDisplay,
-              statusCopy: airPurgeTaskRunning
-                ? "Ontluchten draait nu."
-                : (cm100Ready ? "CM100 staat klaar. Start ontluchten wanneer het circuit open staat." : "Start CM100 eerst en voer daarna ontluchten uit."),
-              progressTask: "purge",
-              className: "oq-settings-commissioning-card--span-2",
-              actions: `
-                ${state.entities.airPurgeStart || state.entities.airPurgeAbort ? renderNamedToggleActionButton({
-                  active: airPurgeTaskRunning,
-                  startKey: "airPurgeStart",
-                  stopKey: "airPurgeAbort",
-                  startLabel: "Ontluchten starten",
-                  stopLabel: "Ontluchten stoppen",
-                  startDisabled: airPurgeBusy || airPurgeStartDisabled,
-                  stopDisabled: airPurgeBusy || airPurgeAbortDisabled,
-                }) : ""}
-              `,
-              metrics: `
-                ${renderSettingsStaticField("airPurgeRemaining", "Resterende tijd", "Purge is bewust vast op 5 minuten gehouden.", airPurgeRemaining, "oq-settings-field--compact")}
-                ${renderSettingsStaticField("airPurgePhase", "Fase", "Laat zien welk deel van de purge nu actief is.", airPurgePhase, "oq-settings-field--compact")}
-                ${renderSettingsStaticField("airPurgeTargetIpwm", "Doel iPWM", "Tijdens pulsen gaat de pomp hard naar iPWM 300.", airPurgeTargetIpwm, "oq-settings-field--compact")}
-                ${renderSettingsStaticField("flowSelected", "Actuele flow", "Gemeten flow tijdens het ontluchten.", getSettingsStatValue("flowSelected"), "oq-settings-field--compact")}
-                ${renderSettingsSwitchField(
-                  "airPurgeReturnToAuto",
-                  "Na afloop terug naar Auto",
-                  "Kies of CM100 automatisch wordt verlaten wanneer ontluchten klaar is.",
-                  "OpenQuatt schakelt na purge terug naar Auto.",
-                  "OpenQuatt blijft na purge in service-stand.",
-                  "oq-settings-field--span-2"
-                )}
-              `,
-            }) : ""}
+          <div class="oq-settings-system-summary oq-settings-service-task-list">
+            ${service.tasks.map((task) => renderSettingsServiceTaskRow(task)).join("")}
           </div>
         </div>
       `,
     );
+  }
+
+  function renderSettingsServiceTaskModal() {
+    const taskKey = String(state.systemModal || "").replace(/^service-task-/, "");
+    const service = getSettingsServiceModel();
+    const task = service.tasks.find((item) => item.key === taskKey);
+    if (!task) {
+      return "";
+    }
+
+    return `
+      <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
+        <section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--scrollable oq-helper-modal--service-task" role="dialog" aria-modal="true" aria-labelledby="oq-service-task-modal-title">
+          <div class="oq-helper-modal-head">
+            <div>
+              <p class="oq-helper-modal-kicker">Service</p>
+              <h2 class="oq-helper-modal-title" id="oq-service-task-modal-title">${escapeHtml(task.title)}</h2>
+            </div>
+            <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit ${escapeHtml(task.title)}">×</button>
+          </div>
+          <p class="oq-helper-modal-copy">${escapeHtml(task.summary)}</p>
+          <div class="oq-settings-service-task-modal-body">
+            ${task.cardMarkup}
+          </div>
+          <div class="oq-helper-modal-actions">
+            <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="close-system-modal">Sluiten</button>
+          </div>
+        </section>
+      </div>
+    `;
   }
 
   function renderHpGenerationField() {
