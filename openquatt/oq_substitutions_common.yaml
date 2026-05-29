@@ -16,6 +16,7 @@ project_name: "openquatt.openquatt"                   # ESPHome project identifi
 project_version: "v0.32.0"                            # ESPHome project version shown in firmware metadata.
 release_channel: "main"                               # Firmware release channel shown in diagnostics (`main` or `dev`).
 oq_hardware_profile: "unknown"                        # Compile-time hardware profile id.
+oq_hardware_build_flag: "-DOQ_HARDWARE_HEATPUMP_CONTROLLER_Q=0" # Hardware capability flag for C++ lambdas.
 oq_connection: "unknown"                              # Compile-time connection profile id (`wifi` or `eth`).
 alternate_connection: ""                              # Optional connection target used for controlled Wi-Fi/Ethernet switching.
 alternate_main_release_manifest_url: ""               # Optional main-channel OTA manifest for the alternate connection target.

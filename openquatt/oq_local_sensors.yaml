@@ -7,6 +7,7 @@
 #
 # Current scope:
 #   - DS18B20 local water supply temperature (1-Wire on configured GPIO)
+#   - Heatpump Controller Q PT1000/MAX31865 local water supply temperature
 #
 # ==============================================================================
 
@@ -17,15 +18,38 @@ one_wire:
 
 sensor:
   - platform: dallas_temp
+    id: water_supply_temp_ds18b20
+    name: "Water Supply Temp (DS18B20)"
+    icon: mdi:thermometer
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    disabled_by_default: true
+    accuracy_decimals: 2
+    update_interval: 5s
+    one_wire_id: oq_local_temp_bus
+    index: 0
+    web_server:
+      sorting_group_id: oq_temperatures
+
+  - platform: template
     id: water_supply_temp_esp
     name: "Water Supply Temp"
-    icon: mdi:thermometer
+    icon: mdi:water-thermometer
     unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 2
     update_interval: 5s
-    one_wire_id: oq_local_temp_bus
-    index: 0
+    lambda: |-
+      #if OQ_HARDWARE_HEATPUMP_CONTROLLER_Q
+      if (id(water_supply_temp_pt1000).has_state() && !isnan(id(water_supply_temp_pt1000).state)) {
+        return id(water_supply_temp_pt1000).state;
+      }
+      #endif
+      if (id(water_supply_temp_ds18b20).has_state() && !isnan(id(water_supply_temp_ds18b20).state)) {
+        return id(water_supply_temp_ds18b20).state;
+      }
+      return NAN;
     web_server:
       sorting_group_id: oq_temperatures

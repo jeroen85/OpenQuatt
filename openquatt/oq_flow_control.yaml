@@ -225,6 +225,15 @@ sensor:
     accuracy_decimals: 0
     update_interval: 1s
     lambda: |-
+      #if OQ_HARDWARE_HEATPUMP_CONTROLLER_Q
+      // On the Heatpump Controller Q, V1 uses the central controller flowmeter.
+      // V1.5/V2 keep using the outdoor-unit Modbus flowmeters.
+      if (id(hp_generation).has_state() && id(hp_generation).current_option() == "V1") {
+        if (id(flow_rate_controller).has_state()) return id(flow_rate_controller).state;
+        return NAN;
+      }
+      #endif
+
       const bool secondary_enabled = (${flow_secondary_enabled} != 0);
       float f1 = id(hp1_flow).state;
       float f2 = secondary_enabled ? id(${flow_secondary_flow_sensor_id}).state : NAN;
@@ -275,6 +284,15 @@ binary_sensor:
       static bool state = false;
       static bool mismatch_timer_running = false;
       static uint32_t mismatch_start_ms = 0;
+
+      #if OQ_HARDWARE_HEATPUMP_CONTROLLER_Q
+      if (id(hp_generation).has_state() && id(hp_generation).current_option() == "V1") {
+        state = false;
+        mismatch_timer_running = false;
+        mismatch_start_ms = 0;
+        return false;
+      }
+      #endif
 
       const bool secondary_enabled = (${flow_secondary_enabled} != 0);
       if (!secondary_enabled) {

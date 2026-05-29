@@ -30,6 +30,7 @@ esphome:
     build_flags:
       # Hard-pinned by the topology entrypoint to prevent accidental topology drift.
       - ${oq_topology_build_flag}
+      - ${oq_hardware_build_flag}
   on_boot:
     priority: -100
     then:
