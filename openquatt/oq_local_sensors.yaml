@@ -42,6 +42,7 @@ sensor:
     accuracy_decimals: 2
     update_interval: 5s
     lambda: |-
+      // Prefer the Q-controller PT1000 when configured, otherwise use DS18B20.
       #if OQ_HARDWARE_HEATPUMP_CONTROLLER_Q
       if (id(${oq_local_supply_temp_selector_id}).current_option() == "PT1000") {
         if (id(${oq_local_supply_temp_sensor_id}).has_state() && !isnan(id(${oq_local_supply_temp_sensor_id}).state)) {

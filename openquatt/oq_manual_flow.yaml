@@ -1,0 +1,151 @@
+# ==============================================================================
+# OpenQuatt - Manual Flow Service Task
+# ==============================================================================
+#
+# Goal:
+#   Circulate water inside the shared CM100 service container using a temporary
+#   flow setpoint. Flow-control remains the sole writer of pump iPWM.
+#
+# ==============================================================================
+
+globals:
+  - id: oq_manual_flow_active
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+number:
+  - platform: template
+    id: oq_manual_flow_setpoint_lph
+    name: "Manual flow service setpoint"
+    icon: mdi:waves-arrow-right
+    unit_of_measurement: "L/h"
+    mode: slider
+    min_value: 0
+    max_value: 1500
+    step: 10
+    restore_value: false
+    optimistic: true
+    initial_value: 800
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_hydraulics
+
+button:
+  - platform: template
+    id: oq_manual_flow_start
+    name: "Manual Flow Start"
+    icon: mdi:water-pump
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_hydraulics
+    on_press:
+      - lambda: |-
+          // Arm temporary PI circulation only from the neutral CM100 service state.
+          if (id(oq_control_mode_code) != 100) {
+            id(oq_manual_flow_status).publish_state("REFUSED: CM100 required");
+            return;
+          }
+          if (id(oq_commissioning_task_code) != oq_commissioning::TASK_NONE) {
+            id(oq_manual_flow_status).publish_state("REFUSED: BUSY");
+            return;
+          }
+          id(oq_commissioning_abort_requested) = false;
+          id(oq_commissioning_task_code) = oq_commissioning::TASK_MANUAL_FLOW;
+          id(oq_commissioning_active) = true;
+          id(oq_manual_flow_active) = true;
+          id(oq_manual_flow_status).publish_state("ACTIVE");
+          id(oq_commissioning_status).publish_state("MANUAL FLOW ACTIVE");
+
+  - platform: template
+    id: oq_manual_flow_abort
+    name: "Manual Flow Abort"
+    icon: mdi:stop-circle-outline
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_hydraulics
+    on_press:
+      - lambda: |-
+          id(oq_manual_flow_active) = false;
+          if (id(oq_commissioning_task_code) == oq_commissioning::TASK_MANUAL_FLOW) {
+            id(oq_commissioning_task_code) = oq_commissioning::TASK_NONE;
+          }
+          id(oq_commissioning_abort_requested) = false;
+          id(oq_manual_flow_status).publish_state("STOPPED");
+          id(oq_commissioning_status).publish_state("CM100 READY");
+
+  - platform: template
+    id: oq_manual_flow_apply_heating
+    name: "Apply Manual Flow To Heating"
+    icon: mdi:radiator
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_hydraulics
+    on_press:
+      - lambda: |-
+          auto call = id(oq_flow_setpoint_lph).make_call();
+          call.set_value(id(oq_manual_flow_setpoint_lph).state);
+          call.perform();
+          id(oq_manual_flow_status).publish_state("SAVED FOR HEATING");
+
+  - platform: template
+    id: oq_manual_flow_apply_cooling
+    name: "Apply Manual Flow To Cooling"
+    icon: mdi:snowflake
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_hydraulics
+    on_press:
+      - lambda: |-
+          auto call = id(oq_cooling_flow_setpoint_lph).make_call();
+          call.set_value(id(oq_manual_flow_setpoint_lph).state);
+          call.perform();
+          id(oq_manual_flow_status).publish_state("SAVED FOR COOLING");
+
+binary_sensor:
+  - platform: template
+    id: oq_manual_flow_active_sensor
+    name: "Manual flow active"
+    icon: mdi:water-pump
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_hydraulics
+    lambda: |-
+      return id(oq_manual_flow_active);
+
+sensor:
+  - platform: template
+    id: oq_manual_flow_target_ipwm_sensor
+    name: "Manual flow target iPWM"
+    icon: mdi:fan-speed-3
+    unit_of_measurement: "iPWM"
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_hydraulics
+    lambda: |-
+      return (float) id(oq_flow_last_pwm);
+
+text_sensor:
+  - platform: template
+    id: oq_manual_flow_status
+    name: "Manual flow status"
+    icon: mdi:information-outline
+    update_interval: never
+    web_server:
+      sorting_group_id: oq_hydraulics
+
+interval:
+  - interval: 1s
+    then:
+      - lambda: |-
+          if (id(oq_manual_flow_active) && id(oq_commissioning_abort_requested)) {
+            id(oq_manual_flow_active) = false;
+            if (id(oq_commissioning_task_code) == oq_commissioning::TASK_MANUAL_FLOW) {
+              id(oq_commissioning_task_code) = oq_commissioning::TASK_NONE;
+            }
+            id(oq_commissioning_abort_requested) = false;
+            id(oq_manual_flow_status).publish_state("ABORTED");
+            id(oq_commissioning_status).publish_state("CM100 READY");
+          }

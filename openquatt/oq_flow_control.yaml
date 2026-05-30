@@ -469,9 +469,11 @@ interval:
           auto run_auto_pi = [&](int pwm_seed) -> int {
             int pwm_local = pwm_seed;
             const bool cooling_target = (id(oq_control_mode_code) == 5);
-            float sp_target = cooling_target
-              ? id(oq_cooling_flow_setpoint_lph).state
-              : id(oq_flow_setpoint_lph).state;
+            float sp_target = id(oq_manual_flow_active)
+              ? id(oq_manual_flow_setpoint_lph).state
+              : (cooling_target
+                  ? id(oq_cooling_flow_setpoint_lph).state
+                  : id(oq_flow_setpoint_lph).state);
             float pv = id(flow_rate_selected).state;
 
             // Treat 0 L/h as a valid measurement (no-flow state), not as sensor failure.
@@ -736,7 +738,7 @@ interval:
             case FLOW_MODE_MANUAL: mode_txt = "MANUAL"; break;
             case FLOW_MODE_AUTO_FAILSAFE: mode_txt = "AUTO (failsafe)"; break;
             case FLOW_MODE_AUTO_STARTING: mode_txt = "AUTO (starting)"; break;
-            default: mode_txt = "AUTO"; break;
+            default: mode_txt = id(oq_manual_flow_active) ? "MANUAL FLOW" : "AUTO"; break;
           }
           if (mode_txt != last_mode) {
             id(oq_flow_mode).publish_state(mode_txt.c_str());

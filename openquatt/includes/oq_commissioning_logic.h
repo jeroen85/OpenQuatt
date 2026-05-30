@@ -7,6 +7,7 @@ enum TaskCode {
   TASK_BOILER_POWER_TEST = 1,
   TASK_FLOW_AUTOTUNE = 2,
   TASK_AIR_PURGE = 3,
+  TASK_MANUAL_FLOW = 4,
 };
 
 enum TaskStateCode {
