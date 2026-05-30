@@ -43,8 +43,11 @@ sensor:
     update_interval: 5s
     lambda: |-
       #if OQ_HARDWARE_HEATPUMP_CONTROLLER_Q
-      if (id(${oq_local_supply_temp_sensor_id}).has_state() && !isnan(id(${oq_local_supply_temp_sensor_id}).state)) {
-        return id(${oq_local_supply_temp_sensor_id}).state;
+      if (id(${oq_local_supply_temp_selector_id}).current_option() == "PT1000") {
+        if (id(${oq_local_supply_temp_sensor_id}).has_state() && !isnan(id(${oq_local_supply_temp_sensor_id}).state)) {
+          return id(${oq_local_supply_temp_sensor_id}).state;
+        }
+        return NAN;
       }
       #endif
       if (id(water_supply_temp_ds18b20).has_state() && !isnan(id(water_supply_temp_ds18b20).state)) {
