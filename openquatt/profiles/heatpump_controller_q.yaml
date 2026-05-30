@@ -67,10 +67,10 @@ sensor:
     rtd_wires: ${hpcq_pt1000_rtd_wires}
     mains_filter: "50 Hz"
     filters:
-      - clamp:
-          min_value: -10
-          max_value: 100
-          ignore_out_of_range: true
+      - lambda: |-
+          if (isnan(x)) return x;
+          if (x < -10.0f || x > 100.0f) return {};
+          return x;
     web_server:
       sorting_group_id: oq_temperatures
 
