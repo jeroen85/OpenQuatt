@@ -106,6 +106,7 @@ STRICT_TOP_LEVEL_ORDER_RULES = {
         "oq_flow_autotune",
         "oq_air_purge",
         "oq_manual_flow",
+        "oq_manual_hp",
         "oq_boiler_test",
         "oq_boiler_control",
         "oq_energy",

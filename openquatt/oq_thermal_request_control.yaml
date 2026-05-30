@@ -685,6 +685,7 @@ interval:
           constexpr int request_strategy_cooling = 1;
           constexpr int request_strategy_curve = 2;
           constexpr int request_strategy_power_house = 3;
+          constexpr int request_strategy_manual_hp = 4;
 
           // =========================
           // 1) Demand path (0..20)
@@ -929,7 +930,72 @@ interval:
           };
 
           // =========================
-          // 1d) Inactive-CM fast exit
+          // 1d) Manual HP service path
+          // Keep CM100 circulation active while sending explicit requests through
+          // the shared actuator. All downstream actuator guards remain normative.
+          // =========================
+          if (id(oq_manual_hp_active) && cm_code == 100) {
+            const bool cooling_mode =
+                id(oq_manual_hp_mode).has_state() &&
+                id(oq_manual_hp_mode).current_option() == "Cooling";
+            const int manual_mode_code = cooling_mode ? 1 : 2;
+            int hp1_req = std::max(0, std::min(10, (int) roundf(id(oq_manual_hp1_level).state)));
+            #if OQ_TOPOLOGY_DUO
+            int hp2_req = std::max(0, std::min(10, (int) roundf(id(oq_manual_hp2_level).state)));
+            #else
+            int hp2_req = 0;
+            #endif
+            const bool cooling_floor_trip =
+                cooling_mode &&
+                id(cooling_effective_min_supply_temp).has_state() &&
+                !isnan(id(cooling_effective_min_supply_temp).state) &&
+                id(oq_system_supply_temp).has_state() &&
+                !isnan(id(oq_system_supply_temp).state) &&
+                id(oq_system_supply_temp).state <= (id(cooling_effective_min_supply_temp).state + 0.10f);
+            const bool manual_flow_ok =
+                id(flow_rate_selected).has_state() &&
+                !isnan(id(flow_rate_selected).state) &&
+                id(flow_rate_selected).state >= (float) ${oq_cm_min_flow_lph};
+            const bool safety_stop =
+                id(oq_water_temp_hard_trip_active) ||
+                id(oq_lowflow_fault_active) ||
+                !manual_flow_ok ||
+                cooling_floor_trip;
+            if (id(oq_manual_hp_stop_requested)) {
+              hp1_req = 0;
+              hp2_req = 0;
+            }
+            if (safety_stop || startup_inhibit_active) {
+              hp1_req = 0;
+              hp2_req = 0;
+            } else {
+              if (hp1_req == 0) hp1_req = min_runtime_hold_level(true);
+              #if OQ_TOPOLOGY_DUO
+              if (hp2_req == 0) hp2_req = min_runtime_hold_level(false);
+              #endif
+            }
+            publish_optimizer_reason("manual_hp");
+            publish_request(
+              manual_mode_code,
+              hp1_req,
+              hp2_req,
+              request_strategy_manual_hp,
+              0,
+              safety_stop ? "manual_hp_safety_stop" :
+              (startup_inhibit_active ? "manual_hp_startup_inhibit" : "manual_hp"));
+            id(oq_actuator_hp1_req) = hp1_req;
+            id(oq_actuator_hp2_req) = hp2_req;
+            #if OQ_TOPOLOGY_DUO
+            const int debug_hp2_applied = id(${hc_secondary_last_applied_level_id});
+            #else
+            const int debug_hp2_applied = 0;
+            #endif
+            publish_debug(hp1_req, hp2_req, id(hp1_last_applied_level), debug_hp2_applied);
+            return;
+          }
+
+          // =========================
+          // 1e) Inactive-CM fast exit
           // Shared standby/hold behavior runs before any request-selection logic.
           // =========================
           if (!cm_allows_hp) {

@@ -708,6 +708,13 @@
   text-transform: uppercase;
 }
 
+.oq-settings-manual-hp-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
 .oq-settings-commissioning-card--air-purge .oq-settings-commissioning-metrics {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -913,6 +920,10 @@
   }
 
   .oq-settings-manual-flow-control {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .oq-settings-manual-hp-controls {
     grid-template-columns: minmax(0, 1fr);
   }
 

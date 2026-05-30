@@ -1,0 +1,221 @@
+# ==============================================================================
+# OpenQuatt - Manual Heat-Pump Service Task
+# ==============================================================================
+#
+# Goal:
+#   Request guarded per-HP compressor levels inside CM100 for service checks.
+#   The shared thermal actuator remains the only writer of HP mode and levels.
+#
+# ==============================================================================
+
+globals:
+  - id: oq_manual_hp_active
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+  - id: oq_manual_hp_stop_requested
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+select:
+  - platform: template
+    id: oq_manual_hp_mode
+    name: "Manual HP service mode"
+    icon: mdi:heat-pump
+    optimistic: true
+    restore_value: false
+    initial_option: "Heating"
+    options:
+      - "Heating"
+      - "Cooling"
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_hydraulics
+
+number:
+  - platform: template
+    id: oq_manual_hp1_level
+    name: "Manual HP1 compressor level"
+    icon: mdi:speedometer
+    mode: slider
+    min_value: 0
+    max_value: 10
+    step: 1
+    restore_value: false
+    optimistic: true
+    initial_value: 0
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_hydraulics
+
+  - platform: template
+    id: oq_manual_hp2_level
+    name: "Manual HP2 compressor level"
+    icon: mdi:speedometer
+    mode: slider
+    min_value: 0
+    max_value: 10
+    step: 1
+    restore_value: false
+    optimistic: true
+    initial_value: 0
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_hydraulics
+
+button:
+  - platform: template
+    id: oq_manual_hp_start
+    name: "Manual HP Start"
+    icon: mdi:heat-pump-outline
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_hydraulics
+    on_press:
+      - lambda: |-
+          // Arm guarded thermal requests only from the neutral CM100 service state.
+          if (id(oq_control_mode_code) != 100) {
+            id(oq_manual_hp_status).publish_state("REFUSED: CM100 required");
+            return;
+          }
+          if (id(oq_commissioning_task_code) != oq_commissioning::TASK_NONE) {
+            id(oq_manual_hp_status).publish_state("REFUSED: BUSY");
+            return;
+          }
+          auto hp1 = id(oq_manual_hp1_level).make_call();
+          hp1.set_value(0);
+          hp1.perform();
+          auto hp2 = id(oq_manual_hp2_level).make_call();
+          hp2.set_value(0);
+          hp2.perform();
+          id(oq_commissioning_abort_requested) = false;
+          id(oq_manual_hp_stop_requested) = false;
+          id(oq_commissioning_task_code) = oq_commissioning::TASK_MANUAL_HP;
+          id(oq_commissioning_active) = true;
+          id(oq_manual_hp_active) = true;
+          id(oq_manual_hp_status).publish_state("ACTIVE: select mode and compressor level");
+          id(oq_commissioning_status).publish_state("MANUAL HP ACTIVE");
+
+  - platform: template
+    id: oq_manual_hp_abort
+    name: "Manual HP Abort"
+    icon: mdi:stop-circle-outline
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_hydraulics
+    on_press:
+      - lambda: |-
+          // Request a controlled stop; keep circulation active until the actuator reaches level 0.
+          auto hp1 = id(oq_manual_hp1_level).make_call();
+          hp1.set_value(0);
+          hp1.perform();
+          auto hp2 = id(oq_manual_hp2_level).make_call();
+          hp2.set_value(0);
+          hp2.perform();
+          id(oq_manual_hp_stop_requested) = true;
+          id(oq_manual_hp_status).publish_state("STOPPING: waiting for compressor release");
+
+binary_sensor:
+  - platform: template
+    id: oq_manual_hp_active_sensor
+    name: "Manual HP active"
+    icon: mdi:heat-pump
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_hydraulics
+    lambda: |-
+      // Expose service-task ownership to the dashboard.
+      return id(oq_manual_hp_active);
+
+text_sensor:
+  - platform: template
+    id: oq_manual_hp_status
+    name: "Manual HP status"
+    icon: mdi:information-outline
+    update_interval: never
+    web_server:
+      sorting_group_id: oq_hydraulics
+
+interval:
+  - interval: 1s
+    then:
+      - lambda: |-
+          // Latch safety stops into zero requests so a technician must re-arm levels explicitly.
+          if (!id(oq_manual_hp_active)) return;
+          const bool cooling_mode =
+              id(oq_manual_hp_mode).has_state() &&
+              id(oq_manual_hp_mode).current_option() == "Cooling";
+          const bool cooling_floor_trip =
+              cooling_mode &&
+              id(cooling_effective_min_supply_temp).has_state() &&
+              !isnan(id(cooling_effective_min_supply_temp).state) &&
+              id(oq_system_supply_temp).has_state() &&
+              !isnan(id(oq_system_supply_temp).state) &&
+              id(oq_system_supply_temp).state <= (id(cooling_effective_min_supply_temp).state + 0.10f);
+          const bool any_thermal_level =
+              (int) roundf(id(oq_manual_hp1_level).state) > 0 ||
+              (int) roundf(id(oq_manual_hp2_level).state) > 0 ||
+              id(hp1_last_applied_level) > 0
+              #if OQ_TOPOLOGY_DUO
+              || id(${manual_hp_secondary_last_applied_level_id}) > 0
+              #endif
+              ;
+          const bool safety_stop =
+              any_thermal_level &&
+              (id(oq_water_temp_hard_trip_active) ||
+               id(oq_lowflow_fault_active) ||
+               !id(flow_rate_selected).has_state() ||
+               isnan(id(flow_rate_selected).state) ||
+               id(flow_rate_selected).state < (float) ${oq_cm_min_flow_lph} ||
+               cooling_floor_trip);
+          if (safety_stop) {
+            if ((int) roundf(id(oq_manual_hp1_level).state) > 0) {
+              auto hp1 = id(oq_manual_hp1_level).make_call();
+              hp1.set_value(0);
+              hp1.perform();
+            }
+            if ((int) roundf(id(oq_manual_hp2_level).state) > 0) {
+              auto hp2 = id(oq_manual_hp2_level).make_call();
+              hp2.set_value(0);
+              hp2.perform();
+            }
+            id(oq_manual_hp_status).publish_state(
+                (id(oq_lowflow_fault_active) ||
+                 !id(flow_rate_selected).has_state() ||
+                 isnan(id(flow_rate_selected).state) ||
+                 id(flow_rate_selected).state < (float) ${oq_cm_min_flow_lph}) ? "SAFETY STOP: LOW FLOW" :
+                (id(oq_water_temp_hard_trip_active) ? "SAFETY STOP: WATER TEMPERATURE" :
+                                                     "SAFETY STOP: COOLING FLOOR"));
+          }
+          if (id(oq_commissioning_abort_requested)) {
+            id(oq_commissioning_abort_requested) = false;
+            id(oq_manual_hp_stop_requested) = true;
+          }
+          if (id(oq_manual_hp_stop_requested)) {
+            auto hp1 = id(oq_manual_hp1_level).make_call();
+            hp1.set_value(0);
+            hp1.perform();
+            auto hp2 = id(oq_manual_hp2_level).make_call();
+            hp2.set_value(0);
+            hp2.perform();
+            #if OQ_TOPOLOGY_DUO
+            const bool all_stopped =
+                id(hp1_last_applied_level) <= 0 &&
+                id(${manual_hp_secondary_last_applied_level_id}) <= 0;
+            #else
+            const bool all_stopped = id(hp1_last_applied_level) <= 0;
+            #endif
+            if (all_stopped) {
+              id(oq_manual_hp_active) = false;
+              id(oq_manual_hp_stop_requested) = false;
+              if (id(oq_commissioning_task_code) == oq_commissioning::TASK_MANUAL_HP) {
+                id(oq_commissioning_task_code) = oq_commissioning::TASK_NONE;
+              }
+              id(oq_manual_hp_status).publish_state("STOPPED");
+              id(oq_commissioning_status).publish_state("CM100 READY");
+            } else {
+              id(oq_manual_hp_status).publish_state("STOPPING: minimum runtime hold");
+            }
+          }
