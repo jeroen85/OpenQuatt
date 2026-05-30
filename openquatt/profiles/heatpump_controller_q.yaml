@@ -85,7 +85,7 @@ sensor:
     filters:
       - lambda: |-
           if (isnan(x)) return x;
-          if (x < -10.0f || x > 100.0f) return {};
+          if (x < -10.0f || x > 100.0f) return NAN;
           return x;
     web_server:
       sorting_group_id: oq_temperatures

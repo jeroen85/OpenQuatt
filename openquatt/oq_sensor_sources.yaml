@@ -361,8 +361,15 @@ sensor:
         //   (normally average, but with mismatch guard inside flow_rate_hp_avg)
         // This keeps the main flow source selector compact while still allowing
         // per-flowmeter inspection and explicit selection for local Duo flow.
+        // On Q-edition V1, the controller flowmeter is the primary local meter.
         const auto local_mode = id(oq_duo_outdoor_flow_mode).current_option();
         if (local_mode == "Flowmeter HP1") {
+          #if OQ_HARDWARE_HEATPUMP_CONTROLLER_Q
+          if (id(hp_generation).has_state() && id(hp_generation).current_option() == "V1") {
+            if (id(${oq_controller_flow_sensor_id}).has_state()) return id(${oq_controller_flow_sensor_id}).state;
+            return NAN;
+          }
+          #endif
           if (id(hp1_flow).has_state()) return id(hp1_flow).state;
           return NAN;
         }
