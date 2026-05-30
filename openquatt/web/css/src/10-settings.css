@@ -1340,6 +1340,10 @@
   z-index: 3;
 }
 
+.oq-settings-choice-card-shell .oq-settings-info.is-open {
+  z-index: 20;
+}
+
 .oq-settings-choice-card-shell--with-image .oq-settings-info {
   top: 12px;
 }
@@ -2363,8 +2367,8 @@
   top: calc(100% + 10px);
   right: 0;
   z-index: 4;
-  width: min(280px, calc(100% - 16px));
-  max-width: min(280px, calc(100% - 16px));
+  width: min(300px, calc(100vw - 48px));
+  max-width: min(300px, calc(100vw - 48px));
   padding: 12px 14px;
   border-radius: var(--oq-helper-radius-md);
   border: 1px solid var(--oq-helper-line);

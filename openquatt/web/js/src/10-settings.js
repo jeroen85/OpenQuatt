@@ -1849,14 +1849,14 @@
 
     const descriptions = {
       V1: {
-        copy: "Voor Quatt V1.",
+        copy: "Voor Quatt V1 en Quatt V1 + V1.5 combinaties.",
         image: HP_GENERATION_IMAGE_V1,
         alt: "Quatt Hybrid V1 en V1.5",
         infoTitle: "V1",
-        infoCopy: "Model: AMM4\nKenmerken: Flowmeter bij CV-ketel en vorstbeveiligingsklep buiten de buitenunit.",
+        infoCopy: "Model: AMM4\nKenmerken: Flowmeter bij CV-ketel en vorstbeveiligingsklep buiten de buitenunit. Ook geschikt voor gemengde V1/V1.5 duo's.",
       },
       "V1.5": {
-        copy: "Voor Quatt V1.5.",
+        copy: "Voor Quatt V1.5-installaties.",
         image: HP_GENERATION_IMAGE_V1,
         alt: "Quatt Hybrid V1 en V1.5",
         infoTitle: "V1.5",
