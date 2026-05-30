@@ -8,6 +8,8 @@ substitutions:
   <<: !include ../../openquatt/topology/duo.yaml
   oq_hardware_profile: "heatpump_controller_q"
   oq_hardware_build_flag: "-DOQ_HARDWARE_HEATPUMP_CONTROLLER_Q=1"
+  oq_local_supply_temp_sensor_id: "water_supply_temp_pt1000"
+  oq_controller_flow_sensor_id: "flow_rate_controller"
   oq_topology_build_flag: "-DOQ_TOPOLOGY_DUO=1"
   main_release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-heatpump-controller-q-duo-eth-ota.manifest.json"
   dev_release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/download/dev-latest/openquatt-heatpump-controller-q-duo-eth-ota.manifest.json"

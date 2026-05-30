@@ -229,7 +229,7 @@ sensor:
       // On the Heatpump Controller Q, V1 uses the central controller flowmeter.
       // V1.5/V2 keep using the outdoor-unit Modbus flowmeters.
       if (id(hp_generation).has_state() && id(hp_generation).current_option() == "V1") {
-        if (id(flow_rate_controller).has_state()) return id(flow_rate_controller).state;
+        if (id(${oq_controller_flow_sensor_id}).has_state()) return id(${oq_controller_flow_sensor_id}).state;
         return NAN;
       }
       #endif
