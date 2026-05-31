@@ -33,6 +33,7 @@ oq_flow_autotune_logic_header: "../../openquatt/includes/oq_flow_autotune_logic.
 oq_air_purge_logic_header: "../../openquatt/includes/oq_air_purge_logic.h" # Air purge runtime controller.
 oq_boiler_task_logic_header: "../../openquatt/includes/oq_boiler_task_logic.h" # Boiler power-test runtime controller.
 oq_manual_flow_logic_header: "../../openquatt/includes/oq_manual_flow_logic.h" # Manual-flow service runtime controller.
+oq_manual_hp_logic_header: "../../openquatt/includes/oq_manual_hp_logic.h" # Manual heat-pump service runtime controller.
 oq_psram_buffer_header: "../../components/openquatt_common/PsramBuffer.h" # Shared PSRAM-backed buffer helper for custom components.
 external_components_path: "../../components"              # Local custom component directory from nested config entrypoints.
 oq_timezone: "Europe/Amsterdam"                         # SNTP timezone used by runtime timestamps.

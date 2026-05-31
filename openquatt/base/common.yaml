@@ -23,6 +23,7 @@ esphome:
     - ${oq_air_purge_logic_header}
     - ${oq_boiler_task_logic_header}
     - ${oq_manual_flow_logic_header}
+    - ${oq_manual_hp_logic_header}
     - ${oq_psram_buffer_header}
   platformio_options:
     extra_scripts:
