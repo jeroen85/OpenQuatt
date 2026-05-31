@@ -111,8 +111,6 @@ STRICT_TOP_LEVEL_ORDER_RULES = {
         "oq_boiler_control",
         "oq_energy",
         "oq_cic",
-        "oq_cic_compatibility",
-        "oq_cic_compatibility_hp1",
         "oq_ha_inputs",
         "oq_local_sensors",
         "oq_sensor_sources",
@@ -138,7 +136,6 @@ STRICT_TOP_LEVEL_ORDER_RULES = {
     ),
     "openquatt/topology/duo_packages.yaml": (
         "heatpump2",
-        "oq_cic_compatibility_hp2",
     ),
     "openquatt/topology/single.yaml": (
         "secondary_hp_id",
@@ -153,9 +150,46 @@ STRICT_TOP_LEVEL_ORDER_RULES = {
         "sensor_sources_duo_flow_internal",
         "ot_secondary_present",
     ),
+    "openquatt/profiles/heatpump_controller_q_cic_compatibility.yaml": (
+        "substitutions",
+        "uart",
+        "modbus",
+        "packages",
+        "web_server",
+    ),
+    "openquatt/profiles/heatpump_controller_q_cic_compatibility_duo.yaml": (
+        "packages",
+    ),
 }
 
-NESTED_KEY_ORDER_RULES = {}
+NESTED_KEY_ORDER_RULES = {
+    ("configs/heatpump_controller_q/single_wifi.yaml", "packages"): (
+        "openquatt_profile_heatpump_controller_q",
+        "openquatt_profile_heatpump_controller_q_cic_compatibility",
+        "openquatt_base_common",
+        "openquatt_connection_wifi",
+    ),
+    ("configs/heatpump_controller_q/single_eth.yaml", "packages"): (
+        "openquatt_profile_heatpump_controller_q",
+        "openquatt_profile_heatpump_controller_q_cic_compatibility",
+        "openquatt_base_common",
+        "openquatt_connection_eth",
+    ),
+    ("configs/heatpump_controller_q/duo_wifi.yaml", "packages"): (
+        "openquatt_profile_heatpump_controller_q",
+        "openquatt_profile_heatpump_controller_q_cic_compatibility",
+        "openquatt_profile_heatpump_controller_q_cic_compatibility_duo",
+        "openquatt_base_common",
+        "openquatt_connection_wifi",
+    ),
+    ("configs/heatpump_controller_q/duo_eth.yaml", "packages"): (
+        "openquatt_profile_heatpump_controller_q",
+        "openquatt_profile_heatpump_controller_q_cic_compatibility",
+        "openquatt_profile_heatpump_controller_q_cic_compatibility_duo",
+        "openquatt_base_common",
+        "openquatt_connection_eth",
+    ),
+}
 
 SUBSTITUTION_SECTION_ORDER_RULES = {
     "openquatt/oq_substitutions_common.yaml": (
@@ -168,7 +202,6 @@ SUBSTITUTION_SECTION_ORDER_RULES = {
         "FLOW AUTOTUNE",
         "BOILER CONTROL",
         "CIC FEED",
-        "CIC COMPATIBILITY",
         "HA INPUT ENTITY MAPPING",
         "HP IO (MODBUS POLLING)",
     ),
