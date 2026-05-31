@@ -41,21 +41,7 @@ button:
       sorting_group_id: oq_hydraulics
     on_press:
       - lambda: |-
-          // Arm temporary PI circulation only from the neutral CM100 service state.
-          if (id(oq_control_mode_code) != 100) {
-            id(oq_manual_flow_status).publish_state("REFUSED: CM100 required");
-            return;
-          }
-          if (id(oq_commissioning_task_code) != oq_commissioning::TASK_NONE) {
-            id(oq_manual_flow_status).publish_state("REFUSED: BUSY");
-            return;
-          }
-          id(oq_commissioning_abort_requested) = false;
-          id(oq_commissioning_task_code) = oq_commissioning::TASK_MANUAL_FLOW;
-          id(oq_commissioning_active) = true;
-          id(oq_manual_flow_active) = true;
-          id(oq_manual_flow_status).publish_state("ACTIVE");
-          id(oq_commissioning_status).publish_state("MANUAL FLOW ACTIVE");
+          oq_manual_flow::runtime().start();
 
   - platform: template
     id: oq_manual_flow_abort
@@ -66,13 +52,7 @@ button:
       sorting_group_id: oq_hydraulics
     on_press:
       - lambda: |-
-          id(oq_manual_flow_active) = false;
-          if (id(oq_commissioning_task_code) == oq_commissioning::TASK_MANUAL_FLOW) {
-            id(oq_commissioning_task_code) = oq_commissioning::TASK_NONE;
-          }
-          id(oq_commissioning_abort_requested) = false;
-          id(oq_manual_flow_status).publish_state("STOPPED");
-          id(oq_commissioning_status).publish_state("CM100 READY");
+          oq_manual_flow::runtime().abort_or_clear();
 
   - platform: template
     id: oq_manual_flow_apply_heating
@@ -83,10 +63,7 @@ button:
       sorting_group_id: oq_hydraulics
     on_press:
       - lambda: |-
-          auto call = id(oq_flow_setpoint_lph).make_call();
-          call.set_value(id(oq_manual_flow_setpoint_lph).state);
-          call.perform();
-          id(oq_manual_flow_status).publish_state("SAVED FOR HEATING");
+          oq_manual_flow::runtime().apply_to_heating();
 
   - platform: template
     id: oq_manual_flow_apply_cooling
@@ -97,10 +74,7 @@ button:
       sorting_group_id: oq_hydraulics
     on_press:
       - lambda: |-
-          auto call = id(oq_cooling_flow_setpoint_lph).make_call();
-          call.set_value(id(oq_manual_flow_setpoint_lph).state);
-          call.perform();
-          id(oq_manual_flow_status).publish_state("SAVED FOR COOLING");
+          oq_manual_flow::runtime().apply_to_cooling();
 
 binary_sensor:
   - platform: template
@@ -140,27 +114,4 @@ interval:
   - interval: 1s
     then:
       - lambda: |-
-          if (!id(oq_manual_flow_active)) return;
-
-          // Release the temporary PI override when CM100 or task ownership is lost.
-          const bool owns_task =
-              id(oq_commissioning_task_code) == oq_commissioning::TASK_MANUAL_FLOW;
-          const bool cm100_exited = id(oq_control_mode_code) != 100;
-          if (!owns_task || cm100_exited || id(oq_commissioning_abort_requested)) {
-            id(oq_manual_flow_active) = false;
-            if (!owns_task) {
-              id(oq_manual_flow_status).publish_state("ABORTED: task ownership lost");
-              return;
-            }
-            id(oq_commissioning_task_code) = oq_commissioning::TASK_NONE;
-            id(oq_commissioning_abort_requested) = false;
-            if (cm100_exited) {
-              id(oq_commissioning_active) = false;
-              id(oq_commissioning_request_pending) = false;
-              id(oq_manual_flow_status).publish_state("ABORTED: CM100 exited");
-              id(oq_commissioning_status).publish_state("IDLE");
-            } else {
-              id(oq_manual_flow_status).publish_state("ABORTED");
-              id(oq_commissioning_status).publish_state("CM100 READY");
-            }
-          }
+          oq_manual_flow::runtime().tick();
