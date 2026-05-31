@@ -25,6 +25,9 @@
       airPurgeRemaining: 0,
       airPurgePhase: 0,
       airPurgeTargetIpwm: 0,
+      manualFlowStatusText: "IDLE",
+      manualFlowSetpoint: 800,
+      manualFlowTargetIpwm: 400,
       boilerResult: 0,
       boilerConfidence: 0,
       flowKpSuggested: 0,
@@ -245,6 +248,7 @@
     const boilerTaskActive = task === "boiler" && cm100Active && !["done", "applied", "aborted", "refused"].includes(phase.toLowerCase());
     const autotuneTaskActive = task === "autotune" && cm100Active && !["done", "applied", "aborted", "refused"].includes(phase.toLowerCase());
     const airPurgeTaskActive = task === "purge" && cm100Active && !["done", "aborted", "refused"].includes(phase.toLowerCase());
+    const manualFlowTaskActive = task === "manual-flow" && cm100Active && !["done", "aborted", "refused"].includes(phase.toLowerCase());
     const commissioningLabel = "CM100 - Commissioning";
     const commissioningStatus = String(state.commissioning.globalStatus || "CM100 READY");
 
@@ -258,6 +262,8 @@
           ? "CM100 flow autotune"
           : airPurgeTaskActive
             ? "CM100 air purge"
+            : manualFlowTaskActive
+              ? "MANUAL FLOW"
             : "CM100 idle")
       : "Gepauzeerd");
 
@@ -265,7 +271,7 @@
       const purgeFlow = airPurgeTaskActive
         ? (phase === "pulse_hard" ? 980 : phase === "stabilize" ? 760 : 680)
         : 0;
-      setNumber("Flow average (Selected)", boilerTaskActive ? 800 : autotuneTaskActive ? 790 : purgeFlow, "L/h");
+      setNumber("Flow average (Selected)", boilerTaskActive ? 800 : autotuneTaskActive ? 790 : manualFlowTaskActive ? state.commissioning.manualFlowSetpoint - 8 : purgeFlow, "L/h");
       setNumber("Total Heat Power", boilerTaskActive ? Number(getEntity("sensor", "Boiler Heat Power")?.value || 0) : 0, "W");
       setNumber("Total Power Input", boilerTaskActive ? (single ? 560 : 640) : airPurgeTaskActive ? (single ? 48 : 78) : single ? 12 : 18, "W");
       setBinary("Boiler active", task === "boiler" && ["boiler settling", "measuring"].includes(phase.toLowerCase()));
@@ -291,6 +297,9 @@
     setNumber("Air purge remaining", state.commissioning.airPurgeRemaining, "s");
     setNumber("Air purge phase", state.commissioning.airPurgePhase, "");
     setNumber("Air purge target iPWM", state.commissioning.airPurgeTargetIpwm, "iPWM");
+    setBinary("Manual flow active", manualFlowTaskActive);
+    setText("text_sensor", "Manual flow status", String(state.commissioning.manualFlowStatusText || "IDLE"));
+    setNumber("Manual flow target iPWM", state.commissioning.manualFlowTargetIpwm, "iPWM");
   }
 
   function generateAuthToken() {
@@ -676,6 +685,10 @@
     setEntity("button", "Apply Flow Autotune Kp-Ki", {});
     setEntity("button", "Air Purge Start", {});
     setEntity("button", "Air Purge Abort", {});
+    setEntity("button", "Manual Flow Start", {});
+    setEntity("button", "Manual Flow Abort", {});
+    setEntity("button", "Apply Manual Flow To Heating", {});
+    setEntity("button", "Apply Manual Flow To Cooling", {});
     setEntity("switch", "Air purge return to Auto", { value: true, state: true });
     setEntity("binary_sensor", "Boiler power test active", { value: false, state: false });
     setEntity("text_sensor", "Boiler power test status", { state: "IDLE", value: "IDLE" });
@@ -689,6 +702,9 @@
     setEntity("sensor", "Air purge remaining", { value: 0, uom: "s" });
     setEntity("sensor", "Air purge phase", { value: 0, uom: "" });
     setEntity("sensor", "Air purge target iPWM", { value: 0, uom: "iPWM" });
+    setEntity("binary_sensor", "Manual flow active", { value: false, state: false });
+    setEntity("text_sensor", "Manual flow status", { state: "IDLE", value: "IDLE" });
+    setEntity("sensor", "Manual flow target iPWM", { value: 400, uom: "iPWM" });
     setEntity("select", "Quatt Hybrid version", {
       value: "V1.5",
       state: "V1.5",
@@ -747,6 +763,7 @@
     [
       ["Flow Setpoint", 800, 0, 1500, 10, "L/h"],
       ["Cooling Flow Setpoint", 800, 0, 1500, 10, "L/h"],
+      ["Manual flow service setpoint", 800, 0, 1500, 10, "L/h"],
       ["Manual iPWM", 400, 50, 850, 1, "iPWM"],
       ["Flow PI Kp", 0.35, 0, 5, 0.01, ""],
       ["Flow PI Ki", 0.05, 0, 5, 0.01, ""],
@@ -1641,6 +1658,9 @@
 
   function handleNumberSet(name, value) {
     setNumber(name, Number(value));
+    if (name === "Manual flow service setpoint") {
+      state.commissioning.manualFlowSetpoint = Number(value);
+    }
     syncOverviewTelemetry(state.installation === "single");
     updateSummary();
     notifyMockUpdated();
@@ -1698,15 +1718,18 @@
       state.commissioning.airPurgeRemaining = 0;
       state.commissioning.airPurgePhase = 0;
       state.commissioning.airPurgeTargetIpwm = 0;
+      state.commissioning.manualFlowStatusText = "IDLE";
       setText("text_sensor", "Boiler power test status", "IDLE");
       setText("text_sensor", "Flow Autotune status", "IDLE");
       setText("text_sensor", "Air purge status", "IDLE");
+      setText("text_sensor", "Manual flow status", "IDLE");
       setNumber("Air purge remaining", 0, "s");
       setNumber("Air purge phase", 0, "");
       setNumber("Air purge target iPWM", 0, "iPWM");
       setNumber("Flow average (Selected)", 0, "L/h");
       setBinary("Boiler power test active", false);
       setBinary("Air purge active", false);
+      setBinary("Manual flow active", false);
       setBinary("Boiler active", false);
     } else if (name === "CM100 Stop") {
       clearCommissioningTimers();
@@ -1722,15 +1745,18 @@
       state.commissioning.airPurgeRemaining = 0;
       state.commissioning.airPurgePhase = 0;
       state.commissioning.airPurgeTargetIpwm = 0;
+      state.commissioning.manualFlowStatusText = "IDLE";
       setText("text_sensor", "Boiler power test status", "IDLE");
       setText("text_sensor", "Flow Autotune status", "IDLE");
       setText("text_sensor", "Air purge status", "IDLE");
+      setText("text_sensor", "Manual flow status", "IDLE");
       setNumber("Air purge remaining", 0, "s");
       setNumber("Air purge phase", 0, "");
       setNumber("Air purge target iPWM", 0, "iPWM");
       setBinary("CM100 active", false);
       setBinary("Boiler power test active", false);
       setBinary("Air purge active", false);
+      setBinary("Manual flow active", false);
       setBinary("Boiler active", false);
     } else if (name === "Boiler Power Test Start") {
       if (!state.commissioning.cm100Active) {
@@ -1955,6 +1981,39 @@
       if (state.commissioning.cm100Active) {
         setText("text_sensor", "Flow Mode", "CM100 idle");
       }
+    } else if (name === "Manual Flow Start") {
+      if (!state.commissioning.cm100Active) {
+        state.commissioning.manualFlowStatusText = "REFUSED: CM100 required";
+        setText("text_sensor", "Manual flow status", "REFUSED: CM100 required");
+      } else {
+        state.commissioning.globalStatus = "MANUAL FLOW ACTIVE";
+        state.commissioning.manualFlowStatusText = "ACTIVE";
+        state.commissioning.manualFlowSetpoint = Number(getEntity("number", "Manual flow service setpoint")?.value || 800);
+        setCommissioningPhase("manual-flow", "active");
+        setText("text_sensor", "Commissioning status", "MANUAL FLOW ACTIVE");
+        setText("text_sensor", "Manual flow status", "ACTIVE");
+        setText("text_sensor", "Flow Mode", "MANUAL FLOW");
+        setBinary("Manual flow active", true);
+        setNumber("Flow average (Selected)", state.commissioning.manualFlowSetpoint - 8, "L/h");
+        setNumber("Manual flow target iPWM", state.commissioning.manualFlowTargetIpwm, "iPWM");
+      }
+    } else if (name === "Manual Flow Abort") {
+      state.commissioning.globalStatus = state.commissioning.cm100Active ? "CM100 READY" : "CM0 - Standby";
+      state.commissioning.manualFlowStatusText = "STOPPED";
+      setCommissioningPhase("manual-flow", "aborted");
+      setText("text_sensor", "Commissioning status", state.commissioning.globalStatus);
+      setText("text_sensor", "Manual flow status", "STOPPED");
+      setText("text_sensor", "Flow Mode", state.commissioning.cm100Active ? "CM100 idle" : "Gepauzeerd");
+      setBinary("Manual flow active", false);
+      setNumber("Flow average (Selected)", 0, "L/h");
+    } else if (name === "Apply Manual Flow To Heating") {
+      setNumber("Flow Setpoint", Number(getEntity("number", "Manual flow service setpoint")?.value || 0), "L/h");
+      state.commissioning.manualFlowStatusText = "SAVED FOR HEATING";
+      setText("text_sensor", "Manual flow status", "SAVED FOR HEATING");
+    } else if (name === "Apply Manual Flow To Cooling") {
+      setNumber("Cooling Flow Setpoint", Number(getEntity("number", "Manual flow service setpoint")?.value || 0), "L/h");
+      state.commissioning.manualFlowStatusText = "SAVED FOR COOLING";
+      setText("text_sensor", "Manual flow status", "SAVED FOR COOLING");
     } else if (name === "Complete setup") {
       state.complete = true;
     } else if (name === "Reset setup state") {

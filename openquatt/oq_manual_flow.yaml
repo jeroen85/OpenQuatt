@@ -1,0 +1,117 @@
+# ==============================================================================
+# OpenQuatt - Manual Flow Service Task
+# ==============================================================================
+#
+# Goal:
+#   Circulate water inside the shared CM100 service container using a temporary
+#   flow setpoint. Flow-control remains the sole writer of pump iPWM.
+#
+# ==============================================================================
+
+globals:
+  - id: oq_manual_flow_active
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+number:
+  - platform: template
+    id: oq_manual_flow_setpoint_lph
+    name: "Manual flow service setpoint"
+    icon: mdi:waves-arrow-right
+    unit_of_measurement: "L/h"
+    mode: slider
+    min_value: 0
+    max_value: 1500
+    step: 10
+    restore_value: false
+    optimistic: true
+    initial_value: 800
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_hydraulics
+
+button:
+  - platform: template
+    id: oq_manual_flow_start
+    name: "Manual Flow Start"
+    icon: mdi:water-pump
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_hydraulics
+    on_press:
+      - lambda: |-
+          oq_manual_flow::runtime().start();
+
+  - platform: template
+    id: oq_manual_flow_abort
+    name: "Manual Flow Abort"
+    icon: mdi:stop-circle-outline
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_hydraulics
+    on_press:
+      - lambda: |-
+          oq_manual_flow::runtime().abort_or_clear();
+
+  - platform: template
+    id: oq_manual_flow_apply_heating
+    name: "Apply Manual Flow To Heating"
+    icon: mdi:radiator
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_hydraulics
+    on_press:
+      - lambda: |-
+          oq_manual_flow::runtime().apply_to_heating();
+
+  - platform: template
+    id: oq_manual_flow_apply_cooling
+    name: "Apply Manual Flow To Cooling"
+    icon: mdi:snowflake
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_hydraulics
+    on_press:
+      - lambda: |-
+          oq_manual_flow::runtime().apply_to_cooling();
+
+binary_sensor:
+  - platform: template
+    id: oq_manual_flow_active_sensor
+    name: "Manual flow active"
+    icon: mdi:water-pump
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_hydraulics
+    lambda: |-
+      return id(oq_manual_flow_active);
+
+sensor:
+  - platform: template
+    id: oq_manual_flow_target_ipwm_sensor
+    name: "Manual flow target iPWM"
+    icon: mdi:fan-speed-3
+    unit_of_measurement: "iPWM"
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_hydraulics
+    lambda: |-
+      return (float) id(oq_flow_last_pwm);
+
+text_sensor:
+  - platform: template
+    id: oq_manual_flow_status
+    name: "Manual flow status"
+    icon: mdi:information-outline
+    update_interval: never
+    web_server:
+      sorting_group_id: oq_hydraulics
+
+interval:
+  - interval: 1s
+    then:
+      - lambda: |-
+          oq_manual_flow::runtime().tick();

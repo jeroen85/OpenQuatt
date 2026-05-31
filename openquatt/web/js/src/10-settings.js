@@ -1075,6 +1075,7 @@
     statusCopy,
     progressTask,
     actions = "",
+    controls = "",
     metrics = "",
     className = "",
   }) {
@@ -1088,6 +1089,7 @@
           </div>
         </div>
         ${actions ? `<div class="oq-settings-commissioning-card-actions">${actions}</div>` : ""}
+        ${controls}
         <div class="oq-settings-quickstart-status oq-settings-quickstart-status--compact oq-settings-commissioning-card-status">
           <div class="oq-settings-quickstart-status-row">
             <div>
@@ -1568,6 +1570,15 @@
         : airPurgePhaseCode === 3
           ? "Stabiliseren"
           : airPurgeProgress.phase;
+    const manualFlowStatus = getStatusTextValue("manualFlowStatus", "IDLE");
+    const manualFlowActive = isEntityActive("manualFlowActive");
+    const manualFlowBusy = state.loadingEntities || state.busyAction === "manualFlowStart" || state.busyAction === "manualFlowAbort";
+    const manualFlowControls = Boolean(state.entities.manualFlowStart || state.entities.manualFlowAbort);
+    const manualFlowPending = Boolean(state.pendingManualFlowStart);
+    const manualFlowTaskLocked = state.commissioningTaskLock === "manual-flow";
+    const manualFlowTaskTerminal = isCommissioningTaskStatusTerminal(manualFlowStatus);
+    const manualFlowTaskRunning = !manualFlowTaskTerminal &&
+      (manualFlowActive || manualFlowPending || manualFlowTaskLocked || isCommissioningTaskStatusActive(manualFlowStatus));
     const flowKpSuggested = getSettingsStatValue("flowKpSuggested", { decimals: 5, trimTrailingZeros: true });
     const flowKiSuggested = getSettingsStatValue("flowKiSuggested", { decimals: 5, trimTrailingZeros: true });
     const boilerResultReady = /DONE|APPLIED/.test(String(boilerStatus || "").toUpperCase());
@@ -1591,14 +1602,19 @@
         ? airPurgeProgress.phase
         : (airPurgeResultReady ? "Klaar" : "Klaar om te starten"))
       : "Wachten op CM100";
-    const boilerStartDisabled = !cm100Ready || boilerBusy || !boilerControls || autotuneTaskRunning || airPurgeTaskRunning || boilerTaskRunning || autotuneTaskLocked || airPurgeTaskLocked || boilerPending;
+    const manualFlowStatusDisplay = cm100Ready
+      ? (manualFlowTaskRunning ? "Actief" : "Klaar om te starten")
+      : "Wachten op CM100";
+    const boilerStartDisabled = !cm100Ready || boilerBusy || !boilerControls || autotuneTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || boilerTaskRunning || autotuneTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || boilerPending;
     const boilerAbortDisabled = boilerBusy || !(boilerTaskRunning || boilerTaskLocked || boilerPending);
     const boilerApplyDisabled = boilerBusy || boilerStartDisabled || !boilerResultReady || autotuneTaskRunning || airPurgeTaskRunning;
-    const autotuneStartDisabled = !cm100Ready || autotuneBusy || !autotuneControls || boilerTaskRunning || airPurgeTaskRunning || autotuneTaskRunning || boilerTaskLocked || airPurgeTaskLocked || autotunePending;
+    const autotuneStartDisabled = !cm100Ready || autotuneBusy || !autotuneControls || boilerTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || autotuneTaskRunning || boilerTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || autotunePending;
     const autotuneAbortDisabled = autotuneBusy || !(autotuneTaskRunning || autotuneTaskLocked || autotunePending);
     const autotuneApplyDisabled = autotuneBusy || autotuneStartDisabled || !autotuneResultReady || boilerTaskRunning || airPurgeTaskRunning;
-    const airPurgeStartDisabled = !cm100Ready || airPurgeBusy || !airPurgeControls || boilerTaskRunning || autotuneTaskRunning || airPurgeTaskRunning || boilerTaskLocked || autotuneTaskLocked || airPurgePending;
+    const airPurgeStartDisabled = !cm100Ready || airPurgeBusy || !airPurgeControls || boilerTaskRunning || autotuneTaskRunning || manualFlowTaskRunning || airPurgeTaskRunning || boilerTaskLocked || autotuneTaskLocked || manualFlowTaskLocked || airPurgePending;
     const airPurgeAbortDisabled = airPurgeBusy || !(airPurgeTaskRunning || airPurgeTaskLocked || airPurgePending);
+    const manualFlowStartDisabled = !cm100Ready || manualFlowBusy || !manualFlowControls || boilerTaskRunning || autotuneTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || boilerTaskLocked || autotuneTaskLocked || airPurgeTaskLocked || manualFlowPending;
+    const manualFlowAbortDisabled = manualFlowBusy || !(manualFlowTaskRunning || manualFlowTaskLocked || manualFlowPending);
 
     if (cm100Pending && cm100Ready) {
       state.pendingCommissioningCm100Start = false;
@@ -1624,6 +1640,12 @@
     if (airPurgeTaskLocked && isCommissioningTaskStatusTerminal(airPurgeStatus)) {
       state.commissioningTaskLock = "";
     }
+    if (manualFlowPending && (manualFlowActive || isCommissioningTaskStatusTerminal(manualFlowStatus))) {
+      state.pendingManualFlowStart = false;
+    }
+    if (manualFlowTaskLocked && (manualFlowActive || isCommissioningTaskStatusTerminal(manualFlowStatus))) {
+      state.commissioningTaskLock = "";
+    }
 
     const cm100StatusDisplay = cm100WaitingForCm100 ? "Wachten op CM100" : cm100Status;
     const serviceStatusCopy = cm100WaitingForCm100
@@ -1631,6 +1653,49 @@
       : (cm100Ready ? "CM100 is actief en klaar voor service-taken." : "Start de service-stand voordat je een taak uitvoert.");
 
     const tasks = [
+      {
+        key: "manual-flow",
+        title: "Handmatige flowregeling",
+        label: "Handmatige flow",
+        summary: "Laat de waterpomp draaien op een tijdelijk flow-setpoint en luister naar het leidingwerk.",
+        status: manualFlowStatusDisplay,
+        available: Boolean(manualFlowControls || state.entities.manualFlowStatus),
+        openDisabled: !cm100Ready,
+        cardMarkup: renderCommissioningTaskCard({
+          taskKey: "manual-flow",
+          title: "Handmatige flowregeling",
+          copy: "Gebruik een tijdelijk flow-setpoint om het leidingwerk rustig te controleren. De normale instellingen wijzigen pas wanneer je een waarde bewust overneemt.",
+          subcopy: "De bestaande PI-regeling blijft de pomp aansturen.",
+          status: manualFlowStatusDisplay,
+          statusCopy: manualFlowTaskRunning
+            ? "De waterpomp draait. Pas het tijdelijke setpoint aan en controleer de gemeten flow."
+            : (cm100Ready ? "CM100 staat klaar. Kies een tijdelijk setpoint en start de waterpomp." : "Start CM100 eerst."),
+          progressTask: "",
+          controls: `
+            <div class="oq-settings-manual-flow-control">
+              ${renderSettingsSliderField("manualFlowSetpoint", "Tijdelijke gewenste flow", "Pas deze waarde aan terwijl de waterpomp draait.", "oq-settings-field--compact")}
+              ${state.entities.manualFlowStart || state.entities.manualFlowAbort ? renderNamedToggleActionButton({
+                active: manualFlowTaskRunning,
+                startKey: "manualFlowStart",
+                stopKey: "manualFlowAbort",
+                startLabel: "Waterpomp starten",
+                stopLabel: "Waterpomp stoppen",
+                startDisabled: manualFlowBusy || manualFlowStartDisabled,
+                stopDisabled: manualFlowBusy || manualFlowAbortDisabled,
+              }) : ""}
+            </div>
+          `,
+          metrics: `
+            <p class="oq-settings-manual-flow-results-title">Resultaten</p>
+            ${renderSettingsStaticField("flowSelected", "Gemeten flow", "Actuele doorstroming in het watercircuit.", getSettingsStatValue("flowSelected"), "oq-settings-field--compact")}
+            ${renderSettingsStaticField("manualFlowTargetIpwm", "Actuele pompstand", "Door de PI-regeling aangevraagde pompstand.", getSettingsStatValue("manualFlowTargetIpwm"), "oq-settings-field--compact")}
+          `,
+        }),
+        modalActions: `
+          ${state.entities.manualFlowApplyHeating ? renderNamedActionButton("manualFlowApplyHeating", "Overnemen voor verwarmen", "oq-helper-button oq-helper-button--ghost", manualFlowBusy) : ""}
+          ${state.entities.manualFlowApplyCooling ? renderNamedActionButton("manualFlowApplyCooling", "Overnemen voor koelen", "oq-helper-button oq-helper-button--ghost", manualFlowBusy) : ""}
+        `,
+      },
       {
         key: "autotune",
         title: "Flow autotune",
@@ -1835,6 +1900,7 @@
             ${task.cardMarkup}
           </div>
           <div class="oq-helper-modal-actions">
+            ${task.modalActions || ""}
             <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="close-system-modal">Sluiten</button>
           </div>
         </section>

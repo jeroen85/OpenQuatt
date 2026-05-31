@@ -194,6 +194,14 @@ airPurgeStatus: { domain: "text_sensor", name: "Air purge status", optional: tru
 airPurgeRemaining: { domain: "sensor", name: "Air purge remaining", optional: true },
 airPurgePhase: { domain: "sensor", name: "Air purge phase", optional: true },
 airPurgeTargetIpwm: { domain: "sensor", name: "Air purge target iPWM", optional: true },
+manualFlowStart: { domain: "button", name: "Manual Flow Start", optional: true },
+manualFlowAbort: { domain: "button", name: "Manual Flow Abort", optional: true },
+manualFlowApplyHeating: { domain: "button", name: "Apply Manual Flow To Heating", optional: true },
+manualFlowApplyCooling: { domain: "button", name: "Apply Manual Flow To Cooling", optional: true },
+manualFlowActive: { domain: "binary_sensor", name: "Manual flow active", optional: true },
+manualFlowStatus: { domain: "text_sensor", name: "Manual flow status", optional: true },
+manualFlowSetpoint: { domain: "number", name: "Manual flow service setpoint", optional: true },
+manualFlowTargetIpwm: { domain: "sensor", name: "Manual flow target iPWM", optional: true },
 controlModeLabel: { domain: "text_sensor", name: "Control Mode (Label)" },
 flowMode: { domain: "text_sensor", name: "Flow Mode" },
 dayMax: { domain: "number", name: "Day max level" },
@@ -451,6 +459,14 @@ const COMMISSIONING_STATE_KEYS = [
 "airPurgeRemaining",
 "airPurgePhase",
 "airPurgeTargetIpwm",
+"manualFlowStart",
+"manualFlowAbort",
+"manualFlowApplyHeating",
+"manualFlowApplyCooling",
+"manualFlowActive",
+"manualFlowStatus",
+"manualFlowSetpoint",
+"manualFlowTargetIpwm",
 ];
 const CIC_COMPATIBILITY_KEYS = ["cicCompatibilityMode"];
 const COOLING_SETTING_KEYS = [
@@ -1009,6 +1025,7 @@ pendingCommissioningCm100Start: false,
 pendingBoilerPowerTestStart: false,
 pendingFlowAutotuneStart: false,
 pendingAirPurgeStart: false,
+pendingManualFlowStart: false,
 commissioningTaskLock: "",
 commissioningBoilerHeatPowerDisplay: "",
 headerRenderSignature: "",
@@ -5817,6 +5834,12 @@ const numeric = parseLooseNumber(event.target.value);
 if (!Number.isNaN(numeric)) {
 const normalized = normalizeNumber(field, event.target.value);
 state.drafts[field] = normalized;
+if (event.target.type === "range") {
+const sliderValue = event.target.closest(".oq-helper-slider-field")?.querySelector(".oq-helper-slider-meta strong");
+if (sliderValue) {
+sliderValue.textContent = formatValue(field, normalized);
+}
+}
 }
 }
 }
@@ -6173,7 +6196,7 @@ return;
 }
 if (action === "open-service-task-modal") {
 const taskKey = String(button.dataset.serviceTask || "").trim();
-if (["autotune", "boiler", "purge"].includes(taskKey)) {
+if (["autotune", "boiler", "purge", "manual-flow"].includes(taskKey)) {
 state.systemModal = `service-task-${taskKey}`;
 render();
 syncEntities({ forceBulk: true });
@@ -6192,12 +6215,14 @@ state.pendingCommissioningCm100Start = false;
 state.pendingBoilerPowerTestStart = false;
 state.pendingFlowAutotuneStart = false;
 state.pendingAirPurgeStart = false;
+state.pendingManualFlowStart = false;
 state.commissioningTaskLock = "";
 state.commissioningBoilerHeatPowerDisplay = "";
 } else if (buttonKey === "boilerPowerTestStart") {
 state.pendingBoilerPowerTestStart = true;
 state.pendingFlowAutotuneStart = false;
 state.pendingAirPurgeStart = false;
+state.pendingManualFlowStart = false;
 state.commissioningTaskLock = "boiler";
 state.commissioningBoilerHeatPowerDisplay = "";
 } else if (buttonKey === "boilerPowerTestAbort" || buttonKey === "boilerPowerTestApply") {
@@ -6206,6 +6231,7 @@ state.commissioningTaskLock = "boiler";
 state.pendingFlowAutotuneStart = true;
 state.pendingBoilerPowerTestStart = false;
 state.pendingAirPurgeStart = false;
+state.pendingManualFlowStart = false;
 state.commissioningTaskLock = "autotune";
 } else if (buttonKey === "flowAutotuneAbort" || buttonKey === "flowAutotuneApply") {
 state.commissioningTaskLock = "autotune";
@@ -6213,9 +6239,18 @@ state.commissioningTaskLock = "autotune";
 state.pendingAirPurgeStart = true;
 state.pendingBoilerPowerTestStart = false;
 state.pendingFlowAutotuneStart = false;
+state.pendingManualFlowStart = false;
 state.commissioningTaskLock = "purge";
 } else if (buttonKey === "airPurgeAbort") {
 state.commissioningTaskLock = "purge";
+} else if (buttonKey === "manualFlowStart") {
+state.pendingManualFlowStart = true;
+state.pendingBoilerPowerTestStart = false;
+state.pendingFlowAutotuneStart = false;
+state.pendingAirPurgeStart = false;
+state.commissioningTaskLock = "manual-flow";
+} else if (buttonKey === "manualFlowAbort") {
+state.commissioningTaskLock = "manual-flow";
 }
 const refreshKeys = [];
 if (buttonKey === "commissioningCm100Start" || buttonKey === "commissioningCm100Stop") {
@@ -6227,6 +6262,8 @@ refreshKeys.push(
 "flowAutotuneStatus",
 "airPurgeStatus",
 "airPurgeActive",
+"manualFlowStatus",
+"manualFlowActive",
 );
 } else if (buttonKey === "boilerPowerTestStart" || buttonKey === "boilerPowerTestAbort" || buttonKey === "boilerPowerTestApply") {
 refreshKeys.push(
@@ -6255,6 +6292,18 @@ refreshKeys.push(
 "airPurgePhase",
 "airPurgeTargetIpwm",
 "flowMode",
+);
+} else if (buttonKey === "manualFlowStart" || buttonKey === "manualFlowAbort" || buttonKey === "manualFlowApplyHeating" || buttonKey === "manualFlowApplyCooling") {
+refreshKeys.push(
+"commissioningStatus",
+"manualFlowStatus",
+"manualFlowActive",
+"manualFlowSetpoint",
+"manualFlowTargetIpwm",
+"flowSelected",
+"flowMode",
+"flowSetpoint",
+"coolingFlowSetpoint",
 );
 }
 void triggerNamedButton(buttonKey, refreshKeys.length ? { refreshKeys } : {});
@@ -7138,6 +7187,10 @@ const keepCommissioningModalOpen = [
 "flowAutotuneApply",
 "airPurgeStart",
 "airPurgeAbort",
+"manualFlowStart",
+"manualFlowAbort",
+"manualFlowApplyHeating",
+"manualFlowApplyCooling",
 ].includes(key);
 if (!keepCommissioningModalOpen) {
 stopLoginAuthStatusPolling();
@@ -7162,6 +7215,9 @@ state.pendingFlowAutotuneStart = false;
 state.commissioningTaskLock = "";
 } else if (key === "airPurgeStart") {
 state.pendingAirPurgeStart = false;
+state.commissioningTaskLock = "";
+} else if (key === "manualFlowStart") {
+state.pendingManualFlowStart = false;
 state.commissioningTaskLock = "";
 }
 state.controlError = `${options.errorPrefix || `Actie mislukt voor "${entity.name}"`}. ${error.message}`;
@@ -9314,6 +9370,7 @@ status,
 statusCopy,
 progressTask,
 actions = "",
+controls = "",
 metrics = "",
 className = "",
 }) {
@@ -9327,6 +9384,7 @@ ${subcopy ? `<p class="oq-settings-commissioning-card-subcopy">${escapeHtml(subc
 </div>
 </div>
 ${actions ? `<div class="oq-settings-commissioning-card-actions">${actions}</div>` : ""}
+${controls}
 <div class="oq-settings-quickstart-status oq-settings-quickstart-status--compact oq-settings-commissioning-card-status">
 <div class="oq-settings-quickstart-status-row">
 <div>
@@ -9778,6 +9836,15 @@ const airPurgePhase = airPurgePhaseCode === 1
 : airPurgePhaseCode === 3
 ? "Stabiliseren"
 : airPurgeProgress.phase;
+const manualFlowStatus = getStatusTextValue("manualFlowStatus", "IDLE");
+const manualFlowActive = isEntityActive("manualFlowActive");
+const manualFlowBusy = state.loadingEntities || state.busyAction === "manualFlowStart" || state.busyAction === "manualFlowAbort";
+const manualFlowControls = Boolean(state.entities.manualFlowStart || state.entities.manualFlowAbort);
+const manualFlowPending = Boolean(state.pendingManualFlowStart);
+const manualFlowTaskLocked = state.commissioningTaskLock === "manual-flow";
+const manualFlowTaskTerminal = isCommissioningTaskStatusTerminal(manualFlowStatus);
+const manualFlowTaskRunning = !manualFlowTaskTerminal &&
+(manualFlowActive || manualFlowPending || manualFlowTaskLocked || isCommissioningTaskStatusActive(manualFlowStatus));
 const flowKpSuggested = getSettingsStatValue("flowKpSuggested", { decimals: 5, trimTrailingZeros: true });
 const flowKiSuggested = getSettingsStatValue("flowKiSuggested", { decimals: 5, trimTrailingZeros: true });
 const boilerResultReady = /DONE|APPLIED/.test(String(boilerStatus || "").toUpperCase());
@@ -9801,14 +9868,19 @@ const airPurgeStatusDisplay = cm100Ready
 ? airPurgeProgress.phase
 : (airPurgeResultReady ? "Klaar" : "Klaar om te starten"))
 : "Wachten op CM100";
-const boilerStartDisabled = !cm100Ready || boilerBusy || !boilerControls || autotuneTaskRunning || airPurgeTaskRunning || boilerTaskRunning || autotuneTaskLocked || airPurgeTaskLocked || boilerPending;
+const manualFlowStatusDisplay = cm100Ready
+? (manualFlowTaskRunning ? "Actief" : "Klaar om te starten")
+: "Wachten op CM100";
+const boilerStartDisabled = !cm100Ready || boilerBusy || !boilerControls || autotuneTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || boilerTaskRunning || autotuneTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || boilerPending;
 const boilerAbortDisabled = boilerBusy || !(boilerTaskRunning || boilerTaskLocked || boilerPending);
 const boilerApplyDisabled = boilerBusy || boilerStartDisabled || !boilerResultReady || autotuneTaskRunning || airPurgeTaskRunning;
-const autotuneStartDisabled = !cm100Ready || autotuneBusy || !autotuneControls || boilerTaskRunning || airPurgeTaskRunning || autotuneTaskRunning || boilerTaskLocked || airPurgeTaskLocked || autotunePending;
+const autotuneStartDisabled = !cm100Ready || autotuneBusy || !autotuneControls || boilerTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || autotuneTaskRunning || boilerTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || autotunePending;
 const autotuneAbortDisabled = autotuneBusy || !(autotuneTaskRunning || autotuneTaskLocked || autotunePending);
 const autotuneApplyDisabled = autotuneBusy || autotuneStartDisabled || !autotuneResultReady || boilerTaskRunning || airPurgeTaskRunning;
-const airPurgeStartDisabled = !cm100Ready || airPurgeBusy || !airPurgeControls || boilerTaskRunning || autotuneTaskRunning || airPurgeTaskRunning || boilerTaskLocked || autotuneTaskLocked || airPurgePending;
+const airPurgeStartDisabled = !cm100Ready || airPurgeBusy || !airPurgeControls || boilerTaskRunning || autotuneTaskRunning || manualFlowTaskRunning || airPurgeTaskRunning || boilerTaskLocked || autotuneTaskLocked || manualFlowTaskLocked || airPurgePending;
 const airPurgeAbortDisabled = airPurgeBusy || !(airPurgeTaskRunning || airPurgeTaskLocked || airPurgePending);
+const manualFlowStartDisabled = !cm100Ready || manualFlowBusy || !manualFlowControls || boilerTaskRunning || autotuneTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || boilerTaskLocked || autotuneTaskLocked || airPurgeTaskLocked || manualFlowPending;
+const manualFlowAbortDisabled = manualFlowBusy || !(manualFlowTaskRunning || manualFlowTaskLocked || manualFlowPending);
 if (cm100Pending && cm100Ready) {
 state.pendingCommissioningCm100Start = false;
 }
@@ -9833,11 +9905,60 @@ state.pendingAirPurgeStart = false;
 if (airPurgeTaskLocked && isCommissioningTaskStatusTerminal(airPurgeStatus)) {
 state.commissioningTaskLock = "";
 }
+if (manualFlowPending && (manualFlowActive || isCommissioningTaskStatusTerminal(manualFlowStatus))) {
+state.pendingManualFlowStart = false;
+}
+if (manualFlowTaskLocked && (manualFlowActive || isCommissioningTaskStatusTerminal(manualFlowStatus))) {
+state.commissioningTaskLock = "";
+}
 const cm100StatusDisplay = cm100WaitingForCm100 ? "Wachten op CM100" : cm100Status;
 const serviceStatusCopy = cm100WaitingForCm100
 ? "Service-stand wordt geopend. Wacht tot CM100 klaar staat."
 : (cm100Ready ? "CM100 is actief en klaar voor service-taken." : "Start de service-stand voordat je een taak uitvoert.");
 const tasks = [
+{
+key: "manual-flow",
+title: "Handmatige flowregeling",
+label: "Handmatige flow",
+summary: "Laat de waterpomp draaien op een tijdelijk flow-setpoint en luister naar het leidingwerk.",
+status: manualFlowStatusDisplay,
+available: Boolean(manualFlowControls || state.entities.manualFlowStatus),
+openDisabled: !cm100Ready,
+cardMarkup: renderCommissioningTaskCard({
+taskKey: "manual-flow",
+title: "Handmatige flowregeling",
+copy: "Gebruik een tijdelijk flow-setpoint om het leidingwerk rustig te controleren. De normale instellingen wijzigen pas wanneer je een waarde bewust overneemt.",
+subcopy: "De bestaande PI-regeling blijft de pomp aansturen.",
+status: manualFlowStatusDisplay,
+statusCopy: manualFlowTaskRunning
+? "De waterpomp draait. Pas het tijdelijke setpoint aan en controleer de gemeten flow."
+: (cm100Ready ? "CM100 staat klaar. Kies een tijdelijk setpoint en start de waterpomp." : "Start CM100 eerst."),
+progressTask: "",
+controls: `
+<div class="oq-settings-manual-flow-control">
+${renderSettingsSliderField("manualFlowSetpoint", "Tijdelijke gewenste flow", "Pas deze waarde aan terwijl de waterpomp draait.", "oq-settings-field--compact")}
+${state.entities.manualFlowStart || state.entities.manualFlowAbort ? renderNamedToggleActionButton({
+active: manualFlowTaskRunning,
+startKey: "manualFlowStart",
+stopKey: "manualFlowAbort",
+startLabel: "Waterpomp starten",
+stopLabel: "Waterpomp stoppen",
+startDisabled: manualFlowBusy || manualFlowStartDisabled,
+stopDisabled: manualFlowBusy || manualFlowAbortDisabled,
+}) : ""}
+</div>
+`,
+metrics: `
+<p class="oq-settings-manual-flow-results-title">Resultaten</p>
+${renderSettingsStaticField("flowSelected", "Gemeten flow", "Actuele doorstroming in het watercircuit.", getSettingsStatValue("flowSelected"), "oq-settings-field--compact")}
+${renderSettingsStaticField("manualFlowTargetIpwm", "Actuele pompstand", "Door de PI-regeling aangevraagde pompstand.", getSettingsStatValue("manualFlowTargetIpwm"), "oq-settings-field--compact")}
+`,
+}),
+modalActions: `
+${state.entities.manualFlowApplyHeating ? renderNamedActionButton("manualFlowApplyHeating", "Overnemen voor verwarmen", "oq-helper-button oq-helper-button--ghost", manualFlowBusy) : ""}
+${state.entities.manualFlowApplyCooling ? renderNamedActionButton("manualFlowApplyCooling", "Overnemen voor koelen", "oq-helper-button oq-helper-button--ghost", manualFlowBusy) : ""}
+`,
+},
 {
 key: "autotune",
 title: "Flow autotune",
@@ -10035,6 +10156,7 @@ return `
 ${task.cardMarkup}
 </div>
 <div class="oq-helper-modal-actions">
+${task.modalActions || ""}
 <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="close-system-modal">Sluiten</button>
 </div>
 </section>

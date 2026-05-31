@@ -469,9 +469,15 @@ interval:
           auto run_auto_pi = [&](int pwm_seed) -> int {
             int pwm_local = pwm_seed;
             const bool cooling_target = (id(oq_control_mode_code) == 5);
-            float sp_target = cooling_target
-              ? id(oq_cooling_flow_setpoint_lph).state
-              : id(oq_flow_setpoint_lph).state;
+            const bool manual_flow_owns_pi =
+              id(oq_manual_flow_active) &&
+              (id(oq_control_mode_code) == 100) &&
+              (id(oq_commissioning_task_code) == oq_commissioning::TASK_MANUAL_FLOW);
+            float sp_target = manual_flow_owns_pi
+              ? id(oq_manual_flow_setpoint_lph).state
+              : (cooling_target
+                  ? id(oq_cooling_flow_setpoint_lph).state
+                  : id(oq_flow_setpoint_lph).state);
             float pv = id(flow_rate_selected).state;
 
             // Treat 0 L/h as a valid measurement (no-flow state), not as sensor failure.
@@ -600,6 +606,10 @@ interval:
           const bool want_manual = (flow_mode_code == 1);
           static bool was_manual = false;
           const bool auto_target_is_cooling = (cm_code == 5);
+          const bool manual_flow_owns_pi =
+              id(oq_manual_flow_active) &&
+              (cm_code == 100) &&
+              (commissioning_task_code == oq_commissioning::TASK_MANUAL_FLOW);
 
           const bool is_cm100_idle =
               (cm_code == 100) &&
@@ -694,8 +704,9 @@ interval:
           int pwm = clamp_iPWM((int) id(oq_flow_last_pwm));
           FlowExecMode exec_mode = FLOW_MODE_AUTO;
 
-          // Fixed-output modes first, AUTO PI as fallback.
-          if (want_manual && !is_frost) {
+          // Manual-flow service deliberately keeps the PI path in control even
+          // when the normal installation setting is fixed Manual PWM.
+          if (want_manual && !manual_flow_owns_pi && !is_frost) {
             pwm = (int) roundf(id(oq_flow_manual_pwm).state);
             pwm = clamp_iPWM(pwm);
             stable_cnt = 0;
@@ -736,7 +747,7 @@ interval:
             case FLOW_MODE_MANUAL: mode_txt = "MANUAL"; break;
             case FLOW_MODE_AUTO_FAILSAFE: mode_txt = "AUTO (failsafe)"; break;
             case FLOW_MODE_AUTO_STARTING: mode_txt = "AUTO (starting)"; break;
-            default: mode_txt = "AUTO"; break;
+            default: mode_txt = manual_flow_owns_pi ? "MANUAL FLOW" : "AUTO"; break;
           }
           if (mode_txt != last_mode) {
             id(oq_flow_mode).publish_state(mode_txt.c_str());

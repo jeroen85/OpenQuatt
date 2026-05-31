@@ -9,6 +9,7 @@
 #   - Boiler power test: measure effective boiler heat output at stable flow.
 #   - Flow autotune: use the same CM100 container for the step-test flow tuning routine.
 #   - Air purge: fixed 5-minute pump-only purge routine.
+#   - Manual flow: circulate with a temporary flow setpoint for hydraulic checks.
 #
 # Safety:
 #   - CM100 is only entered by an explicit request.
@@ -39,7 +40,7 @@ globals:
   - id: oq_commissioning_task_code
     type: int
     restore_value: false
-    initial_value: '0'   # 0=NONE, 1=BOILER_POWER_TEST, 2=FLOW_AUTOTUNE, 3=AIR_PURGE
+    initial_value: '0'   # 0=NONE, 1=BOILER_POWER_TEST, 2=FLOW_AUTOTUNE, 3=AIR_PURGE, 4=MANUAL_FLOW
 
   - id: oq_commissioning_state_code
     type: int
@@ -106,6 +107,7 @@ button:
           id(oq_air_purge_target_ipwm) = 1000;
           id(oq_air_purge_started_ms) = 0;
           id(oq_air_purge_remaining_s) = 0;
+          id(oq_manual_flow_active) = false;
           id(oq_commissioning_status).publish_state("CM100 REQUESTED");
   - platform: template
     id: oq_commissioning_cm100_stop
@@ -153,6 +155,7 @@ button:
           id(oq_air_purge_target_ipwm) = 1000;
           id(oq_air_purge_started_ms) = 0;
           id(oq_air_purge_remaining_s) = 0;
+          id(oq_manual_flow_active) = false;
           id(oq_commissioning_status).publish_state("IDLE");
 
 binary_sensor:
