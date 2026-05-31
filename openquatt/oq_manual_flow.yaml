@@ -140,12 +140,27 @@ interval:
   - interval: 1s
     then:
       - lambda: |-
-          if (id(oq_manual_flow_active) && id(oq_commissioning_abort_requested)) {
+          if (!id(oq_manual_flow_active)) return;
+
+          // Release the temporary PI override when CM100 or task ownership is lost.
+          const bool owns_task =
+              id(oq_commissioning_task_code) == oq_commissioning::TASK_MANUAL_FLOW;
+          const bool cm100_exited = id(oq_control_mode_code) != 100;
+          if (!owns_task || cm100_exited || id(oq_commissioning_abort_requested)) {
             id(oq_manual_flow_active) = false;
-            if (id(oq_commissioning_task_code) == oq_commissioning::TASK_MANUAL_FLOW) {
-              id(oq_commissioning_task_code) = oq_commissioning::TASK_NONE;
+            if (!owns_task) {
+              id(oq_manual_flow_status).publish_state("ABORTED: task ownership lost");
+              return;
             }
+            id(oq_commissioning_task_code) = oq_commissioning::TASK_NONE;
             id(oq_commissioning_abort_requested) = false;
-            id(oq_manual_flow_status).publish_state("ABORTED");
-            id(oq_commissioning_status).publish_state("CM100 READY");
+            if (cm100_exited) {
+              id(oq_commissioning_active) = false;
+              id(oq_commissioning_request_pending) = false;
+              id(oq_manual_flow_status).publish_state("ABORTED: CM100 exited");
+              id(oq_commissioning_status).publish_state("IDLE");
+            } else {
+              id(oq_manual_flow_status).publish_state("ABORTED");
+              id(oq_commissioning_status).publish_state("CM100 READY");
+            }
           }
