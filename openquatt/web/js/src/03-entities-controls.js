@@ -2963,7 +2963,11 @@
             "manualHp2Level",
             "flowSelected",
             "hp1Compressor",
+            "hp1Freq",
+            "hp1Failures",
             "hp2Compressor",
+            "hp2Freq",
+            "hp2Failures",
             "hp1Mode",
             "hp2Mode",
           );

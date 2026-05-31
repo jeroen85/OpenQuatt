@@ -487,7 +487,11 @@ const COMMISSIONING_STATE_KEYS = [
 "manualHp2Level",
 "flowSelected",
 "hp1Compressor",
+"hp1Freq",
+"hp1Failures",
 "hp2Compressor",
+"hp2Freq",
+"hp2Failures",
 "hp1Mode",
 "hp2Mode",
 ];
@@ -1026,6 +1030,7 @@ webServerLogHistoryRequestToken: 0,
 webServerLogHistoryLoaded: false,
 webServerLogScrollRestoreToken: 0,
 cm100CommissioningScrollRestoreToken: 0,
+serviceTaskModalScrollRestoreToken: 0,
 quickStartScrollRestoreToken: 0,
 webServerLogCopyMessage: "",
 webServerLogCopyError: "",
@@ -6358,7 +6363,11 @@ refreshKeys.push(
 "manualHp2Level",
 "flowSelected",
 "hp1Compressor",
+"hp1Freq",
+"hp1Failures",
 "hp2Compressor",
+"hp2Freq",
+"hp2Failures",
 "hp1Mode",
 "hp2Mode",
 );
@@ -7878,6 +7887,50 @@ return;
 }
 applyScrollState();
 }
+function getServiceTaskModalScrollerElement() {
+if (!state.root) {
+return null;
+}
+return state.root.querySelector("[data-oq-service-task-scroller]");
+}
+function captureServiceTaskModalScrollState() {
+const scroller = getServiceTaskModalScrollerElement();
+if (!scroller) {
+return null;
+}
+return {
+scrollTop: scroller.scrollTop,
+};
+}
+function restoreServiceTaskModalScrollState(scrollState) {
+if (!scrollState) {
+return;
+}
+const scroller = getServiceTaskModalScrollerElement();
+if (!scroller) {
+return;
+}
+scroller.scrollTop = Math.max(0, scrollState.scrollTop);
+}
+function queueServiceTaskModalScrollRestore(scrollState, defer = true) {
+if (!scrollState) {
+return;
+}
+const restoreToken = Number(state.serviceTaskModalScrollRestoreToken || 0) + 1;
+state.serviceTaskModalScrollRestoreToken = restoreToken;
+const applyScrollState = () => {
+if (state.serviceTaskModalScrollRestoreToken !== restoreToken ||
+!String(state.systemModal || "").startsWith("service-task-")) {
+return;
+}
+restoreServiceTaskModalScrollState(scrollState);
+};
+if (defer) {
+window.requestAnimationFrame(applyScrollState);
+return;
+}
+applyScrollState();
+}
 async function refreshWebServerLogHistory(options = {}) {
 if (state.nativeOpen || typeof window.fetch !== "function") {
 return;
@@ -8504,6 +8557,13 @@ if (!text || text === "0" || text === "—") {
 return fallback;
 }
 return text;
+}
+function getManualHpActualValue(levelKey, frequencyKey) {
+const level = getEntityNumericValue(levelKey);
+const frequency = getEntityNumericValue(frequencyKey);
+const levelText = Number.isNaN(level) ? "Lvl —" : `Lvl ${Math.round(level)}`;
+const frequencyText = Number.isNaN(frequency) ? "— Hz" : `${Math.round(frequency)} Hz`;
+return `${levelText} (${frequencyText})`;
 }
 function isCommissioningTaskStatusBusy(status) {
 const normalized = String(status || "").trim().toUpperCase();
@@ -10079,13 +10139,13 @@ stopDisabled: manualHpBusy || manualHpAbortDisabled,
 controls: `
 <div class="oq-settings-manual-hp-controls">
 <div class="oq-settings-manual-hp-unit">
-${renderSettingsSelectField("manualHp1Mode", "Warmtepomp 1 werkmodus", "Start in Standby. Verwarmen of koelen kan pas worden gekozen zodra voldoende flow is gemeten.")}
-${renderSettingsSliderField("manualHp1Level", "Warmtepomp 1 compressorstand", "Aangevraagde stand 0 tot en met 10. Kies eerst een werkmodus. Normaal uitgesloten standen mogen tijdens deze handmatige test bewust worden gekozen.")}
+${renderSettingsSelectField("manualHp1Mode", "Warmtepomp 1 werkmodus", "Start in Standby. Verwarmen of koelen kan pas worden gekozen zodra voldoende flow is gemeten.", "oq-settings-field--compact")}
+${renderSettingsSliderField("manualHp1Level", "Warmtepomp 1 compressorstand", "Aangevraagde stand 0 tot en met 10. Kies eerst een werkmodus. Normaal uitgesloten standen mogen tijdens deze handmatige test bewust worden gekozen.", "oq-settings-field--compact")}
 </div>
 ${hasEntity("hp2ExcludedA") ? `
 <div class="oq-settings-manual-hp-unit">
-${renderSettingsSelectField("manualHp2Mode", "Warmtepomp 2 werkmodus", "Start in Standby. Verwarmen of koelen kan pas worden gekozen zodra voldoende flow is gemeten.")}
-${renderSettingsSliderField("manualHp2Level", "Warmtepomp 2 compressorstand", "Aangevraagde stand 0 tot en met 10. Kies eerst een werkmodus. Normaal uitgesloten standen mogen tijdens deze handmatige test bewust worden gekozen.")}
+${renderSettingsSelectField("manualHp2Mode", "Warmtepomp 2 werkmodus", "Start in Standby. Verwarmen of koelen kan pas worden gekozen zodra voldoende flow is gemeten.", "oq-settings-field--compact")}
+${renderSettingsSliderField("manualHp2Level", "Warmtepomp 2 compressorstand", "Aangevraagde stand 0 tot en met 10. Kies eerst een werkmodus. Normaal uitgesloten standen mogen tijdens deze handmatige test bewust worden gekozen.", "oq-settings-field--compact")}
 </div>
 ` : ""}
 </div>
@@ -10094,10 +10154,14 @@ metrics: `
 <p class="oq-settings-manual-flow-results-title">Resultaten</p>
 <div class="oq-settings-manual-hp-results">
 ${renderSettingsStaticField("flowSelected", "Gemeten flow", "Actuele doorstroming in het watercircuit.", getSettingsStatValue("flowSelected"), "oq-settings-field--compact")}
-${renderSettingsStaticField("hp1Compressor", "Warmtepomp 1 actueel", "Door de actuator werkelijk toegepaste compressorstand.", getSettingsStatValue("hp1Compressor"), "oq-settings-field--compact")}
-${hasEntity("hp2Compressor") ? renderSettingsStaticField("hp2Compressor", "Warmtepomp 2 actueel", "Door de actuator werkelijk toegepaste compressorstand.", getSettingsStatValue("hp2Compressor"), "oq-settings-field--compact") : ""}
+${renderSettingsStaticField("hp1Compressor", "Warmtepomp 1 actueel", "Door de actuator werkelijk toegepaste compressorstand en gemeten compressorfrequentie.", getManualHpActualValue("hp1Compressor", "hp1Freq"), "oq-settings-field--compact")}
+${hasEntity("hp2Compressor") ? renderSettingsStaticField("hp2Compressor", "Warmtepomp 2 actueel", "Door de actuator werkelijk toegepaste compressorstand en gemeten compressorfrequentie.", getManualHpActualValue("hp2Compressor", "hp2Freq"), "oq-settings-field--compact") : ""}
 </div>
 ${renderSettingsStaticField("manualHpGuardStatus", "Bewaking", "Toont waarom een handmatig verzoek tijdelijk niet of nog niet volledig wordt toegepast.", getEntityValue("manualHpGuardStatus") || "Vrijgegeven", "oq-settings-field--compact oq-settings-field--full")}
+<div class="oq-settings-manual-hp-statuses">
+${renderSettingsStaticField("hp1Failures", "Warmtepomp 1 statusmelding", "Actuele melding die de warmtepomp zelf rapporteert.", formatFailures(getEntityStateText("hp1Failures", "None")), "oq-settings-field--compact")}
+${hasEntity("hp2Failures") ? renderSettingsStaticField("hp2Failures", "Warmtepomp 2 statusmelding", "Actuele melding die de warmtepomp zelf rapporteert.", formatFailures(getEntityStateText("hp2Failures", "None")), "oq-settings-field--compact") : ""}
+</div>
 `,
 }),
 },
@@ -10285,7 +10349,7 @@ return "";
 }
 return `
 <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
-<section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--scrollable oq-helper-modal--service-task" role="dialog" aria-modal="true" aria-labelledby="oq-service-task-modal-title">
+<section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--scrollable oq-helper-modal--service-task" data-oq-service-task-scroller role="dialog" aria-modal="true" aria-labelledby="oq-service-task-modal-title">
 <div class="oq-helper-modal-head">
 <div>
 <p class="oq-helper-modal-kicker">Service</p>
@@ -14817,6 +14881,9 @@ const webServerLogScrollState = state.systemModal === "webserver-logs"
 const cm100CommissioningScrollState = state.systemModal === "cm100-commissioning"
 ? captureCm100CommissioningScrollState()
 : null;
+const serviceTaskModalScrollState = String(state.systemModal || "").startsWith("service-task-")
+? captureServiceTaskModalScrollState()
+: null;
 const quickStartScrollState = state.quickStartModalOpen
 ? captureQuickStartScrollState()
 : null;
@@ -14835,6 +14902,7 @@ syncDocumentTheme();
 syncDocumentTitle();
 queueWebServerLogScrollRestore(webServerLogScrollState);
 queueCm100CommissioningScrollRestore(cm100CommissioningScrollState);
+queueServiceTaskModalScrollRestore(serviceTaskModalScrollState);
 queueQuickStartScrollRestore(quickStartScrollState);
 return;
 }
@@ -14881,6 +14949,7 @@ syncDocumentTheme();
 syncDocumentTitle();
 queueWebServerLogScrollRestore(webServerLogScrollState);
 queueCm100CommissioningScrollRestore(cm100CommissioningScrollState);
+queueServiceTaskModalScrollRestore(serviceTaskModalScrollState);
 queueQuickStartScrollRestore(quickStartScrollState);
 }
 function escapeHtml(value) {

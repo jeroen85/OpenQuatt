@@ -84,6 +84,9 @@ function renderSettingsView() {
     const cm100CommissioningScrollState = state.systemModal === "cm100-commissioning"
       ? captureCm100CommissioningScrollState()
       : null;
+    const serviceTaskModalScrollState = String(state.systemModal || "").startsWith("service-task-")
+      ? captureServiceTaskModalScrollState()
+      : null;
     const quickStartScrollState = state.quickStartModalOpen
       ? captureQuickStartScrollState()
       : null;
@@ -103,6 +106,7 @@ function renderSettingsView() {
       syncDocumentTitle();
       queueWebServerLogScrollRestore(webServerLogScrollState);
       queueCm100CommissioningScrollRestore(cm100CommissioningScrollState);
+      queueServiceTaskModalScrollRestore(serviceTaskModalScrollState);
       queueQuickStartScrollRestore(quickStartScrollState);
       return;
     }
@@ -151,6 +155,7 @@ function renderSettingsView() {
     syncDocumentTitle();
     queueWebServerLogScrollRestore(webServerLogScrollState);
     queueCm100CommissioningScrollRestore(cm100CommissioningScrollState);
+    queueServiceTaskModalScrollRestore(serviceTaskModalScrollState);
     queueQuickStartScrollRestore(quickStartScrollState);
   }
 
