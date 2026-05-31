@@ -637,8 +637,10 @@ interval:
           // Cooling has its own water-side dwell/limiter and must react quickly
           // after that limiter changes demand. Do not route CM5 through the
           // slower heating-curve cadence.
+          const bool manual_hp_service_active = oq_manual_hp::owns_control();
           const uint32_t loop_target_ms = (uint32_t) (
-              (is_cooling_mode ? ${oq_heat_loop_tick_s} :
+              (manual_hp_service_active ? ${oq_heat_loop_tick_s} :
+               is_cooling_mode ? ${oq_heat_loop_tick_s} :
                (is_curve_mode ? ${oq_heat_loop_curve_s} : ${oq_heat_loop_powerhouse_s})) * 1000UL);
 
           // After any controller reboot we intentionally keep the compressors blocked for a while.
@@ -934,7 +936,7 @@ interval:
           // Keep CM100 circulation active while sending explicit requests through
           // the shared actuator. All downstream actuator guards remain normative.
           // =========================
-          if (oq_manual_hp::owns_control()) {
+          if (manual_hp_service_active) {
             const int hp1_mode_code = std::max(0, std::min(2, id(oq_manual_hp1_mode_code)));
             #if OQ_TOPOLOGY_DUO
             const int hp2_mode_code = std::max(0, std::min(2, id(oq_manual_hp2_mode_code)));
