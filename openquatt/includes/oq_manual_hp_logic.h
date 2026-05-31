@@ -5,6 +5,12 @@
 
 namespace oq_manual_hp {
 
+inline bool owns_control() {
+  return id(oq_manual_hp_active) &&
+         id(oq_control_mode_code) == 100 &&
+         id(oq_commissioning_task_code) == oq_commissioning::TASK_MANUAL_HP;
+}
+
 class ManualHpRuntime {
  public:
   void set_mode(int hp_index, const std::string &option, float min_flow_lph) {
@@ -26,7 +32,7 @@ class ManualHpRuntime {
       publish_selected_mode(hp_index, oq_request::request_mode_option(current_mode));
       return;
     }
-    if (!id(oq_manual_hp_active)) {
+    if (!owns_control()) {
       publish_guard(hp_index == 1 ? "HP1: start de bediening eerst" : "HP2: start de bediening eerst");
       publish_selected_mode(hp_index, oq_request::request_mode_option(current_mode));
       return;
@@ -84,6 +90,29 @@ class ManualHpRuntime {
 
   void tick(float min_flow_lph) {
     if (!id(oq_manual_hp_active)) return;
+
+    const bool owns_task =
+        id(oq_commissioning_task_code) == oq_commissioning::TASK_MANUAL_HP;
+    const bool cm100_exited = id(oq_control_mode_code) != 100;
+    if (!owns_task || cm100_exited) {
+      reset_modes_and_levels();
+      id(oq_manual_hp_active) = false;
+      id(oq_manual_hp_stop_requested) = false;
+      id(oq_manual_hp_mode_allowed) = false;
+      if (!owns_task) {
+        publish_status("ABORTED: task ownership lost");
+        return;
+      }
+
+      id(oq_commissioning_task_code) = oq_commissioning::TASK_NONE;
+      id(oq_commissioning_abort_requested) = false;
+      id(oq_commissioning_active) = false;
+      id(oq_commissioning_request_pending) = false;
+      publish_status("ABORTED: CM100 exited");
+      publish_guard("Vrijgegeven");
+      id(oq_commissioning_status).publish_state("IDLE");
+      return;
+    }
 
     const bool safety_stop =
         any_thermal_level() &&

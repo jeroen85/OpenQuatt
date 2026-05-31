@@ -934,7 +934,7 @@ interval:
           // Keep CM100 circulation active while sending explicit requests through
           // the shared actuator. All downstream actuator guards remain normative.
           // =========================
-          if (id(oq_manual_hp_active) && cm_code == 100) {
+          if (oq_manual_hp::owns_control()) {
             const int hp1_mode_code = std::max(0, std::min(2, id(oq_manual_hp1_mode_code)));
             #if OQ_TOPOLOGY_DUO
             const int hp2_mode_code = std::max(0, std::min(2, id(oq_manual_hp2_mode_code)));

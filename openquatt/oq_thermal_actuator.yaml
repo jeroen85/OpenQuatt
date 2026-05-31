@@ -135,7 +135,7 @@ interval:
 
           const int request_mode_code = id(oq_request_mode_code);
           const bool request_thermal_active = (request_mode_code == 1 || request_mode_code == 2);
-          const bool manual_hp_service_active = id(oq_manual_hp_active);
+          const bool manual_hp_service_active = oq_manual_hp::owns_control();
           const char* request_thermal_mode_opt = oq_request::request_mode_option(request_mode_code);
 
           auto hp_hold_mode_opt = [&](bool is_hp1)->const char* {

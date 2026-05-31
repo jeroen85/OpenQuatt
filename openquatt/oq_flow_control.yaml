@@ -470,7 +470,7 @@ interval:
             int pwm_local = pwm_seed;
             const bool cooling_target =
                 (id(oq_control_mode_code) == 5) ||
-                (id(oq_manual_hp_active) &&
+                (oq_manual_hp::owns_control() &&
                  (id(oq_manual_hp1_mode_code) == 1 ||
                   id(oq_manual_hp2_mode_code) == 1));
             const bool manual_flow_owns_pi =
