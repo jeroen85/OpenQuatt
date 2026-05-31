@@ -715,6 +715,13 @@
   margin-top: 14px;
 }
 
+.oq-settings-manual-hp-results {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .oq-settings-commissioning-card--air-purge .oq-settings-commissioning-metrics {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -924,6 +931,10 @@
   }
 
   .oq-settings-manual-hp-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .oq-settings-manual-hp-results {
     grid-template-columns: minmax(0, 1fr);
   }
 

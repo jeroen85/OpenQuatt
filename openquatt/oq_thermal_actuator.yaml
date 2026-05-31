@@ -135,6 +135,7 @@ interval:
 
           const int request_mode_code = id(oq_request_mode_code);
           const bool request_thermal_active = (request_mode_code == 1 || request_mode_code == 2);
+          const bool manual_hp_service_active = id(oq_manual_hp_active);
           const char* request_thermal_mode_opt = oq_request::request_mode_option(request_mode_code);
 
           auto hp_hold_mode_opt = [&](bool is_hp1)->const char* {
@@ -298,13 +299,17 @@ interval:
 
             int applied = req_level;
 
-            // Silent/day cap
-            const bool silent_active = id(oq_silent_active).state;
-            int cap = silent_active ? (int) roundf(id(oq_silent_max_level).state)
-                                    : (int) roundf(id(oq_day_max_level).state);
-            cap = std::max(min_level, std::min(max_level, cap));
-            if (applied > cap) applied = cap;
-            applied = pick_allowed_capped(applied, is_hp1, cap);
+            // Manual HP service deliberately bypasses policy limits so every
+            // compressor level can be tested. Technical actuator guards remain active.
+            int cap = max_level;
+            if (!manual_hp_service_active) {
+              const bool silent_active = id(oq_silent_active).state;
+              cap = silent_active ? (int) roundf(id(oq_silent_max_level).state)
+                                  : (int) roundf(id(oq_day_max_level).state);
+              cap = std::max(min_level, std::min(max_level, cap));
+              if (applied > cap) applied = cap;
+              applied = pick_allowed_capped(applied, is_hp1, cap);
+            }
 
             // Normative rule: compressor >0 only when the active thermal mode is measured
             // or the command target is already on that mode. This avoids losing a full

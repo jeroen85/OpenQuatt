@@ -9911,12 +9911,6 @@ const manualHpTaskRunning = !manualHpTaskTerminal &&
 (manualHpActive || manualHpPending || manualHpTaskLocked || isCommissioningTaskStatusActive(manualHpStatus));
 const manualHpSafetyStopped = /SAFETY STOP/.test(String(manualHpStatus || "").toUpperCase());
 const manualHpStopping = /STOPPING/.test(String(manualHpStatus || "").toUpperCase());
-const manualHpExcludedLevels = (keyA, keyB) => {
-const values = [getEntityValue(keyA), getEntityValue(keyB)]
-.map((value) => String(value || "").trim())
-.filter((value) => value && value !== "None");
-return values.length ? values.join(", ") : "Geen";
-};
 const flowKpSuggested = getSettingsStatValue("flowKpSuggested", { decimals: 5, trimTrailingZeros: true });
 const flowKiSuggested = getSettingsStatValue("flowKiSuggested", { decimals: 5, trimTrailingZeros: true });
 const boilerResultReady = /DONE|APPLIED/.test(String(boilerStatus || "").toUpperCase());
@@ -10054,7 +10048,7 @@ cardMarkup: renderCommissioningTaskCard({
 taskKey: "manual-hp",
 title: "Handmatige warmtepompbediening",
 copy: "Start eerst de service-taak zodat de waterpomp draait. Kies daarna verwarmen of koelen en vraag per warmtepomp een compressorstand aan.",
-subcopy: "Low-flow, watertemperatuur, koelvloer, minimum draaitijd, minimum uit-tijd, dag/nacht-cap en uitgesloten compressorstanden blijven actief.",
+subcopy: "Low-flow, maximale watertemperatuur, minimum draaitijd, minimum uit-tijd en veilige modusovergangen blijven actief. De koelvloer, silent-modus, dag/nacht-cap en normaal uitgesloten compressorstanden worden voor deze handmatige test bewust genegeerd.",
 status: manualHpStatusDisplay,
 statusCopy: manualHpTaskRunning
 ? (manualHpStopping
@@ -10078,17 +10072,17 @@ stopDisabled: manualHpBusy || manualHpAbortDisabled,
 controls: `
 <div class="oq-settings-manual-hp-controls">
 ${renderSettingsSelectField("manualHpMode", "Werkmodus", "Kies of de warmtepomp voor de servicetest verwarmt of koelt.")}
-${renderSettingsSliderField("manualHp1Level", "Warmtepomp 1 compressorstand", "Aangevraagde stand 0 tot en met 10. Uitgesloten standen worden door de actuator overgeslagen.")}
-${hasEntity("hp2ExcludedA") ? renderSettingsSliderField("manualHp2Level", "Warmtepomp 2 compressorstand", "Aangevraagde stand 0 tot en met 10. Uitgesloten standen worden door de actuator overgeslagen.") : ""}
+${renderSettingsSliderField("manualHp1Level", "Warmtepomp 1 compressorstand", "Aangevraagde stand 0 tot en met 10. Normaal uitgesloten standen mogen tijdens deze handmatige test bewust worden gekozen.")}
+${hasEntity("hp2ExcludedA") ? renderSettingsSliderField("manualHp2Level", "Warmtepomp 2 compressorstand", "Aangevraagde stand 0 tot en met 10. Normaal uitgesloten standen mogen tijdens deze handmatige test bewust worden gekozen.") : ""}
 </div>
 `,
 metrics: `
 <p class="oq-settings-manual-flow-results-title">Resultaten</p>
+<div class="oq-settings-manual-hp-results">
 ${renderSettingsStaticField("flowSelected", "Gemeten flow", "Actuele doorstroming in het watercircuit.", getSettingsStatValue("flowSelected"), "oq-settings-field--compact")}
-${renderSettingsStaticField("hp1Compressor", "Warmtepomp 1 toegepast", "Door de actuator werkelijk toegepaste compressorstand.", getSettingsStatValue("hp1Compressor"), "oq-settings-field--compact")}
-${hasEntity("hp2Compressor") ? renderSettingsStaticField("hp2Compressor", "Warmtepomp 2 toegepast", "Door de actuator werkelijk toegepaste compressorstand.", getSettingsStatValue("hp2Compressor"), "oq-settings-field--compact") : ""}
-${renderSettingsStaticField("hp1ExcludedA", "Warmtepomp 1 uitgesloten", "Overgenomen uit Geavanceerd > Compressorinstellingen.", manualHpExcludedLevels("hp1ExcludedA", "hp1ExcludedB"), "oq-settings-field--compact")}
-${hasEntity("hp2ExcludedA") ? renderSettingsStaticField("hp2ExcludedA", "Warmtepomp 2 uitgesloten", "Overgenomen uit Geavanceerd > Compressorinstellingen.", manualHpExcludedLevels("hp2ExcludedA", "hp2ExcludedB"), "oq-settings-field--compact") : ""}
+${renderSettingsStaticField("hp1Compressor", "Warmtepomp 1 actueel", "Door de actuator werkelijk toegepaste compressorstand.", getSettingsStatValue("hp1Compressor"), "oq-settings-field--compact")}
+${hasEntity("hp2Compressor") ? renderSettingsStaticField("hp2Compressor", "Warmtepomp 2 actueel", "Door de actuator werkelijk toegepaste compressorstand.", getSettingsStatValue("hp2Compressor"), "oq-settings-field--compact") : ""}
+</div>
 `,
 }),
 },
