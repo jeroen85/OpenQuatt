@@ -935,16 +935,18 @@ interval:
           // the shared actuator. All downstream actuator guards remain normative.
           // =========================
           if (id(oq_manual_hp_active) && cm_code == 100) {
-            const bool cooling_mode =
-                id(oq_manual_hp_mode).has_state() &&
-                id(oq_manual_hp_mode).current_option() == "Cooling";
-            const int manual_mode_code = cooling_mode ? 1 : 2;
-            int hp1_req = std::max(0, std::min(10, (int) roundf(id(oq_manual_hp1_level).state)));
+            const int hp1_mode_code = std::max(0, std::min(2, id(oq_manual_hp1_mode_code)));
             #if OQ_TOPOLOGY_DUO
-            int hp2_req = std::max(0, std::min(10, (int) roundf(id(oq_manual_hp2_level).state)));
+            const int hp2_mode_code = std::max(0, std::min(2, id(oq_manual_hp2_mode_code)));
             #else
-            int hp2_req = 0;
+            const int hp2_mode_code = 0;
             #endif
+            int hp1_req = (hp1_mode_code > 0)
+                ? std::max(0, std::min(10, (int) roundf(id(oq_manual_hp1_level).state)))
+                : 0;
+            int hp2_req = (hp2_mode_code > 0)
+                ? std::max(0, std::min(10, (int) roundf(id(oq_manual_hp2_level).state)))
+                : 0;
             const bool manual_flow_ok =
                 id(flow_rate_selected).has_state() &&
                 !isnan(id(flow_rate_selected).state) &&
@@ -953,11 +955,20 @@ interval:
                 id(oq_water_temp_hard_trip_active) ||
                 id(oq_lowflow_fault_active) ||
                 !manual_flow_ok;
+            const bool manual_mode_conflict =
+                hp1_mode_code > 0 &&
+                hp2_mode_code > 0 &&
+                hp1_mode_code != hp2_mode_code;
+            id(oq_manual_hp_mode_allowed) =
+                !id(oq_manual_hp_stop_requested) &&
+                !safety_stop &&
+                !startup_inhibit_active &&
+                !manual_mode_conflict;
             if (id(oq_manual_hp_stop_requested)) {
               hp1_req = 0;
               hp2_req = 0;
             }
-            if (safety_stop || startup_inhibit_active) {
+            if (safety_stop || startup_inhibit_active || manual_mode_conflict) {
               hp1_req = 0;
               hp2_req = 0;
             } else {
@@ -965,6 +976,12 @@ interval:
               #if OQ_TOPOLOGY_DUO
               if (hp2_req == 0) hp2_req = min_runtime_hold_level(false);
               #endif
+            }
+            int manual_mode_code = 0;
+            if (hp1_req > 0 && hp1_mode_code > 0) manual_mode_code = hp1_mode_code;
+            if (hp2_req > 0 && hp2_mode_code > 0) manual_mode_code = hp2_mode_code;
+            if (manual_mode_code == 0 && (hp1_req > 0 || hp2_req > 0)) {
+              manual_mode_code = hold_request_mode_code(hp1_req, hp2_req);
             }
             publish_optimizer_reason("manual_hp");
             publish_request(
@@ -974,7 +991,8 @@ interval:
               request_strategy_manual_hp,
               0,
               safety_stop ? "manual_hp_safety_stop" :
-              (startup_inhibit_active ? "manual_hp_startup_inhibit" : "manual_hp"));
+              (startup_inhibit_active ? "manual_hp_startup_inhibit" :
+              (manual_mode_conflict ? "manual_hp_mode_conflict" : "manual_hp")));
             id(oq_actuator_hp1_req) = hp1_req;
             id(oq_actuator_hp2_req) = hp2_req;
             #if OQ_TOPOLOGY_DUO

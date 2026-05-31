@@ -19,20 +19,156 @@ globals:
     restore_value: false
     initial_value: 'false'
 
+  - id: oq_manual_hp_mode_allowed
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+  - id: oq_manual_hp1_mode_code
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_manual_hp2_mode_code
+    type: int
+    restore_value: false
+    initial_value: '0'
+
 select:
   - platform: template
-    id: oq_manual_hp_mode
-    name: "Manual HP service mode"
+    id: oq_manual_hp1_mode
+    name: "Manual HP1 service mode"
     icon: mdi:heat-pump
-    optimistic: true
+    optimistic: false
     restore_value: false
-    initial_option: "Heating"
+    initial_option: "Standby"
     options:
+      - "Standby"
       - "Heating"
       - "Cooling"
     entity_category: config
     web_server:
       sorting_group_id: oq_hydraulics
+    set_action:
+      - lambda: |-
+          // Accept HP1 thermal mode changes only after circulation is proven safe.
+          const int requested_mode = (x == "Cooling") ? 1 : ((x == "Heating") ? 2 : 0);
+          const int current_mode = id(oq_manual_hp1_mode_code);
+          auto publish_current = [&]() {
+            id(oq_manual_hp1_mode).publish_state(oq_request::request_mode_option(current_mode));
+          };
+          if (requested_mode == current_mode) {
+            id(oq_manual_hp1_mode).publish_state(x.str());
+            return;
+          }
+          if (requested_mode == 0) {
+            id(oq_manual_hp1_mode_code) = 0;
+            auto level = id(oq_manual_hp1_level).make_call();
+            level.set_value(0);
+            level.perform();
+            id(oq_manual_hp1_mode).publish_state("Standby");
+            return;
+          }
+          const bool flow_ok =
+              id(flow_rate_selected).has_state() &&
+              !isnan(id(flow_rate_selected).state) &&
+              id(flow_rate_selected).state >= (float) ${oq_cm_min_flow_lph};
+          if (!id(oq_manual_hp_active)) {
+            id(oq_manual_hp_guard_status).publish_state("HP1: start de bediening eerst");
+            publish_current();
+            return;
+          }
+          if (!flow_ok) {
+            id(oq_manual_hp_guard_status).publish_state("HP1: wacht op voldoende flow");
+            publish_current();
+            return;
+          }
+          if (id(oq_manual_hp2_mode_code) > 0 && id(oq_manual_hp2_mode_code) != requested_mode) {
+            id(oq_manual_hp_guard_status).publish_state("HP1: conflicterende werkmodus met HP2");
+            publish_current();
+            return;
+          }
+          if (id(hp1_last_applied_level) > 0) {
+            id(oq_manual_hp_guard_status).publish_state("HP1: zet eerst op Standby en wacht op stand 0");
+            publish_current();
+            return;
+          }
+          id(oq_manual_hp1_mode_code) = requested_mode;
+          auto level = id(oq_manual_hp1_level).make_call();
+          level.set_value(0);
+          level.perform();
+          id(oq_manual_hp1_mode).publish_state(x.str());
+          id(oq_manual_hp_guard_status).publish_state("Vrijgegeven");
+
+  - platform: template
+    id: oq_manual_hp2_mode
+    name: "Manual HP2 service mode"
+    icon: mdi:heat-pump
+    optimistic: false
+    restore_value: false
+    initial_option: "Standby"
+    options:
+      - "Standby"
+      - "Heating"
+      - "Cooling"
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_hydraulics
+    set_action:
+      - lambda: |-
+          // Accept HP2 thermal mode changes only after circulation is proven safe.
+          const int requested_mode = (x == "Cooling") ? 1 : ((x == "Heating") ? 2 : 0);
+          const int current_mode = id(oq_manual_hp2_mode_code);
+          auto publish_current = [&]() {
+            id(oq_manual_hp2_mode).publish_state(oq_request::request_mode_option(current_mode));
+          };
+          if (requested_mode == current_mode) {
+            id(oq_manual_hp2_mode).publish_state(x.str());
+            return;
+          }
+          if (requested_mode == 0) {
+            id(oq_manual_hp2_mode_code) = 0;
+            auto level = id(oq_manual_hp2_level).make_call();
+            level.set_value(0);
+            level.perform();
+            id(oq_manual_hp2_mode).publish_state("Standby");
+            return;
+          }
+          #if OQ_TOPOLOGY_DUO
+          const bool flow_ok =
+              id(flow_rate_selected).has_state() &&
+              !isnan(id(flow_rate_selected).state) &&
+              id(flow_rate_selected).state >= (float) ${oq_cm_min_flow_lph};
+          if (!id(oq_manual_hp_active)) {
+            id(oq_manual_hp_guard_status).publish_state("HP2: start de bediening eerst");
+            publish_current();
+            return;
+          }
+          if (!flow_ok) {
+            id(oq_manual_hp_guard_status).publish_state("HP2: wacht op voldoende flow");
+            publish_current();
+            return;
+          }
+          if (id(oq_manual_hp1_mode_code) > 0 && id(oq_manual_hp1_mode_code) != requested_mode) {
+            id(oq_manual_hp_guard_status).publish_state("HP2: conflicterende werkmodus met HP1");
+            publish_current();
+            return;
+          }
+          if (id(${manual_hp_secondary_last_applied_level_id}) > 0) {
+            id(oq_manual_hp_guard_status).publish_state("HP2: zet eerst op Standby en wacht op stand 0");
+            publish_current();
+            return;
+          }
+          id(oq_manual_hp2_mode_code) = requested_mode;
+          auto level = id(oq_manual_hp2_level).make_call();
+          level.set_value(0);
+          level.perform();
+          id(oq_manual_hp2_mode).publish_state(x.str());
+          id(oq_manual_hp_guard_status).publish_state("Vrijgegeven");
+          #else
+          id(oq_manual_hp_guard_status).publish_state("HP2: niet beschikbaar in single-opstelling");
+          publish_current();
+          #endif
 
 number:
   - platform: template
@@ -90,12 +226,18 @@ button:
           auto hp2 = id(oq_manual_hp2_level).make_call();
           hp2.set_value(0);
           hp2.perform();
+          id(oq_manual_hp1_mode_code) = 0;
+          id(oq_manual_hp2_mode_code) = 0;
+          id(oq_manual_hp1_mode).publish_state("Standby");
+          id(oq_manual_hp2_mode).publish_state("Standby");
           id(oq_commissioning_abort_requested) = false;
           id(oq_manual_hp_stop_requested) = false;
+          id(oq_manual_hp_mode_allowed) = false;
           id(oq_commissioning_task_code) = oq_commissioning::TASK_MANUAL_HP;
           id(oq_commissioning_active) = true;
           id(oq_manual_hp_active) = true;
           id(oq_manual_hp_status).publish_state("ACTIVE: select mode and compressor level");
+          id(oq_manual_hp_guard_status).publish_state("Vrijgegeven");
           id(oq_commissioning_status).publish_state("MANUAL HP ACTIVE");
 
   - platform: template
@@ -114,6 +256,11 @@ button:
           auto hp2 = id(oq_manual_hp2_level).make_call();
           hp2.set_value(0);
           hp2.perform();
+          id(oq_manual_hp1_mode_code) = 0;
+          id(oq_manual_hp2_mode_code) = 0;
+          id(oq_manual_hp1_mode).publish_state("Standby");
+          id(oq_manual_hp2_mode).publish_state("Standby");
+          id(oq_manual_hp_mode_allowed) = false;
           id(oq_manual_hp_stop_requested) = true;
           id(oq_manual_hp_status).publish_state("STOPPING: waiting for compressor release");
 
@@ -134,6 +281,14 @@ text_sensor:
     id: oq_manual_hp_status
     name: "Manual HP status"
     icon: mdi:information-outline
+    update_interval: never
+    web_server:
+      sorting_group_id: oq_hydraulics
+
+  - platform: template
+    id: oq_manual_hp_guard_status
+    name: "Manual HP guard status"
+    icon: mdi:shield-check-outline
     update_interval: never
     web_server:
       sorting_group_id: oq_hydraulics
@@ -170,6 +325,11 @@ interval:
               hp2.set_value(0);
               hp2.perform();
             }
+            id(oq_manual_hp1_mode_code) = 0;
+            id(oq_manual_hp2_mode_code) = 0;
+            id(oq_manual_hp1_mode).publish_state("Standby");
+            id(oq_manual_hp2_mode).publish_state("Standby");
+            id(oq_manual_hp_mode_allowed) = false;
             id(oq_manual_hp_status).publish_state(
                 (id(oq_lowflow_fault_active) ||
                  !id(flow_rate_selected).has_state() ||
@@ -179,6 +339,11 @@ interval:
           }
           if (id(oq_commissioning_abort_requested)) {
             id(oq_commissioning_abort_requested) = false;
+            id(oq_manual_hp1_mode_code) = 0;
+            id(oq_manual_hp2_mode_code) = 0;
+            id(oq_manual_hp1_mode).publish_state("Standby");
+            id(oq_manual_hp2_mode).publish_state("Standby");
+            id(oq_manual_hp_mode_allowed) = false;
             id(oq_manual_hp_stop_requested) = true;
           }
           if (id(oq_manual_hp_stop_requested)) {
@@ -198,10 +363,12 @@ interval:
             if (all_stopped) {
               id(oq_manual_hp_active) = false;
               id(oq_manual_hp_stop_requested) = false;
+              id(oq_manual_hp_mode_allowed) = false;
               if (id(oq_commissioning_task_code) == oq_commissioning::TASK_MANUAL_HP) {
                 id(oq_commissioning_task_code) = oq_commissioning::TASK_NONE;
               }
               id(oq_manual_hp_status).publish_state("STOPPED");
+              id(oq_manual_hp_guard_status).publish_state("Vrijgegeven");
               id(oq_commissioning_status).publish_state("CM100 READY");
             } else {
               id(oq_manual_hp_status).publish_state("STOPPING: minimum runtime hold");

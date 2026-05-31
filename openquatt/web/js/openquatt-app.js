@@ -206,7 +206,9 @@ manualHpStart: { domain: "button", name: "Manual HP Start", optional: true },
 manualHpAbort: { domain: "button", name: "Manual HP Abort", optional: true },
 manualHpActive: { domain: "binary_sensor", name: "Manual HP active", optional: true },
 manualHpStatus: { domain: "text_sensor", name: "Manual HP status", optional: true },
-manualHpMode: { domain: "select", name: "Manual HP service mode", optional: true },
+manualHpGuardStatus: { domain: "text_sensor", name: "Manual HP guard status", optional: true },
+manualHp1Mode: { domain: "select", name: "Manual HP1 service mode", optional: true },
+manualHp2Mode: { domain: "select", name: "Manual HP2 service mode", optional: true },
 manualHp1Level: { domain: "number", name: "Manual HP1 compressor level", optional: true },
 manualHp2Level: { domain: "number", name: "Manual HP2 compressor level", optional: true },
 controlModeLabel: { domain: "text_sensor", name: "Control Mode (Label)" },
@@ -478,7 +480,9 @@ const COMMISSIONING_STATE_KEYS = [
 "manualHpAbort",
 "manualHpActive",
 "manualHpStatus",
-"manualHpMode",
+"manualHpGuardStatus",
+"manualHp1Mode",
+"manualHp2Mode",
 "manualHp1Level",
 "manualHp2Level",
 "flowSelected",
@@ -6299,6 +6303,7 @@ refreshKeys.push(
 "manualFlowStatus",
 "manualFlowActive",
 "manualHpStatus",
+"manualHpGuardStatus",
 "manualHpActive",
 );
 } else if (buttonKey === "boilerPowerTestStart" || buttonKey === "boilerPowerTestAbort" || buttonKey === "boilerPowerTestApply") {
@@ -6345,8 +6350,10 @@ refreshKeys.push(
 refreshKeys.push(
 "commissioningStatus",
 "manualHpStatus",
+"manualHpGuardStatus",
 "manualHpActive",
-"manualHpMode",
+"manualHp1Mode",
+"manualHp2Mode",
 "manualHp1Level",
 "manualHp2Level",
 "flowSelected",
@@ -10047,7 +10054,7 @@ openDisabled: !cm100Ready,
 cardMarkup: renderCommissioningTaskCard({
 taskKey: "manual-hp",
 title: "Handmatige warmtepompbediening",
-copy: "Start eerst de service-taak zodat de waterpomp draait. Kies daarna verwarmen of koelen en vraag per warmtepomp een compressorstand aan.",
+copy: "Start eerst de service-taak zodat de waterpomp draait. Zodra voldoende flow is gemeten kun je per warmtepomp vanuit Standby naar verwarmen of koelen schakelen en daarna een compressorstand aanvragen.",
 subcopy: "Low-flow, maximale watertemperatuur, minimum draaitijd, minimum uit-tijd en veilige modusovergangen blijven actief. De koelvloer, silent-modus, dag/nacht-cap en normaal uitgesloten compressorstanden worden voor deze handmatige test bewust genegeerd.",
 status: manualHpStatusDisplay,
 statusCopy: manualHpTaskRunning
@@ -10071,9 +10078,16 @@ stopDisabled: manualHpBusy || manualHpAbortDisabled,
 `,
 controls: `
 <div class="oq-settings-manual-hp-controls">
-${renderSettingsSelectField("manualHpMode", "Werkmodus", "Kies of de warmtepomp voor de servicetest verwarmt of koelt.")}
-${renderSettingsSliderField("manualHp1Level", "Warmtepomp 1 compressorstand", "Aangevraagde stand 0 tot en met 10. Normaal uitgesloten standen mogen tijdens deze handmatige test bewust worden gekozen.")}
-${hasEntity("hp2ExcludedA") ? renderSettingsSliderField("manualHp2Level", "Warmtepomp 2 compressorstand", "Aangevraagde stand 0 tot en met 10. Normaal uitgesloten standen mogen tijdens deze handmatige test bewust worden gekozen.") : ""}
+<div class="oq-settings-manual-hp-unit">
+${renderSettingsSelectField("manualHp1Mode", "Warmtepomp 1 werkmodus", "Start in Standby. Verwarmen of koelen kan pas worden gekozen zodra voldoende flow is gemeten.")}
+${renderSettingsSliderField("manualHp1Level", "Warmtepomp 1 compressorstand", "Aangevraagde stand 0 tot en met 10. Kies eerst een werkmodus. Normaal uitgesloten standen mogen tijdens deze handmatige test bewust worden gekozen.")}
+</div>
+${hasEntity("hp2ExcludedA") ? `
+<div class="oq-settings-manual-hp-unit">
+${renderSettingsSelectField("manualHp2Mode", "Warmtepomp 2 werkmodus", "Start in Standby. Verwarmen of koelen kan pas worden gekozen zodra voldoende flow is gemeten.")}
+${renderSettingsSliderField("manualHp2Level", "Warmtepomp 2 compressorstand", "Aangevraagde stand 0 tot en met 10. Kies eerst een werkmodus. Normaal uitgesloten standen mogen tijdens deze handmatige test bewust worden gekozen.")}
+</div>
+` : ""}
 </div>
 `,
 metrics: `
@@ -10083,6 +10097,7 @@ ${renderSettingsStaticField("flowSelected", "Gemeten flow", "Actuele doorstromin
 ${renderSettingsStaticField("hp1Compressor", "Warmtepomp 1 actueel", "Door de actuator werkelijk toegepaste compressorstand.", getSettingsStatValue("hp1Compressor"), "oq-settings-field--compact")}
 ${hasEntity("hp2Compressor") ? renderSettingsStaticField("hp2Compressor", "Warmtepomp 2 actueel", "Door de actuator werkelijk toegepaste compressorstand.", getSettingsStatValue("hp2Compressor"), "oq-settings-field--compact") : ""}
 </div>
+${renderSettingsStaticField("manualHpGuardStatus", "Bewaking", "Toont waarom een handmatig verzoek tijdelijk niet of nog niet volledig wordt toegepast.", getEntityValue("manualHpGuardStatus") || "Vrijgegeven", "oq-settings-field--compact oq-settings-field--full")}
 `,
 }),
 },

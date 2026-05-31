@@ -216,7 +216,13 @@ interval:
           };
 
           auto set_mode = [&](bool is_hp1, bool active) {
-            const char* opt = (active && request_thermal_active) ? request_thermal_mode_opt : oq_request::request_mode_option(0);
+            int mode_code = (active && request_thermal_active) ? request_mode_code : 0;
+            if (manual_hp_service_active && id(oq_manual_hp_mode_allowed)) {
+              const int selected_manual_mode =
+                  is_hp1 ? id(oq_manual_hp1_mode_code) : id(oq_manual_hp2_mode_code);
+              if (selected_manual_mode > 0) mode_code = selected_manual_mode;
+            }
+            const char* opt = oq_request::request_mode_option(mode_code);
             if (is_hp1) {
               if (id(hp1_set_working_mode).current_option() != opt) {
                 auto c = id(hp1_set_working_mode).make_call();
@@ -254,6 +260,8 @@ interval:
 
           // Note: options must exactly match the options map in oq_HP_io.yaml (levels 0..10)
           const char* lvl_opts[11] = {"0","1","2","3","4","5","6","7","8","9","10"};
+          std::string hp1_service_guard = "Vrijgegeven";
+          std::string hp2_service_guard = "Vrijgegeven";
 
           auto apply_level = [&](bool is_hp1, int req_level)->int {
             req_level = std::max(min_level, std::min(max_level, req_level));
@@ -266,6 +274,8 @@ interval:
               char reason_buf[96];
               snprintf(reason_buf, sizeof(reason_buf), "defrost hold at level %d", retained_level);
               block_reason = reason_buf;
+              (is_hp1 ? hp1_service_guard : hp2_service_guard) =
+                  "ontdooihold op stand " + std::to_string(retained_level);
               log_hp_block_change(is_hp1, reason_buf);
               apply_active_mode_hold(is_hp1, retained_level);
               publish_optimizer_reason("defrost_protect_hold");
@@ -289,6 +299,8 @@ interval:
                            "minimum off-time remaining %u s after stop (requested %d)",
                            (unsigned int) remaining_s, requested_level);
                   block_reason = reason_buf;
+                  (is_hp1 ? hp1_service_guard : hp2_service_guard) =
+                      "minimale uit-tijd: nog " + std::to_string(remaining_s) + " s";
                   log_hp_block_change(is_hp1, reason_buf);
                 }
               }
@@ -317,6 +329,7 @@ interval:
             if (req_level > 0 && !mode_is_active_thermal(is_hp1) && !mode_target_is_active_thermal(is_hp1)) {
               applied = 0;
               block_reason = "waiting for thermal mode confirmation";
+              (is_hp1 ? hp1_service_guard : hp2_service_guard) = "wachten op bevestiging werkmodus";
               log_hp_block_change(is_hp1, "waiting for thermal mode confirmation");
             }
 
@@ -333,6 +346,7 @@ interval:
                 log_hp_block_change(is_hp1, reason_buf);
               } else if (block_reason.empty() && retained_level == 0) {
                 block_reason = "actuator gating held request at 0";
+                (is_hp1 ? hp1_service_guard : hp2_service_guard) = "technische bewaking houdt verzoek tegen";
                 log_hp_block_change(is_hp1, "actuator gating held request at 0");
               }
             } else if (block_reason.empty()) {
@@ -380,6 +394,41 @@ interval:
           #else
           const int hp2_applied = 0;
           #endif
+
+          if (manual_hp_service_active) {
+            const int manual_hp1_level = (int) roundf(id(oq_manual_hp1_level).state);
+            const int manual_hp2_level = (int) roundf(id(oq_manual_hp2_level).state);
+            if (manual_hp1_level <= 0 && hp1_applied > 0) {
+              hp1_service_guard = "minimale draaitijd: tijdelijk stand " + std::to_string(hp1_applied);
+            } else if (manual_hp1_level > 0 && hp1_applied == 0 && hp1_service_guard == "Vrijgegeven") {
+              hp1_service_guard = "technische bewaking houdt verzoek tegen";
+            }
+            #if OQ_TOPOLOGY_DUO
+            if (manual_hp2_level <= 0 && hp2_applied > 0) {
+              hp2_service_guard = "minimale draaitijd: tijdelijk stand " + std::to_string(hp2_applied);
+            } else if (manual_hp2_level > 0 && hp2_applied == 0 && hp2_service_guard == "Vrijgegeven") {
+              hp2_service_guard = "technische bewaking houdt verzoek tegen";
+            }
+            #else
+            (void) manual_hp2_level;
+            #endif
+            std::string manual_guard_status = "Vrijgegeven";
+            if (hp1_service_guard != "Vrijgegeven") {
+              manual_guard_status = "HP1: " + hp1_service_guard;
+            }
+            #if OQ_TOPOLOGY_DUO
+            if (hp2_service_guard != "Vrijgegeven") {
+              if (manual_guard_status != "Vrijgegeven") manual_guard_status += " | ";
+              else manual_guard_status.clear();
+              manual_guard_status += "HP2: " + hp2_service_guard;
+            }
+            #endif
+            static std::string last_manual_guard_status = "";
+            if (manual_guard_status != last_manual_guard_status) {
+              id(oq_manual_hp_guard_status).publish_state(manual_guard_status.c_str());
+              last_manual_guard_status = manual_guard_status;
+            }
+          }
 
           auto log_transition = [&](bool is_hp1, int new_lvl) {
             int &prev = is_hp1 ? id(hp1_last_applied_level) : id(${ta_secondary_last_applied_level_id});

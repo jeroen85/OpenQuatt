@@ -710,9 +710,15 @@
 
 .oq-settings-manual-hp-controls {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin-top: 14px;
+}
+
+.oq-settings-manual-hp-unit {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
 }
 
 .oq-settings-manual-hp-results {
@@ -720,6 +726,10 @@
   grid-column: 1 / -1;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+}
+
+.oq-settings-field--full {
+  grid-column: 1 / -1;
 }
 
 .oq-settings-commissioning-card--air-purge .oq-settings-commissioning-metrics {

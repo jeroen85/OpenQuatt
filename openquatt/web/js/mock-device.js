@@ -29,6 +29,7 @@
       manualFlowSetpoint: 800,
       manualFlowTargetIpwm: 400,
       manualHpStatusText: "IDLE",
+      manualHpGuardStatusText: "Vrijgegeven",
       manualHp1Level: 0,
       manualHp2Level: 0,
       boilerResult: 0,
@@ -309,12 +310,14 @@
     setNumber("Manual flow target iPWM", state.commissioning.manualFlowTargetIpwm, "iPWM");
     setBinary("Manual HP active", manualHpTaskActive);
     setText("text_sensor", "Manual HP status", String(state.commissioning.manualHpStatusText || "IDLE"));
-    setNumber("HP1 compressor level", manualHpTaskActive ? state.commissioning.manualHp1Level : 0, "");
-    setNumber("HP2 compressor level", manualHpTaskActive ? state.commissioning.manualHp2Level : 0, "");
+    setText("text_sensor", "Manual HP guard status", String(state.commissioning.manualHpGuardStatusText || "Vrijgegeven"));
+    const manualHp1Mode = String(getEntity("select", "Manual HP1 service mode")?.value || "Standby");
+    const manualHp2Mode = String(getEntity("select", "Manual HP2 service mode")?.value || "Standby");
+    setNumber("HP1 compressor level", manualHpTaskActive && manualHp1Mode !== "Standby" ? state.commissioning.manualHp1Level : 0, "");
+    setNumber("HP2 compressor level", manualHpTaskActive && manualHp2Mode !== "Standby" ? state.commissioning.manualHp2Level : 0, "");
     if (manualHpTaskActive) {
-      const mode = String(getEntity("select", "Manual HP service mode")?.value || "Heating");
-      setText("text_sensor", "HP1 - Working Mode Label", state.commissioning.manualHp1Level > 0 ? mode : "Standby");
-      setText("text_sensor", "HP2 - Working Mode Label", state.commissioning.manualHp2Level > 0 ? mode : "Standby");
+      setText("text_sensor", "HP1 - Working Mode Label", manualHp1Mode);
+      setText("text_sensor", "HP2 - Working Mode Label", manualHp2Mode);
     }
   }
 
@@ -725,7 +728,9 @@
     setEntity("sensor", "Manual flow target iPWM", { value: 400, uom: "iPWM" });
     setEntity("binary_sensor", "Manual HP active", { value: false, state: false });
     setEntity("text_sensor", "Manual HP status", { state: "IDLE", value: "IDLE" });
-    setEntity("select", "Manual HP service mode", { value: "Heating", state: "Heating", option: ["Heating", "Cooling"] });
+    setEntity("text_sensor", "Manual HP guard status", { state: "Vrijgegeven", value: "Vrijgegeven" });
+    setEntity("select", "Manual HP1 service mode", { value: "Standby", state: "Standby", option: ["Standby", "Heating", "Cooling"] });
+    setEntity("select", "Manual HP2 service mode", { value: "Standby", state: "Standby", option: ["Standby", "Heating", "Cooling"] });
     setEntity("select", "Quatt Hybrid version", {
       value: "V1.5",
       state: "V1.5",
@@ -1620,6 +1625,38 @@
   }
 
   function handleSelectSet(name, value) {
+    if (name === "Manual HP1 service mode" || name === "Manual HP2 service mode") {
+      const hp = name.includes("HP1") ? "HP1" : "HP2";
+      const otherName = hp === "HP1" ? "Manual HP2 service mode" : "Manual HP1 service mode";
+      const flow = Number(getEntity("sensor", "Flow average (Selected)")?.value || 0);
+      const otherMode = String(getEntity("select", otherName)?.value || "Standby");
+      const requestedMode = String(value || "Standby");
+      if (requestedMode !== "Standby" && state.commissioning.task !== "manual-hp") {
+        state.commissioning.manualHpGuardStatusText = `${hp}: start de bediening eerst`;
+        syncCommissioningEntities(state.installation === "single");
+        updateSummary();
+        notifyMockUpdated();
+        return;
+      }
+      if (requestedMode !== "Standby" && flow < 250) {
+        state.commissioning.manualHpGuardStatusText = `${hp}: wacht op voldoende flow`;
+        syncCommissioningEntities(state.installation === "single");
+        updateSummary();
+        notifyMockUpdated();
+        return;
+      }
+      if (requestedMode !== "Standby" && otherMode !== "Standby" && otherMode !== requestedMode) {
+        state.commissioning.manualHpGuardStatusText = `${hp}: conflicterende werkmodus met ${hp === "HP1" ? "HP2" : "HP1"}`;
+        syncCommissioningEntities(state.installation === "single");
+        updateSummary();
+        notifyMockUpdated();
+        return;
+      }
+      const levelName = `Manual ${hp} compressor level`;
+      state.commissioning[hp === "HP1" ? "manualHp1Level" : "manualHp2Level"] = 0;
+      state.commissioning.manualHpGuardStatusText = "Vrijgegeven";
+      setNumber(levelName, 0, "");
+    }
     setText("select", name, value);
     if (name === "Preset") {
       applyPreset(value);
@@ -1751,6 +1788,7 @@
       state.commissioning.airPurgeTargetIpwm = 0;
       state.commissioning.manualFlowStatusText = "IDLE";
       state.commissioning.manualHpStatusText = "IDLE";
+      state.commissioning.manualHpGuardStatusText = "Vrijgegeven";
       state.commissioning.manualHp1Level = 0;
       state.commissioning.manualHp2Level = 0;
       setText("text_sensor", "Boiler power test status", "IDLE");
@@ -1758,11 +1796,14 @@
       setText("text_sensor", "Air purge status", "IDLE");
       setText("text_sensor", "Manual flow status", "IDLE");
       setText("text_sensor", "Manual HP status", "IDLE");
+      setText("text_sensor", "Manual HP guard status", "Vrijgegeven");
       setNumber("Air purge remaining", 0, "s");
       setNumber("Air purge phase", 0, "");
       setNumber("Air purge target iPWM", 0, "iPWM");
       setNumber("Manual HP1 compressor level", 0, "");
       setNumber("Manual HP2 compressor level", 0, "");
+      setText("select", "Manual HP1 service mode", "Standby");
+      setText("select", "Manual HP2 service mode", "Standby");
       setNumber("Flow average (Selected)", 0, "L/h");
       setBinary("Boiler power test active", false);
       setBinary("Air purge active", false);
@@ -1785,6 +1826,7 @@
       state.commissioning.airPurgeTargetIpwm = 0;
       state.commissioning.manualFlowStatusText = "IDLE";
       state.commissioning.manualHpStatusText = "IDLE";
+      state.commissioning.manualHpGuardStatusText = "Vrijgegeven";
       state.commissioning.manualHp1Level = 0;
       state.commissioning.manualHp2Level = 0;
       setText("text_sensor", "Boiler power test status", "IDLE");
@@ -1792,11 +1834,14 @@
       setText("text_sensor", "Air purge status", "IDLE");
       setText("text_sensor", "Manual flow status", "IDLE");
       setText("text_sensor", "Manual HP status", "IDLE");
+      setText("text_sensor", "Manual HP guard status", "Vrijgegeven");
       setNumber("Air purge remaining", 0, "s");
       setNumber("Air purge phase", 0, "");
       setNumber("Air purge target iPWM", 0, "iPWM");
       setNumber("Manual HP1 compressor level", 0, "");
       setNumber("Manual HP2 compressor level", 0, "");
+      setText("select", "Manual HP1 service mode", "Standby");
+      setText("select", "Manual HP2 service mode", "Standby");
       setBinary("CM100 active", false);
       setBinary("Boiler power test active", false);
       setBinary("Air purge active", false);
@@ -2066,13 +2111,17 @@
       } else {
         state.commissioning.globalStatus = "MANUAL HP ACTIVE";
         state.commissioning.manualHpStatusText = "ACTIVE: select mode and compressor level";
+        state.commissioning.manualHpGuardStatusText = "Vrijgegeven";
         state.commissioning.manualHp1Level = 0;
         state.commissioning.manualHp2Level = 0;
         setNumber("Manual HP1 compressor level", 0, "");
         setNumber("Manual HP2 compressor level", 0, "");
+        setText("select", "Manual HP1 service mode", "Standby");
+        setText("select", "Manual HP2 service mode", "Standby");
         setCommissioningPhase("manual-hp", "active");
         setText("text_sensor", "Commissioning status", "MANUAL HP ACTIVE");
         setText("text_sensor", "Manual HP status", state.commissioning.manualHpStatusText);
+        setText("text_sensor", "Manual HP guard status", state.commissioning.manualHpGuardStatusText);
         setText("text_sensor", "Flow Mode", "MANUAL HP");
         setBinary("Manual HP active", true);
         setNumber("Flow average (Selected)", 792, "L/h");
@@ -2080,13 +2129,17 @@
     } else if (name === "Manual HP Abort") {
       state.commissioning.globalStatus = state.commissioning.cm100Active ? "CM100 READY" : "CM0 - Standby";
       state.commissioning.manualHpStatusText = "STOPPED";
+      state.commissioning.manualHpGuardStatusText = "Vrijgegeven";
       state.commissioning.manualHp1Level = 0;
       state.commissioning.manualHp2Level = 0;
       setNumber("Manual HP1 compressor level", 0, "");
       setNumber("Manual HP2 compressor level", 0, "");
+      setText("select", "Manual HP1 service mode", "Standby");
+      setText("select", "Manual HP2 service mode", "Standby");
       setCommissioningPhase("manual-hp", "aborted");
       setText("text_sensor", "Commissioning status", state.commissioning.globalStatus);
       setText("text_sensor", "Manual HP status", "STOPPED");
+      setText("text_sensor", "Manual HP guard status", "Vrijgegeven");
       setText("text_sensor", "Flow Mode", state.commissioning.cm100Active ? "CM100 idle" : "Gepauzeerd");
       setBinary("Manual HP active", false);
       setNumber("HP1 compressor level", 0, "");

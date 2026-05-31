@@ -2908,6 +2908,7 @@
             "manualFlowStatus",
             "manualFlowActive",
             "manualHpStatus",
+            "manualHpGuardStatus",
             "manualHpActive",
           );
         } else if (buttonKey === "boilerPowerTestStart" || buttonKey === "boilerPowerTestAbort" || buttonKey === "boilerPowerTestApply") {
@@ -2954,8 +2955,10 @@
           refreshKeys.push(
             "commissioningStatus",
             "manualHpStatus",
+            "manualHpGuardStatus",
             "manualHpActive",
-            "manualHpMode",
+            "manualHp1Mode",
+            "manualHp2Mode",
             "manualHp1Level",
             "manualHp2Level",
             "flowSelected",
