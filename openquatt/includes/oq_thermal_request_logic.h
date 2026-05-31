@@ -72,7 +72,7 @@ inline int sanitize_request_mode_code(int mode_code) {
 }
 
 inline int sanitize_request_strategy_code(int strategy_code) {
-  return (strategy_code >= 0 && strategy_code <= 3) ? strategy_code : 0;
+  return (strategy_code >= 0 && strategy_code <= 4) ? strategy_code : 0;
 }
 
 inline PublishedRequest make_published_request(int mode_code,

@@ -2824,7 +2824,7 @@
 
     if (action === "open-service-task-modal") {
       const taskKey = String(button.dataset.serviceTask || "").trim();
-      if (["autotune", "boiler", "purge", "manual-flow"].includes(taskKey)) {
+      if (["autotune", "boiler", "purge", "manual-flow", "manual-hp"].includes(taskKey)) {
         state.systemModal = `service-task-${taskKey}`;
         render();
         syncEntities({ forceBulk: true });
@@ -2845,6 +2845,7 @@
           state.pendingFlowAutotuneStart = false;
           state.pendingAirPurgeStart = false;
           state.pendingManualFlowStart = false;
+          state.pendingManualHpStart = false;
           state.commissioningTaskLock = "";
           state.commissioningBoilerHeatPowerDisplay = "";
         } else if (buttonKey === "boilerPowerTestStart") {
@@ -2852,6 +2853,7 @@
           state.pendingFlowAutotuneStart = false;
           state.pendingAirPurgeStart = false;
           state.pendingManualFlowStart = false;
+          state.pendingManualHpStart = false;
           state.commissioningTaskLock = "boiler";
           state.commissioningBoilerHeatPowerDisplay = "";
         } else if (buttonKey === "boilerPowerTestAbort" || buttonKey === "boilerPowerTestApply") {
@@ -2861,6 +2863,7 @@
           state.pendingBoilerPowerTestStart = false;
           state.pendingAirPurgeStart = false;
           state.pendingManualFlowStart = false;
+          state.pendingManualHpStart = false;
           state.commissioningTaskLock = "autotune";
         } else if (buttonKey === "flowAutotuneAbort" || buttonKey === "flowAutotuneApply") {
           state.commissioningTaskLock = "autotune";
@@ -2869,6 +2872,7 @@
           state.pendingBoilerPowerTestStart = false;
           state.pendingFlowAutotuneStart = false;
           state.pendingManualFlowStart = false;
+          state.pendingManualHpStart = false;
           state.commissioningTaskLock = "purge";
         } else if (buttonKey === "airPurgeAbort") {
           state.commissioningTaskLock = "purge";
@@ -2877,9 +2881,19 @@
           state.pendingBoilerPowerTestStart = false;
           state.pendingFlowAutotuneStart = false;
           state.pendingAirPurgeStart = false;
+          state.pendingManualHpStart = false;
           state.commissioningTaskLock = "manual-flow";
         } else if (buttonKey === "manualFlowAbort") {
           state.commissioningTaskLock = "manual-flow";
+        } else if (buttonKey === "manualHpStart") {
+          state.pendingManualHpStart = true;
+          state.pendingBoilerPowerTestStart = false;
+          state.pendingFlowAutotuneStart = false;
+          state.pendingAirPurgeStart = false;
+          state.pendingManualFlowStart = false;
+          state.commissioningTaskLock = "manual-hp";
+        } else if (buttonKey === "manualHpAbort") {
+          state.commissioningTaskLock = "manual-hp";
         }
         const refreshKeys = [];
         if (buttonKey === "commissioningCm100Start" || buttonKey === "commissioningCm100Stop") {
@@ -2893,6 +2907,9 @@
             "airPurgeActive",
             "manualFlowStatus",
             "manualFlowActive",
+            "manualHpStatus",
+            "manualHpGuardStatus",
+            "manualHpActive",
           );
         } else if (buttonKey === "boilerPowerTestStart" || buttonKey === "boilerPowerTestAbort" || buttonKey === "boilerPowerTestApply") {
           refreshKeys.push(
@@ -2933,6 +2950,26 @@
             "flowMode",
             "flowSetpoint",
             "coolingFlowSetpoint",
+          );
+        } else if (buttonKey === "manualHpStart" || buttonKey === "manualHpAbort") {
+          refreshKeys.push(
+            "commissioningStatus",
+            "manualHpStatus",
+            "manualHpGuardStatus",
+            "manualHpActive",
+            "manualHp1Mode",
+            "manualHp2Mode",
+            "manualHp1Level",
+            "manualHp2Level",
+            "flowSelected",
+            "hp1Compressor",
+            "hp1Freq",
+            "hp1Failures",
+            "hp2Compressor",
+            "hp2Freq",
+            "hp2Failures",
+            "hp1Mode",
+            "hp2Mode",
           );
         }
         void triggerNamedButton(buttonKey, refreshKeys.length ? { refreshKeys } : {});
@@ -3908,6 +3945,8 @@
         "manualFlowAbort",
         "manualFlowApplyHeating",
         "manualFlowApplyCooling",
+        "manualHpStart",
+        "manualHpAbort",
       ].includes(key);
       if (!keepCommissioningModalOpen) {
         stopLoginAuthStatusPolling();
@@ -3935,6 +3974,9 @@
         state.commissioningTaskLock = "";
       } else if (key === "manualFlowStart") {
         state.pendingManualFlowStart = false;
+        state.commissioningTaskLock = "";
+      } else if (key === "manualHpStart") {
+        state.pendingManualHpStart = false;
         state.commissioningTaskLock = "";
       }
       state.controlError = `${options.errorPrefix || `Actie mislukt voor "${entity.name}"`}. ${error.message}`;

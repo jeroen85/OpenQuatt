@@ -637,8 +637,10 @@ interval:
           // Cooling has its own water-side dwell/limiter and must react quickly
           // after that limiter changes demand. Do not route CM5 through the
           // slower heating-curve cadence.
+          const bool manual_hp_service_active = oq_manual_hp::owns_control();
           const uint32_t loop_target_ms = (uint32_t) (
-              (is_cooling_mode ? ${oq_heat_loop_tick_s} :
+              (manual_hp_service_active ? ${oq_heat_loop_tick_s} :
+               is_cooling_mode ? ${oq_heat_loop_tick_s} :
                (is_curve_mode ? ${oq_heat_loop_curve_s} : ${oq_heat_loop_powerhouse_s})) * 1000UL);
 
           // After any controller reboot we intentionally keep the compressors blocked for a while.
@@ -685,6 +687,7 @@ interval:
           constexpr int request_strategy_cooling = 1;
           constexpr int request_strategy_curve = 2;
           constexpr int request_strategy_power_house = 3;
+          constexpr int request_strategy_manual_hp = 4;
 
           // =========================
           // 1) Demand path (0..20)
@@ -929,7 +932,90 @@ interval:
           };
 
           // =========================
-          // 1d) Inactive-CM fast exit
+          // 1d) Manual HP service path
+          // Keep CM100 circulation active while sending explicit requests through
+          // the shared actuator. All downstream actuator guards remain normative.
+          // =========================
+          if (manual_hp_service_active) {
+            const int hp1_mode_code = std::max(0, std::min(2, id(oq_manual_hp1_mode_code)));
+            #if OQ_TOPOLOGY_DUO
+            const int hp2_mode_code = std::max(0, std::min(2, id(oq_manual_hp2_mode_code)));
+            #else
+            const int hp2_mode_code = 0;
+            #endif
+            int hp1_req = (hp1_mode_code > 0)
+                ? std::max(0, std::min(10, (int) roundf(id(oq_manual_hp1_level).state)))
+                : 0;
+            int hp2_req = (hp2_mode_code > 0)
+                ? std::max(0, std::min(10, (int) roundf(id(oq_manual_hp2_level).state)))
+                : 0;
+            const bool manual_flow_ok =
+                id(flow_rate_selected).has_state() &&
+                !isnan(id(flow_rate_selected).state) &&
+                id(flow_rate_selected).state >= (float) ${oq_cm_min_flow_lph};
+            const bool safety_stop =
+                id(oq_water_temp_hard_trip_active) ||
+                id(oq_lowflow_fault_active) ||
+                !manual_flow_ok;
+            const bool manual_mode_conflict =
+                hp1_mode_code > 0 &&
+                hp2_mode_code > 0 &&
+                hp1_mode_code != hp2_mode_code;
+            id(oq_manual_hp_mode_allowed) =
+                !id(oq_manual_hp_stop_requested) &&
+                !safety_stop &&
+                !startup_inhibit_active &&
+                !manual_mode_conflict;
+            const bool controlled_stop = id(oq_manual_hp_stop_requested);
+            if (controlled_stop) {
+              // Keep a recently started compressor alive at its technical
+              // minimum until the runtime floor expires. Safety stops below
+              // deliberately remain allowed to override this controlled hold.
+              hp1_req = min_runtime_hold_level(true);
+              #if OQ_TOPOLOGY_DUO
+              hp2_req = min_runtime_hold_level(false);
+              #else
+              hp2_req = 0;
+              #endif
+            }
+            if (safety_stop || startup_inhibit_active || manual_mode_conflict) {
+              hp1_req = 0;
+              hp2_req = 0;
+            } else if (!controlled_stop) {
+              if (hp1_req == 0) hp1_req = min_runtime_hold_level(true);
+              #if OQ_TOPOLOGY_DUO
+              if (hp2_req == 0) hp2_req = min_runtime_hold_level(false);
+              #endif
+            }
+            int manual_mode_code = 0;
+            if (hp1_req > 0 && hp1_mode_code > 0) manual_mode_code = hp1_mode_code;
+            if (hp2_req > 0 && hp2_mode_code > 0) manual_mode_code = hp2_mode_code;
+            if (manual_mode_code == 0 && (hp1_req > 0 || hp2_req > 0)) {
+              manual_mode_code = hold_request_mode_code(hp1_req, hp2_req);
+            }
+            publish_optimizer_reason("manual_hp");
+            publish_request(
+              manual_mode_code,
+              hp1_req,
+              hp2_req,
+              request_strategy_manual_hp,
+              0,
+              safety_stop ? "manual_hp_safety_stop" :
+              (startup_inhibit_active ? "manual_hp_startup_inhibit" :
+              (manual_mode_conflict ? "manual_hp_mode_conflict" : "manual_hp")));
+            id(oq_actuator_hp1_req) = hp1_req;
+            id(oq_actuator_hp2_req) = hp2_req;
+            #if OQ_TOPOLOGY_DUO
+            const int debug_hp2_applied = id(${hc_secondary_last_applied_level_id});
+            #else
+            const int debug_hp2_applied = 0;
+            #endif
+            publish_debug(hp1_req, hp2_req, id(hp1_last_applied_level), debug_hp2_applied);
+            return;
+          }
+
+          // =========================
+          // 1e) Inactive-CM fast exit
           // Shared standby/hold behavior runs before any request-selection logic.
           // =========================
           if (!cm_allows_hp) {

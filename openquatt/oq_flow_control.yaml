@@ -468,7 +468,11 @@ interval:
           // AUTO PI path only: setpoint ramp, PI, startup-hold, and last_good tracking.
           auto run_auto_pi = [&](int pwm_seed) -> int {
             int pwm_local = pwm_seed;
-            const bool cooling_target = (id(oq_control_mode_code) == 5);
+            const bool cooling_target =
+                (id(oq_control_mode_code) == 5) ||
+                (oq_manual_hp::owns_control() &&
+                 (id(oq_manual_hp1_mode_code) == 1 ||
+                  id(oq_manual_hp2_mode_code) == 1));
             const bool manual_flow_owns_pi =
               id(oq_manual_flow_active) &&
               (id(oq_control_mode_code) == 100) &&

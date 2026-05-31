@@ -140,6 +140,7 @@ class BoilerPowerTestRuntime {
     const bool task_is_flow_autotune = task_code == TASK_FLOW_AUTOTUNE;
     const bool task_is_air_purge = task_code == TASK_AIR_PURGE;
     const bool task_is_manual_flow = task_code == oq_commissioning::TASK_MANUAL_FLOW;
+    const bool task_is_manual_hp = task_code == oq_commissioning::TASK_MANUAL_HP;
     const bool boiler_test_running = id(oq_commissioning_active) && task_is_boiler;
     const float flow_lph = id(flow_rate_selected).state;
     const bool flow_stable_now = flow_on_target(flow_lph, cfg);
@@ -147,7 +148,7 @@ class BoilerPowerTestRuntime {
     const bool heat_valid = !isnan(heat_w) && heat_w >= 0.0f;
     log_heartbeat(task_is_boiler, cm_code, flow_lph, heat_w, now_ms, cfg);
 
-    if (task_is_air_purge || task_is_manual_flow) {
+    if (task_is_air_purge || task_is_manual_flow || task_is_manual_hp) {
       return;
     }
 

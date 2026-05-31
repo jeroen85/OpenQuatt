@@ -1,0 +1,161 @@
+# ==============================================================================
+# OpenQuatt - Manual Heat-Pump Service Task
+# ==============================================================================
+#
+# Goal:
+#   Request guarded per-HP compressor levels inside CM100 for service checks.
+#   The shared thermal actuator remains the only writer of HP mode and levels.
+#
+# ==============================================================================
+
+globals:
+  - id: oq_manual_hp_active
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+  - id: oq_manual_hp_stop_requested
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+  - id: oq_manual_hp_mode_allowed
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+  - id: oq_manual_hp1_mode_code
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_manual_hp2_mode_code
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+select:
+  - platform: template
+    id: oq_manual_hp1_mode
+    name: "Manual HP1 service mode"
+    icon: mdi:heat-pump
+    optimistic: false
+    restore_value: false
+    initial_option: "Standby"
+    options:
+      - "Standby"
+      - "Heating"
+      - "Cooling"
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_hydraulics
+    set_action:
+      - lambda: |-
+          oq_manual_hp::runtime().set_mode(1, x.str(), (float) ${oq_cm_min_flow_lph});
+
+  - platform: template
+    id: oq_manual_hp2_mode
+    name: "Manual HP2 service mode"
+    icon: mdi:heat-pump
+    optimistic: false
+    restore_value: false
+    initial_option: "Standby"
+    options:
+      - "Standby"
+      - "Heating"
+      - "Cooling"
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_hydraulics
+    set_action:
+      - lambda: |-
+          oq_manual_hp::runtime().set_mode(2, x.str(), (float) ${oq_cm_min_flow_lph});
+
+number:
+  - platform: template
+    id: oq_manual_hp1_level
+    name: "Manual HP1 compressor level"
+    icon: mdi:speedometer
+    mode: slider
+    min_value: 0
+    max_value: 10
+    step: 1
+    restore_value: false
+    optimistic: true
+    initial_value: 0
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_hydraulics
+
+  - platform: template
+    id: oq_manual_hp2_level
+    name: "Manual HP2 compressor level"
+    icon: mdi:speedometer
+    mode: slider
+    min_value: 0
+    max_value: 10
+    step: 1
+    restore_value: false
+    optimistic: true
+    initial_value: 0
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_hydraulics
+
+button:
+  - platform: template
+    id: oq_manual_hp_start
+    name: "Manual HP Start"
+    icon: mdi:heat-pump-outline
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_hydraulics
+    on_press:
+      - lambda: |-
+          oq_manual_hp::runtime().start();
+
+  - platform: template
+    id: oq_manual_hp_abort
+    name: "Manual HP Abort"
+    icon: mdi:stop-circle-outline
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_hydraulics
+    on_press:
+      - lambda: |-
+          oq_manual_hp::runtime().abort_or_clear();
+
+binary_sensor:
+  - platform: template
+    id: oq_manual_hp_active_sensor
+    name: "Manual HP active"
+    icon: mdi:heat-pump
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_hydraulics
+    lambda: |-
+      // Expose service-task ownership to the dashboard.
+      return id(oq_manual_hp_active);
+
+text_sensor:
+  - platform: template
+    id: oq_manual_hp_status
+    name: "Manual HP status"
+    icon: mdi:information-outline
+    update_interval: never
+    web_server:
+      sorting_group_id: oq_hydraulics
+
+  - platform: template
+    id: oq_manual_hp_guard_status
+    name: "Manual HP guard status"
+    icon: mdi:shield-check-outline
+    update_interval: never
+    web_server:
+      sorting_group_id: oq_hydraulics
+
+interval:
+  - interval: 1s
+    then:
+      - lambda: |-
+          oq_manual_hp::runtime().tick((float) ${oq_cm_min_flow_lph});

@@ -202,6 +202,15 @@ manualFlowActive: { domain: "binary_sensor", name: "Manual flow active", optiona
 manualFlowStatus: { domain: "text_sensor", name: "Manual flow status", optional: true },
 manualFlowSetpoint: { domain: "number", name: "Manual flow service setpoint", optional: true },
 manualFlowTargetIpwm: { domain: "sensor", name: "Manual flow target iPWM", optional: true },
+manualHpStart: { domain: "button", name: "Manual HP Start", optional: true },
+manualHpAbort: { domain: "button", name: "Manual HP Abort", optional: true },
+manualHpActive: { domain: "binary_sensor", name: "Manual HP active", optional: true },
+manualHpStatus: { domain: "text_sensor", name: "Manual HP status", optional: true },
+manualHpGuardStatus: { domain: "text_sensor", name: "Manual HP guard status", optional: true },
+manualHp1Mode: { domain: "select", name: "Manual HP1 service mode", optional: true },
+manualHp2Mode: { domain: "select", name: "Manual HP2 service mode", optional: true },
+manualHp1Level: { domain: "number", name: "Manual HP1 compressor level", optional: true },
+manualHp2Level: { domain: "number", name: "Manual HP2 compressor level", optional: true },
 controlModeLabel: { domain: "text_sensor", name: "Control Mode (Label)" },
 flowMode: { domain: "text_sensor", name: "Flow Mode" },
 dayMax: { domain: "number", name: "Day max level" },
@@ -467,6 +476,24 @@ const COMMISSIONING_STATE_KEYS = [
 "manualFlowStatus",
 "manualFlowSetpoint",
 "manualFlowTargetIpwm",
+"manualHpStart",
+"manualHpAbort",
+"manualHpActive",
+"manualHpStatus",
+"manualHpGuardStatus",
+"manualHp1Mode",
+"manualHp2Mode",
+"manualHp1Level",
+"manualHp2Level",
+"flowSelected",
+"hp1Compressor",
+"hp1Freq",
+"hp1Failures",
+"hp2Compressor",
+"hp2Freq",
+"hp2Failures",
+"hp1Mode",
+"hp2Mode",
 ];
 const CIC_COMPATIBILITY_KEYS = ["cicCompatibilityMode"];
 const COOLING_SETTING_KEYS = [
@@ -1003,6 +1030,7 @@ webServerLogHistoryRequestToken: 0,
 webServerLogHistoryLoaded: false,
 webServerLogScrollRestoreToken: 0,
 cm100CommissioningScrollRestoreToken: 0,
+serviceTaskModalScrollRestoreToken: 0,
 quickStartScrollRestoreToken: 0,
 webServerLogCopyMessage: "",
 webServerLogCopyError: "",
@@ -1026,6 +1054,7 @@ pendingBoilerPowerTestStart: false,
 pendingFlowAutotuneStart: false,
 pendingAirPurgeStart: false,
 pendingManualFlowStart: false,
+pendingManualHpStart: false,
 commissioningTaskLock: "",
 commissioningBoilerHeatPowerDisplay: "",
 headerRenderSignature: "",
@@ -6196,7 +6225,7 @@ return;
 }
 if (action === "open-service-task-modal") {
 const taskKey = String(button.dataset.serviceTask || "").trim();
-if (["autotune", "boiler", "purge", "manual-flow"].includes(taskKey)) {
+if (["autotune", "boiler", "purge", "manual-flow", "manual-hp"].includes(taskKey)) {
 state.systemModal = `service-task-${taskKey}`;
 render();
 syncEntities({ forceBulk: true });
@@ -6216,6 +6245,7 @@ state.pendingBoilerPowerTestStart = false;
 state.pendingFlowAutotuneStart = false;
 state.pendingAirPurgeStart = false;
 state.pendingManualFlowStart = false;
+state.pendingManualHpStart = false;
 state.commissioningTaskLock = "";
 state.commissioningBoilerHeatPowerDisplay = "";
 } else if (buttonKey === "boilerPowerTestStart") {
@@ -6223,6 +6253,7 @@ state.pendingBoilerPowerTestStart = true;
 state.pendingFlowAutotuneStart = false;
 state.pendingAirPurgeStart = false;
 state.pendingManualFlowStart = false;
+state.pendingManualHpStart = false;
 state.commissioningTaskLock = "boiler";
 state.commissioningBoilerHeatPowerDisplay = "";
 } else if (buttonKey === "boilerPowerTestAbort" || buttonKey === "boilerPowerTestApply") {
@@ -6232,6 +6263,7 @@ state.pendingFlowAutotuneStart = true;
 state.pendingBoilerPowerTestStart = false;
 state.pendingAirPurgeStart = false;
 state.pendingManualFlowStart = false;
+state.pendingManualHpStart = false;
 state.commissioningTaskLock = "autotune";
 } else if (buttonKey === "flowAutotuneAbort" || buttonKey === "flowAutotuneApply") {
 state.commissioningTaskLock = "autotune";
@@ -6240,6 +6272,7 @@ state.pendingAirPurgeStart = true;
 state.pendingBoilerPowerTestStart = false;
 state.pendingFlowAutotuneStart = false;
 state.pendingManualFlowStart = false;
+state.pendingManualHpStart = false;
 state.commissioningTaskLock = "purge";
 } else if (buttonKey === "airPurgeAbort") {
 state.commissioningTaskLock = "purge";
@@ -6248,9 +6281,19 @@ state.pendingManualFlowStart = true;
 state.pendingBoilerPowerTestStart = false;
 state.pendingFlowAutotuneStart = false;
 state.pendingAirPurgeStart = false;
+state.pendingManualHpStart = false;
 state.commissioningTaskLock = "manual-flow";
 } else if (buttonKey === "manualFlowAbort") {
 state.commissioningTaskLock = "manual-flow";
+} else if (buttonKey === "manualHpStart") {
+state.pendingManualHpStart = true;
+state.pendingBoilerPowerTestStart = false;
+state.pendingFlowAutotuneStart = false;
+state.pendingAirPurgeStart = false;
+state.pendingManualFlowStart = false;
+state.commissioningTaskLock = "manual-hp";
+} else if (buttonKey === "manualHpAbort") {
+state.commissioningTaskLock = "manual-hp";
 }
 const refreshKeys = [];
 if (buttonKey === "commissioningCm100Start" || buttonKey === "commissioningCm100Stop") {
@@ -6264,6 +6307,9 @@ refreshKeys.push(
 "airPurgeActive",
 "manualFlowStatus",
 "manualFlowActive",
+"manualHpStatus",
+"manualHpGuardStatus",
+"manualHpActive",
 );
 } else if (buttonKey === "boilerPowerTestStart" || buttonKey === "boilerPowerTestAbort" || buttonKey === "boilerPowerTestApply") {
 refreshKeys.push(
@@ -6304,6 +6350,26 @@ refreshKeys.push(
 "flowMode",
 "flowSetpoint",
 "coolingFlowSetpoint",
+);
+} else if (buttonKey === "manualHpStart" || buttonKey === "manualHpAbort") {
+refreshKeys.push(
+"commissioningStatus",
+"manualHpStatus",
+"manualHpGuardStatus",
+"manualHpActive",
+"manualHp1Mode",
+"manualHp2Mode",
+"manualHp1Level",
+"manualHp2Level",
+"flowSelected",
+"hp1Compressor",
+"hp1Freq",
+"hp1Failures",
+"hp2Compressor",
+"hp2Freq",
+"hp2Failures",
+"hp1Mode",
+"hp2Mode",
 );
 }
 void triggerNamedButton(buttonKey, refreshKeys.length ? { refreshKeys } : {});
@@ -7191,6 +7257,8 @@ const keepCommissioningModalOpen = [
 "manualFlowAbort",
 "manualFlowApplyHeating",
 "manualFlowApplyCooling",
+"manualHpStart",
+"manualHpAbort",
 ].includes(key);
 if (!keepCommissioningModalOpen) {
 stopLoginAuthStatusPolling();
@@ -7218,6 +7286,9 @@ state.pendingAirPurgeStart = false;
 state.commissioningTaskLock = "";
 } else if (key === "manualFlowStart") {
 state.pendingManualFlowStart = false;
+state.commissioningTaskLock = "";
+} else if (key === "manualHpStart") {
+state.pendingManualHpStart = false;
 state.commissioningTaskLock = "";
 }
 state.controlError = `${options.errorPrefix || `Actie mislukt voor "${entity.name}"`}. ${error.message}`;
@@ -7809,6 +7880,50 @@ if (state.cm100CommissioningScrollRestoreToken !== restoreToken || state.systemM
 return;
 }
 restoreCm100CommissioningScrollState(scrollState);
+};
+if (defer) {
+window.requestAnimationFrame(applyScrollState);
+return;
+}
+applyScrollState();
+}
+function getServiceTaskModalScrollerElement() {
+if (!state.root) {
+return null;
+}
+return state.root.querySelector("[data-oq-service-task-scroller]");
+}
+function captureServiceTaskModalScrollState() {
+const scroller = getServiceTaskModalScrollerElement();
+if (!scroller) {
+return null;
+}
+return {
+scrollTop: scroller.scrollTop,
+};
+}
+function restoreServiceTaskModalScrollState(scrollState) {
+if (!scrollState) {
+return;
+}
+const scroller = getServiceTaskModalScrollerElement();
+if (!scroller) {
+return;
+}
+scroller.scrollTop = Math.max(0, scrollState.scrollTop);
+}
+function queueServiceTaskModalScrollRestore(scrollState, defer = true) {
+if (!scrollState) {
+return;
+}
+const restoreToken = Number(state.serviceTaskModalScrollRestoreToken || 0) + 1;
+state.serviceTaskModalScrollRestoreToken = restoreToken;
+const applyScrollState = () => {
+if (state.serviceTaskModalScrollRestoreToken !== restoreToken ||
+!String(state.systemModal || "").startsWith("service-task-")) {
+return;
+}
+restoreServiceTaskModalScrollState(scrollState);
 };
 if (defer) {
 window.requestAnimationFrame(applyScrollState);
@@ -8442,6 +8557,13 @@ if (!text || text === "0" || text === "—") {
 return fallback;
 }
 return text;
+}
+function getManualHpActualValue(levelKey, frequencyKey) {
+const level = getEntityNumericValue(levelKey);
+const frequency = getEntityNumericValue(frequencyKey);
+const levelText = Number.isNaN(level) ? "Lvl —" : `Lvl ${Math.round(level)}`;
+const frequencyText = Number.isNaN(frequency) ? "— Hz" : `${Math.round(frequency)} Hz`;
+return `${levelText} (${frequencyText})`;
 }
 function isCommissioningTaskStatusBusy(status) {
 const normalized = String(status || "").trim().toUpperCase();
@@ -9845,6 +9967,17 @@ const manualFlowTaskLocked = state.commissioningTaskLock === "manual-flow";
 const manualFlowTaskTerminal = isCommissioningTaskStatusTerminal(manualFlowStatus);
 const manualFlowTaskRunning = !manualFlowTaskTerminal &&
 (manualFlowActive || manualFlowPending || manualFlowTaskLocked || isCommissioningTaskStatusActive(manualFlowStatus));
+const manualHpStatus = getStatusTextValue("manualHpStatus", "IDLE");
+const manualHpActive = isEntityActive("manualHpActive");
+const manualHpBusy = state.loadingEntities || state.busyAction === "manualHpStart" || state.busyAction === "manualHpAbort";
+const manualHpControls = Boolean(state.entities.manualHpStart || state.entities.manualHpAbort);
+const manualHpPending = Boolean(state.pendingManualHpStart);
+const manualHpTaskLocked = state.commissioningTaskLock === "manual-hp";
+const manualHpTaskTerminal = isCommissioningTaskStatusTerminal(manualHpStatus);
+const manualHpTaskRunning = !manualHpTaskTerminal &&
+(manualHpActive || manualHpPending || manualHpTaskLocked || isCommissioningTaskStatusActive(manualHpStatus));
+const manualHpSafetyStopped = /SAFETY STOP/.test(String(manualHpStatus || "").toUpperCase());
+const manualHpStopping = /STOPPING/.test(String(manualHpStatus || "").toUpperCase());
 const flowKpSuggested = getSettingsStatValue("flowKpSuggested", { decimals: 5, trimTrailingZeros: true });
 const flowKiSuggested = getSettingsStatValue("flowKiSuggested", { decimals: 5, trimTrailingZeros: true });
 const boilerResultReady = /DONE|APPLIED/.test(String(boilerStatus || "").toUpperCase());
@@ -9871,16 +10004,21 @@ const airPurgeStatusDisplay = cm100Ready
 const manualFlowStatusDisplay = cm100Ready
 ? (manualFlowTaskRunning ? "Actief" : "Klaar om te starten")
 : "Wachten op CM100";
-const boilerStartDisabled = !cm100Ready || boilerBusy || !boilerControls || autotuneTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || boilerTaskRunning || autotuneTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || boilerPending;
+const manualHpStatusDisplay = cm100Ready
+? (manualHpTaskRunning ? (manualHpStopping ? "Bezig met stoppen" : (manualHpSafetyStopped ? "Veiligheidsstop" : "Actief")) : "Klaar om te starten")
+: "Wachten op CM100";
+const boilerStartDisabled = !cm100Ready || boilerBusy || !boilerControls || autotuneTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || manualHpTaskRunning || boilerTaskRunning || autotuneTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || manualHpTaskLocked || boilerPending;
 const boilerAbortDisabled = boilerBusy || !(boilerTaskRunning || boilerTaskLocked || boilerPending);
 const boilerApplyDisabled = boilerBusy || boilerStartDisabled || !boilerResultReady || autotuneTaskRunning || airPurgeTaskRunning;
-const autotuneStartDisabled = !cm100Ready || autotuneBusy || !autotuneControls || boilerTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || autotuneTaskRunning || boilerTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || autotunePending;
+const autotuneStartDisabled = !cm100Ready || autotuneBusy || !autotuneControls || boilerTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || manualHpTaskRunning || autotuneTaskRunning || boilerTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || manualHpTaskLocked || autotunePending;
 const autotuneAbortDisabled = autotuneBusy || !(autotuneTaskRunning || autotuneTaskLocked || autotunePending);
 const autotuneApplyDisabled = autotuneBusy || autotuneStartDisabled || !autotuneResultReady || boilerTaskRunning || airPurgeTaskRunning;
-const airPurgeStartDisabled = !cm100Ready || airPurgeBusy || !airPurgeControls || boilerTaskRunning || autotuneTaskRunning || manualFlowTaskRunning || airPurgeTaskRunning || boilerTaskLocked || autotuneTaskLocked || manualFlowTaskLocked || airPurgePending;
+const airPurgeStartDisabled = !cm100Ready || airPurgeBusy || !airPurgeControls || boilerTaskRunning || autotuneTaskRunning || manualFlowTaskRunning || manualHpTaskRunning || airPurgeTaskRunning || boilerTaskLocked || autotuneTaskLocked || manualFlowTaskLocked || manualHpTaskLocked || airPurgePending;
 const airPurgeAbortDisabled = airPurgeBusy || !(airPurgeTaskRunning || airPurgeTaskLocked || airPurgePending);
-const manualFlowStartDisabled = !cm100Ready || manualFlowBusy || !manualFlowControls || boilerTaskRunning || autotuneTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || boilerTaskLocked || autotuneTaskLocked || airPurgeTaskLocked || manualFlowPending;
+const manualFlowStartDisabled = !cm100Ready || manualFlowBusy || !manualFlowControls || boilerTaskRunning || autotuneTaskRunning || airPurgeTaskRunning || manualHpTaskRunning || manualFlowTaskRunning || boilerTaskLocked || autotuneTaskLocked || airPurgeTaskLocked || manualHpTaskLocked || manualFlowPending;
 const manualFlowAbortDisabled = manualFlowBusy || !(manualFlowTaskRunning || manualFlowTaskLocked || manualFlowPending);
+const manualHpStartDisabled = !cm100Ready || manualHpBusy || !manualHpControls || boilerTaskRunning || autotuneTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || manualHpTaskRunning || boilerTaskLocked || autotuneTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || manualHpPending;
+const manualHpAbortDisabled = manualHpBusy || !(manualHpTaskRunning || manualHpTaskLocked || manualHpPending);
 if (cm100Pending && cm100Ready) {
 state.pendingCommissioningCm100Start = false;
 }
@@ -9909,6 +10047,12 @@ if (manualFlowPending && (manualFlowActive || isCommissioningTaskStatusTerminal(
 state.pendingManualFlowStart = false;
 }
 if (manualFlowTaskLocked && (manualFlowActive || isCommissioningTaskStatusTerminal(manualFlowStatus))) {
+state.commissioningTaskLock = "";
+}
+if (manualHpPending && (manualHpActive || isCommissioningTaskStatusTerminal(manualHpStatus))) {
+state.pendingManualHpStart = false;
+}
+if (manualHpTaskLocked && (manualHpActive || isCommissioningTaskStatusTerminal(manualHpStatus))) {
 state.commissioningTaskLock = "";
 }
 const cm100StatusDisplay = cm100WaitingForCm100 ? "Wachten op CM100" : cm100Status;
@@ -9958,6 +10102,68 @@ modalActions: `
 ${state.entities.manualFlowApplyHeating ? renderNamedActionButton("manualFlowApplyHeating", "Overnemen voor verwarmen", "oq-helper-button oq-helper-button--ghost", manualFlowBusy) : ""}
 ${state.entities.manualFlowApplyCooling ? renderNamedActionButton("manualFlowApplyCooling", "Overnemen voor koelen", "oq-helper-button oq-helper-button--ghost", manualFlowBusy) : ""}
 `,
+},
+{
+key: "manual-hp",
+title: "Handmatige warmtepompbediening",
+label: "Handmatige warmtepomp",
+summary: "Selecteer een werkmodus en vraag per warmtepomp een compressorstand aan binnen de bestaande bewaking.",
+status: manualHpStatusDisplay,
+available: Boolean(manualHpControls || state.entities.manualHpStatus),
+openDisabled: !cm100Ready,
+cardMarkup: renderCommissioningTaskCard({
+taskKey: "manual-hp",
+title: "Handmatige warmtepompbediening",
+copy: "Start eerst de service-taak zodat de waterpomp draait. Zodra voldoende flow is gemeten kun je per warmtepomp vanuit Standby naar verwarmen of koelen schakelen en daarna een compressorstand aanvragen.",
+subcopy: "Low-flow, maximale watertemperatuur, minimum draaitijd, minimum uit-tijd en veilige modusovergangen blijven actief. De koelvloer, silent-modus, dag/nacht-cap en normaal uitgesloten compressorstanden worden voor deze handmatige test bewust genegeerd.",
+status: manualHpStatusDisplay,
+statusCopy: manualHpTaskRunning
+? (manualHpStopping
+? "De compressorvraag staat op 0. De waterpomp blijft draaien totdat de minimale draaitijd veilig is afgerond."
+: manualHpSafetyStopped
+? "De bewaking heeft de aangevraagde standen teruggezet naar 0. Controleer de oorzaak voordat je opnieuw opschaalt."
+: "De service-taak is actief. Een veiligheidsstop zet de aangevraagde standen terug naar 0; opnieuw opschalen vereist een bewuste handeling.")
+: (cm100Ready ? "CM100 staat klaar. Start de taak om handmatige warmtepompbediening vrij te geven." : "Start CM100 eerst."),
+progressTask: "",
+actions: `
+${state.entities.manualHpStart || state.entities.manualHpAbort ? renderNamedToggleActionButton({
+active: manualHpTaskRunning,
+startKey: "manualHpStart",
+stopKey: "manualHpAbort",
+startLabel: "Bediening starten",
+stopLabel: "Bediening stoppen",
+startDisabled: manualHpBusy || manualHpStartDisabled,
+stopDisabled: manualHpBusy || manualHpAbortDisabled,
+}) : ""}
+`,
+controls: `
+<div class="oq-settings-manual-hp-controls">
+<div class="oq-settings-manual-hp-unit">
+${renderSettingsSelectField("manualHp1Mode", "Warmtepomp 1 werkmodus", "Start in Standby. Verwarmen of koelen kan pas worden gekozen zodra voldoende flow is gemeten.", "oq-settings-field--compact")}
+${renderSettingsSliderField("manualHp1Level", "Warmtepomp 1 compressorstand", "Aangevraagde stand 0 tot en met 10. Kies eerst een werkmodus. Normaal uitgesloten standen mogen tijdens deze handmatige test bewust worden gekozen.", "oq-settings-field--compact")}
+</div>
+${hasEntity("hp2ExcludedA") ? `
+<div class="oq-settings-manual-hp-unit">
+${renderSettingsSelectField("manualHp2Mode", "Warmtepomp 2 werkmodus", "Start in Standby. Verwarmen of koelen kan pas worden gekozen zodra voldoende flow is gemeten.", "oq-settings-field--compact")}
+${renderSettingsSliderField("manualHp2Level", "Warmtepomp 2 compressorstand", "Aangevraagde stand 0 tot en met 10. Kies eerst een werkmodus. Normaal uitgesloten standen mogen tijdens deze handmatige test bewust worden gekozen.", "oq-settings-field--compact")}
+</div>
+` : ""}
+</div>
+`,
+metrics: `
+<p class="oq-settings-manual-flow-results-title">Resultaten</p>
+<div class="oq-settings-manual-hp-results">
+${renderSettingsStaticField("flowSelected", "Gemeten flow", "Actuele doorstroming in het watercircuit.", getSettingsStatValue("flowSelected"), "oq-settings-field--compact")}
+${renderSettingsStaticField("hp1Compressor", "Warmtepomp 1 actueel", "Door de actuator werkelijk toegepaste compressorstand en gemeten compressorfrequentie.", getManualHpActualValue("hp1Compressor", "hp1Freq"), "oq-settings-field--compact")}
+${hasEntity("hp2Compressor") ? renderSettingsStaticField("hp2Compressor", "Warmtepomp 2 actueel", "Door de actuator werkelijk toegepaste compressorstand en gemeten compressorfrequentie.", getManualHpActualValue("hp2Compressor", "hp2Freq"), "oq-settings-field--compact") : ""}
+</div>
+${renderSettingsStaticField("manualHpGuardStatus", "Bewaking", "Toont waarom een handmatig verzoek tijdelijk niet of nog niet volledig wordt toegepast.", getEntityValue("manualHpGuardStatus") || "Vrijgegeven", "oq-settings-field--compact oq-settings-field--full")}
+<div class="oq-settings-manual-hp-statuses">
+${renderSettingsStaticField("hp1Failures", "Warmtepomp 1 statusmelding", "Actuele melding die de warmtepomp zelf rapporteert.", formatFailures(getEntityStateText("hp1Failures", "None")), "oq-settings-field--compact")}
+${hasEntity("hp2Failures") ? renderSettingsStaticField("hp2Failures", "Warmtepomp 2 statusmelding", "Actuele melding die de warmtepomp zelf rapporteert.", formatFailures(getEntityStateText("hp2Failures", "None")), "oq-settings-field--compact") : ""}
+</div>
+`,
+}),
 },
 {
 key: "autotune",
@@ -10143,7 +10349,7 @@ return "";
 }
 return `
 <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
-<section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--scrollable oq-helper-modal--service-task" role="dialog" aria-modal="true" aria-labelledby="oq-service-task-modal-title">
+<section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--scrollable oq-helper-modal--service-task" data-oq-service-task-scroller role="dialog" aria-modal="true" aria-labelledby="oq-service-task-modal-title">
 <div class="oq-helper-modal-head">
 <div>
 <p class="oq-helper-modal-kicker">Service</p>
@@ -14675,6 +14881,9 @@ const webServerLogScrollState = state.systemModal === "webserver-logs"
 const cm100CommissioningScrollState = state.systemModal === "cm100-commissioning"
 ? captureCm100CommissioningScrollState()
 : null;
+const serviceTaskModalScrollState = String(state.systemModal || "").startsWith("service-task-")
+? captureServiceTaskModalScrollState()
+: null;
 const quickStartScrollState = state.quickStartModalOpen
 ? captureQuickStartScrollState()
 : null;
@@ -14693,6 +14902,7 @@ syncDocumentTheme();
 syncDocumentTitle();
 queueWebServerLogScrollRestore(webServerLogScrollState);
 queueCm100CommissioningScrollRestore(cm100CommissioningScrollState);
+queueServiceTaskModalScrollRestore(serviceTaskModalScrollState);
 queueQuickStartScrollRestore(quickStartScrollState);
 return;
 }
@@ -14739,6 +14949,7 @@ syncDocumentTheme();
 syncDocumentTitle();
 queueWebServerLogScrollRestore(webServerLogScrollState);
 queueCm100CommissioningScrollRestore(cm100CommissioningScrollState);
+queueServiceTaskModalScrollRestore(serviceTaskModalScrollState);
 queueQuickStartScrollRestore(quickStartScrollState);
 }
 function escapeHtml(value) {

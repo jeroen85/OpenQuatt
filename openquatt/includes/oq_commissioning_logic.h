@@ -8,6 +8,7 @@ enum TaskCode {
   TASK_FLOW_AUTOTUNE = 2,
   TASK_AIR_PURGE = 3,
   TASK_MANUAL_FLOW = 4,
+  TASK_MANUAL_HP = 5,
 };
 
 enum TaskStateCode {

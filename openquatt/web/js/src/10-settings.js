@@ -67,6 +67,14 @@
     return text;
   }
 
+  function getManualHpActualValue(levelKey, frequencyKey) {
+    const level = getEntityNumericValue(levelKey);
+    const frequency = getEntityNumericValue(frequencyKey);
+    const levelText = Number.isNaN(level) ? "Lvl —" : `Lvl ${Math.round(level)}`;
+    const frequencyText = Number.isNaN(frequency) ? "— Hz" : `${Math.round(frequency)} Hz`;
+    return `${levelText} (${frequencyText})`;
+  }
+
   function isCommissioningTaskStatusBusy(status) {
     const normalized = String(status || "").trim().toUpperCase();
     if (!normalized || normalized === "0" || normalized === "IDLE" || normalized === "CM100 READY" || normalized === "CM100 STOPPED") {
@@ -1579,6 +1587,17 @@
     const manualFlowTaskTerminal = isCommissioningTaskStatusTerminal(manualFlowStatus);
     const manualFlowTaskRunning = !manualFlowTaskTerminal &&
       (manualFlowActive || manualFlowPending || manualFlowTaskLocked || isCommissioningTaskStatusActive(manualFlowStatus));
+    const manualHpStatus = getStatusTextValue("manualHpStatus", "IDLE");
+    const manualHpActive = isEntityActive("manualHpActive");
+    const manualHpBusy = state.loadingEntities || state.busyAction === "manualHpStart" || state.busyAction === "manualHpAbort";
+    const manualHpControls = Boolean(state.entities.manualHpStart || state.entities.manualHpAbort);
+    const manualHpPending = Boolean(state.pendingManualHpStart);
+    const manualHpTaskLocked = state.commissioningTaskLock === "manual-hp";
+    const manualHpTaskTerminal = isCommissioningTaskStatusTerminal(manualHpStatus);
+    const manualHpTaskRunning = !manualHpTaskTerminal &&
+      (manualHpActive || manualHpPending || manualHpTaskLocked || isCommissioningTaskStatusActive(manualHpStatus));
+    const manualHpSafetyStopped = /SAFETY STOP/.test(String(manualHpStatus || "").toUpperCase());
+    const manualHpStopping = /STOPPING/.test(String(manualHpStatus || "").toUpperCase());
     const flowKpSuggested = getSettingsStatValue("flowKpSuggested", { decimals: 5, trimTrailingZeros: true });
     const flowKiSuggested = getSettingsStatValue("flowKiSuggested", { decimals: 5, trimTrailingZeros: true });
     const boilerResultReady = /DONE|APPLIED/.test(String(boilerStatus || "").toUpperCase());
@@ -1605,16 +1624,21 @@
     const manualFlowStatusDisplay = cm100Ready
       ? (manualFlowTaskRunning ? "Actief" : "Klaar om te starten")
       : "Wachten op CM100";
-    const boilerStartDisabled = !cm100Ready || boilerBusy || !boilerControls || autotuneTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || boilerTaskRunning || autotuneTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || boilerPending;
+    const manualHpStatusDisplay = cm100Ready
+      ? (manualHpTaskRunning ? (manualHpStopping ? "Bezig met stoppen" : (manualHpSafetyStopped ? "Veiligheidsstop" : "Actief")) : "Klaar om te starten")
+      : "Wachten op CM100";
+    const boilerStartDisabled = !cm100Ready || boilerBusy || !boilerControls || autotuneTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || manualHpTaskRunning || boilerTaskRunning || autotuneTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || manualHpTaskLocked || boilerPending;
     const boilerAbortDisabled = boilerBusy || !(boilerTaskRunning || boilerTaskLocked || boilerPending);
     const boilerApplyDisabled = boilerBusy || boilerStartDisabled || !boilerResultReady || autotuneTaskRunning || airPurgeTaskRunning;
-    const autotuneStartDisabled = !cm100Ready || autotuneBusy || !autotuneControls || boilerTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || autotuneTaskRunning || boilerTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || autotunePending;
+    const autotuneStartDisabled = !cm100Ready || autotuneBusy || !autotuneControls || boilerTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || manualHpTaskRunning || autotuneTaskRunning || boilerTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || manualHpTaskLocked || autotunePending;
     const autotuneAbortDisabled = autotuneBusy || !(autotuneTaskRunning || autotuneTaskLocked || autotunePending);
     const autotuneApplyDisabled = autotuneBusy || autotuneStartDisabled || !autotuneResultReady || boilerTaskRunning || airPurgeTaskRunning;
-    const airPurgeStartDisabled = !cm100Ready || airPurgeBusy || !airPurgeControls || boilerTaskRunning || autotuneTaskRunning || manualFlowTaskRunning || airPurgeTaskRunning || boilerTaskLocked || autotuneTaskLocked || manualFlowTaskLocked || airPurgePending;
+    const airPurgeStartDisabled = !cm100Ready || airPurgeBusy || !airPurgeControls || boilerTaskRunning || autotuneTaskRunning || manualFlowTaskRunning || manualHpTaskRunning || airPurgeTaskRunning || boilerTaskLocked || autotuneTaskLocked || manualFlowTaskLocked || manualHpTaskLocked || airPurgePending;
     const airPurgeAbortDisabled = airPurgeBusy || !(airPurgeTaskRunning || airPurgeTaskLocked || airPurgePending);
-    const manualFlowStartDisabled = !cm100Ready || manualFlowBusy || !manualFlowControls || boilerTaskRunning || autotuneTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || boilerTaskLocked || autotuneTaskLocked || airPurgeTaskLocked || manualFlowPending;
+    const manualFlowStartDisabled = !cm100Ready || manualFlowBusy || !manualFlowControls || boilerTaskRunning || autotuneTaskRunning || airPurgeTaskRunning || manualHpTaskRunning || manualFlowTaskRunning || boilerTaskLocked || autotuneTaskLocked || airPurgeTaskLocked || manualHpTaskLocked || manualFlowPending;
     const manualFlowAbortDisabled = manualFlowBusy || !(manualFlowTaskRunning || manualFlowTaskLocked || manualFlowPending);
+    const manualHpStartDisabled = !cm100Ready || manualHpBusy || !manualHpControls || boilerTaskRunning || autotuneTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || manualHpTaskRunning || boilerTaskLocked || autotuneTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || manualHpPending;
+    const manualHpAbortDisabled = manualHpBusy || !(manualHpTaskRunning || manualHpTaskLocked || manualHpPending);
 
     if (cm100Pending && cm100Ready) {
       state.pendingCommissioningCm100Start = false;
@@ -1644,6 +1668,12 @@
       state.pendingManualFlowStart = false;
     }
     if (manualFlowTaskLocked && (manualFlowActive || isCommissioningTaskStatusTerminal(manualFlowStatus))) {
+      state.commissioningTaskLock = "";
+    }
+    if (manualHpPending && (manualHpActive || isCommissioningTaskStatusTerminal(manualHpStatus))) {
+      state.pendingManualHpStart = false;
+    }
+    if (manualHpTaskLocked && (manualHpActive || isCommissioningTaskStatusTerminal(manualHpStatus))) {
       state.commissioningTaskLock = "";
     }
 
@@ -1695,6 +1725,68 @@
           ${state.entities.manualFlowApplyHeating ? renderNamedActionButton("manualFlowApplyHeating", "Overnemen voor verwarmen", "oq-helper-button oq-helper-button--ghost", manualFlowBusy) : ""}
           ${state.entities.manualFlowApplyCooling ? renderNamedActionButton("manualFlowApplyCooling", "Overnemen voor koelen", "oq-helper-button oq-helper-button--ghost", manualFlowBusy) : ""}
         `,
+      },
+      {
+        key: "manual-hp",
+        title: "Handmatige warmtepompbediening",
+        label: "Handmatige warmtepomp",
+        summary: "Selecteer een werkmodus en vraag per warmtepomp een compressorstand aan binnen de bestaande bewaking.",
+        status: manualHpStatusDisplay,
+        available: Boolean(manualHpControls || state.entities.manualHpStatus),
+        openDisabled: !cm100Ready,
+        cardMarkup: renderCommissioningTaskCard({
+          taskKey: "manual-hp",
+          title: "Handmatige warmtepompbediening",
+          copy: "Start eerst de service-taak zodat de waterpomp draait. Zodra voldoende flow is gemeten kun je per warmtepomp vanuit Standby naar verwarmen of koelen schakelen en daarna een compressorstand aanvragen.",
+          subcopy: "Low-flow, maximale watertemperatuur, minimum draaitijd, minimum uit-tijd en veilige modusovergangen blijven actief. De koelvloer, silent-modus, dag/nacht-cap en normaal uitgesloten compressorstanden worden voor deze handmatige test bewust genegeerd.",
+          status: manualHpStatusDisplay,
+          statusCopy: manualHpTaskRunning
+            ? (manualHpStopping
+              ? "De compressorvraag staat op 0. De waterpomp blijft draaien totdat de minimale draaitijd veilig is afgerond."
+              : manualHpSafetyStopped
+              ? "De bewaking heeft de aangevraagde standen teruggezet naar 0. Controleer de oorzaak voordat je opnieuw opschaalt."
+              : "De service-taak is actief. Een veiligheidsstop zet de aangevraagde standen terug naar 0; opnieuw opschalen vereist een bewuste handeling.")
+            : (cm100Ready ? "CM100 staat klaar. Start de taak om handmatige warmtepompbediening vrij te geven." : "Start CM100 eerst."),
+          progressTask: "",
+          actions: `
+            ${state.entities.manualHpStart || state.entities.manualHpAbort ? renderNamedToggleActionButton({
+              active: manualHpTaskRunning,
+              startKey: "manualHpStart",
+              stopKey: "manualHpAbort",
+              startLabel: "Bediening starten",
+              stopLabel: "Bediening stoppen",
+              startDisabled: manualHpBusy || manualHpStartDisabled,
+              stopDisabled: manualHpBusy || manualHpAbortDisabled,
+            }) : ""}
+          `,
+          controls: `
+            <div class="oq-settings-manual-hp-controls">
+              <div class="oq-settings-manual-hp-unit">
+                ${renderSettingsSelectField("manualHp1Mode", "Warmtepomp 1 werkmodus", "Start in Standby. Verwarmen of koelen kan pas worden gekozen zodra voldoende flow is gemeten.", "oq-settings-field--compact")}
+                ${renderSettingsSliderField("manualHp1Level", "Warmtepomp 1 compressorstand", "Aangevraagde stand 0 tot en met 10. Kies eerst een werkmodus. Normaal uitgesloten standen mogen tijdens deze handmatige test bewust worden gekozen.", "oq-settings-field--compact")}
+              </div>
+              ${hasEntity("hp2ExcludedA") ? `
+                <div class="oq-settings-manual-hp-unit">
+                  ${renderSettingsSelectField("manualHp2Mode", "Warmtepomp 2 werkmodus", "Start in Standby. Verwarmen of koelen kan pas worden gekozen zodra voldoende flow is gemeten.", "oq-settings-field--compact")}
+                  ${renderSettingsSliderField("manualHp2Level", "Warmtepomp 2 compressorstand", "Aangevraagde stand 0 tot en met 10. Kies eerst een werkmodus. Normaal uitgesloten standen mogen tijdens deze handmatige test bewust worden gekozen.", "oq-settings-field--compact")}
+                </div>
+              ` : ""}
+            </div>
+          `,
+          metrics: `
+            <p class="oq-settings-manual-flow-results-title">Resultaten</p>
+            <div class="oq-settings-manual-hp-results">
+              ${renderSettingsStaticField("flowSelected", "Gemeten flow", "Actuele doorstroming in het watercircuit.", getSettingsStatValue("flowSelected"), "oq-settings-field--compact")}
+              ${renderSettingsStaticField("hp1Compressor", "Warmtepomp 1 actueel", "Door de actuator werkelijk toegepaste compressorstand en gemeten compressorfrequentie.", getManualHpActualValue("hp1Compressor", "hp1Freq"), "oq-settings-field--compact")}
+              ${hasEntity("hp2Compressor") ? renderSettingsStaticField("hp2Compressor", "Warmtepomp 2 actueel", "Door de actuator werkelijk toegepaste compressorstand en gemeten compressorfrequentie.", getManualHpActualValue("hp2Compressor", "hp2Freq"), "oq-settings-field--compact") : ""}
+            </div>
+            ${renderSettingsStaticField("manualHpGuardStatus", "Bewaking", "Toont waarom een handmatig verzoek tijdelijk niet of nog niet volledig wordt toegepast.", getEntityValue("manualHpGuardStatus") || "Vrijgegeven", "oq-settings-field--compact oq-settings-field--full")}
+            <div class="oq-settings-manual-hp-statuses">
+              ${renderSettingsStaticField("hp1Failures", "Warmtepomp 1 statusmelding", "Actuele melding die de warmtepomp zelf rapporteert.", formatFailures(getEntityStateText("hp1Failures", "None")), "oq-settings-field--compact")}
+              ${hasEntity("hp2Failures") ? renderSettingsStaticField("hp2Failures", "Warmtepomp 2 statusmelding", "Actuele melding die de warmtepomp zelf rapporteert.", formatFailures(getEntityStateText("hp2Failures", "None")), "oq-settings-field--compact") : ""}
+            </div>
+          `,
+        }),
       },
       {
         key: "autotune",
@@ -1887,7 +1979,7 @@
 
     return `
       <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
-        <section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--scrollable oq-helper-modal--service-task" role="dialog" aria-modal="true" aria-labelledby="oq-service-task-modal-title">
+        <section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--scrollable oq-helper-modal--service-task" data-oq-service-task-scroller role="dialog" aria-modal="true" aria-labelledby="oq-service-task-modal-title">
           <div class="oq-helper-modal-head">
             <div>
               <p class="oq-helper-modal-kicker">Service</p>

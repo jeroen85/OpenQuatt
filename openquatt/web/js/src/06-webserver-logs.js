@@ -369,6 +369,60 @@ function queueCm100CommissioningScrollRestore(scrollState, defer = true) {
   applyScrollState();
 }
 
+function getServiceTaskModalScrollerElement() {
+  if (!state.root) {
+    return null;
+  }
+  return state.root.querySelector("[data-oq-service-task-scroller]");
+}
+
+function captureServiceTaskModalScrollState() {
+  const scroller = getServiceTaskModalScrollerElement();
+  if (!scroller) {
+    return null;
+  }
+
+  return {
+    scrollTop: scroller.scrollTop,
+  };
+}
+
+function restoreServiceTaskModalScrollState(scrollState) {
+  if (!scrollState) {
+    return;
+  }
+
+  const scroller = getServiceTaskModalScrollerElement();
+  if (!scroller) {
+    return;
+  }
+
+  scroller.scrollTop = Math.max(0, scrollState.scrollTop);
+}
+
+function queueServiceTaskModalScrollRestore(scrollState, defer = true) {
+  if (!scrollState) {
+    return;
+  }
+
+  const restoreToken = Number(state.serviceTaskModalScrollRestoreToken || 0) + 1;
+  state.serviceTaskModalScrollRestoreToken = restoreToken;
+  const applyScrollState = () => {
+    if (state.serviceTaskModalScrollRestoreToken !== restoreToken ||
+        !String(state.systemModal || "").startsWith("service-task-")) {
+      return;
+    }
+    restoreServiceTaskModalScrollState(scrollState);
+  };
+
+  if (defer) {
+    window.requestAnimationFrame(applyScrollState);
+    return;
+  }
+
+  applyScrollState();
+}
+
 async function refreshWebServerLogHistory(options = {}) {
   if (state.nativeOpen || typeof window.fetch !== "function") {
     return;

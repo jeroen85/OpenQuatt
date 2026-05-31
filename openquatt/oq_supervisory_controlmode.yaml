@@ -962,7 +962,13 @@ interval:
               heating_req = false;
             }
           }
-          const bool thermal_req = heating_req || cooling_req;
+          const bool manual_hp_thermal_req =
+              oq_manual_hp::owns_control() &&
+              ((int) roundf(id(oq_manual_hp1_level).state) > 0 ||
+               (int) roundf(id(oq_manual_hp2_level).state) > 0 ||
+               id(oq_actuator_hp1_req) > 0 ||
+               id(oq_actuator_hp2_req) > 0);
+          const bool thermal_req = heating_req || cooling_req || manual_hp_thermal_req;
 
           // -------------------------------------------------
           // 2) Flow interlock status + timers
@@ -1403,7 +1409,11 @@ interval:
               id(oq_silent_active).publish_state(silent_active);
             }
 
-            const char* silent_opt = silent_active ? "On" : "Off";
+            // Manual HP service must exercise the requested compressor behavior
+            // without the scheduled low-noise policy. Restore it automatically
+            // when the service task releases ownership.
+            const bool hp_silent_active = silent_active && !oq_manual_hp::owns_control();
+            const char* silent_opt = hp_silent_active ? "On" : "Off";
             set_select_option(id(hp1_low_noise_mode), silent_opt);
             #if OQ_TOPOLOGY_DUO
             set_select_option(id(${supervisory_secondary_low_noise_mode_id}), silent_opt);

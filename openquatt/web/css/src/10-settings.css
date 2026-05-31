@@ -708,6 +708,69 @@
   text-transform: uppercase;
 }
 
+.oq-settings-manual-hp-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.oq-settings-manual-hp-unit {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.oq-settings-manual-hp-results {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.oq-settings-manual-hp-statuses {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.oq-settings-manual-hp-statuses .oq-settings-static-value {
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+.oq-helper-modal--service-task {
+  padding: 16px;
+}
+
+.oq-helper-modal--service-task .oq-helper-modal-head {
+  margin-bottom: 6px;
+}
+
+.oq-helper-modal--service-task .oq-helper-modal-copy {
+  margin-bottom: 10px;
+  font-size: 0.94rem;
+  line-height: 1.45;
+}
+
+.oq-helper-modal--service-task .oq-settings-commissioning-card {
+  gap: 5px;
+  padding: 14px;
+}
+
+.oq-helper-modal--service-task .oq-settings-commissioning-card-subcopy {
+  font-size: 0.8rem;
+}
+
+.oq-helper-modal--service-task .oq-settings-commissioning-metrics {
+  gap: 10px;
+}
+
+.oq-settings-field--full {
+  grid-column: 1 / -1;
+}
+
 .oq-settings-commissioning-card--air-purge .oq-settings-commissioning-metrics {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -913,6 +976,18 @@
   }
 
   .oq-settings-manual-flow-control {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .oq-settings-manual-hp-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .oq-settings-manual-hp-results {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .oq-settings-manual-hp-statuses {
     grid-template-columns: minmax(0, 1fr);
   }
 
