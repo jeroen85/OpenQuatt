@@ -10,6 +10,10 @@ on:
         required: false
         type: boolean
         default: false
+      cache_esphome_build:
+        required: false
+        type: boolean
+        default: false
       project_version:
         required: false
         type: string
@@ -64,6 +68,13 @@ jobs:
           key: ${{ runner.os }}-platformio-${{ hashFiles('.github/requirements-esphome.txt') }}
           restore-keys: |
             ${{ runner.os }}-platformio-
+
+      - name: Cache ESPHome build
+        if: ${{ inputs.cache_esphome_build }}
+        uses: actions/cache@v5
+        with:
+          path: ${{ matrix.target.build_path }}
+          key: ${{ runner.os }}-esphome-build-v1-${{ hashFiles('.github/requirements-esphome.txt') }}-${{ matrix.target.id }}
 
       - name: Install ESPHome
         run: |
