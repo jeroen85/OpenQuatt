@@ -1,6 +1,6 @@
 #pragma once
 
-#include "oq_commissioning_logic.h"
+#include "oq_service_logic.h"
 
 namespace oq_commissioning {
 

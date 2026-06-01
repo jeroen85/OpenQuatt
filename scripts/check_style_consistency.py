@@ -98,7 +98,7 @@ STRICT_TOP_LEVEL_ORDER_RULES = {
         "oq_runtime_packages",
         "oq_strategy_packages",
         "oq_thermal_pipeline_packages",
-        "oq_commissioning_task_packages",
+        "oq_service_task_packages",
         "oq_integration_packages",
         "oq_ui_runtime_packages",
         "oq_heatpump1_package",
@@ -112,7 +112,7 @@ STRICT_TOP_LEVEL_ORDER_RULES = {
     "openquatt/packages/30_thermal_pipeline.yaml": (
         "packages",
     ),
-    "openquatt/packages/40_commissioning_tasks.yaml": (
+    "openquatt/packages/40_service_tasks.yaml": (
         "packages",
     ),
     "openquatt/packages/50_integrations.yaml": (
@@ -213,7 +213,7 @@ NESTED_KEY_ORDER_RULES = {
         "oq_thermal_actuator",
         "oq_flow_control",
     ),
-    ("openquatt/packages/40_commissioning_tasks.yaml", "packages"): (
+    ("openquatt/packages/40_service_tasks.yaml", "packages"): (
         "oq_flow_autotune",
         "oq_air_purge",
         "oq_manual_flow",
