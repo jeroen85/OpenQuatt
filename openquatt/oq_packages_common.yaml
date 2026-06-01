@@ -12,16 +12,15 @@
 # 8) Flow/boiler and other actuation followers
 # 9) Aggregation/energy telemetry
 # 10) External inputs (CIC)
-# 11) CiC compatibility bridge
-# 12) External HA proxy inputs
-# 13) Local sensors
-# 14) Source selection and merged selected-source signals
-# 15) OpenTherm thermostat bridge
-# 16) Setup/status
-# 17) Web UI
-# 18) Web access runtime
-# 19) MQTT runtime/config
-# 20) Per-HP hardware adapters
+# 11) External HA proxy inputs
+# 12) Local sensors
+# 13) Source selection and merged selected-source signals
+# 14) OpenTherm thermostat bridge
+# 15) Setup/status
+# 16) Web UI
+# 17) Web access runtime
+# 18) MQTT runtime/config
+# 19) Per-HP hardware adapters
 # ==============================================================================
 # Shared modules use `*_secondary_*` template vars so topology wiring stays
 # centralized in topology substitutions and avoids duplicated module files.
@@ -137,13 +136,6 @@ oq_cic: !include
   vars:
     cic_secondary_enabled: "${cic_secondary_enabled}"
     cic_hp2_sensor_internal: "${cic_hp2_sensor_internal}"
-oq_cic_compatibility: !include oq_cic_compatibility.yaml
-oq_cic_compatibility_hp1: !include
-  file: oq_cic_compatibility_server.yaml
-  vars:
-    cic_compat_hp_id: "hp1"
-    cic_compat_label: "HP1"
-    cic_compat_device_address: "${cic_compat_modbus_address_hp1}"
 oq_ha_inputs: !include oq_ha_inputs.yaml
 oq_local_sensors: !include oq_local_sensors.yaml
 oq_sensor_sources: !include

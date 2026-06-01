@@ -10,9 +10,6 @@ substitutions:
   uart_tx_pin: "GPIO17"                                 # Active RS485 TX pin.
   uart_rx_pin: "GPIO18"                                 # Active RS485 RX pin.
   uart_rts_pin: "GPIO21"                                # Active RS485 DE/RE (flow control) pin.
-  cic_compat_uart_tx_pin: "GPIO15"                      # Secondary CiC Modbus TX pin.
-  cic_compat_uart_rx_pin: "GPIO16"                      # Secondary CiC Modbus RX pin.
-  cic_compat_uart_rts_pin: "GPIO19"                     # Secondary CiC Modbus DE/RE pin.
   oq_ot_thermostat_in_pin: "GPIO14"                     # OpenTherm thermostat input on header pin GPIO14.
   oq_ot_thermostat_out_pin: "GPIO13"                    # OpenTherm thermostat output on header pin GPIO13.
   ds18b20_pin: "GPIO2"                                  # Active DS18B20 1-Wire pin.
