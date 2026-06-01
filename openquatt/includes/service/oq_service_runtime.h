@@ -46,13 +46,15 @@ inline void request_neutral_cm100() {
 
 inline bool request_running_task_abort() {
   const int task_code = id(oq_commissioning_task_code);
-  if (stop_routes_to_autotune_abort(id(oq_commissioning_active),
-                                    task_code,
-                                    id(oq_flow_autotune_req))) {
+  if (task_active(id(oq_commissioning_active), task_code, TASK_FLOW_AUTOTUNE)) {
     id(oq_flow_autotune_abort) = true;
-    id(oq_commissioning_abort_requested) = true;
   } else if (stop_routes_to_commissioning_abort(id(oq_commissioning_active),
                                                 task_code)) {
+    id(oq_commissioning_abort_requested) = true;
+  } else if (stop_routes_to_autotune_abort(id(oq_commissioning_active),
+                                           task_code,
+                                           id(oq_flow_autotune_req))) {
+    id(oq_flow_autotune_abort) = true;
     id(oq_commissioning_abort_requested) = true;
   } else {
     return false;
