@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <string>
 
+#include "../oq_commissioning_runtime.h"
+
 namespace oq_air_purge {
 
 static constexpr int TASK_AIR_PURGE = oq_commissioning::TASK_AIR_PURGE;
@@ -295,15 +297,8 @@ class AirPurgeRuntime {
     id(oq_air_purge_target_ipwm) = 1000;
     id(oq_air_purge_remaining_s) = 0;
 
-    id(oq_commissioning_request_pending) = false;
-    id(oq_commissioning_abort_requested) = false;
-    id(oq_commissioning_task_code) = oq_commissioning::TASK_NONE;
-    id(oq_commissioning_state_code) = next_state;
-    id(oq_commissioning_started_ms) = 0;
-    id(oq_commissioning_state_since_ms) = 0;
-
     if (return_to_auto) {
-      id(oq_commissioning_active) = false;
+      oq_commissioning::clear_container(false, next_state);
       if (id(oq_cm_override).has_state() && id(oq_cm_override).current_option() != "Auto") {
         auto call = id(oq_cm_override).make_call();
         call.set_option("Auto");
@@ -312,8 +307,7 @@ class AirPurgeRuntime {
       id(oq_commissioning_status).publish_state("IDLE");
     } else {
       const bool still_cm100 = oq_commissioning::is_cm100(id(oq_control_mode_code));
-      id(oq_commissioning_active) = still_cm100;
-      id(oq_commissioning_status).publish_state(still_cm100 ? "CM100 READY" : "IDLE");
+      oq_commissioning::clear_container(still_cm100, next_state);
     }
 
     publish(status);

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../oq_commissioning_runtime.h"
+
 namespace oq_manual_flow {
 
 class ManualFlowRuntime {
@@ -24,10 +26,7 @@ class ManualFlowRuntime {
 
   void abort_or_clear() {
     id(oq_manual_flow_active) = false;
-    if (id(oq_commissioning_task_code) == oq_commissioning::TASK_MANUAL_FLOW) {
-      id(oq_commissioning_task_code) = oq_commissioning::TASK_NONE;
-    }
-    id(oq_commissioning_abort_requested) = false;
+    oq_commissioning::clear_container(true);
     publish("STOPPED");
     id(oq_commissioning_status).publish_state("CM100 READY");
   }
@@ -56,14 +55,12 @@ class ManualFlowRuntime {
       return;
     }
 
-    id(oq_commissioning_task_code) = oq_commissioning::TASK_NONE;
-    id(oq_commissioning_abort_requested) = false;
     if (cm100_exited) {
-      id(oq_commissioning_active) = false;
-      id(oq_commissioning_request_pending) = false;
+      oq_commissioning::clear_container(false);
       publish("ABORTED: CM100 exited");
       id(oq_commissioning_status).publish_state("IDLE");
     } else {
+      oq_commissioning::clear_container(true);
       publish("ABORTED");
       id(oq_commissioning_status).publish_state("CM100 READY");
     }

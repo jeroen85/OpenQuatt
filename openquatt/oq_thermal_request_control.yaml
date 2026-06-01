@@ -295,7 +295,7 @@ button:
           // so fairness and minimum-runtime diagnostics restart from a clean state.
           #if OQ_TOPOLOGY_DUO
           id(hp1_minutes) = 0;
-          id(${hc_secondary_minutes_id}) = 0;
+          id(${secondary_minutes_id}) = 0;
           id(hp1_runtime_accum_ms) = 0;
           id(hp2_runtime_accum_ms) = 0;
           id(hp1_last_real_heat_start_ms) = 0;
@@ -330,7 +330,7 @@ sensor:
       auto nz = [](float value) -> float { return isnan(value) ? 0.0f : value; };
       const float hp1_power_w = nz(id(hp1_power_input).state);
       #if OQ_TOPOLOGY_DUO
-      const float hp2_power_w = nz(id(${hc_secondary_power_input_id}).state);
+      const float hp2_power_w = nz(id(${secondary_power_input_id}).state);
       const float total_input_w = hp1_power_w + hp2_power_w;
       #else
       const float total_input_w = hp1_power_w;
@@ -354,8 +354,8 @@ sensor:
       const float hp1_mode = id(hp1_working_mode).state;
       const float hp1_power_w = (hp1_mode == 2.0f) ? nz(id(hp1_power_input).state) : 0.0f;
       #if OQ_TOPOLOGY_DUO
-      const float hp2_mode = id(${hc_secondary_working_mode_id}).state;
-      const float hp2_power_w = (hp2_mode == 2.0f) ? nz(id(${hc_secondary_power_input_id}).state) : 0.0f;
+      const float hp2_mode = id(${secondary_working_mode_id}).state;
+      const float hp2_power_w = (hp2_mode == 2.0f) ? nz(id(${secondary_power_input_id}).state) : 0.0f;
       return hp1_power_w + hp2_power_w;
       #else
       return hp1_power_w;
@@ -377,8 +377,8 @@ sensor:
       const float hp1_mode = id(hp1_working_mode).state;
       const float hp1_power_w = (hp1_mode == 1.0f) ? nz(id(hp1_power_input).state) : 0.0f;
       #if OQ_TOPOLOGY_DUO
-      const float hp2_mode = id(${hc_secondary_working_mode_id}).state;
-      const float hp2_power_w = (hp2_mode == 1.0f) ? nz(id(${hc_secondary_power_input_id}).state) : 0.0f;
+      const float hp2_mode = id(${secondary_working_mode_id}).state;
+      const float hp2_power_w = (hp2_mode == 1.0f) ? nz(id(${secondary_power_input_id}).state) : 0.0f;
       return hp1_power_w + hp2_power_w;
       #else
       return hp1_power_w;
@@ -398,7 +398,7 @@ sensor:
     lambda: |-
       const float hp1_heat_w = id(hp1_heat_power).state;
       #if OQ_TOPOLOGY_DUO
-      const float hp2_heat_w = id(${hc_secondary_heat_power_id}).state;
+      const float hp2_heat_w = id(${secondary_heat_power_id}).state;
 
       if (isnan(hp1_heat_w) && isnan(hp2_heat_w)) return NAN;
       if (isnan(hp1_heat_w)) return hp2_heat_w;
@@ -424,7 +424,7 @@ sensor:
     lambda: |-
       const float hp1_cooling_w = id(hp1_cooling_power).state;
       #if OQ_TOPOLOGY_DUO
-      const float hp2_cooling_w = id(${hc_secondary_cooling_power_id}).state;
+      const float hp2_cooling_w = id(${secondary_cooling_power_id}).state;
 
       if (isnan(hp1_cooling_w) && isnan(hp2_cooling_w)) return NAN;
       if (isnan(hp1_cooling_w)) return hp2_cooling_w;
@@ -527,8 +527,8 @@ sensor:
       sorting_group_id: oq_heating_strategy
     lambda: |-
       #if OQ_TOPOLOGY_DUO
-      if (!id(${hc_secondary_compressor_level_id}).has_state()) return NAN;
-      auto idx = id(${hc_secondary_compressor_level_id}).active_index();
+      if (!id(${secondary_compressor_level_id}).has_state()) return NAN;
+      auto idx = id(${secondary_compressor_level_id}).active_index();
       if (!idx.has_value()) return NAN;
       return (float) idx.value();
       #else
@@ -589,7 +589,7 @@ text_sensor:
       sorting_group_id: oq_heating_strategy
     lambda: |-
       #if OQ_TOPOLOGY_DUO
-      const bool lead_is_hp1 = (id(hp1_minutes) <= id(${hc_secondary_minutes_id}));
+      const bool lead_is_hp1 = (id(hp1_minutes) <= id(${secondary_minutes_id}));
       return std::string(lead_is_hp1 ? "HP1" : "HP2");
       #else
       return std::string("HP1");
@@ -723,7 +723,7 @@ interval:
           }
           id(hp1_prev_heating_mode_active) = hp1_measured_thermal;
           #if OQ_TOPOLOGY_DUO
-          const float hp2_mode_runtime_raw = id(${hc_secondary_working_mode_id}).state;
+          const float hp2_mode_runtime_raw = id(${secondary_working_mode_id}).state;
           const bool hp2_measured_thermal =
               !isnan(hp2_mode_runtime_raw) &&
               ((((int) roundf(hp2_mode_runtime_raw)) == 1) || (((int) roundf(hp2_mode_runtime_raw)) == 2));
@@ -774,9 +774,9 @@ interval:
             int rt2 = 0;
             if (id(hp1_compressor_level).has_state()) cur1 = (int) id(hp1_compressor_level).active_index().value_or(-1);
             #if OQ_TOPOLOGY_DUO
-            wm2 = id(${hc_secondary_working_mode_id}).state;
-            if (id(${hc_secondary_compressor_level_id}).has_state()) cur2 = (int) id(${hc_secondary_compressor_level_id}).active_index().value_or(-1);
-            rt2 = id(${hc_secondary_minutes_id});
+            wm2 = id(${secondary_working_mode_id}).state;
+            if (id(${secondary_compressor_level_id}).has_state()) cur2 = (int) id(${secondary_compressor_level_id}).active_index().value_or(-1);
+            rt2 = id(${secondary_minutes_id});
             #endif
             char buf[768];
             snprintf(
@@ -850,13 +850,13 @@ interval:
               auto idx = id(hp1_compressor_level).active_index();
               return idx.has_value() ? (int) idx.value() : -1;
             }
-            if (!id(${hc_secondary_compressor_level_id}).has_state()) return -1;
-            auto idx = id(${hc_secondary_compressor_level_id}).active_index();
+            if (!id(${secondary_compressor_level_id}).has_state()) return -1;
+            auto idx = id(${secondary_compressor_level_id}).active_index();
             return idx.has_value() ? (int) idx.value() : -1;
           };
 
           auto hp_mode_is_cooling = [&](bool is_hp1)->bool {
-            const float mode_raw = is_hp1 ? id(hp1_working_mode).state : id(${hc_secondary_working_mode_id}).state;
+            const float mode_raw = is_hp1 ? id(hp1_working_mode).state : id(${secondary_working_mode_id}).state;
             return oq_request::thermal_mode_matches(mode_raw, 1);
           };
 
@@ -868,8 +868,8 @@ interval:
                   1);
             }
             return oq_request::target_option_matches_mode(
-                id(${hc_secondary_set_working_mode_id}).has_state(),
-                id(${hc_secondary_set_working_mode_id}).current_option(),
+                id(${secondary_set_working_mode_id}).has_state(),
+                id(${secondary_set_working_mode_id}).current_option(),
                 1);
           };
 
@@ -893,7 +893,7 @@ interval:
           auto valve_defrost_active = [&](bool is_hp1)->bool {
             if (is_hp1) return id(hp1_4_way_valve).state;
             #if OQ_TOPOLOGY_DUO
-            return id(${hc_secondary_4_way_valve_id}).state;
+            return id(${secondary_4_way_valve_id}).state;
             #else
             return false;
             #endif
@@ -905,7 +905,7 @@ interval:
             // caused the duo optimizer to pre-load far too aggressively.
             const bool defrost_active = valve_defrost_active(is_hp1);
             const int selected_level = hp_selected_level(is_hp1);
-            const int prev_applied = is_hp1 ? id(hp1_last_applied_level) : id(${hc_secondary_last_applied_level_id});
+            const int prev_applied = is_hp1 ? id(hp1_last_applied_level) : id(${secondary_last_applied_level_id});
             const bool cooling_mode_active =
                 hp_mode_is_cooling(is_hp1) || hp_mode_target_is_cooling(is_hp1);
             return oq_request::defrost_hold_level(
@@ -923,7 +923,7 @@ interval:
             const uint32_t last_real_start_ms = is_hp1 ? id(hp1_last_real_heat_start_ms) : id(hp2_last_real_heat_start_ms);
             if (!oq_request::min_runtime_window_active(now_ms, last_real_start_ms, min_rt_ms)) return 0;
 
-            const int last_applied = is_hp1 ? id(hp1_last_applied_level) : id(${hc_secondary_last_applied_level_id});
+            const int last_applied = is_hp1 ? id(hp1_last_applied_level) : id(${secondary_last_applied_level_id});
             const bool measured_thermal = is_hp1 ? hp1_measured_thermal : hp2_measured_thermal;
             if (!(last_applied > 0 || measured_thermal)) return 0;
 
@@ -1006,7 +1006,7 @@ interval:
             id(oq_actuator_hp1_req) = hp1_req;
             id(oq_actuator_hp2_req) = hp2_req;
             #if OQ_TOPOLOGY_DUO
-            const int debug_hp2_applied = id(${hc_secondary_last_applied_level_id});
+            const int debug_hp2_applied = id(${secondary_last_applied_level_id});
             #else
             const int debug_hp2_applied = 0;
             #endif
@@ -1060,7 +1060,7 @@ interval:
             id(oq_actuator_hp1_req) = hp1_hold_level;
             id(oq_actuator_hp2_req) = hp2_hold_level;
             #if OQ_TOPOLOGY_DUO
-            const int debug_hp2_applied = id(${hc_secondary_last_applied_level_id});
+            const int debug_hp2_applied = id(${secondary_last_applied_level_id});
             #else
             const int debug_hp2_applied = 0;
             #endif
@@ -1084,7 +1084,7 @@ interval:
 
           // Lead HP = fewest runtime minutes
           #if OQ_TOPOLOGY_DUO
-          const bool lead_is_hp1 = (id(hp1_minutes) <= id(${hc_secondary_minutes_id}));
+          const bool lead_is_hp1 = (id(hp1_minutes) <= id(${secondary_minutes_id}));
           #else
           const bool lead_is_hp1 = true;
           #endif
@@ -1094,7 +1094,7 @@ interval:
             id(oq_last_lead_hp) = lead_code;
             #if OQ_TOPOLOGY_DUO
             ESP_LOGI("quatt", "Runtime lead changed: %s (hp1_minutes=%d, hp2_minutes=%d)",
-                     lead_is_hp1 ? "HP1" : "HP2", id(hp1_minutes), id(${hc_secondary_minutes_id}));
+                     lead_is_hp1 ? "HP1" : "HP2", id(hp1_minutes), id(${secondary_minutes_id}));
             #else
             ESP_LOGI("quatt", "Runtime lead changed: HP1 (single topology)");
             #endif
@@ -1122,11 +1122,11 @@ interval:
             }
             #if OQ_TOPOLOGY_DUO
             return oq_request::ExcludedLevels{
-                id(${hc_secondary_excluded_level_a_id}).has_state()
-                    ? id(${hc_secondary_excluded_level_a_id}).current_option()
+                id(${secondary_excluded_level_a_id}).has_state()
+                    ? id(${secondary_excluded_level_a_id}).current_option()
                     : std::string("None"),
-                id(${hc_secondary_excluded_level_b_id}).has_state()
-                    ? id(${hc_secondary_excluded_level_b_id}).current_option()
+                id(${secondary_excluded_level_b_id}).has_state()
+                    ? id(${secondary_excluded_level_b_id}).current_option()
                     : std::string("None"),
             };
             #else
@@ -1278,7 +1278,7 @@ interval:
             if (curve_regime == 1) up_hold_s = tuning.recovery_up_hold_s;
 
             auto limit_slew = [&](bool is_hp1, int req_level)->int {
-              const int prev = is_hp1 ? id(hp1_last_applied_level) : id(${hc_secondary_last_applied_level_id});
+              const int prev = is_hp1 ? id(hp1_last_applied_level) : id(${secondary_last_applied_level_id});
               uint32_t &last_change_ms = is_hp1 ? id(hp1_last_level_change_ms) : id(hp2_last_level_change_ms);
 
               if (req_level == prev) return req_level;
@@ -1306,7 +1306,7 @@ interval:
             // Global guardrail: in curve mode allow at most one HP level change per cycle.
             // This avoids tandem jumps like 1+1 -> 2+2 that create thermal overshoot.
             const int prev1 = id(hp1_last_applied_level);
-            const int prev2 = id(${hc_secondary_last_applied_level_id});
+            const int prev2 = id(${secondary_last_applied_level_id});
             const int d_hp1 = hp1_req - prev1;
             const int d_hp2 = hp2_req - prev2;
             if (d_hp1 != 0 && d_hp2 != 0) {
@@ -1403,7 +1403,7 @@ interval:
                 ((uint32_t)(now_ms - id(hp2_last_real_heat_start_ms)) < min_rt_ms);
             const bool hp2_min_runtime_hold =
                 (hp2_req == 0 && !cooling_floor_trip && hp2_min_runtime_active &&
-                 (id(${hc_secondary_last_applied_level_id}) > 0 || hp2_measured_thermal));
+                 (id(${secondary_last_applied_level_id}) > 0 || hp2_measured_thermal));
             if (hp2_min_runtime_hold) {
               hp2_req = pick_allowed(1, false);
             }
@@ -1433,7 +1433,7 @@ interval:
           id(oq_actuator_hp1_req) = hp1_req;
           id(oq_actuator_hp2_req) = hp2_req;
           #if OQ_TOPOLOGY_DUO
-          const int debug_hp2_applied = id(${hc_secondary_last_applied_level_id});
+          const int debug_hp2_applied = id(${secondary_last_applied_level_id});
           #else
           const int debug_hp2_applied = 0;
           #endif

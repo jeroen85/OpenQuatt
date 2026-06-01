@@ -227,7 +227,7 @@ sensor:
     lambda: |-
       const bool secondary_enabled = (${flow_secondary_enabled} != 0);
       float f1 = id(hp1_flow).state;
-      float f2 = secondary_enabled ? id(${flow_secondary_flow_sensor_id}).state : NAN;
+      float f2 = secondary_enabled ? id(${secondary_flow_id}).state : NAN;
 
       #if OQ_HARDWARE_HEATPUMP_CONTROLLER_Q
       // Q-edition V1 uses the central controller meter as its primary local flow.
@@ -293,7 +293,7 @@ binary_sensor:
       }
 
       float f1 = id(hp1_flow).state;
-      float f2 = id(${flow_secondary_flow_sensor_id}).state;
+      float f2 = id(${secondary_flow_id}).state;
 
       #if OQ_HARDWARE_HEATPUMP_CONTROLLER_Q
       // Compare the Q-edition V1 controller meter with a secondary V1.5 meter when present.
@@ -446,7 +446,7 @@ interval:
 
             const int cm_code = id(oq_control_mode_code);
             const bool cooling_target = (cm_code == 5);
-            const bool commissioning_start = (cm_code == 100) && (id(oq_commissioning_task_code) != 0);
+            const bool commissioning_start = (cm_code == 100) && (id(oq_commissioning_task_code) != oq_commissioning::TASK_NONE);
             const int last_good_pwm =
               cooling_target ? id(oq_flow_last_good_pwm_cooling) : id(oq_flow_last_good_pwm);
             int start_pwm = commissioning_start
@@ -663,14 +663,14 @@ interval:
           id(oq_flow_last_mode) = mode;
 
           // Autotune temporarily overrides PWM (flow_control remains output owner).
-          if (id(oq_flow_autotune_active) && (cm_code == 100) && (id(oq_commissioning_task_code) == 2) && !is_frost) {
+          if (id(oq_flow_autotune_active) && (cm_code == 100) && (id(oq_commissioning_task_code) == oq_commissioning::TASK_FLOW_AUTOTUNE) && !is_frost) {
             int at_pwm = clamp_iPWM((int) id(oq_flow_autotune_pwm));
             id(oq_flow_last_pwm) = at_pwm;
             stable_cnt = 0;
             pi_failsafe = false;
             write_pump_pwm_if_changed(id(hp1_pump_speed), at_pwm);
             if (${flow_secondary_enabled} != 0) {
-              write_pump_pwm_if_changed(id(${flow_secondary_pump_speed_id}), at_pwm);
+              write_pump_pwm_if_changed(id(${secondary_pump_speed_id}), at_pwm);
             }
             if (last_mode != "AUTOTUNE") {
               id(oq_flow_mode).publish_state("AUTOTUNE");
@@ -690,7 +690,7 @@ interval:
             pi_failsafe = false;
             write_pump_pwm_if_changed(id(hp1_pump_speed), purge_pwm);
             if (${flow_secondary_enabled} != 0) {
-              write_pump_pwm_if_changed(id(${flow_secondary_pump_speed_id}), purge_pwm);
+              write_pump_pwm_if_changed(id(${secondary_pump_speed_id}), purge_pwm);
             }
             if (last_mode != "AIR PURGE") {
               id(oq_flow_mode).publish_state("AIR PURGE");
@@ -741,7 +741,7 @@ interval:
 
           write_pump_pwm_if_changed(id(hp1_pump_speed), pwm);
           if (${flow_secondary_enabled} != 0) {
-            write_pump_pwm_if_changed(id(${flow_secondary_pump_speed_id}), pwm);
+            write_pump_pwm_if_changed(id(${secondary_pump_speed_id}), pwm);
           }
 
           // External mode text has explicit priority and updates only on change.

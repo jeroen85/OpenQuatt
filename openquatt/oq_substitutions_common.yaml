@@ -24,17 +24,8 @@ oq_connection: "unknown"                              # Compile-time connection 
 alternate_connection: ""                              # Optional connection target used for controlled Wi-Fi/Ethernet switching.
 alternate_main_release_manifest_url: ""               # Optional main-channel OTA manifest for the alternate connection target.
 alternate_dev_release_manifest_url: ""                # Optional dev-channel OTA manifest for the alternate connection target.
-hp_perf_map_header: "../../openquatt/includes/hp_perf_map.h" # C++ performance-map header include path.
-hp_perf_map_v2_high_header: "../../openquatt/includes/hp_perf_map_v2_high.h" # C++ V2 high-temperature continuation header.
-thermal_request_logic_header: "../../openquatt/includes/oq_thermal_request_logic.h" # Shared C++ helper include for request/control glue.
-heating_curve_logic_header: "../../openquatt/includes/oq_heating_curve_logic.h" # Shared C++ helper include for curve runtime state and naming.
-oq_commissioning_logic_header: "../../openquatt/includes/oq_commissioning_logic.h" # Shared commissioning task/state contract.
-oq_flow_autotune_logic_header: "../../openquatt/includes/oq_flow_autotune_logic.h" # Flow autotune runtime controller.
-oq_air_purge_logic_header: "../../openquatt/includes/oq_air_purge_logic.h" # Air purge runtime controller.
-oq_boiler_task_logic_header: "../../openquatt/includes/oq_boiler_task_logic.h" # Boiler power-test runtime controller.
-oq_manual_flow_logic_header: "../../openquatt/includes/oq_manual_flow_logic.h" # Manual-flow service runtime controller.
-oq_manual_hp_logic_header: "../../openquatt/includes/oq_manual_hp_logic.h" # Manual heat-pump service runtime controller.
-oq_psram_buffer_header: "../../components/openquatt_common/PsramBuffer.h" # Shared PSRAM-backed buffer helper for custom components.
+oq_cpp_headers_dir: "../../openquatt/includes"              # Copy and include the grouped OpenQuatt C++ runtime headers.
+oq_component_psram_buffer_header: "../../components/openquatt_common/PsramBuffer.h" # Shared PSRAM-backed buffer helper for custom components.
 external_components_path: "../../components"              # Local custom component directory from nested config entrypoints.
 oq_timezone: "Europe/Amsterdam"                         # SNTP timezone used by runtime timestamps.
 oq_webserver_css_include: "../../openquatt/web/css/openquatt-app.css" # Bundled OpenQuatt web UI stylesheet.
@@ -63,6 +54,36 @@ mqtt_retain_snapshots: "true"                         # Retain schema/state/heat
 # - openquatt/profiles/waveshare.yaml
 # - openquatt/profiles/heatpump_listener.yaml
 # - openquatt/profiles/heatpump_controller_q.yaml
+
+# ----------------------------
+# TOPOLOGY CONTRACT
+# ----------------------------
+# A single topology substitution (`secondary_hp_id`) resolves these shared IDs
+# to HP1 for single builds and HP2 for duo builds.
+secondary_power_input_id: "${secondary_hp_id}_power_input"
+secondary_heat_power_id: "${secondary_hp_id}_heat_power"
+secondary_cooling_power_id: "${secondary_hp_id}_cooling_power"
+secondary_compressor_level_id: "${secondary_hp_id}_compressor_level"
+secondary_defrost_id: "${secondary_hp_id}_defrost"
+secondary_last_applied_level_id: "${secondary_hp_id}_last_applied_level"
+secondary_last_start_ms_id: "${secondary_hp_id}_last_start_ms"
+secondary_last_stop_ms_id: "${secondary_hp_id}_last_stop_ms"
+secondary_minutes_id: "${secondary_hp_id}_minutes"
+secondary_set_working_mode_id: "${secondary_hp_id}_set_working_mode"
+secondary_working_mode_id: "${secondary_hp_id}_working_mode"
+secondary_4_way_valve_id: "${secondary_hp_id}_4_way_valve"
+secondary_excluded_level_a_id: "${secondary_hp_id}_excluded_level_a"
+secondary_excluded_level_b_id: "${secondary_hp_id}_excluded_level_b"
+secondary_oil_return_id: "${secondary_hp_id}_prot_oil_return"
+secondary_flow_id: "${secondary_hp_id}_flow"
+secondary_pump_speed_id: "${secondary_hp_id}_pump_speed"
+secondary_low_noise_mode_id: "${secondary_hp_id}_low_noise_mode"
+secondary_set_pump_mode_id: "${secondary_hp_id}_set_pump_mode"
+secondary_outside_temp_id: "${secondary_hp_id}_outside_temp"
+secondary_outside_last_change_ms_id: "${secondary_hp_id}_outside_temp_last_change_ms"
+secondary_outside_activity_ms_id: "${secondary_hp_id}_outside_temp_activity_ms"
+secondary_water_out_temp_id: "${secondary_hp_id}_water_out_temp"
+secondary_fault_binary_sensor_id: "${secondary_hp_id}_ot_fault_active"
 
 # ----------------------------
 # SUPERVISORY CONTROL MODE

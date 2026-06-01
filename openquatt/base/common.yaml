@@ -14,17 +14,8 @@ esphome:
   min_version: 2026.5.1
   name_add_mac_suffix: false
   includes:
-    - ${hp_perf_map_header}
-    - ${hp_perf_map_v2_high_header}
-    - ${thermal_request_logic_header}
-    - ${heating_curve_logic_header}
-    - ${oq_commissioning_logic_header}
-    - ${oq_flow_autotune_logic_header}
-    - ${oq_air_purge_logic_header}
-    - ${oq_boiler_task_logic_header}
-    - ${oq_manual_flow_logic_header}
-    - ${oq_manual_hp_logic_header}
-    - ${oq_psram_buffer_header}
+    - ${oq_cpp_headers_dir}
+    - ${oq_component_psram_buffer_header}
   platformio_options:
     extra_scripts:
       - pre:../../../scripts/normalize_factory_merge_inputs.py

@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "../oq_commissioning_runtime.h"
+
 namespace oq_flow_autotune {
 
 enum StateCode {
@@ -309,14 +311,7 @@ class FlowAutotuneRuntime {
     id(oq_flow_autotune_active) = false;
     id(oq_flow_autotune_abort) = false;
     id(oq_flow_autotune_req) = false;
-    id(oq_commissioning_request_pending) = false;
-    id(oq_commissioning_active) = keep_cm100;
-    id(oq_commissioning_abort_requested) = false;
-    id(oq_commissioning_task_code) = oq_commissioning::TASK_NONE;
-    id(oq_commissioning_state_code) = oq_commissioning::TASK_STATE_IDLE;
-    id(oq_commissioning_started_ms) = 0;
-    id(oq_commissioning_state_since_ms) = 0;
-    id(oq_commissioning_status).publish_state(keep_cm100 ? "CM100 READY" : "IDLE");
+    oq_commissioning::clear_container(keep_cm100);
   }
 
   void sync_external_idle() {

@@ -374,7 +374,7 @@ sensor:
           return NAN;
         }
         if (local_mode == "Flowmeter HP2") {
-          if (id(${flow_secondary_flow_sensor_id}).has_state()) return id(${flow_secondary_flow_sensor_id}).state;
+          if (id(${secondary_flow_id}).has_state()) return id(${secondary_flow_id}).state;
           return NAN;
         }
         #endif

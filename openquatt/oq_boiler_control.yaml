@@ -88,7 +88,7 @@ sensor:
       const bool commissioning_boiler =
           (cm_code == 100) &&
           id(oq_commissioning_active) &&
-          (id(oq_commissioning_task_code) == 1) &&
+          (id(oq_commissioning_task_code) == oq_commissioning::TASK_BOILER_POWER_TEST) &&
           id(oq_commissioning_boiler_request);
       const bool in_cm3 = (cm_code == 3);
       if (!id(oq_boiler_assist_enabled).state) return 0.0f;
@@ -121,7 +121,7 @@ interval:
           const bool commissioning_boiler =
               (cm_code == 100) &&
               id(oq_commissioning_active) &&
-              (id(oq_commissioning_task_code) == 1) &&
+              (id(oq_commissioning_task_code) == oq_commissioning::TASK_BOILER_POWER_TEST) &&
               id(oq_commissioning_boiler_request);
           // Boiler follows Control Mode CM3, but the shared water-temperature model
           // may block it independently from CM ownership.
@@ -139,7 +139,7 @@ interval:
             boiler_block_reason = "water temperature hard trip active";
           } else if ((cm_code == 100) &&
                      id(oq_commissioning_active) &&
-                     (id(oq_commissioning_task_code) == 1) &&
+                     (id(oq_commissioning_task_code) == oq_commissioning::TASK_BOILER_POWER_TEST) &&
                      !id(oq_commissioning_boiler_request)) {
             boiler_block_reason = "CM100 boiler commissioning waiting for flow settle";
           } else if (!in_cm3 && !commissioning_boiler) {

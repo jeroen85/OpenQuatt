@@ -743,15 +743,15 @@ interval:
           const int hp1_cmd_lvl =
               id(hp1_compressor_level).has_state() ? (int) id(hp1_compressor_level).active_index().value_or(-1) : -1;
           #if OQ_TOPOLOGY_DUO
-          const int hp2_lvl = id(${supervisory_secondary_last_applied_level_id});
+          const int hp2_lvl = id(${secondary_last_applied_level_id});
           const int hp2_cmd_lvl =
-              id(${supervisory_secondary_compressor_level_id}).has_state()
-                  ? (int) id(${supervisory_secondary_compressor_level_id}).active_index().value_or(-1)
+              id(${secondary_compressor_level_id}).has_state()
+                  ? (int) id(${secondary_compressor_level_id}).active_index().value_or(-1)
                   : -1;
           const bool both_levels_off = (hp1_lvl <= 0) && (hp2_lvl <= 0);
 
           const float hp1_mode_raw = id(hp1_working_mode).state;
-          const float hp2_mode_raw = id(${supervisory_secondary_working_mode_id}).state;
+          const float hp2_mode_raw = id(${secondary_working_mode_id}).state;
           const bool hp1_mode_valid = !isnan(hp1_mode_raw);
           const bool hp2_mode_valid = !isnan(hp2_mode_raw);
           const bool hp1_heating = hp1_mode_valid && ((int) roundf(hp1_mode_raw) == 2);
@@ -761,11 +761,11 @@ interval:
           const bool hp1_target_heating =
               id(hp1_set_working_mode).has_state() && id(hp1_set_working_mode).current_option() == "Heating";
           const bool hp2_target_heating =
-              id(${supervisory_secondary_set_working_mode_id}).has_state() && id(${supervisory_secondary_set_working_mode_id}).current_option() == "Heating";
+              id(${secondary_set_working_mode_id}).has_state() && id(${secondary_set_working_mode_id}).current_option() == "Heating";
           const bool hp1_target_cooling =
               id(hp1_set_working_mode).has_state() && id(hp1_set_working_mode).current_option() == "Cooling";
           const bool hp2_target_cooling =
-              id(${supervisory_secondary_set_working_mode_id}).has_state() && id(${supervisory_secondary_set_working_mode_id}).current_option() == "Cooling";
+              id(${secondary_set_working_mode_id}).has_state() && id(${secondary_set_working_mode_id}).current_option() == "Cooling";
           const bool hp1_active_guard = hp1_heating || hp1_cooling || hp1_target_heating || hp1_target_cooling || (hp1_lvl > 0);
           const bool hp2_active_guard = hp2_heating || hp2_cooling || hp2_target_heating || hp2_target_cooling || (hp2_lvl > 0);
           const bool any_hp_active_guard = hp1_active_guard || hp2_active_guard;
@@ -787,7 +787,7 @@ interval:
           const bool any_hp_active_guard = hp1_active_guard;
           #endif
           auto defrost_stop_hold_level = [&](bool is_hp1)->int {
-            const bool defrost_active = is_hp1 ? id(hp1_defrost).state : id(${supervisory_secondary_defrost_id}).state;
+            const bool defrost_active = is_hp1 ? id(hp1_defrost).state : id(${secondary_defrost_id}).state;
             if (!defrost_active) return 0;
 
             const int selected_level = is_hp1 ? hp1_cmd_lvl : hp2_cmd_lvl;
@@ -1026,8 +1026,8 @@ interval:
             }
             #if OQ_TOPOLOGY_DUO
             if (defrost_stop_hold_level(false) <= 0) {
-              set_select_option(id(${supervisory_secondary_set_working_mode_id}), "Standby");
-              set_select_option(id(${supervisory_secondary_compressor_level_id}), "0");
+              set_select_option(id(${secondary_set_working_mode_id}), "Standby");
+              set_select_option(id(${secondary_compressor_level_id}), "0");
             }
             #endif
           }
@@ -1416,7 +1416,7 @@ interval:
             const char* silent_opt = hp_silent_active ? "On" : "Off";
             set_select_option(id(hp1_low_noise_mode), silent_opt);
             #if OQ_TOPOLOGY_DUO
-            set_select_option(id(${supervisory_secondary_low_noise_mode_id}), silent_opt);
+            set_select_option(id(${secondary_low_noise_mode_id}), silent_opt);
             #endif
           };
 
@@ -1454,7 +1454,7 @@ interval:
             const bool sticky_active = in_cm0 && ms_window_active(id(oq_sticky_until_ms));
             const bool cm100_task_active =
                 (strcmp(desired_cm, "CM100") == 0) &&
-                (id(oq_commissioning_task_code) != 0);
+                (id(oq_commissioning_task_code) != oq_commissioning::TASK_NONE);
             // Pump failsafe: never stop circulation while any HP is still active.
             // CM100 idle is a service stand, not an active circulation mode.
             const bool pump_on = (strcmp(desired_cm, "CM0") != 0 && strcmp(desired_cm, "CM100") != 0) ||
@@ -1463,7 +1463,7 @@ interval:
                                  any_hp_active_guard;
             set_select_option(id(hp1_set_pump_mode), pump_on ? "On" : "Off");
             #if OQ_TOPOLOGY_DUO
-            set_select_option(id(${supervisory_secondary_set_pump_mode_id}), pump_on ? "On" : "Off");
+            set_select_option(id(${secondary_set_pump_mode_id}), pump_on ? "On" : "Off");
             #endif
 
             if (strcmp(desired_cm, "CM0") == 0) {
@@ -1472,7 +1472,7 @@ interval:
               const float target_pwm = sticky_active ? sticky_pwm : stop_pwm;
               set_number_value(id(hp1_pump_speed), target_pwm, 1.0f);
               #if OQ_TOPOLOGY_DUO
-              set_number_value(id(${supervisory_secondary_pump_speed_id}), target_pwm, 1.0f);
+              set_number_value(id(${secondary_pump_speed_id}), target_pwm, 1.0f);
               #endif
             } else {
               if (id(oq_sticky_active).state) id(oq_sticky_active).publish_state(false);

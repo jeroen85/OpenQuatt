@@ -1,0 +1,24 @@
+# ==============================================================================
+# OpenQuatt - Integration Packages
+# ==============================================================================
+packages:
+  oq_boiler_control: !include
+    file: ../oq_boiler_control.yaml
+    vars:
+      heatpump_outlet_temp_id: "${secondary_water_out_temp_id}"
+  oq_energy: !include ../oq_energy.yaml
+  oq_cic: !include
+    file: ../oq_cic.yaml
+    vars:
+      cic_secondary_enabled: "${cic_secondary_enabled}"
+      cic_hp2_sensor_internal: "${cic_hp2_sensor_internal}"
+  oq_ha_inputs: !include ../oq_ha_inputs.yaml
+  oq_local_sensors: !include ../oq_local_sensors.yaml
+  oq_sensor_sources: !include
+    file: ../oq_sensor_sources.yaml
+    vars:
+      sensor_sources_duo_flow_internal: "${sensor_sources_duo_flow_internal}"
+  oq_ot_slave: !include
+    file: ../oq_ot_slave.yaml
+    vars:
+      ot_secondary_present: "${ot_secondary_present}"

@@ -22,7 +22,6 @@ esphome:
 
 packages:
   openquatt_profile_heatpump_controller_q: !include ../../openquatt/profiles/heatpump_controller_q.yaml
-  openquatt_profile_heatpump_controller_q_cic_compatibility: !include ../../openquatt/profiles/heatpump_controller_q_cic_compatibility.yaml
   openquatt_profile_heatpump_controller_q_cic_compatibility_duo: !include ../../openquatt/profiles/heatpump_controller_q_cic_compatibility_duo.yaml
   openquatt_base_common: !include ../../openquatt/base/common.yaml
   openquatt_connection_wifi: !include ../../openquatt/connection/wifi.yaml

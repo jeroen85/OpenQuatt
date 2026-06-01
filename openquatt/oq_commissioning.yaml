@@ -84,37 +84,13 @@ button:
                    id(oq_commissioning_task_code),
                    (int) id(oq_commissioning_active),
                    (int) id(oq_commissioning_request_pending));
-          if (id(oq_commissioning_active) && id(oq_commissioning_task_code) != 0) {
+          if (id(oq_commissioning_active) &&
+              id(oq_commissioning_task_code) != oq_commissioning::TASK_NONE) {
             id(oq_commissioning_status).publish_state("REFUSED: BUSY");
             return;
           }
 
-          id(oq_commissioning_task_code) = 0;
-          id(oq_commissioning_request_pending) = true;
-          id(oq_commissioning_active) = false;
-          id(oq_commissioning_abort_requested) = false;
-          id(oq_commissioning_state_code) = 0;
-          id(oq_commissioning_started_ms) = 0;
-          id(oq_commissioning_state_since_ms) = 0;
-          id(oq_commissioning_boiler_request) = false;
-          id(oq_flow_autotune_req) = false;
-          id(oq_flow_autotune_abort) = false;
-          id(oq_flow_autotune_active) = false;
-          id(oq_flow_autotune_state) = 0;
-          id(oq_air_purge_active) = false;
-          id(oq_air_purge_abort) = false;
-          id(oq_air_purge_state) = 0;
-          id(oq_air_purge_phase) = 0;
-          id(oq_air_purge_target_ipwm) = 1000;
-          id(oq_air_purge_started_ms) = 0;
-          id(oq_air_purge_remaining_s) = 0;
-          id(oq_manual_flow_active) = false;
-          id(oq_manual_hp_active) = false;
-          id(oq_manual_hp_stop_requested) = false;
-          id(oq_manual_hp_mode_allowed) = false;
-          id(oq_manual_hp1_mode_code) = 0;
-          id(oq_manual_hp2_mode_code) = 0;
-          id(oq_commissioning_status).publish_state("CM100 REQUESTED");
+          oq_commissioning::request_neutral_cm100();
   - platform: template
     id: oq_commissioning_cm100_stop
     name: "CM100 Stop"
@@ -125,49 +101,8 @@ button:
     on_press:
       - lambda: |-
           // Stop CM100 immediately when no task is active; otherwise abort the running task.
-          const int cm_code = id(oq_control_mode_code);
-          const int task_code = id(oq_commissioning_task_code);
-          if (id(oq_commissioning_active) && task_code != oq_commissioning::TASK_NONE) {
-            if (task_code == oq_commissioning::TASK_FLOW_AUTOTUNE) {
-              id(oq_flow_autotune_abort) = true;
-            } else {
-              id(oq_commissioning_abort_requested) = true;
-            }
-            id(oq_commissioning_status).publish_state("ABORT REQUESTED");
-            return;
-          }
-          if (task_code == 2 || id(oq_flow_autotune_req)) {
-            id(oq_flow_autotune_abort) = true;
-            id(oq_commissioning_abort_requested) = true;
-            id(oq_commissioning_status).publish_state("ABORT REQUESTED");
-            return;
-          }
-          id(oq_commissioning_request_pending) = false;
-          id(oq_commissioning_active) = false;
-          id(oq_commissioning_abort_requested) = false;
-          id(oq_commissioning_task_code) = 0;
-          id(oq_commissioning_state_code) = 0;
-          id(oq_commissioning_started_ms) = 0;
-          id(oq_commissioning_state_since_ms) = 0;
-          id(oq_commissioning_boiler_request) = false;
-          id(oq_flow_autotune_req) = false;
-          id(oq_flow_autotune_abort) = false;
-          id(oq_flow_autotune_active) = false;
-          id(oq_flow_autotune_state) = 0;
-          id(oq_air_purge_active) = false;
-          id(oq_air_purge_abort) = false;
-          id(oq_air_purge_state) = 0;
-          id(oq_air_purge_phase) = 0;
-          id(oq_air_purge_target_ipwm) = 1000;
-          id(oq_air_purge_started_ms) = 0;
-          id(oq_air_purge_remaining_s) = 0;
-          id(oq_manual_flow_active) = false;
-          id(oq_manual_hp_active) = false;
-          id(oq_manual_hp_stop_requested) = false;
-          id(oq_manual_hp_mode_allowed) = false;
-          id(oq_manual_hp1_mode_code) = 0;
-          id(oq_manual_hp2_mode_code) = 0;
-          id(oq_commissioning_status).publish_state("IDLE");
+          if (oq_commissioning::request_running_task_abort()) return;
+          oq_commissioning::stop_neutral_cm100();
 
 binary_sensor:
   - platform: template

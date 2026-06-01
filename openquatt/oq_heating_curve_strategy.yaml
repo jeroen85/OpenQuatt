@@ -455,7 +455,7 @@ output:
           constexpr uint32_t oil_return_hold_ms = 180000UL;
           bool oil_return_active = id(hp1_prot_oil_return).state;
           #if OQ_TOPOLOGY_DUO
-          oil_return_active = oil_return_active || id(${curve_secondary_oil_return_id}).state;
+          oil_return_active = oil_return_active || id(${secondary_oil_return_id}).state;
           #endif
           if (oil_return_active) {
             id(oq_curve_oil_return_hold_until_ms) = now_ms + oil_return_hold_ms;
@@ -558,7 +558,7 @@ output:
               int total = id(hp1_last_applied_level);
               if (total < 0) total = 0;
               #if OQ_TOPOLOGY_DUO
-              int secondary = id(${curve_secondary_last_applied_level_id});
+              int secondary = id(${secondary_last_applied_level_id});
               if (secondary > 0) total += secondary;
               #endif
               return total;
@@ -965,9 +965,9 @@ interval:
               if (isnan(spw) || isnan(pv)) return true;
 
               const bool hp1_level_on = id(hp1_last_applied_level) > 0;
-              const bool hp2_level_on = id(${curve_secondary_last_applied_level_id}) > 0;
+              const bool hp2_level_on = id(${secondary_last_applied_level_id}) > 0;
               const float hp1_mode_raw = id(hp1_working_mode).state;
-              const float hp2_mode_raw = id(${curve_secondary_working_mode_id}).state;
+              const float hp2_mode_raw = id(${secondary_working_mode_id}).state;
               const bool hp1_heating = !isnan(hp1_mode_raw) && ((int) roundf(hp1_mode_raw) == 2);
               const bool hp2_heating = !isnan(hp2_mode_raw) && ((int) roundf(hp2_mode_raw) == 2);
               const bool hp_delivering =
@@ -1026,7 +1026,7 @@ interval:
           if (f > f_cap) f = f_cap;
 
           #if OQ_TOPOLOGY_DUO
-          const bool lead_is_hp1 = (id(hp1_minutes) <= id(${curve_secondary_minutes_id}));
+          const bool lead_is_hp1 = (id(hp1_minutes) <= id(${secondary_minutes_id}));
           #else
           const bool lead_is_hp1 = true;
           #endif
@@ -1046,11 +1046,11 @@ interval:
             }
             #if OQ_TOPOLOGY_DUO
             return oq_request::ExcludedLevels{
-                id(${curve_secondary_excluded_level_a_id}).has_state()
-                    ? id(${curve_secondary_excluded_level_a_id}).current_option()
+                id(${secondary_excluded_level_a_id}).has_state()
+                    ? id(${secondary_excluded_level_a_id}).current_option()
                     : std::string("None"),
-                id(${curve_secondary_excluded_level_b_id}).has_state()
-                    ? id(${curve_secondary_excluded_level_b_id}).current_option()
+                id(${secondary_excluded_level_b_id}).has_state()
+                    ? id(${secondary_excluded_level_b_id}).current_option()
                     : std::string("None"),
             };
             #else
@@ -1066,7 +1066,7 @@ interval:
           auto valve_defrost_active = [&](bool is_hp1)->bool {
             if (is_hp1) return id(hp1_4_way_valve).state;
             #if OQ_TOPOLOGY_DUO
-            return id(${curve_secondary_4_way_valve_id}).state;
+            return id(${secondary_4_way_valve_id}).state;
             #else
             return false;
             #endif
@@ -1127,7 +1127,7 @@ interval:
           };
 
           const int prev1 = id(hp1_last_applied_level);
-          const int prev2 = id(${curve_secondary_last_applied_level_id});
+          const int prev2 = id(${secondary_last_applied_level_id});
 
           auto build_candidate = [&](int hp1_level, int hp2_level, float target_power_w)->oq_curve::DispatchCandidate {
             float p1 = level_power_w(true, hp1_level);
@@ -1201,7 +1201,7 @@ interval:
           const int dual_off_hold_min = std::max(1, (int) roundf(id(oq_dual_hp_disable_hold_min).state));
           const float dt_min = ((float) loop_target_ms / 1000.0f) / 60.0f;
           const uint32_t lead_last_start_ms =
-              lead_is_hp1 ? id(hp1_last_start_ms) : id(${curve_secondary_last_start_ms_id});
+              lead_is_hp1 ? id(hp1_last_start_ms) : id(${secondary_last_start_ms_id});
           const bool startup_grace_active =
               (tuning.dual_startup_grace_s > 0) &&
               (lead_last_start_ms > 0) &&

@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <string>
 
+#include "../oq_commissioning_runtime.h"
+
 namespace oq_boiler_task {
 
 static constexpr int TASK_NONE = oq_commissioning::TASK_NONE;
@@ -268,13 +270,7 @@ class BoilerPowerTestRuntime {
   void clear_container() {
     restore_flow_setpoint();
     reset_measurement();
-    id(oq_commissioning_request_pending) = false;
-    id(oq_commissioning_active) = false;
-    id(oq_commissioning_abort_requested) = false;
-    id(oq_commissioning_task_code) = TASK_NONE;
-    id(oq_commissioning_state_code) = STATE_IDLE;
-    id(oq_commissioning_started_ms) = 0;
-    id(oq_commissioning_state_since_ms) = 0;
+    oq_commissioning::clear_container(false);
     id(oq_commissioning_boiler_request) = false;
     id(oq_flow_autotune_req) = false;
     id(oq_flow_autotune_abort) = false;
@@ -286,18 +282,13 @@ class BoilerPowerTestRuntime {
   void finish_task(const char *status, int next_state, bool keep_result, bool keep_cm100) {
     id(oq_commissioning_boiler_request) = false;
     restore_flow_setpoint();
-    id(oq_commissioning_request_pending) = false;
-    id(oq_commissioning_active) = keep_cm100;
-    id(oq_commissioning_abort_requested) = false;
-    id(oq_commissioning_task_code) = TASK_NONE;
-    id(oq_commissioning_state_code) = next_state;
+    oq_commissioning::clear_container(keep_cm100, next_state);
     if (!keep_result) {
       id(oq_commissioning_result_w) = NAN;
       id(oq_commissioning_result_confidence) = 0.0f;
       reset_measurement();
     }
     publish_status(status);
-    id(oq_commissioning_status).publish_state(keep_cm100 ? "CM100 READY" : "IDLE");
   }
 
   void accept_neutral_cm100_if_ready(bool in_cm100, uint32_t now_ms) {

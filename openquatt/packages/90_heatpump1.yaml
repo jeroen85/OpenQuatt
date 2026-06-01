@@ -1,0 +1,10 @@
+# ==============================================================================
+# OpenQuatt - Primary Heat Pump Adapter Package
+# ==============================================================================
+packages:
+  heatpump1: !include
+    file: ../oq_HP_io.yaml
+    vars:
+      hp_id: "hp1"
+      prefix: "HP1 - "
+      device_address: 0x01

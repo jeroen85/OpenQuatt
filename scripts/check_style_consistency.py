@@ -16,6 +16,7 @@ TEXT_PATTERNS = (
     "openquatt/*.yaml",
     "openquatt/base/*.yaml",
     "openquatt/connection/*.yaml",
+    "openquatt/packages/*.yaml",
     "openquatt/profiles/*.yaml",
     "openquatt/topology/*.yaml",
     "scripts/*.py",
@@ -28,6 +29,7 @@ YAML_BANNER_PATTERNS = (
     "openquatt/*.yaml",
     "openquatt/base/*.yaml",
     "openquatt/connection/*.yaml",
+    "openquatt/packages/*.yaml",
     "openquatt/profiles/*.yaml",
     "openquatt/topology/*.yaml",
 )
@@ -37,6 +39,7 @@ LAMBDA_PATTERNS = (
     "openquatt/*.yaml",
     "openquatt/base/*.yaml",
     "openquatt/connection/*.yaml",
+    "openquatt/packages/*.yaml",
     "openquatt/profiles/*.yaml",
     "openquatt/topology/*.yaml",
 )
@@ -92,34 +95,34 @@ STRICT_TOP_LEVEL_ORDER_RULES = {
         "sensor",
     ),
     "openquatt/oq_packages_common.yaml": (
-        "oq_common",
-        "oq_supervisory_controlmode",
-        "oq_commissioning",
-        "oq_thermal_limits",
-        "oq_strategy_manager",
-        "oq_cooling_strategy",
-        "oq_heating_curve_strategy",
-        "oq_power_house_strategy",
-        "oq_thermal_request_control",
-        "oq_thermal_actuator",
-        "oq_flow_control",
-        "oq_flow_autotune",
-        "oq_air_purge",
-        "oq_manual_flow",
-        "oq_manual_hp",
-        "oq_boiler_test",
-        "oq_boiler_control",
-        "oq_energy",
-        "oq_cic",
-        "oq_ha_inputs",
-        "oq_local_sensors",
-        "oq_sensor_sources",
-        "oq_ot_slave",
-        "oq_setup_status",
-        "oq_webserver",
-        "oq_web_access",
-        "oq_mqtt",
-        "heatpump1",
+        "oq_runtime_packages",
+        "oq_strategy_packages",
+        "oq_thermal_pipeline_packages",
+        "oq_commissioning_task_packages",
+        "oq_integration_packages",
+        "oq_ui_runtime_packages",
+        "oq_heatpump1_package",
+    ),
+    "openquatt/packages/10_runtime.yaml": (
+        "packages",
+    ),
+    "openquatt/packages/20_strategies.yaml": (
+        "packages",
+    ),
+    "openquatt/packages/30_thermal_pipeline.yaml": (
+        "packages",
+    ),
+    "openquatt/packages/40_commissioning_tasks.yaml": (
+        "packages",
+    ),
+    "openquatt/packages/50_integrations.yaml": (
+        "packages",
+    ),
+    "openquatt/packages/60_ui_runtime.yaml": (
+        "packages",
+    ),
+    "openquatt/packages/90_heatpump1.yaml": (
+        "packages",
     ),
     "openquatt/topology/duo.yaml": (
         "secondary_hp_id",
@@ -160,34 +163,83 @@ STRICT_TOP_LEVEL_ORDER_RULES = {
     "openquatt/profiles/heatpump_controller_q_cic_compatibility_duo.yaml": (
         "packages",
     ),
+    "openquatt/profiles/heatpump_controller_q.yaml": (
+        "substitutions",
+        "packages",
+        "psram",
+        "select",
+        "spi",
+        "sensor",
+    ),
 }
 
 NESTED_KEY_ORDER_RULES = {
     ("configs/heatpump_controller_q/single_wifi.yaml", "packages"): (
         "openquatt_profile_heatpump_controller_q",
-        "openquatt_profile_heatpump_controller_q_cic_compatibility",
         "openquatt_base_common",
         "openquatt_connection_wifi",
     ),
     ("configs/heatpump_controller_q/single_eth.yaml", "packages"): (
         "openquatt_profile_heatpump_controller_q",
-        "openquatt_profile_heatpump_controller_q_cic_compatibility",
         "openquatt_base_common",
         "openquatt_connection_eth",
     ),
     ("configs/heatpump_controller_q/duo_wifi.yaml", "packages"): (
         "openquatt_profile_heatpump_controller_q",
-        "openquatt_profile_heatpump_controller_q_cic_compatibility",
         "openquatt_profile_heatpump_controller_q_cic_compatibility_duo",
         "openquatt_base_common",
         "openquatt_connection_wifi",
     ),
     ("configs/heatpump_controller_q/duo_eth.yaml", "packages"): (
         "openquatt_profile_heatpump_controller_q",
-        "openquatt_profile_heatpump_controller_q_cic_compatibility",
         "openquatt_profile_heatpump_controller_q_cic_compatibility_duo",
         "openquatt_base_common",
         "openquatt_connection_eth",
+    ),
+    ("openquatt/packages/10_runtime.yaml", "packages"): (
+        "oq_common",
+        "oq_supervisory_controlmode",
+        "oq_commissioning",
+        "oq_thermal_limits",
+    ),
+    ("openquatt/packages/20_strategies.yaml", "packages"): (
+        "oq_strategy_manager",
+        "oq_cooling_strategy",
+        "oq_heating_curve_strategy",
+        "oq_power_house_strategy",
+    ),
+    ("openquatt/packages/30_thermal_pipeline.yaml", "packages"): (
+        "oq_thermal_request_control",
+        "oq_thermal_actuator",
+        "oq_flow_control",
+    ),
+    ("openquatt/packages/40_commissioning_tasks.yaml", "packages"): (
+        "oq_flow_autotune",
+        "oq_air_purge",
+        "oq_manual_flow",
+        "oq_manual_hp",
+        "oq_boiler_test",
+    ),
+    ("openquatt/packages/50_integrations.yaml", "packages"): (
+        "oq_boiler_control",
+        "oq_energy",
+        "oq_cic",
+        "oq_ha_inputs",
+        "oq_local_sensors",
+        "oq_sensor_sources",
+        "oq_ot_slave",
+    ),
+    ("openquatt/packages/60_ui_runtime.yaml", "packages"): (
+        "oq_setup_status",
+        "oq_webserver",
+        "oq_web_access",
+        "oq_mqtt",
+    ),
+    ("openquatt/packages/90_heatpump1.yaml", "packages"): (
+        "heatpump1",
+    ),
+    ("openquatt/profiles/heatpump_controller_q.yaml", "packages"): (
+        "oq_cic_compatibility",
     ),
 }
 
@@ -195,6 +247,7 @@ SUBSTITUTION_SECTION_ORDER_RULES = {
     "openquatt/oq_substitutions_common.yaml": (
         "CORE PROJECT",
         "HARDWARE",
+        "TOPOLOGY CONTRACT",
         "SUPERVISORY CONTROL MODE",
         "HEATING STRATEGY",
         "HEAT CONTROL",

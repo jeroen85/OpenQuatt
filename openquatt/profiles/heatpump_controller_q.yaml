@@ -35,6 +35,9 @@ substitutions:
   hpcq_flow_kf_lpm_per_hz: "0.1836"                     # Flow coefficient: Qv[l/min] = Kf * f[Hz] + Q0.
   hpcq_flow_q0_lpm: "-0.2"                              # Flow intercept [l/min].
 
+packages:
+  oq_cic_compatibility: !include heatpump_controller_q_cic_compatibility.yaml
+
 psram:
   mode: octal
   speed: 80MHz

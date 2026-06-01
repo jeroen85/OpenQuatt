@@ -68,11 +68,11 @@ interval:
             }
             #if OQ_TOPOLOGY_DUO
             return oq_request::ExcludedLevels{
-                id(${ta_secondary_excluded_level_a_id}).has_state()
-                    ? id(${ta_secondary_excluded_level_a_id}).current_option()
+                id(${secondary_excluded_level_a_id}).has_state()
+                    ? id(${secondary_excluded_level_a_id}).current_option()
                     : std::string("None"),
-                id(${ta_secondary_excluded_level_b_id}).has_state()
-                    ? id(${ta_secondary_excluded_level_b_id}).current_option()
+                id(${secondary_excluded_level_b_id}).has_state()
+                    ? id(${secondary_excluded_level_b_id}).current_option()
                     : std::string("None"),
             };
             #else
@@ -92,18 +92,18 @@ interval:
               auto idx = id(hp1_compressor_level).active_index();
               return idx.has_value() ? (int) idx.value() : -1;
             }
-            if (!id(${ta_secondary_compressor_level_id}).has_state()) return -1;
-            auto idx = id(${ta_secondary_compressor_level_id}).active_index();
+            if (!id(${secondary_compressor_level_id}).has_state()) return -1;
+            auto idx = id(${secondary_compressor_level_id}).active_index();
             return idx.has_value() ? (int) idx.value() : -1;
           };
 
           auto hp_mode_is_cooling = [&](bool is_hp1)->bool {
-            const float mode_raw = is_hp1 ? id(hp1_working_mode).state : id(${ta_secondary_working_mode_id}).state;
+            const float mode_raw = is_hp1 ? id(hp1_working_mode).state : id(${secondary_working_mode_id}).state;
             return oq_request::thermal_mode_matches(mode_raw, 1);
           };
 
           auto hp_mode_is_heating = [&](bool is_hp1)->bool {
-            const float mode_raw = is_hp1 ? id(hp1_working_mode).state : id(${ta_secondary_working_mode_id}).state;
+            const float mode_raw = is_hp1 ? id(hp1_working_mode).state : id(${secondary_working_mode_id}).state;
             return oq_request::thermal_mode_matches(mode_raw, 2);
           };
 
@@ -115,8 +115,8 @@ interval:
                   1);
             }
             return oq_request::target_option_matches_mode(
-                id(${ta_secondary_set_working_mode_id}).has_state(),
-                id(${ta_secondary_set_working_mode_id}).current_option(),
+                id(${secondary_set_working_mode_id}).has_state(),
+                id(${secondary_set_working_mode_id}).current_option(),
                 1);
           };
 
@@ -128,8 +128,8 @@ interval:
                   2);
             }
             return oq_request::target_option_matches_mode(
-                id(${ta_secondary_set_working_mode_id}).has_state(),
-                id(${ta_secondary_set_working_mode_id}).current_option(),
+                id(${secondary_set_working_mode_id}).has_state(),
+                id(${secondary_set_working_mode_id}).current_option(),
                 2);
           };
 
@@ -148,7 +148,7 @@ interval:
           auto valve_defrost_active = [&](bool is_hp1)->bool {
             if (is_hp1) return id(hp1_4_way_valve).state;
             #if OQ_TOPOLOGY_DUO
-            return id(${ta_secondary_4_way_valve_id}).state;
+            return id(${secondary_4_way_valve_id}).state;
             #else
             return false;
             #endif
@@ -160,7 +160,7 @@ interval:
             // caused the duo optimizer to pre-load far too aggressively.
             const bool defrost_active = valve_defrost_active(is_hp1);
             const int selected_level = hp_selected_level(is_hp1);
-            const int prev_applied = is_hp1 ? id(hp1_last_applied_level) : id(${ta_secondary_last_applied_level_id});
+            const int prev_applied = is_hp1 ? id(hp1_last_applied_level) : id(${secondary_last_applied_level_id});
             const bool cooling_mode_active =
                 hp_mode_is_cooling(is_hp1) || hp_mode_target_is_cooling(is_hp1);
             return oq_request::defrost_hold_level(
@@ -185,13 +185,13 @@ interval:
                 c.perform();
               }
             } else {
-              if (!id(${ta_secondary_set_working_mode_id}).has_state() || id(${ta_secondary_set_working_mode_id}).current_option() != opt) {
-                auto c = id(${ta_secondary_set_working_mode_id}).make_call();
+              if (!id(${secondary_set_working_mode_id}).has_state() || id(${secondary_set_working_mode_id}).current_option() != opt) {
+                auto c = id(${secondary_set_working_mode_id}).make_call();
                 c.set_option(opt);
                 c.perform();
               }
               if (hp_selected_level(false) != retained_level) {
-                auto c = id(${ta_secondary_compressor_level_id}).make_call();
+                auto c = id(${secondary_compressor_level_id}).make_call();
                 c.set_index(retained_level);
                 c.perform();
               }
@@ -230,8 +230,8 @@ interval:
                 c.perform();
               }
             } else {
-              if (id(${ta_secondary_set_working_mode_id}).current_option() != opt) {
-                auto c = id(${ta_secondary_set_working_mode_id}).make_call();
+              if (id(${secondary_set_working_mode_id}).current_option() != opt) {
+                auto c = id(${secondary_set_working_mode_id}).make_call();
                 c.set_option(opt);
                 c.perform();
               }
@@ -239,7 +239,7 @@ interval:
           };
 
           auto mode_is_active_thermal = [&](bool is_hp1)->bool {
-            const float mode_raw = is_hp1 ? id(hp1_working_mode).state : id(${ta_secondary_working_mode_id}).state;
+            const float mode_raw = is_hp1 ? id(hp1_working_mode).state : id(${secondary_working_mode_id}).state;
             if (isnan(mode_raw)) return false;
             return request_thermal_active && oq_request::thermal_mode_matches(mode_raw, request_mode_code);
           };
@@ -253,8 +253,8 @@ interval:
                   request_mode_code);
             }
             return oq_request::target_option_matches_mode(
-                id(${ta_secondary_set_working_mode_id}).has_state(),
-                id(${ta_secondary_set_working_mode_id}).current_option(),
+                id(${secondary_set_working_mode_id}).has_state(),
+                id(${secondary_set_working_mode_id}).current_option(),
                 request_mode_code);
           };
 
@@ -266,7 +266,7 @@ interval:
           auto apply_level = [&](bool is_hp1, int req_level)->int {
             req_level = std::max(min_level, std::min(max_level, req_level));
             const int requested_level = req_level;
-            const int prev_applied = is_hp1 ? id(hp1_last_applied_level) : id(${ta_secondary_last_applied_level_id});
+            const int prev_applied = is_hp1 ? id(hp1_last_applied_level) : id(${secondary_last_applied_level_id});
             const int retained_level = defrost_stop_hold_level(is_hp1);
             std::string block_reason;
 
@@ -287,7 +287,7 @@ interval:
               int min_off_s = (int) ${oq_hp_min_off_s};
               if (min_off_s < 0) min_off_s = 0;
 
-              const uint32_t last_stop_ms = is_hp1 ? id(hp1_last_stop_ms) : id(${ta_secondary_last_stop_ms_id});
+              const uint32_t last_stop_ms = is_hp1 ? id(hp1_last_stop_ms) : id(${secondary_last_stop_ms_id});
               if (min_off_s > 0 && last_stop_ms > 0 && now_ms > last_stop_ms) {
                 const uint32_t elapsed_off_ms = now_ms - last_stop_ms;
                 const uint32_t min_off_ms = (uint32_t) min_off_s * 1000UL;
@@ -368,10 +368,10 @@ interval:
                 c.perform();
               }
             } else {
-              auto idx = id(${ta_secondary_compressor_level_id}).active_index();
+              auto idx = id(${secondary_compressor_level_id}).active_index();
               const int cur = idx.has_value() ? (int) idx.value() : -1;
               if (cur != applied) {
-                auto c = id(${ta_secondary_compressor_level_id}).make_call();
+                auto c = id(${secondary_compressor_level_id}).make_call();
                 c.set_option(lvl_opts[applied]);
                 c.perform();
               }
@@ -386,7 +386,7 @@ interval:
           #if OQ_TOPOLOGY_DUO
           const int hp2_applied = apply_level(false, hp2_req);
           const int prev_topology_count =
-              (id(hp1_last_applied_level) > 0 ? 1 : 0) + (id(${ta_secondary_last_applied_level_id}) > 0 ? 1 : 0);
+              (id(hp1_last_applied_level) > 0 ? 1 : 0) + (id(${secondary_last_applied_level_id}) > 0 ? 1 : 0);
           const int new_topology_count = (hp1_applied > 0 ? 1 : 0) + (hp2_applied > 0 ? 1 : 0);
           if (prev_topology_count > 0 && new_topology_count > 0 && prev_topology_count != new_topology_count) {
             id(oq_duo_request_hold_until_ms) = now_ms + 180000UL;
@@ -439,7 +439,7 @@ interval:
             }
             #if OQ_TOPOLOGY_DUO
             hp2_service_guard =
-                manual_request_guard(manual_hp2_level, id(oq_manual_hp2_mode_code), id(${ta_secondary_last_stop_ms_id}), hp2_service_guard);
+                manual_request_guard(manual_hp2_level, id(oq_manual_hp2_mode_code), id(${secondary_last_stop_ms_id}), hp2_service_guard);
             if (manual_hp2_level <= 0 && hp2_applied > 0) {
               hp2_service_guard = "minimale draaitijd: tijdelijk stand " + std::to_string(hp2_applied);
             } else if (manual_hp2_level > 0 && hp2_applied == 0 && hp2_service_guard == "Vrijgegeven") {
@@ -467,7 +467,7 @@ interval:
           }
 
           auto log_transition = [&](bool is_hp1, int new_lvl) {
-            int &prev = is_hp1 ? id(hp1_last_applied_level) : id(${ta_secondary_last_applied_level_id});
+            int &prev = is_hp1 ? id(hp1_last_applied_level) : id(${secondary_last_applied_level_id});
             if (prev != new_lvl) {
               if (is_hp1) id(hp1_last_level_change_ms) = now_ms;
               else id(hp2_last_level_change_ms) = now_ms;
@@ -475,22 +475,22 @@ interval:
 
             if (prev == 0 && new_lvl > 0) {
               if (is_hp1) id(hp1_last_start_ms) = now_ms;
-              else id(${ta_secondary_last_start_ms_id}) = now_ms;
+              else id(${secondary_last_start_ms_id}) = now_ms;
             } else if (prev > 0 && new_lvl == 0) {
               if (is_hp1) id(hp1_last_stop_ms) = now_ms;
-              else id(${ta_secondary_last_stop_ms_id}) = now_ms;
+              else id(${secondary_last_stop_ms_id}) = now_ms;
             }
 
             // Runtime counting: only count when the specific unit is measured in an active thermal mode.
             // This avoids overcounting during command/mode transition, standby, or fault situations.
             if (new_lvl > 0 && dt_ms > 0) {
-              const float working_mode_raw = is_hp1 ? id(hp1_working_mode).state : id(${ta_secondary_working_mode_id}).state;
+              const float working_mode_raw = is_hp1 ? id(hp1_working_mode).state : id(${secondary_working_mode_id}).state;
               const bool thermal_now =
                   !isnan(working_mode_raw) &&
                   ((((int) roundf(working_mode_raw)) == 1) || (((int) roundf(working_mode_raw)) == 2));
               if (thermal_now) {
                 uint32_t &runtime_accum_ms = is_hp1 ? id(hp1_runtime_accum_ms) : id(hp2_runtime_accum_ms);
-                int &runtime_minutes = is_hp1 ? id(hp1_minutes) : id(${ta_secondary_minutes_id});
+                int &runtime_minutes = is_hp1 ? id(hp1_minutes) : id(${secondary_minutes_id});
                 uint32_t sum_ms = runtime_accum_ms + dt_ms;
                 if (sum_ms < runtime_accum_ms) sum_ms = 60000UL;  // overflow guard
                 runtime_accum_ms = sum_ms;

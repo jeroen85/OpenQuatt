@@ -130,7 +130,7 @@ binary_sensor:
     web_server:
       sorting_group_id: oq_boiler
     lambda: |-
-      return id(oq_commissioning_active) && id(oq_commissioning_task_code) == 1;
+      return id(oq_commissioning_active) && id(oq_commissioning_task_code) == oq_commissioning::TASK_BOILER_POWER_TEST;
 
 text_sensor:
   - platform: template

@@ -135,18 +135,18 @@ interval:
                 const bool hp1_heating_active = is_active_mode(id(hp1_last_applied_level), id(hp1_working_mode), 2);
                 const bool hp2_heating_active =
                     (${ot_secondary_present} != 0) &&
-                    is_active_mode(id(${ot_secondary_last_applied_level_id}), id(${ot_secondary_working_mode_id}), 2);
+                    is_active_mode(id(${secondary_last_applied_level_id}), id(${secondary_working_mode_id}), 2);
                 const bool hp1_cooling_active = is_active_mode(id(hp1_last_applied_level), id(hp1_working_mode), 1);
                 const bool hp2_cooling_active =
                     (${ot_secondary_present} != 0) &&
-                    is_active_mode(id(${ot_secondary_last_applied_level_id}), id(${ot_secondary_working_mode_id}), 1);
+                    is_active_mode(id(${secondary_last_applied_level_id}), id(${secondary_working_mode_id}), 1);
                 const bool boiler_on = id(boiler_active).has_state() && id(boiler_active).state;
                 const bool ch_active = hp1_heating_active || hp2_heating_active || boiler_on;
                 const bool cooling_active = hp1_cooling_active || hp2_cooling_active;
 
                 const bool hp1_fault = is_active_problem(id(hp1_ot_fault_active));
                 const bool hp2_fault =
-                    (${ot_secondary_present} != 0) && is_active_problem(id(${ot_secondary_fault_binary_sensor_id}));
+                    (${ot_secondary_present} != 0) && is_active_problem(id(${secondary_fault_binary_sensor_id}));
                 const bool lowflow_fault = id(oq_lowflow_fault_active);
                 const bool temp_trip = id(oq_water_temp_trip_active) || id(oq_water_temp_hard_trip_active);
 

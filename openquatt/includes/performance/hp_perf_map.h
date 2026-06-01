@@ -4,7 +4,7 @@
 // V1/V1.5 and V2 performance maps, kept in dedicated namespaces for dispatching.
 // Provides thermisch vermogen (W) en COP als functie van (level, Tamb, Tsup).
 #include <cmath>
-#include "hp_perf_map_v2_high.h"
+#include "detail/hp_perf_map_v2_high.h"
 
 namespace oq_perf_v1 {
 

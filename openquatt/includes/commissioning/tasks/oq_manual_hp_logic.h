@@ -3,6 +3,9 @@
 #include <math.h>
 #include <string>
 
+#include "../../control/oq_thermal_request_logic.h"
+#include "../oq_commissioning_runtime.h"
+
 namespace oq_manual_hp {
 
 inline bool owns_control() {
@@ -104,10 +107,7 @@ class ManualHpRuntime {
         return;
       }
 
-      id(oq_commissioning_task_code) = oq_commissioning::TASK_NONE;
-      id(oq_commissioning_abort_requested) = false;
-      id(oq_commissioning_active) = false;
-      id(oq_commissioning_request_pending) = false;
+      oq_commissioning::clear_container(false);
       publish_status("ABORTED: CM100 exited");
       publish_guard("Vrijgegeven");
       id(oq_commissioning_status).publish_state("IDLE");
@@ -146,9 +146,7 @@ class ManualHpRuntime {
     id(oq_manual_hp_active) = false;
     id(oq_manual_hp_stop_requested) = false;
     id(oq_manual_hp_mode_allowed) = false;
-    if (id(oq_commissioning_task_code) == oq_commissioning::TASK_MANUAL_HP) {
-      id(oq_commissioning_task_code) = oq_commissioning::TASK_NONE;
-    }
+    oq_commissioning::clear_container(true);
     publish_status("STOPPED");
     publish_guard("Vrijgegeven");
     id(oq_commissioning_status).publish_state("CM100 READY");

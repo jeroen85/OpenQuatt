@@ -39,6 +39,8 @@ EFUSE_PATCH_MARKER = (
     EFUSE_PATCH_MARKER_PREFIX
     + "esp_efuse_fields.c; esp_efuse_utility.c stays in the main efuse CMakeLists.\n"
 )
+SYSTEM_TIME_SOURCE = '"src/system_time.c"'
+SYSTEM_TIME_RENAMED = '"src/esp_timer_system_time.c"'
 
 
 def repo_root() -> Path:
@@ -303,17 +305,35 @@ def patch_framework_espidf_efuse_sources(package_dir: Path) -> bool:
     return patched
 
 
-def apply_framework_espidf_efuse_workaround(pio_core_dir: Path) -> list[Path]:
+def patch_framework_espidf_system_time_source(package_dir: Path) -> bool:
+    cmake_path = package_dir / "components" / "esp_timer" / "CMakeLists.txt"
+    source_path = package_dir / "components" / "esp_timer" / "src" / "system_time.c"
+    renamed_path = source_path.with_name("esp_timer_system_time.c")
+    if not cmake_path.is_file() or not source_path.is_file():
+        return False
+
+    text = cmake_path.read_text(encoding="utf-8")
+    if SYSTEM_TIME_SOURCE not in text:
+        return False
+
+    cmake_path.write_text(text.replace(SYSTEM_TIME_SOURCE, SYSTEM_TIME_RENAMED, 1), encoding="utf-8")
+    if not renamed_path.exists():
+        renamed_path.write_text(source_path.read_text(encoding="utf-8"), encoding="utf-8")
+    return True
+
+
+def apply_framework_espidf_source_workarounds(pio_core_dir: Path) -> list[Path]:
     patched: list[Path] = []
     for package_dir in framework_espidf_package_dirs(pio_core_dir):
         main_patched = patch_framework_espidf_efuse_main_cmake(package_dir)
         sources_patched = patch_framework_espidf_efuse_sources(package_dir)
-        if main_patched or sources_patched:
+        system_time_patched = patch_framework_espidf_system_time_source(package_dir)
+        if main_patched or sources_patched or system_time_patched:
             patched.append(package_dir)
     return patched
 
 
-def has_framework_espidf_efuse_workaround(pio_core_dir: Path) -> bool:
+def has_framework_espidf_source_workarounds(pio_core_dir: Path) -> bool:
     for package_dir in framework_espidf_package_dirs(pio_core_dir):
         cmake_path = package_dir / "components" / "efuse" / "CMakeLists.txt"
         if not cmake_path.is_file():
@@ -321,7 +341,16 @@ def has_framework_espidf_efuse_workaround(pio_core_dir: Path) -> bool:
         text = cmake_path.read_text(encoding="utf-8")
         esp32s3_sources = package_dir / "components" / "efuse" / "esp32s3" / "sources.cmake"
         renamed_source = package_dir / "components" / "efuse" / "esp32s3" / "esp_efuse_utility_esp32s3.c"
-        if 'src/esp_efuse_utility.c' in text and esp32s3_sources.is_file() and renamed_source.is_file():
+        timer_cmake_path = package_dir / "components" / "esp_timer" / "CMakeLists.txt"
+        timer_renamed_source = package_dir / "components" / "esp_timer" / "src" / "esp_timer_system_time.c"
+        if (
+            'src/esp_efuse_utility.c' in text
+            and esp32s3_sources.is_file()
+            and renamed_source.is_file()
+            and timer_cmake_path.is_file()
+            and SYSTEM_TIME_RENAMED in timer_cmake_path.read_text(encoding="utf-8")
+            and timer_renamed_source.is_file()
+        ):
             return True
     return False
 
@@ -630,9 +659,9 @@ def validate_command(args: argparse.Namespace) -> int:
             print("Validation complete.")
             return 0
 
-        patched_packages = apply_framework_espidf_efuse_workaround(pio_core_dir)
+        patched_packages = apply_framework_espidf_source_workarounds(pio_core_dir)
         for package_dir in patched_packages:
-            print(f"[fix] patched framework-espidf efuse sources in {package_dir}")
+            print(f"[fix] patched framework-espidf duplicate sources in {package_dir}")
         if patched_packages:
             shutil.rmtree(command_root / ".esphome" / "build", ignore_errors=True)
 
@@ -663,20 +692,20 @@ def validate_command(args: argparse.Namespace) -> int:
             )
             if exit_code != 0:
                 tail = tail_lines(log_path, limit=160)
-                efuse_duplicate = (
+                source_duplicate = (
                     "Multiple ways to build the same target were specified for:" in tail
-                    and "esp_efuse_fields.c.o" in tail
+                    and ("esp_efuse_fields.c.o" in tail or "system_time.c.o" in tail)
                 )
                 cache_race = (
                     ".esphome/.espressif/service_" in tail
                     and ("ArduinoJson" in tail or "idf_component_manager" in tail)
                 )
-                if efuse_duplicate:
-                    patched = apply_framework_espidf_efuse_workaround(pio_core_dir)
-                    if patched or has_framework_espidf_efuse_workaround(pio_core_dir):
+                if source_duplicate:
+                    patched = apply_framework_espidf_source_workarounds(pio_core_dir)
+                    if patched or has_framework_espidf_source_workarounds(pio_core_dir):
                         print(
                             f"[retry] compile {config}: resetting build cache after framework-espidf "
-                            "efuse duplicate-target failure."
+                            "duplicate-target failure."
                         )
                         build_root = command_root / target_build_paths.get(config, f".esphome/build/{Path(config).stem}")
                         shutil.rmtree(build_root, ignore_errors=True)

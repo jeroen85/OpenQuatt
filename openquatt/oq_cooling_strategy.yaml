@@ -374,7 +374,7 @@ interval:
 
           bool oil_return_active = id(hp1_prot_oil_return).state;
           #if OQ_TOPOLOGY_DUO
-          oil_return_active = oil_return_active || id(${cc_secondary_oil_return_id}).state;
+          oil_return_active = oil_return_active || id(${secondary_oil_return_id}).state;
           #endif
           if (oil_return_active) {
             id(oq_cooling_oil_return_hold_until_ms) = now_ms + oil_return_hold_ms;
@@ -830,7 +830,7 @@ interval:
           if (f > f_cap) f = f_cap;
 
           #if OQ_TOPOLOGY_DUO
-          const bool lead_is_hp1 = (id(hp1_minutes) <= id(${cc_secondary_minutes_id}));
+          const bool lead_is_hp1 = (id(hp1_minutes) <= id(${secondary_minutes_id}));
           #else
           const bool lead_is_hp1 = true;
           #endif
@@ -851,11 +851,11 @@ interval:
             }
             #if OQ_TOPOLOGY_DUO
             return oq_request::ExcludedLevels{
-                id(${cc_secondary_excluded_level_a_id}).has_state()
-                    ? id(${cc_secondary_excluded_level_a_id}).current_option()
+                id(${secondary_excluded_level_a_id}).has_state()
+                    ? id(${secondary_excluded_level_a_id}).current_option()
                     : std::string("None"),
-                id(${cc_secondary_excluded_level_b_id}).has_state()
-                    ? id(${cc_secondary_excluded_level_b_id}).current_option()
+                id(${secondary_excluded_level_b_id}).has_state()
+                    ? id(${secondary_excluded_level_b_id}).current_option()
                     : std::string("None"),
             };
             #else
@@ -876,13 +876,13 @@ interval:
           };
 
           auto hp_restart_blocked = [&](bool is_hp1)->bool {
-            const int prev_applied = is_hp1 ? id(hp1_last_applied_level) : id(${cc_secondary_last_applied_level_id});
+            const int prev_applied = is_hp1 ? id(hp1_last_applied_level) : id(${secondary_last_applied_level_id});
             if (prev_applied > 0) return false;
 
             int min_off_s = (int) ${oq_hp_min_off_s};
             if (min_off_s <= 0) return false;
 
-            const uint32_t last_stop_ms = is_hp1 ? id(hp1_last_stop_ms) : id(${cc_secondary_last_stop_ms_id});
+            const uint32_t last_stop_ms = is_hp1 ? id(hp1_last_stop_ms) : id(${secondary_last_stop_ms_id});
             if (last_stop_ms == 0 || now_ms <= last_stop_ms) return false;
 
             const uint32_t min_off_ms = (uint32_t) min_off_s * 1000UL;
@@ -896,7 +896,7 @@ interval:
           auto hp_restart_remaining_s = [&](bool is_hp1)->uint32_t {
             int min_off_s = (int) ${oq_hp_min_off_s};
             if (min_off_s <= 0) return 0;
-            const uint32_t last_stop_ms = is_hp1 ? id(hp1_last_stop_ms) : id(${cc_secondary_last_stop_ms_id});
+            const uint32_t last_stop_ms = is_hp1 ? id(hp1_last_stop_ms) : id(${secondary_last_stop_ms_id});
             if (last_stop_ms == 0 || now_ms <= last_stop_ms) return 0;
             const uint32_t min_off_ms = (uint32_t) min_off_s * 1000UL;
             const uint32_t elapsed_off_ms = now_ms - last_stop_ms;
@@ -929,9 +929,9 @@ interval:
 
           auto hp_last_activity_ms = [&](bool is_hp1)->uint32_t {
             const uint32_t last_start_ms =
-                is_hp1 ? id(hp1_last_start_ms) : id(${cc_secondary_last_start_ms_id});
+                is_hp1 ? id(hp1_last_start_ms) : id(${secondary_last_start_ms_id});
             const uint32_t last_stop_ms =
-                is_hp1 ? id(hp1_last_stop_ms) : id(${cc_secondary_last_stop_ms_id});
+                is_hp1 ? id(hp1_last_stop_ms) : id(${secondary_last_stop_ms_id});
             return std::max(last_start_ms, last_stop_ms);
           };
 
@@ -942,7 +942,7 @@ interval:
 
           #if OQ_TOPOLOGY_DUO
           const bool prev_hp1_on = (id(hp1_last_applied_level) > 0);
-          const bool prev_hp2_on = (id(${cc_secondary_last_applied_level_id}) > 0);
+          const bool prev_hp2_on = (id(${secondary_last_applied_level_id}) > 0);
           const bool hp1_can_start_cooling = hp_can_take_cooling_start(true);
           const bool hp2_can_start_cooling = hp_can_take_cooling_start(false);
           const uint32_t hp1_last_active_ms = hp_last_activity_ms(true);
