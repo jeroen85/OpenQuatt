@@ -34,6 +34,7 @@ jobs:
     uses: ./.github/workflows/esphome-build.yml
     with:
       artifact_suffix: dev-release
+      cache_esphome_build: true
       project_version: ${{ needs.compute-meta.outputs.version }}
       release_channel: dev
       release_manifest_tag: dev-latest
