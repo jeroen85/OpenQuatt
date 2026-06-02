@@ -17,8 +17,10 @@
       latched: false,
       firstSeenAt: 0,
       lastSeenAt: 0,
-      hp1Peak1h: 0,
-      hp2Peak1h: 0,
+      hp1Peak2h: 0,
+      hp1Peak72h: 0,
+      hp2Peak2h: 0,
+      hp2Peak72h: 0,
       alternating: false,
     },
     commissioningTimers: [],
@@ -81,9 +83,10 @@
     ["sensor", "HP2 - COP", { value: 0, uom: "" }],
     ["sensor", "HP2 compressor level", { value: 0, uom: "" }],
     ["sensor", "HP2 - Compressor frequency", { value: 0, uom: "Hz" }],
-    ["sensor", "HP2 - Compressor starts 1h", { value: 3 }],
+    ["sensor", "HP2 - Compressor starts 2h", { value: 3 }],
     ["sensor", "HP2 - Compressor starts 6h", { value: 9 }],
     ["sensor", "HP2 - Compressor starts 24h", { value: 24 }],
+    ["sensor", "HP2 - Compressor starts 72h", { value: 40 }],
     ["sensor", "HP2 - Compressor last start age", { value: 18, uom: "min" }],
     ["sensor", "HP2 - Fan speed", { value: 0, uom: "rpm" }],
     ["sensor", "HP2 - Flow", { value: 0, uom: "L/h" }],
@@ -814,7 +817,8 @@
       ["Silent max level", 6, 0, 10, 1, ""],
       ["Maximum water temperature", 56, 25, 75, 1, "°C"],
       ["Minimum runtime", 300, 300, 3600, 30, "s"],
-      ["Compressor starts warning limit", 6, 1, 20, 1, ""],
+      ["Compressor starts 2h warning limit", 6, 1, 20, 1, ""],
+      ["Compressor starts 72h warning limit", 40, 1, 120, 1, ""],
       ["Rated maximum house power", 4500, 500, 12000, 100, "W"],
       ["House cold temp", -10, -25, 5, 0.5, "°C"],
       ["Maximum heating outdoor temperature", 16, -10, 25, 1, "°C"],
@@ -913,14 +917,17 @@
       ["HP1 - COP", 0, ""],
       ["HP1 compressor level", 0, ""],
       ["HP1 - Compressor frequency", 0, "Hz"],
-      ["HP1 - Compressor starts 1h", 3, ""],
+      ["HP1 - Compressor starts 2h", 3, ""],
       ["HP1 - Compressor starts 6h", 11, ""],
       ["HP1 - Compressor starts 24h", 29, ""],
+      ["HP1 - Compressor starts 72h", 40, ""],
       ["HP1 - Compressor last start age", 12, "min"],
       ["Compressor cycling alert first seen", 0, "s"],
       ["Compressor cycling alert last seen", 0, "s"],
-      ["Compressor cycling alert HP1 peak 1h", 0, ""],
-      ["Compressor cycling alert HP2 peak 1h", 0, ""],
+      ["Compressor cycling alert HP1 peak 2h", 0, ""],
+      ["Compressor cycling alert HP1 peak 72h", 0, ""],
+      ["Compressor cycling alert HP2 peak 2h", 0, ""],
+      ["Compressor cycling alert HP2 peak 72h", 0, ""],
       ["HP1 - Fan speed", 0, "rpm"],
       ["HP1 - Flow", 0, "L/h"],
       ["HP1 - Evaporator coil temperature", 0, "\u00B0C"],
@@ -951,7 +958,8 @@
       ["Cooling Request Active", false],
       ["Cooling Permitted", false],
       ["Boiler active", false],
-      ["Compressor cycling warning", false],
+      ["Compressor cycling warning 2h", false],
+      ["Compressor cycling warning 72h", false],
       ["Alternating compressor starts warning", false],
       ["Compressor cycling alert latched", false],
       ["Compressor cycling alert alternating", false],
@@ -1077,46 +1085,56 @@
 
   function applyDiagnosticScenario() {
     const single = state.installation === "single";
-    setBinary("Compressor cycling warning", false);
+    setBinary("Compressor cycling warning 2h", false);
+    setBinary("Compressor cycling warning 72h", false);
     setBinary("Alternating compressor starts warning", false);
     setBinary("Lowflow fault active", false);
     setBinary("Flow mismatch (HP1 vs HP2)", false);
     setBinary("CIC - Data stale", false);
     setBinary("OT - Link Problem", false);
-    setNumber("HP1 - Compressor starts 1h", 3);
+    setNumber("HP1 - Compressor starts 2h", 3);
     setNumber("HP1 - Compressor starts 6h", 11);
     setNumber("HP1 - Compressor starts 24h", 29);
+    setNumber("HP1 - Compressor starts 72h", 40);
     setNumber("HP1 - Compressor last start age", 12, "min");
     if (!single) {
-      setNumber("HP2 - Compressor starts 1h", 3);
+      setNumber("HP2 - Compressor starts 2h", 3);
       setNumber("HP2 - Compressor starts 6h", 9);
       setNumber("HP2 - Compressor starts 24h", 24);
+      setNumber("HP2 - Compressor starts 72h", 40);
       setNumber("HP2 - Compressor last start age", 18, "min");
     }
 
     if (state.diagnostics === "cycling") {
-      setBinary("Compressor cycling warning", true);
+      setBinary("Compressor cycling warning 2h", true);
+      setBinary("Compressor cycling warning 72h", true);
       setBinary("Alternating compressor starts warning", !single);
-      setNumber("HP1 - Compressor starts 1h", 8);
-      setNumber("HP1 - Compressor starts 6h", 31);
-      setNumber("HP1 - Compressor starts 24h", 88);
+      setNumber("HP1 - Compressor starts 2h", 8);
+      setNumber("HP1 - Compressor starts 6h", 18);
+      setNumber("HP1 - Compressor starts 24h", 33);
+      setNumber("HP1 - Compressor starts 72h", 48);
       setNumber("HP1 - Compressor last start age", 3, "min");
       if (!single) {
-        setNumber("HP2 - Compressor starts 1h", 8);
-        setNumber("HP2 - Compressor starts 6h", 29);
-        setNumber("HP2 - Compressor starts 24h", 84);
+        setNumber("HP2 - Compressor starts 2h", 8);
+        setNumber("HP2 - Compressor starts 6h", 16);
+        setNumber("HP2 - Compressor starts 24h", 30);
+        setNumber("HP2 - Compressor starts 72h", 44);
         setNumber("HP2 - Compressor last start age", 7, "min");
       }
       recordMockCompressorCyclingAlert({
-        hp1Peak1h: 8,
-        hp2Peak1h: single ? 0 : 8,
+        hp1Peak2h: 8,
+        hp1Peak72h: 48,
+        hp2Peak2h: single ? 0 : 8,
+        hp2Peak72h: single ? 0 : 44,
         alternating: !single,
         ongoing: true,
       });
     } else if (state.diagnostics === "cycling-recovered") {
       recordMockCompressorCyclingAlert({
-        hp1Peak1h: 8,
-        hp2Peak1h: single ? 0 : 8,
+        hp1Peak2h: 8,
+        hp1Peak72h: 48,
+        hp2Peak2h: single ? 0 : 8,
+        hp2Peak72h: single ? 0 : 44,
         alternating: !single,
       });
     } else if (state.diagnostics === "hydraulics") {
@@ -1131,7 +1149,7 @@
     syncMockCompressorCyclingAlertEntities();
   }
 
-  function recordMockCompressorCyclingAlert({ hp1Peak1h, hp2Peak1h, alternating, ongoing = false }) {
+  function recordMockCompressorCyclingAlert({ hp1Peak2h, hp1Peak72h, hp2Peak2h, hp2Peak72h, alternating, ongoing = false }) {
     const alert = state.compressorCyclingAlert;
     const now = Date.now();
     if (!alert.latched) {
@@ -1141,8 +1159,10 @@
     } else if (ongoing) {
       alert.lastSeenAt = now;
     }
-    alert.hp1Peak1h = Math.max(alert.hp1Peak1h, hp1Peak1h);
-    alert.hp2Peak1h = Math.max(alert.hp2Peak1h, hp2Peak1h);
+    alert.hp1Peak2h = Math.max(alert.hp1Peak2h, hp1Peak2h);
+    alert.hp1Peak72h = Math.max(alert.hp1Peak72h, hp1Peak72h);
+    alert.hp2Peak2h = Math.max(alert.hp2Peak2h, hp2Peak2h);
+    alert.hp2Peak72h = Math.max(alert.hp2Peak72h, hp2Peak72h);
     alert.alternating = alert.alternating || alternating;
   }
 
@@ -1151,8 +1171,10 @@
       latched: false,
       firstSeenAt: 0,
       lastSeenAt: 0,
-      hp1Peak1h: 0,
-      hp2Peak1h: 0,
+      hp1Peak2h: 0,
+      hp1Peak72h: 0,
+      hp2Peak2h: 0,
+      hp2Peak72h: 0,
       alternating: false,
     });
   }
@@ -1163,8 +1185,10 @@
     setBinary("Compressor cycling alert alternating", alert.alternating);
     setNumber("Compressor cycling alert first seen", Math.round(alert.firstSeenAt / 1000), "s");
     setNumber("Compressor cycling alert last seen", Math.round(alert.lastSeenAt / 1000), "s");
-    setNumber("Compressor cycling alert HP1 peak 1h", alert.hp1Peak1h);
-    setNumber("Compressor cycling alert HP2 peak 1h", alert.hp2Peak1h);
+    setNumber("Compressor cycling alert HP1 peak 2h", alert.hp1Peak2h);
+    setNumber("Compressor cycling alert HP1 peak 72h", alert.hp1Peak72h);
+    setNumber("Compressor cycling alert HP2 peak 2h", alert.hp2Peak2h);
+    setNumber("Compressor cycling alert HP2 peak 72h", alert.hp2Peak72h);
   }
 
   function buildTrendPreviewSamples(windowHours = 24) {
@@ -2273,9 +2297,11 @@
     } else if (name === "Reset setup state") {
       state.complete = false;
     } else if (name === "Acknowledge compressor cycling alert") {
-      clearMockCompressorCyclingAlert();
-      if (state.diagnostics === "cycling-recovered") {
-        state.diagnostics = "clear";
+      if (state.diagnostics !== "cycling") {
+        clearMockCompressorCyclingAlert();
+        if (state.diagnostics === "cycling-recovered") {
+          state.diagnostics = "clear";
+        }
       }
     } else if (name === "Check Firmware Updates") {
       const channel = String(getEntity("select", "Firmware Update Channel")?.value || "dev");

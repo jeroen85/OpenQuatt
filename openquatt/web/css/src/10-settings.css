@@ -734,6 +734,8 @@
 
 .oq-settings-monitoring-compressor-unit dl {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 10px;
   margin: 0;
 }
@@ -741,7 +743,7 @@
 .oq-settings-monitoring-compressor-unit dl div {
   display: grid;
   gap: 2px;
-  min-width: 38px;
+  min-width: 44px;
   text-align: right;
 }
 
@@ -1293,7 +1295,7 @@
   }
 
   .oq-settings-monitoring-compressor-unit dl {
-    justify-content: space-between;
+    justify-content: flex-start;
   }
 
   .oq-settings-commissioning-card-head {

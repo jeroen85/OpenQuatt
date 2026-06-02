@@ -1534,7 +1534,8 @@
 
   function getInstallationMonitoringModel() {
     const problems = [];
-    const cyclingActive = isInstallationMonitoringBinaryActive("compressorCyclingWarning")
+    const cyclingActive = isInstallationMonitoringBinaryActive("compressorCyclingWarning2h")
+      || isInstallationMonitoringBinaryActive("compressorCyclingWarning72h")
       || isInstallationMonitoringBinaryActive("alternatingCompressorStartsWarning");
     const cyclingAlertLatched = isInstallationMonitoringBinaryActive("compressorCyclingAlertLatched");
     const addBinaryProblem = (key, label) => {
@@ -1542,7 +1543,8 @@
         problems.push({ key, label });
       }
     };
-    addBinaryProblem("compressorCyclingWarning", "Te veel compressorstarts");
+    addBinaryProblem("compressorCyclingWarning2h", "Te veel compressorstarts in 2 uur");
+    addBinaryProblem("compressorCyclingWarning72h", "Te veel compressorstarts in 72 uur");
     addBinaryProblem("alternatingCompressorStartsWarning", "Warmtepompen starten opvallend vaak om en om");
     addBinaryProblem("lowflowFaultActive", "Te lage flow");
     addBinaryProblem("flowMismatch", "Flowverschil tussen warmtepomp 1 en 2");
@@ -1635,9 +1637,13 @@
       return "";
     }
     const alternating = isInstallationMonitoringBinaryActive("compressorCyclingAlertAlternating");
-    const hp1Peak = getInstallationMonitoringCount("compressorCyclingAlertHp1Peak1h");
-    const hp2Peak = hasEntity("compressorCyclingAlertHp2Peak1h")
-      ? getInstallationMonitoringCount("compressorCyclingAlertHp2Peak1h")
+    const hp1Peak2h = getInstallationMonitoringCount("compressorCyclingAlertHp1Peak2h");
+    const hp1Peak72h = getInstallationMonitoringCount("compressorCyclingAlertHp1Peak72h");
+    const hp2Peak2h = hasEntity("compressorCyclingAlertHp2Peak2h")
+      ? getInstallationMonitoringCount("compressorCyclingAlertHp2Peak2h")
+      : "";
+    const hp2Peak72h = hasEntity("compressorCyclingAlertHp2Peak72h")
+      ? getInstallationMonitoringCount("compressorCyclingAlertHp2Peak72h")
       : "";
     return `
       <div class="oq-settings-monitoring-incident${monitoring.cyclingAlertActive ? " is-active" : " is-recovered"}">
@@ -1649,13 +1655,15 @@
           ${renderInstallationMonitoringBadge(monitoring.cyclingAlertActive, "Actief", "Hersteld")}
         </div>
         <span>${monitoring.cyclingAlertActive
-          ? "De melding blijft staan nadat de starts weer rustig zijn geworden."
+          ? "De melding blijft staan nadat de starts weer rustig zijn geworden. Hier zie je de vastgelegde aantallen."
           : "OpenQuatt bewaart deze melding totdat je haar hieronder bevestigt."}</span>
         <dl>
           <div><dt>Eerste melding</dt><dd>${escapeHtml(formatInstallationMonitoringEpoch("compressorCyclingAlertFirstSeen"))}</dd></div>
           <div><dt>Laatste melding</dt><dd>${escapeHtml(formatInstallationMonitoringEpoch("compressorCyclingAlertLastSeen"))}</dd></div>
-          <div><dt>Piek warmtepomp 1</dt><dd>${escapeHtml(hp1Peak)} starts / uur</dd></div>
-          ${hp2Peak ? `<div><dt>Piek warmtepomp 2</dt><dd>${escapeHtml(hp2Peak)} starts / uur</dd></div>` : ""}
+          <div><dt>HP1 2 uur</dt><dd>${escapeHtml(hp1Peak2h)} starts</dd></div>
+          <div><dt>HP1 72 uur</dt><dd>${escapeHtml(hp1Peak72h)} starts</dd></div>
+          ${hp2Peak2h ? `<div><dt>HP2 2 uur</dt><dd>${escapeHtml(hp2Peak2h)} starts</dd></div>` : ""}
+          ${hp2Peak72h ? `<div><dt>HP2 72 uur</dt><dd>${escapeHtml(hp2Peak72h)} starts</dd></div>` : ""}
           ${alternating ? "<div><dt>Patroon</dt><dd>Opvallend vaak om en om</dd></div>" : ""}
         </dl>
         <div class="oq-settings-monitoring-incident-action">
@@ -1676,7 +1684,7 @@
   }
 
   function renderInstallationMonitoringCompressorUnit(title, prefix) {
-    if (!hasEntity(`${prefix}CompressorStarts1h`)) {
+    if (!hasEntity(`${prefix}CompressorStarts2h`)) {
       return "";
     }
     return `
@@ -1686,9 +1694,10 @@
           <span>Laatste start: ${escapeHtml(formatInstallationMonitoringLastStart(`${prefix}CompressorLastStartAge`))}</span>
         </div>
         <dl>
-          <div><dt>1 uur</dt><dd>${escapeHtml(getInstallationMonitoringCount(`${prefix}CompressorStarts1h`))}</dd></div>
+          <div><dt>2 uur</dt><dd>${escapeHtml(getInstallationMonitoringCount(`${prefix}CompressorStarts2h`))}</dd></div>
           <div><dt>6 uur</dt><dd>${escapeHtml(getInstallationMonitoringCount(`${prefix}CompressorStarts6h`))}</dd></div>
           <div><dt>24 uur</dt><dd>${escapeHtml(getInstallationMonitoringCount(`${prefix}CompressorStarts24h`))}</dd></div>
+          <div><dt>72 uur</dt><dd>${escapeHtml(getInstallationMonitoringCount(`${prefix}CompressorStarts72h`))}</dd></div>
         </dl>
       </div>
     `;
@@ -1747,7 +1756,12 @@
         active: isInstallationMonitoringFailureActive("hp2Failures"),
       }) : "",
     ].filter(Boolean).join("");
-    const compressorLimit = getEntityNumericValue("compressorStartsWarningLimit");
+    const compressorLimit2h = getEntityNumericValue("compressorStarts2hWarningLimit");
+    const compressorLimit72h = getEntityNumericValue("compressorStarts72hWarningLimit");
+    const compressorWarningActive = isInstallationMonitoringBinaryActive("compressorCyclingWarning2h")
+      || isInstallationMonitoringBinaryActive("compressorCyclingWarning72h")
+      || isInstallationMonitoringBinaryActive("alternatingCompressorStartsWarning")
+      || monitoring.cyclingAlertLatched;
     const hydraulicPanel = hydraulicRows ? `
       <article class="oq-settings-monitoring-card">
         <header><p>Hydrauliek</p></header>
@@ -1795,23 +1809,28 @@
             <header>
               <p>Compressorstarts</p>
               ${renderInstallationMonitoringBadge(
-                isInstallationMonitoringBinaryActive("compressorCyclingWarning")
-                  || isInstallationMonitoringBinaryActive("alternatingCompressorStartsWarning")
-                  || monitoring.cyclingAlertLatched,
+                compressorWarningActive,
               )}
             </header>
-            <span>Gemeten starts sinds de laatste controllerherstart. OpenQuatt waarschuwt boven de ingestelde grens per warmtepomp.</span>
+            <span>Gemeten starts sinds de laatste controllerherstart. 6 uur en 24 uur geven extra context; de waarschuwingen zelf gelden op 2 uur en 72 uur.</span>
             ${renderInstallationMonitoringCyclingIncident(monitoring)}
             <div class="oq-settings-monitoring-compressor-list">
               ${renderInstallationMonitoringCompressorUnit("Warmtepomp 1", "hp1")}
               ${renderInstallationMonitoringCompressorUnit("Warmtepomp 2", "hp2")}
             </div>
             ${renderSettingsSliderField(
-              "compressorStartsWarningLimit",
-              "Waarschuwen boven",
-              "Maximaal toegestaan aantal starts per warmtepomp binnen een rollend uur.",
+              "compressorStarts2hWarningLimit",
+              "Alarmwaarde voor aantal starts per 2 uur",
+              "Aantal starts per warmtepomp binnen 2 uur.",
               "oq-settings-field--compact",
-              { minLabel: "1", maxLabel: "20", valueLabel: Number.isNaN(compressorLimit) ? "—" : `${Math.round(compressorLimit)} starts / uur` },
+              { minLabel: "1", maxLabel: "20", valueLabel: Number.isNaN(compressorLimit2h) ? "—" : `${Math.round(compressorLimit2h)} starts / 2 uur` },
+            )}
+            ${renderSettingsSliderField(
+              "compressorStarts72hWarningLimit",
+              "Alarmwaarde voor aantal starts per 72 uur",
+              "Aantal starts per warmtepomp binnen 72 uur.",
+              "oq-settings-field--compact",
+              { minLabel: "1", maxLabel: "120", valueLabel: Number.isNaN(compressorLimit72h) ? "—" : `${Math.round(compressorLimit72h)} starts / 72 uur` },
             )}
           </article>
           ${hpPanel}

@@ -12,6 +12,8 @@ class InstallationMonitor {
   static constexpr uint32_t kHourMs = 60U * 60U * 1000U;
   static constexpr uint32_t kSixHoursMs = 6U * kHourMs;
   static constexpr uint32_t kDayMs = 24U * kHourMs;
+  static constexpr uint32_t kTwoHoursMs = 2U * kHourMs;
+  static constexpr uint32_t kSeventyTwoHoursMs = 72U * kHourMs;
 
   bool observe_compressor_frequency(int hp_index, float frequency_hz, uint32_t now_ms) {
     UnitState &unit = unit_for(hp_index);
@@ -71,9 +73,19 @@ class InstallationMonitor {
     return static_cast<float>(elapsed_ms(now_ms, unit.last_start_ms)) / 60000.0f;
   }
 
-  bool compressor_cycling_warning(uint32_t now_ms, size_t warning_limit) const {
-    return start_count(1, now_ms, kHourMs) > warning_limit ||
-           start_count(2, now_ms, kHourMs) > warning_limit;
+  bool compressor_cycling_warning_2h(uint32_t now_ms, size_t warning_limit) const {
+    return start_count(1, now_ms, kTwoHoursMs) > warning_limit ||
+           start_count(2, now_ms, kTwoHoursMs) > warning_limit;
+  }
+
+  bool compressor_cycling_warning_72h(uint32_t now_ms, size_t warning_limit) const {
+    return start_count(1, now_ms, kSeventyTwoHoursMs) > warning_limit ||
+           start_count(2, now_ms, kSeventyTwoHoursMs) > warning_limit;
+  }
+
+  bool compressor_cycling_warning(uint32_t now_ms, size_t short_warning_limit, size_t long_warning_limit) const {
+    return compressor_cycling_warning_2h(now_ms, short_warning_limit) ||
+           compressor_cycling_warning_72h(now_ms, long_warning_limit);
   }
 
   bool alternating_cycling_warning(uint32_t now_ms, size_t warning_limit) const {
@@ -85,7 +97,7 @@ class InstallationMonitor {
     uint8_t previous_hp = 0;
     for (size_t offset = 0; offset < required_events; ++offset) {
       const StartEvent &event = events_[reverse_event_index(offset)];
-      if (elapsed_ms(now_ms, event.at_ms) > kHourMs) {
+      if (elapsed_ms(now_ms, event.at_ms) > kTwoHoursMs) {
         return false;
       }
       if (previous_hp != 0 && previous_hp == event.hp_index) {
@@ -96,11 +108,11 @@ class InstallationMonitor {
     return true;
   }
 
- private:
+  private:
   static constexpr uint32_t kStopConfirmMs = 20U * 1000U;
   // A confirmed stop takes at least kStopConfirmMs. Keep enough timestamps for
-  // every physically possible start in a rolling day without truncating counts.
-  static constexpr size_t kStartsCapacity = (kDayMs / kStopConfirmMs) + 1U;
+  // every physically possible start in a rolling 72h window without truncating counts.
+  static constexpr size_t kStartsCapacity = (kSeventyTwoHoursMs / kStopConfirmMs) + 1U;
   static constexpr size_t kEventsCapacity = 32;
 
   struct UnitState {
