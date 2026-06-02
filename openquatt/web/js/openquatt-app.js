@@ -193,7 +193,9 @@ hp2CompressorStarts72h: { domain: "sensor", name: "HP2 - Compressor starts 72h",
 hp2CompressorLastStartAge: { domain: "sensor", name: "HP2 - Compressor last start age", optional: true },
 lowflowFaultActive: { domain: "binary_sensor", name: "Lowflow fault active", optional: true },
 flowMismatch: { domain: "binary_sensor", name: "Flow mismatch (HP1 vs HP2)", optional: true },
+cicPollingEnabled: { domain: "switch", name: "CIC - Enable polling", optional: true },
 cicDataStale: { domain: "binary_sensor", name: "CIC - Data stale", optional: true },
+otEnabled: { domain: "switch", name: "OpenTherm Enabled", optional: true },
 otLinkProblem: { domain: "binary_sensor", name: "OT - Link Problem", optional: true },
 flowKp: { domain: "number", name: "Flow PI Kp", optional: true },
 flowKi: { domain: "number", name: "Flow PI Ki", optional: true },
@@ -497,7 +499,9 @@ const INSTALLATION_MONITORING_STATE_KEYS = [
 "hp2CompressorLastStartAge",
 "lowflowFaultActive",
 "flowMismatch",
+"cicPollingEnabled",
 "cicDataStale",
+"otEnabled",
 "otLinkProblem",
 "hp1Failures",
 "hp2Failures",
@@ -509,7 +513,9 @@ const INSTALLATION_MONITORING_OVERVIEW_KEYS = [
 "compressorCyclingAlertLatched",
 "lowflowFaultActive",
 "flowMismatch",
+"cicPollingEnabled",
 "cicDataStale",
+"otEnabled",
 "otLinkProblem",
 "hp1Failures",
 "hp2Failures",
@@ -928,6 +934,8 @@ const SETTINGS_BACKUP_EXCLUDED_KEYS = new Set([
 "trendHistoryFlashLastFlush",
 "trendHistoryFlashSize",
 "trendHistoryFlashWrites",
+"cicPollingEnabled",
+"otEnabled",
 "coolingGuardMode",
 "coolingFallbackNightMinOutdoorTemp",
 "coolingFallbackMinSupplyTemp",
@@ -10002,6 +10010,9 @@ ${flowTuning}
 function isInstallationMonitoringBinaryActive(key) {
 return hasEntity(key) && isEntityActive(key);
 }
+function isInstallationMonitoringIntegrationEnabled(key) {
+return !hasEntity(key) || isEntityActive(key);
+}
 function getInstallationMonitoringFailureText(key) {
 if (!hasEntity(key)) {
 return "";
@@ -10018,6 +10029,8 @@ const cyclingActive = isInstallationMonitoringBinaryActive("compressorCyclingWar
 || isInstallationMonitoringBinaryActive("compressorCyclingWarning72h")
 || isInstallationMonitoringBinaryActive("alternatingCompressorStartsWarning");
 const cyclingAlertLatched = isInstallationMonitoringBinaryActive("compressorCyclingAlertLatched");
+const cicPollingEnabled = isInstallationMonitoringIntegrationEnabled("cicPollingEnabled");
+const otEnabled = isInstallationMonitoringIntegrationEnabled("otEnabled");
 const addBinaryProblem = (key, label) => {
 if (isInstallationMonitoringBinaryActive(key)) {
 problems.push({ key, label });
@@ -10028,8 +10041,12 @@ addBinaryProblem("compressorCyclingWarning72h", "Te veel compressorstarts in 72 
 addBinaryProblem("alternatingCompressorStartsWarning", "Warmtepompen starten opvallend vaak om en om");
 addBinaryProblem("lowflowFaultActive", "Te lage flow");
 addBinaryProblem("flowMismatch", "Flowverschil tussen warmtepomp 1 en 2");
+if (cicPollingEnabled) {
 addBinaryProblem("cicDataStale", "CIC-data is verouderd");
+}
+if (otEnabled) {
 addBinaryProblem("otLinkProblem", "OpenTherm-verbinding meldt een probleem");
+}
 if (isInstallationMonitoringFailureActive("hp1Failures")) {
 problems.push({ key: "hp1Failures", label: `Warmtepomp 1: ${getInstallationMonitoringFailureText("hp1Failures")}` });
 }
@@ -10190,6 +10207,8 @@ state.installationMonitoringDetailsOpen = true;
 function renderSettingsInstallationMonitoringSection() {
 const monitoring = getInstallationMonitoringModel();
 syncInstallationMonitoringDetailsState(monitoring);
+const cicPollingEnabled = isInstallationMonitoringIntegrationEnabled("cicPollingEnabled");
+const otEnabled = isInstallationMonitoringIntegrationEnabled("otEnabled");
 const hydraulicRows = [
 hasEntity("lowflowFaultActive") ? renderInstallationMonitoringStatusRow({
 label: "Flow",
@@ -10205,13 +10224,17 @@ active: isInstallationMonitoringBinaryActive("flowMismatch"),
 const connectionRows = [
 hasEntity("cicDataStale") ? renderInstallationMonitoringStatusRow({
 label: "CIC-data",
-value: isInstallationMonitoringBinaryActive("cicDataStale") ? "Verouderd" : "Geen probleem gemeld",
-active: isInstallationMonitoringBinaryActive("cicDataStale"),
+value: !cicPollingEnabled
+? "Polling uitgeschakeld"
+: isInstallationMonitoringBinaryActive("cicDataStale") ? "Verouderd" : "Geen probleem gemeld",
+active: cicPollingEnabled && isInstallationMonitoringBinaryActive("cicDataStale"),
 }) : "",
 hasEntity("otLinkProblem") ? renderInstallationMonitoringStatusRow({
 label: "OpenTherm",
-value: isInstallationMonitoringBinaryActive("otLinkProblem") ? "Verbindingsprobleem" : "Geen probleem gemeld",
-active: isInstallationMonitoringBinaryActive("otLinkProblem"),
+value: !otEnabled
+? "Uitgeschakeld"
+: isInstallationMonitoringBinaryActive("otLinkProblem") ? "Verbindingsprobleem" : "Geen probleem gemeld",
+active: otEnabled && isInstallationMonitoringBinaryActive("otLinkProblem"),
 }) : "",
 ].filter(Boolean).join("");
 const hpRows = [

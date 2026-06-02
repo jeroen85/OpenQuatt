@@ -690,6 +690,8 @@
     setEntity("switch", "OpenQuatt Enabled", { value: true, state: true });
     setEntity("switch", "Boiler assist enabled", { value: true, state: true });
     setEntity("switch", "Manual Cooling Enable", { value: false, state: false });
+    setEntity("switch", "CIC - Enable polling", { value: false, state: false });
+    setEntity("switch", "OpenTherm Enabled", { value: false, state: false });
     setEntity("switch", "CiC Compatibility Mode", { value: false, state: false });
     setEntity("switch", "Trendopslag", { value: true, state: true });
     setEntity("switch", "Trendhistorie opslaan in flash", { value: true, state: true });
@@ -1090,7 +1092,7 @@
     setBinary("Alternating compressor starts warning", false);
     setBinary("Lowflow fault active", false);
     setBinary("Flow mismatch (HP1 vs HP2)", false);
-    setBinary("CIC - Data stale", false);
+    setBinary("CIC - Data stale", !isSwitchEnabled("CIC - Enable polling"));
     setBinary("OT - Link Problem", false);
     setNumber("HP1 - Compressor starts 2h", 3);
     setNumber("HP1 - Compressor starts 6h", 11);
@@ -1141,6 +1143,8 @@
       setBinary("Lowflow fault active", true);
       setBinary("Flow mismatch (HP1 vs HP2)", !single);
     } else if (state.diagnostics === "connections") {
+      setEntity("switch", "CIC - Enable polling", { value: true, state: true });
+      setEntity("switch", "OpenTherm Enabled", { value: true, state: true });
       setBinary("CIC - Data stale", true);
       setBinary("OT - Link Problem", true);
     } else if (state.diagnostics === "hp-fault") {

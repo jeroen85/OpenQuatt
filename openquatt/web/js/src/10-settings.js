@@ -1520,6 +1520,10 @@
     return hasEntity(key) && isEntityActive(key);
   }
 
+  function isInstallationMonitoringIntegrationEnabled(key) {
+    return !hasEntity(key) || isEntityActive(key);
+  }
+
   function getInstallationMonitoringFailureText(key) {
     if (!hasEntity(key)) {
       return "";
@@ -1538,6 +1542,8 @@
       || isInstallationMonitoringBinaryActive("compressorCyclingWarning72h")
       || isInstallationMonitoringBinaryActive("alternatingCompressorStartsWarning");
     const cyclingAlertLatched = isInstallationMonitoringBinaryActive("compressorCyclingAlertLatched");
+    const cicPollingEnabled = isInstallationMonitoringIntegrationEnabled("cicPollingEnabled");
+    const otEnabled = isInstallationMonitoringIntegrationEnabled("otEnabled");
     const addBinaryProblem = (key, label) => {
       if (isInstallationMonitoringBinaryActive(key)) {
         problems.push({ key, label });
@@ -1548,8 +1554,12 @@
     addBinaryProblem("alternatingCompressorStartsWarning", "Warmtepompen starten opvallend vaak om en om");
     addBinaryProblem("lowflowFaultActive", "Te lage flow");
     addBinaryProblem("flowMismatch", "Flowverschil tussen warmtepomp 1 en 2");
-    addBinaryProblem("cicDataStale", "CIC-data is verouderd");
-    addBinaryProblem("otLinkProblem", "OpenTherm-verbinding meldt een probleem");
+    if (cicPollingEnabled) {
+      addBinaryProblem("cicDataStale", "CIC-data is verouderd");
+    }
+    if (otEnabled) {
+      addBinaryProblem("otLinkProblem", "OpenTherm-verbinding meldt een probleem");
+    }
     if (isInstallationMonitoringFailureActive("hp1Failures")) {
       problems.push({ key: "hp1Failures", label: `Warmtepomp 1: ${getInstallationMonitoringFailureText("hp1Failures")}` });
     }
@@ -1720,6 +1730,8 @@
   function renderSettingsInstallationMonitoringSection() {
     const monitoring = getInstallationMonitoringModel();
     syncInstallationMonitoringDetailsState(monitoring);
+    const cicPollingEnabled = isInstallationMonitoringIntegrationEnabled("cicPollingEnabled");
+    const otEnabled = isInstallationMonitoringIntegrationEnabled("otEnabled");
     const hydraulicRows = [
       hasEntity("lowflowFaultActive") ? renderInstallationMonitoringStatusRow({
         label: "Flow",
@@ -1735,13 +1747,17 @@
     const connectionRows = [
       hasEntity("cicDataStale") ? renderInstallationMonitoringStatusRow({
         label: "CIC-data",
-        value: isInstallationMonitoringBinaryActive("cicDataStale") ? "Verouderd" : "Geen probleem gemeld",
-        active: isInstallationMonitoringBinaryActive("cicDataStale"),
+        value: !cicPollingEnabled
+          ? "Polling uitgeschakeld"
+          : isInstallationMonitoringBinaryActive("cicDataStale") ? "Verouderd" : "Geen probleem gemeld",
+        active: cicPollingEnabled && isInstallationMonitoringBinaryActive("cicDataStale"),
       }) : "",
       hasEntity("otLinkProblem") ? renderInstallationMonitoringStatusRow({
         label: "OpenTherm",
-        value: isInstallationMonitoringBinaryActive("otLinkProblem") ? "Verbindingsprobleem" : "Geen probleem gemeld",
-        active: isInstallationMonitoringBinaryActive("otLinkProblem"),
+        value: !otEnabled
+          ? "Uitgeschakeld"
+          : isInstallationMonitoringBinaryActive("otLinkProblem") ? "Verbindingsprobleem" : "Geen probleem gemeld",
+        active: otEnabled && isInstallationMonitoringBinaryActive("otLinkProblem"),
       }) : "",
     ].filter(Boolean).join("");
     const hpRows = [
