@@ -18,7 +18,6 @@ static bool deadline_reached(uint32_t now_ms, uint32_t deadline_ms) {
 void OpenQuattCIC::setup() {
   this->backoff_ms_ = this->backoff_start_ms_;
   this->next_ms_ = millis() + this->backoff_start_ms_;
-  this->response_buffer_.assign(this->response_buffer_size_, 0U);
   if (this->fetch_mutex_ == nullptr) {
     this->fetch_mutex_ = xSemaphoreCreateMutex();
   }

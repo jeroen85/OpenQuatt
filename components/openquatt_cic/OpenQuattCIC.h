@@ -148,7 +148,6 @@ class OpenQuattCIC : public PollingComponent {
   int last_status_code_{0};
   uint32_t last_diag_publish_ms_{0};
 
-  std::vector<uint8_t> response_buffer_{};
   SemaphoreHandle_t fetch_mutex_{nullptr};
   TaskHandle_t fetch_task_handle_{nullptr};
   bool fetch_in_progress_{false};
