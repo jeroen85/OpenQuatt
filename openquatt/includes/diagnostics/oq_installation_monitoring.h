@@ -137,7 +137,7 @@ class InstallationMonitor {
   }
 
   void record_start(int hp_index, UnitState &unit, uint32_t now_ms) {
-    unit.starts_ms[unit.starts_next_] = now_ms;
+    unit.starts_ms[unit.starts_next] = now_ms;
     unit.starts_next = (unit.starts_next + 1U) % kStartsCapacity;
     if (unit.starts_count < kStartsCapacity) {
       ++unit.starts_count;
