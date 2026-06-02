@@ -6,5 +6,6 @@ packages:
     file: ../oq_HP_io.yaml
     vars:
       hp_id: "hp1"
+      hp_index: "1"
       prefix: "HP1 - "
       device_address: 0x01

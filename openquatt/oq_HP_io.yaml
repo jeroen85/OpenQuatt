@@ -338,6 +338,14 @@ sensor:
           max_value: 100
           ignore_out_of_range: true
     skip_updates: ${oq_skip_10s}
+    on_value:
+      then:
+        - lambda: |-
+            if (oq_diagnostics::installation_monitor().observe_compressor_frequency(
+                    ${hp_index}, x, millis())) {
+              ESP_LOGI("oq_diag", "%sMeasured compressor start.", "${prefix}");
+              id(oq_capture_compressor_cycling_alert).execute();
+            }
     web_server:
       sorting_group_id: oq_${hp_id}
 

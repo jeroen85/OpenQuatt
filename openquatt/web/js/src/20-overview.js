@@ -24,6 +24,20 @@
     `;
   }
 
+  function renderOverviewInstallationMonitoringNotice() {
+    const monitoring = getInstallationMonitoringModel();
+    return `
+      <aside class="oq-overview-monitoring-notice${monitoring.active ? " is-warning" : " is-hidden"}" data-oq-monitoring-notice data-render-signature="${escapeHtml(getRenderSignature(monitoring))}">
+        <div>
+          <p>Installatiebewaking</p>
+          <strong>${escapeHtml(monitoring.title)}</strong>
+          <span>${escapeHtml(monitoring.problems.map((problem) => problem.label).join(" · "))}</span>
+        </div>
+        <button type="button" data-oq-action="open-installation-monitoring">Bekijk diagnose</button>
+      </aside>
+    `;
+  }
+
   function renderOverviewShell({ className, title, copy, body, signature = "" }) {
     const signatureAttr = signature ? ` data-render-signature="${escapeHtml(signature)}"` : "";
     return `

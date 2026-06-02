@@ -136,6 +136,7 @@ STRICT_TOP_LEVEL_ORDER_RULES = {
         "cic_hp2_sensor_internal",
         "sensor_sources_duo_flow_internal",
         "ot_secondary_present",
+        "monitoring_hp2_internal",
     ),
     "openquatt/topology/duo_packages.yaml": (
         "heatpump2",
@@ -152,6 +153,7 @@ STRICT_TOP_LEVEL_ORDER_RULES = {
         "cic_hp2_sensor_internal",
         "sensor_sources_duo_flow_internal",
         "ot_secondary_present",
+        "monitoring_hp2_internal",
     ),
     "openquatt/profiles/heatpump_controller_q_cic_compatibility.yaml": (
         "substitutions",
@@ -201,6 +203,7 @@ NESTED_KEY_ORDER_RULES = {
         "oq_supervisory_controlmode",
         "oq_commissioning",
         "oq_thermal_limits",
+        "oq_installation_monitoring",
     ),
     ("openquatt/packages/20_strategies.yaml", "packages"): (
         "oq_strategy_manager",

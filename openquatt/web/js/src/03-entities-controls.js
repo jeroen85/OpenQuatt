@@ -248,7 +248,7 @@
       "silentEndTime",
       "maxWater",
     ],
-    service: ["commissioningStatus", "cm100Active"],
+    service: ["compressorCyclingWarning", "commissioningStatus", "cm100Active"],
     heating: ["strategy"],
     cooling: ["manualCoolingEnable", "coolingWithoutDewPointMode"],
     advanced: ["minRuntime"],
@@ -280,6 +280,7 @@
       "maxWater",
     ],
     service: [
+      ...INSTALLATION_MONITORING_STATE_KEYS,
       ...COMMISSIONING_STATE_KEYS,
       "boilerCvAssistEnabled",
       "boilerRatedHeatPower",
@@ -718,6 +719,7 @@
     });
 
     applyDerivedState();
+    syncInstallationMonitoringDetailsState(getInstallationMonitoringModel());
     if (firstError) {
       noteEntityRefreshFailure(firstError);
       if (state.deviceReconnectMode) {
@@ -2603,6 +2605,14 @@
       return;
     }
 
+    if (action === "toggle-installation-monitoring-details") {
+      event.preventDefault();
+      const details = button.closest(".oq-settings-monitoring-details");
+      state.installationMonitoringDetailsOpen = !(details && details.hasAttribute("open"));
+      render();
+      return;
+    }
+
     if (action === "select-view") {
       if ((button.dataset.viewId || "") === "trends" && !isTrendHistoryEnabled()) {
         return;
@@ -2822,6 +2832,15 @@
       return;
     }
 
+    if (action === "open-installation-monitoring") {
+      state.systemModal = "";
+      setAppView("settings");
+      setSettingsGroup("service");
+      render();
+      syncEntities({ forceBulk: true });
+      return;
+    }
+
     if (action === "open-service-task-modal") {
       const taskKey = String(button.dataset.serviceTask || "").trim();
       if (["autotune", "boiler", "purge", "manual-flow", "manual-hp"].includes(taskKey)) {
@@ -2896,7 +2915,9 @@
           state.commissioningTaskLock = "manual-hp";
         }
         const refreshKeys = [];
-        if (buttonKey === "commissioningCm100Start" || buttonKey === "commissioningCm100Stop") {
+        if (buttonKey === "acknowledgeCompressorCyclingAlert") {
+          refreshKeys.push(...INSTALLATION_MONITORING_STATE_KEYS);
+        } else if (buttonKey === "commissioningCm100Start" || buttonKey === "commissioningCm100Stop") {
           refreshKeys.push(
             "commissioningStatus",
             "cm100Active",

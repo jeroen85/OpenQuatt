@@ -1041,6 +1041,7 @@
     return `
       <section class="oq-helper-panel oq-helper-panel--flush">
         <div class="oq-overview-board oq-overview-board--${escapeHtml(state.overviewTheme)}">
+          ${renderOverviewInstallationMonitoringNotice()}
           ${renderOverviewSummaryShell(strategyLabel)}
           <div class="oq-overview-main">
             ${renderOverviewNarrativePanel(getOverviewStrategySectionModel())}
@@ -1354,6 +1355,7 @@
     }
 
     const strategyLabel = getOverviewStrategyLabel();
+    const monitoringNotice = board.querySelector("[data-oq-monitoring-notice]");
     const summaryShell = board.querySelector(".oq-overview-summary-shell");
     const system = board.querySelector(".oq-overview-system");
     const temps = board.querySelector(".oq-overview-temps");
@@ -1362,6 +1364,15 @@
     const hpGrid = board.querySelector(".oq-overview-hp-grid");
     const boilerPanel = board.querySelector("[data-oq-boiler-panel]");
     const heatPumpPanels = getHeatPumpPanels();
+
+    if (monitoringNotice) {
+      const monitoring = getInstallationMonitoringModel();
+      replaceOuterHtmlIfSignatureChanged(
+        monitoringNotice,
+        getRenderSignature(monitoring),
+        renderOverviewInstallationMonitoringNotice(),
+      );
+    }
 
     if (summaryShell) {
       const top = summaryShell.querySelector(".oq-overview-top");

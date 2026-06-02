@@ -75,6 +75,9 @@ web_server:
     - id: oq_system_diagnostics
       name: "System Diagnostics"
       sorting_weight: 180
+    - id: oq_installation_monitoring
+      name: "Installation Monitoring"
+      sorting_weight: 185
     - id: oq_hp_diagnostics
       name: "HP Diagnostics"
       sorting_weight: 190

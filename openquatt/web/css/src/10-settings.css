@@ -520,6 +520,315 @@
   margin-top: 0;
 }
 
+.oq-settings-monitoring-summary,
+.oq-settings-monitoring-card {
+  border: 1px solid var(--oq-helper-line);
+  border-radius: var(--oq-helper-radius-lg);
+  background: var(--oq-helper-card-muted);
+}
+
+.oq-settings-monitoring-summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+}
+
+.oq-settings-monitoring-summary > div:first-child {
+  display: grid;
+  gap: 5px;
+}
+
+.oq-settings-monitoring-summary p,
+.oq-settings-monitoring-card header p,
+.oq-settings-monitoring-compressor-unit p,
+.oq-settings-monitoring-row p {
+  margin: 0;
+}
+
+.oq-settings-monitoring-summary p,
+.oq-settings-monitoring-card header p {
+  color: var(--oq-helper-faint);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.oq-settings-monitoring-summary strong,
+.oq-settings-monitoring-card-value {
+  color: var(--oq-helper-ink);
+}
+
+.oq-settings-monitoring-summary span,
+.oq-settings-monitoring-card > span,
+.oq-settings-monitoring-compressor-unit span,
+.oq-settings-monitoring-row span {
+  color: var(--oq-helper-soft);
+  line-height: 1.45;
+}
+
+.oq-settings-monitoring-summary.is-warning {
+  border-color: rgba(217, 119, 6, 0.46);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.oq-settings-monitoring-badge {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  min-height: 26px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.oq-settings-monitoring-badge.is-clear {
+  color: #166534;
+  background: rgba(34, 197, 94, 0.13);
+}
+
+.oq-settings-monitoring-badge.is-warning {
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.17);
+}
+
+.oq-helper-shell--dark .oq-settings-monitoring-badge.is-clear {
+  color: #bbf7d0;
+}
+
+.oq-helper-shell--dark .oq-settings-monitoring-badge.is-warning {
+  color: #fed7aa;
+}
+
+.oq-settings-monitoring-active-list {
+  display: grid;
+  gap: 7px;
+  margin: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(217, 119, 6, 0.32);
+  background: rgba(245, 158, 11, 0.07);
+}
+
+.oq-settings-monitoring-active-list span {
+  color: var(--oq-helper-ink);
+  font-weight: 700;
+}
+
+.oq-settings-monitoring-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.oq-settings-monitoring-column {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.oq-settings-monitoring-details {
+  margin-top: 12px;
+  overflow: hidden;
+  border: 1px solid var(--oq-helper-line);
+  border-radius: var(--oq-helper-radius-lg);
+  background: var(--oq-helper-card-muted);
+}
+
+.oq-settings-monitoring-details > summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 18px;
+  padding: 14px 42px 14px 16px;
+  position: relative;
+  list-style: none;
+  cursor: pointer;
+}
+
+.oq-settings-monitoring-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.oq-settings-monitoring-details > summary::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  position: absolute;
+  top: 17px;
+  right: 18px;
+  border-right: 2px solid var(--oq-helper-faint);
+  border-bottom: 2px solid var(--oq-helper-faint);
+  transform: rotate(45deg);
+  transition: transform 0.18s ease;
+}
+
+.oq-settings-monitoring-details[open] > summary::after {
+  top: 21px;
+  transform: rotate(225deg);
+}
+
+.oq-settings-monitoring-details > summary strong {
+  color: var(--oq-helper-ink);
+}
+
+.oq-settings-monitoring-details > summary span {
+  color: var(--oq-helper-soft);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.oq-settings-monitoring-details > .oq-settings-monitoring-grid {
+  padding: 0 12px 12px;
+}
+
+.oq-settings-monitoring-card {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+}
+
+.oq-settings-monitoring-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.oq-settings-monitoring-compressor-list,
+.oq-settings-monitoring-rows {
+  display: grid;
+  gap: 9px;
+}
+
+.oq-settings-monitoring-compressor-unit,
+.oq-settings-monitoring-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--oq-helper-line);
+  background: var(--oq-helper-card);
+}
+
+.oq-settings-monitoring-compressor-unit > div:first-child,
+.oq-settings-monitoring-row > div:first-child {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.oq-settings-monitoring-compressor-unit p,
+.oq-settings-monitoring-row strong {
+  color: var(--oq-helper-ink);
+}
+
+.oq-settings-monitoring-compressor-unit dl {
+  display: flex;
+  gap: 10px;
+  margin: 0;
+}
+
+.oq-settings-monitoring-compressor-unit dl div {
+  display: grid;
+  gap: 2px;
+  min-width: 38px;
+  text-align: right;
+}
+
+.oq-settings-monitoring-compressor-unit dt {
+  color: var(--oq-helper-faint);
+  font-size: 0.7rem;
+}
+
+.oq-settings-monitoring-compressor-unit dd {
+  margin: 0;
+  color: var(--oq-helper-ink);
+  font-weight: 800;
+}
+
+.oq-settings-monitoring-row.is-warning {
+  border-color: rgba(217, 119, 6, 0.38);
+  background: rgba(245, 158, 11, 0.07);
+}
+
+.oq-settings-monitoring-card .oq-settings-field {
+  padding: 12px;
+}
+
+.oq-settings-monitoring-incident {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(217, 119, 6, 0.38);
+  background: rgba(245, 158, 11, 0.07);
+}
+
+.oq-settings-monitoring-incident-head,
+.oq-settings-monitoring-incident-action {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.oq-settings-monitoring-incident-head > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.oq-settings-monitoring-incident p,
+.oq-settings-monitoring-incident dl {
+  margin: 0;
+}
+
+.oq-settings-monitoring-incident strong,
+.oq-settings-monitoring-incident dd {
+  color: var(--oq-helper-ink);
+}
+
+.oq-settings-monitoring-incident dl {
+  display: grid;
+  gap: 7px;
+}
+
+.oq-settings-monitoring-incident dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.oq-settings-monitoring-incident dt {
+  color: var(--oq-helper-faint);
+}
+
+.oq-settings-monitoring-incident dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 700;
+}
+
+.oq-settings-monitoring-incident-action {
+  align-items: center;
+}
+
+.oq-settings-monitoring-incident-action span {
+  color: var(--oq-helper-soft);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  text-align: right;
+}
+
 .oq-settings-service-row .oq-helper-button {
   min-width: 154px;
   white-space: nowrap;
@@ -965,6 +1274,26 @@
 
   .oq-settings-service-toolbar-actions {
     justify-content: stretch;
+  }
+
+  .oq-settings-monitoring-summary,
+  .oq-settings-monitoring-compressor-unit,
+  .oq-settings-monitoring-row,
+  .oq-settings-monitoring-incident-action {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .oq-settings-monitoring-incident-action span {
+    text-align: left;
+  }
+
+  .oq-settings-monitoring-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .oq-settings-monitoring-compressor-unit dl {
+    justify-content: space-between;
   }
 
   .oq-settings-commissioning-card-head {

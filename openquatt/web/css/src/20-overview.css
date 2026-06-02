@@ -68,6 +68,63 @@
   box-shadow: var(--oq-overview-shell-shadow-soft);
 }
 
+.oq-overview-monitoring-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(245, 158, 11, 0.46);
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.oq-overview-monitoring-notice.is-hidden {
+  display: none;
+}
+
+.oq-overview-monitoring-notice > div {
+  display: grid;
+  gap: 3px;
+}
+
+.oq-overview-monitoring-notice p,
+.oq-overview-monitoring-notice span {
+  margin: 0;
+}
+
+.oq-overview-monitoring-notice p {
+  color: #fdba74;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.oq-overview-monitoring-notice strong {
+  color: var(--oq-overview-title);
+}
+
+.oq-overview-monitoring-notice span {
+  color: var(--oq-overview-soft);
+  line-height: 1.45;
+}
+
+.oq-overview-monitoring-notice button {
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  border-radius: 12px;
+  background: rgba(245, 158, 11, 0.16);
+  color: var(--oq-overview-title);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
 .oq-overview-head {
   display: grid;
   gap: 12px;
@@ -728,6 +785,15 @@
 }
 
 @media (max-width: 980px) {
+  .oq-overview-monitoring-notice {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .oq-overview-monitoring-notice button {
+    width: 100%;
+  }
+
   .oq-overview-trends-head {
     grid-template-columns: minmax(0, 1fr);
     gap: 10px;

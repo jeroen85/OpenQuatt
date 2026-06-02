@@ -1,0 +1,285 @@
+# ==============================================================================
+# OpenQuatt - Local Installation Monitoring
+# ==============================================================================
+# Curated diagnostics for users without Home Assistant. Compressor starts are
+# tracked from measured compressor frequency transitions and reset after reboot.
+# Cycling incidents remain available until the user explicitly acknowledges them.
+# ==============================================================================
+
+globals:
+  - id: oq_compressor_cycling_alert_latched
+    type: bool
+    restore_value: true
+    initial_value: 'false'
+
+  - id: oq_compressor_cycling_alert_first_seen_epoch
+    type: uint32_t
+    restore_value: true
+    initial_value: '0'
+
+  - id: oq_compressor_cycling_alert_last_seen_epoch
+    type: uint32_t
+    restore_value: true
+    initial_value: '0'
+
+  - id: oq_compressor_cycling_alert_hp1_peak_1h
+    type: int
+    restore_value: true
+    initial_value: '0'
+
+  - id: oq_compressor_cycling_alert_hp2_peak_1h
+    type: int
+    restore_value: true
+    initial_value: '0'
+
+  - id: oq_compressor_cycling_alert_alternating
+    type: bool
+    restore_value: true
+    initial_value: 'false'
+
+script:
+  - id: oq_capture_compressor_cycling_alert
+    mode: restart
+    then:
+      - lambda: |-
+          oq_diagnostics::capture_compressor_cycling_alert();
+
+button:
+  - platform: template
+    id: oq_acknowledge_compressor_cycling_alert
+    name: "Acknowledge compressor cycling alert"
+    icon: mdi:check-circle-outline
+    entity_category: config
+    on_press:
+      - lambda: |-
+          oq_diagnostics::acknowledge_compressor_cycling_alert();
+    web_server:
+      sorting_group_id: oq_installation_monitoring
+
+number:
+  - platform: template
+    id: oq_compressor_starts_warning_limit
+    name: "Compressor starts warning limit"
+    icon: mdi:alert-decagram-outline
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_value: 6
+    min_value: 1
+    max_value: 20
+    step: 1
+    mode: slider
+    web_server:
+      sorting_group_id: oq_installation_monitoring
+
+sensor:
+  - platform: template
+    id: oq_hp1_compressor_starts_1h
+    name: "HP1 - Compressor starts 1h"
+    icon: mdi:counter
+    entity_category: diagnostic
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: |-
+      return oq_diagnostics::installation_monitor().start_count(
+          1, millis(), oq_diagnostics::InstallationMonitor::kHourMs);
+    web_server:
+      sorting_group_id: oq_installation_monitoring
+
+  - platform: template
+    id: oq_hp1_compressor_starts_6h
+    name: "HP1 - Compressor starts 6h"
+    icon: mdi:counter
+    entity_category: diagnostic
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: |-
+      return oq_diagnostics::installation_monitor().start_count(
+          1, millis(), oq_diagnostics::InstallationMonitor::kSixHoursMs);
+    web_server:
+      sorting_group_id: oq_installation_monitoring
+
+  - platform: template
+    id: oq_hp1_compressor_starts_24h
+    name: "HP1 - Compressor starts 24h"
+    icon: mdi:counter
+    entity_category: diagnostic
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: |-
+      return oq_diagnostics::installation_monitor().start_count(
+          1, millis(), oq_diagnostics::InstallationMonitor::kDayMs);
+    web_server:
+      sorting_group_id: oq_installation_monitoring
+
+  - platform: template
+    id: oq_hp1_compressor_last_start_age
+    name: "HP1 - Compressor last start age"
+    icon: mdi:clock-outline
+    entity_category: diagnostic
+    unit_of_measurement: min
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: |-
+      const float age = oq_diagnostics::installation_monitor().last_start_age_minutes(1, millis());
+      return age < 0.0f ? NAN : age;
+    web_server:
+      sorting_group_id: oq_installation_monitoring
+
+  - platform: template
+    id: oq_hp2_compressor_starts_1h
+    name: "HP2 - Compressor starts 1h"
+    icon: mdi:counter
+    internal: ${monitoring_hp2_internal}
+    entity_category: diagnostic
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: |-
+      return oq_diagnostics::installation_monitor().start_count(
+          2, millis(), oq_diagnostics::InstallationMonitor::kHourMs);
+    web_server:
+      sorting_group_id: oq_installation_monitoring
+
+  - platform: template
+    id: oq_hp2_compressor_starts_6h
+    name: "HP2 - Compressor starts 6h"
+    icon: mdi:counter
+    internal: ${monitoring_hp2_internal}
+    entity_category: diagnostic
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: |-
+      return oq_diagnostics::installation_monitor().start_count(
+          2, millis(), oq_diagnostics::InstallationMonitor::kSixHoursMs);
+    web_server:
+      sorting_group_id: oq_installation_monitoring
+
+  - platform: template
+    id: oq_hp2_compressor_starts_24h
+    name: "HP2 - Compressor starts 24h"
+    icon: mdi:counter
+    internal: ${monitoring_hp2_internal}
+    entity_category: diagnostic
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: |-
+      return oq_diagnostics::installation_monitor().start_count(
+          2, millis(), oq_diagnostics::InstallationMonitor::kDayMs);
+    web_server:
+      sorting_group_id: oq_installation_monitoring
+
+  - platform: template
+    id: oq_hp2_compressor_last_start_age
+    name: "HP2 - Compressor last start age"
+    icon: mdi:clock-outline
+    internal: ${monitoring_hp2_internal}
+    entity_category: diagnostic
+    unit_of_measurement: min
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: |-
+      const float age = oq_diagnostics::installation_monitor().last_start_age_minutes(2, millis());
+      return age < 0.0f ? NAN : age;
+    web_server:
+      sorting_group_id: oq_installation_monitoring
+
+  - platform: template
+    id: oq_compressor_cycling_alert_first_seen
+    name: "Compressor cycling alert first seen"
+    icon: mdi:clock-start
+    entity_category: diagnostic
+    unit_of_measurement: s
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: |-
+      return id(oq_compressor_cycling_alert_first_seen_epoch) > 0U
+          ? id(oq_compressor_cycling_alert_first_seen_epoch)
+          : NAN;
+    web_server:
+      sorting_group_id: oq_installation_monitoring
+
+  - platform: template
+    id: oq_compressor_cycling_alert_last_seen
+    name: "Compressor cycling alert last seen"
+    icon: mdi:clock-end
+    entity_category: diagnostic
+    unit_of_measurement: s
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: |-
+      return id(oq_compressor_cycling_alert_last_seen_epoch) > 0U
+          ? id(oq_compressor_cycling_alert_last_seen_epoch)
+          : NAN;
+    web_server:
+      sorting_group_id: oq_installation_monitoring
+
+  - platform: template
+    id: oq_compressor_cycling_alert_hp1_peak
+    name: "Compressor cycling alert HP1 peak 1h"
+    icon: mdi:chart-line
+    entity_category: diagnostic
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: |-
+      return id(oq_compressor_cycling_alert_hp1_peak_1h);
+    web_server:
+      sorting_group_id: oq_installation_monitoring
+
+  - platform: template
+    id: oq_compressor_cycling_alert_hp2_peak
+    name: "Compressor cycling alert HP2 peak 1h"
+    icon: mdi:chart-line
+    internal: ${monitoring_hp2_internal}
+    entity_category: diagnostic
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: |-
+      return id(oq_compressor_cycling_alert_hp2_peak_1h);
+    web_server:
+      sorting_group_id: oq_installation_monitoring
+
+binary_sensor:
+  - platform: template
+    id: oq_compressor_cycling_alert_latched_sensor
+    name: "Compressor cycling alert latched"
+    icon: mdi:alert-circle-check-outline
+    device_class: problem
+    entity_category: diagnostic
+    lambda: |-
+      return id(oq_compressor_cycling_alert_latched);
+    web_server:
+      sorting_group_id: oq_installation_monitoring
+
+  - platform: template
+    id: oq_compressor_cycling_alert_alternating_sensor
+    name: "Compressor cycling alert alternating"
+    icon: mdi:swap-horizontal-bold
+    internal: ${monitoring_hp2_internal}
+    entity_category: diagnostic
+    lambda: |-
+      return id(oq_compressor_cycling_alert_alternating);
+    web_server:
+      sorting_group_id: oq_installation_monitoring
+
+  - platform: template
+    id: oq_compressor_cycling_warning
+    name: "Compressor cycling warning"
+    icon: mdi:alert-decagram-outline
+    device_class: problem
+    entity_category: diagnostic
+    lambda: |-
+      return oq_diagnostics::logged_compressor_cycling_warning(millis());
+    web_server:
+      sorting_group_id: oq_installation_monitoring
+
+  - platform: template
+    id: oq_compressor_alternating_warning
+    name: "Alternating compressor starts warning"
+    icon: mdi:swap-horizontal-bold
+    internal: ${monitoring_hp2_internal}
+    device_class: problem
+    entity_category: diagnostic
+    lambda: |-
+      return oq_diagnostics::logged_alternating_cycling_warning(millis());
+    web_server:
+      sorting_group_id: oq_installation_monitoring

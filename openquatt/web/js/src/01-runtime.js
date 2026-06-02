@@ -75,6 +75,8 @@
     entities: {},
     optionalMissingEntities: {},
     settingsInfoOpen: "",
+    installationMonitoringDetailsOpen: false,
+    installationMonitoringProblemSignature: "",
     settingsInteractionLock: false,
     settingsRenderSignature: "",
     settingsBackupDraft: null,
