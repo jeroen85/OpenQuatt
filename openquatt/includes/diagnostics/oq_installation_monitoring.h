@@ -113,7 +113,8 @@ class InstallationMonitor {
            compressor_cycling_warning_72h(now_ms, long_warning_limit);
   }
 
-  bool alternating_cycling_warning(uint32_t now_ms, size_t warning_limit) const {
+  bool alternating_cycling_warning(uint32_t now_ms, size_t warning_limit) {
+    prune_expired_events(now_ms);
     const size_t required_events = std::max<size_t>(warning_limit + 1U, 4U);
     if (events_count_ < required_events) {
       return false;
@@ -297,8 +298,20 @@ class InstallationMonitor {
     return (events_next_ + kEventsCapacity - 1U - offset) % kEventsCapacity;
   }
 
+  void prune_expired_events(uint32_t now_ms) {
+    while (events_count_ > 0U) {
+      const size_t oldest_index =
+          (events_next_ + kEventsCapacity - events_count_) % kEventsCapacity;
+      if (elapsed_ms(now_ms, events_[oldest_index].at_ms) <= kTwoHoursMs) {
+        return;
+      }
+      --events_count_;
+    }
+  }
+
   void record_start(int hp_index, UnitState &unit, uint32_t now_ms) {
     advance_history(unit, now_ms);
+    prune_expired_events(now_ms);
     StartHistory &history = unit.history;
     const uint8_t bucket = bucket_at(history, history.current_minute);
     if (bucket < kBucketMax) {
