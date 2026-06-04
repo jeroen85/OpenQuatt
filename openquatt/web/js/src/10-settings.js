@@ -598,6 +598,7 @@
           renderSettingsFlowSection(),
           renderSettingsSilentSection(),
           renderSettingsWaterSection(),
+          renderSettingsCompressorSection(),
         ]
       : activeGroup === "service"
         ? [
@@ -606,19 +607,18 @@
           ]
       : activeGroup === "heating"
         ? [renderSettingsHeatingSection()]
-        : activeGroup === "cooling"
-          ? [renderSettingsCoolingSection()]
-        : activeGroup === "advanced"
+      : activeGroup === "cooling"
+        ? [renderSettingsCoolingSection()]
+        : activeGroup === "integrations"
             ? [
                 renderSettingsOpenThermCicSection(),
                 renderSettingsSensorSelectionSection(),
-                renderSettingsCompressorSection(),
+                renderSettingsMqttSection(),
               ]
             : [
                 renderSettingsQuickStartSection(),
                 renderSettingsTrendSection(),
                 renderSettingsAccessSecuritySection(),
-                renderSettingsMqttSection(),
                 renderSettingsBackupSection(),
                 renderSettingsDiagnosticsSection(),
               ];
@@ -3605,7 +3605,7 @@
     ].filter(Boolean).join("");
 
     return renderSettingsSection(
-      "Geavanceerd",
+      "Installatie",
       "Compressorinstellingen",
       "Stel hier de minimale draaitijd in en bepaal per warmtepomp welke compressorstanden je wilt overslaan.",
       `

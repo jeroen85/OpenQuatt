@@ -426,10 +426,10 @@ const LOGO_MARKUP = `
   const APP_VIEW_IDS = new Set(APP_VIEWS.map((view) => view.id));
   const SETTINGS_GROUPS = [
     { id: "installation", label: "Installatie" },
-    { id: "service", label: "Service" },
     { id: "heating", label: "Verwarmen" },
     { id: "cooling", label: "Koelen" },
-    { id: "advanced", label: "Geavanceerd" },
+    { id: "integrations", label: "Bronnen / integraties" },
+    { id: "service", label: "Service" },
     { id: "system", label: "Systeem" },
   ];
   const SETTINGS_GROUP_IDS = new Set(SETTINGS_GROUPS.map((group) => group.id));

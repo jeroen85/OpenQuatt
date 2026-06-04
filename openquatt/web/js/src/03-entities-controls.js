@@ -212,6 +212,10 @@
     return state.appView === "settings" && state.settingsGroup === "system";
   }
 
+  function isIntegrationsSettingsGroupActive() {
+    return state.appView === "settings" && state.settingsGroup === "integrations";
+  }
+
   function getDevInitialLoadDelayMs() {
     const raw = typeof window !== "undefined" ? Number(window.__OQ_DEV_LOAD_DELAY_MS || 0) : 0;
     return Number.isFinite(raw) && raw > 0 ? raw : 0;
@@ -247,6 +251,7 @@
       "silentStartTime",
       "silentEndTime",
       "maxWater",
+      "minRuntime",
     ],
     service: [
       "compressorStarts2hWarningLimit",
@@ -259,7 +264,7 @@
     ],
     heating: ["strategy"],
     cooling: ["manualCoolingEnable", "coolingWithoutDewPointMode"],
-    advanced: ["minRuntime"],
+    integrations: ["otEnabled", "cicPollingEnabled", "flowSource"],
     system: ["setupComplete", "projectVersionText", "releaseChannelText", "firmwareUpdateChannel"],
   };
   const INITIAL_SETTINGS_READY_TIMEOUT_MS = 5000;
@@ -285,6 +290,7 @@
       ...FLOW_SETTING_KEYS,
       ...FLOW_TUNING_KEYS,
       ...SILENT_SETTING_KEYS,
+      ...COMPRESSOR_SETTING_KEYS,
       "maxWater",
     ],
     service: [
@@ -312,8 +318,7 @@
       "coolingSupplyError",
       ...COOLING_SETTING_KEYS,
     ],
-    advanced: [
-      ...COMPRESSOR_SETTING_KEYS,
+    integrations: [
       ...OPENTHERM_SETTING_KEYS,
       ...OPENTHERM_DIAGNOSTIC_KEYS,
       ...CIC_POLLING_SETTING_KEYS,
@@ -851,7 +856,7 @@
   }
 
   function shouldRefreshMqttStatusForCurrentSurface() {
-    return state.systemModal === "mqtt" || isSystemSettingsGroupActive();
+    return state.systemModal === "mqtt" || isIntegrationsSettingsGroupActive();
   }
 
   function formatMqttPublishProfile(profile) {
@@ -2068,6 +2073,8 @@
       await refreshAuthStatus({ force: true });
       if (isSystemSettingsGroupActive()) {
         await refreshApiSecurityStatus({ force: true });
+      }
+      if (isIntegrationsSettingsGroupActive()) {
         await refreshMqttStatus({ force: true });
       }
     } finally {

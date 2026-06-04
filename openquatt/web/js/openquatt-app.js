@@ -425,10 +425,10 @@ const APP_VIEWS = [
 const APP_VIEW_IDS = new Set(APP_VIEWS.map((view) => view.id));
 const SETTINGS_GROUPS = [
 { id: "installation", label: "Installatie" },
-{ id: "service", label: "Service" },
 { id: "heating", label: "Verwarmen" },
 { id: "cooling", label: "Koelen" },
-{ id: "advanced", label: "Geavanceerd" },
+{ id: "integrations", label: "Bronnen / integraties" },
+{ id: "service", label: "Service" },
 { id: "system", label: "Systeem" },
 ];
 const SETTINGS_GROUP_IDS = new Set(SETTINGS_GROUPS.map((group) => group.id));
@@ -4060,6 +4060,9 @@ return [...new Set(["setupComplete", ...SETTINGS_KEYS])];
 function isSystemSettingsGroupActive() {
 return state.appView === "settings" && state.settingsGroup === "system";
 }
+function isIntegrationsSettingsGroupActive() {
+return state.appView === "settings" && state.settingsGroup === "integrations";
+}
 function getDevInitialLoadDelayMs() {
 const raw = typeof window !== "undefined" ? Number(window.__OQ_DEV_LOAD_DELAY_MS || 0) : 0;
 return Number.isFinite(raw) && raw > 0 ? raw : 0;
@@ -4094,6 +4097,7 @@ installation: [
 "silentStartTime",
 "silentEndTime",
 "maxWater",
+"minRuntime",
 ],
 service: [
 "compressorStarts2hWarningLimit",
@@ -4106,7 +4110,7 @@ service: [
 ],
 heating: ["strategy"],
 cooling: ["manualCoolingEnable", "coolingWithoutDewPointMode"],
-advanced: ["minRuntime"],
+integrations: ["otEnabled", "cicPollingEnabled", "flowSource"],
 system: ["setupComplete", "projectVersionText", "releaseChannelText", "firmwareUpdateChannel"],
 };
 const INITIAL_SETTINGS_READY_TIMEOUT_MS = 5000;
@@ -4132,6 +4136,7 @@ installation: [
 ...FLOW_SETTING_KEYS,
 ...FLOW_TUNING_KEYS,
 ...SILENT_SETTING_KEYS,
+...COMPRESSOR_SETTING_KEYS,
 "maxWater",
 ],
 service: [
@@ -4159,8 +4164,7 @@ cooling: [
 "coolingSupplyError",
 ...COOLING_SETTING_KEYS,
 ],
-advanced: [
-...COMPRESSOR_SETTING_KEYS,
+integrations: [
 ...OPENTHERM_SETTING_KEYS,
 ...OPENTHERM_DIAGNOSTIC_KEYS,
 ...CIC_POLLING_SETTING_KEYS,
@@ -4645,7 +4649,7 @@ function shouldRefreshApiSecurityStatusForCurrentSurface() {
 return state.systemModal === "api-security" || isSystemSettingsGroupActive();
 }
 function shouldRefreshMqttStatusForCurrentSurface() {
-return state.systemModal === "mqtt" || isSystemSettingsGroupActive();
+return state.systemModal === "mqtt" || isIntegrationsSettingsGroupActive();
 }
 function formatMqttPublishProfile(profile) {
 const normalized = String(profile || "").trim().toLowerCase();
@@ -5754,6 +5758,8 @@ await refreshTrendHistoryData({ force: true });
 await refreshAuthStatus({ force: true });
 if (isSystemSettingsGroupActive()) {
 await refreshApiSecurityStatus({ force: true });
+}
+if (isIntegrationsSettingsGroupActive()) {
 await refreshMqttStatus({ force: true });
 }
 } finally {
@@ -9381,6 +9387,7 @@ renderSettingsBoilerCvSection(),
 renderSettingsFlowSection(),
 renderSettingsSilentSection(),
 renderSettingsWaterSection(),
+renderSettingsCompressorSection(),
 ]
 : activeGroup === "service"
 ? [
@@ -9391,17 +9398,16 @@ renderSettingsServiceSection(),
 ? [renderSettingsHeatingSection()]
 : activeGroup === "cooling"
 ? [renderSettingsCoolingSection()]
-: activeGroup === "advanced"
+: activeGroup === "integrations"
 ? [
 renderSettingsOpenThermCicSection(),
 renderSettingsSensorSelectionSection(),
-renderSettingsCompressorSection(),
+renderSettingsMqttSection(),
 ]
 : [
 renderSettingsQuickStartSection(),
 renderSettingsTrendSection(),
 renderSettingsAccessSecuritySection(),
-renderSettingsMqttSection(),
 renderSettingsBackupSection(),
 renderSettingsDiagnosticsSection(),
 ];
@@ -12240,7 +12246,7 @@ renderSettingsHeatPumpLimiterCard("Warmtepomp 1", "hp1ExcludedA", "hp1ExcludedB"
 renderSettingsHeatPumpLimiterCard("Warmtepomp 2", "hp2ExcludedA", "hp2ExcludedB"),
 ].filter(Boolean).join("");
 return renderSettingsSection(
-"Geavanceerd",
+"Installatie",
 "Compressorinstellingen",
 "Stel hier de minimale draaitijd in en bepaal per warmtepomp welke compressorstanden je wilt overslaan.",
 `
