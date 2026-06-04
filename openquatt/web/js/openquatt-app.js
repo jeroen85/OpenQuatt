@@ -551,10 +551,6 @@ const SENSOR_CALIBRATION_KEYS = [
 "hp2WaterOutOffset",
 ];
 const SENSOR_CALIBRATION_STATE_KEYS = [
-"hp1WaterInRaw",
-"hp1WaterOutRaw",
-"hp2WaterInRaw",
-"hp2WaterOutRaw",
 "hp1WaterIn",
 "hp1WaterOut",
 "hp2WaterIn",
