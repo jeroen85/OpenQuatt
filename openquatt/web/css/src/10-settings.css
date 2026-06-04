@@ -2929,6 +2929,145 @@
   color: #86efac;
 }
 
+.oq-settings-source-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+}
+
+.oq-settings-source-card {
+  display: grid;
+  gap: 9px;
+  align-content: start;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--oq-helper-line);
+  border-radius: var(--oq-helper-radius-md);
+  background: var(--oq-helper-card);
+}
+
+.oq-settings-source-card-head {
+  min-width: 0;
+}
+
+.oq-settings-source-card-head h4 {
+  margin: 0;
+  color: var(--oq-helper-ink);
+  font-size: 0.95rem;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.oq-settings-source-controls {
+  display: grid;
+  gap: 7px;
+}
+
+.oq-settings-source-select {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.oq-settings-source-select-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.oq-settings-source-select-head > span:first-child {
+  min-width: 0;
+  color: var(--oq-helper-faint);
+  font-size: 0.7rem;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+}
+
+.oq-settings-source-select-head .oq-settings-info-button {
+  width: 20px;
+  height: 20px;
+  font-size: 0.7rem;
+}
+
+.oq-settings-source-select-head .oq-settings-info-popover {
+  width: min(280px, calc(100vw - 48px));
+  max-width: min(280px, calc(100vw - 48px));
+}
+
+.oq-settings-source-select .oq-helper-select {
+  min-height: 38px;
+  padding: 0 34px 0 10px;
+  font-size: 0.86rem;
+  font-weight: 750;
+}
+
+.oq-settings-source-warning {
+  margin: 0;
+  padding: 7px 9px;
+  border: 1px solid rgba(234, 88, 12, 0.24);
+  border-radius: 9px;
+  background: var(--oq-helper-accent-soft);
+  color: var(--oq-helper-accent-deep);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.oq-settings-source-rows {
+  display: grid;
+  gap: 0;
+  margin-top: 1px;
+}
+
+.oq-settings-source-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  padding: 6px 0;
+  border-top: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.oq-settings-source-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.oq-settings-source-row:last-child {
+  padding-bottom: 0;
+}
+
+.oq-settings-source-row span,
+.oq-settings-source-row strong {
+  min-width: 0;
+  font-size: 0.79rem;
+  line-height: 1.25;
+}
+
+.oq-settings-source-row span {
+  color: var(--oq-helper-soft);
+  font-weight: 650;
+}
+
+.oq-settings-source-row strong {
+  color: var(--oq-helper-ink);
+  font-weight: 800;
+  text-align: right;
+  word-break: break-word;
+}
+
+.oq-settings-source-row.is-warning strong {
+  color: var(--oq-helper-accent-deep);
+}
+
+.oq-helper-shell--dark .oq-settings-source-card,
+.oq-helper-modal-backdrop--dark .oq-settings-source-card {
+  background: rgba(15, 23, 42, 0.28);
+}
+
 .oq-settings-checkbox-switch {
   appearance: none;
   display: inline-flex;

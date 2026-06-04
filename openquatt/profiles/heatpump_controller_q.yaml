@@ -58,6 +58,21 @@ select:
     web_server:
       sorting_group_id: oq_sensor_selection
 
+  - platform: template
+    id: oq_q_flow_source
+    name: "Q Flow Source"
+    icon: mdi:source-branch
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    options:
+      - Auto
+      - Local
+      - Outdoor unit
+    initial_option: Auto
+    web_server:
+      sorting_group_id: oq_sensor_selection
+
 spi:
   - id: oq_hpcq_pt1000_spi
     mosi_pin: ${hpcq_pt1000_mosi_pin}
