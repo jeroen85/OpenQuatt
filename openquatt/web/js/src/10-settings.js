@@ -1006,6 +1006,41 @@
       }
     }
 
+    stack.querySelectorAll(".oq-settings-hp-offset-row").forEach((row) => {
+      const offsetKey = String(row.dataset.oqSettingsField || "");
+      const rawKey = String(row.dataset.oqHpOffsetRawKey || "");
+      const finalKey = String(row.dataset.oqHpOffsetFinalKey || "");
+      if (!offsetKey || !rawKey || !finalKey) {
+        return;
+      }
+      const meta = getNumberMeta(offsetKey);
+      const raw = getHpWaterRawValue(rawKey, finalKey, offsetKey);
+      const offsetDraft = parseLooseNumber(getInputDraftValue(offsetKey));
+      const finalFromDraft = Number.isFinite(raw) && Number.isFinite(offsetDraft)
+        ? formatSettingsNumberValue(raw + offsetDraft, meta.uom || "°C", 2)
+        : getSettingsTemperatureValue(finalKey, 2);
+      const activeNode = row.querySelector("[data-oq-hp-offset-active]");
+      if (activeNode) {
+        const activeText = `${getSettingsTemperatureValue(finalKey, 2)} actief`;
+        if (activeNode.textContent !== activeText) {
+          activeNode.textContent = activeText;
+        }
+      }
+      const rawNode = row.querySelector("[data-oq-hp-offset-raw]");
+      if (rawNode) {
+        const rawText = Number.isFinite(raw)
+          ? formatSettingsNumberValue(raw, meta.uom || "°C", 2)
+          : getSettingsTemperatureValue(rawKey, 2);
+        if (rawNode.textContent !== rawText) {
+          rawNode.textContent = rawText;
+        }
+      }
+      const finalNode = row.querySelector("[data-oq-hp-offset-final]");
+      if (finalNode && finalNode.textContent !== finalFromDraft) {
+        finalNode.textContent = finalFromDraft;
+      }
+    });
+
     const curveShell = stack.querySelector(".oq-settings-curve-shell");
     const currentCurveMode = isCurveMode();
     if (Boolean(curveShell) !== currentCurveMode) {
@@ -1265,15 +1300,15 @@
         : getSettingsTemperatureValue(row.finalKey, 2);
 
       return `
-        <article class="oq-settings-hp-offset-row" data-oq-settings-field="${escapeHtml(row.offsetKey)}">
+        <article class="oq-settings-hp-offset-row" data-oq-settings-field="${escapeHtml(row.offsetKey)}" data-oq-hp-offset-raw-key="${escapeHtml(row.rawKey)}" data-oq-hp-offset-final-key="${escapeHtml(row.finalKey)}">
           <div class="oq-settings-hp-offset-copy">
             <strong>${escapeHtml(row.label)}</strong>
-            <span>${escapeHtml(getSettingsTemperatureValue(row.finalKey, 2))} actief</span>
+            <span data-oq-hp-offset-active>${escapeHtml(getSettingsTemperatureValue(row.finalKey, 2))} actief</span>
           </div>
           <div class="oq-settings-hp-offset-equation" aria-label="${escapeHtml(`${row.label} correctie`)}">
             <div class="oq-settings-hp-offset-readout">
               <span>Raw</span>
-              <strong>${escapeHtml(Number.isFinite(raw) ? formatSettingsNumberValue(raw, meta.uom || "°C", 2) : getSettingsTemperatureValue(row.rawKey, 2))}</strong>
+              <strong data-oq-hp-offset-raw>${escapeHtml(Number.isFinite(raw) ? formatSettingsNumberValue(raw, meta.uom || "°C", 2) : getSettingsTemperatureValue(row.rawKey, 2))}</strong>
             </div>
             <span class="oq-settings-hp-offset-operator">+</span>
             <label class="oq-settings-hp-offset-input">
@@ -1290,7 +1325,7 @@
             <span class="oq-settings-hp-offset-operator">=</span>
             <div class="oq-settings-hp-offset-readout oq-settings-hp-offset-final">
               <span>Na wijziging</span>
-              <strong>${escapeHtml(finalFromDraft)}</strong>
+              <strong data-oq-hp-offset-final>${escapeHtml(finalFromDraft)}</strong>
             </div>
           </div>
         </article>

@@ -2125,7 +2125,10 @@
   }
 
   async function syncEntities(options = {}) {
-    if (state.nativeOpen || state.loadingEntities || state.focusedField || state.draggingCurveKey || state.busyAction || state.settingsInteractionLock) {
+    if (state.nativeOpen || state.loadingEntities || state.draggingCurveKey || state.busyAction || state.settingsInteractionLock) {
+      return;
+    }
+    if (state.focusedField && state.appView !== "settings") {
       return;
     }
     if (state.entitySyncInFlight) {
@@ -2261,11 +2264,19 @@
       if (state.appView === "settings") {
         const nextSettingsSignature = getSettingsRenderSignature();
         if (nextSettingsSignature !== state.settingsRenderSignature) {
-          render();
-          return;
+          if (!state.focusedField) {
+            render();
+            return;
+          }
         }
         if (!patchSettingsDom()) {
-          render();
+          if (!state.focusedField) {
+            render();
+          }
+          return;
+        }
+        if (state.focusedField) {
+          state.settingsRenderSignature = nextSettingsSignature;
         }
         return;
       }
