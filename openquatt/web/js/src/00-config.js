@@ -194,9 +194,24 @@ const LOGO_MARKUP = `
     lowflowFaultActive: { domain: "binary_sensor", name: "Lowflow fault active", optional: true },
     flowMismatch: { domain: "binary_sensor", name: "Flow mismatch (HP1 vs HP2)", optional: true },
     cicPollingEnabled: { domain: "switch", name: "CIC - Enable polling", optional: true },
+    cicFeedUrl: { domain: "text", name: "CIC - Feed URL", optional: true },
+    cicWaterSupplyTemp: { domain: "sensor", name: "CIC - Water Supply Temp", optional: true },
+    cicControlSetpoint: { domain: "sensor", name: "CIC - Control setpoint", optional: true },
+    cicRoomSetpoint: { domain: "sensor", name: "CIC - Room setpoint", optional: true },
+    cicRoomTemp: { domain: "sensor", name: "CIC - Room temperature", optional: true },
+    cicFlowrate: { domain: "sensor", name: "CIC - Flowrate (filtered)", optional: true },
+    cicLastSuccessAge: { domain: "sensor", name: "CIC - Last success age", optional: true },
+    cicChEnabled: { domain: "binary_sensor", name: "CIC - CH enabled", optional: true },
+    cicCoolingEnabled: { domain: "binary_sensor", name: "CIC - Cooling enabled", optional: true },
+    cicJsonFeedOk: { domain: "binary_sensor", name: "CIC - JSON Feed OK", optional: true },
     cicDataStale: { domain: "binary_sensor", name: "CIC - Data stale", optional: true },
     otEnabled: { domain: "switch", name: "OpenTherm Enabled", optional: true },
+    otThermostatChEnable: { domain: "binary_sensor", name: "OT - Thermostat CH Enable", optional: true },
+    otThermostatCoolingEnable: { domain: "binary_sensor", name: "OT - Thermostat Cooling Enable", optional: true },
     otLinkProblem: { domain: "binary_sensor", name: "OT - Link Problem", optional: true },
+    otControlSetpoint: { domain: "sensor", name: "OT - Control Setpoint", optional: true },
+    otRoomSetpoint: { domain: "sensor", name: "OT - Room Setpoint", optional: true },
+    otRoomTemp: { domain: "sensor", name: "OT - Room Temperature", optional: true },
     flowKp: { domain: "number", name: "Flow PI Kp", optional: true },
     flowKi: { domain: "number", name: "Flow PI Ki", optional: true },
     boilerRatedHeatPower: { domain: "number", name: "Boiler rated heat power", optional: true },
@@ -577,6 +592,26 @@ const LOGO_MARKUP = `
     "hp2Mode",
   ];
   const CIC_COMPATIBILITY_KEYS = ["cicCompatibilityMode"];
+  const OPENTHERM_SETTING_KEYS = ["otEnabled", "otLinkProblem"];
+  const CIC_POLLING_SETTING_KEYS = ["cicPollingEnabled", "cicFeedUrl", "cicDataStale"];
+  const OPENTHERM_DIAGNOSTIC_KEYS = [
+    "otThermostatChEnable",
+    "otThermostatCoolingEnable",
+    "otControlSetpoint",
+    "otRoomSetpoint",
+    "otRoomTemp",
+  ];
+  const CIC_POLLING_DIAGNOSTIC_KEYS = [
+    "cicJsonFeedOk",
+    "cicWaterSupplyTemp",
+    "cicControlSetpoint",
+    "cicRoomSetpoint",
+    "cicRoomTemp",
+    "cicFlowrate",
+    "cicLastSuccessAge",
+    "cicChEnabled",
+    "cicCoolingEnabled",
+  ];
   const COOLING_SETTING_KEYS = [
     "coolingMinimumSupplyTemp",
     "coolingDemandMax",
@@ -916,6 +951,10 @@ const LOGO_MARKUP = `
     "trendHistoryFlashSize",
     "trendHistoryFlashWrites",
     ...CIC_COMPATIBILITY_KEYS,
+    ...OPENTHERM_SETTING_KEYS,
+    ...OPENTHERM_DIAGNOSTIC_KEYS,
+    ...CIC_POLLING_SETTING_KEYS,
+    ...CIC_POLLING_DIAGNOSTIC_KEYS,
     ...FLOW_SETTING_KEYS,
     ...FLOW_TUNING_KEYS,
     ...INSTALLATION_MONITORING_STATE_KEYS,
@@ -926,7 +965,7 @@ const LOGO_MARKUP = `
     ...COMPRESSOR_SETTING_KEYS,
     ...SILENT_SETTING_KEYS,
   ];
-  const SETTINGS_BACKUP_WRITABLE_DOMAINS = new Set(["number", "select", "switch", "time", "datetime"]);
+  const SETTINGS_BACKUP_WRITABLE_DOMAINS = new Set(["number", "select", "switch", "text", "time", "datetime"]);
   const SETTINGS_BACKUP_EXPECTED_EXTRA_KEYS = new Set(["setupComplete", "openquattResumeAt", "firmwareUpdateChannel"]);
   const SETTINGS_BACKUP_EXCLUDED_KEYS = new Set([
     "installationTopology",
@@ -937,8 +976,8 @@ const LOGO_MARKUP = `
     "trendHistoryFlashLastFlush",
     "trendHistoryFlashSize",
     "trendHistoryFlashWrites",
-    "cicPollingEnabled",
-    "otEnabled",
+    "cicDataStale",
+    "otLinkProblem",
     "coolingGuardMode",
     "coolingFallbackNightMinOutdoorTemp",
     "coolingFallbackMinSupplyTemp",
@@ -964,9 +1003,18 @@ const LOGO_MARKUP = `
         "strategy",
         "openquattEnabled",
         "manualCoolingEnable",
-        "cicCompatibilityMode",
         "silentModeOverride",
         "openquattResumeAt",
+      ],
+    },
+    {
+      id: "integrations",
+      label: "Integraties",
+      keys: [
+        "otEnabled",
+        "cicPollingEnabled",
+        "cicFeedUrl",
+        "cicCompatibilityMode",
       ],
     },
     {

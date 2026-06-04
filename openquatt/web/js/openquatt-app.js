@@ -194,9 +194,24 @@ hp2CompressorLastStartAge: { domain: "sensor", name: "HP2 - Compressor last star
 lowflowFaultActive: { domain: "binary_sensor", name: "Lowflow fault active", optional: true },
 flowMismatch: { domain: "binary_sensor", name: "Flow mismatch (HP1 vs HP2)", optional: true },
 cicPollingEnabled: { domain: "switch", name: "CIC - Enable polling", optional: true },
+cicFeedUrl: { domain: "text", name: "CIC - Feed URL", optional: true },
+cicWaterSupplyTemp: { domain: "sensor", name: "CIC - Water Supply Temp", optional: true },
+cicControlSetpoint: { domain: "sensor", name: "CIC - Control setpoint", optional: true },
+cicRoomSetpoint: { domain: "sensor", name: "CIC - Room setpoint", optional: true },
+cicRoomTemp: { domain: "sensor", name: "CIC - Room temperature", optional: true },
+cicFlowrate: { domain: "sensor", name: "CIC - Flowrate (filtered)", optional: true },
+cicLastSuccessAge: { domain: "sensor", name: "CIC - Last success age", optional: true },
+cicChEnabled: { domain: "binary_sensor", name: "CIC - CH enabled", optional: true },
+cicCoolingEnabled: { domain: "binary_sensor", name: "CIC - Cooling enabled", optional: true },
+cicJsonFeedOk: { domain: "binary_sensor", name: "CIC - JSON Feed OK", optional: true },
 cicDataStale: { domain: "binary_sensor", name: "CIC - Data stale", optional: true },
 otEnabled: { domain: "switch", name: "OpenTherm Enabled", optional: true },
+otThermostatChEnable: { domain: "binary_sensor", name: "OT - Thermostat CH Enable", optional: true },
+otThermostatCoolingEnable: { domain: "binary_sensor", name: "OT - Thermostat Cooling Enable", optional: true },
 otLinkProblem: { domain: "binary_sensor", name: "OT - Link Problem", optional: true },
+otControlSetpoint: { domain: "sensor", name: "OT - Control Setpoint", optional: true },
+otRoomSetpoint: { domain: "sensor", name: "OT - Room Setpoint", optional: true },
+otRoomTemp: { domain: "sensor", name: "OT - Room Temperature", optional: true },
 flowKp: { domain: "number", name: "Flow PI Kp", optional: true },
 flowKi: { domain: "number", name: "Flow PI Ki", optional: true },
 boilerRatedHeatPower: { domain: "number", name: "Boiler rated heat power", optional: true },
@@ -574,6 +589,26 @@ const COMMISSIONING_STATE_KEYS = [
 "hp2Mode",
 ];
 const CIC_COMPATIBILITY_KEYS = ["cicCompatibilityMode"];
+const OPENTHERM_SETTING_KEYS = ["otEnabled", "otLinkProblem"];
+const CIC_POLLING_SETTING_KEYS = ["cicPollingEnabled", "cicFeedUrl", "cicDataStale"];
+const OPENTHERM_DIAGNOSTIC_KEYS = [
+"otThermostatChEnable",
+"otThermostatCoolingEnable",
+"otControlSetpoint",
+"otRoomSetpoint",
+"otRoomTemp",
+];
+const CIC_POLLING_DIAGNOSTIC_KEYS = [
+"cicJsonFeedOk",
+"cicWaterSupplyTemp",
+"cicControlSetpoint",
+"cicRoomSetpoint",
+"cicRoomTemp",
+"cicFlowrate",
+"cicLastSuccessAge",
+"cicChEnabled",
+"cicCoolingEnabled",
+];
 const COOLING_SETTING_KEYS = [
 "coolingMinimumSupplyTemp",
 "coolingDemandMax",
@@ -913,6 +948,10 @@ const SETTINGS_KEYS = [
 "trendHistoryFlashSize",
 "trendHistoryFlashWrites",
 ...CIC_COMPATIBILITY_KEYS,
+...OPENTHERM_SETTING_KEYS,
+...OPENTHERM_DIAGNOSTIC_KEYS,
+...CIC_POLLING_SETTING_KEYS,
+...CIC_POLLING_DIAGNOSTIC_KEYS,
 ...FLOW_SETTING_KEYS,
 ...FLOW_TUNING_KEYS,
 ...INSTALLATION_MONITORING_STATE_KEYS,
@@ -923,7 +962,7 @@ const SETTINGS_KEYS = [
 ...COMPRESSOR_SETTING_KEYS,
 ...SILENT_SETTING_KEYS,
 ];
-const SETTINGS_BACKUP_WRITABLE_DOMAINS = new Set(["number", "select", "switch", "time", "datetime"]);
+const SETTINGS_BACKUP_WRITABLE_DOMAINS = new Set(["number", "select", "switch", "text", "time", "datetime"]);
 const SETTINGS_BACKUP_EXPECTED_EXTRA_KEYS = new Set(["setupComplete", "openquattResumeAt", "firmwareUpdateChannel"]);
 const SETTINGS_BACKUP_EXCLUDED_KEYS = new Set([
 "installationTopology",
@@ -934,8 +973,8 @@ const SETTINGS_BACKUP_EXCLUDED_KEYS = new Set([
 "trendHistoryFlashLastFlush",
 "trendHistoryFlashSize",
 "trendHistoryFlashWrites",
-"cicPollingEnabled",
-"otEnabled",
+"cicDataStale",
+"otLinkProblem",
 "coolingGuardMode",
 "coolingFallbackNightMinOutdoorTemp",
 "coolingFallbackMinSupplyTemp",
@@ -959,9 +998,18 @@ keys: [
 "strategy",
 "openquattEnabled",
 "manualCoolingEnable",
-"cicCompatibilityMode",
 "silentModeOverride",
 "openquattResumeAt",
+],
+},
+{
+id: "integrations",
+label: "Integraties",
+keys: [
+"otEnabled",
+"cicPollingEnabled",
+"cicFeedUrl",
+"cicCompatibilityMode",
 ],
 },
 {
@@ -1127,6 +1175,7 @@ entities: {},
 optionalMissingEntities: {},
 settingsInfoOpen: "",
 installationMonitoringDetailsOpen: false,
+integrationDiagnosticsOpen: false,
 installationMonitoringProblemSignature: "",
 settingsInteractionLock: false,
 settingsRenderSignature: "",
@@ -4029,6 +4078,10 @@ cooling: [
 ],
 advanced: [
 ...COMPRESSOR_SETTING_KEYS,
+...OPENTHERM_SETTING_KEYS,
+...OPENTHERM_DIAGNOSTIC_KEYS,
+...CIC_POLLING_SETTING_KEYS,
+...CIC_POLLING_DIAGNOSTIC_KEYS,
 ...CIC_COMPATIBILITY_KEYS,
 ],
 system: [
@@ -5336,6 +5389,17 @@ throw new Error(`HTTP ${response.status}`);
 }
 return normalized;
 }
+if (entity.domain === "text") {
+const normalized = String(value || "").trim();
+const response = await fetch(
+`${buildEntityPath(entity.domain, entity.name, "set")}?value=${encodeURIComponent(normalized)}`,
+{ method: "POST" }
+);
+if (!response.ok) {
+throw new Error(`HTTP ${response.status}`);
+}
+return normalized;
+}
 if (entity.domain === "switch" || entity.domain === "binary_sensor") {
 const enabled = Boolean(value);
 const action = enabled ? "turn_on" : "turn_off";
@@ -5949,6 +6013,10 @@ if (event.target.dataset.oqPauseDraft) {
 state.pauseResumeDraft = String(event.target.value || "");
 return;
 }
+if (ENTITY_DEFS[field]?.domain === "text") {
+state.inputDrafts[field] = String(event.target.value || "");
+return;
+}
 if (event.target.type === "range" || event.target.type === "number") {
 if (event.target.type === "number") {
 state.inputDrafts[field] = event.target.value;
@@ -6005,6 +6073,10 @@ return;
 }
 if (entity.domain === "number") {
 commitNumber(field, event.target.value);
+return;
+}
+if (entity.domain === "text") {
+commitText(field, event.target.value);
 return;
 }
 if (entity.domain === "time") {
@@ -6132,6 +6204,13 @@ if (action === "toggle-installation-monitoring-details") {
 event.preventDefault();
 const details = button.closest(".oq-settings-monitoring-details");
 state.installationMonitoringDetailsOpen = !(details && details.hasAttribute("open"));
+render();
+return;
+}
+if (action === "toggle-integration-diagnostics") {
+event.preventDefault();
+const details = button.closest(".oq-settings-integration-diagnostics");
+state.integrationDiagnosticsOpen = !(details && details.hasAttribute("open"));
 render();
 return;
 }
@@ -7057,6 +7136,45 @@ state.appView === "settings"
 "state"
 );
 } catch (error) {
+state.controlError = `${entity.name} kon niet worden bijgewerkt. ${error.message}`;
+} finally {
+state.busyAction = "";
+render();
+}
+}
+async function commitText(key, value) {
+const entity = ENTITY_DEFS[key];
+const normalized = String(value || "").trim();
+state.busyAction = `save-${key}`;
+state.controlNotice = "";
+state.controlError = "";
+state.inputDrafts[key] = String(value ?? "");
+state.drafts[key] = normalized;
+render();
+try {
+const response = await fetch(
+`${buildEntityPath(entity.domain, entity.name, "set")}?value=${encodeURIComponent(normalized)}`,
+{ method: "POST" }
+);
+if (!response.ok) {
+throw new Error(`HTTP ${response.status}`);
+}
+state.entities[key] = {
+...(state.entities[key] || {}),
+value: normalized,
+state: normalized,
+};
+delete state.drafts[key];
+delete state.inputDrafts[key];
+state.controlNotice = `${entity.name} bijgewerkt.`;
+await refreshEntities(
+state.appView === "settings"
+? getSettingsRefreshKeys()
+: [key, "setupComplete"],
+"state"
+);
+} catch (error) {
+state.inputDrafts[key] = normalized;
 state.controlError = `${entity.name} kon niet worden bijgewerkt. ${error.message}`;
 } finally {
 state.busyAction = "";
@@ -9160,7 +9278,7 @@ renderSettingsServiceSection(),
 : activeGroup === "advanced"
 ? [
 renderSettingsCompressorSection(),
-renderSettingsCiCCompatibilitySection(),
+renderSettingsOpenThermCicSection(),
 ]
 : [
 renderSettingsQuickStartSection(),
@@ -11117,24 +11235,173 @@ return renderSettingsSection(
 renderWaterSettingsFields(),
 );
 }
-function renderSettingsCiCCompatibilitySection() {
-if (!hasEntity("cicCompatibilityMode")) {
+function renderSettingsOpenThermCicSection() {
+const hasOpenThermConfig = hasEntity("otEnabled");
+const hasCicConfig = hasEntity("cicPollingEnabled") || hasEntity("cicFeedUrl");
+const hasCicCompatibilityConfig = hasEntity("cicCompatibilityMode");
+const hasStatus = hasEntity("otLinkProblem") || hasEntity("cicDataStale") || hasEntity("cicJsonFeedOk");
+if (!hasOpenThermConfig && !hasCicConfig && !hasCicCompatibilityConfig && !hasStatus) {
 return "";
 }
+const cicPollingEnabled = isInstallationMonitoringIntegrationEnabled("cicPollingEnabled");
+const otEnabled = isInstallationMonitoringIntegrationEnabled("otEnabled");
+const renderCompactSwitch = (key, title, copy) => {
+if (!hasEntity(key)) {
+return "";
+}
+const enabled = Boolean(getEntityValue(key));
+const busy = state.loadingEntities || state.busyAction === `switch-${key}`;
+const renderButton = (label, targetState) => {
+const active = targetState === (enabled ? "on" : "off");
+return `
+<button
+class="oq-settings-integration-toggle-button${active ? " is-active" : ""}"
+type="button"
+data-oq-action="toggle-overview-control"
+data-control-key="${escapeHtml(key)}"
+data-control-state="${escapeHtml(targetState)}"
+aria-pressed="${active ? "true" : "false"}"
+${busy ? "disabled" : ""}
+>
+${escapeHtml(label)}
+</button>
+`;
+};
+return `
+<article class="oq-settings-integration-card" data-oq-settings-field="${escapeHtml(key)}">
+<div class="oq-settings-integration-card-head">
+<h4>${escapeHtml(title)}</h4>
+<span class="oq-settings-integration-pill${enabled ? " is-on" : ""}">${escapeHtml(enabled ? "Aan" : "Uit")}</span>
+</div>
+<p>${escapeHtml(copy)}</p>
+<div class="oq-settings-integration-toggle" role="group" aria-label="${escapeHtml(title)}">
+${renderButton("Uit", "off")}
+${renderButton("Aan", "on")}
+</div>
+</article>
+`;
+};
+const renderDiagnosticItem = ({ label, value, active = false }) => `
+<div class="oq-settings-integration-diagnostic-item${active ? " is-warning" : ""}">
+<dt>${escapeHtml(label)}</dt>
+<dd>${escapeHtml(value)}</dd>
+</div>
+`;
+const renderBinaryDiagnosticItem = (key, label, activeLabel = "Actief", inactiveLabel = "Normaal", options = {}) => {
+if (!hasEntity(key)) {
+return "";
+}
+const active = isInstallationMonitoringBinaryActive(key);
+return renderDiagnosticItem({
+label,
+value: active ? activeLabel : inactiveLabel,
+active: options.warningWhenActive ? active : false,
+});
+};
+const renderValueDiagnosticItem = (key, label, options = {}) => {
+const fallbackKey = options.fallbackKey || "";
+if (!hasEntity(key) && !(fallbackKey && hasEntity(fallbackKey))) {
+return "";
+}
+return renderDiagnosticItem({
+label,
+value: getSettingsStatValue(hasEntity(key) ? key : fallbackKey, options),
+});
+};
+const renderDiagnosticGroup = (title, rows) => {
+const content = rows.filter(Boolean).join("");
+if (!content) {
+return "";
+}
+return `
+<article class="oq-settings-integration-diagnostic-group">
+<h4>${escapeHtml(title)}</h4>
+<dl>${content}</dl>
+</article>
+`;
+};
+const urlField = hasEntity("cicFeedUrl") ? `
+<article class="oq-settings-integration-card oq-settings-integration-card--wide" data-oq-settings-field="cicFeedUrl">
+<div class="oq-settings-integration-card-head">
+<h4>CIC feed URL</h4>
+<span class="oq-settings-integration-pill">Lokaal</span>
+</div>
+<label class="oq-settings-control oq-settings-control--text">
+<input
+class="oq-helper-input oq-settings-integration-url-input"
+type="url"
+data-oq-field="cicFeedUrl"
+value="${escapeHtml(String(getInputDraftValue("cicFeedUrl") || ""))}"
+placeholder="http://<host>:<poort>/beta/feed/data.json"
+autocomplete="off"
+spellcheck="false"
+${state.loadingEntities ? "disabled" : ""}
+>
+</label>
+<p>Gebruik de lokale JSON-feed van de CiC.</p>
+</article>
+` : "";
+const otDiagnosticPanel = renderDiagnosticGroup("OpenTherm", [
+hasEntity("otLinkProblem") ? renderDiagnosticItem({
+label: "OT-link",
+value: !otEnabled
+? "Uitgeschakeld"
+: isInstallationMonitoringBinaryActive("otLinkProblem") ? "Probleem" : "OK",
+active: otEnabled && isInstallationMonitoringBinaryActive("otLinkProblem"),
+}) : "",
+renderBinaryDiagnosticItem("otThermostatChEnable", "Thermostaat CH", "Actief", "Normaal"),
+renderBinaryDiagnosticItem("otThermostatCoolingEnable", "Thermostaat koeling", "Actief", "Normaal"),
+renderValueDiagnosticItem("otControlSetpoint", "Control setpoint"),
+renderValueDiagnosticItem("otRoomSetpoint", "Room setpoint", { fallbackKey: "roomSetpoint" }),
+renderValueDiagnosticItem("otRoomTemp", "Room temperature", { fallbackKey: "roomTemp" }),
+]);
+const cicDiagnosticPanel = renderDiagnosticGroup("CIC-feed", [
+hasEntity("cicJsonFeedOk") ? renderDiagnosticItem({
+label: "JSON-feed",
+value: !cicPollingEnabled
+? "Polling uit"
+: isInstallationMonitoringBinaryActive("cicJsonFeedOk") ? "OK" : "Probleem",
+active: cicPollingEnabled && !isInstallationMonitoringBinaryActive("cicJsonFeedOk"),
+}) : "",
+hasEntity("cicDataStale") ? renderDiagnosticItem({
+label: "Data",
+value: !cicPollingEnabled
+? "Polling uit"
+: isInstallationMonitoringBinaryActive("cicDataStale") ? "Verouderd" : "Actueel",
+active: cicPollingEnabled && isInstallationMonitoringBinaryActive("cicDataStale"),
+}) : "",
+renderBinaryDiagnosticItem("cicChEnabled", "CH-vraag", "Actief", "Normaal"),
+renderBinaryDiagnosticItem("cicCoolingEnabled", "Koeling", "Actief", "Normaal"),
+renderValueDiagnosticItem("cicControlSetpoint", "Control setpoint"),
+renderValueDiagnosticItem("cicRoomSetpoint", "Room setpoint"),
+renderValueDiagnosticItem("cicRoomTemp", "Room temperature"),
+renderValueDiagnosticItem("cicFlowrate", "Flow"),
+renderValueDiagnosticItem("cicLastSuccessAge", "Laatste succes"),
+]);
+const diagnosticsPanel = otDiagnosticPanel || cicDiagnosticPanel ? `
+<details class="oq-settings-integration-diagnostics"${state.integrationDiagnosticsOpen ? " open" : ""}>
+<summary data-oq-action="toggle-integration-diagnostics">
+<strong>Diagnostiek</strong>
+<span>OpenTherm- en CIC-signalen</span>
+</summary>
+<div class="oq-settings-integration-diagnostic-grid">
+${otDiagnosticPanel}
+${cicDiagnosticPanel}
+</div>
+</details>
+` : "";
 return renderSettingsSection(
 "Integratie",
-"CiC-compatibiliteit",
-"Zet dit aan als je de Quatt app wilt blijven gebruiken terwijl OpenQuatt tussen de warmtepomp en de CiC zit. Let op: sluit de CiC dan via Modbus aan op de tweede RS485-poort van de OpenQuatt Controller.",
+"OpenTherm & CIC-polling",
+"Configureer de directe thermostaatbus, externe CIC-feed en Quatt app-compatibiliteit.",
 `
-<div class="oq-settings-grid">
-${renderSettingsSwitchField(
-"cicCompatibilityMode",
-"Quatt app-verbinding via CiC",
-"Zet dit aan als je wilt dat OpenQuatt gegevens blijft doorgeven aan de CiC voor de Quatt app. Standaard staat dit uit.",
-"OpenQuatt houdt de gegevensstroom naar de CiC in stand, zodat de Quatt app kan blijven werken.",
-"OpenQuatt geeft geen gegevens door aan de CiC voor de Quatt app."
-)}
+<div class="oq-settings-integration-grid">
+${renderCompactSwitch("otEnabled", "OpenTherm", "Thermostaatbus voor warmtevraag en kamerwaarden.")}
+${renderCompactSwitch("cicPollingEnabled", "CIC-polling", "JSON-feed uitlezen voor setpoint, kamerwaarden en flow.")}
+${renderCompactSwitch("cicCompatibilityMode", "CiC-compatibiliteit", "Gegevens doorgeven zodat de Quatt app kan blijven meekijken.")}
+${urlField}
 </div>
+${diagnosticsPanel}
 `,
 );
 }
