@@ -4108,6 +4108,24 @@
     }
   }
 
+  function queueHpWaterCalibrationApplyAnchor() {
+    window.requestAnimationFrame(() => {
+      if (!state.root || state.systemModal !== "service-task-hp-water-calibration") {
+        return;
+      }
+      const scroller = state.root.querySelector("[data-oq-service-task-scroller]");
+      const target = state.root.querySelector("[data-oq-hp-water-calibration-applied]") ||
+        state.root.querySelector("[data-oq-hp-water-calibration-actions]");
+      if (!scroller || !target) {
+        return;
+      }
+      const scrollerRect = scroller.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const nextTop = scroller.scrollTop + targetRect.top - scrollerRect.top - 24;
+      scroller.scrollTop = Math.max(0, nextTop);
+    });
+  }
+
   async function triggerNamedButton(key, options = {}) {
     const entity = ENTITY_DEFS[key];
     if (!entity) {
@@ -4184,6 +4202,9 @@
     } finally {
       state.busyAction = "";
       render();
+      if (key === "hpWaterCalibrationApply") {
+        queueHpWaterCalibrationApplyAnchor();
+      }
     }
   }
 

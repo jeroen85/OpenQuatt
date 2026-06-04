@@ -1277,6 +1277,20 @@
   min-width: 0;
 }
 
+.oq-settings-hp-calibration-applied {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgba(22, 101, 52, 0.28);
+  border-radius: var(--oq-helper-radius);
+  background: rgba(220, 252, 231, 0.72);
+  color: #166534;
+  font-weight: 900;
+  text-align: center;
+}
+
 .oq-settings-hp-offset-panel {
   margin-top: 14px;
 }
@@ -1317,17 +1331,22 @@
 
 .oq-settings-hp-offset-equation {
   display: grid;
-  grid-template-columns: minmax(74px, 0.8fr) auto minmax(120px, 1fr) auto minmax(84px, 0.9fr);
-  align-items: center;
+  grid-template-columns: minmax(108px, 0.9fr) 28px minmax(170px, 1.1fr) 28px minmax(108px, 0.9fr);
+  align-items: end;
   gap: 8px;
   min-width: 0;
 }
 
-.oq-settings-hp-offset-equation > div,
+.oq-settings-hp-offset-readout,
 .oq-settings-hp-offset-input {
   display: grid;
   gap: 4px;
   min-width: 0;
+}
+
+.oq-settings-hp-offset-readout {
+  box-sizing: border-box;
+  align-content: start;
 }
 
 .oq-settings-hp-offset-equation span {
@@ -1338,6 +1357,15 @@
 }
 
 .oq-settings-hp-offset-equation strong {
+  display: flex;
+  box-sizing: border-box;
+  min-height: 58px;
+  align-items: center;
+  width: 100%;
+  padding: 0 16px;
+  border: 1px solid var(--oq-helper-line);
+  border-radius: var(--oq-helper-radius);
+  background: rgba(255, 255, 255, 0.92);
   color: var(--oq-helper-ink);
   font-size: 1.05rem;
   line-height: 1.15;
@@ -1346,8 +1374,11 @@
 
 .oq-settings-hp-offset-operator {
   justify-self: center;
-  color: var(--oq-helper-muted);
-  font-size: 1rem;
+  align-self: end;
+  padding-bottom: 19px;
+  color: var(--oq-helper-ink);
+  font-size: 1.2rem;
+  line-height: 1;
   font-weight: 900;
 }
 
@@ -1657,6 +1688,8 @@
 .oq-helper-modal-backdrop--dark .oq-settings-hp-calibration-live-card,
 .oq-helper-shell--dark .oq-settings-hp-calibration-table,
 .oq-helper-modal-backdrop--dark .oq-settings-hp-calibration-table,
+.oq-helper-shell--dark .oq-settings-hp-offset-readout strong,
+.oq-helper-modal-backdrop--dark .oq-settings-hp-offset-readout strong,
 .oq-helper-shell--dark .oq-settings-hp-offset-row,
 .oq-helper-modal-backdrop--dark .oq-settings-hp-offset-row {
   background: rgba(15, 23, 42, 0.38);
