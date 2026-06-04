@@ -356,11 +356,7 @@ sensor:
       if (source == "Outdoor unit") {
         #if OQ_HARDWARE_HEATPUMP_CONTROLLER_Q
         const auto q_flow_source = id(${oq_q_flow_source_selector_id}).current_option();
-        const bool q_auto_local =
-          q_flow_source == "Auto" &&
-          id(hp_generation).has_state() &&
-          id(hp_generation).current_option() == "V1";
-        if (q_flow_source == "Local" || q_auto_local) {
+        if (q_flow_source == "Local") {
           if (id(${oq_controller_flow_sensor_id}).has_state()) return id(${oq_controller_flow_sensor_id}).state;
           return NAN;
         }

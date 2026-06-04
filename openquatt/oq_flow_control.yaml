@@ -227,6 +227,11 @@ sensor:
     lambda: |-
       const bool secondary_enabled = (${flow_secondary_enabled} != 0);
       float f1 = id(hp1_flow).state;
+      #if OQ_HARDWARE_HEATPUMP_CONTROLLER_Q
+      if (id(hp_generation).has_state() && id(hp_generation).current_option() == "V1") {
+        f1 = id(${oq_controller_flow_sensor_id}).state;
+      }
+      #endif
       float f2 = secondary_enabled ? id(${secondary_flow_id}).state : NAN;
 
       const bool v1 = !isnan(f1);
