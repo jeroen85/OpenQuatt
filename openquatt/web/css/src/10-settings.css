@@ -2779,6 +2779,31 @@
   opacity: 0.62;
 }
 
+.oq-settings-compact-switch-field {
+  display: grid;
+  gap: 8px;
+}
+
+.oq-settings-compact-switch-field > p {
+  margin: 0;
+  color: var(--oq-helper-soft);
+  font-size: 0.8rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.oq-settings-compact-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.oq-settings-compact-switch-row .oq-settings-integration-toggle {
+  flex: 0 0 auto;
+}
+
 .oq-settings-integration-url-input {
   min-height: 40px;
   font-size: 0.9rem;
