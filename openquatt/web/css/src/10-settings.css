@@ -1378,10 +1378,16 @@
   height: 58px;
   min-height: 58px;
   min-width: 0;
+  border-color: rgba(234, 88, 12, 0.28);
   border-radius: var(--oq-helper-radius-md);
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 247, 237, 0.72);
   font-size: 1.05rem;
   font-weight: 800;
+}
+
+.oq-settings-hp-offset-input .oq-helper-input:focus {
+  border-color: rgba(234, 88, 12, 0.7);
+  background: rgba(255, 247, 237, 0.92);
 }
 
 .oq-helper-modal--service-task {
