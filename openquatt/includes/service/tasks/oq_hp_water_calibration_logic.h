@@ -127,8 +127,8 @@ class HpWaterCalibrationRuntime {
     }
 
     ESP_LOGI("quatt.cm100.hpcal",
-             "HP water sensor calibration requested (min_mix=%ds stable_window=%ds max=%ds iPWM=%d spread<=%.2fC drift<=%.2fC/min max_offset=%.2fC)",
-             cfg.min_mixing_s, cfg.stable_window_s, cfg.max_duration_s, cfg.target_ipwm,
+             "HP water sensor calibration requested (min_mix=%ds stable_window=%ds max=%ds flow_setpoint=normal spread<=%.2fC drift<=%.2fC/min max_offset=%.2fC)",
+             cfg.min_mixing_s, cfg.stable_window_s, cfg.max_duration_s,
              cfg.stable_spread_c, cfg.stable_drift_c_per_min, cfg.max_offset_c);
 
     clear_samples();
@@ -532,10 +532,9 @@ class HpWaterCalibrationRuntime {
     if (s != last_status_) {
       id(oq_hp_water_calibration_status).publish_state(s.c_str());
       ESP_LOGI("quatt.cm100.hpcal",
-               "status=%s phase=%d target_iPWM=%d remaining=%ds flow=%.0fL/h spread=%.2fC stable=%ds/%ds",
+               "status=%s phase=%d remaining=%ds flow=%.0fL/h spread=%.2fC stable=%ds/%ds",
                s.c_str(),
                id(oq_hp_water_calibration_phase),
-               id(oq_hp_water_calibration_target_ipwm),
                id(oq_hp_water_calibration_remaining_s),
                id(flow_rate_selected).state,
                id(oq_hp_water_calibration_spread_c),
