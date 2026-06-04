@@ -672,6 +672,7 @@ const LOGO_MARKUP = `
     "hpWaterCalibrationResultHp1OutRawAvg",
     "hpWaterCalibrationResultHp2InRawAvg",
     "hpWaterCalibrationResultHp2OutRawAvg",
+    ...SENSOR_CALIBRATION_STATE_KEYS,
     "hp1WaterInOffsetSuggested",
     "hp1WaterOutOffsetSuggested",
     "hp2WaterInOffsetSuggested",

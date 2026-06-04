@@ -669,6 +669,7 @@ const COMMISSIONING_STATE_KEYS = [
 "hpWaterCalibrationResultHp1OutRawAvg",
 "hpWaterCalibrationResultHp2InRawAvg",
 "hpWaterCalibrationResultHp2OutRawAvg",
+...SENSOR_CALIBRATION_STATE_KEYS,
 "hp1WaterInOffsetSuggested",
 "hp1WaterOutOffsetSuggested",
 "hp2WaterInOffsetSuggested",
