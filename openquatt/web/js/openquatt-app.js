@@ -10898,17 +10898,28 @@ const hasHp2 = hasEntity("hp2WaterIn") || hasEntity("hp2WaterOut") || hasEntity(
 const stableProgress = getEntityNumericValue("hpWaterCalibrationStableProgress");
 const stableRequired = getEntityNumericValue("hpWaterCalibrationStableRequired");
 const remaining = getEntityNumericValue("hpWaterCalibrationRemaining");
-const progressValue = Number.isFinite(stableProgress) && Number.isFinite(stableRequired) && stableRequired > 0
+const phaseCode = Math.round(getEntityNumericValue("hpWaterCalibrationPhase"));
+const mixing = running && (phaseCode === 1 || normalizedStatus.includes("MIXING"));
+const measuring = running && !mixing;
+const maxDurationS = 300;
+const minMixingS = 60;
+const elapsed = Number.isFinite(remaining) ? Math.max(0, maxDurationS - remaining) : NaN;
+const mixingRemaining = Number.isFinite(elapsed) ? Math.max(0, minMixingS - elapsed) : NaN;
+const progressValue = mixing && Number.isFinite(elapsed)
+? Math.max(0, Math.min(100, (elapsed / minMixingS) * 100))
+: measuring && Number.isFinite(stableProgress) && Number.isFinite(stableRequired) && stableRequired > 0
 ? Math.max(0, Math.min(100, (stableProgress / stableRequired) * 100))
 : running && Number.isFinite(remaining)
-? Math.max(0, Math.min(100, 100 - ((remaining / 300) * 100)))
+? Math.max(0, Math.min(100, 100 - ((remaining / maxDurationS) * 100)))
 : resultReady
 ? 100
 : 0;
 const spreadValue = resultReady && hasEntity("hpWaterCalibrationResultSpreadBefore")
 ? getSettingsTemperatureValue("hpWaterCalibrationResultSpreadBefore", 2)
 : getSettingsTemperatureValue("hpWaterCalibrationSpread", 2);
-const stableCopy = Number.isFinite(stableProgress) && Number.isFinite(stableRequired) && stableRequired > 0
+const stableCopy = mixing
+? "Water mengen"
+: Number.isFinite(stableProgress) && Number.isFinite(stableRequired) && stableRequired > 0
 ? (stableProgress > 0
 ? `${Math.round(Math.max(0, stableProgress))} / ${Math.round(stableRequired)} s binnen grenzen`
 : "Nog niet binnen grenzen")
@@ -10919,7 +10930,9 @@ const statusTitle = applied
 : resultReady
 ? `Meting klaar - spreiding ${spreadValue}`
 : running
-? `Meting bezig - ${Number.isFinite(remaining) && remaining > 0 ? `max. ${Math.round(remaining)} s resterend` : stableCopy}`
+? (mixing
+? `Water mengen${Number.isFinite(mixingRemaining) && mixingRemaining > 0 ? ` - meting start over ${Math.round(mixingRemaining)} s` : ""}`
+: `Meting bezig - ${Number.isFinite(remaining) && remaining > 0 ? `max. ${Math.round(remaining)} s resterend` : stableCopy}`)
 : failed
 ? "Meting niet voltooid"
 : "Voorbereiding";
@@ -10928,7 +10941,9 @@ const statusCopy = applied
 : resultReady
 ? "Controleer de voorgestelde offsets en pas ze toe."
 : running
-? "De waterpomp circuleert zonder compressor. De firmware stopt zodra het laatste meetvenster binnen de spreiding- en driftgrenzen valt."
+? (mixing
+? "De waterpomp circuleert zonder compressor zodat de watertemperaturen eerst kunnen mengen."
+: "De firmware stopt zodra het laatste meetvenster binnen de spreiding- en driftgrenzen valt.")
 : failed
 ? getSettingsTextStatValue("hpWaterCalibrationStatus", "Controleer de voorwaarden en start opnieuw.")
 : (hasHp2
