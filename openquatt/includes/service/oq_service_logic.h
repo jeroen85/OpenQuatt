@@ -9,6 +9,7 @@ enum TaskCode {
   TASK_AIR_PURGE = 3,
   TASK_MANUAL_FLOW = 4,
   TASK_MANUAL_HP = 5,
+  TASK_HP_WATER_CALIBRATION = 6,
 };
 
 enum TaskStateCode {
@@ -61,6 +62,11 @@ inline bool flow_autotune_mode_valid(int control_mode_code, int task_code) {
 inline bool air_purge_mode_valid(int control_mode_code, int task_code) {
   return is_cm100(control_mode_code) &&
          task_selected(task_code, TASK_AIR_PURGE);
+}
+
+inline bool hp_water_calibration_mode_valid(int control_mode_code, int task_code) {
+  return is_cm100(control_mode_code) &&
+         task_selected(task_code, TASK_HP_WATER_CALIBRATION);
 }
 
 inline bool neutral_cm100_requested(bool request_pending, int task_code) {

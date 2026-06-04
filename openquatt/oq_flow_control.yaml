@@ -689,6 +689,26 @@ interval:
             return;
           }
 
+          // HP water calibration owns a fixed circulation target while measuring offsets.
+          if (id(oq_hp_water_calibration_active) &&
+              (cm_code == 100) &&
+              (id(oq_commissioning_task_code) == oq_commissioning::TASK_HP_WATER_CALIBRATION) &&
+              !is_frost) {
+            int calibration_pwm = clamp_iPWM((int) id(oq_hp_water_calibration_target_ipwm));
+            id(oq_flow_last_pwm) = calibration_pwm;
+            stable_cnt = 0;
+            pi_failsafe = false;
+            write_pump_pwm_if_changed(id(hp1_pump_speed), calibration_pwm);
+            if (${flow_secondary_enabled} != 0) {
+              write_pump_pwm_if_changed(id(${secondary_pump_speed_id}), calibration_pwm);
+            }
+            if (last_mode != "HP WATER CAL") {
+              id(oq_flow_mode).publish_state("HP WATER CAL");
+              last_mode = "HP WATER CAL";
+            }
+            return;
+          }
+
           // Edge 2: leaving MANUAL to AUTO
           if (was_manual && !want_manual) {
             start_auto_transition("MANUAL->AUTO");

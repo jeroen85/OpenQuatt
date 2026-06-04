@@ -1106,6 +1106,13 @@
         { match: ["DONE"], phase: "Klaar", percent: 100 },
         { match: ["ABORTED", "FAILED", "ABORT"], phase: "Afgebroken", percent: 100 },
       ],
+      "hp-water-calibration": [
+        { match: ["REQUESTED", "STARTED", "REFUSED"], phase: "Voorbereiden", percent: 8 },
+        { match: ["MIXING"], phase: "Water mengen", percent: 42 },
+        { match: ["MEASURING"], phase: "Sensoren meten", percent: 78 },
+        { match: ["DONE", "APPLIED"], phase: "Klaar", percent: 100 },
+        { match: ["ABORTED", "FAILED", "ABORT"], phase: "Afgebroken", percent: 100 },
+      ],
       cm100: [
         { match: ["REQUESTED"], phase: "Wachten op CM100", percent: 0 },
         { match: ["WAITING_FOR_CM100"], phase: "Wachten op CM100", percent: 0 },
@@ -2019,6 +2026,17 @@
       (manualHpActive || manualHpPending || manualHpTaskLocked || isCommissioningTaskStatusActive(manualHpStatus));
     const manualHpSafetyStopped = /SAFETY STOP/.test(String(manualHpStatus || "").toUpperCase());
     const manualHpStopping = /STOPPING/.test(String(manualHpStatus || "").toUpperCase());
+    const hpWaterCalibrationStatus = getStatusTextValue("hpWaterCalibrationStatus", "IDLE");
+    const hpWaterCalibrationProgress = getCommissioningProgressModel(hpWaterCalibrationStatus, "hp-water-calibration");
+    const hpWaterCalibrationActive = isEntityActive("hpWaterCalibrationActive");
+    const hpWaterCalibrationBusy = state.loadingEntities || state.busyAction === "hpWaterCalibrationStart" || state.busyAction === "hpWaterCalibrationAbort" || state.busyAction === "hpWaterCalibrationApply";
+    const hpWaterCalibrationControls = Boolean(state.entities.hpWaterCalibrationStart || state.entities.hpWaterCalibrationAbort || state.entities.hpWaterCalibrationApply);
+    const hpWaterCalibrationPending = Boolean(state.pendingHpWaterCalibrationStart);
+    const hpWaterCalibrationTaskLocked = state.commissioningTaskLock === "hp-water-calibration";
+    const hpWaterCalibrationTaskTerminal = isCommissioningTaskStatusTerminal(hpWaterCalibrationStatus);
+    const hpWaterCalibrationTaskRunning = !hpWaterCalibrationTaskTerminal &&
+      (hpWaterCalibrationActive || hpWaterCalibrationPending || hpWaterCalibrationTaskLocked || isCommissioningTaskStatusActive(hpWaterCalibrationStatus));
+    const hpWaterCalibrationResultReady = /DONE|APPLIED/.test(String(hpWaterCalibrationStatus || "").toUpperCase());
     const flowKpSuggested = getSettingsStatValue("flowKpSuggested", { decimals: 5, trimTrailingZeros: true });
     const flowKiSuggested = getSettingsStatValue("flowKiSuggested", { decimals: 5, trimTrailingZeros: true });
     const boilerResultReady = /DONE|APPLIED/.test(String(boilerStatus || "").toUpperCase());
@@ -2048,18 +2066,26 @@
     const manualHpStatusDisplay = cm100Ready
       ? (manualHpTaskRunning ? (manualHpStopping ? "Bezig met stoppen" : (manualHpSafetyStopped ? "Veiligheidsstop" : "Actief")) : "Klaar om te starten")
       : "Wachten op CM100";
-    const boilerStartDisabled = !cm100Ready || boilerBusy || !boilerControls || autotuneTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || manualHpTaskRunning || boilerTaskRunning || autotuneTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || manualHpTaskLocked || boilerPending;
+    const hpWaterCalibrationStatusDisplay = cm100Ready
+      ? (hpWaterCalibrationTaskRunning
+        ? hpWaterCalibrationProgress.phase
+        : (hpWaterCalibrationResultReady ? "Klaar om toe te passen" : "Klaar om te starten"))
+      : "Wachten op CM100";
+    const boilerStartDisabled = !cm100Ready || boilerBusy || !boilerControls || autotuneTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || manualHpTaskRunning || hpWaterCalibrationTaskRunning || boilerTaskRunning || autotuneTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || manualHpTaskLocked || hpWaterCalibrationTaskLocked || boilerPending;
     const boilerAbortDisabled = boilerBusy || !(boilerTaskRunning || boilerTaskLocked || boilerPending);
-    const boilerApplyDisabled = boilerBusy || boilerStartDisabled || !boilerResultReady || autotuneTaskRunning || airPurgeTaskRunning;
-    const autotuneStartDisabled = !cm100Ready || autotuneBusy || !autotuneControls || boilerTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || manualHpTaskRunning || autotuneTaskRunning || boilerTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || manualHpTaskLocked || autotunePending;
+    const boilerApplyDisabled = boilerBusy || boilerStartDisabled || !boilerResultReady || autotuneTaskRunning || airPurgeTaskRunning || hpWaterCalibrationTaskRunning;
+    const autotuneStartDisabled = !cm100Ready || autotuneBusy || !autotuneControls || boilerTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || manualHpTaskRunning || hpWaterCalibrationTaskRunning || autotuneTaskRunning || boilerTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || manualHpTaskLocked || hpWaterCalibrationTaskLocked || autotunePending;
     const autotuneAbortDisabled = autotuneBusy || !(autotuneTaskRunning || autotuneTaskLocked || autotunePending);
-    const autotuneApplyDisabled = autotuneBusy || autotuneStartDisabled || !autotuneResultReady || boilerTaskRunning || airPurgeTaskRunning;
-    const airPurgeStartDisabled = !cm100Ready || airPurgeBusy || !airPurgeControls || boilerTaskRunning || autotuneTaskRunning || manualFlowTaskRunning || manualHpTaskRunning || airPurgeTaskRunning || boilerTaskLocked || autotuneTaskLocked || manualFlowTaskLocked || manualHpTaskLocked || airPurgePending;
+    const autotuneApplyDisabled = autotuneBusy || autotuneStartDisabled || !autotuneResultReady || boilerTaskRunning || airPurgeTaskRunning || hpWaterCalibrationTaskRunning;
+    const airPurgeStartDisabled = !cm100Ready || airPurgeBusy || !airPurgeControls || boilerTaskRunning || autotuneTaskRunning || manualFlowTaskRunning || manualHpTaskRunning || hpWaterCalibrationTaskRunning || airPurgeTaskRunning || boilerTaskLocked || autotuneTaskLocked || manualFlowTaskLocked || manualHpTaskLocked || hpWaterCalibrationTaskLocked || airPurgePending;
     const airPurgeAbortDisabled = airPurgeBusy || !(airPurgeTaskRunning || airPurgeTaskLocked || airPurgePending);
-    const manualFlowStartDisabled = !cm100Ready || manualFlowBusy || !manualFlowControls || boilerTaskRunning || autotuneTaskRunning || airPurgeTaskRunning || manualHpTaskRunning || manualFlowTaskRunning || boilerTaskLocked || autotuneTaskLocked || airPurgeTaskLocked || manualHpTaskLocked || manualFlowPending;
+    const manualFlowStartDisabled = !cm100Ready || manualFlowBusy || !manualFlowControls || boilerTaskRunning || autotuneTaskRunning || airPurgeTaskRunning || manualHpTaskRunning || hpWaterCalibrationTaskRunning || manualFlowTaskRunning || boilerTaskLocked || autotuneTaskLocked || airPurgeTaskLocked || manualHpTaskLocked || hpWaterCalibrationTaskLocked || manualFlowPending;
     const manualFlowAbortDisabled = manualFlowBusy || !(manualFlowTaskRunning || manualFlowTaskLocked || manualFlowPending);
-    const manualHpStartDisabled = !cm100Ready || manualHpBusy || !manualHpControls || boilerTaskRunning || autotuneTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || manualHpTaskRunning || boilerTaskLocked || autotuneTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || manualHpPending;
+    const manualHpStartDisabled = !cm100Ready || manualHpBusy || !manualHpControls || boilerTaskRunning || autotuneTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || hpWaterCalibrationTaskRunning || manualHpTaskRunning || boilerTaskLocked || autotuneTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || hpWaterCalibrationTaskLocked || manualHpPending;
     const manualHpAbortDisabled = manualHpBusy || !(manualHpTaskRunning || manualHpTaskLocked || manualHpPending);
+    const hpWaterCalibrationStartDisabled = !cm100Ready || hpWaterCalibrationBusy || !hpWaterCalibrationControls || boilerTaskRunning || autotuneTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || manualHpTaskRunning || hpWaterCalibrationTaskRunning || boilerTaskLocked || autotuneTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || manualHpTaskLocked || hpWaterCalibrationPending;
+    const hpWaterCalibrationAbortDisabled = hpWaterCalibrationBusy || !(hpWaterCalibrationTaskRunning || hpWaterCalibrationTaskLocked || hpWaterCalibrationPending);
+    const hpWaterCalibrationApplyDisabled = hpWaterCalibrationBusy || hpWaterCalibrationTaskRunning || !hpWaterCalibrationResultReady;
 
     if (cm100Pending && cm100Ready) {
       state.pendingCommissioningCm100Start = false;
@@ -2097,6 +2123,12 @@
     if (manualHpTaskLocked && (manualHpActive || isCommissioningTaskStatusTerminal(manualHpStatus))) {
       state.commissioningTaskLock = "";
     }
+    if (hpWaterCalibrationPending && (hpWaterCalibrationActive || isCommissioningTaskStatusTerminal(hpWaterCalibrationStatus))) {
+      state.pendingHpWaterCalibrationStart = false;
+    }
+    if (hpWaterCalibrationTaskLocked && isCommissioningTaskStatusTerminal(hpWaterCalibrationStatus)) {
+      state.commissioningTaskLock = "";
+    }
 
     const cm100StatusDisplay = cm100WaitingForCm100 ? "Wachten op CM100" : cm100Status;
     const serviceStatusCopy = cm100WaitingForCm100
@@ -2104,6 +2136,51 @@
       : (cm100Ready ? "CM100 is actief en klaar voor service-taken." : "Start de service-stand voordat je een taak uitvoert.");
 
     const tasks = [
+      {
+        key: "hp-water-calibration",
+        title: "Temperatuursensoren kalibreren",
+        label: "Sensor kalibratie",
+        summary: "Laat de waterpomp draaien zonder compressor en bepaal offsets voor HP1/HP2 water in/out.",
+        status: hpWaterCalibrationStatusDisplay,
+        available: Boolean(hpWaterCalibrationControls || state.entities.hpWaterCalibrationStatus),
+        openDisabled: !cm100Ready,
+        cardMarkup: renderCommissioningTaskCard({
+          taskKey: "hp-water-calibration",
+          title: "Temperatuursensoren kalibreren",
+          copy: "Circuleert water zonder warmtevraag, wacht tot de watermassa gemengd is en berekent daarna relatieve offsets voor de water in/out sensoren.",
+          subcopy: "De voorgestelde waarden worden pas actief wanneer je ze toepast.",
+          status: hpWaterCalibrationStatusDisplay,
+          statusCopy: hpWaterCalibrationTaskRunning
+            ? "De pomp draait en de firmware wacht op een homogeen temperatuurbeeld."
+            : (cm100Ready ? "CM100 staat klaar. Start de meting wanneer compressor en boiler uit zijn." : "Start CM100 eerst."),
+          progressTask: "hp-water-calibration",
+          actions: `
+            ${state.entities.hpWaterCalibrationStart || state.entities.hpWaterCalibrationAbort ? renderNamedToggleActionButton({
+              active: hpWaterCalibrationTaskRunning,
+              startKey: "hpWaterCalibrationStart",
+              stopKey: "hpWaterCalibrationAbort",
+              startLabel: "Kalibratie starten",
+              stopLabel: "Kalibratie stoppen",
+              startDisabled: hpWaterCalibrationBusy || hpWaterCalibrationStartDisabled,
+              stopDisabled: hpWaterCalibrationBusy || hpWaterCalibrationAbortDisabled,
+            }) : ""}
+            ${state.entities.hpWaterCalibrationApply ? renderNamedActionButton("hpWaterCalibrationApply", "Offsets toepassen", "oq-helper-button oq-helper-button--ghost", hpWaterCalibrationBusy || hpWaterCalibrationApplyDisabled) : ""}
+          `,
+          metrics: `
+            ${renderSettingsStaticField("hpWaterCalibrationRemaining", "Resterende tijd", "Meng- en meettijd van de kalibratierun.", getSettingsStatValue("hpWaterCalibrationRemaining", { decimals: 0 }), "oq-settings-field--compact")}
+            ${renderSettingsStaticField("hpWaterCalibrationSpread", "Spreiding", "Verschil tussen de gemiddelde sensortemperaturen na mengen.", getSettingsStatValue("hpWaterCalibrationSpread", { decimals: 2 }), "oq-settings-field--compact")}
+            ${renderSettingsStaticField("hpWaterCalibrationSupplyDelta", "Supply verschil", "Read-only vergelijking tussen HP-gemiddelde en geselecteerde aanvoersensor; deze waarde wordt niet toegepast.", getSettingsStatValue("hpWaterCalibrationSupplyDelta", { decimals: 2 }), "oq-settings-field--compact")}
+            ${renderSettingsStaticField("hp1WaterInOffsetSuggested", "HP1 in voorstel", "Offset die na toepassen bij HP1 water-in wordt opgeteld.", getSettingsStatValue("hp1WaterInOffsetSuggested", { decimals: 2 }), "oq-settings-field--compact")}
+            ${renderSettingsStaticField("hp1WaterOutOffsetSuggested", "HP1 out voorstel", "Offset die na toepassen bij HP1 water-out wordt opgeteld.", getSettingsStatValue("hp1WaterOutOffsetSuggested", { decimals: 2 }), "oq-settings-field--compact")}
+            ${hasEntity("hp2WaterInOffsetSuggested") ? renderSettingsStaticField("hp2WaterInOffsetSuggested", "HP2 in voorstel", "Offset die na toepassen bij HP2 water-in wordt opgeteld.", getSettingsStatValue("hp2WaterInOffsetSuggested", { decimals: 2 }), "oq-settings-field--compact") : ""}
+            ${hasEntity("hp2WaterOutOffsetSuggested") ? renderSettingsStaticField("hp2WaterOutOffsetSuggested", "HP2 out voorstel", "Offset die na toepassen bij HP2 water-out wordt opgeteld.", getSettingsStatValue("hp2WaterOutOffsetSuggested", { decimals: 2 }), "oq-settings-field--compact") : ""}
+            ${renderSettingsStaticField("hp1WaterInOffset", "HP1 in actief", "Actieve offset die al in gecorrigeerde berekeningen wordt gebruikt.", getSettingsStatValue("hp1WaterInOffset", { decimals: 2 }), "oq-settings-field--compact")}
+            ${renderSettingsStaticField("hp1WaterOutOffset", "HP1 out actief", "Actieve offset die al in gecorrigeerde berekeningen wordt gebruikt.", getSettingsStatValue("hp1WaterOutOffset", { decimals: 2 }), "oq-settings-field--compact")}
+            ${hasEntity("hp2WaterInOffset") ? renderSettingsStaticField("hp2WaterInOffset", "HP2 in actief", "Actieve offset die al in gecorrigeerde berekeningen wordt gebruikt.", getSettingsStatValue("hp2WaterInOffset", { decimals: 2 }), "oq-settings-field--compact") : ""}
+            ${hasEntity("hp2WaterOutOffset") ? renderSettingsStaticField("hp2WaterOutOffset", "HP2 out actief", "Actieve offset die al in gecorrigeerde berekeningen wordt gebruikt.", getSettingsStatValue("hp2WaterOutOffset", { decimals: 2 }), "oq-settings-field--compact") : ""}
+          `,
+        }),
+      },
       {
         key: "manual-flow",
         title: "Handmatige flowregeling",

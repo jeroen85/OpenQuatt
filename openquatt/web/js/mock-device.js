@@ -43,6 +43,17 @@
       manualHpGuardStatusText: "Vrijgegeven",
       manualHp1Level: 0,
       manualHp2Level: 0,
+      hpWaterCalibrationStatusText: "IDLE",
+      hpWaterCalibrationRemaining: 0,
+      hpWaterCalibrationPhase: 0,
+      hpWaterCalibrationSpread: NaN,
+      hpWaterCalibrationSupplyDelta: NaN,
+      hpWaterCalibrationSuggested: {
+        hp1In: 0,
+        hp1Out: 0,
+        hp2In: 0,
+        hp2Out: 0,
+      },
       boilerResult: 0,
       boilerConfidence: 0,
       flowKpSuggested: 0,
@@ -227,6 +238,20 @@
     state.commissioningTimers = [];
   }
 
+  function resetHpWaterCalibrationMock(status = "IDLE") {
+    state.commissioning.hpWaterCalibrationStatusText = status;
+    state.commissioning.hpWaterCalibrationRemaining = 0;
+    state.commissioning.hpWaterCalibrationPhase = 0;
+    state.commissioning.hpWaterCalibrationSpread = NaN;
+    state.commissioning.hpWaterCalibrationSupplyDelta = NaN;
+    setBinary("HP water calibration active", false);
+    setText("text_sensor", "HP water calibration status", status);
+    setNumber("HP water calibration remaining", 0, "s");
+    setNumber("HP water calibration phase", 0, "");
+    setNumber("HP water calibration spread", NaN, "\u00B0C");
+    setNumber("HP water calibration supply delta", NaN, "\u00B0C");
+  }
+
   function scheduleCommissioningStep(delay, callback) {
     const timer = window.setTimeout(() => {
       callback();
@@ -271,6 +296,7 @@
     const airPurgeTaskActive = task === "purge" && cm100Active && !["done", "aborted", "refused"].includes(phase.toLowerCase());
     const manualFlowTaskActive = task === "manual-flow" && cm100Active && !["done", "aborted", "refused"].includes(phase.toLowerCase());
     const manualHpTaskActive = task === "manual-hp" && cm100Active && !["done", "aborted", "refused"].includes(phase.toLowerCase());
+    const hpWaterCalibrationTaskActive = task === "hp-water-calibration" && cm100Active && !["done", "applied", "aborted", "refused"].includes(phase.toLowerCase());
     const commissioningLabel = "CM100 - Commissioning";
     const commissioningStatus = String(state.commissioning.globalStatus || "CM100 READY");
 
@@ -288,6 +314,8 @@
               ? "MANUAL FLOW"
               : manualHpTaskActive
                 ? "MANUAL HP"
+                : hpWaterCalibrationTaskActive
+                  ? "HP WATER CAL"
             : "CM100 idle")
       : "Gepauzeerd");
 
@@ -295,9 +323,9 @@
       const purgeFlow = airPurgeTaskActive
         ? (phase === "pulse_hard" ? 980 : phase === "stabilize" ? 760 : 680)
         : 0;
-      setNumber("Flow average (Selected)", boilerTaskActive ? 800 : autotuneTaskActive ? 790 : manualFlowTaskActive ? state.commissioning.manualFlowSetpoint - 8 : manualHpTaskActive ? 792 : purgeFlow, "L/h");
+      setNumber("Flow average (Selected)", boilerTaskActive ? 800 : autotuneTaskActive ? 790 : manualFlowTaskActive ? state.commissioning.manualFlowSetpoint - 8 : manualHpTaskActive ? 792 : hpWaterCalibrationTaskActive ? 735 : purgeFlow, "L/h");
       setNumber("Total Heat Power", boilerTaskActive ? Number(getEntity("sensor", "Boiler Heat Power")?.value || 0) : 0, "W");
-      setNumber("Total Power Input", boilerTaskActive ? (single ? 560 : 640) : airPurgeTaskActive ? (single ? 48 : 78) : single ? 12 : 18, "W");
+      setNumber("Total Power Input", boilerTaskActive ? (single ? 560 : 640) : airPurgeTaskActive ? (single ? 48 : 78) : hpWaterCalibrationTaskActive ? (single ? 34 : 52) : single ? 12 : 18, "W");
       setBinary("Boiler active", task === "boiler" && ["boiler settling", "measuring"].includes(phase.toLowerCase()));
     }
 
@@ -335,6 +363,16 @@
       setText("text_sensor", "HP1 - Working Mode Label", manualHp1Mode);
       setText("text_sensor", "HP2 - Working Mode Label", manualHp2Mode);
     }
+    setBinary("HP water calibration active", hpWaterCalibrationTaskActive);
+    setText("text_sensor", "HP water calibration status", String(state.commissioning.hpWaterCalibrationStatusText || "IDLE"));
+    setNumber("HP water calibration remaining", state.commissioning.hpWaterCalibrationRemaining, "s");
+    setNumber("HP water calibration phase", state.commissioning.hpWaterCalibrationPhase, "");
+    setNumber("HP water calibration spread", state.commissioning.hpWaterCalibrationSpread, "\u00B0C");
+    setNumber("HP water calibration supply delta", state.commissioning.hpWaterCalibrationSupplyDelta, "\u00B0C");
+    setNumber("HP calibration HP1 water in offset suggested", state.commissioning.hpWaterCalibrationSuggested.hp1In, "\u00B0C");
+    setNumber("HP calibration HP1 water out offset suggested", state.commissioning.hpWaterCalibrationSuggested.hp1Out, "\u00B0C");
+    setNumber("HP calibration HP2 water in offset suggested", state.commissioning.hpWaterCalibrationSuggested.hp2In, "\u00B0C");
+    setNumber("HP calibration HP2 water out offset suggested", state.commissioning.hpWaterCalibrationSuggested.hp2Out, "\u00B0C");
   }
 
   function generateAuthToken() {
@@ -730,6 +768,9 @@
     setEntity("button", "Apply Manual Flow To Cooling", {});
     setEntity("button", "Manual HP Start", {});
     setEntity("button", "Manual HP Abort", {});
+    setEntity("button", "HP Water Calibration Start", {});
+    setEntity("button", "HP Water Calibration Abort", {});
+    setEntity("button", "Apply HP Water Calibration Offsets", {});
     setEntity("switch", "Air purge return to Auto", { value: true, state: true });
     setEntity("binary_sensor", "Boiler power test active", { value: false, state: false });
     setEntity("text_sensor", "Boiler power test status", { state: "IDLE", value: "IDLE" });
@@ -751,6 +792,20 @@
     setEntity("text_sensor", "Manual HP guard status", { state: "Vrijgegeven", value: "Vrijgegeven" });
     setEntity("select", "Manual HP1 service mode", { value: "Standby", state: "Standby", option: ["Standby", "Heating", "Cooling"] });
     setEntity("select", "Manual HP2 service mode", { value: "Standby", state: "Standby", option: ["Standby", "Heating", "Cooling"] });
+    setEntity("binary_sensor", "HP water calibration active", { value: false, state: false });
+    setEntity("text_sensor", "HP water calibration status", { state: "IDLE", value: "IDLE" });
+    setEntity("sensor", "HP water calibration remaining", { value: 0, uom: "s" });
+    setEntity("sensor", "HP water calibration phase", { value: 0, uom: "" });
+    setEntity("sensor", "HP water calibration spread", { value: NaN, uom: "\u00B0C" });
+    setEntity("sensor", "HP water calibration supply delta", { value: NaN, uom: "\u00B0C" });
+    setEntity("number", "HP1 water in temperature offset", { value: 0, min_value: -5, max_value: 5, step: 0.01, uom: "\u00B0C" });
+    setEntity("number", "HP1 water out temperature offset", { value: 0, min_value: -5, max_value: 5, step: 0.01, uom: "\u00B0C" });
+    setEntity("number", "HP2 water in temperature offset", { value: 0, min_value: -5, max_value: 5, step: 0.01, uom: "\u00B0C" });
+    setEntity("number", "HP2 water out temperature offset", { value: 0, min_value: -5, max_value: 5, step: 0.01, uom: "\u00B0C" });
+    setEntity("number", "HP calibration HP1 water in offset suggested", { value: 0, min_value: -5, max_value: 5, step: 0.01, uom: "\u00B0C" });
+    setEntity("number", "HP calibration HP1 water out offset suggested", { value: 0, min_value: -5, max_value: 5, step: 0.01, uom: "\u00B0C" });
+    setEntity("number", "HP calibration HP2 water in offset suggested", { value: 0, min_value: -5, max_value: 5, step: 0.01, uom: "\u00B0C" });
+    setEntity("number", "HP calibration HP2 water out offset suggested", { value: 0, min_value: -5, max_value: 5, step: 0.01, uom: "\u00B0C" });
     setEntity("select", "Quatt Hybrid version", {
       value: "V1.5",
       state: "V1.5",
@@ -2050,6 +2105,7 @@
       state.commissioning.manualHpGuardStatusText = "Vrijgegeven";
       state.commissioning.manualHp1Level = 0;
       state.commissioning.manualHp2Level = 0;
+      resetHpWaterCalibrationMock();
       setText("text_sensor", "Boiler power test status", "IDLE");
       setText("text_sensor", "Flow Autotune status", "IDLE");
       setText("text_sensor", "Air purge status", "IDLE");
@@ -2088,6 +2144,7 @@
       state.commissioning.manualHpGuardStatusText = "Vrijgegeven";
       state.commissioning.manualHp1Level = 0;
       state.commissioning.manualHp2Level = 0;
+      resetHpWaterCalibrationMock();
       setText("text_sensor", "Boiler power test status", "IDLE");
       setText("text_sensor", "Flow Autotune status", "IDLE");
       setText("text_sensor", "Air purge status", "IDLE");
@@ -2330,6 +2387,87 @@
       if (state.commissioning.cm100Active) {
         setText("text_sensor", "Flow Mode", "CM100 idle");
       }
+    } else if (name === "HP Water Calibration Start") {
+      if (!state.commissioning.cm100Active) {
+        state.commissioning.hpWaterCalibrationStatusText = "REFUSED: CM100 required";
+        setText("text_sensor", "HP water calibration status", "REFUSED: CM100 required");
+      } else {
+        clearCommissioningTimers();
+        state.commissioning.globalStatus = "HP WATER CAL STARTED";
+        state.commissioning.hpWaterCalibrationStatusText = "REQUESTED";
+        state.commissioning.hpWaterCalibrationRemaining = 420;
+        state.commissioning.hpWaterCalibrationPhase = 1;
+        state.commissioning.hpWaterCalibrationSpread = NaN;
+        state.commissioning.hpWaterCalibrationSupplyDelta = NaN;
+        setCommissioningPhase("hp-water-calibration", "requested");
+        setText("text_sensor", "Control Mode (Label)", "CM100 - Commissioning");
+        setText("text_sensor", "Flow Mode", "HP WATER CAL");
+        setText("text_sensor", "Commissioning status", "HP WATER CAL STARTED");
+        setText("text_sensor", "HP water calibration status", "REQUESTED");
+        setBinary("HP water calibration active", true);
+        setNumber("HP water calibration remaining", 420, "s");
+        setNumber("HP water calibration phase", 1, "");
+        setNumber("Flow average (Selected)", 735, "L/h");
+        scheduleCommissioningStep(800, () => {
+          setCommissioningPhase("hp-water-calibration", "mixing");
+          state.commissioning.hpWaterCalibrationStatusText = "MIXING";
+          state.commissioning.hpWaterCalibrationRemaining = 300;
+          state.commissioning.hpWaterCalibrationPhase = 2;
+          setText("text_sensor", "HP water calibration status", "MIXING");
+        });
+        scheduleCommissioningStep(2200, () => {
+          setCommissioningPhase("hp-water-calibration", "measuring");
+          state.commissioning.hpWaterCalibrationStatusText = "MEASURING";
+          state.commissioning.hpWaterCalibrationRemaining = 120;
+          state.commissioning.hpWaterCalibrationPhase = 3;
+          state.commissioning.hpWaterCalibrationSpread = 0.16;
+          setText("text_sensor", "HP water calibration status", "MEASURING");
+        });
+        scheduleCommissioningStep(3900, () => {
+          const single = state.installation === "single";
+          const hp1In = Number(getEntity("sensor", "HP1 - Water in temperature")?.value || 25.08);
+          const hp1Out = Number(getEntity("sensor", "HP1 - Water out temperature")?.value || 25.34);
+          const hp2In = Number(getEntity("sensor", "HP2 - Water in temperature")?.value || hp1In + 0.07);
+          const hp2Out = Number(getEntity("sensor", "HP2 - Water out temperature")?.value || hp1Out - 0.05);
+          const values = single ? [hp1In, hp1Out] : [hp1In, hp1Out, hp2In, hp2Out];
+          const reference = values.reduce((sum, value) => sum + value, 0) / values.length;
+          const supply = Number(getEntity("sensor", "Water Supply Temp (Selected)")?.value);
+          state.commissioning.hpWaterCalibrationSuggested.hp1In = Number((reference - hp1In).toFixed(2));
+          state.commissioning.hpWaterCalibrationSuggested.hp1Out = Number((reference - hp1Out).toFixed(2));
+          state.commissioning.hpWaterCalibrationSuggested.hp2In = single ? 0 : Number((reference - hp2In).toFixed(2));
+          state.commissioning.hpWaterCalibrationSuggested.hp2Out = single ? 0 : Number((reference - hp2Out).toFixed(2));
+          state.commissioning.hpWaterCalibrationSpread = Number((Math.max(...values) - Math.min(...values)).toFixed(2));
+          state.commissioning.hpWaterCalibrationSupplyDelta = Number.isFinite(supply) ? Number((reference - supply).toFixed(2)) : NaN;
+          state.commissioning.hpWaterCalibrationRemaining = 0;
+          state.commissioning.hpWaterCalibrationPhase = 4;
+          state.commissioning.hpWaterCalibrationStatusText = single ? "DONE: HP1 relative offsets" : "DONE: 4 sensor offsets";
+          state.commissioning.globalStatus = "CM100 READY";
+          setCommissioningPhase("hp-water-calibration", "done");
+          setText("text_sensor", "HP water calibration status", state.commissioning.hpWaterCalibrationStatusText);
+          setText("text_sensor", "Commissioning status", "CM100 READY");
+          setBinary("HP water calibration active", false);
+          setText("text_sensor", "Flow Mode", "CM100 idle");
+        });
+      }
+    } else if (name === "HP Water Calibration Abort") {
+      clearCommissioningTimers();
+      setCommissioningPhase("hp-water-calibration", "aborted");
+      state.commissioning.globalStatus = state.commissioning.cm100Active ? "CM100 READY" : "CM0 - Standby";
+      resetHpWaterCalibrationMock("ABORTED");
+      setText("text_sensor", "Commissioning status", state.commissioning.globalStatus);
+      setText("text_sensor", "Flow Mode", state.commissioning.cm100Active ? "CM100 idle" : "Gepauzeerd");
+      setNumber("Flow average (Selected)", 0, "L/h");
+    } else if (name === "Apply HP Water Calibration Offsets") {
+      const suggested = state.commissioning.hpWaterCalibrationSuggested;
+      setNumber("HP1 water in temperature offset", suggested.hp1In, "\u00B0C");
+      setNumber("HP1 water out temperature offset", suggested.hp1Out, "\u00B0C");
+      setNumber("HP2 water in temperature offset", suggested.hp2In, "\u00B0C");
+      setNumber("HP2 water out temperature offset", suggested.hp2Out, "\u00B0C");
+      state.commissioning.hpWaterCalibrationStatusText = "APPLIED";
+      state.commissioning.globalStatus = "CM100 READY";
+      setCommissioningPhase("hp-water-calibration", "applied");
+      setText("text_sensor", "HP water calibration status", "APPLIED");
+      setText("text_sensor", "Commissioning status", "CM100 READY");
     } else if (name === "Manual Flow Start") {
       if (!state.commissioning.cm100Active) {
         state.commissioning.manualFlowStatusText = "REFUSED: CM100 required";

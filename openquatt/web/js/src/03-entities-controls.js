@@ -296,6 +296,7 @@
     service: [
       ...INSTALLATION_MONITORING_STATE_KEYS,
       ...COMMISSIONING_STATE_KEYS,
+      ...SENSOR_CALIBRATION_KEYS,
       "boilerCvAssistEnabled",
       "boilerRatedHeatPower",
       "flowSelected",
@@ -2916,7 +2917,7 @@
 
     if (action === "open-service-task-modal") {
       const taskKey = String(button.dataset.serviceTask || "").trim();
-      if (["autotune", "boiler", "purge", "manual-flow", "manual-hp"].includes(taskKey)) {
+      if (["autotune", "boiler", "purge", "manual-flow", "manual-hp", "hp-water-calibration"].includes(taskKey)) {
         state.systemModal = `service-task-${taskKey}`;
         render();
         syncEntities({ forceBulk: true });
@@ -2938,6 +2939,7 @@
           state.pendingAirPurgeStart = false;
           state.pendingManualFlowStart = false;
           state.pendingManualHpStart = false;
+          state.pendingHpWaterCalibrationStart = false;
           state.commissioningTaskLock = "";
           state.commissioningBoilerHeatPowerDisplay = "";
         } else if (buttonKey === "boilerPowerTestStart") {
@@ -2946,6 +2948,7 @@
           state.pendingAirPurgeStart = false;
           state.pendingManualFlowStart = false;
           state.pendingManualHpStart = false;
+          state.pendingHpWaterCalibrationStart = false;
           state.commissioningTaskLock = "boiler";
           state.commissioningBoilerHeatPowerDisplay = "";
         } else if (buttonKey === "boilerPowerTestAbort" || buttonKey === "boilerPowerTestApply") {
@@ -2956,6 +2959,7 @@
           state.pendingAirPurgeStart = false;
           state.pendingManualFlowStart = false;
           state.pendingManualHpStart = false;
+          state.pendingHpWaterCalibrationStart = false;
           state.commissioningTaskLock = "autotune";
         } else if (buttonKey === "flowAutotuneAbort" || buttonKey === "flowAutotuneApply") {
           state.commissioningTaskLock = "autotune";
@@ -2965,6 +2969,7 @@
           state.pendingFlowAutotuneStart = false;
           state.pendingManualFlowStart = false;
           state.pendingManualHpStart = false;
+          state.pendingHpWaterCalibrationStart = false;
           state.commissioningTaskLock = "purge";
         } else if (buttonKey === "airPurgeAbort") {
           state.commissioningTaskLock = "purge";
@@ -2974,6 +2979,7 @@
           state.pendingFlowAutotuneStart = false;
           state.pendingAirPurgeStart = false;
           state.pendingManualHpStart = false;
+          state.pendingHpWaterCalibrationStart = false;
           state.commissioningTaskLock = "manual-flow";
         } else if (buttonKey === "manualFlowAbort") {
           state.commissioningTaskLock = "manual-flow";
@@ -2983,7 +2989,18 @@
           state.pendingFlowAutotuneStart = false;
           state.pendingAirPurgeStart = false;
           state.pendingManualFlowStart = false;
+          state.pendingHpWaterCalibrationStart = false;
           state.commissioningTaskLock = "manual-hp";
+        } else if (buttonKey === "hpWaterCalibrationStart") {
+          state.pendingHpWaterCalibrationStart = true;
+          state.pendingBoilerPowerTestStart = false;
+          state.pendingFlowAutotuneStart = false;
+          state.pendingAirPurgeStart = false;
+          state.pendingManualFlowStart = false;
+          state.pendingManualHpStart = false;
+          state.commissioningTaskLock = "hp-water-calibration";
+        } else if (buttonKey === "hpWaterCalibrationAbort" || buttonKey === "hpWaterCalibrationApply") {
+          state.commissioningTaskLock = "hp-water-calibration";
         } else if (buttonKey === "manualHpAbort") {
           state.commissioningTaskLock = "manual-hp";
         }
@@ -3004,6 +3021,8 @@
             "manualHpStatus",
             "manualHpGuardStatus",
             "manualHpActive",
+            "hpWaterCalibrationStatus",
+            "hpWaterCalibrationActive",
           );
         } else if (buttonKey === "boilerPowerTestStart" || buttonKey === "boilerPowerTestAbort" || buttonKey === "boilerPowerTestApply") {
           refreshKeys.push(
@@ -3031,6 +3050,25 @@
             "airPurgeRemaining",
             "airPurgePhase",
             "airPurgeTargetIpwm",
+            "flowMode",
+          );
+        } else if (buttonKey === "hpWaterCalibrationStart" || buttonKey === "hpWaterCalibrationAbort" || buttonKey === "hpWaterCalibrationApply") {
+          refreshKeys.push(
+            "commissioningStatus",
+            "hpWaterCalibrationStatus",
+            "hpWaterCalibrationActive",
+            "hpWaterCalibrationRemaining",
+            "hpWaterCalibrationPhase",
+            "hpWaterCalibrationSpread",
+            "hpWaterCalibrationSupplyDelta",
+            "hp1WaterInOffset",
+            "hp1WaterOutOffset",
+            "hp2WaterInOffset",
+            "hp2WaterOutOffset",
+            "hp1WaterInOffsetSuggested",
+            "hp1WaterOutOffsetSuggested",
+            "hp2WaterInOffsetSuggested",
+            "hp2WaterOutOffsetSuggested",
             "flowMode",
           );
         } else if (buttonKey === "manualFlowStart" || buttonKey === "manualFlowAbort" || buttonKey === "manualFlowApplyHeating" || buttonKey === "manualFlowApplyCooling") {
@@ -4076,6 +4114,9 @@
         "flowAutotuneApply",
         "airPurgeStart",
         "airPurgeAbort",
+        "hpWaterCalibrationStart",
+        "hpWaterCalibrationAbort",
+        "hpWaterCalibrationApply",
         "manualFlowStart",
         "manualFlowAbort",
         "manualFlowApplyHeating",
@@ -4106,6 +4147,9 @@
         state.commissioningTaskLock = "";
       } else if (key === "airPurgeStart") {
         state.pendingAirPurgeStart = false;
+        state.commissioningTaskLock = "";
+      } else if (key === "hpWaterCalibrationStart") {
+        state.pendingHpWaterCalibrationStart = false;
         state.commissioningTaskLock = "";
       } else if (key === "manualFlowStart") {
         state.pendingManualFlowStart = false;

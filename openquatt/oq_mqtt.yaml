@@ -77,8 +77,8 @@ openquatt_mqtt_publisher:
   hp1_power_input_sensor: hp1_power_input
   hp1_heat_power_sensor: hp1_heat_power
   hp1_flow_sensor: hp1_flow
-  hp1_water_in_temp_sensor: hp1_water_in_temp
-  hp1_water_out_temp_sensor: hp1_water_out_temp
+  hp1_water_in_temp_sensor: hp1_water_in_temp_calibrated
+  hp1_water_out_temp_sensor: hp1_water_out_temp_calibrated
   hp1_defrost_binary_sensor: hp1_defrost
   hp1_fault_binary_sensor: hp1_ot_fault_active
   hp2_working_mode_sensor: ${secondary_hp_id}_working_mode
@@ -87,7 +87,7 @@ openquatt_mqtt_publisher:
   hp2_power_input_sensor: ${secondary_hp_id}_power_input
   hp2_heat_power_sensor: ${secondary_hp_id}_heat_power
   hp2_flow_sensor: ${secondary_hp_id}_flow
-  hp2_water_in_temp_sensor: ${secondary_hp_id}_water_in_temp
-  hp2_water_out_temp_sensor: ${secondary_hp_id}_water_out_temp
+  hp2_water_in_temp_sensor: ${secondary_hp_id}_water_in_temp_calibrated
+  hp2_water_out_temp_sensor: ${secondary_hp_id}_water_out_temp_calibrated
   hp2_defrost_binary_sensor: ${secondary_hp_id}_defrost
   hp2_fault_binary_sensor: ${secondary_hp_id}_ot_fault_active
