@@ -156,6 +156,15 @@ coolingFallbackMinSupplyTemp: { domain: "sensor", name: "Cooling Fallback Minimu
 coolingSupplyTarget: { domain: "sensor", name: "Cooling Supply Target", optional: true },
 coolingSupplyError: { domain: "sensor", name: "Cooling Supply Error", optional: true },
 coolingDemandRaw: { domain: "sensor", name: "Cooling Demand (raw)", optional: true },
+waterSupplySource: { domain: "select", name: "Water Supply Source", optional: true },
+flowSource: { domain: "select", name: "Flow Source", optional: true },
+qFlowSource: { domain: "select", name: "Q Flow Source", optional: true },
+outdoorUnitFlowMode: { domain: "select", name: "Outdoor Unit Flow Mode", optional: true },
+outsideTempSource: { domain: "select", name: "Outside Temperature Source", optional: true },
+roomTempSource: { domain: "select", name: "Room Temperature Source", optional: true },
+roomSetpointSource: { domain: "select", name: "Room Setpoint Source", optional: true },
+coolingEnableSource: { domain: "select", name: "Cooling Enable Source", optional: true },
+localWaterSupplyTempSource: { domain: "select", name: "Local Water Supply Temp Source", optional: true },
 coolingMinimumSupplyTemp: { domain: "number", name: "Cooling Minimum Supply Temp", optional: true },
 coolingDemandMax: { domain: "number", name: "Cooling Demand Max", optional: true },
 coolingRestartDelta: { domain: "number", name: "Cooling Restart Delta", optional: true },
@@ -276,6 +285,8 @@ boilerActive: { domain: "binary_sensor", name: "Boiler active", optional: true }
 boilerHeatPower: { domain: "sensor", name: "Boiler Heat Power", optional: true },
 systemHeatPower: { domain: "sensor", name: "System Heat Power", optional: true },
 flowSelected: { domain: "sensor", name: "Flow average (Selected)" },
+flowLocal: { domain: "sensor", name: "Flow average (local)", optional: true },
+controllerFlow: { domain: "sensor", name: "Controller Flow", optional: true },
 trendHistoryEnabled: { domain: "switch", name: "Trendopslag", optional: true },
 trendHistoryFlashEnabled: { domain: "switch", name: "Trendhistorie opslaan in flash", optional: true },
 webServerLogHistoryEnabled: { domain: "switch", name: "RAM log history", optional: true },
@@ -309,6 +320,22 @@ roomTemp: { domain: "sensor", name: "Room Temperature (Selected)" },
 roomSetpoint: { domain: "sensor", name: "Room Setpoint (Selected)" },
 supplyTemp: { domain: "sensor", name: "Water Supply Temp (Selected)" },
 outsideTempSelected: { domain: "sensor", name: "Outside Temperature (Selected)", optional: true },
+waterSupplyTempEsp: { domain: "sensor", name: "Water Supply Temp", optional: true },
+waterSupplyTempDs18b20: { domain: "sensor", name: "Water Supply Temp (DS18B20)", optional: true },
+outsideTempLocalAggregated: { domain: "sensor", name: "Outside Temperature (Local aggregated)", optional: true },
+outsideTempHa: { domain: "sensor", name: "HA - Outside Temperature", optional: true },
+waterSupplyTempHa: { domain: "sensor", name: "HA - Water Supply Temperature", optional: true },
+roomSetpointHa: { domain: "sensor", name: "HA - Thermostat Setpoint", optional: true },
+roomTempHa: { domain: "sensor", name: "HA - Thermostat Room Temperature", optional: true },
+coolingEnableHa: { domain: "binary_sensor", name: "HA - Cooling Enable", optional: true },
+outsideTempHaValid: { domain: "binary_sensor", name: "HA - Outside Temperature Valid", optional: true },
+waterSupplyTempHaValid: { domain: "binary_sensor", name: "HA - Water Supply Temperature Valid", optional: true },
+roomSetpointHaValid: { domain: "binary_sensor", name: "HA - Room Setpoint Valid", optional: true },
+roomTempHaValid: { domain: "binary_sensor", name: "HA - Room Temperature Valid", optional: true },
+coolingEnableHaValid: { domain: "binary_sensor", name: "HA - Cooling Enable Valid", optional: true },
+roomTempEffectiveSource: { domain: "text_sensor", name: "Room Temperature Effective Source", optional: true },
+roomSetpointEffectiveSource: { domain: "text_sensor", name: "Room Setpoint Effective Source", optional: true },
+coolingEnableEffectiveSource: { domain: "text_sensor", name: "Cooling Enable Effective Source", optional: true },
 curveSupplyTarget: { domain: "sensor", name: "Heating Curve Supply Target" },
 strategyRequestedPower: { domain: "sensor", name: "Strategy requested power", optional: true },
 hpCapacity: { domain: "sensor", name: "HP capacity (W)", optional: true },
@@ -608,6 +635,45 @@ const CIC_POLLING_DIAGNOSTIC_KEYS = [
 "cicLastSuccessAge",
 "cicChEnabled",
 "cicCoolingEnabled",
+];
+const SENSOR_SELECTION_KEYS = [
+"waterSupplySource",
+"localWaterSupplyTempSource",
+"flowSource",
+"qFlowSource",
+"outdoorUnitFlowMode",
+"outsideTempSource",
+"roomTempSource",
+"roomSetpointSource",
+"coolingEnableSource",
+];
+const SENSOR_SELECTION_STATE_KEYS = [
+"supplyTemp",
+"waterSupplyTempEsp",
+"waterSupplyTempDs18b20",
+"waterSupplyTempHa",
+"waterSupplyTempHaValid",
+"flowSelected",
+"flowLocal",
+"controllerFlow",
+"hp1Flow",
+"hp2Flow",
+"outsideTempSelected",
+"outsideTempLocalAggregated",
+"outsideTempHa",
+"outsideTempHaValid",
+"roomTemp",
+"roomTempEffectiveSource",
+"roomTempHa",
+"roomTempHaValid",
+"roomSetpoint",
+"roomSetpointEffectiveSource",
+"roomSetpointHa",
+"roomSetpointHaValid",
+"coolingEnableSelected",
+"coolingEnableEffectiveSource",
+"coolingEnableHa",
+"coolingEnableHaValid",
 ];
 const COOLING_SETTING_KEYS = [
 "coolingMinimumSupplyTemp",
@@ -952,6 +1018,8 @@ const SETTINGS_KEYS = [
 ...OPENTHERM_DIAGNOSTIC_KEYS,
 ...CIC_POLLING_SETTING_KEYS,
 ...CIC_POLLING_DIAGNOSTIC_KEYS,
+...SENSOR_SELECTION_KEYS,
+...SENSOR_SELECTION_STATE_KEYS,
 ...FLOW_SETTING_KEYS,
 ...FLOW_TUNING_KEYS,
 ...INSTALLATION_MONITORING_STATE_KEYS,
@@ -1010,6 +1078,21 @@ keys: [
 "cicPollingEnabled",
 "cicFeedUrl",
 "cicCompatibilityMode",
+],
+},
+{
+id: "sensor_sources",
+label: "Sensorbronnen",
+keys: [
+"waterSupplySource",
+"localWaterSupplyTempSource",
+"flowSource",
+"qFlowSource",
+"outdoorUnitFlowMode",
+"outsideTempSource",
+"roomTempSource",
+"roomSetpointSource",
+"coolingEnableSource",
 ],
 },
 {
@@ -4082,6 +4165,8 @@ advanced: [
 ...OPENTHERM_DIAGNOSTIC_KEYS,
 ...CIC_POLLING_SETTING_KEYS,
 ...CIC_POLLING_DIAGNOSTIC_KEYS,
+...SENSOR_SELECTION_KEYS,
+...SENSOR_SELECTION_STATE_KEYS,
 ...CIC_COMPATIBILITY_KEYS,
 ],
 system: [
@@ -4437,10 +4522,7 @@ if (state.optionalMissingEntities) {
 delete state.optionalMissingEntities[key];
 }
 const { payload } = result.value;
-state.entities[key] = {
-...(state.entities[key] || {}),
-...payload,
-};
+state.entities[key] = mergeEntityPayload(key, state.entities[key], payload);
 } else {
 const message = result.reason.message || String(result.reason);
 if (ENTITY_DEFS[key]?.optional) {
@@ -4465,6 +4547,29 @@ state.controlError = `Niet alle helpervelden konden worden ververst. ${firstErro
 noteEntityRefreshSuccess();
 state.controlError = "";
 }
+}
+function mergeEntityPayload(key, previous = {}, payload = {}) {
+const next = {
+...(previous || {}),
+...(payload || {}),
+};
+const isSelect = ENTITY_DEFS[key]?.domain === "select";
+if (!isSelect) {
+return next;
+}
+if (!String(payload.state ?? "").trim() && String(previous?.state ?? "").trim()) {
+next.state = previous.state;
+}
+if (!String(payload.value ?? "").trim() && String(previous?.value ?? "").trim()) {
+next.value = previous.value;
+}
+if (!Array.isArray(payload.option) && Array.isArray(previous?.option)) {
+next.option = previous.option;
+}
+if (!Array.isArray(payload.options) && Array.isArray(previous?.options)) {
+next.options = previous.options;
+}
+return next;
 }
 function getAuthStatusSignature(status = state.authStatus || {}) {
 return [
@@ -8942,6 +9047,17 @@ Custom: "Aangepast",
 [STRATEGY_OPTION_POWER_HOUSE]: "Power House",
 "Dew point required": "Dauwpunt verplicht",
 "Allow without dew point": "Toestaan zonder dauwpunt",
+Local: "Lokaal",
+CIC: "CIC",
+"HA input": "HA-invoer",
+"CIC + HA input": "CIC + HA-invoer",
+"OT thermostat": "OT-thermostaat",
+"Outdoor unit": "Buitenunit",
+Auto: "Auto",
+"CIC or HA input": "CIC of HA-invoer",
+"Flowmeter HP1": "Flowmeter HP1",
+"Flowmeter HP2": "Flowmeter HP2",
+"Local aggregate HP1/HP2": "Gecombineerde flow HP1/HP2",
 };
 return labels[value] || value;
 }
@@ -9277,8 +9393,9 @@ renderSettingsServiceSection(),
 ? [renderSettingsCoolingSection()]
 : activeGroup === "advanced"
 ? [
-renderSettingsCompressorSection(),
 renderSettingsOpenThermCicSection(),
+renderSettingsSensorSelectionSection(),
+renderSettingsCompressorSection(),
 ]
 : [
 renderSettingsQuickStartSection(),
@@ -9342,16 +9459,17 @@ if (staticValue.textContent !== text) {
 staticValue.textContent = text;
 }
 }
-const select = card.querySelector('select[data-oq-field]');
-if (select) {
-const value = String(getEntityValue(key) || "");
+card.querySelectorAll('select[data-oq-field]').forEach((select) => {
+const fieldKey = String(select.dataset.oqField || key);
+const value = String(getEntityValue(fieldKey) || "");
 if (select.value !== value) {
 select.value = value;
 }
-}
+});
 const input = card.querySelector('input[data-oq-field]');
 if (input) {
-const value = String(getInputDraftValue(key) || "");
+const fieldKey = String(input.dataset.oqField || key);
+const value = String(getInputDraftValue(fieldKey) || "");
 if (input.value !== value) {
 input.value = value;
 }
@@ -11403,6 +11521,332 @@ ${urlField}
 </div>
 ${diagnosticsPanel}
 `,
+);
+}
+function renderSettingsSensorSelectionSection() {
+const hasSelectors = SENSOR_SELECTION_KEYS.some((key) => hasEntity(key));
+if (!hasSelectors) {
+return "";
+}
+const cicAvailable = isInstallationMonitoringIntegrationEnabled("cicPollingEnabled");
+const otAvailable = isInstallationMonitoringIntegrationEnabled("otEnabled");
+const hasHaSource = (keys = []) => keys.some((key) => hasEntity(key));
+const isSourceAvailable = (option, config = {}) => {
+if (option === "CIC") {
+return cicAvailable;
+}
+if (option === "OT thermostat") {
+return otAvailable;
+}
+if (option === "HA input") {
+return hasHaSource(config.haKeys);
+}
+if (option === "CIC or HA input") {
+return cicAvailable || hasHaSource(config.haKeys);
+}
+if (option === "Flowmeter HP2") {
+return hasEntity("hp2Flow");
+}
+if (option === "Local aggregate HP1/HP2") {
+return hasEntity("flowLocal") || hasEntity("hp2Flow");
+}
+return true;
+};
+const getUnavailableSourceReason = (option, config = {}) => {
+if (option === "CIC" && !cicAvailable) {
+return "CIC-polling staat uit";
+}
+if (option === "OT thermostat" && !otAvailable) {
+return "OpenTherm staat uit";
+}
+if (option === "HA input" && !hasHaSource(config.haKeys)) {
+return "HA-bron ontbreekt";
+}
+if (option === "CIC or HA input" && !cicAvailable && !hasHaSource(config.haKeys)) {
+return "CIC en HA ontbreken";
+}
+if (option === "Flowmeter HP2" && !hasEntity("hp2Flow")) {
+return "HP2-flow ontbreekt";
+}
+if (option === "Local aggregate HP1/HP2" && !hasEntity("flowLocal") && !hasEntity("hp2Flow")) {
+return "Lokale flow ontbreekt";
+}
+return "";
+};
+const sourceStateText = (key, activeLabel = "Actief", inactiveLabel = "Normaal") => {
+if (!hasEntity(key)) {
+return "";
+}
+return isInstallationMonitoringBinaryActive(key) ? activeLabel : inactiveLabel;
+};
+const sourceValidText = (key) => {
+if (!hasEntity(key)) {
+return "";
+}
+return isInstallationMonitoringBinaryActive(key) ? "Geldig" : "Ongeldig";
+};
+const formatSourceOptionLabel = (option, config = {}) => {
+const value = String(option || "").trim();
+if (!value) {
+return "";
+}
+return config.optionLabels?.[value] || formatSettingsOptionLabel(value);
+};
+const formattedSourceValue = (key, config = {}) => {
+const value = String(getEntityValue(key) || "").trim();
+return value ? formatSourceOptionLabel(value, config) : "";
+};
+const formattedTextSourceValue = (key) => {
+const value = getSettingsTextStatValue(key, "");
+return value ? formatSettingsOptionLabel(value) : "";
+};
+const firstAvailableSourceLabel = (...values) => values.find((value) => String(value || "").trim()) || "";
+const getWaterSupplyUsedSource = () => {
+const source = formattedSourceValue("waterSupplySource");
+if (String(getEntityValue("waterSupplySource") || "") === "Local" && hasEntity("localWaterSupplyTempSource")) {
+const local = formattedSourceValue("localWaterSupplyTempSource");
+return local ? `${source} - ${local}` : source;
+}
+return source;
+};
+const getFlowUsedSource = () => {
+const source = String(getEntityValue("flowSource") || "").trim();
+if (source === "Outdoor unit") {
+if (hasEntity("qFlowSource")) {
+const qSource = String(getEntityValue("qFlowSource") || "").trim();
+const hpGeneration = String(getEntityValue("hpGeneration") || "").trim();
+if (qSource === "Local" || (qSource === "Auto" && hpGeneration === "V1")) {
+return qSource === "Auto" ? "Lokaal (auto)" : "Lokaal";
+}
+return firstAvailableSourceLabel(formattedSourceValue("outdoorUnitFlowMode"), qSource === "Auto" ? "Buitenunit (auto)" : "Buitenunit");
+}
+return firstAvailableSourceLabel(formattedSourceValue("outdoorUnitFlowMode"), "Quatt-flow");
+}
+return formatSettingsOptionLabel(source);
+};
+const getOutsideTempUsedSource = () => {
+const source = String(getEntityValue("outsideTempSource") || "").trim();
+if (source !== "Auto") {
+return formatSettingsOptionLabel(source);
+}
+const unitTemp = getEntityNumericValue("outsideTempLocalAggregated");
+const haTemp = getEntityNumericValue("outsideTempHa");
+const unitValid = !Number.isNaN(unitTemp);
+const haValid = hasEntity("outsideTempHaValid")
+? isInstallationMonitoringBinaryActive("outsideTempHaValid") && !Number.isNaN(haTemp)
+: !Number.isNaN(haTemp);
+if (unitValid && haValid) {
+return haTemp <= unitTemp ? "HA-invoer" : "Buitenunit";
+}
+if (haValid) {
+return "HA-invoer";
+}
+if (unitValid) {
+return "Buitenunit";
+}
+return "Auto";
+};
+const renderSourceRow = ({ label, value = "", key = "", active = false }) => {
+const text = value || (key ? getSettingsStatValue(key) : "");
+if (!text) {
+return "";
+}
+return `
+<div class="oq-settings-source-row${active ? " is-warning" : ""}">
+<span>${escapeHtml(label)}</span>
+<strong>${escapeHtml(text)}</strong>
+</div>
+`;
+};
+const renderSourceSelect = (key, config = {}) => {
+if (!hasEntity(key)) {
+return { markup: "", warning: "" };
+}
+const entity = state.entities[key] || {};
+const current = String(getEntityValue(key) || "");
+const allOptions = getSelectEntityOptions(entity);
+const availableOptions = allOptions.filter((option) => isSourceAvailable(option, config));
+const currentUnavailable = current && !isSourceAvailable(current, config);
+const renderOptions = currentUnavailable && !availableOptions.includes(current)
+? [current, ...availableOptions]
+: availableOptions;
+const optionMarkup = renderOptions.map((option) => {
+const unavailable = !isSourceAvailable(option, config);
+const displayLabel = formatSourceOptionLabel(option, config);
+const label = unavailable
+? `${displayLabel} (${getUnavailableSourceReason(option, config) || "niet beschikbaar"})`
+: displayLabel;
+return `<option value="${escapeHtml(option)}" ${option === current ? "selected" : ""}>${escapeHtml(label)}</option>`;
+}).join("");
+return {
+markup: `
+<label class="oq-settings-source-select">
+<span class="oq-settings-source-select-head">
+<span>${escapeHtml(config.label || "Bron")}</span>
+${config.infoCopy ? renderSettingsInfoToggle(config.infoId || key, config.infoTitle || config.label || "Bron", config.infoCopy) : ""}
+</span>
+<select class="oq-helper-select" data-oq-field="${escapeHtml(key)}" ${state.loadingEntities ? "disabled" : ""}>
+${optionMarkup}
+</select>
+</label>
+`,
+warning: currentUnavailable ? `Huidige bron niet beschikbaar: ${getUnavailableSourceReason(current, config)}` : "",
+};
+};
+const renderSourceCard = ({ key, title, select, secondarySelect = null, secondarySelects = null, rows = [] }) => {
+const mainSelect = select && select.when !== false
+? renderSourceSelect(select.key, select)
+: { markup: "", warning: "" };
+const secondaryConfigs = Array.isArray(secondarySelects)
+? secondarySelects
+: secondarySelect ? [secondarySelect] : [];
+const secondaries = secondaryConfigs
+.filter((config) => config && config.when !== false)
+.map((config) => renderSourceSelect(config.key, config))
+.filter((item) => item.markup);
+const secondaryMarkup = secondaries.map((item) => item.markup).join("");
+const secondaryWarning = secondaries.map((item) => item.warning).find(Boolean) || "";
+const bodyRows = rows.filter(Boolean).join("");
+const controlsMarkup = `${mainSelect.markup}${secondaryMarkup}`;
+if (!controlsMarkup && !bodyRows) {
+return "";
+}
+return `
+<article class="oq-settings-source-card" data-oq-settings-field="${escapeHtml(key || select.key)}">
+<div class="oq-settings-source-card-head">
+<h4>${escapeHtml(title)}</h4>
+</div>
+${controlsMarkup ? `
+<div class="oq-settings-source-controls">
+${controlsMarkup}
+</div>
+` : ""}
+${mainSelect.warning || secondaryWarning ? `
+<p class="oq-settings-source-warning">${escapeHtml(mainSelect.warning || secondaryWarning)}</p>
+` : ""}
+${bodyRows ? `<div class="oq-settings-source-rows">${bodyRows}</div>` : ""}
+</article>
+`;
+};
+const currentWaterSupplySource = String(getEntityValue("waterSupplySource") || "");
+const currentFlowSource = String(getEntityValue("flowSource") || "");
+const currentQFlowSource = String(getEntityValue("qFlowSource") || "");
+const sourceCards = [
+renderSourceCard({
+key: "room-temperature",
+title: "Kamertemperatuur",
+select: { key: "roomTempSource", label: "Kamertemperatuur bron", haKeys: ["roomTempHa", "roomTempHaValid"] },
+rows: [
+renderSourceRow({ label: "Actieve waarde", key: "roomTemp" }),
+renderSourceRow({ label: "Gebruikte bron", value: formattedTextSourceValue("roomTempEffectiveSource") }),
+cicAvailable ? renderSourceRow({ label: "CIC", key: "cicRoomTemp" }) : "",
+otAvailable ? renderSourceRow({ label: "OpenTherm", key: "otRoomTemp" }) : "",
+renderSourceRow({ label: "HA input", key: "roomTempHa" }),
+renderSourceRow({ label: "HA status", value: sourceValidText("roomTempHaValid"), active: hasEntity("roomTempHaValid") && !isInstallationMonitoringBinaryActive("roomTempHaValid") }),
+],
+}),
+renderSourceCard({
+key: "room-setpoint",
+title: "Kamer setpoint",
+select: { key: "roomSetpointSource", label: "Setpoint bron", haKeys: ["roomSetpointHa", "roomSetpointHaValid"] },
+rows: [
+renderSourceRow({ label: "Actieve waarde", key: "roomSetpoint" }),
+renderSourceRow({ label: "Gebruikte bron", value: formattedTextSourceValue("roomSetpointEffectiveSource") }),
+cicAvailable ? renderSourceRow({ label: "CIC", key: "cicRoomSetpoint" }) : "",
+otAvailable ? renderSourceRow({ label: "OpenTherm", key: "otRoomSetpoint" }) : "",
+renderSourceRow({ label: "HA input", key: "roomSetpointHa" }),
+renderSourceRow({ label: "HA status", value: sourceValidText("roomSetpointHaValid"), active: hasEntity("roomSetpointHaValid") && !isInstallationMonitoringBinaryActive("roomSetpointHaValid") }),
+],
+}),
+renderSourceCard({
+key: "water-supply",
+title: "Aanvoertemperatuur",
+select: { key: "waterSupplySource", label: "Aanvoer bron", haKeys: ["waterSupplyTempHa", "waterSupplyTempHaValid"] },
+secondarySelect: {
+key: "localWaterSupplyTempSource",
+label: "Lokale sensor",
+when: currentWaterSupplySource === "Local" && hasEntity("localWaterSupplyTempSource"),
+},
+rows: [
+renderSourceRow({ label: "Actieve waarde", key: "supplyTemp" }),
+renderSourceRow({ label: "Gebruikte bron", value: getWaterSupplyUsedSource() }),
+renderSourceRow({ label: "Lokaal", key: "waterSupplyTempEsp" }),
+renderSourceRow({ label: "DS18B20", key: "waterSupplyTempDs18b20" }),
+cicAvailable ? renderSourceRow({ label: "CIC", key: "cicWaterSupplyTemp" }) : "",
+renderSourceRow({ label: "HA input", key: "waterSupplyTempHa" }),
+renderSourceRow({ label: "HA status", value: sourceValidText("waterSupplyTempHaValid"), active: hasEntity("waterSupplyTempHaValid") && !isInstallationMonitoringBinaryActive("waterSupplyTempHaValid") }),
+],
+}),
+renderSourceCard({
+key: "flow-source",
+title: "Flow",
+select: { key: "flowSource", label: "Flow bron", optionLabels: { "Outdoor unit": "Quatt-flow" }, when: cicAvailable || currentFlowSource === "CIC" },
+secondarySelects: [
+{
+key: "qFlowSource",
+label: "Quatt-flow bron",
+infoId: "qFlowSource-info",
+infoCopy: "Auto behoudt het bestaande gedrag: V1 gebruikt de lokale controller-flowmeter, V1.5 gebruikt de flow uit de buitenunit via Modbus. Kies Lokaal of Buitenunit om dit expliciet vast te zetten.",
+when: currentFlowSource === "Outdoor unit" && hasEntity("qFlowSource"),
+},
+{
+key: "outdoorUnitFlowMode",
+label: "Flowmeterkeuze",
+infoId: "outdoorUnitFlowMode-info",
+infoCopy: "Kies welke buitenunit-flowmeting wordt gebruikt. Flowmeter HP1 en HP2 gebruiken direct die meter. Gecombineerde flow HP1/HP2 gebruikt normaal het gemiddelde, met een guard die bij sterk afwijkende meters de meest aannemelijke waarde kiest.",
+when: currentFlowSource === "Outdoor unit" && hasEntity("outdoorUnitFlowMode") && (!hasEntity("qFlowSource") || currentQFlowSource !== "Local"),
+},
+],
+rows: [
+renderSourceRow({ label: "Actieve waarde", key: "flowSelected" }),
+renderSourceRow({ label: "Gebruikte bron", value: getFlowUsedSource() }),
+renderSourceRow({ label: "Lokaal", key: "controllerFlow" }),
+renderSourceRow({ label: "Gecombineerd", key: "flowLocal" }),
+renderSourceRow({ label: "HP1", key: "hp1Flow" }),
+renderSourceRow({ label: "HP2", key: "hp2Flow" }),
+cicAvailable ? renderSourceRow({ label: "CIC", key: "cicFlowrate" }) : "",
+],
+}),
+renderSourceCard({
+key: "outside-temperature",
+title: "Buitentemperatuur",
+select: {
+key: "outsideTempSource",
+label: "Buiten bron",
+haKeys: ["outsideTempHa", "outsideTempHaValid"],
+infoId: "outsideTempSource-auto-info",
+infoCopy: "Auto gebruikt de laagste geldige buitentemperatuurbron. Zijn zowel buitenunit als HA-invoer geldig, dan kiest OpenQuatt de laagste waarde. Is er maar een van beide geldig, dan wordt die gebruikt.",
+},
+rows: [
+renderSourceRow({ label: "Actieve waarde", key: "outsideTempSelected" }),
+renderSourceRow({ label: "Gebruikte bron", value: getOutsideTempUsedSource() }),
+renderSourceRow({ label: "Buitenunit", key: "outsideTempLocalAggregated" }),
+renderSourceRow({ label: "HA input", key: "outsideTempHa" }),
+renderSourceRow({ label: "HA status", value: sourceValidText("outsideTempHaValid"), active: hasEntity("outsideTempHaValid") && !isInstallationMonitoringBinaryActive("outsideTempHaValid") }),
+],
+}),
+renderSourceCard({
+key: "cooling-enable",
+title: "Koeltoestemming",
+select: { key: "coolingEnableSource", label: "Koeltoestemming bron", haKeys: ["coolingEnableHa", "coolingEnableHaValid"] },
+rows: [
+renderSourceRow({ label: "Actieve waarde", value: sourceStateText("coolingEnableSelected", "Actief", "Niet actief") }),
+renderSourceRow({ label: "Gebruikte bron", value: formattedTextSourceValue("coolingEnableEffectiveSource") }),
+renderSourceRow({ label: "Handmatig", value: sourceStateText("manualCoolingEnable", "Aan", "Uit") }),
+cicAvailable ? renderSourceRow({ label: "CIC", value: sourceStateText("cicCoolingEnabled", "Actief", "Normaal") }) : "",
+renderSourceRow({ label: "HA input", value: sourceStateText("coolingEnableHa", "Actief", "Normaal") }),
+renderSourceRow({ label: "HA status", value: sourceValidText("coolingEnableHaValid"), active: hasEntity("coolingEnableHaValid") && !isInstallationMonitoringBinaryActive("coolingEnableHaValid") }),
+],
+}),
+].filter(Boolean);
+if (!sourceCards.length) {
+return "";
+}
+return renderSettingsSection(
+"Bronnen",
+"Sensorselectie",
+"Kies welke bron OpenQuatt gebruikt voor metingen en vraag-signalen. Uitgeschakelde integraties verdwijnen uit de keuzes.",
+`<div class="oq-settings-source-grid">${sourceCards.join("")}</div>`,
 );
 }
 function renderSettingsLoginSection() {

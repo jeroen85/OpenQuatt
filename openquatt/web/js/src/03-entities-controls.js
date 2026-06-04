@@ -318,6 +318,8 @@
       ...OPENTHERM_DIAGNOSTIC_KEYS,
       ...CIC_POLLING_SETTING_KEYS,
       ...CIC_POLLING_DIAGNOSTIC_KEYS,
+      ...SENSOR_SELECTION_KEYS,
+      ...SENSOR_SELECTION_STATE_KEYS,
       ...CIC_COMPATIBILITY_KEYS,
     ],
     system: [
@@ -714,10 +716,7 @@
           delete state.optionalMissingEntities[key];
         }
         const { payload } = result.value;
-        state.entities[key] = {
-          ...(state.entities[key] || {}),
-          ...payload,
-        };
+        state.entities[key] = mergeEntityPayload(key, state.entities[key], payload);
       } else {
         const message = result.reason.message || String(result.reason);
         if (ENTITY_DEFS[key]?.optional) {
@@ -743,6 +742,31 @@
       noteEntityRefreshSuccess();
       state.controlError = "";
     }
+  }
+
+  function mergeEntityPayload(key, previous = {}, payload = {}) {
+    const next = {
+      ...(previous || {}),
+      ...(payload || {}),
+    };
+    const isSelect = ENTITY_DEFS[key]?.domain === "select";
+    if (!isSelect) {
+      return next;
+    }
+
+    if (!String(payload.state ?? "").trim() && String(previous?.state ?? "").trim()) {
+      next.state = previous.state;
+    }
+    if (!String(payload.value ?? "").trim() && String(previous?.value ?? "").trim()) {
+      next.value = previous.value;
+    }
+    if (!Array.isArray(payload.option) && Array.isArray(previous?.option)) {
+      next.option = previous.option;
+    }
+    if (!Array.isArray(payload.options) && Array.isArray(previous?.options)) {
+      next.options = previous.options;
+    }
+    return next;
   }
 
   function getAuthStatusSignature(status = state.authStatus || {}) {

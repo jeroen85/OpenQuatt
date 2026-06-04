@@ -227,15 +227,12 @@ sensor:
     lambda: |-
       const bool secondary_enabled = (${flow_secondary_enabled} != 0);
       float f1 = id(hp1_flow).state;
-      float f2 = secondary_enabled ? id(${secondary_flow_id}).state : NAN;
-
       #if OQ_HARDWARE_HEATPUMP_CONTROLLER_Q
-      // Q-edition V1 uses the central controller meter as its primary local flow.
-      // In a mixed V1/V1.5 Duo, keep aggregating the secondary outdoor-unit meter.
       if (id(hp_generation).has_state() && id(hp_generation).current_option() == "V1") {
-        f1 = id(${oq_controller_flow_sensor_id}).has_state() ? id(${oq_controller_flow_sensor_id}).state : NAN;
+        f1 = id(${oq_controller_flow_sensor_id}).state;
       }
       #endif
+      float f2 = secondary_enabled ? id(${secondary_flow_id}).state : NAN;
 
       const bool v1 = !isnan(f1);
       const bool v2 = !isnan(f2);
@@ -294,13 +291,6 @@ binary_sensor:
 
       float f1 = id(hp1_flow).state;
       float f2 = id(${secondary_flow_id}).state;
-
-      #if OQ_HARDWARE_HEATPUMP_CONTROLLER_Q
-      // Compare the Q-edition V1 controller meter with a secondary V1.5 meter when present.
-      if (id(hp_generation).has_state() && id(hp_generation).current_option() == "V1") {
-        f1 = id(${oq_controller_flow_sensor_id}).has_state() ? id(${oq_controller_flow_sensor_id}).state : NAN;
-      }
-      #endif
 
       // Evaluate only when both are valid; otherwise reset indication.
       if (isnan(f1) || isnan(f2)) {

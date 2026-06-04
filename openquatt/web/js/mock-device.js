@@ -780,6 +780,51 @@
       state: "Dew point required",
       option: ["Dew point required", "Allow without dew point"],
     });
+    setEntity("select", "Water Supply Source", {
+      value: "Local",
+      state: "Local",
+      option: ["Local", "CIC", "HA input"],
+    });
+    setEntity("select", "Local Water Supply Temp Source", {
+      value: "PT1000",
+      state: "PT1000",
+      option: ["PT1000", "DS18B20"],
+    });
+    setEntity("select", "Flow Source", {
+      value: "Outdoor unit",
+      state: "Outdoor unit",
+      option: ["Outdoor unit", "CIC"],
+    });
+    setEntity("select", "Q Flow Source", {
+      value: "Auto",
+      state: "Auto",
+      option: ["Auto", "Local", "Outdoor unit"],
+    });
+    setEntity("select", "Outdoor Unit Flow Mode", {
+      value: "Local aggregate HP1/HP2",
+      state: "Local aggregate HP1/HP2",
+      option: ["Flowmeter HP1", "Flowmeter HP2", "Local aggregate HP1/HP2"],
+    });
+    setEntity("select", "Outside Temperature Source", {
+      value: "Auto",
+      state: "Auto",
+      option: ["Auto", "Outdoor unit", "HA input"],
+    });
+    setEntity("select", "Room Temperature Source", {
+      value: "OT thermostat",
+      state: "OT thermostat",
+      option: ["CIC", "OT thermostat", "HA input"],
+    });
+    setEntity("select", "Room Setpoint Source", {
+      value: "OT thermostat",
+      state: "OT thermostat",
+      option: ["CIC", "OT thermostat", "HA input"],
+    });
+    setEntity("select", "Cooling Enable Source", {
+      value: "HA input",
+      state: "HA input",
+      option: ["CIC", "HA input", "CIC or HA input"],
+    });
     setEntity("select", "Firmware Update Channel", {
       value: "dev",
       state: "dev",
@@ -899,6 +944,8 @@
       ["System Thermal Energy Daily", 0, "kWh"],
       ["System Thermal Energy Cumulative", 0, "kWh"],
       ["Flow average (Selected)", 0, "L/h"],
+      ["Flow average (local)", 0, "L/h"],
+      ["Controller Flow", 0, "L/h"],
       ["OT - Control Setpoint", 30.0, "\u00B0C"],
       ["OT - Room Setpoint", 20.0, "\u00B0C"],
       ["OT - Room Temperature", 20.9, "\u00B0C"],
@@ -908,6 +955,10 @@
       ["CIC - Room temperature", 20.9, "\u00B0C"],
       ["CIC - Flowrate (filtered)", 785, "L/h"],
       ["CIC - Last success age", 12, "s"],
+      ["HA - Outside Temperature", 15.5, "\u00B0C"],
+      ["HA - Water Supply Temperature", 28.9, "\u00B0C"],
+      ["HA - Thermostat Setpoint", 20.0, "\u00B0C"],
+      ["HA - Thermostat Room Temperature", 21.2, "\u00B0C"],
       ["Room Temperature (Selected)", 20.6, "°C"],
       ["Room Setpoint (Selected)", 21.0, "°C"],
       ["Water Supply Temp (Selected)", 29.5, "°C"],
@@ -942,6 +993,9 @@
       ["Compressor cycling alert HP2 peak 72h", 0, ""],
       ["HP1 - Fan speed", 0, "rpm"],
       ["HP1 - Flow", 0, "L/h"],
+      ["Water Supply Temp", 29.5, "\u00B0C"],
+      ["Water Supply Temp (DS18B20)", 29.2, "\u00B0C"],
+      ["Outside Temperature (Local aggregated)", 15.8, "\u00B0C"],
       ["HP1 - Evaporator coil temperature", 0, "\u00B0C"],
       ["HP1 - Inner coil temperature", 0, "\u00B0C"],
       ["HP1 - Outside temperature", 0, "\u00B0C"],
@@ -959,6 +1013,9 @@
     [
       ["HP1 - Working Mode Label", "Standby"],
       ["HP1 - Active Failures List", "None"],
+      ["Room Temperature Effective Source", "OT thermostat"],
+      ["Room Setpoint Effective Source", "OT thermostat"],
+      ["Cooling Enable Effective Source", "HA input"],
     ].forEach(([name, value]) => {
       setEntity("text_sensor", name, { state: value, value });
     });
@@ -982,6 +1039,12 @@
       ["CIC - CH enabled", false],
       ["CIC - Cooling enabled", false],
       ["CIC - JSON Feed OK", true],
+      ["HA - Outside Temperature Valid", true],
+      ["HA - Water Supply Temperature Valid", true],
+      ["HA - Room Setpoint Valid", true],
+      ["HA - Room Temperature Valid", true],
+      ["HA - Cooling Enable", false],
+      ["HA - Cooling Enable Valid", true],
       ["CIC - Data stale", false],
       ["OT - Link Problem", false],
       ["HP1 - Defrost", false],
@@ -1112,8 +1175,12 @@
     setBinary("CIC - CH enabled", state.scenario !== "idle");
     setBinary("CIC - Cooling enabled", state.scenario === "cooling");
     setBinary("CIC - JSON Feed OK", true);
+    setBinary("HA - Cooling Enable", state.scenario === "cooling");
     setBinary("CIC - Data stale", !isSwitchEnabled("CIC - Enable polling"));
     setBinary("OT - Link Problem", false);
+    setText("text_sensor", "Room Temperature Effective Source", String(getEntity("select", "Room Temperature Source")?.value || "Unknown"));
+    setText("text_sensor", "Room Setpoint Effective Source", String(getEntity("select", "Room Setpoint Source")?.value || "Unknown"));
+    setText("text_sensor", "Cooling Enable Effective Source", String(getEntity("select", "Cooling Enable Source")?.value || "Unknown"));
     setNumber("OT - Control Setpoint", state.scenario === "cooling" ? 18.0 : 30.0, "\u00B0C");
     setNumber("OT - Room Setpoint", state.scenario === "cooling" ? 23.0 : 21.0, "\u00B0C");
     setNumber("OT - Room Temperature", Number(getEntity("sensor", "Room Temperature (Selected)")?.value || 20.6), "\u00B0C");
@@ -1121,6 +1188,11 @@
     setNumber("CIC - Room setpoint", Number(getEntity("sensor", "Room Setpoint (Selected)")?.value || 21.0), "\u00B0C");
     setNumber("CIC - Room temperature", Number(getEntity("sensor", "Room Temperature (Selected)")?.value || 20.6), "\u00B0C");
     setNumber("CIC - Flowrate (filtered)", Number(getEntity("sensor", "Flow average (Selected)")?.value || 0), "L/h");
+    {
+      const selectedFlow = Number(getEntity("sensor", "Flow average (Selected)")?.value || 0);
+      setNumber("Controller Flow", Math.max(0, selectedFlow - 10), "L/h");
+      setNumber("Flow average (local)", selectedFlow, "L/h");
+    }
     setNumber("CIC - Last success age", isSwitchEnabled("CIC - Enable polling") ? 12 : 0, "s");
     setNumber("HP1 - Compressor starts 2h", 3);
     setNumber("HP1 - Compressor starts 6h", 11);
