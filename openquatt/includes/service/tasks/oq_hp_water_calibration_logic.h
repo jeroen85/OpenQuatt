@@ -71,8 +71,8 @@ inline RuntimeConfig make_runtime_config(int sample_time_s) {
       50,
       850,
       20.0f,
-      0.15f,
-      0.05f,
+      0.35f,
+      0.20f,
       2.0f};
 }
 
@@ -264,7 +264,8 @@ class HpWaterCalibrationRuntime {
 
     set_phase(PHASE_MEASURING, STATE_MEASURE, now_ms);
     WindowStats stats;
-    const bool stable = compute_window_stats(cfg, stats) && window_is_stable(cfg, stats);
+    const bool have_stats = compute_window_stats(cfg, stats);
+    const bool stable = have_stats && window_is_stable(cfg, stats);
     id(oq_hp_water_calibration_stable_progress_s) = stable ? stats.span_s : 0;
     if (stable) {
       compute_result(cfg, stats);
@@ -274,7 +275,13 @@ class HpWaterCalibrationRuntime {
     publish("MEASURING");
 
     if (elapsed_s >= cfg.max_duration_s) {
-      finish("FAILED: temperatures not stable", STATE_FAILED);
+      char status[96];
+      if (have_stats) {
+        snprintf(status, sizeof(status), "FAILED: not stable spread %.2fC drift %.2fC", stats.spread, stats.drift);
+        finish(status, STATE_FAILED);
+      } else {
+        finish("FAILED: not enough samples", STATE_FAILED);
+      }
     }
   }
 

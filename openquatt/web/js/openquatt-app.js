@@ -10913,7 +10913,9 @@ const spreadValue = resultReady && hasEntity("hpWaterCalibrationResultSpreadBefo
 ? getSettingsTemperatureValue("hpWaterCalibrationResultSpreadBefore", 2)
 : getSettingsTemperatureValue("hpWaterCalibrationSpread", 2);
 const stableCopy = Number.isFinite(stableProgress) && Number.isFinite(stableRequired) && stableRequired > 0
-? `${Math.round(Math.max(0, stableProgress))} / ${Math.round(stableRequired)} s stabiel`
+? (stableProgress > 0
+? `${Math.round(Math.max(0, stableProgress))} / ${Math.round(stableRequired)} s binnen grenzen`
+: "Nog niet binnen grenzen")
 : "Wachten op stabiel venster";
 const stepIndex = resultReady ? 3 : running ? 2 : 1;
 const statusTitle = applied
@@ -10930,7 +10932,7 @@ const statusCopy = applied
 : resultReady
 ? "Controleer de voorgestelde offsets en pas ze toe."
 : running
-? "De waterpomp circuleert zonder compressor. De firmware stopt eerder zodra het temperatuurbeeld 60 seconden stabiel genoeg is."
+? "De waterpomp circuleert zonder compressor. De firmware stopt zodra het laatste meetvenster binnen de spreiding- en driftgrenzen valt."
 : failed
 ? getSettingsTextStatValue("hpWaterCalibrationStatus", "Controleer de voorwaarden en start opnieuw.")
 : (hasHp2
