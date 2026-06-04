@@ -9064,13 +9064,13 @@ return getSettingsStatValue(key, { decimals });
 }
 function getHpWaterRawValue(rawKey, finalKey, offsetKey) {
 const raw = getEntityNumericValue(rawKey);
+if (Number.isFinite(raw)) {
+return raw;
+}
 const finalValue = getEntityNumericValue(finalKey);
 const offset = getEntityNumericValue(offsetKey);
 if (Number.isFinite(finalValue) && Number.isFinite(offset)) {
 return finalValue - offset;
-}
-if (Number.isFinite(raw)) {
-return raw;
 }
 return NaN;
 }
@@ -10155,7 +10155,7 @@ return `
 </div>
 <div class="oq-settings-hp-offset-equation" aria-label="${escapeHtml(`${row.label} correctie`)}">
 <div class="oq-settings-hp-offset-readout">
-<span>Zonder correctie</span>
+<span>Raw</span>
 <strong>${escapeHtml(Number.isFinite(raw) ? formatSettingsNumberValue(raw, meta.uom || "°C", 2) : getSettingsTemperatureValue(row.rawKey, 2))}</strong>
 </div>
 <span class="oq-settings-hp-offset-operator">+</span>
@@ -10184,7 +10184,7 @@ return `
 <div class="oq-settings-subpanel-head">
 <p class="oq-helper-label">Sensorcorrecties</p>
 <h4>Water in/out offsets</h4>
-<p>Actief is de temperatuur die OpenQuatt nu gebruikt. Zonder correctie wordt daaruit afgeleid en beweegt mee met de actuele sensorwaarde.</p>
+<p>Raw is de ongecorrigeerde sensorwaarde. Actief is de temperatuur die OpenQuatt nu gebruikt: raw plus correctie.</p>
 </div>
 <div class="oq-settings-hp-offset-list">
 ${rows.map(renderRow).join("")}

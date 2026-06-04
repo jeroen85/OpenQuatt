@@ -630,7 +630,7 @@ sensor:
     modbus_controller_id: ${hp_id}
     id: ${hp_id}_water_in_temp_raw
     name: "${prefix}Water in temperature raw"
-    internal: true
+    disabled_by_default: true
     icon: mdi:thermometer-water
     register_type: holding
     address: 2133
@@ -655,7 +655,7 @@ sensor:
     modbus_controller_id: ${hp_id}
     id: ${hp_id}_water_out_temp_raw
     name: "${prefix}Water out temperature raw"
-    internal: true
+    disabled_by_default: true
     icon: mdi:thermometer-water
     register_type: holding
     address: 2134
