@@ -11200,10 +11200,8 @@ const boilerPowerEntityAvailable = hasEntity("boilerRatedHeatPower");
 const boilerMeta = getNumberMeta("boilerRatedHeatPower");
 const boilerValue = getInputDraftValue("boilerRatedHeatPower");
 const boilerBusy = state.loadingEntities || state.busyAction === "switch-boilerCvAssistEnabled";
-const boilerDisabledHint = "Zet CV-ketel/boiler aanwezig aan om het vermogen in te stellen.";
 const boilerPowerMissingHint = "Deze firmware levert nog geen bewerkbare boilervermogensinstelling.";
-const boilerPowerControl = boilerPresent
-? (boilerPowerEntityAvailable
+const boilerPowerControl = boilerPowerEntityAvailable
 ? renderNumberInputControl({
 key: "boilerRatedHeatPower",
 value: boilerValue,
@@ -11216,13 +11214,10 @@ unitMarkup: `<span class="oq-helper-unit-chip">W</span>`,
 <strong>Niet beschikbaar</strong>
 <p>${escapeHtml(boilerPowerMissingHint)}</p>
 </div>
-`)
-: `
-<div class="oq-settings-boiler-power-empty">
-<strong>Niet actief</strong>
-<p>${escapeHtml(boilerDisabledHint)}</p>
-</div>
 `;
+const boilerPowerFooter = boilerPresent && boilerPowerEntityAvailable
+? `<p class="oq-settings-boiler-power-note">Je kunt deze waarde altijd handmatig aanpassen.</p>`
+: "";
 return `
 <div class="${escapeHtml(className)}">
 ${renderSettingsFieldCard(
@@ -11232,17 +11227,11 @@ ${renderSettingsFieldCard(
 `
 <div class="oq-settings-compact-switch-field">
 ${renderSettingsCompactSwitchControl("boilerCvAssistEnabled", "CV-ketel / boiler aanwezig", boilerPresent, boilerBusy)}
-${renderSettingsSwitchCopy(
-"boilerCvAssistEnabled",
-boilerPresent,
-"OpenQuatt mag de ketel of boiler bijschakelen als dat nodig is.",
-"Geen ondersteuning via boiler of CV-ketel."
-)}
 </div>
 `,
 "oq-settings-field--compact",
 )}
-${renderSettingsFieldCard(
+${boilerPresent ? renderSettingsFieldCard(
 "boilerRatedHeatPower",
 "Ingesteld boilervermogen",
 "Vul hier het vermogen in dat OpenQuatt mag meerekenen.",
@@ -11252,12 +11241,8 @@ ${boilerPowerControl}
 </div>
 `,
 boilerPresent && boilerPowerEntityAvailable ? "oq-settings-field--compact" : "oq-settings-field--compact is-disabled",
-`<p class="oq-settings-boiler-power-note">${escapeHtml(
-boilerPresent
-? (boilerPowerEntityAvailable ? "Je kunt deze waarde altijd handmatig aanpassen." : boilerPowerMissingHint)
-: boilerDisabledHint,
-)}</p>`,
-)}
+boilerPowerFooter,
+) : ""}
 </div>
 `;
 }
@@ -11265,10 +11250,13 @@ function renderSettingsBoilerCvSection() {
 if (!hasEntity("boilerCvAssistEnabled")) {
 return "";
 }
+const boilerPresent = isEntityActive("boilerCvAssistEnabled");
 return renderSettingsSection(
 "Basis",
 "CV-ketel of boiler",
-"Geef aan of OpenQuatt een CV-ketel of boiler als ondersteuning mag gebruiken en hoeveel effectief vermogen die functie heeft.",
+boilerPresent
+? "Geef aan of OpenQuatt een CV-ketel of boiler als ondersteuning mag gebruiken en hoeveel effectief vermogen die functie heeft."
+: "Geef aan of OpenQuatt een CV-ketel of boiler als ondersteuning mag gebruiken.",
 renderBoilerCvFields(),
 );
 }
