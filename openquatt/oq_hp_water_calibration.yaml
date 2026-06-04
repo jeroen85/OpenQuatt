@@ -361,7 +361,7 @@ sensor:
     id: oq_hp_water_calibration_result_reference_sensor
     name: "HP water calibration result reference"
     icon: mdi:thermometer-check
-    unit_of_measurement: "Â°C"
+    unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 2
@@ -375,7 +375,7 @@ sensor:
     id: oq_hp_water_calibration_result_spread_before_sensor
     name: "HP water calibration result spread before"
     icon: mdi:thermometer-lines
-    unit_of_measurement: "Â°C"
+    unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 2
@@ -389,7 +389,7 @@ sensor:
     id: oq_hp_water_calibration_result_expected_spread_sensor
     name: "HP water calibration result expected spread"
     icon: mdi:thermometer-check
-    unit_of_measurement: "Â°C"
+    unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 2
@@ -403,7 +403,7 @@ sensor:
     id: oq_hp_water_calibration_result_hp1_in_raw_avg_sensor
     name: "HP water calibration result HP1 water in raw average"
     icon: mdi:thermometer-water
-    unit_of_measurement: "Â°C"
+    unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 2
@@ -417,7 +417,7 @@ sensor:
     id: oq_hp_water_calibration_result_hp1_out_raw_avg_sensor
     name: "HP water calibration result HP1 water out raw average"
     icon: mdi:thermometer-water
-    unit_of_measurement: "Â°C"
+    unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 2
@@ -432,7 +432,7 @@ sensor:
     name: "HP water calibration result HP2 water in raw average"
     internal: ${monitoring_hp2_internal}
     icon: mdi:thermometer-water
-    unit_of_measurement: "Â°C"
+    unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 2
@@ -447,7 +447,7 @@ sensor:
     name: "HP water calibration result HP2 water out raw average"
     internal: ${monitoring_hp2_internal}
     icon: mdi:thermometer-water
-    unit_of_measurement: "Â°C"
+    unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 2

@@ -178,6 +178,10 @@ class HpWaterCalibrationRuntime {
     const float hp2_in = id(oq_hp_calibration_hp2_water_in_offset_suggested).state;
     const float hp2_out = id(oq_hp_calibration_hp2_water_out_offset_suggested).state;
 
+    if (!result_ready()) {
+      publish("APPLY_FAILED: NO_RESULT");
+      return;
+    }
     if (!valid_offset(hp1_in, cfg.max_offset_c) || !valid_offset(hp1_out, cfg.max_offset_c)) {
       publish("APPLY_FAILED");
       return;
@@ -308,6 +312,15 @@ class HpWaterCalibrationRuntime {
 
   bool valid_offset(float value, float max_offset_c) const {
     return !isnan(value) && fabsf(value) <= max_offset_c;
+  }
+
+  bool result_ready() const {
+    return !id(oq_hp_water_calibration_active) &&
+           id(oq_hp_water_calibration_phase) == PHASE_DONE &&
+           id(oq_commissioning_state_code) == STATE_DONE &&
+           !isnan(id(oq_hp_water_calibration_result_reference_c)) &&
+           !isnan(id(oq_hp_water_calibration_result_spread_before_c)) &&
+           !isnan(id(oq_hp_water_calibration_result_expected_spread_c));
   }
 
   void set_phase(int phase, int state_code, uint32_t now_ms) {

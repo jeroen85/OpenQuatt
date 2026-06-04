@@ -10148,7 +10148,7 @@ const meta = getNumberMeta(row.offsetKey);
 const raw = getHpWaterRawValue(row.rawKey, row.finalKey, row.offsetKey);
 const offsetDraft = parseLooseNumber(getInputDraftValue(row.offsetKey));
 const finalFromDraft = Number.isFinite(raw) && Number.isFinite(offsetDraft)
-? formatSettingsNumberValue(raw + offsetDraft, meta.uom || "Â°C", 2)
+? formatSettingsNumberValue(raw + offsetDraft, meta.uom || "°C", 2)
 : getSettingsTemperatureValue(row.finalKey, 2);
 return `
 <article class="oq-settings-hp-offset-row" data-oq-settings-field="${escapeHtml(row.offsetKey)}">
@@ -10159,7 +10159,7 @@ return `
 <div class="oq-settings-hp-offset-equation" aria-label="${escapeHtml(`${row.label} correctie`)}">
 <div class="oq-settings-hp-offset-readout">
 <span>Raw</span>
-<strong>${escapeHtml(Number.isFinite(raw) ? formatSettingsNumberValue(raw, meta.uom || "Â°C", 2) : getSettingsTemperatureValue(row.rawKey, 2))}</strong>
+<strong>${escapeHtml(Number.isFinite(raw) ? formatSettingsNumberValue(raw, meta.uom || "°C", 2) : getSettingsTemperatureValue(row.rawKey, 2))}</strong>
 </div>
 <span class="oq-settings-hp-offset-operator">+</span>
 <label class="oq-settings-hp-offset-input">
@@ -10964,12 +10964,12 @@ const rawValue = Number.isFinite(rawAverage)
 : getHpWaterRawValue(row.rawKey, row.liveKey, row.offsetKey);
 const suggestion = getEntityNumericValue(row.suggestedKey);
 const finalValue = Number.isFinite(rawValue) && Number.isFinite(suggestion)
-? formatSettingsNumberValue(rawValue + suggestion, state.entities[row.suggestedKey]?.uom || "Â°C", 2)
-: "â€”";
+? formatSettingsNumberValue(rawValue + suggestion, state.entities[row.suggestedKey]?.uom || "°C", 2)
+: "—";
 return `
 <tr>
 <th scope="row">${escapeHtml(row.label)}</th>
-<td>${escapeHtml(Number.isFinite(rawValue) ? formatSettingsNumberValue(rawValue, state.entities[row.liveKey]?.uom || "Â°C", 2) : "â€”")}</td>
+<td>${escapeHtml(Number.isFinite(rawValue) ? formatSettingsNumberValue(rawValue, state.entities[row.liveKey]?.uom || "°C", 2) : "—")}</td>
 <td>${escapeHtml(getSettingsTemperatureValue(row.offsetKey, 2))}</td>
 <td><span class="oq-settings-hp-calibration-offset-pill">${escapeHtml(getSettingsTemperatureValue(row.suggestedKey, 2))}</span></td>
 <td>${escapeHtml(finalValue)}</td>
