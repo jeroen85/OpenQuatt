@@ -9058,7 +9058,7 @@ return text;
 function formatSettingsNumberValue(value, unit = "", decimals = 2) {
 const numeric = Number(value);
 if (!Number.isFinite(numeric)) {
-return "â€”";
+return "—";
 }
 return `${numeric.toFixed(Math.max(0, decimals))}${unit ? ` ${unit}` : ""}`;
 }
@@ -9067,13 +9067,16 @@ return getSettingsStatValue(key, { decimals });
 }
 function getHpWaterRawValue(rawKey, finalKey, offsetKey) {
 const raw = getEntityNumericValue(rawKey);
-if (Number.isFinite(raw)) {
-return raw;
-}
 const finalValue = getEntityNumericValue(finalKey);
 const offset = getEntityNumericValue(offsetKey);
 if (Number.isFinite(finalValue) && Number.isFinite(offset)) {
+if (Number.isFinite(raw) && Math.abs(raw) > 0.005) {
+return raw;
+}
 return finalValue - offset;
+}
+if (Number.isFinite(raw)) {
+return raw;
 }
 return NaN;
 }
