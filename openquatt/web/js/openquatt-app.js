@@ -11524,7 +11524,16 @@ return "";
 }
 const cicAvailable = isInstallationMonitoringIntegrationEnabled("cicPollingEnabled");
 const otAvailable = isInstallationMonitoringIntegrationEnabled("otEnabled");
-const hasHaSource = (keys = []) => keys.some((key) => hasEntity(key));
+const getHaValueKey = (config = {}) => config.haValueKey || (config.haKeys || []).find((key) => !/valid$/i.test(key)) || "";
+const getHaValidKey = (config = {}) => config.haValidKey || (config.haKeys || []).find((key) => /valid$/i.test(key)) || "";
+const hasValidHaSource = (valueKey = "", validKey = "") => (
+Boolean(valueKey)
+&& Boolean(validKey)
+&& hasEntity(valueKey)
+&& hasEntity(validKey)
+&& isInstallationMonitoringBinaryActive(validKey)
+);
+const hasHaSource = (config = {}) => hasValidHaSource(getHaValueKey(config), getHaValidKey(config));
 const isSourceAvailable = (option, config = {}) => {
 if (option === "CIC") {
 return cicAvailable;
@@ -11533,10 +11542,10 @@ if (option === "OT thermostat") {
 return otAvailable;
 }
 if (option === "HA input") {
-return hasHaSource(config.haKeys);
+return hasHaSource(config);
 }
 if (option === "CIC or HA input") {
-return cicAvailable || hasHaSource(config.haKeys);
+return cicAvailable || hasHaSource(config);
 }
 if (option === "Flowmeter HP2") {
 return hasEntity("hp2Flow");
@@ -11553,10 +11562,10 @@ return "CIC-polling staat uit";
 if (option === "OT thermostat" && !otAvailable) {
 return "OpenTherm staat uit";
 }
-if (option === "HA input" && !hasHaSource(config.haKeys)) {
-return "HA-bron ontbreekt";
+if (option === "HA input" && !hasHaSource(config)) {
+return "HA-bron ongeldig";
 }
-if (option === "CIC or HA input" && !cicAvailable && !hasHaSource(config.haKeys)) {
+if (option === "CIC or HA input" && !cicAvailable && !hasHaSource(config)) {
 return "CIC en HA ontbreken";
 }
 if (option === "Flowmeter HP2" && !hasEntity("hp2Flow")) {
@@ -11572,12 +11581,6 @@ if (!hasEntity(key)) {
 return "";
 }
 return isInstallationMonitoringBinaryActive(key) ? activeLabel : inactiveLabel;
-};
-const sourceValidText = (key) => {
-if (!hasEntity(key)) {
-return "";
-}
-return isInstallationMonitoringBinaryActive(key) ? "Geldig" : "Ongeldig";
 };
 const formatSourceOptionLabel = (option, config = {}) => {
 const value = String(option || "").trim();
@@ -11652,6 +11655,15 @@ return `
 </div>
 `;
 };
+const renderHaSourceRows = ({ label = "HA input", valueKey = "", validKey = "", value = "" }) => {
+if (!hasValidHaSource(valueKey, validKey)) {
+return [];
+}
+return [
+renderSourceRow({ label, key: valueKey, value }),
+renderSourceRow({ label: "HA status", value: "Geldig" }),
+];
+};
 const renderSourceSelect = (key, config = {}) => {
 if (!hasEntity(key)) {
 return { markup: "", warning: "" };
@@ -11661,7 +11673,8 @@ const current = String(getEntityValue(key) || "");
 const allOptions = getSelectEntityOptions(entity);
 const availableOptions = allOptions.filter((option) => isSourceAvailable(option, config));
 const currentUnavailable = current && !isSourceAvailable(current, config);
-const renderOptions = currentUnavailable && !availableOptions.includes(current)
+const hideUnavailableCurrent = current === "HA input";
+const renderOptions = currentUnavailable && !hideUnavailableCurrent && !availableOptions.includes(current)
 ? [current, ...availableOptions]
 : availableOptions;
 const optionMarkup = renderOptions.map((option) => {
@@ -11735,8 +11748,7 @@ renderSourceRow({ label: "Actieve waarde", key: "roomTemp" }),
 renderSourceRow({ label: "Gebruikte bron", value: formattedTextSourceValue("roomTempEffectiveSource") }),
 cicAvailable ? renderSourceRow({ label: "CIC", key: "cicRoomTemp" }) : "",
 otAvailable ? renderSourceRow({ label: "OpenTherm", key: "otRoomTemp" }) : "",
-renderSourceRow({ label: "HA input", key: "roomTempHa" }),
-renderSourceRow({ label: "HA status", value: sourceValidText("roomTempHaValid"), active: hasEntity("roomTempHaValid") && !isInstallationMonitoringBinaryActive("roomTempHaValid") }),
+...renderHaSourceRows({ valueKey: "roomTempHa", validKey: "roomTempHaValid" }),
 ],
 }),
 renderSourceCard({
@@ -11748,8 +11760,7 @@ renderSourceRow({ label: "Actieve waarde", key: "roomSetpoint" }),
 renderSourceRow({ label: "Gebruikte bron", value: formattedTextSourceValue("roomSetpointEffectiveSource") }),
 cicAvailable ? renderSourceRow({ label: "CIC", key: "cicRoomSetpoint" }) : "",
 otAvailable ? renderSourceRow({ label: "OpenTherm", key: "otRoomSetpoint" }) : "",
-renderSourceRow({ label: "HA input", key: "roomSetpointHa" }),
-renderSourceRow({ label: "HA status", value: sourceValidText("roomSetpointHaValid"), active: hasEntity("roomSetpointHaValid") && !isInstallationMonitoringBinaryActive("roomSetpointHaValid") }),
+...renderHaSourceRows({ valueKey: "roomSetpointHa", validKey: "roomSetpointHaValid" }),
 ],
 }),
 renderSourceCard({
@@ -11767,8 +11778,7 @@ renderSourceRow({ label: "Gebruikte bron", value: getWaterSupplyUsedSource() }),
 renderSourceRow({ label: "Lokaal", key: "waterSupplyTempEsp" }),
 renderSourceRow({ label: "DS18B20", key: "waterSupplyTempDs18b20" }),
 cicAvailable ? renderSourceRow({ label: "CIC", key: "cicWaterSupplyTemp" }) : "",
-renderSourceRow({ label: "HA input", key: "waterSupplyTempHa" }),
-renderSourceRow({ label: "HA status", value: sourceValidText("waterSupplyTempHaValid"), active: hasEntity("waterSupplyTempHaValid") && !isInstallationMonitoringBinaryActive("waterSupplyTempHaValid") }),
+...renderHaSourceRows({ valueKey: "waterSupplyTempHa", validKey: "waterSupplyTempHaValid" }),
 ],
 }),
 renderSourceCard({
@@ -11809,27 +11819,35 @@ key: "outsideTempSource",
 label: "Buiten bron",
 haKeys: ["outsideTempHa", "outsideTempHaValid"],
 infoId: "outsideTempSource-auto-info",
-infoCopy: "Auto gebruikt de laagste geldige buitentemperatuurbron. Zijn zowel buitenunit als HA-invoer geldig, dan kiest OpenQuatt de laagste waarde. Is er maar een van beide geldig, dan wordt die gebruikt.",
+infoCopy: hasValidHaSource("outsideTempHa", "outsideTempHaValid")
+? "Auto gebruikt de laagste geldige buitentemperatuurbron. Zijn zowel buitenunit als HA-invoer geldig, dan kiest OpenQuatt de laagste waarde. Is er maar een van beide geldig, dan wordt die gebruikt."
+: "Auto gebruikt de geldige buitentemperatuur van de buitenunit.",
 },
 rows: [
 renderSourceRow({ label: "Actieve waarde", key: "outsideTempSelected" }),
 renderSourceRow({ label: "Gebruikte bron", value: getOutsideTempUsedSource() }),
 renderSourceRow({ label: "Buitenunit", key: "outsideTempLocalAggregated" }),
-renderSourceRow({ label: "HA input", key: "outsideTempHa" }),
-renderSourceRow({ label: "HA status", value: sourceValidText("outsideTempHaValid"), active: hasEntity("outsideTempHaValid") && !isInstallationMonitoringBinaryActive("outsideTempHaValid") }),
+...renderHaSourceRows({ valueKey: "outsideTempHa", validKey: "outsideTempHaValid" }),
 ],
 }),
 renderSourceCard({
 key: "cooling-enable",
 title: "Koeltoestemming",
-select: { key: "coolingEnableSource", label: "Koeltoestemming bron", haKeys: ["coolingEnableHa", "coolingEnableHaValid"] },
+select: {
+key: "coolingEnableSource",
+label: "Koeltoestemming bron",
+haKeys: ["coolingEnableHa", "coolingEnableHaValid"],
+},
 rows: [
 renderSourceRow({ label: "Actieve waarde", value: sourceStateText("coolingEnableSelected", "Actief", "Niet actief") }),
 renderSourceRow({ label: "Gebruikte bron", value: formattedTextSourceValue("coolingEnableEffectiveSource") }),
 renderSourceRow({ label: "Handmatig", value: sourceStateText("manualCoolingEnable", "Aan", "Uit") }),
 cicAvailable ? renderSourceRow({ label: "CIC", value: sourceStateText("cicCoolingEnabled", "Actief", "Normaal") }) : "",
-renderSourceRow({ label: "HA input", value: sourceStateText("coolingEnableHa", "Actief", "Normaal") }),
-renderSourceRow({ label: "HA status", value: sourceValidText("coolingEnableHaValid"), active: hasEntity("coolingEnableHaValid") && !isInstallationMonitoringBinaryActive("coolingEnableHaValid") }),
+...renderHaSourceRows({
+valueKey: "coolingEnableHa",
+validKey: "coolingEnableHaValid",
+value: sourceStateText("coolingEnableHa", "Actief", "Normaal"),
+}),
 ],
 }),
 ].filter(Boolean);
