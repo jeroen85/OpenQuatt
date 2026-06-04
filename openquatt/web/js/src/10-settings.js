@@ -81,11 +81,15 @@
 
   function getHpWaterRawValue(rawKey, finalKey, offsetKey) {
     const raw = getEntityNumericValue(rawKey);
-    if (Number.isFinite(raw)) {
-      return raw;
-    }
     const finalValue = getEntityNumericValue(finalKey);
     const offset = getEntityNumericValue(offsetKey);
+    const rawLooksUninitialized = Number.isFinite(raw)
+      && Math.abs(raw) <= 0.005
+      && Number.isFinite(finalValue)
+      && Math.abs(finalValue) > 1;
+    if (Number.isFinite(raw) && !rawLooksUninitialized) {
+      return raw;
+    }
     if (Number.isFinite(finalValue) && Number.isFinite(offset)) {
       return finalValue - offset;
     }

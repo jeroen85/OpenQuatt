@@ -554,9 +554,13 @@ const LOGO_MARKUP = `
     "hp2WaterOutOffset",
   ];
   const SENSOR_CALIBRATION_STATE_KEYS = [
+    "hp1WaterInRaw",
     "hp1WaterIn",
+    "hp1WaterOutRaw",
     "hp1WaterOut",
+    "hp2WaterInRaw",
     "hp2WaterIn",
+    "hp2WaterOutRaw",
     "hp2WaterOut",
   ];
   const INSTALLATION_MONITORING_STATE_KEYS = [
