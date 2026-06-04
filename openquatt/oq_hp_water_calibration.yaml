@@ -51,6 +51,51 @@ globals:
     restore_value: false
     initial_value: 'NAN'
 
+  - id: oq_hp_water_calibration_stable_progress_s
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_hp_water_calibration_stable_required_s
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_hp_water_calibration_result_reference_c
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+
+  - id: oq_hp_water_calibration_result_spread_before_c
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+
+  - id: oq_hp_water_calibration_result_expected_spread_c
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+
+  - id: oq_hp_water_calibration_result_hp1_in_raw_avg_c
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+
+  - id: oq_hp_water_calibration_result_hp1_out_raw_avg_c
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+
+  - id: oq_hp_water_calibration_result_hp2_in_raw_avg_c
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+
+  - id: oq_hp_water_calibration_result_hp2_out_raw_avg_c
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+
 number:
   - platform: template
     id: hp1_water_in_temp_offset
@@ -285,6 +330,132 @@ sensor:
       sorting_group_id: oq_temperatures
     lambda: |-
       return id(oq_hp_water_calibration_supply_delta_c);
+
+  - platform: template
+    id: oq_hp_water_calibration_stable_progress_sensor
+    name: "HP water calibration stable window progress"
+    icon: mdi:timer-check-outline
+    unit_of_measurement: "s"
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      return (float) id(oq_hp_water_calibration_stable_progress_s);
+
+  - platform: template
+    id: oq_hp_water_calibration_stable_required_sensor
+    name: "HP water calibration stable window required"
+    icon: mdi:timer-check-outline
+    unit_of_measurement: "s"
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      return (float) id(oq_hp_water_calibration_stable_required_s);
+
+  - platform: template
+    id: oq_hp_water_calibration_result_reference_sensor
+    name: "HP water calibration result reference"
+    icon: mdi:thermometer-check
+    unit_of_measurement: "Â°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      return id(oq_hp_water_calibration_result_reference_c);
+
+  - platform: template
+    id: oq_hp_water_calibration_result_spread_before_sensor
+    name: "HP water calibration result spread before"
+    icon: mdi:thermometer-lines
+    unit_of_measurement: "Â°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      return id(oq_hp_water_calibration_result_spread_before_c);
+
+  - platform: template
+    id: oq_hp_water_calibration_result_expected_spread_sensor
+    name: "HP water calibration result expected spread"
+    icon: mdi:thermometer-check
+    unit_of_measurement: "Â°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      return id(oq_hp_water_calibration_result_expected_spread_c);
+
+  - platform: template
+    id: oq_hp_water_calibration_result_hp1_in_raw_avg_sensor
+    name: "HP water calibration result HP1 water in raw average"
+    icon: mdi:thermometer-water
+    unit_of_measurement: "Â°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      return id(oq_hp_water_calibration_result_hp1_in_raw_avg_c);
+
+  - platform: template
+    id: oq_hp_water_calibration_result_hp1_out_raw_avg_sensor
+    name: "HP water calibration result HP1 water out raw average"
+    icon: mdi:thermometer-water
+    unit_of_measurement: "Â°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      return id(oq_hp_water_calibration_result_hp1_out_raw_avg_c);
+
+  - platform: template
+    id: oq_hp_water_calibration_result_hp2_in_raw_avg_sensor
+    name: "HP water calibration result HP2 water in raw average"
+    internal: ${monitoring_hp2_internal}
+    icon: mdi:thermometer-water
+    unit_of_measurement: "Â°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      return id(oq_hp_water_calibration_result_hp2_in_raw_avg_c);
+
+  - platform: template
+    id: oq_hp_water_calibration_result_hp2_out_raw_avg_sensor
+    name: "HP water calibration result HP2 water out raw average"
+    internal: ${monitoring_hp2_internal}
+    icon: mdi:thermometer-water
+    unit_of_measurement: "Â°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      return id(oq_hp_water_calibration_result_hp2_out_raw_avg_c);
 
 text_sensor:
   - platform: template

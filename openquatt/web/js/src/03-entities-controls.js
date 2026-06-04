@@ -491,7 +491,9 @@
       return "—";
     }
     const meta = getNumberMeta(key);
-    const decimals = meta.step < 1 ? 1 : 0;
+    const decimals = meta.step < 1
+      ? Math.min(4, Math.max(1, String(meta.step).split(".")[1]?.length || 1))
+      : 0;
     return `${Number(value).toFixed(decimals)}${meta.uom ? ` ${meta.uom}` : ""}`;
   }
 
@@ -505,7 +507,10 @@
     const clamped = Math.min(meta.max, Math.max(meta.min, numeric));
     const steps = Math.round((clamped - meta.min) / meta.step);
     const snapped = meta.min + steps * meta.step;
-    return Number(snapped.toFixed(meta.step < 1 ? 1 : 0));
+    const decimals = meta.step < 1
+      ? Math.min(4, Math.max(1, String(meta.step).split(".")[1]?.length || 1))
+      : 0;
+    return Number(snapped.toFixed(decimals));
   }
 
   function getCurveFallbackSuggestion() {
@@ -3061,6 +3066,23 @@
             "hpWaterCalibrationPhase",
             "hpWaterCalibrationSpread",
             "hpWaterCalibrationSupplyDelta",
+            "hpWaterCalibrationStableProgress",
+            "hpWaterCalibrationStableRequired",
+            "hpWaterCalibrationResultReference",
+            "hpWaterCalibrationResultSpreadBefore",
+            "hpWaterCalibrationResultExpectedSpread",
+            "hpWaterCalibrationResultHp1InRawAvg",
+            "hpWaterCalibrationResultHp1OutRawAvg",
+            "hpWaterCalibrationResultHp2InRawAvg",
+            "hpWaterCalibrationResultHp2OutRawAvg",
+            "hp1WaterInRaw",
+            "hp1WaterOutRaw",
+            "hp2WaterInRaw",
+            "hp2WaterOutRaw",
+            "hp1WaterIn",
+            "hp1WaterOut",
+            "hp2WaterIn",
+            "hp2WaterOut",
             "hp1WaterInOffset",
             "hp1WaterOutOffset",
             "hp2WaterInOffset",

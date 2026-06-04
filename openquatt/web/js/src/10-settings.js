@@ -67,6 +67,31 @@
     return text;
   }
 
+  function formatSettingsNumberValue(value, unit = "", decimals = 2) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+      return "â€”";
+    }
+    return `${numeric.toFixed(Math.max(0, decimals))}${unit ? ` ${unit}` : ""}`;
+  }
+
+  function getSettingsTemperatureValue(key, decimals = 2) {
+    return getSettingsStatValue(key, { decimals });
+  }
+
+  function getHpWaterRawValue(rawKey, finalKey, offsetKey) {
+    const raw = getEntityNumericValue(rawKey);
+    if (Number.isFinite(raw)) {
+      return raw;
+    }
+    const finalValue = getEntityNumericValue(finalKey);
+    const offset = getEntityNumericValue(offsetKey);
+    if (Number.isFinite(finalValue) && Number.isFinite(offset)) {
+      return finalValue - offset;
+    }
+    return NaN;
+  }
+
   function getManualHpActualValue(levelKey, frequencyKey) {
     const level = getEntityNumericValue(levelKey);
     const frequency = getEntityNumericValue(frequencyKey);
@@ -1206,9 +1231,78 @@
   }
 
   function renderWaterSettingsFields(className = "oq-settings-grid") {
+    const offsetMarkup = renderHpWaterSensorOffsetSettings();
     return `
       <div class="${escapeHtml(className)}">
         ${renderSettingsNumberField("maxWater", "Maximale watertemperatuur", "Normale bovengrens voor de watertemperatuur tijdens bedrijf. OpenQuatt begint enkele graden eerder al terug te regelen en bewaakt een harde trip op 5°C boven deze grens.")}
+      </div>
+      ${offsetMarkup}
+    `;
+  }
+
+  function renderHpWaterSensorOffsetSettings() {
+    const rows = [
+      { label: "HP1 water in", rawKey: "hp1WaterInRaw", offsetKey: "hp1WaterInOffset", finalKey: "hp1WaterIn" },
+      { label: "HP1 water uit", rawKey: "hp1WaterOutRaw", offsetKey: "hp1WaterOutOffset", finalKey: "hp1WaterOut" },
+      { label: "HP2 water in", rawKey: "hp2WaterInRaw", offsetKey: "hp2WaterInOffset", finalKey: "hp2WaterIn" },
+      { label: "HP2 water uit", rawKey: "hp2WaterOutRaw", offsetKey: "hp2WaterOutOffset", finalKey: "hp2WaterOut" },
+    ].filter((row) => hasEntity(row.offsetKey) && hasEntity(row.finalKey));
+
+    if (!rows.length) {
+      return "";
+    }
+
+    const renderRow = (row) => {
+      const meta = getNumberMeta(row.offsetKey);
+      const raw = getHpWaterRawValue(row.rawKey, row.finalKey, row.offsetKey);
+      const offsetDraft = parseLooseNumber(getInputDraftValue(row.offsetKey));
+      const finalFromDraft = Number.isFinite(raw) && Number.isFinite(offsetDraft)
+        ? formatSettingsNumberValue(raw + offsetDraft, meta.uom || "Â°C", 2)
+        : getSettingsTemperatureValue(row.finalKey, 2);
+
+      return `
+        <article class="oq-settings-hp-offset-row" data-oq-settings-field="${escapeHtml(row.offsetKey)}">
+          <div class="oq-settings-hp-offset-copy">
+            <strong>${escapeHtml(row.label)}</strong>
+            <span>${escapeHtml(getSettingsTemperatureValue(row.finalKey, 2))} actief in regeling, dashboards en CiC-compat.</span>
+          </div>
+          <div class="oq-settings-hp-offset-equation" aria-label="${escapeHtml(`${row.label} correctie`)}">
+            <div>
+              <span>Raw</span>
+              <strong>${escapeHtml(Number.isFinite(raw) ? formatSettingsNumberValue(raw, meta.uom || "Â°C", 2) : getSettingsTemperatureValue(row.rawKey, 2))}</strong>
+            </div>
+            <span class="oq-settings-hp-offset-operator">+</span>
+            <label class="oq-settings-hp-offset-input">
+              <span>Offset</span>
+              ${renderNumberInputControl({
+                key: row.offsetKey,
+                value: getInputDraftValue(row.offsetKey),
+                meta,
+                controlClass: "oq-helper-control oq-helper-control--suffix",
+                inputClass: "oq-helper-input oq-helper-input--compact-number",
+                unitMarkup: meta.uom ? `<span class="oq-helper-unit-chip">${escapeHtml(meta.uom)}</span>` : "",
+              })}
+            </label>
+            <span class="oq-settings-hp-offset-operator">=</span>
+            <div class="oq-settings-hp-offset-final">
+              <span>Final</span>
+              <strong>${escapeHtml(finalFromDraft)}</strong>
+            </div>
+          </div>
+        </article>
+      `;
+    };
+
+    return `
+      <div class="oq-settings-subpanel oq-settings-hp-offset-panel">
+        <div class="oq-settings-subpanel-head">
+          <p class="oq-helper-label">Sensorcorrecties</p>
+          <h4>Water in/out offsets</h4>
+          <p>Deze offsets worden bij de ruwe HP-watersensoren opgeteld. De normale sensor-ID's tonen de gecorrigeerde waarde; de ruwe meting blijft apart beschikbaar als diagnose.</p>
+        </div>
+        <div class="oq-settings-hp-offset-list">
+          ${rows.map(renderRow).join("")}
+        </div>
       </div>
     `;
   }
@@ -1941,6 +2035,176 @@
     );
   }
 
+  function renderHpWaterCalibrationWizard({
+    status,
+    running,
+    resultReady,
+    startDisabled,
+    abortDisabled,
+    applyDisabled,
+    busy,
+    controlsAvailable,
+  }) {
+    const normalizedStatus = String(status || "").toUpperCase();
+    const failed = normalizedStatus.includes("FAILED") || normalizedStatus.includes("REFUSED") || normalizedStatus.includes("ABORT");
+    const hasHp2 = hasEntity("hp2WaterIn") || hasEntity("hp2WaterOut") || hasEntity("hp2WaterInRaw") || hasEntity("hp2WaterOutRaw");
+    const stableProgress = getEntityNumericValue("hpWaterCalibrationStableProgress");
+    const stableRequired = getEntityNumericValue("hpWaterCalibrationStableRequired");
+    const remaining = getEntityNumericValue("hpWaterCalibrationRemaining");
+    const progressValue = Number.isFinite(stableProgress) && Number.isFinite(stableRequired) && stableRequired > 0
+      ? Math.max(0, Math.min(100, (stableProgress / stableRequired) * 100))
+      : running && Number.isFinite(remaining)
+        ? Math.max(0, Math.min(100, 100 - ((remaining / 300) * 100)))
+        : resultReady
+          ? 100
+          : 0;
+    const spreadValue = resultReady && hasEntity("hpWaterCalibrationResultSpreadBefore")
+      ? getSettingsTemperatureValue("hpWaterCalibrationResultSpreadBefore", 2)
+      : getSettingsTemperatureValue("hpWaterCalibrationSpread", 2);
+    const stableCopy = Number.isFinite(stableProgress) && Number.isFinite(stableRequired) && stableRequired > 0
+      ? `${Math.round(Math.max(0, stableProgress))} / ${Math.round(stableRequired)} s stabiel`
+      : "Wachten op stabiel venster";
+    const stepIndex = resultReady ? 3 : running ? 2 : 1;
+    const statusTitle = resultReady
+      ? `Meting klaar - spreiding ${spreadValue}`
+      : running
+        ? `Meting bezig - ${Number.isFinite(remaining) && remaining > 0 ? `max. ${Math.round(remaining)} s resterend` : stableCopy}`
+        : failed
+          ? "Meting niet voltooid"
+          : "Voorbereiding";
+    const statusCopy = resultReady
+      ? "Controleer de voorgestelde offsets. Pas ze toe om de gecorrigeerde HP-watertemperaturen als normale waarden te gebruiken."
+      : running
+        ? "De waterpomp circuleert zonder compressor. De firmware stopt eerder zodra het temperatuurbeeld 60 seconden stabiel genoeg is."
+        : failed
+          ? getSettingsTextStatValue("hpWaterCalibrationStatus", "Controleer de voorwaarden en start opnieuw.")
+          : (hasHp2
+            ? "Start alleen wanneer compressor en boiler uit zijn. HP1 en HP2 water in/out worden samen naar een relatieve referentie gebracht."
+            : "Start alleen wanneer compressor en boiler uit zijn. Bij single setup wordt HP1 water in/out onderling gelijkgetrokken; supply blijft diagnose.");
+    const sensorRows = [
+      { label: "HP1 water in", rawKey: "hp1WaterInRaw", liveKey: "hp1WaterIn", resultRawKey: "hpWaterCalibrationResultHp1InRawAvg", offsetKey: "hp1WaterInOffset", suggestedKey: "hp1WaterInOffsetSuggested" },
+      { label: "HP1 water uit", rawKey: "hp1WaterOutRaw", liveKey: "hp1WaterOut", resultRawKey: "hpWaterCalibrationResultHp1OutRawAvg", offsetKey: "hp1WaterOutOffset", suggestedKey: "hp1WaterOutOffsetSuggested" },
+      { label: "HP2 water in", rawKey: "hp2WaterInRaw", liveKey: "hp2WaterIn", resultRawKey: "hpWaterCalibrationResultHp2InRawAvg", offsetKey: "hp2WaterInOffset", suggestedKey: "hp2WaterInOffsetSuggested" },
+      { label: "HP2 water uit", rawKey: "hp2WaterOutRaw", liveKey: "hp2WaterOut", resultRawKey: "hpWaterCalibrationResultHp2OutRawAvg", offsetKey: "hp2WaterOutOffset", suggestedKey: "hp2WaterOutOffsetSuggested" },
+    ].filter((row) => hasEntity(row.liveKey) || hasEntity(row.rawKey) || hasEntity(row.offsetKey));
+
+    const renderStep = (index, label) => {
+      const done = stepIndex > index;
+      const active = stepIndex === index;
+      return `
+        <div class="oq-settings-hp-calibration-step${done ? " is-done" : ""}${active ? " is-active" : ""}">
+          <span>${done ? "✓" : index}</span>
+          <strong>${escapeHtml(label)}</strong>
+        </div>
+      `;
+    };
+
+    const renderLiveCard = (row) => {
+      const key = hasEntity(row.rawKey) ? row.rawKey : row.liveKey;
+      return `
+        <article class="oq-settings-hp-calibration-live-card">
+          <span>${escapeHtml(row.label)}</span>
+          <strong>${escapeHtml(getSettingsTemperatureValue(key, 2))}</strong>
+        </article>
+      `;
+    };
+
+    const renderResultRow = (row) => {
+      const rawAverage = getEntityNumericValue(row.resultRawKey);
+      const rawValue = Number.isFinite(rawAverage)
+        ? rawAverage
+        : getHpWaterRawValue(row.rawKey, row.liveKey, row.offsetKey);
+      const suggestion = getEntityNumericValue(row.suggestedKey);
+      const finalValue = Number.isFinite(rawValue) && Number.isFinite(suggestion)
+        ? formatSettingsNumberValue(rawValue + suggestion, state.entities[row.suggestedKey]?.uom || "Â°C", 2)
+        : "â€”";
+
+      return `
+        <tr>
+          <th scope="row">${escapeHtml(row.label)}</th>
+          <td>${escapeHtml(Number.isFinite(rawValue) ? formatSettingsNumberValue(rawValue, state.entities[row.liveKey]?.uom || "Â°C", 2) : "â€”")}</td>
+          <td>${escapeHtml(getSettingsTemperatureValue(row.offsetKey, 2))}</td>
+          <td><span class="oq-settings-hp-calibration-offset-pill">${escapeHtml(getSettingsTemperatureValue(row.suggestedKey, 2))}</span></td>
+          <td>${escapeHtml(finalValue)}</td>
+        </tr>
+      `;
+    };
+
+    return `
+      <div class="oq-settings-hp-calibration">
+        <div class="oq-settings-hp-calibration-steps">
+          ${renderStep(1, "Voorbereiding")}
+          ${renderStep(2, "Meting")}
+          ${renderStep(3, "Offsets toepassen")}
+        </div>
+
+        <div class="oq-settings-hp-calibration-status${resultReady ? " is-success" : running ? " is-active" : failed ? " is-warning" : ""}">
+          <div>
+            <strong>${escapeHtml(statusTitle)}</strong>
+            <p>${escapeHtml(statusCopy)}</p>
+          </div>
+          ${running || resultReady ? `<span>${escapeHtml(running ? stableCopy : "Resultaat beschikbaar")}</span>` : ""}
+          ${running ? `<div class="oq-settings-hp-calibration-progress"><i style="width: ${progressValue.toFixed(0)}%"></i></div>` : ""}
+        </div>
+
+        ${running ? `
+          <div class="oq-settings-hp-calibration-live-grid">
+            ${sensorRows.map(renderLiveCard).join("")}
+            <article class="oq-settings-hp-calibration-live-card is-highlight">
+              <span>Spreiding</span>
+              <strong>${escapeHtml(getSettingsTemperatureValue("hpWaterCalibrationSpread", 2))}</strong>
+            </article>
+            <article class="oq-settings-hp-calibration-live-card">
+              <span>Supply verschil</span>
+              <strong>${escapeHtml(getSettingsTemperatureValue("hpWaterCalibrationSupplyDelta", 2))}</strong>
+            </article>
+          </div>
+          <p class="oq-settings-hp-calibration-note">Supply wordt alleen als diagnose getoond en niet automatisch gecorrigeerd.</p>
+        ` : ""}
+
+        ${resultReady ? `
+          <div class="oq-settings-hp-calibration-results">
+            <div class="oq-settings-hp-calibration-result-summary">
+              <span>Referentie ${escapeHtml(getSettingsTemperatureValue("hpWaterCalibrationResultReference", 2))}</span>
+              <span>Supply verschil ${escapeHtml(getSettingsTemperatureValue("hpWaterCalibrationSupplyDelta", 2))}</span>
+            </div>
+            <div class="oq-settings-hp-calibration-table-wrap">
+              <table class="oq-settings-hp-calibration-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Sensor</th>
+                    <th scope="col">Raw gemiddelde</th>
+                    <th scope="col">Huidig actief</th>
+                    <th scope="col">Voorstel</th>
+                    <th scope="col">Na toepassen</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${sensorRows.map(renderResultRow).join("")}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ` : ""}
+
+        ${controlsAvailable ? `
+          <div class="oq-settings-hp-calibration-actions">
+            ${renderNamedToggleActionButton({
+              active: running,
+              startKey: "hpWaterCalibrationStart",
+              stopKey: "hpWaterCalibrationAbort",
+              startLabel: "Kalibratie starten",
+              stopLabel: "Meting stoppen",
+              startDisabled: busy || startDisabled,
+              stopDisabled: busy || abortDisabled,
+            })}
+            ${state.entities.hpWaterCalibrationApply ? renderNamedActionButton("hpWaterCalibrationApply", "Offsets toepassen", "oq-helper-button oq-helper-button--primary", busy || applyDisabled) : ""}
+          </div>
+        ` : ""}
+      </div>
+    `;
+  }
+
   function getSettingsServiceModel() {
     const hasBoilerAssist = hasEntity("boilerCvAssistEnabled") && isEntityActive("boilerCvAssistEnabled");
     const cm100Status = getCommissioningStatusValue();
@@ -2147,38 +2411,24 @@
         cardMarkup: renderCommissioningTaskCard({
           taskKey: "hp-water-calibration",
           title: "Temperatuursensoren kalibreren",
-          copy: "Circuleert water zonder warmtevraag, wacht tot de watermassa gemengd is en berekent daarna relatieve offsets voor de water in/out sensoren.",
-          subcopy: "De voorgestelde waarden worden pas actief wanneer je ze toepast.",
+          copy: "Doorloop voorbereiding, meting en toepassen in vaste volgorde. De meting stopt eerder zodra de sensoren stabiel genoeg zijn.",
+          subcopy: "De voorgestelde waarden worden pas actief wanneer je ze toepast; supply blijft een diagnosewaarde.",
           status: hpWaterCalibrationStatusDisplay,
           statusCopy: hpWaterCalibrationTaskRunning
-            ? "De pomp draait en de firmware wacht op een homogeen temperatuurbeeld."
-            : (cm100Ready ? "CM100 staat klaar. Start de meting wanneer compressor en boiler uit zijn." : "Start CM100 eerst."),
+            ? "De pomp draait en de firmware wacht op een stabiel temperatuurbeeld."
+            : (hpWaterCalibrationResultReady ? "Controleer de voorgestelde offsets voordat je ze toepast." : (cm100Ready ? "CM100 staat klaar. Start de meting wanneer compressor en boiler uit zijn." : "Start CM100 eerst.")),
           progressTask: "hp-water-calibration",
-          actions: `
-            ${state.entities.hpWaterCalibrationStart || state.entities.hpWaterCalibrationAbort ? renderNamedToggleActionButton({
-              active: hpWaterCalibrationTaskRunning,
-              startKey: "hpWaterCalibrationStart",
-              stopKey: "hpWaterCalibrationAbort",
-              startLabel: "Kalibratie starten",
-              stopLabel: "Kalibratie stoppen",
-              startDisabled: hpWaterCalibrationBusy || hpWaterCalibrationStartDisabled,
-              stopDisabled: hpWaterCalibrationBusy || hpWaterCalibrationAbortDisabled,
-            }) : ""}
-            ${state.entities.hpWaterCalibrationApply ? renderNamedActionButton("hpWaterCalibrationApply", "Offsets toepassen", "oq-helper-button oq-helper-button--ghost", hpWaterCalibrationBusy || hpWaterCalibrationApplyDisabled) : ""}
-          `,
-          metrics: `
-            ${renderSettingsStaticField("hpWaterCalibrationRemaining", "Resterende tijd", "Meng- en meettijd van de kalibratierun.", getSettingsStatValue("hpWaterCalibrationRemaining", { decimals: 0 }), "oq-settings-field--compact")}
-            ${renderSettingsStaticField("hpWaterCalibrationSpread", "Spreiding", "Verschil tussen de gemiddelde sensortemperaturen na mengen.", getSettingsStatValue("hpWaterCalibrationSpread", { decimals: 2 }), "oq-settings-field--compact")}
-            ${renderSettingsStaticField("hpWaterCalibrationSupplyDelta", "Supply verschil", "Read-only vergelijking tussen HP-gemiddelde en geselecteerde aanvoersensor; deze waarde wordt niet toegepast.", getSettingsStatValue("hpWaterCalibrationSupplyDelta", { decimals: 2 }), "oq-settings-field--compact")}
-            ${renderSettingsStaticField("hp1WaterInOffsetSuggested", "HP1 in voorstel", "Offset die na toepassen bij HP1 water-in wordt opgeteld.", getSettingsStatValue("hp1WaterInOffsetSuggested", { decimals: 2 }), "oq-settings-field--compact")}
-            ${renderSettingsStaticField("hp1WaterOutOffsetSuggested", "HP1 out voorstel", "Offset die na toepassen bij HP1 water-out wordt opgeteld.", getSettingsStatValue("hp1WaterOutOffsetSuggested", { decimals: 2 }), "oq-settings-field--compact")}
-            ${hasEntity("hp2WaterInOffsetSuggested") ? renderSettingsStaticField("hp2WaterInOffsetSuggested", "HP2 in voorstel", "Offset die na toepassen bij HP2 water-in wordt opgeteld.", getSettingsStatValue("hp2WaterInOffsetSuggested", { decimals: 2 }), "oq-settings-field--compact") : ""}
-            ${hasEntity("hp2WaterOutOffsetSuggested") ? renderSettingsStaticField("hp2WaterOutOffsetSuggested", "HP2 out voorstel", "Offset die na toepassen bij HP2 water-out wordt opgeteld.", getSettingsStatValue("hp2WaterOutOffsetSuggested", { decimals: 2 }), "oq-settings-field--compact") : ""}
-            ${renderSettingsStaticField("hp1WaterInOffset", "HP1 in actief", "Actieve offset die al in gecorrigeerde berekeningen wordt gebruikt.", getSettingsStatValue("hp1WaterInOffset", { decimals: 2 }), "oq-settings-field--compact")}
-            ${renderSettingsStaticField("hp1WaterOutOffset", "HP1 out actief", "Actieve offset die al in gecorrigeerde berekeningen wordt gebruikt.", getSettingsStatValue("hp1WaterOutOffset", { decimals: 2 }), "oq-settings-field--compact")}
-            ${hasEntity("hp2WaterInOffset") ? renderSettingsStaticField("hp2WaterInOffset", "HP2 in actief", "Actieve offset die al in gecorrigeerde berekeningen wordt gebruikt.", getSettingsStatValue("hp2WaterInOffset", { decimals: 2 }), "oq-settings-field--compact") : ""}
-            ${hasEntity("hp2WaterOutOffset") ? renderSettingsStaticField("hp2WaterOutOffset", "HP2 out actief", "Actieve offset die al in gecorrigeerde berekeningen wordt gebruikt.", getSettingsStatValue("hp2WaterOutOffset", { decimals: 2 }), "oq-settings-field--compact") : ""}
-          `,
+          controls: renderHpWaterCalibrationWizard({
+            status: hpWaterCalibrationStatus,
+            running: hpWaterCalibrationTaskRunning,
+            resultReady: hpWaterCalibrationResultReady,
+            startDisabled: hpWaterCalibrationStartDisabled,
+            abortDisabled: hpWaterCalibrationAbortDisabled,
+            applyDisabled: hpWaterCalibrationApplyDisabled,
+            busy: hpWaterCalibrationBusy,
+            controlsAvailable: Boolean(state.entities.hpWaterCalibrationStart || state.entities.hpWaterCalibrationAbort),
+          }),
+          className: "oq-settings-commissioning-card--hp-water-calibration",
         }),
       },
       {

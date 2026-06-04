@@ -48,6 +48,17 @@
       hpWaterCalibrationPhase: 0,
       hpWaterCalibrationSpread: NaN,
       hpWaterCalibrationSupplyDelta: NaN,
+      hpWaterCalibrationStableProgress: 0,
+      hpWaterCalibrationStableRequired: 60,
+      hpWaterCalibrationResultReference: NaN,
+      hpWaterCalibrationResultSpreadBefore: NaN,
+      hpWaterCalibrationResultExpectedSpread: NaN,
+      hpWaterCalibrationResultRawAverages: {
+        hp1In: NaN,
+        hp1Out: NaN,
+        hp2In: NaN,
+        hp2Out: NaN,
+      },
       hpWaterCalibrationSuggested: {
         hp1In: 0,
         hp1Out: 0,
@@ -111,6 +122,8 @@
     ["sensor", "HP2 - EEV steps", { value: 0, uom: "p" }],
     ["sensor", "HP2 - Water in temperature", { value: 25.4, uom: "°C" }],
     ["sensor", "HP2 - Water out temperature", { value: 29.1, uom: "°C" }],
+    ["sensor", "HP2 - Water in temperature raw", { value: 25.4, uom: "\u00B0C" }],
+    ["sensor", "HP2 - Water out temperature raw", { value: 29.1, uom: "\u00B0C" }],
     ["text_sensor", "HP2 - Working Mode Label", { state: "Standby", value: "Standby" }],
     ["text_sensor", "HP2 - Active Failures List", { state: "None", value: "None" }],
     ["binary_sensor", "HP2 - Defrost", { value: false }],
@@ -163,7 +176,22 @@
     if (!entity) {
       return;
     }
-    entity.value = Number(value);
+    let nextValue = Number(value);
+    const hpWaterMatch = /^HP([12]) - Water (in|out) temperature$/.exec(name);
+    if (hpWaterMatch) {
+      const hp = `HP${hpWaterMatch[1]}`;
+      const side = hpWaterMatch[2];
+      const rawEntity = getEntity("sensor", `${hp} - Water ${side} temperature raw`);
+      const offsetEntity = getEntity("number", `${hp} water ${side} temperature offset`);
+      if (rawEntity) {
+        rawEntity.value = nextValue;
+        rawEntity.state = "";
+        rawEntity.uom = uom || rawEntity.uom;
+      }
+      const offset = Number(offsetEntity?.value || 0);
+      nextValue = Number.isFinite(nextValue) ? Number((nextValue + offset).toFixed(2)) : nextValue;
+    }
+    entity.value = nextValue;
     entity.state = "";
     if (uom) {
       entity.uom = uom;
@@ -244,12 +272,30 @@
     state.commissioning.hpWaterCalibrationPhase = 0;
     state.commissioning.hpWaterCalibrationSpread = NaN;
     state.commissioning.hpWaterCalibrationSupplyDelta = NaN;
+    state.commissioning.hpWaterCalibrationStableProgress = 0;
+    state.commissioning.hpWaterCalibrationStableRequired = 60;
+    state.commissioning.hpWaterCalibrationResultReference = NaN;
+    state.commissioning.hpWaterCalibrationResultSpreadBefore = NaN;
+    state.commissioning.hpWaterCalibrationResultExpectedSpread = NaN;
+    state.commissioning.hpWaterCalibrationResultRawAverages.hp1In = NaN;
+    state.commissioning.hpWaterCalibrationResultRawAverages.hp1Out = NaN;
+    state.commissioning.hpWaterCalibrationResultRawAverages.hp2In = NaN;
+    state.commissioning.hpWaterCalibrationResultRawAverages.hp2Out = NaN;
     setBinary("HP water calibration active", false);
     setText("text_sensor", "HP water calibration status", status);
     setNumber("HP water calibration remaining", 0, "s");
     setNumber("HP water calibration phase", 0, "");
     setNumber("HP water calibration spread", NaN, "\u00B0C");
     setNumber("HP water calibration supply delta", NaN, "\u00B0C");
+    setNumber("HP water calibration stable window progress", 0, "s");
+    setNumber("HP water calibration stable window required", 60, "s");
+    setNumber("HP water calibration result reference", NaN, "\u00B0C");
+    setNumber("HP water calibration result spread before", NaN, "\u00B0C");
+    setNumber("HP water calibration result expected spread", NaN, "\u00B0C");
+    setNumber("HP water calibration result HP1 water in raw average", NaN, "\u00B0C");
+    setNumber("HP water calibration result HP1 water out raw average", NaN, "\u00B0C");
+    setNumber("HP water calibration result HP2 water in raw average", NaN, "\u00B0C");
+    setNumber("HP water calibration result HP2 water out raw average", NaN, "\u00B0C");
   }
 
   function scheduleCommissioningStep(delay, callback) {
@@ -369,6 +415,15 @@
     setNumber("HP water calibration phase", state.commissioning.hpWaterCalibrationPhase, "");
     setNumber("HP water calibration spread", state.commissioning.hpWaterCalibrationSpread, "\u00B0C");
     setNumber("HP water calibration supply delta", state.commissioning.hpWaterCalibrationSupplyDelta, "\u00B0C");
+    setNumber("HP water calibration stable window progress", state.commissioning.hpWaterCalibrationStableProgress, "s");
+    setNumber("HP water calibration stable window required", state.commissioning.hpWaterCalibrationStableRequired, "s");
+    setNumber("HP water calibration result reference", state.commissioning.hpWaterCalibrationResultReference, "\u00B0C");
+    setNumber("HP water calibration result spread before", state.commissioning.hpWaterCalibrationResultSpreadBefore, "\u00B0C");
+    setNumber("HP water calibration result expected spread", state.commissioning.hpWaterCalibrationResultExpectedSpread, "\u00B0C");
+    setNumber("HP water calibration result HP1 water in raw average", state.commissioning.hpWaterCalibrationResultRawAverages.hp1In, "\u00B0C");
+    setNumber("HP water calibration result HP1 water out raw average", state.commissioning.hpWaterCalibrationResultRawAverages.hp1Out, "\u00B0C");
+    setNumber("HP water calibration result HP2 water in raw average", state.commissioning.hpWaterCalibrationResultRawAverages.hp2In, "\u00B0C");
+    setNumber("HP water calibration result HP2 water out raw average", state.commissioning.hpWaterCalibrationResultRawAverages.hp2Out, "\u00B0C");
     setNumber("HP calibration HP1 water in offset suggested", state.commissioning.hpWaterCalibrationSuggested.hp1In, "\u00B0C");
     setNumber("HP calibration HP1 water out offset suggested", state.commissioning.hpWaterCalibrationSuggested.hp1Out, "\u00B0C");
     setNumber("HP calibration HP2 water in offset suggested", state.commissioning.hpWaterCalibrationSuggested.hp2In, "\u00B0C");
@@ -798,6 +853,15 @@
     setEntity("sensor", "HP water calibration phase", { value: 0, uom: "" });
     setEntity("sensor", "HP water calibration spread", { value: NaN, uom: "\u00B0C" });
     setEntity("sensor", "HP water calibration supply delta", { value: NaN, uom: "\u00B0C" });
+    setEntity("sensor", "HP water calibration stable window progress", { value: 0, uom: "s" });
+    setEntity("sensor", "HP water calibration stable window required", { value: 60, uom: "s" });
+    setEntity("sensor", "HP water calibration result reference", { value: NaN, uom: "\u00B0C" });
+    setEntity("sensor", "HP water calibration result spread before", { value: NaN, uom: "\u00B0C" });
+    setEntity("sensor", "HP water calibration result expected spread", { value: NaN, uom: "\u00B0C" });
+    setEntity("sensor", "HP water calibration result HP1 water in raw average", { value: NaN, uom: "\u00B0C" });
+    setEntity("sensor", "HP water calibration result HP1 water out raw average", { value: NaN, uom: "\u00B0C" });
+    setEntity("sensor", "HP water calibration result HP2 water in raw average", { value: NaN, uom: "\u00B0C" });
+    setEntity("sensor", "HP water calibration result HP2 water out raw average", { value: NaN, uom: "\u00B0C" });
     setEntity("number", "HP1 water in temperature offset", { value: 0, min_value: -5, max_value: 5, step: 0.01, uom: "\u00B0C" });
     setEntity("number", "HP1 water out temperature offset", { value: 0, min_value: -5, max_value: 5, step: 0.01, uom: "\u00B0C" });
     setEntity("number", "HP2 water in temperature offset", { value: 0, min_value: -5, max_value: 5, step: 0.01, uom: "\u00B0C" });
@@ -1061,6 +1125,8 @@
       ["HP1 - EEV steps", 0, "p"],
       ["HP1 - Water in temperature", 25.5, "°C"],
       ["HP1 - Water out temperature", 29.5, "°C"],
+      ["HP1 - Water in temperature raw", 25.5, "°C"],
+      ["HP1 - Water out temperature raw", 29.5, "°C"],
     ].forEach(([name, value, uom]) => {
       setEntity("sensor", name, { value, uom });
     });
@@ -2399,6 +2465,11 @@
         state.commissioning.hpWaterCalibrationPhase = 1;
         state.commissioning.hpWaterCalibrationSpread = NaN;
         state.commissioning.hpWaterCalibrationSupplyDelta = NaN;
+        state.commissioning.hpWaterCalibrationStableProgress = 0;
+        state.commissioning.hpWaterCalibrationStableRequired = 60;
+        state.commissioning.hpWaterCalibrationResultReference = NaN;
+        state.commissioning.hpWaterCalibrationResultSpreadBefore = NaN;
+        state.commissioning.hpWaterCalibrationResultExpectedSpread = NaN;
         setCommissioningPhase("hp-water-calibration", "requested");
         setText("text_sensor", "Control Mode (Label)", "CM100 - Commissioning");
         setText("text_sensor", "Flow Mode", "HP WATER CAL");
@@ -2407,6 +2478,8 @@
         setBinary("HP water calibration active", true);
         setNumber("HP water calibration remaining", 420, "s");
         setNumber("HP water calibration phase", 1, "");
+        setNumber("HP water calibration stable window progress", 0, "s");
+        setNumber("HP water calibration stable window required", 60, "s");
         setNumber("Flow average (Selected)", 735, "L/h");
         scheduleCommissioningStep(800, () => {
           setCommissioningPhase("hp-water-calibration", "mixing");
@@ -2421,14 +2494,15 @@
           state.commissioning.hpWaterCalibrationRemaining = 120;
           state.commissioning.hpWaterCalibrationPhase = 3;
           state.commissioning.hpWaterCalibrationSpread = 0.16;
+          state.commissioning.hpWaterCalibrationStableProgress = 24;
           setText("text_sensor", "HP water calibration status", "MEASURING");
         });
         scheduleCommissioningStep(3900, () => {
           const single = state.installation === "single";
-          const hp1In = Number(getEntity("sensor", "HP1 - Water in temperature")?.value || 25.08);
-          const hp1Out = Number(getEntity("sensor", "HP1 - Water out temperature")?.value || 25.34);
-          const hp2In = Number(getEntity("sensor", "HP2 - Water in temperature")?.value || hp1In + 0.07);
-          const hp2Out = Number(getEntity("sensor", "HP2 - Water out temperature")?.value || hp1Out - 0.05);
+          const hp1In = Number(getEntity("sensor", "HP1 - Water in temperature raw")?.value || getEntity("sensor", "HP1 - Water in temperature")?.value || 25.08);
+          const hp1Out = Number(getEntity("sensor", "HP1 - Water out temperature raw")?.value || getEntity("sensor", "HP1 - Water out temperature")?.value || 25.34);
+          const hp2In = Number(getEntity("sensor", "HP2 - Water in temperature raw")?.value || getEntity("sensor", "HP2 - Water in temperature")?.value || hp1In + 0.07);
+          const hp2Out = Number(getEntity("sensor", "HP2 - Water out temperature raw")?.value || getEntity("sensor", "HP2 - Water out temperature")?.value || hp1Out - 0.05);
           const values = single ? [hp1In, hp1Out] : [hp1In, hp1Out, hp2In, hp2Out];
           const reference = values.reduce((sum, value) => sum + value, 0) / values.length;
           const supply = Number(getEntity("sensor", "Water Supply Temp (Selected)")?.value);
@@ -2438,6 +2512,14 @@
           state.commissioning.hpWaterCalibrationSuggested.hp2Out = single ? 0 : Number((reference - hp2Out).toFixed(2));
           state.commissioning.hpWaterCalibrationSpread = Number((Math.max(...values) - Math.min(...values)).toFixed(2));
           state.commissioning.hpWaterCalibrationSupplyDelta = Number.isFinite(supply) ? Number((reference - supply).toFixed(2)) : NaN;
+          state.commissioning.hpWaterCalibrationStableProgress = 60;
+          state.commissioning.hpWaterCalibrationResultReference = Number(reference.toFixed(2));
+          state.commissioning.hpWaterCalibrationResultSpreadBefore = state.commissioning.hpWaterCalibrationSpread;
+          state.commissioning.hpWaterCalibrationResultExpectedSpread = 0;
+          state.commissioning.hpWaterCalibrationResultRawAverages.hp1In = Number(hp1In.toFixed(2));
+          state.commissioning.hpWaterCalibrationResultRawAverages.hp1Out = Number(hp1Out.toFixed(2));
+          state.commissioning.hpWaterCalibrationResultRawAverages.hp2In = single ? NaN : Number(hp2In.toFixed(2));
+          state.commissioning.hpWaterCalibrationResultRawAverages.hp2Out = single ? NaN : Number(hp2Out.toFixed(2));
           state.commissioning.hpWaterCalibrationRemaining = 0;
           state.commissioning.hpWaterCalibrationPhase = 4;
           state.commissioning.hpWaterCalibrationStatusText = single ? "DONE: HP1 relative offsets" : "DONE: 4 sensor offsets";
@@ -2463,6 +2545,17 @@
       setNumber("HP1 water out temperature offset", suggested.hp1Out, "\u00B0C");
       setNumber("HP2 water in temperature offset", suggested.hp2In, "\u00B0C");
       setNumber("HP2 water out temperature offset", suggested.hp2Out, "\u00B0C");
+      [
+        ["HP1", "in"],
+        ["HP1", "out"],
+        ["HP2", "in"],
+        ["HP2", "out"],
+      ].forEach(([hp, side]) => {
+        const raw = getEntity("sensor", `${hp} - Water ${side} temperature raw`);
+        if (raw) {
+          setNumber(`${hp} - Water ${side} temperature`, raw.value, raw.uom || "\u00B0C");
+        }
+      });
       state.commissioning.hpWaterCalibrationStatusText = "APPLIED";
       state.commissioning.globalStatus = "CM100 READY";
       setCommissioningPhase("hp-water-calibration", "applied");

@@ -39,6 +39,15 @@ inline void reset_task_runtime_state() {
   id(oq_hp_water_calibration_remaining_s) = 0;
   id(oq_hp_water_calibration_spread_c) = NAN;
   id(oq_hp_water_calibration_supply_delta_c) = NAN;
+  id(oq_hp_water_calibration_stable_progress_s) = 0;
+  id(oq_hp_water_calibration_stable_required_s) = 0;
+  id(oq_hp_water_calibration_result_reference_c) = NAN;
+  id(oq_hp_water_calibration_result_spread_before_c) = NAN;
+  id(oq_hp_water_calibration_result_expected_spread_c) = NAN;
+  id(oq_hp_water_calibration_result_hp1_in_raw_avg_c) = NAN;
+  id(oq_hp_water_calibration_result_hp1_out_raw_avg_c) = NAN;
+  id(oq_hp_water_calibration_result_hp2_in_raw_avg_c) = NAN;
+  id(oq_hp_water_calibration_result_hp2_out_raw_avg_c) = NAN;
   id(oq_manual_flow_active) = false;
   id(oq_manual_hp_active) = false;
   id(oq_manual_hp_stop_requested) = false;
