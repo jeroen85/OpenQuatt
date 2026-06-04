@@ -9067,9 +9067,6 @@ const raw = getEntityNumericValue(rawKey);
 const finalValue = getEntityNumericValue(finalKey);
 const offset = getEntityNumericValue(offsetKey);
 if (Number.isFinite(finalValue) && Number.isFinite(offset)) {
-if (Number.isFinite(raw) && Math.abs(raw) > 0.005) {
-return raw;
-}
 return finalValue - offset;
 }
 if (Number.isFinite(raw)) {
@@ -10158,12 +10155,12 @@ return `
 </div>
 <div class="oq-settings-hp-offset-equation" aria-label="${escapeHtml(`${row.label} correctie`)}">
 <div class="oq-settings-hp-offset-readout">
-<span>Raw</span>
+<span>Zonder correctie</span>
 <strong>${escapeHtml(Number.isFinite(raw) ? formatSettingsNumberValue(raw, meta.uom || "°C", 2) : getSettingsTemperatureValue(row.rawKey, 2))}</strong>
 </div>
 <span class="oq-settings-hp-offset-operator">+</span>
 <label class="oq-settings-hp-offset-input">
-<span>Offset</span>
+<span>Correctie</span>
 ${renderNumberInputControl({
 key: row.offsetKey,
 value: getInputDraftValue(row.offsetKey),
@@ -10175,7 +10172,7 @@ unitMarkup: meta.uom ? `<span class="oq-helper-unit-chip">${escapeHtml(meta.uom)
 </label>
 <span class="oq-settings-hp-offset-operator">=</span>
 <div class="oq-settings-hp-offset-readout oq-settings-hp-offset-final">
-<span>Final</span>
+<span>Na wijziging</span>
 <strong>${escapeHtml(finalFromDraft)}</strong>
 </div>
 </div>
@@ -10187,7 +10184,7 @@ return `
 <div class="oq-settings-subpanel-head">
 <p class="oq-helper-label">Sensorcorrecties</p>
 <h4>Water in/out offsets</h4>
-<p>Deze offsets corrigeren de HP-watertemperaturen. Gebruik de service-taak Temperatuursensoren kalibreren om automatisch een voorstel te laten bepalen, of pas de waarden hier handmatig aan.</p>
+<p>Actief is de temperatuur die OpenQuatt nu gebruikt. Zonder correctie wordt daaruit afgeleid en beweegt mee met de actuele sensorwaarde.</p>
 </div>
 <div class="oq-settings-hp-offset-list">
 ${rows.map(renderRow).join("")}
@@ -10966,11 +10963,10 @@ return `
 `;
 };
 const renderLiveCard = (row) => {
-const key = hasEntity(row.rawKey) ? row.rawKey : row.liveKey;
 return `
 <article class="oq-settings-hp-calibration-live-card">
 <span>${escapeHtml(row.label)}</span>
-<strong>${escapeHtml(getSettingsTemperatureValue(key, 2))}</strong>
+<strong>${escapeHtml(getSettingsTemperatureValue(row.liveKey, 2))}</strong>
 </article>
 `;
 };
