@@ -7,6 +7,7 @@ substitutions:
   oq_local_supply_temp_sensor_id: "water_supply_temp_pt1000" # Q-edition local PT1000 source.
   oq_local_supply_temp_selector_id: "oq_local_supply_temp_source" # Explicit local physical-sensor selection.
   oq_controller_flow_sensor_id: "flow_rate_controller" # Use the controller pulse meter for V1 flow.
+  oq_q_flow_source_selector_id: "oq_q_flow_source"     # Explicit Q-edition flow source selector.
   esp_board: "esp32-s3-devkitc-1"                       # PlatformIO board shared with the Waveshare S3 build.
   esp_flash_size: "16MB"                                # Active ESP flash size.
   esp_variant: "esp32s3"                                # Active ESP variant.
