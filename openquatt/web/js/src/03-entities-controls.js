@@ -4114,8 +4114,7 @@
         return;
       }
       const scroller = state.root.querySelector("[data-oq-service-task-scroller]");
-      const target = state.root.querySelector("[data-oq-hp-water-calibration-applied]") ||
-        state.root.querySelector("[data-oq-hp-water-calibration-actions]");
+      const target = state.root.querySelector("[data-oq-hp-water-calibration-actions]");
       if (!scroller || !target) {
         return;
       }

@@ -7704,8 +7704,7 @@ if (!state.root || state.systemModal !== "service-task-hp-water-calibration") {
 return;
 }
 const scroller = state.root.querySelector("[data-oq-service-task-scroller]");
-const target = state.root.querySelector("[data-oq-hp-water-calibration-applied]") ||
-state.root.querySelector("[data-oq-hp-water-calibration-actions]");
+const target = state.root.querySelector("[data-oq-hp-water-calibration-actions]");
 if (!scroller || !target) {
 return;
 }
@@ -10155,7 +10154,7 @@ return `
 <article class="oq-settings-hp-offset-row" data-oq-settings-field="${escapeHtml(row.offsetKey)}">
 <div class="oq-settings-hp-offset-copy">
 <strong>${escapeHtml(row.label)}</strong>
-<span>${escapeHtml(getSettingsTemperatureValue(row.finalKey, 2))} actief in regeling, dashboards en CiC-compat.</span>
+<span>${escapeHtml(getSettingsTemperatureValue(row.finalKey, 2))} actief</span>
 </div>
 <div class="oq-settings-hp-offset-equation" aria-label="${escapeHtml(`${row.label} correctie`)}">
 <div class="oq-settings-hp-offset-readout">
@@ -11032,7 +11031,6 @@ ${sensorRows.map(renderResultRow).join("")}
 ` : ""}
 ${controlsAvailable ? `
 <div class="oq-settings-hp-calibration-actions" data-oq-hp-water-calibration-actions>
-${applied ? `<div class="oq-settings-hp-calibration-applied" data-oq-hp-water-calibration-applied>Offsets toegepast</div>` : ""}
 ${renderNamedToggleActionButton({
 active: running,
 startKey: "hpWaterCalibrationStart",

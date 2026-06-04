@@ -1264,7 +1264,7 @@
         <article class="oq-settings-hp-offset-row" data-oq-settings-field="${escapeHtml(row.offsetKey)}">
           <div class="oq-settings-hp-offset-copy">
             <strong>${escapeHtml(row.label)}</strong>
-            <span>${escapeHtml(getSettingsTemperatureValue(row.finalKey, 2))} actief in regeling, dashboards en CiC-compat.</span>
+            <span>${escapeHtml(getSettingsTemperatureValue(row.finalKey, 2))} actief</span>
           </div>
           <div class="oq-settings-hp-offset-equation" aria-label="${escapeHtml(`${row.label} correctie`)}">
             <div class="oq-settings-hp-offset-readout">
@@ -2194,7 +2194,6 @@
 
         ${controlsAvailable ? `
           <div class="oq-settings-hp-calibration-actions" data-oq-hp-water-calibration-actions>
-            ${applied ? `<div class="oq-settings-hp-calibration-applied" data-oq-hp-water-calibration-applied>Offsets toegepast</div>` : ""}
             ${renderNamedToggleActionButton({
               active: running,
               startKey: "hpWaterCalibrationStart",
