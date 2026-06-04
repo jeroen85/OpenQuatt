@@ -314,6 +314,10 @@
     ],
     advanced: [
       ...COMPRESSOR_SETTING_KEYS,
+      ...OPENTHERM_SETTING_KEYS,
+      ...OPENTHERM_DIAGNOSTIC_KEYS,
+      ...CIC_POLLING_SETTING_KEYS,
+      ...CIC_POLLING_DIAGNOSTIC_KEYS,
       ...CIC_COMPATIBILITY_KEYS,
     ],
     system: [
@@ -1747,6 +1751,18 @@
       return normalized;
     }
 
+    if (entity.domain === "text") {
+      const normalized = String(value || "").trim();
+      const response = await fetch(
+        `${buildEntityPath(entity.domain, entity.name, "set")}?value=${encodeURIComponent(normalized)}`,
+        { method: "POST" }
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return normalized;
+    }
+
     if (entity.domain === "switch" || entity.domain === "binary_sensor") {
       const enabled = Boolean(value);
       const action = enabled ? "turn_on" : "turn_off";
@@ -2414,6 +2430,11 @@
       return;
     }
 
+    if (ENTITY_DEFS[field]?.domain === "text") {
+      state.inputDrafts[field] = String(event.target.value || "");
+      return;
+    }
+
     if (event.target.type === "range" || event.target.type === "number") {
       if (event.target.type === "number") {
         state.inputDrafts[field] = event.target.value;
@@ -2478,6 +2499,11 @@
 
     if (entity.domain === "number") {
       commitNumber(field, event.target.value);
+      return;
+    }
+
+    if (entity.domain === "text") {
+      commitText(field, event.target.value);
       return;
     }
 
@@ -2617,6 +2643,14 @@
       event.preventDefault();
       const details = button.closest(".oq-settings-monitoring-details");
       state.installationMonitoringDetailsOpen = !(details && details.hasAttribute("open"));
+      render();
+      return;
+    }
+
+    if (action === "toggle-integration-diagnostics") {
+      event.preventDefault();
+      const details = button.closest(".oq-settings-integration-diagnostics");
+      state.integrationDiagnosticsOpen = !(details && details.hasAttribute("open"));
       render();
       return;
     }
@@ -3638,6 +3672,47 @@
         "state"
       );
     } catch (error) {
+      state.controlError = `${entity.name} kon niet worden bijgewerkt. ${error.message}`;
+    } finally {
+      state.busyAction = "";
+      render();
+    }
+  }
+
+  async function commitText(key, value) {
+    const entity = ENTITY_DEFS[key];
+    const normalized = String(value || "").trim();
+    state.busyAction = `save-${key}`;
+    state.controlNotice = "";
+    state.controlError = "";
+    state.inputDrafts[key] = String(value ?? "");
+    state.drafts[key] = normalized;
+    render();
+
+    try {
+      const response = await fetch(
+        `${buildEntityPath(entity.domain, entity.name, "set")}?value=${encodeURIComponent(normalized)}`,
+        { method: "POST" }
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      state.entities[key] = {
+        ...(state.entities[key] || {}),
+        value: normalized,
+        state: normalized,
+      };
+      delete state.drafts[key];
+      delete state.inputDrafts[key];
+      state.controlNotice = `${entity.name} bijgewerkt.`;
+      await refreshEntities(
+        state.appView === "settings"
+          ? getSettingsRefreshKeys()
+          : [key, "setupComplete"],
+        "state"
+      );
+    } catch (error) {
+      state.inputDrafts[key] = normalized;
       state.controlError = `${entity.name} kon niet worden bijgewerkt. ${error.message}`;
     } finally {
       state.busyAction = "";

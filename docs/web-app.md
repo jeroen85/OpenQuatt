@@ -147,6 +147,14 @@ Wil je dauwpuntbronnen uit Home Assistant gebruiken, kijk dan bij [Dashboard ins
 
 Hier staan instellingen die je meestal niet nodig hebt bij normaal gebruik, zoals compressoruitsluitingen, minimale runtime en compatibiliteitsopties.
 
+Je kunt hier ook de directe integraties beheren:
+
+- `OpenTherm`: zet de lokale OpenTherm-thermostaatkoppeling aan of uit;
+- `CIC-polling`: zet het uitlezen van een externe CIC JSON-feed aan of uit en pas de feed-URL aan;
+- `CiC-compatibiliteit`: gebruik dit alleen als de Quatt app via de CiC moet blijven meekijken.
+
+Dezelfde sectie toont compacte diagnostiek voor OpenTherm en CIC, zoals linkstatus, JSON-feedstatus, kamertemperatuur, setpoint en flow wanneer de firmware die signalen exposeert.
+
 Laat dit met rust zolang OpenQuatt logisch werkt. Verander liever een instelling per keer en kijk daarna wat het systeem doet.
 
 ### Systeem

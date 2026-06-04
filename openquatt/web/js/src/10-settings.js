@@ -600,7 +600,7 @@
         : activeGroup === "advanced"
             ? [
                 renderSettingsCompressorSection(),
-                renderSettingsCiCCompatibilitySection(),
+                renderSettingsOpenThermCicSection(),
               ]
             : [
                 renderSettingsQuickStartSection(),
@@ -2674,25 +2674,184 @@
     );
   }
 
-  function renderSettingsCiCCompatibilitySection() {
-    if (!hasEntity("cicCompatibilityMode")) {
+  function renderSettingsOpenThermCicSection() {
+    const hasOpenThermConfig = hasEntity("otEnabled");
+    const hasCicConfig = hasEntity("cicPollingEnabled") || hasEntity("cicFeedUrl");
+    const hasCicCompatibilityConfig = hasEntity("cicCompatibilityMode");
+    const hasStatus = hasEntity("otLinkProblem") || hasEntity("cicDataStale") || hasEntity("cicJsonFeedOk");
+    if (!hasOpenThermConfig && !hasCicConfig && !hasCicCompatibilityConfig && !hasStatus) {
       return "";
     }
 
+    const cicPollingEnabled = isInstallationMonitoringIntegrationEnabled("cicPollingEnabled");
+    const otEnabled = isInstallationMonitoringIntegrationEnabled("otEnabled");
+    const renderCompactSwitch = (key, title, copy) => {
+      if (!hasEntity(key)) {
+        return "";
+      }
+      const enabled = Boolean(getEntityValue(key));
+      const busy = state.loadingEntities || state.busyAction === `switch-${key}`;
+      const renderButton = (label, targetState) => {
+        const active = targetState === (enabled ? "on" : "off");
+        return `
+          <button
+            class="oq-settings-integration-toggle-button${active ? " is-active" : ""}"
+            type="button"
+            data-oq-action="toggle-overview-control"
+            data-control-key="${escapeHtml(key)}"
+            data-control-state="${escapeHtml(targetState)}"
+            aria-pressed="${active ? "true" : "false"}"
+            ${busy ? "disabled" : ""}
+          >
+            ${escapeHtml(label)}
+          </button>
+        `;
+      };
+
+      return `
+        <article class="oq-settings-integration-card" data-oq-settings-field="${escapeHtml(key)}">
+          <div class="oq-settings-integration-card-head">
+            <h4>${escapeHtml(title)}</h4>
+            <span class="oq-settings-integration-pill${enabled ? " is-on" : ""}">${escapeHtml(enabled ? "Aan" : "Uit")}</span>
+          </div>
+          <p>${escapeHtml(copy)}</p>
+          <div class="oq-settings-integration-toggle" role="group" aria-label="${escapeHtml(title)}">
+            ${renderButton("Uit", "off")}
+            ${renderButton("Aan", "on")}
+          </div>
+        </article>
+      `;
+    };
+
+    const renderDiagnosticItem = ({ label, value, active = false }) => `
+      <div class="oq-settings-integration-diagnostic-item${active ? " is-warning" : ""}">
+        <dt>${escapeHtml(label)}</dt>
+        <dd>${escapeHtml(value)}</dd>
+      </div>
+    `;
+
+    const renderBinaryDiagnosticItem = (key, label, activeLabel = "Actief", inactiveLabel = "Normaal", options = {}) => {
+      if (!hasEntity(key)) {
+        return "";
+      }
+      const active = isInstallationMonitoringBinaryActive(key);
+      return renderDiagnosticItem({
+        label,
+        value: active ? activeLabel : inactiveLabel,
+        active: options.warningWhenActive ? active : false,
+      });
+    };
+
+    const renderValueDiagnosticItem = (key, label, options = {}) => {
+      const fallbackKey = options.fallbackKey || "";
+      if (!hasEntity(key) && !(fallbackKey && hasEntity(fallbackKey))) {
+        return "";
+      }
+      return renderDiagnosticItem({
+        label,
+        value: getSettingsStatValue(hasEntity(key) ? key : fallbackKey, options),
+      });
+    };
+
+    const renderDiagnosticGroup = (title, rows) => {
+      const content = rows.filter(Boolean).join("");
+      if (!content) {
+        return "";
+      }
+      return `
+        <article class="oq-settings-integration-diagnostic-group">
+          <h4>${escapeHtml(title)}</h4>
+          <dl>${content}</dl>
+        </article>
+      `;
+    };
+
+    const urlField = hasEntity("cicFeedUrl") ? `
+      <article class="oq-settings-integration-card oq-settings-integration-card--wide" data-oq-settings-field="cicFeedUrl">
+        <div class="oq-settings-integration-card-head">
+          <h4>CIC feed URL</h4>
+          <span class="oq-settings-integration-pill">Lokaal</span>
+        </div>
+        <label class="oq-settings-control oq-settings-control--text">
+          <input
+            class="oq-helper-input oq-settings-integration-url-input"
+            type="url"
+            data-oq-field="cicFeedUrl"
+            value="${escapeHtml(String(getInputDraftValue("cicFeedUrl") || ""))}"
+            placeholder="http://<host>:<poort>/beta/feed/data.json"
+            autocomplete="off"
+            spellcheck="false"
+            ${state.loadingEntities ? "disabled" : ""}
+          >
+        </label>
+        <p>Gebruik de lokale JSON-feed van de CiC.</p>
+      </article>
+    ` : "";
+
+    const otDiagnosticPanel = renderDiagnosticGroup("OpenTherm", [
+      hasEntity("otLinkProblem") ? renderDiagnosticItem({
+        label: "OT-link",
+        value: !otEnabled
+          ? "Uitgeschakeld"
+          : isInstallationMonitoringBinaryActive("otLinkProblem") ? "Probleem" : "OK",
+        active: otEnabled && isInstallationMonitoringBinaryActive("otLinkProblem"),
+      }) : "",
+      renderBinaryDiagnosticItem("otThermostatChEnable", "Thermostaat CH", "Actief", "Normaal"),
+      renderBinaryDiagnosticItem("otThermostatCoolingEnable", "Thermostaat koeling", "Actief", "Normaal"),
+      renderValueDiagnosticItem("otControlSetpoint", "Control setpoint"),
+      renderValueDiagnosticItem("otRoomSetpoint", "Room setpoint", { fallbackKey: "roomSetpoint" }),
+      renderValueDiagnosticItem("otRoomTemp", "Room temperature", { fallbackKey: "roomTemp" }),
+    ]);
+
+    const cicDiagnosticPanel = renderDiagnosticGroup("CIC-feed", [
+      hasEntity("cicJsonFeedOk") ? renderDiagnosticItem({
+        label: "JSON-feed",
+        value: !cicPollingEnabled
+          ? "Polling uit"
+          : isInstallationMonitoringBinaryActive("cicJsonFeedOk") ? "OK" : "Probleem",
+        active: cicPollingEnabled && !isInstallationMonitoringBinaryActive("cicJsonFeedOk"),
+      }) : "",
+      hasEntity("cicDataStale") ? renderDiagnosticItem({
+        label: "Data",
+        value: !cicPollingEnabled
+          ? "Polling uit"
+          : isInstallationMonitoringBinaryActive("cicDataStale") ? "Verouderd" : "Actueel",
+        active: cicPollingEnabled && isInstallationMonitoringBinaryActive("cicDataStale"),
+      }) : "",
+      renderBinaryDiagnosticItem("cicChEnabled", "CH-vraag", "Actief", "Normaal"),
+      renderBinaryDiagnosticItem("cicCoolingEnabled", "Koeling", "Actief", "Normaal"),
+      renderValueDiagnosticItem("cicControlSetpoint", "Control setpoint"),
+      renderValueDiagnosticItem("cicRoomSetpoint", "Room setpoint"),
+      renderValueDiagnosticItem("cicRoomTemp", "Room temperature"),
+      renderValueDiagnosticItem("cicFlowrate", "Flow"),
+      renderValueDiagnosticItem("cicLastSuccessAge", "Laatste succes"),
+    ]);
+
+    const diagnosticsPanel = otDiagnosticPanel || cicDiagnosticPanel ? `
+      <details class="oq-settings-integration-diagnostics"${state.integrationDiagnosticsOpen ? " open" : ""}>
+        <summary data-oq-action="toggle-integration-diagnostics">
+          <strong>Diagnostiek</strong>
+          <span>OpenTherm- en CIC-signalen</span>
+        </summary>
+        <div class="oq-settings-integration-diagnostic-grid">
+          ${otDiagnosticPanel}
+          ${cicDiagnosticPanel}
+        </div>
+      </details>
+    ` : "";
+
     return renderSettingsSection(
       "Integratie",
-      "CiC-compatibiliteit",
-      "Zet dit aan als je de Quatt app wilt blijven gebruiken terwijl OpenQuatt tussen de warmtepomp en de CiC zit. Let op: sluit de CiC dan via Modbus aan op de tweede RS485-poort van de OpenQuatt Controller.",
+      "OpenTherm & CIC-polling",
+      "Configureer de directe thermostaatbus, externe CIC-feed en Quatt app-compatibiliteit.",
       `
-        <div class="oq-settings-grid">
-          ${renderSettingsSwitchField(
-            "cicCompatibilityMode",
-            "Quatt app-verbinding via CiC",
-            "Zet dit aan als je wilt dat OpenQuatt gegevens blijft doorgeven aan de CiC voor de Quatt app. Standaard staat dit uit.",
-            "OpenQuatt houdt de gegevensstroom naar de CiC in stand, zodat de Quatt app kan blijven werken.",
-            "OpenQuatt geeft geen gegevens door aan de CiC voor de Quatt app."
-          )}
+        <div class="oq-settings-integration-grid">
+          ${renderCompactSwitch("otEnabled", "OpenTherm", "Thermostaatbus voor warmtevraag en kamerwaarden.")}
+          ${renderCompactSwitch("cicPollingEnabled", "CIC-polling", "JSON-feed uitlezen voor setpoint, kamerwaarden en flow.")}
+          ${renderCompactSwitch("cicCompatibilityMode", "CiC-compatibiliteit", "Gegevens doorgeven zodat de Quatt app kan blijven meekijken.")}
+          ${urlField}
         </div>
+        ${diagnosticsPanel}
       `,
     );
   }

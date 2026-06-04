@@ -1,5 +1,5 @@
 (function () {
-  const DOMAINS = new Set(["select", "number", "sensor", "text_sensor", "binary_sensor", "button", "time", "datetime", "update", "switch"]);
+  const DOMAINS = new Set(["select", "number", "sensor", "text", "text_sensor", "binary_sensor", "button", "time", "datetime", "update", "switch"]);
   const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
   const OPENQUATT_AUTH_RECOVERY_WINDOW_MS = 600000;
   const entities = new Map();
@@ -691,6 +691,7 @@
     setEntity("switch", "Boiler assist enabled", { value: true, state: true });
     setEntity("switch", "Manual Cooling Enable", { value: false, state: false });
     setEntity("switch", "CIC - Enable polling", { value: false, state: false });
+    setEntity("text", "CIC - Feed URL", { value: "http://192.168.2.117:8080/beta/feed/data.json", state: "http://192.168.2.117:8080/beta/feed/data.json" });
     setEntity("switch", "OpenTherm Enabled", { value: false, state: false });
     setEntity("switch", "CiC Compatibility Mode", { value: false, state: false });
     setEntity("switch", "Trendopslag", { value: true, state: true });
@@ -898,6 +899,15 @@
       ["System Thermal Energy Daily", 0, "kWh"],
       ["System Thermal Energy Cumulative", 0, "kWh"],
       ["Flow average (Selected)", 0, "L/h"],
+      ["OT - Control Setpoint", 30.0, "\u00B0C"],
+      ["OT - Room Setpoint", 20.0, "\u00B0C"],
+      ["OT - Room Temperature", 20.9, "\u00B0C"],
+      ["CIC - Water Supply Temp", 29.5, "\u00B0C"],
+      ["CIC - Control setpoint", 30.0, "\u00B0C"],
+      ["CIC - Room setpoint", 20.0, "\u00B0C"],
+      ["CIC - Room temperature", 20.9, "\u00B0C"],
+      ["CIC - Flowrate (filtered)", 785, "L/h"],
+      ["CIC - Last success age", 12, "s"],
       ["Room Temperature (Selected)", 20.6, "°C"],
       ["Room Setpoint (Selected)", 21.0, "°C"],
       ["Water Supply Temp (Selected)", 29.5, "°C"],
@@ -967,6 +977,11 @@
       ["Compressor cycling alert alternating", false],
       ["Lowflow fault active", false],
       ["Flow mismatch (HP1 vs HP2)", false],
+      ["OT - Thermostat CH Enable", false],
+      ["OT - Thermostat Cooling Enable", false],
+      ["CIC - CH enabled", false],
+      ["CIC - Cooling enabled", false],
+      ["CIC - JSON Feed OK", true],
       ["CIC - Data stale", false],
       ["OT - Link Problem", false],
       ["HP1 - Defrost", false],
@@ -1092,8 +1107,21 @@
     setBinary("Alternating compressor starts warning", false);
     setBinary("Lowflow fault active", false);
     setBinary("Flow mismatch (HP1 vs HP2)", false);
+    setBinary("OT - Thermostat CH Enable", state.scenario !== "idle");
+    setBinary("OT - Thermostat Cooling Enable", state.scenario === "cooling");
+    setBinary("CIC - CH enabled", state.scenario !== "idle");
+    setBinary("CIC - Cooling enabled", state.scenario === "cooling");
+    setBinary("CIC - JSON Feed OK", true);
     setBinary("CIC - Data stale", !isSwitchEnabled("CIC - Enable polling"));
     setBinary("OT - Link Problem", false);
+    setNumber("OT - Control Setpoint", state.scenario === "cooling" ? 18.0 : 30.0, "\u00B0C");
+    setNumber("OT - Room Setpoint", state.scenario === "cooling" ? 23.0 : 21.0, "\u00B0C");
+    setNumber("OT - Room Temperature", Number(getEntity("sensor", "Room Temperature (Selected)")?.value || 20.6), "\u00B0C");
+    setNumber("CIC - Control setpoint", state.scenario === "cooling" ? 18.0 : 30.0, "\u00B0C");
+    setNumber("CIC - Room setpoint", Number(getEntity("sensor", "Room Setpoint (Selected)")?.value || 21.0), "\u00B0C");
+    setNumber("CIC - Room temperature", Number(getEntity("sensor", "Room Temperature (Selected)")?.value || 20.6), "\u00B0C");
+    setNumber("CIC - Flowrate (filtered)", Number(getEntity("sensor", "Flow average (Selected)")?.value || 0), "L/h");
+    setNumber("CIC - Last success age", isSwitchEnabled("CIC - Enable polling") ? 12 : 0, "s");
     setNumber("HP1 - Compressor starts 2h", 3);
     setNumber("HP1 - Compressor starts 6h", 11);
     setNumber("HP1 - Compressor starts 24h", 29);
@@ -1145,6 +1173,7 @@
     } else if (state.diagnostics === "connections") {
       setEntity("switch", "CIC - Enable polling", { value: true, state: true });
       setEntity("switch", "OpenTherm Enabled", { value: true, state: true });
+      setBinary("CIC - JSON Feed OK", false);
       setBinary("CIC - Data stale", true);
       setBinary("OT - Link Problem", true);
     } else if (state.diagnostics === "hp-fault") {
@@ -1900,6 +1929,12 @@
     notifyMockUpdated();
   }
 
+  function handleTextSet(name, value) {
+    setText("text", name, String(value || "").trim());
+    updateSummary();
+    notifyMockUpdated();
+  }
+
   function handleSwitchSet(name, enabled) {
     const entity = getEntity("switch", name);
     if (!entity) {
@@ -2489,6 +2524,8 @@
           handleTimeSet(request.name, rawValue || "");
         } else if (request.domain === "datetime") {
           handleDateTimeSet(request.name, rawValue || "");
+        } else if (request.domain === "text") {
+          handleTextSet(request.name, rawValue || "");
         }
         return mockResponse(200, entity);
       }
