@@ -265,12 +265,24 @@ std::string OpenQuattMqttPublisher::build_config_signature_() const {
   if (this->config_ == nullptr) {
     return std::string();
   }
-  return this->config_->get_base_topic() + "|" + this->config_->get_publish_profile_name() + "|" +
-         std::to_string(this->config_->get_essential_interval_s()) + "|" +
-         std::to_string(this->config_->get_standard_interval_s()) + "|" +
-         std::to_string(this->config_->get_diagnostic_interval_s()) + "|" +
-         (this->config_->get_retain_snapshots() ? "retain" : "volatile") + "|" +
-         (this->config_->is_enabled() ? "enabled" : "disabled");
+  const std::string base_topic = this->config_->get_base_topic();
+  const std::string profile_name = this->config_->get_publish_profile_name();
+  std::string out;
+  out.reserve(base_topic.size() + profile_name.size() + 48);
+  out += base_topic;
+  out += "|";
+  out += profile_name;
+  out += "|";
+  out += std::to_string(this->config_->get_essential_interval_s());
+  out += "|";
+  out += std::to_string(this->config_->get_standard_interval_s());
+  out += "|";
+  out += std::to_string(this->config_->get_diagnostic_interval_s());
+  out += "|";
+  out += this->config_->get_retain_snapshots() ? "retain" : "volatile";
+  out += "|";
+  out += this->config_->is_enabled() ? "enabled" : "disabled";
+  return out;
 }
 
 static inline void append_sensor_signature_(std::string &out, const sensor::Sensor *sensor) {
