@@ -62,6 +62,8 @@ OpenQuatt richt zich nu bewust op drie hardwareprofielen:
 
 Voor nieuwe installaties is de Heatpump Controller Q-edition de voorkeursmodule.
 
+Alle ondersteunde OpenQuatt-profielen gebruiken PSRAM. De firmware zet `psram.ignore_not_found: false`, zodat ontbrekende PSRAM direct zichtbaar wordt als hardware- of profielprobleem in plaats van stil tot beperkte functionaliteit te leiden.
+
 ## Documentatie
 
 Belangrijkste pagina's voor gebruikers:

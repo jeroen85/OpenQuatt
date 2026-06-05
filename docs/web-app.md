@@ -102,6 +102,8 @@ Zie je hier al vreemde waarden, ga dan niet meteen tunen. Controleer eerst de br
 
 Trendopslag kan onder `Instellingen -> Systeem` worden beheerd. Als trendopslag uit staat, kan de tab minder of geen historie tonen.
 
+OpenQuatt bewaart de korte trendhistorie in PSRAM en kan aanvullend tot 30 dagen trendhistorie in flash bewaren. Alle ondersteunde OpenQuatt-profielen gebruiken PSRAM; ontbrekende PSRAM wijst dus op een hardware- of profielprobleem. De flashhistorie reserveert 360 KiB in de `openquatt_data` partitie. Op het 8 MB hardwareprofiel is die partitie 384 KiB groot, waardoor na de trendhistorie nog 24 KiB overblijft voor andere data in dezelfde partitie.
+
 ## Energie
 
 `Energie` geeft inzicht in vermogen en rendement. Gebruik dit vooral om richting te krijgen, niet als gecertificeerde energiemeter.

@@ -283,6 +283,25 @@ Shared non-hardware constants are in `openquatt/oq_substitutions_common.yaml`.
 
 Compile-time profile selection is done by choosing a matrix entrypoint from `build_targets.yaml`. Ethernet targets are enabled for the Heatpump Controller Q as separate Ethernet-only builds.
 
+### 9.1 Memory and flash expectations
+
+All active hardware profiles configure PSRAM with `ignore_not_found: false`. OpenQuatt therefore treats PSRAM as required hardware for supported profiles, not as an optional acceleration path. Missing PSRAM should surface as a hardware or profile mismatch instead of silently degrading Trends and LogHistory behavior.
+
+Trends uses a fixed flash archive inside the `openquatt_data` partition:
+
+- `components/openquatt_trends` reserves 90 flash sectors of 4 KiB.
+- Total Trends flash archive size is 360 KiB.
+- The archive stores 720 hourly blocks, covering up to 30 days.
+
+The custom partition tables leave different data headroom:
+
+| Partition table | `openquatt_data` size | Trends archive | Remaining data partition space |
+|---|---:|---:|---:|
+| `openquatt_8mb.csv` | 384 KiB | 360 KiB | 24 KiB |
+| `openquatt_16mb.csv` | 6016 KiB | 360 KiB | 5656 KiB |
+
+The 8 MB profile therefore has only a small `openquatt_data` margin after Trends flash history. Keep any future data-partition features explicit about their storage budget.
+
 
 ## 10. UI and Observability Organization
 
