@@ -565,6 +565,7 @@ sensor:
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
     name: "${prefix}Firmware EEPROM"
+    internal: true
     disabled_by_default: true
     icon: mdi:memory
     register_type: holding
@@ -577,6 +578,7 @@ sensor:
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
     name: "${prefix}Control board item number"
+    internal: true
     disabled_by_default: true
     icon: mdi:identifier
     register_type: holding
@@ -970,6 +972,7 @@ binary_sensor:
     modbus_controller_id: ${hp_id}
     id: ${hp_id}_fan_low_speed_mode
     name: "${prefix}Fan Low Speed Mode"
+    internal: true
     disabled_by_default: true
     icon: mdi:fan-speed-1
     device_class: running
@@ -1010,6 +1013,7 @@ binary_sensor:
     modbus_controller_id: ${hp_id}
     id: ${hp_id}_fan_defrost_mode
     name: "${prefix}Fan Defrost Mode"
+    internal: true
     disabled_by_default: true
     icon: mdi:snowflake-melt
     device_class: running
@@ -1024,6 +1028,7 @@ binary_sensor:
     modbus_controller_id: ${hp_id}
     id: ${hp_id}_fan_high_speed_mode
     name: "${prefix}Fan High Speed Mode"
+    internal: true
     disabled_by_default: true
     icon: mdi:fan-speed-3
     device_class: running
@@ -1291,6 +1296,7 @@ text_sensor:
   - platform: template
     id: ${hp_id}_pcb_firmware_version
     name: "${prefix}ODU PCB firmware version"
+    internal: true
     icon: mdi:chip
     entity_category: diagnostic
     disabled_by_default: true
