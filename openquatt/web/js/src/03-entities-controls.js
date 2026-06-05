@@ -585,6 +585,17 @@
       || normalized.includes("timeout");
   }
 
+  const OPTIONAL_MISSING_RETRY_INTERVAL_MS = 5 * 60 * 1000;
+
+  function clearOptionalMissingEntities() {
+    if (!state.optionalMissingEntities) {
+      return;
+    }
+    for (const key of Object.keys(state.optionalMissingEntities)) {
+      delete state.optionalMissingEntities[key];
+    }
+  }
+
   function noteEntityRefreshSuccess() {
     const now = Date.now();
     state.lastEntitySyncAt = now;
@@ -611,6 +622,7 @@
         state.webServerLogEnabled = null;
         state.webServerLogConnected = false;
       }
+      clearOptionalMissingEntities();
     }
   }
 
@@ -701,12 +713,24 @@
     }
   }
 
-  function isKnownOptionalMissingEntity(key) {
-    return Boolean(ENTITY_DEFS[key]?.optional && state.optionalMissingEntities?.[key]);
+  function isKnownOptionalMissingEntity(key, now = Date.now()) {
+    const missingAt = state.optionalMissingEntities?.[key];
+    if (!ENTITY_DEFS[key]?.optional || !missingAt) {
+      return false;
+    }
+    return (now - Number(missingAt)) < OPTIONAL_MISSING_RETRY_INTERVAL_MS;
+  }
+
+  function markOptionalMissingEntity(key, now = Date.now()) {
+    if (!state.optionalMissingEntities) {
+      return;
+    }
+    state.optionalMissingEntities[key] = now;
   }
 
   async function refreshEntities(keys, detail = "state", options = {}) {
-    const refreshKeys = keys.filter((key) => !isKnownOptionalMissingEntity(key));
+    const now = Date.now();
+    const refreshKeys = keys.filter((key) => !isKnownOptionalMissingEntity(key, now));
     if (!refreshKeys.length) {
       return;
     }
@@ -741,7 +765,7 @@
         const message = result.reason.message || String(result.reason);
         if (ENTITY_DEFS[key]?.optional) {
           if (message.includes("HTTP 404")) {
-            state.optionalMissingEntities[key] = true;
+            markOptionalMissingEntity(key, now);
           }
         } else if (!firstError) {
           firstError = message;
