@@ -334,7 +334,9 @@ void OpenQuattEntities::dump_config() {
 void OpenQuattEntities::write_entities(httpd_req_t *req, const std::string &detail, const std::string &entities) const {
   ChunkedJsonWriter writer(req);
   const bool detail_all = detail == "all";
-  const bool include_internal = this->web_server_ != nullptr && this->web_server_->include_internal_;
+  // Mirror ESPHome's direct entity endpoints: an explicitly requested internal entity is returned,
+  // even when internal entities are not listed in the web UI.
+  const bool include_internal = true;
   std::vector<std::string> missing;
   std::vector<std::string> errors;
 
