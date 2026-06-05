@@ -18,6 +18,14 @@ namespace {
 
 constexpr uint32_t kDefaultWindowHours = 24;
 
+bool url_path_matches(const char *url, const char *path) {
+  if (url == nullptr || path == nullptr) {
+    return false;
+  }
+  const size_t path_len = std::strlen(path);
+  return std::strncmp(url, path, path_len) == 0 && (url[path_len] == '\0' || url[path_len] == '?');
+}
+
 uint32_t parse_window_hours_value(const char *value) {
   if (value == nullptr || value[0] == '\0') {
     return kDefaultWindowHours;
@@ -138,18 +146,12 @@ class OpenQuattTrendsRequestHandler : public AsyncWebHandler {
   bool canHandle(AsyncWebServerRequest *request) const override {
     char url_buf[AsyncWebServerRequest::URL_BUF_SIZE];
     request->url_to(url_buf);
-    return std::strncmp(url_buf, "/trends/history", std::strlen("/trends/history")) == 0 &&
-           request->method() == HTTP_GET;
+    return url_path_matches(url_buf, "/trends/history") && request->method() == HTTP_GET;
   }
 
   void handleRequest(AsyncWebServerRequest *request) override {
     char url_buf[AsyncWebServerRequest::URL_BUF_SIZE];
     request->url_to(url_buf);
-    if (std::strncmp(url_buf, "/trends/history", std::strlen("/trends/history")) != 0 || request->method() != HTTP_GET) {
-      request->send(404);
-      return;
-    }
-
     const std::string hours_arg = request->arg("hours");
     const uint32_t window_hours = hours_arg.empty() ? parse_window_hours_from_url(url_buf)
                                                     : parse_window_hours_value(hours_arg.c_str());
