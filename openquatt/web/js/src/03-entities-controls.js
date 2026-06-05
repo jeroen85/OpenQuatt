@@ -291,12 +291,15 @@
       ...FLOW_TUNING_KEYS,
       ...SILENT_SETTING_KEYS,
       ...COMPRESSOR_SETTING_KEYS,
+      ...SENSOR_CALIBRATION_KEYS,
+      ...SENSOR_CALIBRATION_STATE_KEYS,
       "maxWater",
     ],
     service: [
       ...INSTALLATION_MONITORING_STATE_KEYS,
       ...COMMISSIONING_STATE_KEYS,
       ...SENSOR_CALIBRATION_KEYS,
+      ...SENSOR_CALIBRATION_STATE_KEYS,
       "boilerCvAssistEnabled",
       "boilerRatedHeatPower",
       "flowSelected",
@@ -2122,7 +2125,10 @@
     if (state.appView === "settings") {
       return [...new Set([...base, ...getSettingsGroupHydrationKeys()])];
     }
-    if (state.appView === "overview" || state.appView === "trends" || state.appView === "energy") {
+    if (state.appView === "energy") {
+      return [...new Set([...base, ...OVERVIEW_KEYS])];
+    }
+    if (state.appView === "overview" || state.appView === "trends") {
       return [...new Set([...base, ...FAST_OVERVIEW_KEYS])];
     }
     return [...new Set(base)];
@@ -2328,7 +2334,7 @@
         concurrency: forceFast && isOverviewLike ? FAST_VIEW_ENTITY_REFRESH_CONCURRENCY : ENTITY_REFRESH_CONCURRENCY,
       });
       state.lastFastEntitySyncAt = Date.now();
-      if (isBulkDue) {
+      if (isBulkDue && isOverviewLike && !isPrefetchOverview) {
         state.lastBulkEntitySyncAt = state.lastFastEntitySyncAt;
       }
       if (staticKeys.length) {
@@ -2841,7 +2847,7 @@
       const nextView = button.dataset.viewId || "overview";
       setAppView(nextView, { syncMode: "push" });
       render();
-      syncEntities(nextView === "settings" ? { forceBulk: true } : { forceFast: true });
+      syncEntities(nextView === "settings" || nextView === "energy" ? { forceBulk: true } : { forceFast: true });
       return;
     }
 
