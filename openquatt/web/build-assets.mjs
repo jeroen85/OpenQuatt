@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { transform } from "esbuild";
 import { checkSettingsBackupConfig } from "./check-settings-backup.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -39,75 +40,14 @@ const bundles = [
   },
 ];
 
-function minifyJavaScript(source) {
-  const output = [];
-  let state = "normal";
-  let quote = "";
-  let escaped = false;
-
-  for (let index = 0; index < source.length; index += 1) {
-    const char = source[index];
-    const next = source[index + 1] || "";
-
-    if (state === "line-comment") {
-      if (char === "\n" || char === "\r") {
-        state = "normal";
-        output.push(char);
-      }
-      continue;
-    }
-
-    if (state === "block-comment") {
-      if (char === "*" && next === "/") {
-        index += 1;
-        state = "normal";
-        output.push("\n");
-      }
-      continue;
-    }
-
-    if (state === "string" || state === "template") {
-      output.push(char);
-      if (escaped) {
-        escaped = false;
-      } else if (char === "\\") {
-        escaped = true;
-      } else if (char === quote) {
-        state = "normal";
-      }
-      continue;
-    }
-
-    if (char === "/" && next === "/") {
-      state = "line-comment";
-      index += 1;
-      continue;
-    }
-
-    if (char === "/" && next === "*") {
-      state = "block-comment";
-      index += 1;
-      continue;
-    }
-
-    if (char === "'" || char === '"' || char === "`") {
-      output.push(char);
-      quote = char;
-      escaped = false;
-      state = char === "`" ? "template" : "string";
-      continue;
-    }
-
-    output.push(char);
-  }
-
-  return output
-    .join("")
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .join("\n")
-    .trim();
+async function minifyJavaScript(source) {
+  const result = await transform(source, {
+    format: "iife",
+    legalComments: "none",
+    minify: true,
+    target: "es2020",
+  });
+  return result.code.trim();
 }
 
 function minifyCss(source) {
@@ -158,7 +98,7 @@ async function buildBundle(bundle) {
     bodySegments.splice(5, 0, await buildEmbeddedAssetBlock());
   }
   const body = bodySegments.join("\n");
-  const minified = bundle.label === "JS" ? minifyJavaScript(body) : minifyCss(body);
+  const minified = bundle.label === "JS" ? await minifyJavaScript(body) : minifyCss(body);
   await mkdir(path.dirname(bundle.output), { recursive: true });
   await writeFile(bundle.output, `${header}\n${minified}\n`, "utf8");
   console.log(`${bundle.label} bundle rebuilt: ${path.relative(__dirname, bundle.output)}`);

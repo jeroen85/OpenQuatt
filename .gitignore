@@ -8,9 +8,11 @@
 output/
 __pycache__/
 *.pyc
+node_modules/
 tmp/
 .tmp/
 .cache/
 .venv/
 # Lokale referentiedocumenten die bewust niet in GitHub horen
 docs/_local_reference/
+references/

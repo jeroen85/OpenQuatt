@@ -1,0 +1,21 @@
+{
+  "name": "openquatt",
+  "version": "1.0.0",
+  "description": "OpenQuatt firmware and embedded web UI tooling",
+  "private": true,
+  "scripts": {
+    "build:web": "node openquatt/web/build-assets.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jeroen85/OpenQuatt.git"
+  },
+  "license": "GPL-3.0-only",
+  "bugs": {
+    "url": "https://github.com/jeroen85/OpenQuatt/issues"
+  },
+  "homepage": "https://github.com/jeroen85/OpenQuatt#readme",
+  "devDependencies": {
+    "esbuild": "^0.28.0"
+  }
+}
