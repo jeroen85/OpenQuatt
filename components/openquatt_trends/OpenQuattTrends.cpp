@@ -557,7 +557,8 @@ bool OpenQuattTrends::write_flash_block_(const FlashBlockBuilder &builder) {
 
   const uint32_t slot_index = builder.sequence % FLASH_SLOT_COUNT;
   const uint32_t slot_offset = slot_index * FLASH_SLOT_SIZE;
-  if ((slot_offset % FLASH_SECTOR_SIZE) == 0) {
+  const bool erased_sector = (slot_offset % FLASH_SECTOR_SIZE) == 0;
+  if (erased_sector) {
     const esp_err_t erase_result = esp_partition_erase_range(this->flash_partition_, slot_offset, FLASH_SECTOR_SIZE);
     if (erase_result != ESP_OK) {
       ESP_LOGW(TAG, "Could not erase trend flash sector %u: %s", static_cast<unsigned>(slot_index / FLASH_SLOTS_PER_SECTOR),
@@ -612,7 +613,9 @@ bool OpenQuattTrends::write_flash_block_(const FlashBlockBuilder &builder) {
   this->next_flash_sequence_ = builder.sequence + 1U;
   this->flash_dirty_ = false;
   this->last_flash_flush_ms_ = static_cast<uint32_t>(millis());
-  this->invalidate_flash_index_();
+  if (!this->update_flash_index_after_write_(info, erased_sector)) {
+    this->invalidate_flash_index_();
+  }
   return true;
 }
 
@@ -639,6 +642,67 @@ bool OpenQuattTrends::flush_flash_builder_(bool force) {
 void OpenQuattTrends::invalidate_flash_index_() {
   this->flash_archive_scanned_ = false;
   this->flash_index_count_ = 0;
+}
+
+bool OpenQuattTrends::update_flash_index_after_write_(const FlashBlockInfo &info, bool erased_sector) {
+  if (!this->flash_archive_scanned_ || !this->flash_index_) {
+    return false;
+  }
+
+  const uint32_t erased_sector_start = (info.slot_index / FLASH_SLOTS_PER_SECTOR) * FLASH_SLOTS_PER_SECTOR;
+  const uint32_t erased_sector_end = erased_sector_start + FLASH_SLOTS_PER_SECTOR;
+  size_t write_index = 0;
+  for (size_t read_index = 0; read_index < this->flash_index_count_; ++read_index) {
+    const FlashBlockInfo &existing = this->flash_index_[read_index];
+    const bool same_slot = existing.slot_index == info.slot_index;
+    const bool erased_slot = erased_sector && existing.slot_index >= erased_sector_start &&
+                             existing.slot_index < erased_sector_end;
+    if (!same_slot && !erased_slot) {
+      this->flash_index_[write_index++] = existing;
+    }
+  }
+
+  this->flash_index_count_ = write_index;
+  if (this->flash_index_count_ >= this->flash_index_.size()) {
+    return false;
+  }
+
+  this->flash_index_[this->flash_index_count_++] = info;
+  if (this->flash_index_count_ > 1) {
+    std::sort(this->flash_index_.data(), this->flash_index_.data() + this->flash_index_count_,
+              [](const FlashBlockInfo &a, const FlashBlockInfo &b) {
+                if (a.start_timestamp_ms == b.start_timestamp_ms) {
+                  return a.sequence < b.sequence;
+                }
+                return a.start_timestamp_ms < b.start_timestamp_ms;
+              });
+  }
+
+  this->rebuild_flash_metadata_from_index_();
+  this->flash_archive_scanned_ = true;
+  return true;
+}
+
+void OpenQuattTrends::rebuild_flash_metadata_from_index_() {
+  this->flash_latest_timestamp_ms_ = 0;
+  this->flash_oldest_timestamp_ms_ = 0;
+  this->flash_last_flush_timestamp_ms_ = 0;
+  this->flash_valid_block_count_ = 0;
+  if (!this->flash_index_) {
+    return;
+  }
+
+  this->flash_valid_block_count_ = static_cast<uint16_t>(std::min(this->flash_index_count_, FLASH_SLOT_COUNT));
+  for (size_t index = 0; index < this->flash_index_count_; ++index) {
+    const FlashBlockInfo &info = this->flash_index_[index];
+    if (index == 0 || info.start_timestamp_ms < this->flash_oldest_timestamp_ms_) {
+      this->flash_oldest_timestamp_ms_ = info.start_timestamp_ms;
+    }
+    if (index == 0 || info.end_timestamp_ms >= this->flash_latest_timestamp_ms_) {
+      this->flash_latest_timestamp_ms_ = info.end_timestamp_ms;
+      this->flash_last_flush_timestamp_ms_ = info.flush_timestamp_ms > 0 ? info.flush_timestamp_ms : info.end_timestamp_ms;
+    }
+  }
 }
 
 bool OpenQuattTrends::read_flash_block_(uint32_t slot_index, uint32_t expected_sequence, FlashBlockInfo *info,
