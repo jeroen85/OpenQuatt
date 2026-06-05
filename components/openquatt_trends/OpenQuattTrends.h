@@ -142,6 +142,8 @@ class OpenQuattTrends : public Component {
   bool write_flash_block_(const FlashBlockBuilder &builder);
   bool read_flash_block_(uint32_t slot_index, uint32_t expected_sequence, FlashBlockInfo *info,
                          std::array<TrendSample, FLASH_SAMPLES_PER_BLOCK> *samples) const;
+  bool update_flash_index_after_write_(const FlashBlockInfo &info, bool erased_sector);
+  void rebuild_flash_metadata_from_index_();
   void invalidate_flash_index_();
   void reset_flash_builder_();
 
