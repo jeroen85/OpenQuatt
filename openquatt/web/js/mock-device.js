@@ -474,6 +474,39 @@
     return new URLSearchParams();
   }
 
+  function parseBulkEntityFormBody(init) {
+    return parseAuthFormBody(init);
+  }
+
+  function handleBulkEntities(init) {
+    const params = parseBulkEntityFormBody(init || {});
+    const lines = String(params.get("entities") || "").split(/\r?\n/);
+    const responseEntities = {};
+    const missing = [];
+
+    lines.forEach((line) => {
+      const [key, domain, name] = String(line || "").split("\t");
+      const normalizedKey = String(key || "").trim();
+      const normalizedDomain = String(domain || "").trim();
+      const normalizedName = String(name || "").trim();
+      if (!normalizedKey || !normalizedDomain || !normalizedName) {
+        return;
+      }
+
+      const entity = getEntity(normalizedDomain, normalizedName);
+      if (entity) {
+        responseEntities[normalizedKey] = clone(entity);
+      } else {
+        missing.push(normalizedKey);
+      }
+    });
+
+    return mockResponse(200, {
+      entities: responseEntities,
+      missing,
+    });
+  }
+
   function makeAuthResponse(status, payload) {
     return mockResponse(status, payload);
   }
@@ -2797,6 +2830,9 @@
           enabled: Boolean(state.logHistoryEnabled),
           entries: clone(state.logHistoryEntries),
         });
+      }
+      if (url.pathname === "/openquatt/entities" && String(init?.method || "GET").toUpperCase() === "POST") {
+        return handleBulkEntities(init || {});
       }
       if (url.pathname === "/update" && String(init?.method || "GET").toUpperCase() === "POST") {
         handleUpdateInstall("Firmware Update");

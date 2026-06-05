@@ -291,12 +291,15 @@
       ...FLOW_TUNING_KEYS,
       ...SILENT_SETTING_KEYS,
       ...COMPRESSOR_SETTING_KEYS,
+      ...SENSOR_CALIBRATION_KEYS,
+      ...SENSOR_CALIBRATION_STATE_KEYS,
       "maxWater",
     ],
     service: [
       ...INSTALLATION_MONITORING_STATE_KEYS,
       ...COMMISSIONING_STATE_KEYS,
       ...SENSOR_CALIBRATION_KEYS,
+      ...SENSOR_CALIBRATION_STATE_KEYS,
       "boilerCvAssistEnabled",
       "boilerRatedHeatPower",
       "flowSelected",
@@ -535,6 +538,8 @@
 
   const ENTITY_REQUEST_TIMEOUT_MS = 8000;
   const RECONNECT_ENTITY_REQUEST_TIMEOUT_MS = 3000;
+  const BULK_ENTITY_ENDPOINT = "/openquatt/entities";
+  const BULK_ENTITY_REQUEST_BODY_MAX_CHARS = 900;
 
   function getEntityRequestTimeoutMs() {
     return state.deviceReconnectMode || state.busyAction === "restartAction" || state.updateInstallBusy || state.updateInstallPhaseHint
@@ -728,6 +733,87 @@
     state.optionalMissingEntities[key] = now;
   }
 
+  function getBulkEntityLine(key) {
+    const entity = ENTITY_DEFS[key];
+    return entity ? `${key}\t${entity.domain}\t${entity.name}` : "";
+  }
+
+  function buildBulkEntityRequestBody(lines, detail) {
+    const params = new URLSearchParams();
+    params.set("detail", detail === "all" ? "all" : "state");
+    params.set("entities", lines.join("\n"));
+    return params.toString();
+  }
+
+  function buildBulkEntityChunks(keys, detail) {
+    const chunks = [];
+    let currentKeys = [];
+    let currentLines = [];
+    let currentBody = "";
+
+    keys.forEach((key) => {
+      const line = getBulkEntityLine(key);
+      if (!line) {
+        return;
+      }
+
+      const nextLines = [...currentLines, line];
+      const nextBody = buildBulkEntityRequestBody(nextLines, detail);
+      if (currentLines.length && nextBody.length > BULK_ENTITY_REQUEST_BODY_MAX_CHARS) {
+        chunks.push({ keys: currentKeys, body: currentBody });
+        currentKeys = [key];
+        currentLines = [line];
+        currentBody = buildBulkEntityRequestBody(currentLines, detail);
+        return;
+      }
+
+      currentKeys = [...currentKeys, key];
+      currentLines = nextLines;
+      currentBody = nextBody;
+    });
+
+    if (currentLines.length) {
+      chunks.push({ keys: currentKeys, body: currentBody });
+    }
+
+    return chunks;
+  }
+
+  async function fetchBulkEntityChunk(chunk) {
+    const timeoutMs = getEntityRequestTimeoutMs();
+    const fetchOptions = {
+      method: "POST",
+      cache: "no-store",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: chunk.body,
+    };
+
+    if (typeof AbortController === "function") {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(BULK_ENTITY_ENDPOINT, { ...fetchOptions, signal: controller.signal });
+        if (!response.ok) {
+          throw new Error(`bulk entities HTTP ${response.status}`);
+        }
+        return response.json();
+      } catch (error) {
+        if (controller.signal.aborted) {
+          throw new Error(`bulk entities request timed out after ${timeoutMs}ms`);
+        }
+        throw error;
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
+    }
+
+    const response = await fetch(BULK_ENTITY_ENDPOINT, fetchOptions);
+    if (!response.ok) {
+      throw new Error(`bulk entities HTTP ${response.status}`);
+    }
+    return response.json();
+  }
+
   async function refreshEntities(keys, detail = "state", options = {}) {
     const now = Date.now();
     const refreshKeys = keys.filter((key) => !isKnownOptionalMissingEntity(key, now));
@@ -739,11 +825,13 @@
     const concurrency = Number.isFinite(requestedConcurrency) && requestedConcurrency > 0
       ? Math.floor(requestedConcurrency)
       : ENTITY_REFRESH_CONCURRENCY;
+    const chunks = buildBulkEntityChunks(refreshKeys, detail);
+    const chunkConcurrency = Math.max(1, Math.min(concurrency, ENTITY_REFRESH_CONCURRENCY));
     const results = [];
-    for (let index = 0; index < refreshKeys.length; index += concurrency) {
-      const batch = refreshKeys.slice(index, index + concurrency);
+    for (let index = 0; index < chunks.length; index += chunkConcurrency) {
+      const batch = chunks.slice(index, index + chunkConcurrency);
       const batchResults = await Promise.allSettled(
-        batch.map(async (key) => ({ key, payload: await fetchEntityPayload(key, detail) }))
+        batch.map(async (chunk) => ({ chunk, payload: await fetchBulkEntityChunk(chunk) }))
       );
       results.push(...batchResults);
     }
@@ -753,24 +841,37 @@
     }
 
     let firstError = "";
-    results.forEach((result, index) => {
-      const key = refreshKeys[index];
-      if (result.status === "fulfilled") {
-        if (state.optionalMissingEntities) {
-          delete state.optionalMissingEntities[key];
-        }
-        const { payload } = result.value;
-        state.entities[key] = mergeEntityPayload(key, state.entities[key], payload);
-      } else {
+    results.forEach((result) => {
+      if (result.status !== "fulfilled") {
         const message = result.reason.message || String(result.reason);
-        if (ENTITY_DEFS[key]?.optional) {
-          if (message.includes("HTTP 404")) {
+        if (!firstError) {
+          firstError = message;
+        }
+        return;
+      }
+
+      const { chunk, payload } = result.value;
+      const entities = payload?.entities && typeof payload.entities === "object" ? payload.entities : {};
+      const missing = new Set(Array.isArray(payload?.missing) ? payload.missing : []);
+
+      chunk.keys.forEach((key) => {
+        if (Object.prototype.hasOwnProperty.call(entities, key)) {
+          if (state.optionalMissingEntities) {
+            delete state.optionalMissingEntities[key];
+          }
+          state.entities[key] = mergeEntityPayload(key, state.entities[key], entities[key]);
+          return;
+        }
+
+        const entity = ENTITY_DEFS[key];
+        if (entity?.optional) {
+          if (missing.has(key)) {
             markOptionalMissingEntity(key, now);
           }
         } else if (!firstError) {
-          firstError = message;
+          firstError = `${entity?.name || key} ontbreekt in bulk response`;
         }
-      }
+      });
     });
 
     applyDerivedState();
@@ -2024,7 +2125,10 @@
     if (state.appView === "settings") {
       return [...new Set([...base, ...getSettingsGroupHydrationKeys()])];
     }
-    if (state.appView === "overview" || state.appView === "trends" || state.appView === "energy") {
+    if (state.appView === "energy") {
+      return [...new Set([...base, ...OVERVIEW_KEYS])];
+    }
+    if (state.appView === "overview" || state.appView === "trends") {
       return [...new Set([...base, ...FAST_OVERVIEW_KEYS])];
     }
     return [...new Set(base)];
@@ -2230,7 +2334,7 @@
         concurrency: forceFast && isOverviewLike ? FAST_VIEW_ENTITY_REFRESH_CONCURRENCY : ENTITY_REFRESH_CONCURRENCY,
       });
       state.lastFastEntitySyncAt = Date.now();
-      if (isBulkDue) {
+      if (isBulkDue && isOverviewLike && !isPrefetchOverview) {
         state.lastBulkEntitySyncAt = state.lastFastEntitySyncAt;
       }
       if (staticKeys.length) {
@@ -2743,7 +2847,7 @@
       const nextView = button.dataset.viewId || "overview";
       setAppView(nextView, { syncMode: "push" });
       render();
-      syncEntities(nextView === "settings" ? { forceBulk: true } : { forceFast: true });
+      syncEntities(nextView === "settings" || nextView === "energy" ? { forceBulk: true } : { forceFast: true });
       return;
     }
 

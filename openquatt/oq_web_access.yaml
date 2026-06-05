@@ -9,7 +9,7 @@ external_components:
   - source:
       type: local
       path: ${external_components_path}
-    components: [openquatt_web_auth, openquatt_trends, openquatt_log_history]
+    components: [openquatt_web_auth, openquatt_trends, openquatt_log_history, openquatt_entities]
 
 openquatt_web_auth:
   id: oq_web_auth_store
@@ -21,6 +21,9 @@ openquatt_log_history:
   id: oq_log_history
   enabled_switch: oq_ram_log_history_switch
   clock: oq_time
+
+openquatt_entities:
+  id: oq_entities
 
 switch:
   - platform: template

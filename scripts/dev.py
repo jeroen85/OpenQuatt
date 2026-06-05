@@ -6,6 +6,7 @@ import concurrent.futures
 import fnmatch
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -41,6 +42,8 @@ EFUSE_PATCH_MARKER = (
 )
 SYSTEM_TIME_SOURCE = '"src/system_time.c"'
 SYSTEM_TIME_RENAMED = '"src/esp_timer_system_time.c"'
+HAL_TARGET_EFUSE_SOURCE = '"${target}/efuse_hal.c"'
+HAL_TARGET_EFUSE_RENAMED = '"${target}/efuse_hal_${target}.c"'
 
 
 def repo_root() -> Path:
@@ -322,13 +325,35 @@ def patch_framework_espidf_system_time_source(package_dir: Path) -> bool:
     return True
 
 
+def patch_framework_espidf_hal_target_efuse_source(package_dir: Path) -> bool:
+    cmake_path = package_dir / "components" / "hal" / "CMakeLists.txt"
+    hal_dir = package_dir / "components" / "hal"
+    if not cmake_path.is_file() or not hal_dir.is_dir():
+        return False
+
+    text = cmake_path.read_text(encoding="utf-8")
+    if HAL_TARGET_EFUSE_SOURCE not in text:
+        return False
+
+    patched = False
+    for source_path in hal_dir.glob("*/efuse_hal.c"):
+        renamed_path = source_path.with_name(f"efuse_hal_{source_path.parent.name}.c")
+        if not renamed_path.exists():
+            renamed_path.write_text(source_path.read_text(encoding="utf-8"), encoding="utf-8")
+            patched = True
+
+    cmake_path.write_text(text.replace(HAL_TARGET_EFUSE_SOURCE, HAL_TARGET_EFUSE_RENAMED, 1), encoding="utf-8")
+    return True
+
+
 def apply_framework_espidf_source_workarounds(pio_core_dir: Path) -> list[Path]:
     patched: list[Path] = []
     for package_dir in framework_espidf_package_dirs(pio_core_dir):
         main_patched = patch_framework_espidf_efuse_main_cmake(package_dir)
         sources_patched = patch_framework_espidf_efuse_sources(package_dir)
         system_time_patched = patch_framework_espidf_system_time_source(package_dir)
-        if main_patched or sources_patched or system_time_patched:
+        hal_patched = patch_framework_espidf_hal_target_efuse_source(package_dir)
+        if main_patched or sources_patched or system_time_patched or hal_patched:
             patched.append(package_dir)
     return patched
 
@@ -355,9 +380,21 @@ def has_framework_espidf_system_time_workaround(package_dir: Path) -> bool:
     )
 
 
+def has_framework_espidf_hal_target_efuse_workaround(package_dir: Path) -> bool:
+    cmake_path = package_dir / "components" / "hal" / "CMakeLists.txt"
+    renamed_source = package_dir / "components" / "hal" / "esp32s3" / "efuse_hal_esp32s3.c"
+    return (
+        cmake_path.is_file()
+        and HAL_TARGET_EFUSE_RENAMED in cmake_path.read_text(encoding="utf-8")
+        and renamed_source.is_file()
+    )
+
+
 def has_framework_espidf_source_workaround(pio_core_dir: Path, duplicate_object: str) -> bool:
     for package_dir in framework_espidf_package_dirs(pio_core_dir):
         if duplicate_object == "esp_efuse_fields.c.o" and has_framework_espidf_efuse_workaround(package_dir):
+            return True
+        if duplicate_object == "efuse_hal.c.o" and has_framework_espidf_hal_target_efuse_workaround(package_dir):
             return True
         if duplicate_object == "system_time.c.o" and has_framework_espidf_system_time_workaround(package_dir):
             return True
@@ -535,9 +572,9 @@ def build_pages_site(site_dir: Path, factory_dir: Path, helper_python: Sequence[
 
     demo_html = (root_dir / "openquatt" / "web" / "dev.html").read_text(encoding="utf-8")
     demo_html = demo_html.replace("<title>OpenQuatt UI Preview</title>", "<title>OpenQuatt web-app demo</title>")
-    demo_html = demo_html.replace("./css/openquatt-app.css?v=q-connection-switch-v3", "../css/openquatt-app.css?v=q-pages-demo")
-    demo_html = demo_html.replace("./js/mock-device.js?v=q-connection-switch-v3", "../js/mock-device.js?v=q-pages-demo")
-    demo_html = demo_html.replace("./js/openquatt-app.js?v=q-connection-switch-v3", "../js/openquatt-app.js?v=q-pages-demo")
+    demo_html = re.sub(r"\./css/openquatt-app\.css\?v=[^\"]+", "../css/openquatt-app.css?v=q-pages-demo", demo_html)
+    demo_html = re.sub(r"\./js/mock-device\.js\?v=[^\"]+", "../js/mock-device.js?v=q-pages-demo", demo_html)
+    demo_html = re.sub(r"\./js/openquatt-app\.js\?v=[^\"]+", "../js/openquatt-app.js?v=q-pages-demo", demo_html)
     demo_dir = site_dir / "demo"
     demo_dir.mkdir(parents=True, exist_ok=True)
     (demo_dir / "index.html").write_text(demo_html, encoding="utf-8")
@@ -706,7 +743,7 @@ def validate_command(args: argparse.Namespace) -> int:
                 duplicate_object = next(
                     (
                         object_name
-                        for object_name in ("esp_efuse_fields.c.o", "system_time.c.o")
+                        for object_name in ("esp_efuse_fields.c.o", "efuse_hal.c.o", "system_time.c.o")
                         if object_name in tail
                     ),
                     "",
