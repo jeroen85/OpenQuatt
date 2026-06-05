@@ -18,7 +18,7 @@ namespace {
 
 constexpr uint32_t kDefaultWindowHours = 24;
 
-bool url_path_matches(const char *url, const char *path) {
+static bool url_path_matches(const char *url, const char *path) {
   if (url == nullptr || path == nullptr) {
     return false;
   }
