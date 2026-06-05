@@ -29,6 +29,7 @@ switch:
   - platform: template
     id: oq_ram_log_history_switch
     name: RAM log history
+    internal: true
     disabled_by_default: true
     icon: mdi:memory
     entity_category: config

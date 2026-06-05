@@ -100,6 +100,7 @@ number:
   - platform: template
     id: hp1_water_in_temp_offset
     name: "HP1 water in temperature offset"
+    internal: true
     icon: mdi:thermometer-plus
     unit_of_measurement: "°C"
     mode: slider
@@ -117,6 +118,7 @@ number:
   - platform: template
     id: hp1_water_out_temp_offset
     name: "HP1 water out temperature offset"
+    internal: true
     icon: mdi:thermometer-plus
     unit_of_measurement: "°C"
     mode: slider
@@ -134,7 +136,7 @@ number:
   - platform: template
     id: hp2_water_in_temp_offset
     name: "HP2 water in temperature offset"
-    internal: ${monitoring_hp2_internal}
+    internal: true
     icon: mdi:thermometer-plus
     unit_of_measurement: "°C"
     mode: slider
@@ -152,7 +154,7 @@ number:
   - platform: template
     id: hp2_water_out_temp_offset
     name: "HP2 water out temperature offset"
-    internal: ${monitoring_hp2_internal}
+    internal: true
     icon: mdi:thermometer-plus
     unit_of_measurement: "°C"
     mode: slider
@@ -170,6 +172,7 @@ number:
   - platform: template
     id: oq_hp_calibration_hp1_water_in_offset_suggested
     name: "HP calibration HP1 water in offset suggested"
+    internal: true
     icon: mdi:thermometer-check
     unit_of_measurement: "°C"
     mode: slider
@@ -187,6 +190,7 @@ number:
   - platform: template
     id: oq_hp_calibration_hp1_water_out_offset_suggested
     name: "HP calibration HP1 water out offset suggested"
+    internal: true
     icon: mdi:thermometer-check
     unit_of_measurement: "°C"
     mode: slider
@@ -204,7 +208,7 @@ number:
   - platform: template
     id: oq_hp_calibration_hp2_water_in_offset_suggested
     name: "HP calibration HP2 water in offset suggested"
-    internal: ${monitoring_hp2_internal}
+    internal: true
     icon: mdi:thermometer-check
     unit_of_measurement: "°C"
     mode: slider
@@ -222,7 +226,7 @@ number:
   - platform: template
     id: oq_hp_calibration_hp2_water_out_offset_suggested
     name: "HP calibration HP2 water out offset suggested"
-    internal: ${monitoring_hp2_internal}
+    internal: true
     icon: mdi:thermometer-check
     unit_of_measurement: "°C"
     mode: slider
@@ -241,6 +245,7 @@ button:
   - platform: template
     id: oq_hp_water_calibration_start
     name: "HP Water Calibration Start"
+    internal: true
     icon: mdi:thermometer-sync
     entity_category: config
     disabled_by_default: true
@@ -255,6 +260,7 @@ button:
   - platform: template
     id: oq_hp_water_calibration_abort_btn
     name: "HP Water Calibration Abort"
+    internal: true
     icon: mdi:stop-circle-outline
     entity_category: config
     disabled_by_default: true
@@ -267,6 +273,7 @@ button:
   - platform: template
     id: oq_hp_water_calibration_apply
     name: "Apply HP Water Calibration Offsets"
+    internal: true
     icon: mdi:check-circle-outline
     entity_category: config
     disabled_by_default: true
@@ -281,6 +288,7 @@ binary_sensor:
   - platform: template
     id: oq_hp_water_calibration_active_sensor
     name: "HP water calibration active"
+    internal: true
     icon: mdi:thermometer-sync
     entity_category: diagnostic
     disabled_by_default: true
@@ -293,6 +301,7 @@ sensor:
   - platform: template
     id: oq_hp_water_calibration_remaining_sensor
     name: "HP water calibration remaining"
+    internal: true
     icon: mdi:timer-outline
     unit_of_measurement: "s"
     state_class: measurement
@@ -307,6 +316,7 @@ sensor:
   - platform: template
     id: oq_hp_water_calibration_phase_sensor
     name: "HP water calibration phase"
+    internal: true
     icon: mdi:timeline-clock-outline
     state_class: measurement
     accuracy_decimals: 0
@@ -320,6 +330,7 @@ sensor:
   - platform: template
     id: oq_hp_water_calibration_spread_sensor
     name: "HP water calibration spread"
+    internal: true
     icon: mdi:thermometer-lines
     unit_of_measurement: "°C"
     device_class: temperature
@@ -335,6 +346,7 @@ sensor:
   - platform: template
     id: oq_hp_water_calibration_supply_delta_sensor
     name: "HP water calibration supply delta"
+    internal: true
     icon: mdi:thermometer-lines
     unit_of_measurement: "°C"
     device_class: temperature
@@ -350,6 +362,7 @@ sensor:
   - platform: template
     id: oq_hp_water_calibration_stable_progress_sensor
     name: "HP water calibration stable window progress"
+    internal: true
     icon: mdi:timer-check-outline
     unit_of_measurement: "s"
     state_class: measurement
@@ -364,6 +377,7 @@ sensor:
   - platform: template
     id: oq_hp_water_calibration_stable_required_sensor
     name: "HP water calibration stable window required"
+    internal: true
     icon: mdi:timer-check-outline
     unit_of_measurement: "s"
     state_class: measurement
@@ -378,6 +392,7 @@ sensor:
   - platform: template
     id: oq_hp_water_calibration_result_reference_sensor
     name: "HP water calibration result reference"
+    internal: true
     icon: mdi:thermometer-check
     unit_of_measurement: "°C"
     device_class: temperature
@@ -393,6 +408,7 @@ sensor:
   - platform: template
     id: oq_hp_water_calibration_result_spread_before_sensor
     name: "HP water calibration result spread before"
+    internal: true
     icon: mdi:thermometer-lines
     unit_of_measurement: "°C"
     device_class: temperature
@@ -408,6 +424,7 @@ sensor:
   - platform: template
     id: oq_hp_water_calibration_result_expected_spread_sensor
     name: "HP water calibration result expected spread"
+    internal: true
     icon: mdi:thermometer-check
     unit_of_measurement: "°C"
     device_class: temperature
@@ -423,6 +440,7 @@ sensor:
   - platform: template
     id: oq_hp_water_calibration_result_hp1_in_raw_avg_sensor
     name: "HP water calibration result HP1 water in raw average"
+    internal: true
     icon: mdi:thermometer-water
     unit_of_measurement: "°C"
     device_class: temperature
@@ -438,6 +456,7 @@ sensor:
   - platform: template
     id: oq_hp_water_calibration_result_hp1_out_raw_avg_sensor
     name: "HP water calibration result HP1 water out raw average"
+    internal: true
     icon: mdi:thermometer-water
     unit_of_measurement: "°C"
     device_class: temperature
@@ -453,7 +472,7 @@ sensor:
   - platform: template
     id: oq_hp_water_calibration_result_hp2_in_raw_avg_sensor
     name: "HP water calibration result HP2 water in raw average"
-    internal: ${monitoring_hp2_internal}
+    internal: true
     icon: mdi:thermometer-water
     unit_of_measurement: "°C"
     device_class: temperature
@@ -469,7 +488,7 @@ sensor:
   - platform: template
     id: oq_hp_water_calibration_result_hp2_out_raw_avg_sensor
     name: "HP water calibration result HP2 water out raw average"
-    internal: ${monitoring_hp2_internal}
+    internal: true
     icon: mdi:thermometer-water
     unit_of_measurement: "°C"
     device_class: temperature
@@ -486,6 +505,7 @@ text_sensor:
   - platform: template
     id: oq_hp_water_calibration_status
     name: "HP water calibration status"
+    internal: true
     icon: mdi:information-outline
     disabled_by_default: true
     update_interval: never

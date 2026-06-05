@@ -18,6 +18,7 @@ number:
   - platform: template
     id: oq_manual_flow_setpoint_lph
     name: "Manual flow service setpoint"
+    internal: true
     icon: mdi:waves-arrow-right
     unit_of_measurement: "L/h"
     mode: slider
@@ -35,6 +36,7 @@ button:
   - platform: template
     id: oq_manual_flow_start
     name: "Manual Flow Start"
+    internal: true
     icon: mdi:water-pump
     entity_category: config
     web_server:
@@ -46,6 +48,7 @@ button:
   - platform: template
     id: oq_manual_flow_abort
     name: "Manual Flow Abort"
+    internal: true
     icon: mdi:stop-circle-outline
     entity_category: config
     web_server:
@@ -57,6 +60,7 @@ button:
   - platform: template
     id: oq_manual_flow_apply_heating
     name: "Apply Manual Flow To Heating"
+    internal: true
     icon: mdi:radiator
     entity_category: config
     web_server:
@@ -68,6 +72,7 @@ button:
   - platform: template
     id: oq_manual_flow_apply_cooling
     name: "Apply Manual Flow To Cooling"
+    internal: true
     icon: mdi:snowflake
     entity_category: config
     web_server:
@@ -80,6 +85,7 @@ binary_sensor:
   - platform: template
     id: oq_manual_flow_active_sensor
     name: "Manual flow active"
+    internal: true
     icon: mdi:water-pump
     entity_category: diagnostic
     web_server:
@@ -91,6 +97,7 @@ sensor:
   - platform: template
     id: oq_manual_flow_target_ipwm_sensor
     name: "Manual flow target iPWM"
+    internal: true
     icon: mdi:fan-speed-3
     unit_of_measurement: "iPWM"
     state_class: measurement
@@ -105,6 +112,7 @@ text_sensor:
   - platform: template
     id: oq_manual_flow_status
     name: "Manual flow status"
+    internal: true
     icon: mdi:information-outline
     update_interval: never
     web_server:

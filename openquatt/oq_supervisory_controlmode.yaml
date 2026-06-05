@@ -445,6 +445,7 @@ binary_sensor:
   - platform: template
     id: oq_time_valid
     name: "Time valid"
+    internal: true
     disabled_by_default: true
     icon: mdi:clock-check
     device_class: connectivity
@@ -472,6 +473,7 @@ text_sensor:
   - platform: template
     id: oq_time_now_hhmm
     name: "Time now (HH:MM)"
+    internal: true
     icon: mdi:clock-outline
     update_interval: never
     entity_category: diagnostic

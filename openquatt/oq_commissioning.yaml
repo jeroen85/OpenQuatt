@@ -65,6 +65,7 @@ button:
   - platform: template
     id: oq_commissioning_cm100_start
     name: "CM100 Start"
+    internal: true
     icon: mdi:play-circle-outline
     entity_category: config
     web_server:
@@ -94,6 +95,7 @@ button:
   - platform: template
     id: oq_commissioning_cm100_stop
     name: "CM100 Stop"
+    internal: true
     icon: mdi:stop-circle-outline
     entity_category: config
     web_server:
@@ -108,6 +110,7 @@ binary_sensor:
   - platform: template
     id: oq_commissioning_cm100_active
     name: "CM100 active"
+    internal: true
     icon: mdi:state-machine
     entity_category: diagnostic
     web_server:
@@ -120,6 +123,7 @@ text_sensor:
   - platform: template
     id: oq_commissioning_status
     name: "Commissioning status"
+    internal: true
     icon: mdi:state-machine
     update_interval: never
     web_server:

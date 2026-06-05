@@ -54,6 +54,7 @@ button:
   - platform: template
     id: oq_air_purge_start
     name: "Air Purge Start"
+    internal: true
     icon: mdi:water-pump
     entity_category: config
     web_server:
@@ -67,6 +68,7 @@ button:
   - platform: template
     id: oq_air_purge_abort_btn
     name: "Air Purge Abort"
+    internal: true
     icon: mdi:stop-circle-outline
     entity_category: config
     web_server:
@@ -79,6 +81,7 @@ switch:
   - platform: template
     id: oq_air_purge_return_to_auto
     name: "Air purge return to Auto"
+    internal: true
     icon: mdi:backup-restore
     entity_category: config
     optimistic: true
@@ -93,6 +96,7 @@ binary_sensor:
   - platform: template
     id: oq_air_purge_active_sensor
     name: "Air purge active"
+    internal: true
     icon: mdi:water-pump
     entity_category: diagnostic
     web_server:
@@ -104,6 +108,7 @@ sensor:
   - platform: template
     id: oq_air_purge_remaining_sensor
     name: "Air purge remaining"
+    internal: true
     icon: mdi:timer-outline
     unit_of_measurement: "s"
     state_class: measurement
@@ -117,6 +122,7 @@ sensor:
   - platform: template
     id: oq_air_purge_phase_sensor
     name: "Air purge phase"
+    internal: true
     icon: mdi:timeline-clock-outline
     state_class: measurement
     accuracy_decimals: 0
@@ -129,6 +135,7 @@ sensor:
   - platform: template
     id: oq_air_purge_target_ipwm_sensor
     name: "Air purge target iPWM"
+    internal: true
     icon: mdi:fan-speed-3
     unit_of_measurement: "iPWM"
     state_class: measurement
@@ -143,6 +150,7 @@ text_sensor:
   - platform: template
     id: oq_air_purge_status
     name: "Air purge status"
+    internal: true
     icon: mdi:information-outline
     update_interval: never
     web_server:

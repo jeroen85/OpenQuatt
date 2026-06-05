@@ -22,6 +22,7 @@ button:
   - platform: template
     id: oq_setup_complete_button
     name: "Complete setup"
+    internal: true
     disabled_by_default: true
     icon: mdi:check-bold
     entity_category: config
@@ -34,6 +35,7 @@ button:
   - platform: template
     id: oq_setup_reset_button
     name: "Reset setup state"
+    internal: true
     disabled_by_default: true
     icon: mdi:restart
     entity_category: config
@@ -47,6 +49,7 @@ binary_sensor:
   - platform: template
     id: oq_setup_complete_sensor
     name: "Setup Complete"
+    internal: true
     icon: mdi:check-circle-outline
     device_class: running
     entity_category: diagnostic

@@ -101,6 +101,7 @@ select:
     modbus_controller_id: ${hp_id}
     id: ${hp_id}_set_working_mode
     name: "${prefix}Set Working Mode"
+    internal: true
     disabled_by_default: true
     icon: "mdi:heat-pump-outline"
     address: 3999
@@ -118,6 +119,7 @@ select:
     modbus_controller_id: ${hp_id}
     id: ${hp_id}_compressor_level
     name: "${prefix}Set Compressor Level"
+    internal: true
     disabled_by_default: true
     icon: "mdi:sine-wave"
     address: 1999
@@ -143,6 +145,7 @@ select:
     modbus_controller_id: ${hp_id}
     id: ${hp_id}_low_noise_mode
     name: "${prefix}Silent Mode"
+    internal: true
     disabled_by_default: true
     icon: mdi:weather-night
     address: 2006
@@ -159,6 +162,7 @@ select:
     modbus_controller_id: ${hp_id}
     id: ${hp_id}_set_pump_mode
     name: "${prefix}Set Pump Mode"
+    internal: true
     disabled_by_default: true
     icon: "mdi:pump"
     address: 2010
@@ -630,6 +634,7 @@ sensor:
     modbus_controller_id: ${hp_id}
     id: ${hp_id}_water_in_temp_raw
     name: "${prefix}Water in temperature raw"
+    internal: true
     disabled_by_default: true
     icon: mdi:thermometer-water
     register_type: holding
@@ -655,6 +660,7 @@ sensor:
     modbus_controller_id: ${hp_id}
     id: ${hp_id}_water_out_temp_raw
     name: "${prefix}Water out temperature raw"
+    internal: true
     disabled_by_default: true
     icon: mdi:thermometer-water
     register_type: holding

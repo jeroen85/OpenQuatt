@@ -22,21 +22,17 @@ views:
 
               Deze waarden geven live de belangrijkste systeemprestatie:
 
-              - `Power E`: totaal elektrisch ingangsvermogen van de
-              warmtepomp(en).
+              - `Power E`: totaal elektrisch ingangsvermogen van de warmtepomp(en).
 
               - `Power H`: totaal thermisch afgegeven vermogen.
 
               - `COP`: verhouding `Power H / Power E` (momentane efficientie).
 
-              - `Flow`: actuele volumestroom die als basis dient voor
-              flowbewaking.
+              - `Flow`: actuele volumestroom die als basis dient voor flowbewaking.
 
-              - `Buitentemp`: geselecteerde bron voor buitentemperatuur in de
-              regeling.
+              - `Buitentemp`: geselecteerde bron voor buitentemperatuur in de regeling.
 
-              - `Aanvoertemperatuur`: geselecteerde bron voor actuele
-              watersupply.
+              - `Aanvoertemperatuur`: geselecteerde bron voor actuele watersupply.
 
 
               </details>
@@ -102,13 +98,11 @@ views:
 
               - `Flow mode`: manier waarop de pomp/flowregeling momenteel werkt.
 
-              - `Verwarmingsstrategie`: bron van de warmtevraag (bijv. Power
-              House/curve).
+              - `Verwarmingsstrategie`: bron van de warmtevraag (bijv. Power House/curve).
 
               - `Ketel actief`: geeft aan of ketelondersteuning actief is.
 
-              - `Stille modus actief`: toont of het stil-venster nu van kracht
-              is.
+              - `Stille modus actief`: toont of het stil-venster nu van kracht is.
 
 
               </details>
@@ -152,19 +146,13 @@ views:
 
               Gebruik deze schakelaars voor directe runtime-bediening:
 
-              - `OpenQuatt regeling`: schakelt de automatische verwarmings- en
-              koelregeling tijdelijk uit of weer in. Bewaking en
-              vorstbeveiliging blijven actief.
+              - `OpenQuatt regeling`: schakelt de automatische verwarmings- en koelregeling tijdelijk uit of weer in. Bewaking en vorstbeveiliging blijven actief.
 
-              - `Hervat automatisch`: kies een datum en tijd waarop de
-              regeling vanzelf weer wordt ingeschakeld nadat je haar tijdelijk
-              hebt uitgezet.
+              - `Hervat automatisch`: kies een datum en tijd waarop de regeling vanzelf weer wordt ingeschakeld nadat je haar tijdelijk hebt uitgezet.
 
-              - `Handmatige koeling`: telt mee als extra koeltoestemming,
-              bovenop CIC en/of HA-invoer.
+              - `Handmatige koeling`: telt mee als extra koeltoestemming, bovenop CIC en/of HA-invoer.
 
-              - `Stille modus override`: zet stille modus op `Schema`, `Aan`
-              of `Uit`.
+              - `Stille modus override`: zet stille modus op `Schema`, `Aan` of `Uit`.
 
 
               </details>
@@ -205,8 +193,7 @@ views:
               <details>
 
               <summary><strong>Uitleg</strong></summary><ha-alert
-              alert-type="warning">Pas op, dit overruled de ControlMode van
-              OpenQuatt!</ha-alert>
+              alert-type="warning">Pas op, dit overruled de ControlMode van OpenQuatt!</ha-alert>
 
 
               `CM override`: handmatige mode-override; normaal op `Auto` laten.
@@ -242,8 +229,7 @@ views:
 
               - `Huidige temperatuur`: gemeten ruimtetemperatuur.
 
-              Het verschil tussen deze twee bepaalt hoe sterk de warmtevraag
-              oploopt.
+              Het verschil tussen deze twee bepaalt hoe sterk de warmtevraag oploopt.
 
 
               </details>
@@ -287,8 +273,7 @@ views:
 
               - `Day max level`: bovengrens compressorlevel buiten silent-uren.
 
-              - `Silent max level`: bovengrens compressorlevel tijdens
-              silent-uren.
+              - `Silent max level`: bovengrens compressorlevel tijdens silent-uren.
 
 
               </details>
@@ -347,8 +332,7 @@ views:
               - `COP`: efficientieverhouding (`Power H / Power E`).
 
 
-              Gebruik dit om te controleren of warmteafgifte het opgenomen
-              vermogen volgt en of COP realistisch blijft.
+              Gebruik dit om te controleren of warmteafgifte het opgenomen vermogen volgt en of COP realistisch blijft.
 
               </details>
             text_only: true
@@ -626,8 +610,7 @@ views:
 
               Dagaggregatie voor energie:
 
-              - Elektriciteit en warmte als dagelijkse kWh (afgeleid uit
-              cumulatieve sensoren)
+              - Elektriciteit en warmte als dagelijkse kWh (afgeleid uit cumulatieve sensoren)
 
               - `COP vandaag` als daggemiddelde
 
@@ -797,8 +780,7 @@ views:
         content: |-
           # <ha-icon icon="mdi:lightning-bolt-circle"></ha-icon> Energie
 
-          Energie-overzicht van Warmtepomp, boiler en totaal systeem (dag +
-          cumulatief).
+          Energie-overzicht van Warmtepomp, boiler en totaal systeem (dag + cumulatief).
   - title: Flow
     path: flow
     icon: mdi:waves
@@ -831,11 +813,9 @@ views:
 
               - `Low flow alarm`: beveiligingsalarm bij te lage flow.
 
-              - `Flow (gemiddeld)`: geselecteerde gemiddelde flow voor
-              regeling/beveiliging.
+              - `Flow (gemiddeld)`: geselecteerde gemiddelde flow voor regeling/beveiliging.
 
-              - `Flow mismatch`: signaleert hydraulische onbalans tussen HP1 en
-              HP2.
+              - `Flow mismatch`: signaleert hydraulische onbalans tussen HP1 en HP2.
 
               </details>
             text_only: true
@@ -881,11 +861,9 @@ views:
               Belangrijkste flowinstellingen:
 
 
-              - `Flow control mode`: kies automatische flowregeling of
-              handmatige werking.
+              - `Flow control mode`: kies automatische flowregeling of handmatige werking.
 
-              - `Flow setpoint`: doel-flow in L/h voor automatische regeling
-              buiten koelen.
+              - `Flow setpoint`: doel-flow in L/h voor automatische regeling buiten koelen.
 
               - `Cooling flow setpoint`: doel-flow in L/h tijdens koelen.
 
@@ -1011,14 +989,11 @@ views:
               <summary><strong>Uitleg</strong></summary>
 
 
-              - `ControlMode`: kiest welke strategie de warmtevraag opbouwt
-              (bijv. Stooklijn of PH).
+              - `ControlMode`: kiest welke strategie de warmtevraag opbouwt (bijv. Stooklijn of PH).
 
-              - Bij stooklijnregeling verschijnt ook `Heating Curve Control
-              Profile` voor de ingebouwde regelkarakteristiek.
+              - Bij stooklijnregeling verschijnt ook `Heating Curve Control Profile` voor de ingebouwde regelkarakteristiek.
 
-              - Controleer daarna bij `Kern KPI` hoe dit doorwerkt in `P_req`,
-              `P_house` en `Tekort`.
+              - Controleer daarna bij `Kern KPI` hoe dit doorwerkt in `P_req`, `P_house` en `Tekort`.
 
               </details>
             text_only: true
@@ -1058,8 +1033,7 @@ views:
               Kernindicatoren voor warmtebalans:
 
 
-              - Vergelijk `P_req` (gevraagd vermogen) met `P_house`
-              (modelschatting).
+              - Vergelijk `P_req` (gevraagd vermogen) met `P_house` (modelschatting).
 
               - `P_req`: gevraagde verwarmingspower na filtering/ramp-limiet.
 
@@ -1067,11 +1041,9 @@ views:
 
               - `Max HP capaciteit`: geschatte beschikbare warmtepompcapaciteit.
 
-              - `Tekort`: positieve waarde betekent dat vraag boven
-              beschikbare/geleverde warmte ligt.
+              - `Tekort`: positieve waarde betekent dat vraag boven beschikbare/geleverde warmte ligt.
 
-              - Richtlijn: bij `Tekort > 0 W` vraagt het systeem meer dan nu
-              geleverd wordt.
+              - Richtlijn: bij `Tekort > 0 W` vraagt het systeem meer dan nu geleverd wordt.
 
               - Gebruik `Trends` voor het gedrag over tijd.
 
@@ -1155,14 +1127,11 @@ views:
               <summary><strong>Uitleg</strong></summary>
 
 
-              - `Warmtevraag` vergelijkt gevraagde (`P_req`) met geleverde
-              warmte.
+              - `Warmtevraag` vergelijkt gevraagde (`P_req`) met geleverde warmte.
 
-              - `HP powerinput` en `HP heat output` tonen elektrisch in versus
-              thermisch uit.
+              - `HP powerinput` en `HP heat output` tonen elektrisch in versus thermisch uit.
 
-              - `Temperatuurregeling` toont buiten-, supply- en kamertemperatuur
-              tegen targets.
+              - `Temperatuurregeling` toont buiten-, supply- en kamertemperatuur tegen targets.
 
 
               </details>
@@ -2032,12 +2001,9 @@ views:
       card:
         type: markdown
         content: |-
-          # <ha-icon icon="mdi:heat-pump-outline"></ha-icon> Overzicht HP1 en
-          HP2
+          # <ha-icon icon="mdi:heat-pump-outline"></ha-icon> Overzicht HP1 en HP2
 
-          Deze tab toont per HP een technische momentopname van
-          koudemiddel/waterzijde. Gebruik dit vooral voor diagnose en
-          vergelijking tussen HP1 en HP2.
+          Deze tab toont per HP een technische momentopname van koudemiddel/waterzijde. Gebruik dit vooral voor diagnose en vergelijking tussen HP1 en HP2.
 
           Voor instellingen: gebruik `Flow`, `Warmteregeling` en `Instellingen`.
   - title: Sensorconfiguratie
@@ -2063,8 +2029,7 @@ views:
 
               De `Geselecteerde` waarde hoort de gekozen bron direct te volgen.
 
-              Zo zie je snel of de effectieve regelinput overeenkomt met wat je
-              verwacht.
+              Zo zie je snel of de effectieve regelinput overeenkomt met wat je verwacht.
 
 
               Gebruik dit blok voor:
@@ -2074,21 +2039,14 @@ views:
               - snelle vergelijking tussen CIC, lokaal en HA input
 
               - validatie van de effectieve regelinput
-              - bij `Flow bron = Outdoor unit` in een Duo-opstelling verschijnt
-              een extra
-                keuze voor `Flowmeter HP1`, `Flowmeter HP2` of de bestaande lokale
-                aggregatie van HP1/HP2
+              - bij `Flow bron = Outdoor unit` in een Duo-opstelling verschijnt een extra
+                keuze voor `Flowmeter HP1`, `Flowmeter HP2` of de bestaande lokale aggregatie van HP1/HP2
 
-              De lokale aggregatie van `HP1/HP2` is in principe het gemiddelde
-              van beide
+              De lokale aggregatie van `HP1/HP2` is in principe het gemiddelde van beide
 
               flowmeters.
 
-              Voor `Buitentemperatuur bron` is `Auto` de aanbevolen stand.
-              OpenQuatt kiest dan de laagste geldige bron tussen de lokale
-              Duo-aggregatie en de HA-buitentemperatuur, als die bron is
-              geconfigureerd en geldig is. Dat houdt de regeling robuust als
-              een bron tijdelijk te warm uitvalt door zon of lokale opwarming.
+              Voor `Buitentemperatuur bron` is `Auto` de aanbevolen stand. OpenQuatt kiest dan de laagste geldige bron tussen de lokale Duo-aggregatie en de HA-buitentemperatuur, als die bron is geconfigureerd en geldig is. Dat houdt de regeling robuust als een bron tijdelijk te warm uitvalt door zon of lokale opwarming.
 
 
               </details>
@@ -2255,8 +2213,7 @@ views:
                   <details>
                   <summary><strong>Uitleg</strong></summary>
 
-                  Vul hier de entity IDs in van de bronnen die de OpenQuatt HA
-                  proxy-sensoren moeten voeden.
+                  Vul hier de entity IDs in van de bronnen die de OpenQuatt HA proxy-sensoren moeten voeden.
 
                   Voorbeelden:
                   - `sensor.outdoor_temperature`
@@ -2268,8 +2225,7 @@ views:
                   - `climate.woonkamer | hvac_mode`
 
                   Optioneel attribuutformaat:
-                  - `entity_id|attribute_name`
-                  Spaties rond `|` worden genegeerd.
+                  - `entity_id|attribute_name` Spaties rond `|` worden genegeerd.
 
                   Is een bron ongeldig, dan wordt de proxywaarde `Unavailable`.
                   </details>
@@ -2305,13 +2261,11 @@ views:
                   OpenQuatt dienen.
 
 
-                  De status `Valid` hoort voor alle vijf signalen op `on` te
-                  staan.
+                  De status `Valid` hoort voor alle vijf signalen op `on` te staan.
 
                   Als `Valid` op `off` staat, is de huidige bron niet numeriek.
 
-                  Dan wordt de proxywaarde `Unavailable` totdat de bron weer
-                  geldig
+                  Dan wordt de proxywaarde `Unavailable` totdat de bron weer geldig
 
                   is.
 
@@ -2351,11 +2305,9 @@ views:
                   <details>
                   <summary><strong>Uitleg</strong></summary>
 
-                  Dit zijn de vijf HA-invoerwaarden zoals OpenQuatt ze ontvangt.
-                  Deze horen de proxywaarden uit het middelste blok te volgen.
+                  Dit zijn de vijf HA-invoerwaarden zoals OpenQuatt ze ontvangt. Deze horen de proxywaarden uit het middelste blok te volgen.
 
-                  Blijft een waarde op `Unknown`, controleer dan eerst of de
-                  bijbehorende `... bron valid` op `on` staat.
+                  Blijft een waarde op `Unknown`, controleer dan eerst of de bijbehorende `... bron valid` op `on` staat.
 
                   </details>
                 text_only: true
@@ -2424,18 +2376,13 @@ views:
               <details>
               <summary><strong>Uitleg</strong></summary>
 
-              Configureer hier per kamer de dauwpunt-, temperatuur- en
-              luchtvochtigheidsbron voor cooling.
+              Configureer hier per kamer de dauwpunt-, temperatuur- en luchtvochtigheidsbron voor cooling.
 
-              Gebruik per kamer bij voorkeur een directe dauwpuntentity. Heb je
-              die niet, vul dan temperatuur en relatieve luchtvochtigheid in.
+              Gebruik per kamer bij voorkeur een directe dauwpuntentity. Heb je die niet, vul dan temperatuur en relatieve luchtvochtigheid in.
 
-              OpenQuatt gebruikt per kamer eerst het directe dauwpunt en
-              berekent anders zelf het dauwpunt uit temperatuur + RH. Voor de
-              systeembeveiliging telt daarna de hoogste geldige kamerwaarde.
+              OpenQuatt gebruikt per kamer eerst het directe dauwpunt en berekent anders zelf het dauwpunt uit temperatuur + RH. Voor de systeembeveiliging telt daarna de hoogste geldige kamerwaarde.
 
-              Verhoog eerst `Aantal kamers`; daarna verschijnen de invoervelden
-              per kamer.
+              Verhoog eerst `Aantal kamers`; daarna verschijnen de invoervelden per kamer.
               </details>
             text_only: true
             grid_options:
@@ -2620,10 +2567,7 @@ views:
               <details>
               <summary><strong>Uitleg</strong></summary>
 
-              Dit blok toont de directe OpenTherm-thermostaatkoppeling.
-              Gebruik het om te controleren dat OpenQuatt warmtevraag,
-              koelvraag en kamerwaarden rechtstreeks van de thermostaat ziet,
-              dus buiten CIC of Home Assistant om.
+              Dit blok toont de directe OpenTherm-thermostaatkoppeling. Gebruik het om te controleren dat OpenQuatt warmtevraag, koelvraag en kamerwaarden rechtstreeks van de thermostaat ziet, dus buiten CIC of Home Assistant om.
 
               Controleer bij afwijkingen eerst:
               - `OpenTherm Enabled`
@@ -2663,9 +2607,7 @@ views:
               <details>
               <summary><strong>Uitleg</strong></summary>
 
-              Dit blok toont de status van de CiC-feed.
-              Als de feed niet OK is of data stale wordt, kunnen CIC-bronnen
-              onbruikbaar worden voor de geselecteerde signalen.
+              Dit blok toont de status van de CiC-feed. Als de feed niet OK is of data stale wordt, kunnen CIC-bronnen onbruikbaar worden voor de geselecteerde signalen.
 
               Controleer bij afwijkingen:
               - `JSON feed OK`
@@ -2693,8 +2635,7 @@ views:
           # <ha-icon icon="mdi:source-branch"></ha-icon> Sensorconfiguratie
 
 
-          Configureer bronkeuze en bronkoppeling, en verifieer daarna per
-          signaal
+          Configureer bronkeuze en bronkoppeling, en verifieer daarna per signaal
 
           de geselecteerde waarde en bronstatus.
     top_margin: false
@@ -2717,8 +2658,7 @@ views:
 
               <summary><strong>Uitleg</strong></summary>
 
-              Kies hier welke Quatt Hybrid je hebt. OpenQuatt gebruikt deze
-              keuze om de juiste modelregels en limieten toe te passen.
+              Kies hier welke Quatt Hybrid je hebt. OpenQuatt gebruikt deze keuze om de juiste modelregels en limieten toe te passen.
 
               </details>
             text_only: true
@@ -2740,11 +2680,9 @@ views:
               <summary><strong>Uitleg parameters</strong></summary>
 
 
-              - **Day max level / Silent max level** begrenzen het maximale
-              compressorlevel in normale of stille uren.
+              - **Day max level / Silent max level** begrenzen het maximale compressorlevel in normale of stille uren.
 
-              - **Silent start/end time** definieert het tijdvenster waarin de
-              silent-begrenzing actief is.
+              - **Silent start/end time** definieert het tijdvenster waarin de silent-begrenzing actief is.
 
 
               </details>
@@ -2773,38 +2711,23 @@ views:
               <summary><strong>Uitleg parameters</strong></summary>
 
 
-              - **House cold temp** en **Rated maximum house power (Pr)**
-              bepalen samen de schaal van de warmtevraag bij koude condities.
+              - **House cold temp** en **Rated maximum house power (Pr)** bepalen samen de schaal van de warmtevraag bij koude condities.
 
-              - **Maximum heating outdoor temperature** is het punt waar
-              modelmatig de warmtevraag naar ~0 gaat.
+              - **Maximum heating outdoor temperature** is het punt waar modelmatig de warmtevraag naar ~0 gaat.
 
-              - **PH temperatuurreactie** bepaalt hoe sterk Power House extra
-              warmtevraag toevoegt onder de koude comfortgrens en hoe sterk het
-              boven het kamer-setpoint weer gas terugneemt.
+              - **PH temperatuurreactie** bepaalt hoe sterk Power House extra warmtevraag toevoegt onder de koude comfortgrens en hoe sterk het boven het kamer-setpoint weer gas terugneemt.
 
-              - **Comfort above setpoint** bepaalt de acceptabele bovenkant van
-              de comfortband.
+              - **Comfort above setpoint** bepaalt de acceptabele bovenkant van de comfortband.
 
-              - **Comfort below setpoint** bepaalt hoeveel ruimte onder
-              setpoint nog acceptabel is voordat extra opwarming begint.
+              - **Comfort below setpoint** bepaalt hoeveel ruimte onder setpoint nog acceptabel is voordat extra opwarming begint.
 
-              - Als de kamer langere tijd te koud blijft, houdt Power House
-              wat langer extra warmtevraag vast. Daardoor blijft de kamer
-              beter binnen de ingestelde comfortband.
+              - Als de kamer langere tijd te koud blijft, houdt Power House wat langer extra warmtevraag vast. Daardoor blijft de kamer beter binnen de ingestelde comfortband.
 
-              - **Response profile** is een snelle voorkeuze voor rustige,
-              gebalanceerde of vlottere Power House-reactie. Zodra opbouwtijd en
-              afbouwtijd niet meer bij een preset horen, toont het profiel
-              automatisch `Custom`.
+              - **Response profile** is een snelle voorkeuze voor rustige, gebalanceerde of vlottere Power House-reactie. Zodra opbouwtijd en afbouwtijd niet meer bij een preset horen, toont het profiel automatisch `Custom`.
 
-              - **Demand rise time** geeft ongeveer aan hoe lang `P_req` nodig
-              mag hebben om van `0` naar `Pr` te lopen. Lager = sneller
-              opschakelen.
+              - **Demand rise time** geeft ongeveer aan hoe lang `P_req` nodig mag hebben om van `0` naar `Pr` te lopen. Lager = sneller opschakelen.
 
-              - **Demand fall time** geeft ongeveer aan hoe lang `P_req` nodig
-              mag hebben om van `Pr` naar `0` te zakken. Lager = sneller
-              terugregelen bij overshoot.
+              - **Demand fall time** geeft ongeveer aan hoe lang `P_req` nodig mag hebben om van `Pr` naar `0` te zakken. Lager = sneller terugregelen bij overshoot.
 
               </details>
             text_only: true
@@ -2842,20 +2765,15 @@ views:
               <summary><strong>Uitleg parameters</strong></summary>
 
 
-              - De **aanvoerpunten** vormen de stooklijn: gewenste
-              aanvoertemperatuur bij verschillende buitentemperaturen.
+              - De **aanvoerpunten** vormen de stooklijn: gewenste aanvoertemperatuur bij verschillende buitentemperaturen.
 
-              - Pas eerst de curvepunten aan voor het juiste basiscomfort,
-              daarna pas PID finetunen.
+              - Pas eerst de curvepunten aan voor het juiste basiscomfort, daarna pas PID finetunen.
 
-              - **Fallback-aanvoer** wordt gebruikt als buitentemperatuur
-              tijdelijk ontbreekt.
+              - **Fallback-aanvoer** wordt gebruikt als buitentemperatuur tijdelijk ontbreekt.
 
-              - `Heating Curve Control Profile` kiest het ingebouwde regelgedrag
-              voor stabiliteit (o.a. smoothing/hysterese).
+              - `Heating Curve Control Profile` kiest het ingebouwde regelgedrag voor stabiliteit (o.a. smoothing/hysterese).
 
-              - **PID Kp/Ki/Kd** bepaalt de correctie op de
-              systeem-aanvoertemperatuur:
+              - **PID Kp/Ki/Kd** bepaalt de correctie op de systeem-aanvoertemperatuur:
                 - Kp te hoog: snelle maar nerveuze reactie.
                 - Ki te hoog: traag pendelen/overshoot.
                 - Kd meestal laag houden in trage hydraulische systemen.
@@ -2901,16 +2819,11 @@ views:
               <summary><strong>Uitleg parameters</strong></summary>
 
 
-              - Gebruikt `Water Supply Temp (Selected)` als gemeten
-              begrenzingsbron.
+              - Gebruikt `Water Supply Temp (Selected)` als gemeten begrenzingsbron.
 
-              - **Maximum water temperature** is het normale plafond voor de
-              gemeten aanvoertemperatuur.
+              - **Maximum water temperature** is het normale plafond voor de gemeten aanvoertemperatuur.
 
-              - OpenQuatt leidt uit die instelling intern zelf een
-              terugregelband en een harde trip op `max + 5°C` af. In `CM3`
-              valt eerst de boiler weg; alleen bij aanhoudende overshoot volgt
-              daarna een harde HP-stop.
+              - OpenQuatt leidt uit die instelling intern zelf een terugregelband en een harde trip op `max + 5°C` af. In `CM3` valt eerst de boiler weg; alleen bij aanhoudende overshoot volgt daarna een harde HP-stop.
 
 
               </details>
@@ -2994,13 +2907,9 @@ views:
               <summary><strong>Uitleg parameters</strong></summary>
 
 
-              - **Minimum runtime** houdt een al gestarte compressor minimaal
-              `300 s` aan. Je kunt deze runtime verlengen, maar niet lager
-              zetten.
+              - **Minimum runtime** houdt een al gestarte compressor minimaal `300 s` aan. Je kunt deze runtime verlengen, maar niet lager zetten.
 
-              - In heating-curve mode wordt PID-demand direct doorgezet; de
-              allocatie is single-HP-first met dual-enable hysterese en
-              sequentiële levelstappen.
+              - In heating-curve mode wordt PID-demand direct doorgezet; de allocatie is single-HP-first met dual-enable hysterese en sequentiële levelstappen.
 
 
               </details>
@@ -3023,8 +2932,7 @@ views:
               <summary><strong>Uitleg parameters</strong></summary>
 
 
-              - **Flow PI Kp/Ki** bepaalt de dynamiek van flowregeling; wijzig
-              in kleine stappen.
+              - **Flow PI Kp/Ki** bepaalt de dynamiek van flowregeling; wijzig in kleine stappen.
 
 
               </details>
@@ -3048,24 +2956,17 @@ views:
 
               <summary><strong>Uitleg parameters</strong></summary>
 
-              - **Nominaal ketelvermogen** is de referentie voor
-              boilerondersteuning en de boiler power test.
+              - **Nominaal ketelvermogen** is de referentie voor boilerondersteuning en de boiler power test.
 
-              - **CV-ketel/boiler aanwezig** moet aan staan voordat
-              OpenQuatt de ketel/boiler als ondersteuning of de boiler power
-              test mag gebruiken.
+              - **CV-ketel/boiler aanwezig** moet aan staan voordat OpenQuatt de ketel/boiler als ondersteuning of de boiler power test mag gebruiken.
 
-              - De **CM3-tekort inschakel- en uitschakeldrempels** bepalen
-              wanneer boilerondersteuning mag inschakelen/uitschakelen.
+              - De **CM3-tekort inschakel- en uitschakeldrempels** bepalen wanneer boilerondersteuning mag inschakelen/uitschakelen.
 
-              - Boilerondersteuning wordt daarnaast geblokkeerd door de
-              watertempbegrenzing als de gemeten aanvoer te hoog wordt.
+              - Boilerondersteuning wordt daarnaast geblokkeerd door de watertempbegrenzing als de gemeten aanvoer te hoog wordt.
 
-              - Houd de inschakeldrempel duidelijk hoger dan de
-              uitschakeldrempel om schakelen rond de grens te beperken.
+              - Houd de inschakeldrempel duidelijk hoger dan de uitschakeldrempel om schakelen rond de grens te beperken.
 
-              - Bij te agressief gedrag: inschakeldrempel verhogen of
-              uitschakeldrempel verlagen.
+              - Bij te agressief gedrag: inschakeldrempel verhogen of uitschakeldrempel verlagen.
 
 
               </details>
@@ -3095,19 +2996,15 @@ views:
               <summary><strong>Uitleg parameters</strong></summary>
 
 
-              - Kies hier maximaal twee compressorlevels per HP die de
-              verdelingslogica moet overslaan.
+              - Kies hier maximaal twee compressorlevels per HP die de verdelingslogica moet overslaan.
 
               - `None` betekent: geen uitsluiting in dat slot.
 
-              - Als een gevraagd level is uitgesloten, zoekt OpenQuatt eerst een
-              lager level en daarna pas een hoger level.
+              - Als een gevraagd level is uitgesloten, zoekt OpenQuatt eerst een lager level en daarna pas een hoger level.
 
-              - Meestal laat je beide slots op `None`; gebruik uitsluitingen
-              alleen voor testen, geluid of specifieke beperkingen.
+              - Meestal laat je beide slots op `None`; gebruik uitsluitingen alleen voor testen, geluid of specifieke beperkingen.
 
-              - Als beide slots hetzelfde level kiezen, telt dat gewoon als
-              een enkele uitsluiting.
+              - Als beide slots hetzelfde level kiezen, telt dat gewoon als een enkele uitsluiting.
 
 
               </details>
@@ -3141,8 +3038,7 @@ views:
         content: |-
           # <ha-icon icon="mdi:tune-vertical"></ha-icon> Instellingen
 
-          Structurele regelinstellingen voor limieten, huismodel, stooklijn,
-          heat-allocation en flow.
+          Structurele regelinstellingen voor limieten, huismodel, stooklijn, heat-allocation en flow.
     cards: []
   - title: Service en test
     path: service-test
@@ -3163,17 +3059,13 @@ views:
               <summary><strong>Uitleg parameters</strong></summary>
 
 
-              - **Reset draaitellers**. Let op: het kan maximaal 1 minuut duren
-              voordat je effect ziet.
+              - **Reset draaitellers**. Let op: het kan maximaal 1 minuut duren voordat je effect ziet.
 
-              - **Reset cumulatieve energietellers** zet cumulatieve
-              elektriciteits- en warmte-energiemeters terug naar 0.
+              - **Reset cumulatieve energietellers** zet cumulatieve elektriciteits- en warmte-energiemeters terug naar 0.
 
-              - **HP1/HP2 draaitijd counters** tonen de actuele teller waarop de
-              runtime-balans wordt gebaseerd.
+              - **HP1/HP2 draaitijd counters** tonen de actuele teller waarop de runtime-balans wordt gebaseerd.
 
-              - **Leidende HP** toont welke unit momenteel lead is op basis van
-              de laagste runtime.
+              - **Leidende HP** toont welke unit momenteel lead is op basis van de laagste runtime.
 
 
               </details>
@@ -3192,134 +3084,6 @@ views:
               - entity: sensor.openquatt_runtime_lead_hp
                 name: Leidende HP
         column_span: 1
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:tools
-            heading: CM100 commissioning
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-
-              <summary><strong>Uitleg parameters</strong></summary>
-
-
-              - Start eerst **CM100**. In deze stand gebeurt nog niets: geen
-              flow, geen boiler en geen autotune.
-
-              - Kies daarna precies één commissioningtaak: **Boiler power test**
-              of **Flow autotune**.
-
-              - Start eerst **CM100**. Pas daarna kun je precies één
-              commissioningtaak starten.
-
-
-              </details>
-            text_only: true
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: button.openquatt_cm100_start
-                name: CM100 starten
-              - entity: button.openquatt_cm100_stop
-                name: CM100 stoppen
-              - entity: sensor.openquatt_control_mode_label
-                name: ControlMode
-              - entity: binary_sensor.openquatt_cm100_active
-                name: CM100 actief
-              - entity: sensor.openquatt_commissioning_status
-                name: CM100 status
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:tools
-            heading: CM100 - Flow autotune
-            heading_style: title
-            grid_options:
-              columns: 12
-              rows: 1
-          - type: heading
-            icon: mdi:water-boiler
-            heading: CM100 - Boiler power test
-            heading_style: title
-            grid_options:
-              columns: 12
-              rows: auto
-          - type: markdown
-            content: |-
-              <details>
-
-              <summary><strong>Uitleg parameters</strong></summary>
-
-
-              - Start **Flow autotune** alleen terwijl **CM100** al actief is.
-
-              - In CM100 start autotune zelf de flow op en meet daarna de
-              respons.
-
-              - Autotune gebruikt een vaste duur en een adaptieve stap-preset.
-              starten.
-
-              - `Apply autotune Kp/Ki` alleen toepassen als de voorgestelde
-              waarden logisch zijn.
-
-
-              </details>
-            text_only: true
-          - type: markdown
-            content: |-
-              <details>
-
-              <summary><strong>Uitleg parameters</strong></summary>
-
-
-              - Meet het effectieve ketelvermogen bij stabiele flow.
-
-              - Start de test alleen terwijl **CM100** al actief is.
-
-              - Pas de gemeten waarde toe als die logisch oogt.
-
-
-              </details>
-            text_only: true
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: button.openquatt_flow_autotune_start
-                name: Flow autotune starten
-              - entity: button.openquatt_flow_autotune_abort
-                name: Flow autotune afbreken
-              - entity: button.openquatt_apply_flow_autotune_kp_ki
-                name: Pas autotune Kp/Ki toe
-              - entity: number.openquatt_flow_autotune_kp_suggested
-                name: Autotune Kp voorstel
-              - entity: number.openquatt_flow_autotune_ki_suggested
-                name: Autotune Ki voorstel
-              - entity: sensor.openquatt_flow_autotune_status
-                name: Autotune status
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: button.openquatt_boiler_power_test_start
-                name: Boiler power test starten
-              - entity: button.openquatt_boiler_power_test_abort
-                name: Boiler power test afbreken
-              - entity: button.openquatt_boiler_power_test_apply
-                name: Pas boilervermogen toe
-              - entity: number.openquatt_boiler_rated_heat_power
-                name: Nominaal ketelvermogen
-              - entity: sensor.openquatt_boiler_power_test_result
-                name: Boiler power test resultaat
-              - entity: sensor.openquatt_boiler_power_test_confidence
-                name: Boiler power test confidence
-              - entity: sensor.openquatt_boiler_power_test_status
-                name: Boiler power test status
-        visibility:
-          - condition: state
-            entity: binary_sensor.openquatt_cm100_active
-            state: 'on'
-        column_span: 2
     header:
       card:
         type: markdown
@@ -3366,8 +3130,7 @@ views:
 
               laatste GitHub release en toont of er een update beschikbaar is.
 
-              - `Controleer firmware-updates`: forceert direct een nieuwe
-              updatecheck
+              - `Controleer firmware-updates`: forceert direct een nieuwe updatecheck
 
               (zonder te wachten op de volgende automatische poll).
 
@@ -3470,11 +3233,9 @@ views:
 
               - `P_house` is de modelschatting op basis van buitentemperatuur.
 
-              - `P_req` is de begrensde warmtevraag na comfortband,
-              temperatuurreactie en ramp-limiter.
+              - `P_req` is de begrensde warmtevraag na comfortband, temperatuurreactie en ramp-limiter.
 
-              Als `P_req` onverwacht hoog/laag is: controleer buitenbron, kamer
-              setpoint/temp, comfortband en responsinstellingen.
+              Als `P_req` onverwacht hoog/laag is: controleer buitenbron, kamer setpoint/temp, comfortband en responsinstellingen.
 
 
               </details>
@@ -3506,20 +3267,16 @@ views:
               <summary><strong>Uitleg</strong></summary>
 
 
-              Gebruik dit blok om de curve-regeling stap voor stap te
-              controleren.
+              Gebruik dit blok om de curve-regeling stap voor stap te controleren.
 
 
               - Deze sectie is vooral relevant bij actieve stooklijnregeling.
 
-              - Vergelijk eerst `Aanvoerdoel` met `Werkelijke aanvoer (gekozen)`
-              om de regelafwijking te zien.
+              - Vergelijk eerst `Aanvoerdoel` met `Werkelijke aanvoer (gekozen)` om de regelafwijking te zien.
 
-              - Gebruik `Stooklijn-PID` bij finetuning als de regeling te
-              traag of te nerveus reageert.
+              - Gebruik `Stooklijn-PID` bij finetuning als de regeling te traag of te nerveus reageert.
 
-              - `Buitentemp (gekozen)` helpt verklaren waarom het `Supply
-              target` stijgt of daalt.
+              - `Buitentemp (gekozen)` helpt verklaren waarom het `Supply target` stijgt of daalt.
 
 
               </details>

@@ -34,6 +34,7 @@ button:
   - platform: template
     id: oq_boiler_power_test_start
     name: "Boiler Power Test Start"
+    internal: true
     icon: mdi:play-circle-outline
     entity_category: config
     web_server:
@@ -45,6 +46,7 @@ button:
   - platform: template
     id: oq_boiler_power_test_abort
     name: "Boiler Power Test Abort"
+    internal: true
     icon: mdi:stop-circle-outline
     entity_category: config
     web_server:
@@ -56,6 +58,7 @@ button:
   - platform: template
     id: oq_boiler_power_test_apply
     name: "Boiler Power Test Apply"
+    internal: true
     icon: mdi:check-circle-outline
     entity_category: config
     web_server:
@@ -97,6 +100,7 @@ sensor:
   - platform: template
     id: oq_boiler_power_test_result
     name: "Boiler power test result"
+    internal: true
     icon: mdi:chart-line
     unit_of_measurement: "W"
     device_class: power
@@ -111,6 +115,7 @@ sensor:
   - platform: template
     id: oq_boiler_power_test_confidence
     name: "Boiler power test confidence"
+    internal: true
     icon: mdi:percent-outline
     unit_of_measurement: "%"
     state_class: measurement
@@ -125,6 +130,7 @@ binary_sensor:
   - platform: template
     id: oq_boiler_power_test_active
     name: "Boiler power test active"
+    internal: true
     icon: mdi:test-tube
     entity_category: diagnostic
     web_server:
@@ -136,6 +142,7 @@ text_sensor:
   - platform: template
     id: oq_boiler_power_test_status
     name: "Boiler power test status"
+    internal: true
     icon: mdi:information-outline
     update_interval: never
     web_server:

@@ -38,6 +38,7 @@ select:
   - platform: template
     id: oq_manual_hp1_mode
     name: "Manual HP1 service mode"
+    internal: true
     icon: mdi:heat-pump
     optimistic: false
     restore_value: false
@@ -56,6 +57,7 @@ select:
   - platform: template
     id: oq_manual_hp2_mode
     name: "Manual HP2 service mode"
+    internal: true
     icon: mdi:heat-pump
     optimistic: false
     restore_value: false
@@ -75,6 +77,7 @@ number:
   - platform: template
     id: oq_manual_hp1_level
     name: "Manual HP1 compressor level"
+    internal: true
     icon: mdi:speedometer
     mode: slider
     min_value: 0
@@ -90,6 +93,7 @@ number:
   - platform: template
     id: oq_manual_hp2_level
     name: "Manual HP2 compressor level"
+    internal: true
     icon: mdi:speedometer
     mode: slider
     min_value: 0
@@ -106,6 +110,7 @@ button:
   - platform: template
     id: oq_manual_hp_start
     name: "Manual HP Start"
+    internal: true
     icon: mdi:heat-pump-outline
     entity_category: config
     web_server:
@@ -117,6 +122,7 @@ button:
   - platform: template
     id: oq_manual_hp_abort
     name: "Manual HP Abort"
+    internal: true
     icon: mdi:stop-circle-outline
     entity_category: config
     web_server:
@@ -129,6 +135,7 @@ binary_sensor:
   - platform: template
     id: oq_manual_hp_active_sensor
     name: "Manual HP active"
+    internal: true
     icon: mdi:heat-pump
     entity_category: diagnostic
     web_server:
@@ -141,6 +148,7 @@ text_sensor:
   - platform: template
     id: oq_manual_hp_status
     name: "Manual HP status"
+    internal: true
     icon: mdi:information-outline
     update_interval: never
     web_server:
@@ -149,6 +157,7 @@ text_sensor:
   - platform: template
     id: oq_manual_hp_guard_status
     name: "Manual HP guard status"
+    internal: true
     icon: mdi:shield-check-outline
     update_interval: never
     web_server:

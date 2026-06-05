@@ -32,8 +32,7 @@ views:
 
               - `Outside temp`: selected outdoor temperature source used in control.
 
-              - `Supply temperature`: selected source for current water supply
-              temperature.
+              - `Supply temperature`: selected source for current water supply temperature.
 
 
               </details>
@@ -147,19 +146,13 @@ views:
 
               Use these controls for direct runtime interaction:
 
-              - `OpenQuatt regulation`: temporarily disables or re-enables
-              automatic heating and cooling control. Safety monitoring and
-              freeze protection stay active.
+              - `OpenQuatt regulation`: temporarily disables or re-enables automatic heating and cooling control. Safety monitoring and freeze protection stay active.
 
-              - `Resume automatically`: choose the date and time when the
-              regulation should turn itself back on after being temporarily
-              disabled.
+              - `Resume automatically`: choose the date and time when the regulation should turn itself back on after being temporarily disabled.
 
-              - `Manual cooling`: adds an extra cooling permission on top of
-              CIC and/or HA input.
+              - `Manual cooling`: adds an extra cooling permission on top of CIC and/or HA input.
 
-              - `Silent mode override`: sets silent mode to `Schedule`, `On`
-              or `Off`.
+              - `Silent mode override`: sets silent mode to `Schedule`, `On` or `Off`.
 
 
               </details>
@@ -200,8 +193,7 @@ views:
               <details>
 
               <summary><strong>Explanation</strong></summary><ha-alert
-              alert-type="warning">Pas op, dit overruled de ControlMode van
-              OpenQuatt!</ha-alert>
+              alert-type="warning">Pas op, dit overruled de ControlMode van OpenQuatt!</ha-alert>
 
 
               `CM override`: handmatige mode-override; normaal op `Auto` laten.
@@ -893,8 +885,7 @@ views:
 
               <summary><strong>Explanation</strong></summary>
 
-              - `Flow measurements` compares actual flow versus setpoint over
-              time.
+              - `Flow measurements` compares actual flow versus setpoint over time.
 
               - `Pump control` shows iPWM command output for HP1.
 
@@ -1605,20 +1596,14 @@ views:
               <details>
               <summary><strong>Explanation</strong></summary>
 
-              Select which source OpenQuatt should use per signal.
-              The `Selected` value should directly follow the chosen source.
-              This makes it easy to verify that the effective control input matches your expectation.
+              Select which source OpenQuatt should use per signal. The `Selected` value should directly follow the chosen source. This makes it easy to verify that the effective control input matches your expectation.
 
               Use this block for:
               - source selection during tuning
               - quick comparison between CIC, local, and HA Input
               - validation of the effective control input
 
-              For `Outside temperature source`, `Auto` is the recommended mode.
-              OpenQuatt then picks the lowest valid source between the local
-              outdoor-unit reading and HA outside temperature, when HA is
-              configured and valid. This keeps control robust when one source
-              is temporarily biased warm by sun or local heat.
+              For `Outside temperature source`, `Auto` is the recommended mode. OpenQuatt then picks the lowest valid source between the local outdoor-unit reading and HA outside temperature, when HA is configured and valid. This keeps control robust when one source is temporarily biased warm by sun or local heat.
 
               </details>
             text_only: true
@@ -1774,8 +1759,7 @@ views:
                   <details>
                   <summary><strong>Explanation</strong></summary>
 
-                  Enter the entity IDs for the sources that must feed the OpenQuatt HA
-                  proxy sensors.
+                  Enter the entity IDs for the sources that must feed the OpenQuatt HA proxy sensors.
 
                   Example values:
                   - `sensor.outdoor_temperature`
@@ -1787,8 +1771,7 @@ views:
                   - `climate.living_room | hvac_mode`
 
                   Optional attribute format:
-                  - `entity_id|attribute_name`
-                  Spaces around `|` are ignored.
+                  - `entity_id|attribute_name` Spaces around `|` are ignored.
 
                   If a source is invalid, the proxy value becomes `Unavailable`.
                   </details>
@@ -1817,13 +1800,9 @@ views:
                   <details>
                   <summary><strong>Explanation</strong></summary>
 
-                  These are the stable HA proxy entities used as the contract towards
-                  OpenQuatt.
+                  These are the stable HA proxy entities used as the contract towards OpenQuatt.
 
-                  `Valid` should be `on` for all five signals.
-                  If `Valid` is `off`, the current source is not numeric.
-                  In that case the proxy value is `Unavailable` until the source
-                  becomes valid again.
+                  `Valid` should be `on` for all five signals. If `Valid` is `off`, the current source is not numeric. In that case the proxy value is `Unavailable` until the source becomes valid again.
                   </details>
                 text_only: true
               - type: entities
@@ -1860,11 +1839,9 @@ views:
                   <details>
                   <summary><strong>Explanation</strong></summary>
 
-                  These are the five HA input signals as received by OpenQuatt.
-                  They should follow the proxy values shown in the middle panel.
+                  These are the five HA input signals as received by OpenQuatt. They should follow the proxy values shown in the middle panel.
 
-                  If a value stays `Unknown`, first check whether the matching
-                  `... source valid` sensor is `on`.
+                  If a value stays `Unknown`, first check whether the matching `... source valid` sensor is `on`.
 
                   </details>
                 text_only: true
@@ -1933,18 +1910,13 @@ views:
               <details>
               <summary><strong>Explanation</strong></summary>
 
-              Configure the dew point, temperature, and humidity source per room
-              for cooling.
+              Configure the dew point, temperature, and humidity source per room for cooling.
 
-              Prefer a direct dew point entity per room. If you do not have one,
-              enter temperature and relative humidity instead.
+              Prefer a direct dew point entity per room. If you do not have one, enter temperature and relative humidity instead.
 
-              OpenQuatt prefers the direct dew point per room and otherwise
-              computes dew point from temperature + RH. For system safety it
-              then uses the highest valid room value.
+              OpenQuatt prefers the direct dew point per room and otherwise computes dew point from temperature + RH. For system safety it then uses the highest valid room value.
 
-              Increase `Number of rooms` first; the input fields per room will
-              appear below.
+              Increase `Number of rooms` first; the input fields per room will appear below.
               </details>
             text_only: true
             grid_options:
@@ -2129,9 +2101,7 @@ views:
               <details>
               <summary><strong>Explanation</strong></summary>
 
-              This block shows the direct OpenTherm thermostat link.
-              Use it to verify that OpenQuatt sees thermostat heat/cooling intent
-              and room values without going through CIC or Home Assistant.
+              This block shows the direct OpenTherm thermostat link. Use it to verify that OpenQuatt sees thermostat heat/cooling intent and room values without going through CIC or Home Assistant.
 
               Check these first when OT behavior looks wrong:
               - `OpenTherm Enabled`
@@ -2171,9 +2141,7 @@ views:
               <details>
               <summary><strong>Explanation</strong></summary>
 
-              This block shows CiC feed health.
-              If feed health degrades or data becomes stale, CIC-backed sources
-              may become unusable for selected signals.
+              This block shows CiC feed health. If feed health degrades or data becomes stale, CIC-backed sources may become unusable for selected signals.
 
               Check these first when values look wrong:
               - `JSON feed OK`
@@ -2200,8 +2168,7 @@ views:
         content: |-
           # <ha-icon icon="mdi:source-branch"></ha-icon> Sensor configuration
 
-          Configure source selection and source mapping, then verify per signal
-          the selected value and source status.
+          Configure source selection and source mapping, then verify per signal the selected value and source status.
     top_margin: false
     dense_section_placement: false
   - title: Tuning
@@ -2222,8 +2189,7 @@ views:
 
               <summary><strong>Explanation</strong></summary>
 
-              Choose which Quatt Hybrid you have. OpenQuatt uses this setting
-              to apply the correct model rules and limits.
+              Choose which Quatt Hybrid you have. OpenQuatt uses this setting to apply the correct model rules and limits.
 
               </details>
             text_only: true
@@ -2245,11 +2211,9 @@ views:
               <summary><strong>Parameter explanation</strong></summary>
 
 
-              - **Day max level / Silent max level** limit the maximum
-              compressor level during normal or silent hours.
+              - **Day max level / Silent max level** limit the maximum compressor level during normal or silent hours.
 
-              - **Silent start/end time** defines the time window in which the
-              silent cap is active.
+              - **Silent start/end time** defines the time window in which the silent cap is active.
 
               </details>
             text_only: true
@@ -2277,37 +2241,23 @@ views:
               <summary><strong>Parameter explanation</strong></summary>
 
 
-              - **House cold temp** and **Rated maximum house power (Pr)**
-              together define heat-demand scale at cold conditions.
+              - **House cold temp** and **Rated maximum house power (Pr)** together define heat-demand scale at cold conditions.
 
-              - **Maximum heating outdoor temperature** is the point where model
-              heat demand approaches ~0.
+              - **Maximum heating outdoor temperature** is the point where model heat demand approaches ~0.
 
-              - **PH temperature reaction** defines how strongly Power House
-              adds heat below the cold comfort edge and how strongly it starts
-              pulling heat back again above room setpoint.
+              - **PH temperature reaction** defines how strongly Power House adds heat below the cold comfort edge and how strongly it starts pulling heat back again above room setpoint.
 
-              - **Comfort above setpoint** defines the acceptable upper side of
-              the comfort band.
+              - **Comfort above setpoint** defines the acceptable upper side of the comfort band.
 
-              - **Comfort below setpoint** is the cold-side margin below
-              setpoint before extra heating correction starts.
+              - **Comfort below setpoint** is the cold-side margin below setpoint before extra heating correction starts.
 
-              - If the room stays too cold for longer, Power House keeps some
-              extra heat demand active for longer. This helps the room stay
-              within the configured comfort band.
+              - If the room stays too cold for longer, Power House keeps some extra heat demand active for longer. This helps the room stay within the configured comfort band.
 
-              - **Response profile** is a quick preset for calmer, balanced, or
-              more responsive Power House behavior. As soon as rise and fall
-              time no longer match a preset, the profile automatically shows
-              `Custom`.
+              - **Response profile** is a quick preset for calmer, balanced, or more responsive Power House behavior. As soon as rise and fall time no longer match a preset, the profile automatically shows `Custom`.
 
-              - **Demand rise time** is the approximate time `P_req` may take
-              to move from `0` to `Pr`. Lower = faster ramp-up.
+              - **Demand rise time** is the approximate time `P_req` may take to move from `0` to `Pr`. Lower = faster ramp-up.
 
-              - **Demand fall time** is the approximate time `P_req` may take
-              to move from `Pr` back to `0`. Lower = faster pullback on
-              overshoot.
+              - **Demand fall time** is the approximate time `P_req` may take to move from `Pr` back to `0`. Lower = faster pullback on overshoot.
 
               </details>
             text_only: true
@@ -2345,19 +2295,15 @@ views:
               <summary><strong>Parameter explanation</strong></summary>
 
 
-              - **Supply points** form the heating curve: desired supply
-              temperature for different outdoor temperatures.
+              - **Supply points** form the heating curve: desired supply temperature for different outdoor temperatures.
 
               - First tune curve points for baseline comfort, then fine-tune PID.
 
-              - **Fallback supply** is used when outdoor temperature is
-              temporarily unavailable.
+              - **Fallback supply** is used when outdoor temperature is temporarily unavailable.
 
-              - `Heating Curve Control Profile` selects the built-in control
-              behavior for stability (including smoothing/hysteresis behavior).
+              - `Heating Curve Control Profile` selects the built-in control behavior for stability (including smoothing/hysteresis behavior).
 
-              - **PID Kp/Ki/Kd** defines correction on system supply
-              temperature:
+              - **PID Kp/Ki/Kd** defines correction on system supply temperature:
                 - Kp too high: fast but nervous response.
                 - Ki too high: slow oscillation/overshoot.
                 - Keep Kd low in slow hydraulic systems.
@@ -2405,12 +2351,9 @@ views:
 
               - Uses `Water Supply Temp (Selected)` as the measured limit source.
 
-              - **Maximum water temperature** is the normal ceiling for measured
-              supply temperature.
+              - **Maximum water temperature** is the normal ceiling for measured supply temperature.
 
-              - OpenQuatt derives an internal rollback band and a hard trip at
-              `max + 5°C` from that setting. In `CM3` the boiler drops out
-              first; a hard HP stop follows only if the overshoot persists.
+              - OpenQuatt derives an internal rollback band and a hard trip at `max + 5°C` from that setting. In `CM3` the boiler drops out first; a hard HP stop follows only if the overshoot persists.
 
 
               </details>
@@ -2480,8 +2423,7 @@ views:
               <summary><strong>Parameter explanation</strong></summary>
 
 
-              - **Minimum runtime** keeps a started compressor on for at least
-              `300 s`. You can lengthen this runtime, but not lower it.
+              - **Minimum runtime** keeps a started compressor on for at least `300 s`. You can lengthen this runtime, but not lower it.
 
               </details>
             text_only: true
@@ -2503,8 +2445,7 @@ views:
               <summary><strong>Parameter explanation</strong></summary>
 
 
-              - **Flow PI Kp/Ki** defines flow-control dynamics; adjust in small
-              steps.
+              - **Flow PI Kp/Ki** defines flow-control dynamics; adjust in small steps.
 
 
               </details>
@@ -2528,23 +2469,17 @@ views:
 
               <summary><strong>Parameter explanation</strong></summary>
 
-              - **Boiler rated power** is the reference for boiler assist and
-              the boiler power test.
+              - **Boiler rated power** is the reference for boiler assist and the boiler power test.
 
-              - **Boiler assist enabled** must be on before OpenQuatt may
-              use CM3 or run the boiler power test.
+              - **Boiler assist enabled** must be on before OpenQuatt may use CM3 or run the boiler power test.
 
-              - The **CM3 deficit turn-on and turn-off thresholds** define
-              when boiler assist may switch on/off.
+              - The **CM3 deficit turn-on and turn-off thresholds** define when boiler assist may switch on/off.
 
-              - Boiler assist is still blocked by the water temperature limit
-              when measured supply temperature gets too high.
+              - Boiler assist is still blocked by the water temperature limit when measured supply temperature gets too high.
 
-              - Keep the turn-on threshold clearly higher than the turn-off
-              threshold to reduce toggling around the boundary.
+              - Keep the turn-on threshold clearly higher than the turn-off threshold to reduce toggling around the boundary.
 
-              - If behavior is too aggressive: increase the turn-on threshold
-              or decrease the turn-off threshold.
+              - If behavior is too aggressive: increase the turn-on threshold or decrease the turn-off threshold.
 
 
               </details>
@@ -2574,19 +2509,15 @@ views:
               <summary><strong>Parameter explanation</strong></summary>
 
 
-              - Select up to two compressor levels per HP that allocation logic
-              should skip.
+              - Select up to two compressor levels per HP that allocation logic should skip.
 
               - `None` means: no exclusion for that slot.
 
-              - If a requested level is excluded, OpenQuatt searches down first
-              and only then up.
+              - If a requested level is excluded, OpenQuatt searches down first and only then up.
 
-              - Usually you keep both slots on `None`; only exclude levels for
-              testing, noise, or specific constraints.
+              - Usually you keep both slots on `None`; only exclude levels for testing, noise, or specific constraints.
 
-              - If both slots point to the same level, that still counts as a
-              single exclusion.
+              - If both slots point to the same level, that still counts as a single exclusion.
 
 
               </details>
@@ -2610,8 +2541,7 @@ views:
         content: |-
           # <ha-icon icon="mdi:tune-vertical"></ha-icon> Tuning
 
-          Structural control tuning for limits, house model, heating curve, heat
-          allocation, and flow.
+          Structural control tuning for limits, house model, heating curve, heat allocation, and flow.
     cards: []
   - title: Service & Test
     path: service-test
@@ -2632,16 +2562,12 @@ views:
               <summary><strong>Parameter explanation</strong></summary>
 
 
-              - **Reset runtime counters**. Note: it can take up to 1 minute
-              before the effect is visible.
+              - **Reset runtime counters**. Note: it can take up to 1 minute before the effect is visible.
 
-              - **Reset cumulative energy counters** sets cumulative electricity
-              and thermal energy counters back to 0.
-              - **HP1 Runtime counter** shows the current counter used for
-              runtime balancing.
+              - **Reset cumulative energy counters** sets cumulative electricity and thermal energy counters back to 0.
+              - **HP1 Runtime counter** shows the current counter used for runtime balancing.
 
-              - **Runtime lead HP** shows which unit is currently selected as
-              lead based on the lowest runtime.
+              - **Runtime lead HP** shows which unit is currently selected as lead based on the lowest runtime.
 
 
               </details>
@@ -2657,134 +2583,6 @@ views:
                 name: HP1 Runtime
               - entity: sensor.openquatt_runtime_lead_hp
                 name: Runtime lead HP
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:tools
-            heading: CM100 commissioning
-            heading_style: title
-          - type: markdown
-            content: |-
-              <details>
-
-              <summary><strong>Parameter explanation</strong></summary>
-
-
-              - Start **CM100** first. In this mode nothing happens yet: no
-              flow, no boiler, and no autotune.
-
-              - Then choose exactly one commissioning task: **Boiler power
-              test** or **Flow autotune**.
-
-              - Start **CM100** first. Only then can you start exactly one
-              commissioning task.
-
-
-              </details>
-            text_only: true
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: button.openquatt_cm100_start
-                name: Start CM100
-              - entity: button.openquatt_cm100_stop
-                name: Stop CM100
-              - entity: sensor.openquatt_control_mode_label
-                name: ControlMode
-              - entity: binary_sensor.openquatt_cm100_active
-                name: CM100 active
-              - entity: sensor.openquatt_commissioning_status
-                name: CM100 status
-      - type: grid
-        cards:
-          - type: heading
-            icon: mdi:tools
-            heading: CM100 - Flow autotune
-            heading_style: title
-            grid_options:
-              columns: 12
-              rows: 1
-          - type: heading
-            icon: mdi:water-boiler
-            heading: CM100 - Boiler power test
-            heading_style: title
-            grid_options:
-              columns: 12
-              rows: auto
-          - type: markdown
-            content: |-
-              <details>
-
-              <summary><strong>Parameter explanation</strong></summary>
-
-
-              - Start **Flow autotune** only while **CM100** is already
-              active.
-
-              - In CM100, autotune starts the flow itself and then measures
-              the response.
-
-              - Autotune uses a fixed duration and an adaptive step preset.
-
-              - Apply `Apply autotune Kp/Ki` only if suggested values are
-              sensible.
-
-
-              </details>
-            text_only: true
-          - type: markdown
-            content: |-
-              <details>
-
-              <summary><strong>Parameter explanation</strong></summary>
-
-
-              - Measures the effective boiler output at stable flow.
-
-              - Start the test only while **CM100** is already active.
-
-              - Apply the measured value only if it looks sensible.
-
-
-              </details>
-            text_only: true
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: button.openquatt_flow_autotune_start
-                name: Flow autotune start
-              - entity: button.openquatt_flow_autotune_abort
-                name: Flow autotune abort
-              - entity: button.openquatt_apply_flow_autotune_kp_ki
-                name: Apply autotune Kp/Ki
-              - entity: number.openquatt_flow_autotune_kp_suggested
-                name: Autotune Kp suggested
-              - entity: number.openquatt_flow_autotune_ki_suggested
-                name: Autotune Ki suggested
-              - entity: sensor.openquatt_flow_autotune_status
-                name: Autotune status
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: button.openquatt_boiler_power_test_start
-                name: Start boiler power test
-              - entity: button.openquatt_boiler_power_test_abort
-                name: Abort boiler power test
-              - entity: button.openquatt_boiler_power_test_apply
-                name: Apply boiler power
-              - entity: number.openquatt_boiler_rated_heat_power
-                name: Boiler rated power
-              - entity: sensor.openquatt_boiler_power_test_result
-                name: Boiler power test result
-              - entity: sensor.openquatt_boiler_power_test_confidence
-                name: Boiler power test confidence
-              - entity: sensor.openquatt_boiler_power_test_status
-                name: Boiler power test status
-        visibility:
-          - condition: state
-            entity: binary_sensor.openquatt_cm100_active
-            state: 'on'
-        column_span: 2
     header:
       card:
         type: markdown
@@ -2813,19 +2611,13 @@ views:
 
               This block shows firmware version and OTA update status:
 
-              - `OpenQuatt Version`: version currently running on the ESP
-              (from build-time `project_version`).
-              - `OpenQuatt Release Channel`: build channel currently running
-              on the ESP (`main` or `dev`).
-              - `Firmware Update Channel`: selects which OTA track the update
-              entity follows next (`main` or `dev`).
-              - `Firmware Update`: compares your installed firmware with the
-              latest GitHub release and indicates if an update is available.
-              - `Check Firmware Updates`: forces an immediate update check
-              (without waiting for the next scheduled poll).
+              - `OpenQuatt Version`: version currently running on the ESP (from build-time `project_version`).
+              - `OpenQuatt Release Channel`: build channel currently running on the ESP (`main` or `dev`).
+              - `Firmware Update Channel`: selects which OTA track the update entity follows next (`main` or `dev`).
+              - `Firmware Update`: compares your installed firmware with the latest GitHub release and indicates if an update is available.
+              - `Check Firmware Updates`: forces an immediate update check (without waiting for the next scheduled poll).
 
-              Note: after a new release, the update entity may take a short
-              time to reflect the latest version (cache/refresh interval).
+              Note: after a new release, the update entity may take a short time to reflect the latest version (cache/refresh interval).
 
               </details>
             text_only: true
@@ -2908,11 +2700,9 @@ views:
 
               - `P_house` is the model estimate based on outdoor temperature.
 
-              - `P_req` is the limited heat request after comfort band,
-              temperature reaction and ramp limiting.
+              - `P_req` is the limited heat request after comfort band, temperature reaction and ramp limiting.
 
-              If `P_req` looks unexpectedly high/low: check outside source, room
-              setpoint/temp, comfort band and response settings.
+              If `P_req` looks unexpectedly high/low: check outside source, room setpoint/temp, comfort band and response settings.
 
 
               </details>
@@ -2949,14 +2739,11 @@ views:
 
               - This section is most relevant when heating-curve control is active.
 
-              - First compare `Supply target` and `Supply actual` to see control
-              error.
+              - First compare `Supply target` and `Supply actual` to see control error.
 
-              - Use `Heating Curve PID` for fine tuning when response is too
-              slow or too nervous.
+              - Use `Heating Curve PID` for fine tuning when response is too slow or too nervous.
 
-              - `Outside temp (selected)` helps explain why `Supply target`
-              rises or drops.
+              - `Outside temp (selected)` helps explain why `Supply target` rises or drops.
 
 
               </details>

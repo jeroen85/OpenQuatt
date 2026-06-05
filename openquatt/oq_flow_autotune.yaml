@@ -54,6 +54,7 @@ button:
   - platform: template
     id: oq_flow_autotune_start
     name: "Flow Autotune Start"
+    internal: true
     icon: mdi:play-circle-outline
     entity_category: config
     web_server:
@@ -71,6 +72,7 @@ button:
   - platform: template
     id: oq_flow_autotune_abort_btn
     name: "Flow Autotune Abort"
+    internal: true
     icon: mdi:stop-circle-outline
     entity_category: config
     web_server:
@@ -82,6 +84,7 @@ button:
   - platform: template
     id: oq_flow_autotune_apply
     name: "Apply Flow Autotune Kp-Ki"
+    internal: true
     icon: mdi:check-circle-outline
     entity_category: config
     web_server:
@@ -108,6 +111,7 @@ number:
   - platform: template
     id: oq_flow_kp_suggested
     name: "Flow Autotune Kp suggested"
+    internal: true
     icon: mdi:alpha-k-circle-outline
     mode: slider
     min_value: ${oq_flow_kp_min}
@@ -123,6 +127,7 @@ number:
   - platform: template
     id: oq_flow_ki_suggested
     name: "Flow Autotune Ki suggested"
+    internal: true
     icon: mdi:alpha-i-circle-outline
     mode: slider
     min_value: ${oq_flow_ki_min}
@@ -139,6 +144,7 @@ text_sensor:
   - platform: template
     id: oq_flow_autotune_status
     name: "Flow Autotune status"
+    internal: true
     icon: mdi:information-outline
     web_server:
       sorting_group_id: oq_tuning_flow

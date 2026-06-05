@@ -59,6 +59,7 @@ button:
   - platform: template
     id: oq_acknowledge_compressor_cycling_alert
     name: "Acknowledge compressor cycling alert"
+    internal: true
     icon: mdi:check-circle-outline
     entity_category: config
     on_press:
@@ -239,6 +240,7 @@ sensor:
   - platform: template
     id: oq_compressor_cycling_alert_first_seen
     name: "Compressor cycling alert first seen"
+    internal: true
     icon: mdi:clock-start
     entity_category: diagnostic
     unit_of_measurement: s
@@ -254,6 +256,7 @@ sensor:
   - platform: template
     id: oq_compressor_cycling_alert_last_seen
     name: "Compressor cycling alert last seen"
+    internal: true
     icon: mdi:clock-end
     entity_category: diagnostic
     unit_of_measurement: s
@@ -269,6 +272,7 @@ sensor:
   - platform: template
     id: oq_compressor_cycling_alert_hp1_peak_2h
     name: "Compressor cycling alert HP1 peak 2h"
+    internal: true
     icon: mdi:chart-line
     entity_category: diagnostic
     accuracy_decimals: 0
@@ -281,6 +285,7 @@ sensor:
   - platform: template
     id: oq_compressor_cycling_alert_hp1_peak_72h
     name: "Compressor cycling alert HP1 peak 72h"
+    internal: true
     icon: mdi:chart-line
     entity_category: diagnostic
     accuracy_decimals: 0
@@ -294,7 +299,7 @@ sensor:
     id: oq_compressor_cycling_alert_hp2_peak_2h
     name: "Compressor cycling alert HP2 peak 2h"
     icon: mdi:chart-line
-    internal: ${monitoring_hp2_internal}
+    internal: true
     entity_category: diagnostic
     accuracy_decimals: 0
     update_interval: 60s
@@ -307,7 +312,7 @@ sensor:
     id: oq_compressor_cycling_alert_hp2_peak_72h
     name: "Compressor cycling alert HP2 peak 72h"
     icon: mdi:chart-line
-    internal: ${monitoring_hp2_internal}
+    internal: true
     entity_category: diagnostic
     accuracy_decimals: 0
     update_interval: 60s
@@ -320,6 +325,7 @@ binary_sensor:
   - platform: template
     id: oq_compressor_cycling_alert_latched_sensor
     name: "Compressor cycling alert latched"
+    internal: true
     icon: mdi:alert-circle-check-outline
     device_class: problem
     entity_category: diagnostic
@@ -332,7 +338,7 @@ binary_sensor:
     id: oq_compressor_cycling_alert_alternating_sensor
     name: "Compressor cycling alert alternating"
     icon: mdi:swap-horizontal-bold
-    internal: ${monitoring_hp2_internal}
+    internal: true
     entity_category: diagnostic
     lambda: |-
       return id(oq_compressor_cycling_alert_alternating);

@@ -393,6 +393,7 @@ button:
   - platform: template
     id: oq_trend_history_flush_button
     name: Trendhistorie nu opslaan
+    internal: true
     disabled_by_default: true
     icon: mdi:content-save
     entity_category: config
@@ -444,6 +445,7 @@ switch:
   - platform: template
     id: oq_trend_history_enabled_switch
     name: Trendopslag
+    internal: true
     disabled_by_default: true
     icon: mdi:chart-line
     entity_category: config
@@ -460,6 +462,7 @@ switch:
   - platform: template
     id: oq_trend_history_flash_switch
     name: Trendhistorie opslaan in flash
+    internal: true
     icon: mdi:database
     entity_category: config
     optimistic: true
@@ -569,6 +572,7 @@ sensor:
   - platform: template
     id: oq_trend_history_flash_size
     name: Trendhistorie grootte
+    internal: true
     disabled_by_default: true
     icon: mdi:database-outline
     unit_of_measurement: kB
@@ -583,6 +587,7 @@ sensor:
   - platform: template
     id: oq_trend_history_flash_writes
     name: Trendhistorie schrijfacties
+    internal: true
     disabled_by_default: true
     icon: mdi:pencil-box-multiple-outline
     accuracy_decimals: 0
@@ -624,6 +629,7 @@ text_sensor:
   - platform: template
     id: oq_trend_history_flash_available
     name: Trendhistorie beschikbaar
+    internal: true
     disabled_by_default: true
     icon: mdi:calendar-range
     entity_category: diagnostic
@@ -636,6 +642,7 @@ text_sensor:
   - platform: template
     id: oq_trend_history_flash_oldest
     name: Trendhistorie oudste punt
+    internal: true
     disabled_by_default: true
     icon: mdi:calendar-start
     entity_category: diagnostic
@@ -648,6 +655,7 @@ text_sensor:
   - platform: template
     id: oq_trend_history_flash_newest
     name: Trendhistorie nieuwste punt
+    internal: true
     disabled_by_default: true
     icon: mdi:clock-end
     entity_category: diagnostic
@@ -660,6 +668,7 @@ text_sensor:
   - platform: template
     id: oq_trend_history_flash_last_flush
     name: Trendhistorie laatste opslag
+    internal: true
     disabled_by_default: true
     icon: mdi:content-save-clock-outline
     entity_category: diagnostic
