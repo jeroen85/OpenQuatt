@@ -1,0 +1,502 @@
+# ==============================================================================
+# OpenQuatt - HP Water Sensor Calibration
+# ==============================================================================
+#
+# Goal:
+#   Run a manual CM100 service task that circulates water without compressor
+#   demand, waits for the HP water sensors to equalize, and proposes relative
+#   offsets for HP water-in/out sensors. Applying the proposal is a separate
+#   user action.
+#
+# ==============================================================================
+
+globals:
+  - id: oq_hp_water_calibration_active
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+  - id: oq_hp_water_calibration_abort
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+  - id: oq_hp_water_calibration_phase
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_hp_water_calibration_target_ipwm
+    type: int
+    restore_value: false
+    initial_value: '1000'
+
+  - id: oq_hp_water_calibration_started_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_hp_water_calibration_remaining_s
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_hp_water_calibration_spread_c
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+
+  - id: oq_hp_water_calibration_supply_delta_c
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+
+  - id: oq_hp_water_calibration_stable_progress_s
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_hp_water_calibration_stable_required_s
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_hp_water_calibration_result_reference_c
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+
+  - id: oq_hp_water_calibration_result_spread_before_c
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+
+  - id: oq_hp_water_calibration_result_expected_spread_c
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+
+  - id: oq_hp_water_calibration_result_hp1_in_raw_avg_c
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+
+  - id: oq_hp_water_calibration_result_hp1_out_raw_avg_c
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+
+  - id: oq_hp_water_calibration_result_hp2_in_raw_avg_c
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+
+  - id: oq_hp_water_calibration_result_hp2_out_raw_avg_c
+    type: float
+    restore_value: false
+    initial_value: 'NAN'
+
+number:
+  - platform: template
+    id: hp1_water_in_temp_offset
+    name: "HP1 water in temperature offset"
+    icon: mdi:thermometer-plus
+    unit_of_measurement: "°C"
+    mode: slider
+    min_value: -2
+    max_value: 2
+    step: 0.01
+    restore_value: true
+    optimistic: true
+    initial_value: 0
+    entity_category: config
+    disabled_by_default: true
+    web_server:
+      sorting_group_id: oq_temperatures
+
+  - platform: template
+    id: hp1_water_out_temp_offset
+    name: "HP1 water out temperature offset"
+    icon: mdi:thermometer-plus
+    unit_of_measurement: "°C"
+    mode: slider
+    min_value: -2
+    max_value: 2
+    step: 0.01
+    restore_value: true
+    optimistic: true
+    initial_value: 0
+    entity_category: config
+    disabled_by_default: true
+    web_server:
+      sorting_group_id: oq_temperatures
+
+  - platform: template
+    id: hp2_water_in_temp_offset
+    name: "HP2 water in temperature offset"
+    internal: ${monitoring_hp2_internal}
+    icon: mdi:thermometer-plus
+    unit_of_measurement: "°C"
+    mode: slider
+    min_value: -2
+    max_value: 2
+    step: 0.01
+    restore_value: true
+    optimistic: true
+    initial_value: 0
+    entity_category: config
+    disabled_by_default: true
+    web_server:
+      sorting_group_id: oq_temperatures
+
+  - platform: template
+    id: hp2_water_out_temp_offset
+    name: "HP2 water out temperature offset"
+    internal: ${monitoring_hp2_internal}
+    icon: mdi:thermometer-plus
+    unit_of_measurement: "°C"
+    mode: slider
+    min_value: -2
+    max_value: 2
+    step: 0.01
+    restore_value: true
+    optimistic: true
+    initial_value: 0
+    entity_category: config
+    disabled_by_default: true
+    web_server:
+      sorting_group_id: oq_temperatures
+
+  - platform: template
+    id: oq_hp_calibration_hp1_water_in_offset_suggested
+    name: "HP calibration HP1 water in offset suggested"
+    icon: mdi:thermometer-check
+    unit_of_measurement: "°C"
+    mode: slider
+    min_value: -2
+    max_value: 2
+    step: 0.01
+    restore_value: false
+    optimistic: true
+    initial_value: 0
+    entity_category: diagnostic
+    disabled_by_default: true
+    web_server:
+      sorting_group_id: oq_temperatures
+
+  - platform: template
+    id: oq_hp_calibration_hp1_water_out_offset_suggested
+    name: "HP calibration HP1 water out offset suggested"
+    icon: mdi:thermometer-check
+    unit_of_measurement: "°C"
+    mode: slider
+    min_value: -2
+    max_value: 2
+    step: 0.01
+    restore_value: false
+    optimistic: true
+    initial_value: 0
+    entity_category: diagnostic
+    disabled_by_default: true
+    web_server:
+      sorting_group_id: oq_temperatures
+
+  - platform: template
+    id: oq_hp_calibration_hp2_water_in_offset_suggested
+    name: "HP calibration HP2 water in offset suggested"
+    internal: ${monitoring_hp2_internal}
+    icon: mdi:thermometer-check
+    unit_of_measurement: "°C"
+    mode: slider
+    min_value: -2
+    max_value: 2
+    step: 0.01
+    restore_value: false
+    optimistic: true
+    initial_value: 0
+    entity_category: diagnostic
+    disabled_by_default: true
+    web_server:
+      sorting_group_id: oq_temperatures
+
+  - platform: template
+    id: oq_hp_calibration_hp2_water_out_offset_suggested
+    name: "HP calibration HP2 water out offset suggested"
+    internal: ${monitoring_hp2_internal}
+    icon: mdi:thermometer-check
+    unit_of_measurement: "°C"
+    mode: slider
+    min_value: -2
+    max_value: 2
+    step: 0.01
+    restore_value: false
+    optimistic: true
+    initial_value: 0
+    entity_category: diagnostic
+    disabled_by_default: true
+    web_server:
+      sorting_group_id: oq_temperatures
+
+button:
+  - platform: template
+    id: oq_hp_water_calibration_start
+    name: "HP Water Calibration Start"
+    icon: mdi:thermometer-sync
+    entity_category: config
+    disabled_by_default: true
+    web_server:
+      sorting_group_id: oq_temperatures
+    on_press:
+      - lambda: |-
+          oq_hp_water_calibration::runtime().start(
+              oq_hp_water_calibration::make_runtime_config(${oq_flow_loop_s}),
+              (uint32_t) millis());
+
+  - platform: template
+    id: oq_hp_water_calibration_abort_btn
+    name: "HP Water Calibration Abort"
+    icon: mdi:stop-circle-outline
+    entity_category: config
+    disabled_by_default: true
+    web_server:
+      sorting_group_id: oq_temperatures
+    on_press:
+      - lambda: |-
+          oq_hp_water_calibration::runtime().abort_or_clear();
+
+  - platform: template
+    id: oq_hp_water_calibration_apply
+    name: "Apply HP Water Calibration Offsets"
+    icon: mdi:check-circle-outline
+    entity_category: config
+    disabled_by_default: true
+    web_server:
+      sorting_group_id: oq_temperatures
+    on_press:
+      - lambda: |-
+          oq_hp_water_calibration::runtime().apply(
+              oq_hp_water_calibration::make_runtime_config(${oq_flow_loop_s}));
+
+binary_sensor:
+  - platform: template
+    id: oq_hp_water_calibration_active_sensor
+    name: "HP water calibration active"
+    icon: mdi:thermometer-sync
+    entity_category: diagnostic
+    disabled_by_default: true
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      return id(oq_hp_water_calibration_active);
+
+sensor:
+  - platform: template
+    id: oq_hp_water_calibration_remaining_sensor
+    name: "HP water calibration remaining"
+    icon: mdi:timer-outline
+    unit_of_measurement: "s"
+    state_class: measurement
+    accuracy_decimals: 0
+    disabled_by_default: true
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      return (float) id(oq_hp_water_calibration_remaining_s);
+
+  - platform: template
+    id: oq_hp_water_calibration_phase_sensor
+    name: "HP water calibration phase"
+    icon: mdi:timeline-clock-outline
+    state_class: measurement
+    accuracy_decimals: 0
+    disabled_by_default: true
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      return (float) id(oq_hp_water_calibration_phase);
+
+  - platform: template
+    id: oq_hp_water_calibration_spread_sensor
+    name: "HP water calibration spread"
+    icon: mdi:thermometer-lines
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    disabled_by_default: true
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      return id(oq_hp_water_calibration_spread_c);
+
+  - platform: template
+    id: oq_hp_water_calibration_supply_delta_sensor
+    name: "HP water calibration supply delta"
+    icon: mdi:thermometer-lines
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    disabled_by_default: true
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      return id(oq_hp_water_calibration_supply_delta_c);
+
+  - platform: template
+    id: oq_hp_water_calibration_stable_progress_sensor
+    name: "HP water calibration stable window progress"
+    icon: mdi:timer-check-outline
+    unit_of_measurement: "s"
+    state_class: measurement
+    accuracy_decimals: 0
+    disabled_by_default: true
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      return (float) id(oq_hp_water_calibration_stable_progress_s);
+
+  - platform: template
+    id: oq_hp_water_calibration_stable_required_sensor
+    name: "HP water calibration stable window required"
+    icon: mdi:timer-check-outline
+    unit_of_measurement: "s"
+    state_class: measurement
+    accuracy_decimals: 0
+    disabled_by_default: true
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      return (float) id(oq_hp_water_calibration_stable_required_s);
+
+  - platform: template
+    id: oq_hp_water_calibration_result_reference_sensor
+    name: "HP water calibration result reference"
+    icon: mdi:thermometer-check
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    disabled_by_default: true
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      return id(oq_hp_water_calibration_result_reference_c);
+
+  - platform: template
+    id: oq_hp_water_calibration_result_spread_before_sensor
+    name: "HP water calibration result spread before"
+    icon: mdi:thermometer-lines
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    disabled_by_default: true
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      return id(oq_hp_water_calibration_result_spread_before_c);
+
+  - platform: template
+    id: oq_hp_water_calibration_result_expected_spread_sensor
+    name: "HP water calibration result expected spread"
+    icon: mdi:thermometer-check
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    disabled_by_default: true
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      return id(oq_hp_water_calibration_result_expected_spread_c);
+
+  - platform: template
+    id: oq_hp_water_calibration_result_hp1_in_raw_avg_sensor
+    name: "HP water calibration result HP1 water in raw average"
+    icon: mdi:thermometer-water
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    disabled_by_default: true
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      return id(oq_hp_water_calibration_result_hp1_in_raw_avg_c);
+
+  - platform: template
+    id: oq_hp_water_calibration_result_hp1_out_raw_avg_sensor
+    name: "HP water calibration result HP1 water out raw average"
+    icon: mdi:thermometer-water
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    disabled_by_default: true
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      return id(oq_hp_water_calibration_result_hp1_out_raw_avg_c);
+
+  - platform: template
+    id: oq_hp_water_calibration_result_hp2_in_raw_avg_sensor
+    name: "HP water calibration result HP2 water in raw average"
+    internal: ${monitoring_hp2_internal}
+    icon: mdi:thermometer-water
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    disabled_by_default: true
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      return id(oq_hp_water_calibration_result_hp2_in_raw_avg_c);
+
+  - platform: template
+    id: oq_hp_water_calibration_result_hp2_out_raw_avg_sensor
+    name: "HP water calibration result HP2 water out raw average"
+    internal: ${monitoring_hp2_internal}
+    icon: mdi:thermometer-water
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    disabled_by_default: true
+    update_interval: 1s
+    web_server:
+      sorting_group_id: oq_temperatures
+    lambda: |-
+      return id(oq_hp_water_calibration_result_hp2_out_raw_avg_c);
+
+text_sensor:
+  - platform: template
+    id: oq_hp_water_calibration_status
+    name: "HP water calibration status"
+    icon: mdi:information-outline
+    disabled_by_default: true
+    update_interval: never
+    web_server:
+      sorting_group_id: oq_temperatures
+
+interval:
+  - interval: ${oq_flow_loop_s}s
+    startup_delay: 5400ms
+    then:
+      - lambda: |-
+          oq_hp_water_calibration::runtime().tick(
+              oq_hp_water_calibration::make_runtime_config(${oq_flow_loop_s}),
+              (uint32_t) millis());

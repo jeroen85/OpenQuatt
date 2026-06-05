@@ -1051,6 +1051,345 @@
   overflow-wrap: anywhere;
 }
 
+.oq-settings-hp-calibration {
+  display: grid;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.oq-settings-hp-calibration-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.oq-settings-hp-calibration-step {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 8px;
+  color: var(--oq-helper-soft);
+}
+
+.oq-settings-hp-calibration-step span {
+  display: grid;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid var(--oq-helper-line);
+  border-radius: 50%;
+  color: var(--oq-helper-muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.oq-settings-hp-calibration-step strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.oq-settings-hp-calibration-step.is-active {
+  color: var(--oq-helper-ink);
+}
+
+.oq-settings-hp-calibration-step.is-active span {
+  border-color: rgba(234, 88, 12, 0.6);
+  background: rgba(234, 88, 12, 0.12);
+  color: #c2410c;
+}
+
+.oq-settings-hp-calibration-step.is-done span {
+  border-color: rgba(22, 101, 52, 0.36);
+  background: rgba(22, 101, 52, 0.12);
+  color: #166534;
+}
+
+.oq-settings-hp-calibration-status {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--oq-helper-line);
+  border-radius: var(--oq-helper-radius);
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.oq-settings-hp-calibration-status.is-active {
+  border-color: rgba(37, 99, 235, 0.5);
+  background: rgba(219, 234, 254, 0.72);
+}
+
+.oq-settings-hp-calibration-status.is-success {
+  border-color: rgba(22, 101, 52, 0.4);
+  background: rgba(220, 252, 231, 0.62);
+}
+
+.oq-settings-hp-calibration-status.is-warning {
+  border-color: rgba(217, 119, 6, 0.45);
+  background: rgba(254, 243, 199, 0.72);
+}
+
+.oq-settings-hp-calibration-status strong {
+  display: block;
+  color: var(--oq-helper-ink);
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.oq-settings-hp-calibration-status p,
+.oq-settings-hp-calibration-note {
+  margin: 0;
+  color: var(--oq-helper-soft);
+  line-height: 1.42;
+}
+
+.oq-settings-hp-calibration-status > span {
+  color: var(--oq-helper-muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.oq-settings-hp-calibration-progress {
+  overflow: hidden;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.28);
+}
+
+.oq-settings-hp-calibration-progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #ea580c;
+}
+
+.oq-settings-hp-calibration-checklist,
+.oq-settings-hp-calibration-live-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.oq-settings-hp-calibration-checklist span,
+.oq-settings-hp-calibration-live-card {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--oq-helper-line);
+  border-radius: var(--oq-helper-radius);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.oq-settings-hp-calibration-checklist span {
+  color: var(--oq-helper-soft);
+  line-height: 1.35;
+}
+
+.oq-settings-hp-calibration-live-card {
+  display: grid;
+  gap: 6px;
+}
+
+.oq-settings-hp-calibration-live-card span,
+.oq-settings-hp-calibration-table th,
+.oq-settings-hp-calibration-table td,
+.oq-settings-hp-offset-equation span {
+  color: var(--oq-helper-soft);
+}
+
+.oq-settings-hp-calibration-live-card strong {
+  color: var(--oq-helper-ink);
+  font-size: 1.35rem;
+  line-height: 1.1;
+}
+
+.oq-settings-hp-calibration-live-card.is-highlight {
+  border-color: rgba(37, 99, 235, 0.45);
+  background: rgba(219, 234, 254, 0.7);
+}
+
+.oq-settings-hp-calibration-results {
+  display: grid;
+  gap: 12px;
+}
+
+.oq-settings-hp-calibration-result-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.oq-settings-hp-calibration-result-summary span,
+.oq-settings-hp-calibration-offset-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  color: var(--oq-helper-ink);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.oq-settings-hp-calibration-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--oq-helper-line);
+  border-radius: var(--oq-helper-radius);
+}
+
+.oq-settings-hp-calibration-table {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.oq-settings-hp-calibration-table th,
+.oq-settings-hp-calibration-table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--oq-helper-line);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.oq-settings-hp-calibration-table tbody tr:last-child th,
+.oq-settings-hp-calibration-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.oq-settings-hp-calibration-table tbody th {
+  color: var(--oq-helper-ink);
+  font-weight: 800;
+}
+
+.oq-settings-hp-calibration-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.oq-settings-hp-calibration-actions .oq-helper-button {
+  width: 100%;
+  min-width: 0;
+}
+
+.oq-settings-hp-offset-panel {
+  margin-top: 14px;
+}
+
+.oq-settings-hp-offset-list {
+  display: grid;
+  gap: 10px;
+}
+
+.oq-settings-hp-offset-row {
+  display: grid;
+  grid-template-columns: minmax(170px, 0.7fr) minmax(0, 1.3fr);
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--oq-helper-line);
+  border-radius: var(--oq-helper-radius);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.oq-settings-hp-offset-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.oq-settings-hp-offset-copy strong {
+  color: var(--oq-helper-ink);
+  font-size: 0.98rem;
+  line-height: 1.25;
+}
+
+.oq-settings-hp-offset-copy span {
+  color: var(--oq-helper-soft);
+  font-size: 0.86rem;
+  line-height: 1.34;
+}
+
+.oq-settings-hp-offset-equation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr) 28px minmax(0, 1fr);
+  align-items: end;
+  gap: 10px;
+  min-width: 0;
+}
+
+.oq-settings-hp-offset-readout,
+.oq-settings-hp-offset-input {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.oq-settings-hp-offset-readout {
+  box-sizing: border-box;
+  align-content: start;
+}
+
+.oq-settings-hp-offset-equation span {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.oq-settings-hp-offset-equation strong {
+  display: flex;
+  box-sizing: border-box;
+  height: 58px;
+  min-height: 58px;
+  align-items: center;
+  width: 100%;
+  padding: 0 16px;
+  border: 1px solid var(--oq-helper-line);
+  border-radius: var(--oq-helper-radius-md);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--oq-helper-ink);
+  font-size: 1.05rem;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.oq-settings-hp-offset-operator {
+  justify-self: center;
+  align-self: end;
+  padding-bottom: 19px;
+  color: var(--oq-helper-ink);
+  font-size: 1.2rem;
+  line-height: 1;
+  font-weight: 900;
+}
+
+.oq-settings-hp-offset-input .oq-helper-control {
+  width: 100%;
+  min-width: 0;
+}
+
+.oq-settings-hp-offset-input .oq-helper-input {
+  height: 58px;
+  min-height: 58px;
+  min-width: 0;
+  border-color: rgba(234, 88, 12, 0.28);
+  border-radius: var(--oq-helper-radius-md);
+  background: rgba(255, 247, 237, 0.72);
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.oq-settings-hp-offset-input .oq-helper-input:focus {
+  border-color: rgba(234, 88, 12, 0.7);
+  background: rgba(255, 247, 237, 0.92);
+}
+
 .oq-helper-modal--service-task {
   padding: 16px;
 }
@@ -1325,6 +1664,34 @@
   .oq-settings-commissioning-card--air-purge .oq-settings-commissioning-metrics {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  .oq-settings-hp-calibration-steps,
+  .oq-settings-hp-calibration-checklist,
+  .oq-settings-hp-calibration-live-grid,
+  .oq-settings-hp-calibration-actions,
+  .oq-settings-hp-offset-row,
+  .oq-settings-hp-offset-equation {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .oq-settings-hp-offset-operator {
+    display: none;
+  }
+}
+
+.oq-helper-shell--dark .oq-settings-hp-calibration-status,
+.oq-helper-modal-backdrop--dark .oq-settings-hp-calibration-status,
+.oq-helper-shell--dark .oq-settings-hp-calibration-checklist span,
+.oq-helper-modal-backdrop--dark .oq-settings-hp-calibration-checklist span,
+.oq-helper-shell--dark .oq-settings-hp-calibration-live-card,
+.oq-helper-modal-backdrop--dark .oq-settings-hp-calibration-live-card,
+.oq-helper-shell--dark .oq-settings-hp-calibration-table,
+.oq-helper-modal-backdrop--dark .oq-settings-hp-calibration-table,
+.oq-helper-shell--dark .oq-settings-hp-offset-readout strong,
+.oq-helper-modal-backdrop--dark .oq-settings-hp-offset-readout strong,
+.oq-helper-shell--dark .oq-settings-hp-offset-row,
+.oq-helper-modal-backdrop--dark .oq-settings-hp-offset-row {
+  background: rgba(15, 23, 42, 0.38);
 }
 
 .oq-settings-access-security-shell {

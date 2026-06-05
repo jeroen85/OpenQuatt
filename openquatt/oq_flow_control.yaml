@@ -700,7 +700,11 @@ interval:
 
           // Manual-flow service deliberately keeps the PI path in control even
           // when the normal installation setting is fixed Manual PWM.
-          if (want_manual && !manual_flow_owns_pi && !is_frost) {
+          const bool hp_water_calibration_owns_pi =
+              id(oq_hp_water_calibration_active) &&
+              (cm_code == 100) &&
+              (commissioning_task_code == oq_commissioning::TASK_HP_WATER_CALIBRATION);
+          if (want_manual && !manual_flow_owns_pi && !hp_water_calibration_owns_pi && !is_frost) {
             pwm = (int) roundf(id(oq_flow_manual_pwm).state);
             pwm = clamp_iPWM(pwm);
             stable_cnt = 0;
@@ -741,7 +745,7 @@ interval:
             case FLOW_MODE_MANUAL: mode_txt = "MANUAL"; break;
             case FLOW_MODE_AUTO_FAILSAFE: mode_txt = "AUTO (failsafe)"; break;
             case FLOW_MODE_AUTO_STARTING: mode_txt = "AUTO (starting)"; break;
-            default: mode_txt = manual_flow_owns_pi ? "MANUAL FLOW" : "AUTO"; break;
+            default: mode_txt = manual_flow_owns_pi ? "MANUAL FLOW" : (hp_water_calibration_owns_pi ? "HP WATER CAL" : "AUTO"); break;
           }
           if (mode_txt != last_mode) {
             id(oq_flow_mode).publish_state(mode_txt.c_str());

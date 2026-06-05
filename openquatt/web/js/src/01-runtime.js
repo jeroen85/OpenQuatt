@@ -89,6 +89,7 @@
     pendingAirPurgeStart: false,
     pendingManualFlowStart: false,
     pendingManualHpStart: false,
+    pendingHpWaterCalibrationStart: false,
     commissioningTaskLock: "",
     commissioningBoilerHeatPowerDisplay: "",
     headerRenderSignature: "",

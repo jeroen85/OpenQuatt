@@ -219,6 +219,7 @@ NESTED_KEY_ORDER_RULES = {
     ("openquatt/packages/40_service_tasks.yaml", "packages"): (
         "oq_flow_autotune",
         "oq_air_purge",
+        "oq_hp_water_calibration",
         "oq_manual_flow",
         "oq_manual_hp",
         "oq_boiler_test",

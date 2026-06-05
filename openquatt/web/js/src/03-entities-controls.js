@@ -296,6 +296,7 @@
     service: [
       ...INSTALLATION_MONITORING_STATE_KEYS,
       ...COMMISSIONING_STATE_KEYS,
+      ...SENSOR_CALIBRATION_KEYS,
       "boilerCvAssistEnabled",
       "boilerRatedHeatPower",
       "flowSelected",
@@ -490,7 +491,9 @@
       return "—";
     }
     const meta = getNumberMeta(key);
-    const decimals = meta.step < 1 ? 1 : 0;
+    const decimals = meta.step < 1
+      ? Math.min(4, Math.max(1, String(meta.step).split(".")[1]?.length || 1))
+      : 0;
     return `${Number(value).toFixed(decimals)}${meta.uom ? ` ${meta.uom}` : ""}`;
   }
 
@@ -504,7 +507,10 @@
     const clamped = Math.min(meta.max, Math.max(meta.min, numeric));
     const steps = Math.round((clamped - meta.min) / meta.step);
     const snapped = meta.min + steps * meta.step;
-    return Number(snapped.toFixed(meta.step < 1 ? 1 : 0));
+    const decimals = meta.step < 1
+      ? Math.min(4, Math.max(1, String(meta.step).split(".")[1]?.length || 1))
+      : 0;
+    return Number(snapped.toFixed(decimals));
   }
 
   function getCurveFallbackSuggestion() {
@@ -2119,7 +2125,10 @@
   }
 
   async function syncEntities(options = {}) {
-    if (state.nativeOpen || state.loadingEntities || state.focusedField || state.draggingCurveKey || state.busyAction || state.settingsInteractionLock) {
+    if (state.nativeOpen || state.loadingEntities || state.draggingCurveKey || state.busyAction || state.settingsInteractionLock) {
+      return;
+    }
+    if (state.focusedField && state.appView !== "settings") {
       return;
     }
     if (state.entitySyncInFlight) {
@@ -2255,11 +2264,19 @@
       if (state.appView === "settings") {
         const nextSettingsSignature = getSettingsRenderSignature();
         if (nextSettingsSignature !== state.settingsRenderSignature) {
-          render();
-          return;
+          if (!state.focusedField) {
+            render();
+            return;
+          }
         }
         if (!patchSettingsDom()) {
-          render();
+          if (!state.focusedField) {
+            render();
+          }
+          return;
+        }
+        if (state.focusedField) {
+          state.settingsRenderSignature = nextSettingsSignature;
         }
         return;
       }
@@ -2916,7 +2933,7 @@
 
     if (action === "open-service-task-modal") {
       const taskKey = String(button.dataset.serviceTask || "").trim();
-      if (["autotune", "boiler", "purge", "manual-flow", "manual-hp"].includes(taskKey)) {
+      if (["autotune", "boiler", "purge", "manual-flow", "manual-hp", "hp-water-calibration"].includes(taskKey)) {
         state.systemModal = `service-task-${taskKey}`;
         render();
         syncEntities({ forceBulk: true });
@@ -2938,6 +2955,7 @@
           state.pendingAirPurgeStart = false;
           state.pendingManualFlowStart = false;
           state.pendingManualHpStart = false;
+          state.pendingHpWaterCalibrationStart = false;
           state.commissioningTaskLock = "";
           state.commissioningBoilerHeatPowerDisplay = "";
         } else if (buttonKey === "boilerPowerTestStart") {
@@ -2946,6 +2964,7 @@
           state.pendingAirPurgeStart = false;
           state.pendingManualFlowStart = false;
           state.pendingManualHpStart = false;
+          state.pendingHpWaterCalibrationStart = false;
           state.commissioningTaskLock = "boiler";
           state.commissioningBoilerHeatPowerDisplay = "";
         } else if (buttonKey === "boilerPowerTestAbort" || buttonKey === "boilerPowerTestApply") {
@@ -2956,6 +2975,7 @@
           state.pendingAirPurgeStart = false;
           state.pendingManualFlowStart = false;
           state.pendingManualHpStart = false;
+          state.pendingHpWaterCalibrationStart = false;
           state.commissioningTaskLock = "autotune";
         } else if (buttonKey === "flowAutotuneAbort" || buttonKey === "flowAutotuneApply") {
           state.commissioningTaskLock = "autotune";
@@ -2965,6 +2985,7 @@
           state.pendingFlowAutotuneStart = false;
           state.pendingManualFlowStart = false;
           state.pendingManualHpStart = false;
+          state.pendingHpWaterCalibrationStart = false;
           state.commissioningTaskLock = "purge";
         } else if (buttonKey === "airPurgeAbort") {
           state.commissioningTaskLock = "purge";
@@ -2974,6 +2995,7 @@
           state.pendingFlowAutotuneStart = false;
           state.pendingAirPurgeStart = false;
           state.pendingManualHpStart = false;
+          state.pendingHpWaterCalibrationStart = false;
           state.commissioningTaskLock = "manual-flow";
         } else if (buttonKey === "manualFlowAbort") {
           state.commissioningTaskLock = "manual-flow";
@@ -2983,7 +3005,18 @@
           state.pendingFlowAutotuneStart = false;
           state.pendingAirPurgeStart = false;
           state.pendingManualFlowStart = false;
+          state.pendingHpWaterCalibrationStart = false;
           state.commissioningTaskLock = "manual-hp";
+        } else if (buttonKey === "hpWaterCalibrationStart") {
+          state.pendingHpWaterCalibrationStart = true;
+          state.pendingBoilerPowerTestStart = false;
+          state.pendingFlowAutotuneStart = false;
+          state.pendingAirPurgeStart = false;
+          state.pendingManualFlowStart = false;
+          state.pendingManualHpStart = false;
+          state.commissioningTaskLock = "hp-water-calibration";
+        } else if (buttonKey === "hpWaterCalibrationAbort" || buttonKey === "hpWaterCalibrationApply") {
+          state.commissioningTaskLock = "hp-water-calibration";
         } else if (buttonKey === "manualHpAbort") {
           state.commissioningTaskLock = "manual-hp";
         }
@@ -3004,6 +3037,8 @@
             "manualHpStatus",
             "manualHpGuardStatus",
             "manualHpActive",
+            "hpWaterCalibrationStatus",
+            "hpWaterCalibrationActive",
           );
         } else if (buttonKey === "boilerPowerTestStart" || buttonKey === "boilerPowerTestAbort" || buttonKey === "boilerPowerTestApply") {
           refreshKeys.push(
@@ -3031,6 +3066,42 @@
             "airPurgeRemaining",
             "airPurgePhase",
             "airPurgeTargetIpwm",
+            "flowMode",
+          );
+        } else if (buttonKey === "hpWaterCalibrationStart" || buttonKey === "hpWaterCalibrationAbort" || buttonKey === "hpWaterCalibrationApply") {
+          refreshKeys.push(
+            "commissioningStatus",
+            "hpWaterCalibrationStatus",
+            "hpWaterCalibrationActive",
+            "hpWaterCalibrationRemaining",
+            "hpWaterCalibrationPhase",
+            "hpWaterCalibrationSpread",
+            "hpWaterCalibrationSupplyDelta",
+            "hpWaterCalibrationStableProgress",
+            "hpWaterCalibrationStableRequired",
+            "hpWaterCalibrationResultReference",
+            "hpWaterCalibrationResultSpreadBefore",
+            "hpWaterCalibrationResultExpectedSpread",
+            "hpWaterCalibrationResultHp1InRawAvg",
+            "hpWaterCalibrationResultHp1OutRawAvg",
+            "hpWaterCalibrationResultHp2InRawAvg",
+            "hpWaterCalibrationResultHp2OutRawAvg",
+            "hp1WaterInRaw",
+            "hp1WaterOutRaw",
+            "hp2WaterInRaw",
+            "hp2WaterOutRaw",
+            "hp1WaterIn",
+            "hp1WaterOut",
+            "hp2WaterIn",
+            "hp2WaterOut",
+            "hp1WaterInOffset",
+            "hp1WaterOutOffset",
+            "hp2WaterInOffset",
+            "hp2WaterOutOffset",
+            "hp1WaterInOffsetSuggested",
+            "hp1WaterOutOffsetSuggested",
+            "hp2WaterInOffsetSuggested",
+            "hp2WaterOutOffsetSuggested",
             "flowMode",
           );
         } else if (buttonKey === "manualFlowStart" || buttonKey === "manualFlowAbort" || buttonKey === "manualFlowApplyHeating" || buttonKey === "manualFlowApplyCooling") {
@@ -4048,6 +4119,23 @@
     }
   }
 
+  function queueHpWaterCalibrationApplyAnchor() {
+    window.requestAnimationFrame(() => {
+      if (!state.root || state.systemModal !== "service-task-hp-water-calibration") {
+        return;
+      }
+      const scroller = state.root.querySelector("[data-oq-service-task-scroller]");
+      const target = state.root.querySelector("[data-oq-hp-water-calibration-actions]");
+      if (!scroller || !target) {
+        return;
+      }
+      const scrollerRect = scroller.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const nextTop = scroller.scrollTop + targetRect.top - scrollerRect.top - 24;
+      scroller.scrollTop = Math.max(0, nextTop);
+    });
+  }
+
   async function triggerNamedButton(key, options = {}) {
     const entity = ENTITY_DEFS[key];
     if (!entity) {
@@ -4076,6 +4164,9 @@
         "flowAutotuneApply",
         "airPurgeStart",
         "airPurgeAbort",
+        "hpWaterCalibrationStart",
+        "hpWaterCalibrationAbort",
+        "hpWaterCalibrationApply",
         "manualFlowStart",
         "manualFlowAbort",
         "manualFlowApplyHeating",
@@ -4107,6 +4198,9 @@
       } else if (key === "airPurgeStart") {
         state.pendingAirPurgeStart = false;
         state.commissioningTaskLock = "";
+      } else if (key === "hpWaterCalibrationStart") {
+        state.pendingHpWaterCalibrationStart = false;
+        state.commissioningTaskLock = "";
       } else if (key === "manualFlowStart") {
         state.pendingManualFlowStart = false;
         state.commissioningTaskLock = "";
@@ -4118,6 +4212,9 @@
     } finally {
       state.busyAction = "";
       render();
+      if (key === "hpWaterCalibrationApply") {
+        queueHpWaterCalibrationApplyAnchor();
+      }
     }
   }
 

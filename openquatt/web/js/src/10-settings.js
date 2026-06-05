@@ -67,6 +67,28 @@
     return text;
   }
 
+  function formatSettingsNumberValue(value, unit = "", decimals = 2) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+      return "—";
+    }
+    return `${numeric.toFixed(Math.max(0, decimals))}${unit ? ` ${unit}` : ""}`;
+  }
+
+  function getSettingsTemperatureValue(key, decimals = 2) {
+    return getSettingsStatValue(key, { decimals });
+  }
+
+  function getHpWaterRawValue(rawKey, finalKey, offsetKey) {
+    const finalValue = getEntityNumericValue(finalKey);
+    const offset = getEntityNumericValue(offsetKey);
+    if (Number.isFinite(finalValue) && Number.isFinite(offset)) {
+      return finalValue - offset;
+    }
+    const raw = getEntityNumericValue(rawKey);
+    return Number.isFinite(raw) ? raw : NaN;
+  }
+
   function getManualHpActualValue(levelKey, frequencyKey) {
     const level = getEntityNumericValue(levelKey);
     const frequency = getEntityNumericValue(frequencyKey);
@@ -977,6 +999,41 @@
       }
     }
 
+    stack.querySelectorAll(".oq-settings-hp-offset-row").forEach((row) => {
+      const offsetKey = String(row.dataset.oqSettingsField || "");
+      const rawKey = String(row.dataset.oqHpOffsetRawKey || "");
+      const finalKey = String(row.dataset.oqHpOffsetFinalKey || "");
+      if (!offsetKey || !rawKey || !finalKey) {
+        return;
+      }
+      const meta = getNumberMeta(offsetKey);
+      const raw = getHpWaterRawValue(rawKey, finalKey, offsetKey);
+      const offsetDraft = parseLooseNumber(getInputDraftValue(offsetKey));
+      const finalFromDraft = Number.isFinite(raw) && Number.isFinite(offsetDraft)
+        ? formatSettingsNumberValue(raw + offsetDraft, meta.uom || "°C", 2)
+        : getSettingsTemperatureValue(finalKey, 2);
+      const activeNode = row.querySelector("[data-oq-hp-offset-active]");
+      if (activeNode) {
+        const activeText = `${getSettingsTemperatureValue(finalKey, 2)} actief`;
+        if (activeNode.textContent !== activeText) {
+          activeNode.textContent = activeText;
+        }
+      }
+      const rawNode = row.querySelector("[data-oq-hp-offset-raw]");
+      if (rawNode) {
+        const rawText = Number.isFinite(raw)
+          ? formatSettingsNumberValue(raw, meta.uom || "°C", 2)
+          : getSettingsTemperatureValue(rawKey, 2);
+        if (rawNode.textContent !== rawText) {
+          rawNode.textContent = rawText;
+        }
+      }
+      const finalNode = row.querySelector("[data-oq-hp-offset-final]");
+      if (finalNode && finalNode.textContent !== finalFromDraft) {
+        finalNode.textContent = finalFromDraft;
+      }
+    });
+
     const curveShell = stack.querySelector(".oq-settings-curve-shell");
     const currentCurveMode = isCurveMode();
     if (Boolean(curveShell) !== currentCurveMode) {
@@ -1106,6 +1163,13 @@
         { match: ["DONE"], phase: "Klaar", percent: 100 },
         { match: ["ABORTED", "FAILED", "ABORT"], phase: "Afgebroken", percent: 100 },
       ],
+      "hp-water-calibration": [
+        { match: ["REQUESTED", "STARTED", "REFUSED"], phase: "Voorbereiden", percent: 8 },
+        { match: ["MIXING"], phase: "Water mengen", percent: 42 },
+        { match: ["MEASURING"], phase: "Sensoren meten", percent: 78 },
+        { match: ["DONE", "APPLIED"], phase: "Klaar", percent: 100 },
+        { match: ["ABORTED", "FAILED", "ABORT"], phase: "Afgebroken", percent: 100 },
+      ],
       cm100: [
         { match: ["REQUESTED"], phase: "Wachten op CM100", percent: 0 },
         { match: ["WAITING_FOR_CM100"], phase: "Wachten op CM100", percent: 0 },
@@ -1199,9 +1263,78 @@
   }
 
   function renderWaterSettingsFields(className = "oq-settings-grid") {
+    const offsetMarkup = renderHpWaterSensorOffsetSettings();
     return `
       <div class="${escapeHtml(className)}">
         ${renderSettingsNumberField("maxWater", "Maximale watertemperatuur", "Normale bovengrens voor de watertemperatuur tijdens bedrijf. OpenQuatt begint enkele graden eerder al terug te regelen en bewaakt een harde trip op 5°C boven deze grens.")}
+      </div>
+      ${offsetMarkup}
+    `;
+  }
+
+  function renderHpWaterSensorOffsetSettings() {
+    const rows = [
+      { label: "HP1 water in", rawKey: "hp1WaterInRaw", offsetKey: "hp1WaterInOffset", finalKey: "hp1WaterIn" },
+      { label: "HP1 water uit", rawKey: "hp1WaterOutRaw", offsetKey: "hp1WaterOutOffset", finalKey: "hp1WaterOut" },
+      { label: "HP2 water in", rawKey: "hp2WaterInRaw", offsetKey: "hp2WaterInOffset", finalKey: "hp2WaterIn" },
+      { label: "HP2 water uit", rawKey: "hp2WaterOutRaw", offsetKey: "hp2WaterOutOffset", finalKey: "hp2WaterOut" },
+    ].filter((row) => hasEntity(row.offsetKey) && hasEntity(row.finalKey));
+
+    if (!rows.length) {
+      return "";
+    }
+
+    const renderRow = (row) => {
+      const meta = getNumberMeta(row.offsetKey);
+      const raw = getHpWaterRawValue(row.rawKey, row.finalKey, row.offsetKey);
+      const offsetDraft = parseLooseNumber(getInputDraftValue(row.offsetKey));
+      const finalFromDraft = Number.isFinite(raw) && Number.isFinite(offsetDraft)
+        ? formatSettingsNumberValue(raw + offsetDraft, meta.uom || "°C", 2)
+        : getSettingsTemperatureValue(row.finalKey, 2);
+
+      return `
+        <article class="oq-settings-hp-offset-row" data-oq-settings-field="${escapeHtml(row.offsetKey)}" data-oq-hp-offset-raw-key="${escapeHtml(row.rawKey)}" data-oq-hp-offset-final-key="${escapeHtml(row.finalKey)}">
+          <div class="oq-settings-hp-offset-copy">
+            <strong>${escapeHtml(row.label)}</strong>
+            <span data-oq-hp-offset-active>${escapeHtml(getSettingsTemperatureValue(row.finalKey, 2))} actief</span>
+          </div>
+          <div class="oq-settings-hp-offset-equation" aria-label="${escapeHtml(`${row.label} correctie`)}">
+            <div class="oq-settings-hp-offset-readout">
+              <span>Raw</span>
+              <strong data-oq-hp-offset-raw>${escapeHtml(Number.isFinite(raw) ? formatSettingsNumberValue(raw, meta.uom || "°C", 2) : getSettingsTemperatureValue(row.rawKey, 2))}</strong>
+            </div>
+            <span class="oq-settings-hp-offset-operator">+</span>
+            <label class="oq-settings-hp-offset-input">
+              <span>Correctie</span>
+              ${renderNumberInputControl({
+                key: row.offsetKey,
+                value: getInputDraftValue(row.offsetKey),
+                meta,
+                controlClass: "oq-helper-control oq-helper-control--suffix",
+                inputClass: "oq-helper-input oq-helper-input--compact-number",
+                unitMarkup: meta.uom ? `<span class="oq-helper-unit-chip">${escapeHtml(meta.uom)}</span>` : "",
+              })}
+            </label>
+            <span class="oq-settings-hp-offset-operator">=</span>
+            <div class="oq-settings-hp-offset-readout oq-settings-hp-offset-final">
+              <span>Na wijziging</span>
+              <strong data-oq-hp-offset-final>${escapeHtml(finalFromDraft)}</strong>
+            </div>
+          </div>
+        </article>
+      `;
+    };
+
+    return `
+      <div class="oq-settings-subpanel oq-settings-hp-offset-panel">
+        <div class="oq-settings-subpanel-head">
+          <p class="oq-helper-label">Sensorcorrecties</p>
+          <h4>Water in/out offsets</h4>
+          <p>Raw is de ongecorrigeerde sensorwaarde. Actief is de temperatuur die OpenQuatt nu gebruikt: raw plus correctie.</p>
+        </div>
+        <div class="oq-settings-hp-offset-list">
+          ${rows.map(renderRow).join("")}
+        </div>
       </div>
     `;
   }
@@ -1934,6 +2067,197 @@
     );
   }
 
+  function renderHpWaterCalibrationWizard({
+    status,
+    running,
+    resultReady,
+    startDisabled,
+    abortDisabled,
+    applyDisabled,
+    busy,
+    controlsAvailable,
+  }) {
+    const normalizedStatus = String(status || "").toUpperCase();
+    const failed = normalizedStatus.includes("FAILED") || normalizedStatus.includes("REFUSED") || normalizedStatus.includes("ABORT");
+    const applied = normalizedStatus.includes("APPLIED");
+    const hasHp2 = hasEntity("hp2WaterIn") || hasEntity("hp2WaterOut") || hasEntity("hp2WaterInRaw") || hasEntity("hp2WaterOutRaw");
+    const stableProgress = getEntityNumericValue("hpWaterCalibrationStableProgress");
+    const stableRequired = getEntityNumericValue("hpWaterCalibrationStableRequired");
+    const remaining = getEntityNumericValue("hpWaterCalibrationRemaining");
+    const phaseCode = Math.round(getEntityNumericValue("hpWaterCalibrationPhase"));
+    const mixing = running && (phaseCode === 1 || normalizedStatus.includes("MIXING"));
+    const measuring = running && !mixing;
+    const maxDurationS = 300;
+    const minMixingS = 60;
+    const elapsed = Number.isFinite(remaining) ? Math.max(0, maxDurationS - remaining) : NaN;
+    const mixingRemaining = Number.isFinite(elapsed) ? Math.max(0, minMixingS - elapsed) : NaN;
+    const progressValue = mixing && Number.isFinite(elapsed)
+      ? Math.max(0, Math.min(100, (elapsed / minMixingS) * 100))
+      : measuring && Number.isFinite(stableProgress) && Number.isFinite(stableRequired) && stableRequired > 0
+        ? Math.max(0, Math.min(100, (stableProgress / stableRequired) * 100))
+        : running && Number.isFinite(remaining)
+          ? Math.max(0, Math.min(100, 100 - ((remaining / maxDurationS) * 100)))
+          : resultReady
+            ? 100
+            : 0;
+    const spreadValue = resultReady && hasEntity("hpWaterCalibrationResultSpreadBefore")
+      ? getSettingsTemperatureValue("hpWaterCalibrationResultSpreadBefore", 2)
+      : getSettingsTemperatureValue("hpWaterCalibrationSpread", 2);
+    const stableCopy = mixing
+      ? "Water mengen"
+      : Number.isFinite(stableProgress) && Number.isFinite(stableRequired) && stableRequired > 0
+        ? (stableProgress > 0
+        ? `${Math.round(Math.max(0, stableProgress))} / ${Math.round(stableRequired)} s binnen grenzen`
+        : "Nog niet binnen grenzen")
+        : "Wachten op stabiel venster";
+    const stepIndex = resultReady ? 3 : running ? 2 : 1;
+    const statusTitle = applied
+      ? "Offsets toegepast"
+      : resultReady
+      ? `Meting klaar - spreiding ${spreadValue}`
+      : running
+        ? (mixing
+          ? `Water mengen${Number.isFinite(mixingRemaining) && mixingRemaining > 0 ? ` - meting start over ${Math.round(mixingRemaining)} s` : ""}`
+          : `Meting bezig - ${Number.isFinite(remaining) && remaining > 0 ? `max. ${Math.round(remaining)} s resterend` : stableCopy}`)
+        : failed
+          ? "Meting niet voltooid"
+          : "Voorbereiding";
+    const statusCopy = applied
+      ? "De voorgestelde offsets zijn opgeslagen."
+      : resultReady
+      ? "Controleer de voorgestelde offsets en pas ze toe."
+      : running
+        ? (mixing
+          ? "De waterpomp circuleert zonder compressor zodat de watertemperaturen eerst kunnen mengen."
+          : "De firmware stopt zodra het laatste meetvenster binnen de spreiding- en driftgrenzen valt.")
+        : failed
+          ? getSettingsTextStatValue("hpWaterCalibrationStatus", "Controleer de voorwaarden en start opnieuw.")
+          : (hasHp2
+            ? "Start alleen wanneer compressor en boiler uit zijn. HP1 en HP2 water in/out worden samen naar een relatieve referentie gebracht."
+            : "Start alleen wanneer compressor en boiler uit zijn. Bij single setup wordt HP1 water in/out onderling gelijkgetrokken; supply blijft diagnose.");
+    const sensorRows = [
+      { label: "HP1 water in", rawKey: "hp1WaterInRaw", liveKey: "hp1WaterIn", resultRawKey: "hpWaterCalibrationResultHp1InRawAvg", offsetKey: "hp1WaterInOffset", suggestedKey: "hp1WaterInOffsetSuggested" },
+      { label: "HP1 water uit", rawKey: "hp1WaterOutRaw", liveKey: "hp1WaterOut", resultRawKey: "hpWaterCalibrationResultHp1OutRawAvg", offsetKey: "hp1WaterOutOffset", suggestedKey: "hp1WaterOutOffsetSuggested" },
+      { label: "HP2 water in", rawKey: "hp2WaterInRaw", liveKey: "hp2WaterIn", resultRawKey: "hpWaterCalibrationResultHp2InRawAvg", offsetKey: "hp2WaterInOffset", suggestedKey: "hp2WaterInOffsetSuggested" },
+      { label: "HP2 water uit", rawKey: "hp2WaterOutRaw", liveKey: "hp2WaterOut", resultRawKey: "hpWaterCalibrationResultHp2OutRawAvg", offsetKey: "hp2WaterOutOffset", suggestedKey: "hp2WaterOutOffsetSuggested" },
+    ].filter((row) => hasEntity(row.liveKey) || hasEntity(row.rawKey) || hasEntity(row.offsetKey));
+
+    const renderStep = (index, label) => {
+      const done = stepIndex > index;
+      const active = stepIndex === index;
+      return `
+        <div class="oq-settings-hp-calibration-step${done ? " is-done" : ""}${active ? " is-active" : ""}">
+          <span>${done ? "✓" : index}</span>
+          <strong>${escapeHtml(label)}</strong>
+        </div>
+      `;
+    };
+
+    const renderLiveCard = (row) => {
+      return `
+        <article class="oq-settings-hp-calibration-live-card">
+          <span>${escapeHtml(row.label)}</span>
+          <strong>${escapeHtml(getSettingsTemperatureValue(row.liveKey, 2))}</strong>
+        </article>
+      `;
+    };
+
+    const renderResultRow = (row) => {
+      const rawAverage = getEntityNumericValue(row.resultRawKey);
+      const rawValue = Number.isFinite(rawAverage)
+        ? rawAverage
+        : getHpWaterRawValue(row.rawKey, row.liveKey, row.offsetKey);
+      const suggestion = getEntityNumericValue(row.suggestedKey);
+      const finalValue = Number.isFinite(rawValue) && Number.isFinite(suggestion)
+        ? formatSettingsNumberValue(rawValue + suggestion, state.entities[row.suggestedKey]?.uom || "°C", 2)
+        : "—";
+
+      return `
+        <tr>
+          <th scope="row">${escapeHtml(row.label)}</th>
+          <td>${escapeHtml(Number.isFinite(rawValue) ? formatSettingsNumberValue(rawValue, state.entities[row.liveKey]?.uom || "°C", 2) : "—")}</td>
+          <td>${escapeHtml(getSettingsTemperatureValue(row.offsetKey, 2))}</td>
+          <td><span class="oq-settings-hp-calibration-offset-pill">${escapeHtml(getSettingsTemperatureValue(row.suggestedKey, 2))}</span></td>
+          <td>${escapeHtml(finalValue)}</td>
+        </tr>
+      `;
+    };
+
+    return `
+      <div class="oq-settings-hp-calibration">
+        <div class="oq-settings-hp-calibration-steps">
+          ${renderStep(1, "Voorbereiding")}
+          ${renderStep(2, "Meting")}
+          ${renderStep(3, "Offsets toepassen")}
+        </div>
+
+        <div class="oq-settings-hp-calibration-status${resultReady ? " is-success" : running ? " is-active" : failed ? " is-warning" : ""}">
+          <div>
+            <strong>${escapeHtml(statusTitle)}</strong>
+            <p>${escapeHtml(statusCopy)}</p>
+          </div>
+          ${running || resultReady ? `<span>${escapeHtml(running ? stableCopy : "Resultaat beschikbaar")}</span>` : ""}
+          ${running ? `<div class="oq-settings-hp-calibration-progress"><i style="width: ${progressValue.toFixed(0)}%"></i></div>` : ""}
+        </div>
+
+        ${running ? `
+          <div class="oq-settings-hp-calibration-live-grid">
+            ${sensorRows.map(renderLiveCard).join("")}
+            <article class="oq-settings-hp-calibration-live-card is-highlight">
+              <span>Spreiding</span>
+              <strong>${escapeHtml(getSettingsTemperatureValue("hpWaterCalibrationSpread", 2))}</strong>
+            </article>
+            <article class="oq-settings-hp-calibration-live-card">
+              <span>Supply verschil</span>
+              <strong>${escapeHtml(getSettingsTemperatureValue("hpWaterCalibrationSupplyDelta", 2))}</strong>
+            </article>
+          </div>
+          <p class="oq-settings-hp-calibration-note">Supply wordt alleen als diagnose getoond en niet automatisch gecorrigeerd.</p>
+        ` : ""}
+
+        ${resultReady ? `
+          <div class="oq-settings-hp-calibration-results">
+            <div class="oq-settings-hp-calibration-result-summary">
+              <span>Referentie ${escapeHtml(getSettingsTemperatureValue("hpWaterCalibrationResultReference", 2))}</span>
+              <span>Supply verschil ${escapeHtml(getSettingsTemperatureValue("hpWaterCalibrationSupplyDelta", 2))}</span>
+            </div>
+            <div class="oq-settings-hp-calibration-table-wrap">
+              <table class="oq-settings-hp-calibration-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Sensor</th>
+                    <th scope="col">Raw gemiddelde</th>
+                    <th scope="col">Huidig actief</th>
+                    <th scope="col">Voorstel</th>
+                    <th scope="col">Na toepassen</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${sensorRows.map(renderResultRow).join("")}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ` : ""}
+
+        ${controlsAvailable ? `
+          <div class="oq-settings-hp-calibration-actions" data-oq-hp-water-calibration-actions>
+            ${renderNamedToggleActionButton({
+              active: running,
+              startKey: "hpWaterCalibrationStart",
+              stopKey: "hpWaterCalibrationAbort",
+              startLabel: "Kalibratie starten",
+              stopLabel: "Meting stoppen",
+              startDisabled: busy || startDisabled,
+              stopDisabled: busy || abortDisabled,
+            })}
+            ${state.entities.hpWaterCalibrationApply ? renderNamedActionButton("hpWaterCalibrationApply", "Offsets toepassen", "oq-helper-button oq-helper-button--primary", busy || applyDisabled) : ""}
+          </div>
+        ` : ""}
+      </div>
+    `;
+  }
+
   function getSettingsServiceModel() {
     const hasBoilerAssist = hasEntity("boilerCvAssistEnabled") && isEntityActive("boilerCvAssistEnabled");
     const cm100Status = getCommissioningStatusValue();
@@ -2019,6 +2343,18 @@
       (manualHpActive || manualHpPending || manualHpTaskLocked || isCommissioningTaskStatusActive(manualHpStatus));
     const manualHpSafetyStopped = /SAFETY STOP/.test(String(manualHpStatus || "").toUpperCase());
     const manualHpStopping = /STOPPING/.test(String(manualHpStatus || "").toUpperCase());
+    const hpWaterCalibrationStatus = getStatusTextValue("hpWaterCalibrationStatus", "IDLE");
+    const hpWaterCalibrationProgress = getCommissioningProgressModel(hpWaterCalibrationStatus, "hp-water-calibration");
+    const hpWaterCalibrationActive = isEntityActive("hpWaterCalibrationActive");
+    const hpWaterCalibrationBusy = state.loadingEntities || state.busyAction === "hpWaterCalibrationStart" || state.busyAction === "hpWaterCalibrationAbort" || state.busyAction === "hpWaterCalibrationApply";
+    const hpWaterCalibrationControls = Boolean(state.entities.hpWaterCalibrationStart || state.entities.hpWaterCalibrationAbort || state.entities.hpWaterCalibrationApply);
+    const hpWaterCalibrationPending = Boolean(state.pendingHpWaterCalibrationStart);
+    const hpWaterCalibrationTaskLocked = state.commissioningTaskLock === "hp-water-calibration";
+    const hpWaterCalibrationTaskTerminal = isCommissioningTaskStatusTerminal(hpWaterCalibrationStatus);
+    const hpWaterCalibrationTaskRunning = !hpWaterCalibrationTaskTerminal &&
+      (hpWaterCalibrationActive || hpWaterCalibrationPending || hpWaterCalibrationTaskLocked || isCommissioningTaskStatusActive(hpWaterCalibrationStatus));
+    const hpWaterCalibrationResultReady = /DONE|APPLIED/.test(String(hpWaterCalibrationStatus || "").toUpperCase());
+    const hpWaterCalibrationApplied = /APPLIED/.test(String(hpWaterCalibrationStatus || "").toUpperCase());
     const flowKpSuggested = getSettingsStatValue("flowKpSuggested", { decimals: 5, trimTrailingZeros: true });
     const flowKiSuggested = getSettingsStatValue("flowKiSuggested", { decimals: 5, trimTrailingZeros: true });
     const boilerResultReady = /DONE|APPLIED/.test(String(boilerStatus || "").toUpperCase());
@@ -2048,18 +2384,26 @@
     const manualHpStatusDisplay = cm100Ready
       ? (manualHpTaskRunning ? (manualHpStopping ? "Bezig met stoppen" : (manualHpSafetyStopped ? "Veiligheidsstop" : "Actief")) : "Klaar om te starten")
       : "Wachten op CM100";
-    const boilerStartDisabled = !cm100Ready || boilerBusy || !boilerControls || autotuneTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || manualHpTaskRunning || boilerTaskRunning || autotuneTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || manualHpTaskLocked || boilerPending;
+    const hpWaterCalibrationStatusDisplay = cm100Ready
+      ? (hpWaterCalibrationTaskRunning
+        ? hpWaterCalibrationProgress.phase
+        : (hpWaterCalibrationApplied ? "Offsets toegepast" : (hpWaterCalibrationResultReady ? "Klaar om toe te passen" : "Klaar om te starten")))
+      : "Wachten op CM100";
+    const boilerStartDisabled = !cm100Ready || boilerBusy || !boilerControls || autotuneTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || manualHpTaskRunning || hpWaterCalibrationTaskRunning || boilerTaskRunning || autotuneTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || manualHpTaskLocked || hpWaterCalibrationTaskLocked || boilerPending;
     const boilerAbortDisabled = boilerBusy || !(boilerTaskRunning || boilerTaskLocked || boilerPending);
-    const boilerApplyDisabled = boilerBusy || boilerStartDisabled || !boilerResultReady || autotuneTaskRunning || airPurgeTaskRunning;
-    const autotuneStartDisabled = !cm100Ready || autotuneBusy || !autotuneControls || boilerTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || manualHpTaskRunning || autotuneTaskRunning || boilerTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || manualHpTaskLocked || autotunePending;
+    const boilerApplyDisabled = boilerBusy || boilerStartDisabled || !boilerResultReady || autotuneTaskRunning || airPurgeTaskRunning || hpWaterCalibrationTaskRunning;
+    const autotuneStartDisabled = !cm100Ready || autotuneBusy || !autotuneControls || boilerTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || manualHpTaskRunning || hpWaterCalibrationTaskRunning || autotuneTaskRunning || boilerTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || manualHpTaskLocked || hpWaterCalibrationTaskLocked || autotunePending;
     const autotuneAbortDisabled = autotuneBusy || !(autotuneTaskRunning || autotuneTaskLocked || autotunePending);
-    const autotuneApplyDisabled = autotuneBusy || autotuneStartDisabled || !autotuneResultReady || boilerTaskRunning || airPurgeTaskRunning;
-    const airPurgeStartDisabled = !cm100Ready || airPurgeBusy || !airPurgeControls || boilerTaskRunning || autotuneTaskRunning || manualFlowTaskRunning || manualHpTaskRunning || airPurgeTaskRunning || boilerTaskLocked || autotuneTaskLocked || manualFlowTaskLocked || manualHpTaskLocked || airPurgePending;
+    const autotuneApplyDisabled = autotuneBusy || autotuneStartDisabled || !autotuneResultReady || boilerTaskRunning || airPurgeTaskRunning || hpWaterCalibrationTaskRunning;
+    const airPurgeStartDisabled = !cm100Ready || airPurgeBusy || !airPurgeControls || boilerTaskRunning || autotuneTaskRunning || manualFlowTaskRunning || manualHpTaskRunning || hpWaterCalibrationTaskRunning || airPurgeTaskRunning || boilerTaskLocked || autotuneTaskLocked || manualFlowTaskLocked || manualHpTaskLocked || hpWaterCalibrationTaskLocked || airPurgePending;
     const airPurgeAbortDisabled = airPurgeBusy || !(airPurgeTaskRunning || airPurgeTaskLocked || airPurgePending);
-    const manualFlowStartDisabled = !cm100Ready || manualFlowBusy || !manualFlowControls || boilerTaskRunning || autotuneTaskRunning || airPurgeTaskRunning || manualHpTaskRunning || manualFlowTaskRunning || boilerTaskLocked || autotuneTaskLocked || airPurgeTaskLocked || manualHpTaskLocked || manualFlowPending;
+    const manualFlowStartDisabled = !cm100Ready || manualFlowBusy || !manualFlowControls || boilerTaskRunning || autotuneTaskRunning || airPurgeTaskRunning || manualHpTaskRunning || hpWaterCalibrationTaskRunning || manualFlowTaskRunning || boilerTaskLocked || autotuneTaskLocked || airPurgeTaskLocked || manualHpTaskLocked || hpWaterCalibrationTaskLocked || manualFlowPending;
     const manualFlowAbortDisabled = manualFlowBusy || !(manualFlowTaskRunning || manualFlowTaskLocked || manualFlowPending);
-    const manualHpStartDisabled = !cm100Ready || manualHpBusy || !manualHpControls || boilerTaskRunning || autotuneTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || manualHpTaskRunning || boilerTaskLocked || autotuneTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || manualHpPending;
+    const manualHpStartDisabled = !cm100Ready || manualHpBusy || !manualHpControls || boilerTaskRunning || autotuneTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || hpWaterCalibrationTaskRunning || manualHpTaskRunning || boilerTaskLocked || autotuneTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || hpWaterCalibrationTaskLocked || manualHpPending;
     const manualHpAbortDisabled = manualHpBusy || !(manualHpTaskRunning || manualHpTaskLocked || manualHpPending);
+    const hpWaterCalibrationStartDisabled = !cm100Ready || hpWaterCalibrationBusy || !hpWaterCalibrationControls || boilerTaskRunning || autotuneTaskRunning || airPurgeTaskRunning || manualFlowTaskRunning || manualHpTaskRunning || hpWaterCalibrationTaskRunning || boilerTaskLocked || autotuneTaskLocked || airPurgeTaskLocked || manualFlowTaskLocked || manualHpTaskLocked || hpWaterCalibrationPending;
+    const hpWaterCalibrationAbortDisabled = hpWaterCalibrationBusy || !(hpWaterCalibrationTaskRunning || hpWaterCalibrationTaskLocked || hpWaterCalibrationPending);
+    const hpWaterCalibrationApplyDisabled = hpWaterCalibrationBusy || hpWaterCalibrationTaskRunning || !hpWaterCalibrationResultReady || hpWaterCalibrationApplied;
 
     if (cm100Pending && cm100Ready) {
       state.pendingCommissioningCm100Start = false;
@@ -2097,6 +2441,12 @@
     if (manualHpTaskLocked && (manualHpActive || isCommissioningTaskStatusTerminal(manualHpStatus))) {
       state.commissioningTaskLock = "";
     }
+    if (hpWaterCalibrationPending && (hpWaterCalibrationActive || isCommissioningTaskStatusTerminal(hpWaterCalibrationStatus))) {
+      state.pendingHpWaterCalibrationStart = false;
+    }
+    if (hpWaterCalibrationTaskLocked && isCommissioningTaskStatusTerminal(hpWaterCalibrationStatus)) {
+      state.commissioningTaskLock = "";
+    }
 
     const cm100StatusDisplay = cm100WaitingForCm100 ? "Wachten op CM100" : cm100Status;
     const serviceStatusCopy = cm100WaitingForCm100
@@ -2104,6 +2454,37 @@
       : (cm100Ready ? "CM100 is actief en klaar voor service-taken." : "Start de service-stand voordat je een taak uitvoert.");
 
     const tasks = [
+      {
+        key: "hp-water-calibration",
+        title: "Temperatuursensoren kalibreren",
+        label: "Sensor kalibratie",
+        summary: "Laat de waterpomp draaien zonder compressor en bepaal offsets voor HP1/HP2 water in/out.",
+        status: hpWaterCalibrationStatusDisplay,
+        available: Boolean(hpWaterCalibrationControls || state.entities.hpWaterCalibrationStatus),
+        openDisabled: !cm100Ready,
+        cardMarkup: renderCommissioningTaskCard({
+          taskKey: "hp-water-calibration",
+          title: "Temperatuursensoren kalibreren",
+          copy: "Doorloop voorbereiding, meting en toepassen in vaste volgorde. De meting stopt eerder zodra de sensoren stabiel genoeg zijn.",
+          subcopy: "De voorgestelde waarden worden pas actief wanneer je ze toepast; supply blijft een diagnosewaarde.",
+          status: hpWaterCalibrationStatusDisplay,
+          statusCopy: hpWaterCalibrationTaskRunning
+            ? "De pomp draait en de firmware wacht op een stabiel temperatuurbeeld."
+            : (hpWaterCalibrationResultReady ? "Controleer de voorgestelde offsets voordat je ze toepast." : (cm100Ready ? "CM100 staat klaar. Start de meting wanneer compressor en boiler uit zijn." : "Start CM100 eerst.")),
+          progressTask: "hp-water-calibration",
+          controls: renderHpWaterCalibrationWizard({
+            status: hpWaterCalibrationStatus,
+            running: hpWaterCalibrationTaskRunning,
+            resultReady: hpWaterCalibrationResultReady,
+            startDisabled: hpWaterCalibrationStartDisabled,
+            abortDisabled: hpWaterCalibrationAbortDisabled,
+            applyDisabled: hpWaterCalibrationApplyDisabled,
+            busy: hpWaterCalibrationBusy,
+            controlsAvailable: Boolean(state.entities.hpWaterCalibrationStart || state.entities.hpWaterCalibrationAbort),
+          }),
+          className: "oq-settings-commissioning-card--hp-water-calibration",
+        }),
+      },
       {
         key: "manual-flow",
         title: "Handmatige flowregeling",
