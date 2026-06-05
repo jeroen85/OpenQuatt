@@ -352,6 +352,7 @@ select:
   - platform: template
     name: "Debug Level"
     id: debug_level_select
+    internal: true
     disabled_by_default: true
     icon: mdi:lan
     web_server:

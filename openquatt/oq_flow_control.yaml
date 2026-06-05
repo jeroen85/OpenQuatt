@@ -130,6 +130,7 @@ number:
   - platform: template
     id: oq_flow_frost_pwm
     name: "Frost Circulation iPWM"
+    internal: true
     disabled_by_default: true
     icon: mdi:snowflake
     unit_of_measurement: "iPWM"
@@ -146,6 +147,7 @@ number:
   - platform: template
     id: oq_flow_auto_start_pwm
     name: "Flow AUTO start iPWM"
+    internal: true
     disabled_by_default: true
     icon: mdi:rocket-launch-outline
     unit_of_measurement: "iPWM"
