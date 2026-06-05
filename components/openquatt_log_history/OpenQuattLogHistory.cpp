@@ -15,6 +15,14 @@ static const char *const TAG = "openquatt.log_history";
 
 namespace {
 
+bool url_path_matches(const char *url, const char *path) {
+  if (url == nullptr || path == nullptr) {
+    return false;
+  }
+  const size_t path_len = std::strlen(path);
+  return std::strncmp(url, path, path_len) == 0 && (url[path_len] == '\0' || url[path_len] == '?');
+}
+
 class ChunkedJsonWriter {
  public:
   explicit ChunkedJsonWriter(httpd_req_t *req) : req_(req) { this->buffer_.allocate(BUFFER_SIZE); }
@@ -157,19 +165,10 @@ class OpenQuattLogHistoryRequestHandler : public AsyncWebHandler {
   bool canHandle(AsyncWebServerRequest *request) const override {
     char url_buf[AsyncWebServerRequest::URL_BUF_SIZE];
     request->url_to(url_buf);
-    return std::strncmp(url_buf, "/openquatt/logs/recent", std::strlen("/openquatt/logs/recent")) == 0 &&
-           request->method() == HTTP_GET;
+    return url_path_matches(url_buf, "/openquatt/logs/recent") && request->method() == HTTP_GET;
   }
 
   void handleRequest(AsyncWebServerRequest *request) override {
-    char url_buf[AsyncWebServerRequest::URL_BUF_SIZE];
-    request->url_to(url_buf);
-    if (std::strncmp(url_buf, "/openquatt/logs/recent", std::strlen("/openquatt/logs/recent")) != 0 ||
-        request->method() != HTTP_GET) {
-      request->send(404);
-      return;
-    }
-
     httpd_req_t *req = *request;
     httpd_resp_set_status(req, HTTPD_200);
     httpd_resp_set_type(req, "application/json; charset=utf-8");
@@ -378,6 +377,8 @@ void OpenQuattLogHistory::on_log_(uint8_t level, const char *tag, const char *me
   }
 
   LogEntry entry{};
+  // The API uses this compact sequence only for relative ordering; wrapping at
+  // uint16_t is intentional.
   entry.seq = static_cast<uint16_t>(this->next_seq_++);
   entry.timestamp_s = static_cast<uint32_t>(this->current_time_ms_() / 1000ULL);
   entry.level = normalize_level_(level);
