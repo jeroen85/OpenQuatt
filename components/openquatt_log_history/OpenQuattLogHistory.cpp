@@ -144,10 +144,6 @@ class ChunkedJsonWriter {
       this->used_ += to_copy;
       cursor += to_copy;
       remaining -= to_copy;
-
-      if (this->used_ == BUFFER_SIZE && !this->flush()) {
-        return false;
-      }
     }
 
     return true;
