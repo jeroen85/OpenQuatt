@@ -21,6 +21,9 @@ void OpenQuattCIC::setup() {
   if (this->fetch_mutex_ == nullptr) {
     this->fetch_mutex_ = xSemaphoreCreateMutex();
   }
+  if (!this->response_buffer_.allocate(this->response_buffer_size_)) {
+    ESP_LOGE(TAG, "Failed to allocate CIC response buffer");
+  }
   this->publish_float_if_changed_(this->backoff_sensor_, this->backoff_start_ms_ / 1000.0f);
   this->publish_float_if_changed_(this->last_success_age_sensor_, NAN);
   this->publish_binary_if_changed_(this->feed_ok_, false);
@@ -78,6 +81,8 @@ void OpenQuattCIC::dump_config() {
   LOG_UPDATE_INTERVAL(this);
   ESP_LOGCONFIG(TAG, "  Timeout: %u ms", this->timeout_ms_);
   ESP_LOGCONFIG(TAG, "  Response buffer size: %u B", static_cast<unsigned>(this->response_buffer_size_));
+  ESP_LOGCONFIG(TAG, "  Response buffer: %s",
+                !this->response_buffer_ ? "missing" : (this->response_buffer_.is_external() ? "PSRAM" : "internal"));
   ESP_LOGCONFIG(TAG, "  Backoff start/max: %u / %u ms", this->backoff_start_ms_, this->backoff_max_ms_);
   ESP_LOGCONFIG(TAG, "  Stale after: %u ms", this->stale_after_ms_);
   ESP_LOGCONFIG(TAG, "  Feed error trip: %u", this->feed_error_trip_n_);
@@ -108,6 +113,7 @@ bool OpenQuattCIC::start_fetch_(const std::string &url) {
           .completed_at_ms = millis(),
           .duration_ms = 0,
           .status_code = -1,
+          .stack_high_water_mark = 0,
           .error_status = "task_create",
       };
       xSemaphoreGive(this->fetch_mutex_);
@@ -134,6 +140,7 @@ void OpenQuattCIC::fetch_task_() {
   }
 
   (void) this->fetch_and_parse_(url, &result);
+  result.stack_high_water_mark = static_cast<uint32_t>(uxTaskGetStackHighWaterMark(nullptr));
   result.ready = true;
   result.completed_at_ms = millis();
 
@@ -171,6 +178,12 @@ void OpenQuattCIC::finalize_fetch_() {
   this->request_count_++;
   this->last_duration_ms_ = result.duration_ms;
   this->last_status_code_ = result.status_code;
+  if (result.stack_high_water_mark > 0 &&
+      (this->fetch_stack_min_free_ == 0 || result.stack_high_water_mark < this->fetch_stack_min_free_)) {
+    this->fetch_stack_min_free_ = result.stack_high_water_mark;
+    ESP_LOGI(TAG, "CIC fetch task stack high-watermark: %u B free",
+             static_cast<unsigned>(this->fetch_stack_min_free_));
+  }
   if (this->last_duration_ms_ > this->max_duration_ms_) {
     this->max_duration_ms_ = this->last_duration_ms_;
   }
@@ -201,6 +214,13 @@ bool OpenQuattCIC::fetch_and_parse_(const std::string &url, FetchResult *result)
     return false;
   }
 
+  if (!this->response_buffer_) {
+    result->duration_ms = 0;
+    result->status_code = -1;
+    result->error_status = "buffer";
+    return false;
+  }
+
   esp_http_client_config_t config = {};
   config.url = url.c_str();
   config.method = HTTP_METHOD_GET;
@@ -220,7 +240,8 @@ bool OpenQuattCIC::fetch_and_parse_(const std::string &url, FetchResult *result)
 
   bool ok = false;
   bool client_open = false;
-  std::vector<uint8_t> response_buffer(this->response_buffer_size_, 0U);
+  uint8_t *response_data = this->response_buffer_.data();
+  const size_t response_size = this->response_buffer_.size();
 
   do {
     esp_err_t err = esp_http_client_open(client, 0);
@@ -240,17 +261,17 @@ bool OpenQuattCIC::fetch_and_parse_(const std::string &url, FetchResult *result)
       break;
     }
 
-    if (content_length > 0 && static_cast<size_t>(content_length) >= response_buffer.size()) {
-      ESP_LOGW(TAG, "CIC payload %d exceeds buffer %u", content_length, static_cast<unsigned>(response_buffer.size()));
+    if (content_length > 0 && static_cast<size_t>(content_length) >= response_size) {
+      ESP_LOGW(TAG, "CIC payload %d exceeds buffer %u", content_length, static_cast<unsigned>(response_size));
       result->status_code = -2;
       result->error_status = "http_size";
       break;
     }
 
     size_t total = 0;
-    while (total < response_buffer.size()) {
+    while (total < response_size) {
       const int read_len =
-          esp_http_client_read(client, reinterpret_cast<char *>(response_buffer.data() + total), response_buffer.size() - total);
+          esp_http_client_read(client, reinterpret_cast<char *>(response_data + total), response_size - total);
 
       if (read_len < 0) {
         ESP_LOGW(TAG, "CIC HTTP read failed");
@@ -269,14 +290,14 @@ bool OpenQuattCIC::fetch_and_parse_(const std::string &url, FetchResult *result)
     if (total == 0) {
       break;
     }
-    if (total == response_buffer.size()) {
+    if (total == response_size) {
       ESP_LOGW(TAG, "CIC payload filled the entire buffer");
       result->status_code = -4;
       result->error_status = "http_trunc";
       break;
     }
 
-    ok = this->parse_payload_(response_buffer.data(), total, &result->payload);
+    ok = this->parse_payload_(response_data, total, &result->payload);
     if (!ok) {
       result->error_status = "json_parse";
     }

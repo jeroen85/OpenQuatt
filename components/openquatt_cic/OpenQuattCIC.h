@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <string>
-#include <vector>
 
 #include "esphome.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
@@ -12,12 +11,15 @@
 #include "esphome/components/switch/switch.h"
 #include "esphome/components/text/text.h"
 #include "esp_http_client.h"
+#include "PsramBuffer.h"
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 #include <freertos/task.h>
 
 namespace esphome {
 namespace openquatt_cic {
+
+using openquatt_common::PsramBuffer;
 
 class OpenQuattCIC : public PollingComponent {
  public:
@@ -84,6 +86,7 @@ class OpenQuattCIC : public PollingComponent {
     uint32_t completed_at_ms{0};
     uint32_t duration_ms{0};
     int status_code{0};
+    uint32_t stack_high_water_mark{0};
     const char *error_status{nullptr};
     ParsedPayload payload;
   };
@@ -147,12 +150,14 @@ class OpenQuattCIC : public PollingComponent {
   uint32_t max_duration_ms_{0};
   int last_status_code_{0};
   uint32_t last_diag_publish_ms_{0};
+  uint32_t fetch_stack_min_free_{0};
 
   SemaphoreHandle_t fetch_mutex_{nullptr};
   TaskHandle_t fetch_task_handle_{nullptr};
   bool fetch_in_progress_{false};
   std::string fetch_url_{};
   FetchResult fetch_result_{};
+  PsramBuffer<uint8_t> response_buffer_{};
 };
 
 }  // namespace openquatt_cic
