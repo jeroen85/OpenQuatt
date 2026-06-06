@@ -13,8 +13,6 @@ on:
       - "scripts/build_pages_docs.py"
       - "scripts/prepare_pages_site.sh"
       - ".github/workflows/pages-deploy.yml"
-  release:
-    types: [published]
   workflow_run:
     workflows: ["Release Build"]
     types: [completed]
