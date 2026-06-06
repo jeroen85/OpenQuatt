@@ -317,6 +317,7 @@ number:
   - platform: template
     id: oq_low_load_dyn_off_factor
     name: "Low-load dynamic OFF factor"
+    internal: true
     icon: mdi:percent-outline
     disabled_by_default: true
     min_value: 0.60
@@ -332,6 +333,7 @@ number:
   - platform: template
     id: oq_low_load_dyn_on_factor
     name: "Low-load dynamic ON factor"
+    internal: true
     icon: mdi:percent-outline
     disabled_by_default: true
     min_value: 0.85
@@ -347,6 +349,7 @@ number:
   - platform: template
     id: oq_low_load_min_hysteresis_w
     name: "Low-load minimum hysteresis"
+    internal: true
     icon: mdi:arrow-expand-vertical
     disabled_by_default: true
     unit_of_measurement: "W"
@@ -363,6 +366,7 @@ number:
   - platform: template
     id: oq_low_load_reentry_block_s
     name: "Low-load CM2 re-entry block"
+    internal: true
     icon: mdi:timer-lock-outline
     disabled_by_default: true
     unit_of_measurement: "s"
@@ -483,6 +487,7 @@ text_sensor:
   - platform: template
     id: oq_silent_window_hhmm
     name: "Silent window (start-end)"
+    internal: true
     disabled_by_default: true
     icon: mdi:calendar-clock
     update_interval: never
@@ -493,6 +498,7 @@ text_sensor:
   - platform: template
     id: oq_silent_status
     name: "Silent status"
+    internal: true
     disabled_by_default: true
     icon: mdi:information-outline
     update_interval: never
@@ -504,6 +510,7 @@ text_sensor:
   - platform: template
     id: oq_low_load_dyn_status
     name: "Low-load dynamic thresholds"
+    internal: true
     icon: mdi:chart-bell-curve
     update_interval: ${oq_diagnostic_update_interval_s}s
     entity_category: diagnostic

@@ -24,7 +24,7 @@ function isWebServerLogDemoMode() {
     return false;
   }
 
-  return window.location.protocol === "file:" && getWebServerLogDemoEntries().length > 0;
+  return getWebServerLogDemoEntries().length > 0;
 }
 
 function getWebServerLogUrl() {

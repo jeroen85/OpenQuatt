@@ -825,6 +825,11 @@ body.oq-surface-native {
   overflow: auto;
 }
 
+.oq-debug-recording-modal {
+  width: min(100%, 820px);
+  padding: 26px;
+}
+
 .oq-helper-modal--scrollable {
   min-height: 0;
   max-height: calc(100dvh - 48px);
@@ -1554,6 +1559,399 @@ body.oq-surface-native {
 
 .oq-helper-button--ghost {
   background: var(--oq-helper-card);
+}
+
+.oq-debug-recording-card {
+  overflow: hidden;
+  margin-top: 18px;
+  border: 1px solid rgba(203, 213, 225, 0.82);
+  border-radius: var(--oq-helper-radius-md);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.oq-helper-shell--dark .oq-debug-recording-card,
+.oq-helper-modal-backdrop--dark .oq-debug-recording-card {
+  border-color: rgba(71, 85, 105, 0.5);
+  background: rgba(24, 35, 49, 0.72);
+}
+
+.oq-debug-recording-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 18px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.82);
+}
+
+.oq-helper-shell--dark .oq-debug-recording-card-head,
+.oq-helper-modal-backdrop--dark .oq-debug-recording-card-head {
+  border-bottom-color: rgba(71, 85, 105, 0.5);
+}
+
+.oq-debug-recording-card-head h3,
+.oq-debug-recording-duration h3 {
+  margin: 0;
+  color: var(--oq-helper-ink);
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.oq-helper-shell--dark .oq-debug-recording-card-head h3,
+.oq-helper-shell--dark .oq-debug-recording-duration h3,
+.oq-helper-modal-backdrop--dark .oq-debug-recording-card-head h3,
+.oq-helper-modal-backdrop--dark .oq-debug-recording-duration h3 {
+  color: #f8fafc;
+}
+
+.oq-debug-recording-heading-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  color: var(--oq-helper-accent);
+}
+
+.oq-debug-recording-heading-dot {
+  display: inline-flex;
+  width: 9px;
+  height: 9px;
+  margin: 0 6px 0 4px;
+  border-radius: 999px;
+  background: var(--oq-helper-accent);
+  box-shadow: 0 0 0 5px rgba(249, 115, 22, 0.1);
+}
+
+.oq-debug-recording-heading-icon svg,
+.oq-debug-recording-icon svg,
+.oq-debug-recording-button-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.oq-debug-recording-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.oq-debug-recording-icon svg path,
+.oq-debug-recording-icon svg circle,
+.oq-debug-recording-icon svg rect,
+.oq-debug-recording-icon svg ellipse {
+  vector-effect: non-scaling-stroke;
+}
+
+.oq-debug-recording-progress {
+  display: grid;
+  gap: 8px;
+  padding: 14px 18px 16px;
+}
+
+.oq-debug-recording-progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--oq-helper-soft);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.oq-debug-recording-progress-head strong {
+  color: var(--oq-helper-ink);
+}
+
+.oq-helper-shell--dark .oq-debug-recording-progress-head,
+.oq-helper-modal-backdrop--dark .oq-debug-recording-progress-head {
+  color: #cbd5e1;
+}
+
+.oq-helper-shell--dark .oq-debug-recording-progress-head strong,
+.oq-helper-modal-backdrop--dark .oq-debug-recording-progress-head strong {
+  color: #f8fafc;
+}
+
+.oq-debug-recording-progress-track {
+  overflow: hidden;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.18);
+}
+
+.oq-helper-shell--dark .oq-debug-recording-progress-track,
+.oq-helper-modal-backdrop--dark .oq-debug-recording-progress-track {
+  background: rgba(71, 85, 105, 0.44);
+}
+
+.oq-debug-recording-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--oq-helper-accent);
+  transition: width 180ms ease;
+}
+
+.oq-debug-recording-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  padding: 4px 18px 10px;
+}
+
+.oq-debug-recording-stat {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(104px, 0.58fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 50px;
+  margin: 0;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.82);
+}
+
+.oq-debug-recording-stat:nth-child(odd) {
+  padding-right: 18px;
+  border-right: 1px solid rgba(226, 232, 240, 0.82);
+}
+
+.oq-debug-recording-stat:nth-child(even) {
+  padding-left: 18px;
+}
+
+.oq-helper-shell--dark .oq-debug-recording-stat,
+.oq-helper-shell--dark .oq-debug-recording-stat:nth-child(odd),
+.oq-helper-modal-backdrop--dark .oq-debug-recording-stat,
+.oq-helper-modal-backdrop--dark .oq-debug-recording-stat:nth-child(odd) {
+  border-color: rgba(71, 85, 105, 0.5);
+}
+
+.oq-debug-recording-stat dt {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  gap: 10px;
+  color: var(--oq-helper-soft);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.oq-debug-recording-stat dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--oq-helper-ink);
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.oq-helper-shell--dark .oq-debug-recording-stat dt,
+.oq-helper-modal-backdrop--dark .oq-debug-recording-stat dt {
+  color: #cbd5e1;
+}
+
+.oq-helper-shell--dark .oq-debug-recording-stat dd,
+.oq-helper-modal-backdrop--dark .oq-debug-recording-stat dd {
+  color: #f8fafc;
+}
+
+.oq-debug-recording-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: rgba(241, 245, 249, 0.9);
+  color: #475569;
+}
+
+.oq-helper-shell--dark .oq-debug-recording-icon,
+.oq-helper-modal-backdrop--dark .oq-debug-recording-icon {
+  background: rgba(51, 65, 85, 0.86);
+  color: #cbd5e1;
+}
+
+.oq-debug-recording-duration {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.oq-debug-recording-segments {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+  width: min(100%, 500px);
+  min-height: 50px;
+  border: 1px solid var(--oq-helper-line);
+  border-radius: var(--oq-helper-radius-sm);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.oq-helper-shell--dark .oq-debug-recording-segments,
+.oq-helper-modal-backdrop--dark .oq-debug-recording-segments {
+  border-color: rgba(71, 85, 105, 0.5);
+  background: rgba(24, 35, 49, 0.72);
+}
+
+.oq-debug-recording-segment {
+  appearance: none;
+  position: relative;
+  min-width: 0;
+  border: 0;
+  border-left: 1px solid var(--oq-helper-line);
+  background: transparent;
+  color: var(--oq-helper-soft);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 750;
+  padding: 0 16px;
+}
+
+.oq-debug-recording-segment:first-child {
+  border-left: 0;
+}
+
+.oq-helper-shell--dark .oq-debug-recording-segment,
+.oq-helper-modal-backdrop--dark .oq-debug-recording-segment {
+  border-left-color: rgba(71, 85, 105, 0.5);
+  color: #cbd5e1;
+}
+
+.oq-debug-recording-segment:hover {
+  color: var(--oq-helper-accent-deep);
+  background: var(--oq-helper-accent-soft);
+}
+
+.oq-debug-recording-segment--selected,
+.oq-debug-recording-segment--selected:hover {
+  color: var(--oq-helper-accent-deep);
+  background: linear-gradient(180deg, rgba(255, 247, 237, 0.98), rgba(255, 255, 255, 0.78));
+  box-shadow: inset 0 -3px 0 var(--oq-helper-accent);
+}
+
+.oq-debug-recording-segment:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.oq-debug-recording-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 24px -26px -26px;
+  padding: 20px 26px 24px;
+  border-top: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.oq-helper-shell--dark .oq-debug-recording-actions,
+.oq-helper-modal-backdrop--dark .oq-debug-recording-actions {
+  border-top-color: rgba(71, 85, 105, 0.5);
+}
+
+.oq-debug-recording-actions .oq-helper-button {
+  gap: 9px;
+  min-height: 44px;
+  padding-inline: 18px;
+}
+
+.oq-debug-recording-primary {
+  min-width: 148px;
+}
+
+.oq-debug-recording-button-icon {
+  display: inline-flex;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+}
+
+.oq-helper-button:disabled .oq-debug-recording-button-icon {
+  opacity: 0.55;
+}
+
+.oq-debug-recording-feedback {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  margin: 4px 0 0;
+  padding: 0 12px;
+  border: 1px solid rgba(34, 197, 94, 0.22);
+  border-radius: 999px;
+  background: rgba(240, 253, 244, 0.78);
+  color: #166534;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.oq-debug-recording-feedback .oq-debug-recording-button-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.oq-debug-recording-feedback--error {
+  border-color: rgba(234, 88, 12, 0.28);
+  background: rgba(255, 247, 237, 0.86);
+  color: var(--oq-helper-accent-deep);
+}
+
+.oq-helper-shell--dark .oq-debug-recording-feedback,
+.oq-helper-modal-backdrop--dark .oq-debug-recording-feedback {
+  border-color: rgba(34, 197, 94, 0.28);
+  background: rgba(20, 83, 45, 0.24);
+  color: #bbf7d0;
+}
+
+.oq-helper-shell--dark .oq-debug-recording-feedback--error,
+.oq-helper-modal-backdrop--dark .oq-debug-recording-feedback--error {
+  border-color: rgba(249, 115, 22, 0.36);
+  background: rgba(124, 45, 18, 0.24);
+  color: #fed7aa;
+}
+
+@media (max-width: 720px) {
+  .oq-debug-recording-modal {
+    padding: 22px;
+  }
+
+  .oq-debug-recording-stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .oq-debug-recording-stat,
+  .oq-debug-recording-stat:nth-child(odd),
+  .oq-debug-recording-stat:nth-child(even) {
+    padding-right: 0;
+    padding-left: 0;
+    border-right: 0;
+  }
+
+  .oq-debug-recording-segments {
+    width: 100%;
+  }
+
+  .oq-debug-recording-actions {
+    margin-right: -22px;
+    margin-left: -22px;
+    margin-bottom: -22px;
+    padding: 18px 22px 22px;
+  }
+
+  .oq-debug-recording-actions .oq-helper-button {
+    width: 100%;
+  }
+
+  .oq-debug-recording-feedback {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 .oq-helper-grid {

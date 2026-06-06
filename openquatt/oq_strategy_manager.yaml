@@ -154,6 +154,7 @@ text_sensor:
   - platform: template
     id: oq_strategy_debug_state
     name: "Strategy debug state"
+    internal: true
     icon: mdi:text-box-search-outline
     update_interval: never
     entity_category: diagnostic
@@ -225,6 +226,7 @@ sensor:
   - platform: template
     id: oq_strategy_active_code_sensor
     name: "Strategy active code"
+    internal: true
     icon: mdi:counter
     accuracy_decimals: 0
     update_interval: 5s
@@ -238,6 +240,7 @@ sensor:
   - platform: template
     id: oq_strategy_phase_code_sensor
     name: "Strategy phase code"
+    internal: true
     icon: mdi:counter
     accuracy_decimals: 0
     update_interval: 5s
@@ -251,6 +254,7 @@ sensor:
   - platform: template
     id: oq_strategy_requested_power_w_sensor
     name: "Strategy requested power"
+    internal: true
     icon: mdi:flash-outline
     unit_of_measurement: "W"
     state_class: measurement
@@ -266,6 +270,7 @@ sensor:
   - platform: template
     id: oq_strategy_supply_target_temp_sensor
     name: "Strategy supply target"
+    internal: true
     icon: mdi:target
     unit_of_measurement: "°C"
     device_class: temperature
@@ -282,6 +287,7 @@ sensor:
   - platform: template
     id: oq_strategy_water_limit_factor_sensor
     name: "Strategy water limit factor"
+    internal: true
     icon: mdi:water-percent-alert
     accuracy_decimals: 2
     update_interval: 5s
@@ -296,6 +302,7 @@ binary_sensor:
   - platform: template
     id: oq_strategy_heat_request_active_sensor
     name: "Strategy request active"
+    internal: true
     device_class: heat
     entity_category: diagnostic
     disabled_by_default: true
@@ -307,6 +314,7 @@ binary_sensor:
   - platform: template
     id: oq_strategy_water_trip_active_sensor
     name: "Strategy water trip active"
+    internal: true
     entity_category: diagnostic
     disabled_by_default: true
     lambda: |-
@@ -317,6 +325,7 @@ binary_sensor:
   - platform: template
     id: oq_strategy_water_hard_trip_active_sensor
     name: "Strategy water hard trip active"
+    internal: true
     entity_category: diagnostic
     disabled_by_default: true
     lambda: |-

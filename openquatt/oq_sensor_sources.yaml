@@ -263,6 +263,7 @@ text_sensor:
   - platform: template
     id: oq_selected_input_hold_active
     name: "Selected Input Hold Active"
+    internal: true
     disabled_by_default: true
     icon: mdi:timer-sand
     entity_category: diagnostic

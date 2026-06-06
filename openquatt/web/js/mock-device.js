@@ -223,7 +223,7 @@
 
   function parseDemoLogEntry(raw, index, total) {
     const normalized = String(raw || "").trim();
-    const match = normalized.match(/^\[([A-Z]+)\]\[(.+?)\](?:: \[(.+?)\])?:\s*(.*)$/);
+    const match = normalized.match(/^\[([A-Z]+)\]\[([^\]]+)\]\s*:?\s*(?:\[([^\]]+)\]\s*:?\s*)?(.*)$/);
     const level = match ? String(match[1] || "I").slice(0, 2) : "I";
     const header = match ? String(match[2] || "") : "";
     const body = match ? String(match[4] || normalized) : normalized;
@@ -2825,13 +2825,13 @@
       if (url.pathname === "/api-security/disable" && String(init?.method || "GET").toUpperCase() === "POST") {
         return handleApiSecurityDisable(init || {});
       }
-      if (url.pathname === "/openquatt/logs/recent" && String(init?.method || "GET").toUpperCase() === "GET") {
+      if (url.pathname.endsWith("/openquatt/logs/recent") && String(init?.method || "GET").toUpperCase() === "GET") {
         return mockResponse(200, {
           enabled: Boolean(state.logHistoryEnabled),
           entries: clone(state.logHistoryEntries),
         });
       }
-      if (url.pathname === "/openquatt/entities" && String(init?.method || "GET").toUpperCase() === "POST") {
+      if (url.pathname.endsWith("/openquatt/entities") && String(init?.method || "GET").toUpperCase() === "POST") {
         return handleBulkEntities(init || {});
       }
       if (url.pathname === "/update" && String(init?.method || "GET").toUpperCase() === "POST") {

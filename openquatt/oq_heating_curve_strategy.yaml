@@ -743,6 +743,7 @@ sensor:
   - platform: template
     id: oq_curve_demand_continuous_sensor
     name: "Curve demand (effective)"
+    internal: true
     disabled_by_default: true
     icon: mdi:sine-wave
     unit_of_measurement: "step"
@@ -758,6 +759,7 @@ sensor:
   - platform: template
     id: oq_curve_demand_post_guardrail_sensor
     name: "Curve demand (discrete)"
+    internal: true
     disabled_by_default: true
     icon: mdi:counter
     unit_of_measurement: "step"
@@ -773,6 +775,7 @@ sensor:
   - platform: template
     id: oq_curve_request_total_level_sensor
     name: "Curve dispatch total level"
+    internal: true
     disabled_by_default: true
     icon: mdi:counter
     unit_of_measurement: "step"
@@ -788,6 +791,7 @@ sensor:
   - platform: template
     id: oq_curve_dispatch_hp1_level_sensor
     name: "Curve target HP1 level"
+    internal: true
     disabled_by_default: true
     icon: mdi:counter
     unit_of_measurement: "step"
@@ -803,6 +807,7 @@ sensor:
   - platform: template
     id: oq_curve_dispatch_hp2_level_sensor
     name: "Curve target HP2 level"
+    internal: true
     disabled_by_default: true
     icon: mdi:counter
     unit_of_measurement: "step"
@@ -818,6 +823,7 @@ sensor:
   - platform: template
     id: oq_curve_restart_inhibit_sensor
     name: "Curve restart inhibit"
+    internal: true
     disabled_by_default: true
     icon: mdi:timer-sand-paused
     accuracy_decimals: 0
@@ -832,6 +838,7 @@ text_sensor:
   - platform: template
     id: oq_curve_phase_sensor
     name: "Curve Phase"
+    internal: true
     icon: mdi:state-machine
     update_interval: ${oq_diagnostic_update_interval_s}s
     entity_category: diagnostic
@@ -845,6 +852,7 @@ text_sensor:
   - platform: template
     id: oq_curve_regime_sensor
     name: "Curve operating regime"
+    internal: true
     icon: mdi:state-machine
     update_interval: ${oq_diagnostic_update_interval_s}s
     entity_category: diagnostic
@@ -861,6 +869,7 @@ text_sensor:
   - platform: template
     id: oq_curve_capacity_mode_sensor
     name: "Curve capacity mode"
+    internal: true
     icon: mdi:state-machine
     update_interval: ${oq_diagnostic_update_interval_s}s
     entity_category: diagnostic

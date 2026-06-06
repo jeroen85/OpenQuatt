@@ -571,6 +571,7 @@ text_sensor:
   - platform: template
     id: oq_request_reason
     name: "Request Reason"
+    internal: true
     icon: mdi:source-branch
     entity_category: diagnostic
     disabled_by_default: true
@@ -598,6 +599,7 @@ text_sensor:
   - platform: template
     id: oq_heating_debug_state
     name: "Heating Debug State"
+    internal: true
     icon: mdi:bug-outline
     entity_category: diagnostic
     disabled_by_default: true
