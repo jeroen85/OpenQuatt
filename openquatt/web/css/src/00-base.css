@@ -1649,7 +1649,7 @@ body.oq-surface-native {
 .oq-debug-recording-progress {
   display: grid;
   gap: 8px;
-  padding: 12px 18px 0;
+  padding: 14px 18px 16px;
 }
 
 .oq-debug-recording-progress-head {
@@ -1700,7 +1700,7 @@ body.oq-surface-native {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin: 0;
-  padding: 0 18px 10px;
+  padding: 4px 18px 10px;
 }
 
 .oq-debug-recording-stat {
@@ -1876,6 +1876,46 @@ body.oq-surface-native {
   opacity: 0.55;
 }
 
+.oq-debug-recording-feedback {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  margin: 4px 0 0;
+  padding: 0 12px;
+  border: 1px solid rgba(34, 197, 94, 0.22);
+  border-radius: 999px;
+  background: rgba(240, 253, 244, 0.78);
+  color: #166534;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.oq-debug-recording-feedback .oq-debug-recording-button-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.oq-debug-recording-feedback--error {
+  border-color: rgba(234, 88, 12, 0.28);
+  background: rgba(255, 247, 237, 0.86);
+  color: var(--oq-helper-accent-deep);
+}
+
+.oq-helper-shell--dark .oq-debug-recording-feedback,
+.oq-helper-modal-backdrop--dark .oq-debug-recording-feedback {
+  border-color: rgba(34, 197, 94, 0.28);
+  background: rgba(20, 83, 45, 0.24);
+  color: #bbf7d0;
+}
+
+.oq-helper-shell--dark .oq-debug-recording-feedback--error,
+.oq-helper-modal-backdrop--dark .oq-debug-recording-feedback--error {
+  border-color: rgba(249, 115, 22, 0.36);
+  background: rgba(124, 45, 18, 0.24);
+  color: #fed7aa;
+}
+
 @media (max-width: 720px) {
   .oq-debug-recording-modal {
     padding: 22px;
@@ -1906,6 +1946,11 @@ body.oq-surface-native {
 
   .oq-debug-recording-actions .oq-helper-button {
     width: 100%;
+  }
+
+  .oq-debug-recording-feedback {
+    width: 100%;
+    justify-content: center;
   }
 }
 

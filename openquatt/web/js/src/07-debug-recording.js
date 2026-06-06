@@ -90,6 +90,8 @@ function renderDebugRecordingSvgIcon(name) {
     stop: '<svg viewBox="0 0 24 24" focusable="false"><path d="M7 7h10v10H7z"/></svg>',
     download: '<svg viewBox="0 0 24 24" focusable="false"><path d="M12 4v10"/><path d="m8 10 4 4 4-4"/><path d="M5 19h14"/></svg>',
     copy: '<svg viewBox="0 0 24 24" focusable="false"><rect x="8" y="8" width="10" height="10" rx="2"/><path d="M6 14H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1"/></svg>',
+    check: '<svg viewBox="0 0 24 24" focusable="false"><path d="m5 13 4 4L19 7"/></svg>',
+    alert: '<svg viewBox="0 0 24 24" focusable="false"><path d="M12 8v5"/><path d="M12 17h.01"/><path d="M10.3 4.7 2.8 18a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.7a2 2 0 0 0-3.4 0z"/></svg>',
   };
   return icons[name] || icons.status;
 }
@@ -460,7 +462,7 @@ async function downloadDebugRecordingBundle() {
     downloadDebugRecordingTextFile(getDebugRecordingFilename(bundle), getDebugRecordingCompactJson(bundle));
     state.debugRecordingNotice = "Supportbestand gedownload.";
   } catch (error) {
-    state.debugRecordingError = `Download mislukt. ${error.message || String(error)}`;
+    state.debugRecordingError = "Download mislukt. Probeer opnieuw of kopieer de data.";
   } finally {
     state.debugRecordingBusy = false;
     render();
@@ -484,7 +486,7 @@ async function copyDebugRecordingBundle() {
     }
     state.debugRecordingNotice = "Supportbestand gekopieerd.";
   } catch (error) {
-    state.debugRecordingError = `Kopiëren mislukt. ${error.message || String(error)}`;
+    state.debugRecordingError = "Kopiëren mislukt. Probeer opnieuw of download het supportbestand.";
   } finally {
     state.debugRecordingBusy = false;
     render();
@@ -510,6 +512,11 @@ function renderDebugRecordingModal() {
     { icon: "file", label: "Geschatte grootte", value: `± ${estimatedSize}` },
     { icon: "storage", label: "Opslag", value: "Browser" },
   ];
+  const feedback = state.debugRecordingError
+    ? { kind: "error", icon: "alert", text: state.debugRecordingError }
+    : state.debugRecordingNotice
+      ? { kind: "success", icon: "check", text: state.debugRecordingNotice }
+      : null;
   return `
     <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
       <section class="oq-helper-modal oq-debug-recording-modal" role="dialog" aria-modal="true" aria-labelledby="oq-debug-recording-modal-title">
@@ -574,9 +581,13 @@ function renderDebugRecordingModal() {
           `}
           <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="download-debug-recording" ${!hasRecording || busy ? "disabled" : ""}>${renderDebugRecordingButtonIcon("download")}Download supportbestand</button>
           <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="copy-debug-recording" ${!hasRecording || busy ? "disabled" : ""}>${renderDebugRecordingButtonIcon("copy")}Kopieer data</button>
+          ${feedback ? `
+            <p class="oq-debug-recording-feedback oq-debug-recording-feedback--${feedback.kind}" role="status">
+              ${renderDebugRecordingButtonIcon(feedback.icon)}
+              <span>${escapeHtml(feedback.text)}</span>
+            </p>
+          ` : ""}
         </div>
-        ${state.debugRecordingError ? `<p class="oq-settings-action-note oq-settings-action-note--warning">${escapeHtml(state.debugRecordingError)}</p>` : ""}
-        ${state.debugRecordingNotice ? `<p class="oq-settings-action-note">${escapeHtml(state.debugRecordingNotice)}</p>` : ""}
       </section>
     </div>
   `;
