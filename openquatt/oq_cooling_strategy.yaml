@@ -1270,4 +1270,4 @@ interval:
             id(oq_cooling_dew_gap_c),
             cooling_reason_name(id(oq_cooling_limiter_reason_code)),
             id(cooling_supply_target).state);
-          id(oq_strategy_debug_state).publish_state(debug_buf);
+          ESP_LOGD("quatt.strategy", "%s", debug_buf);

@@ -126,7 +126,7 @@ select:
               id(oq_duo_request_hold_until_ms),
               0);
             id(oq_strategy_phase_text).publish_state("idle");
-            id(oq_strategy_debug_state).publish_state("strategy_switch");
+            ESP_LOGD("quatt.strategy", "strategy_switch");
 
 text_sensor:
   - platform: template
@@ -150,19 +150,6 @@ text_sensor:
       sorting_group_id: oq_heating_strategy
     lambda: |-
       return std::string("idle");
-
-  - platform: template
-    id: oq_strategy_debug_state
-    name: "Strategy debug state"
-    internal: true
-    icon: mdi:text-box-search-outline
-    update_interval: never
-    entity_category: diagnostic
-    disabled_by_default: true
-    web_server:
-      sorting_group_id: oq_heating_strategy
-    lambda: |-
-      return std::string("init");
 
 sensor:
   - platform: template

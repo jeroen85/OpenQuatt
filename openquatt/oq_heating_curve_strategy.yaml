@@ -946,7 +946,7 @@ interval:
               phase_text, regime_text,
               id(oq_curve_demand_continuous), d_out,
               id(oq_curve_demand_pre_guardrail), target_c, supply_c);
-            id(oq_strategy_debug_state).publish_state(debug_buf);
+            ESP_LOGD("quatt.strategy", "%s", debug_buf);
           } else {
             if (id(oq_heating_curve_pid).mode != CLIMATE_MODE_OFF) {
               auto c0 = id(oq_heating_curve_pid).make_call();

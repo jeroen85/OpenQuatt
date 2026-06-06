@@ -60,13 +60,7 @@ class OpenQuattMqttPublisher : public Component, public mqtt::CustomMQTTDevice {
     this->lowflow_fault_binary_sensor_ = binary_sensor;
   }
   void set_strategy_phase_text_sensor(text_sensor::TextSensor *sensor) { this->strategy_phase_text_sensor_ = sensor; }
-  void set_strategy_debug_state_text_sensor(text_sensor::TextSensor *sensor) {
-    this->strategy_debug_state_text_sensor_ = sensor;
-  }
   void set_request_reason_text_sensor(text_sensor::TextSensor *sensor) { this->request_reason_text_sensor_ = sensor; }
-  void set_heating_debug_state_text_sensor(text_sensor::TextSensor *sensor) {
-    this->heating_debug_state_text_sensor_ = sensor;
-  }
   void set_duo_optimizer_reason_text_sensor(text_sensor::TextSensor *sensor) {
     this->duo_optimizer_reason_text_sensor_ = sensor;
   }
@@ -191,9 +185,7 @@ class OpenQuattMqttPublisher : public Component, public mqtt::CustomMQTTDevice {
   sensor::Sensor *total_cop_sensor_{nullptr};
   binary_sensor::BinarySensor *lowflow_fault_binary_sensor_{nullptr};
   text_sensor::TextSensor *strategy_phase_text_sensor_{nullptr};
-  text_sensor::TextSensor *strategy_debug_state_text_sensor_{nullptr};
   text_sensor::TextSensor *request_reason_text_sensor_{nullptr};
-  text_sensor::TextSensor *heating_debug_state_text_sensor_{nullptr};
   text_sensor::TextSensor *duo_optimizer_reason_text_sensor_{nullptr};
   select::Select *flow_control_mode_select_{nullptr};
   text_sensor::TextSensor *flow_mode_text_sensor_{nullptr};

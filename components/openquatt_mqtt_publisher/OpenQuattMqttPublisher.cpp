@@ -185,9 +185,7 @@ void OpenQuattMqttPublisher::publish_diagnostics_(bool force, uint32_t now_ms, u
       signature, [this](JsonObject root) {
     root["schema"] = "openquatt.diagnostics.v1";
     set_text_fields_(root, {{"strategy_phase", this->strategy_phase_text_sensor_},
-                            {"strategy_debug_state", this->strategy_debug_state_text_sensor_},
                             {"request_reason", this->request_reason_text_sensor_},
-                            {"heating_debug_state", this->heating_debug_state_text_sensor_},
                             {"duo_optimizer_reason", this->duo_optimizer_reason_text_sensor_},
                             {"flow_mode", this->flow_mode_text_sensor_},
                             {"commissioning_status", this->commissioning_status_text_sensor_},
@@ -382,9 +380,7 @@ std::string OpenQuattMqttPublisher::build_diagnostics_signature_() const {
   std::string out;
   out.reserve(256);
   append_text_signature_(out, this->strategy_phase_text_sensor_);
-  append_text_signature_(out, this->strategy_debug_state_text_sensor_);
   append_text_signature_(out, this->request_reason_text_sensor_);
-  append_text_signature_(out, this->heating_debug_state_text_sensor_);
   append_text_signature_(out, this->duo_optimizer_reason_text_sensor_);
   append_select_signature_(out, this->flow_control_mode_select_);
   append_text_signature_(out, this->flow_mode_text_sensor_);
