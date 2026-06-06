@@ -77,6 +77,31 @@ function getDebugRecordingProgressPercent() {
   return Math.max(0, Math.min(100, (elapsedMs / totalMs) * 100));
 }
 
+function renderDebugRecordingSvgIcon(name) {
+  const icons = {
+    activity: '<svg viewBox="0 0 24 24" focusable="false"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>',
+    status: '<svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="4"/></svg>',
+    clock: '<svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg>',
+    samples: '<svg viewBox="0 0 24 24" focusable="false"><path d="M4 16h3l2-7 4 9 2-5h5"/></svg>',
+    changes: '<svg viewBox="0 0 24 24" focusable="false"><path d="M18 8a7 7 0 1 0 1 7"/><path d="M18 4v4h-4"/></svg>',
+    file: '<svg viewBox="0 0 24 24" focusable="false"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h5"/></svg>',
+    storage: '<svg viewBox="0 0 24 24" focusable="false"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg>',
+    play: '<svg viewBox="0 0 24 24" focusable="false"><path d="M8 5v14l11-7z"/></svg>',
+    stop: '<svg viewBox="0 0 24 24" focusable="false"><path d="M7 7h10v10H7z"/></svg>',
+    download: '<svg viewBox="0 0 24 24" focusable="false"><path d="M12 4v10"/><path d="m8 10 4 4 4-4"/><path d="M5 19h14"/></svg>',
+    copy: '<svg viewBox="0 0 24 24" focusable="false"><rect x="8" y="8" width="10" height="10" rx="2"/><path d="M6 14H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1"/></svg>',
+  };
+  return icons[name] || icons.status;
+}
+
+function renderDebugRecordingIcon(name) {
+  return `<span class="oq-debug-recording-icon" aria-hidden="true">${renderDebugRecordingSvgIcon(name)}</span>`;
+}
+
+function renderDebugRecordingButtonIcon(name) {
+  return `<span class="oq-debug-recording-button-icon" aria-hidden="true">${renderDebugRecordingSvgIcon(name)}</span>`;
+}
+
 function getDebugRecordingColumnSchema() {
   return [...DEBUG_RECORDING_KEYS];
 }
@@ -477,6 +502,14 @@ function renderDebugRecordingModal() {
   const progressPercent = getDebugRecordingProgressPercent();
   const hasRecording = sampleCount > 0;
   const progressWidth = `${progressPercent.toFixed(1)}%`;
+  const stats = [
+    { icon: "status", label: "Status", value: getDebugRecordingStatusLabel() },
+    { icon: "clock", label: "Duur", value: formatDebugRecordingDuration(getDebugRecordingDurationMs()) },
+    { icon: "samples", label: "Samples", value: String(sampleCount) },
+    { icon: "changes", label: "Statuswijzigingen", value: String(eventCount) },
+    { icon: "file", label: "Geschatte grootte", value: `± ${estimatedSize}` },
+    { icon: "storage", label: "Opslag", value: "Browser" },
+  ];
   return `
     <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
       <section class="oq-helper-modal oq-debug-recording-modal" role="dialog" aria-modal="true" aria-labelledby="oq-debug-recording-modal-title">
@@ -490,7 +523,7 @@ function renderDebugRecordingModal() {
         <p class="oq-helper-modal-copy">${escapeHtml(getDebugRecordingStatusCopy())}</p>
         <section class="oq-debug-recording-card" aria-label="Opname">
           <div class="oq-debug-recording-card-head">
-            <span class="oq-debug-recording-pulse" aria-hidden="true"></span>
+            <span class="oq-debug-recording-heading-icon" aria-hidden="true">${renderDebugRecordingSvgIcon("activity")}</span>
             <h3>Opname</h3>
           </div>
           ${active ? `
@@ -505,30 +538,12 @@ function renderDebugRecordingModal() {
             </div>
           ` : ""}
           <dl class="oq-debug-recording-stats">
-            <div class="oq-debug-recording-stat">
-              <dt><span class="oq-debug-recording-icon" aria-hidden="true">•</span>Status</dt>
-              <dd>${escapeHtml(getDebugRecordingStatusLabel())}</dd>
-            </div>
-            <div class="oq-debug-recording-stat">
-              <dt><span class="oq-debug-recording-icon" aria-hidden="true">T</span>Duur</dt>
-              <dd>${escapeHtml(formatDebugRecordingDuration(getDebugRecordingDurationMs()))}</dd>
-            </div>
-            <div class="oq-debug-recording-stat">
-              <dt><span class="oq-debug-recording-icon" aria-hidden="true">S</span>Samples</dt>
-              <dd>${escapeHtml(String(sampleCount))}</dd>
-            </div>
-            <div class="oq-debug-recording-stat">
-              <dt><span class="oq-debug-recording-icon" aria-hidden="true">Δ</span>Statuswijzigingen</dt>
-              <dd>${escapeHtml(String(eventCount))}</dd>
-            </div>
-            <div class="oq-debug-recording-stat">
-              <dt><span class="oq-debug-recording-icon" aria-hidden="true">B</span>Geschatte grootte</dt>
-              <dd>${escapeHtml(`± ${estimatedSize}`)}</dd>
-            </div>
-            <div class="oq-debug-recording-stat">
-              <dt><span class="oq-debug-recording-icon" aria-hidden="true">O</span>Opslag</dt>
-              <dd>Browser</dd>
-            </div>
+            ${stats.map((item) => `
+              <div class="oq-debug-recording-stat">
+                <dt>${renderDebugRecordingIcon(item.icon)}${escapeHtml(item.label)}</dt>
+                <dd>${escapeHtml(item.value)}</dd>
+              </div>
+            `).join("")}
           </dl>
         </section>
         <section class="oq-debug-recording-duration" aria-label="Duur">
@@ -553,12 +568,12 @@ function renderDebugRecordingModal() {
         </section>
         <div class="oq-debug-recording-actions">
           ${active ? `
-            <button class="oq-helper-button oq-helper-button--warning oq-debug-recording-primary" type="button" data-oq-action="stop-debug-recording" ${busy ? "disabled" : ""}>Stop opname</button>
+            <button class="oq-helper-button oq-helper-button--warning oq-debug-recording-primary" type="button" data-oq-action="stop-debug-recording" ${busy ? "disabled" : ""}>${renderDebugRecordingButtonIcon("stop")}Stop opname</button>
           ` : `
-            <button class="oq-helper-button oq-helper-button--primary oq-debug-recording-primary" type="button" data-oq-action="start-debug-recording" data-debug-minutes="${selectedMinutes}" ${busy ? "disabled" : ""}>Start opname</button>
+            <button class="oq-helper-button oq-helper-button--primary oq-debug-recording-primary" type="button" data-oq-action="start-debug-recording" data-debug-minutes="${selectedMinutes}" ${busy ? "disabled" : ""}>${renderDebugRecordingButtonIcon("play")}Start opname</button>
           `}
-          <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="download-debug-recording" ${!hasRecording || busy ? "disabled" : ""}>Download supportbestand</button>
-          <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="copy-debug-recording" ${!hasRecording || busy ? "disabled" : ""}>Kopieer data</button>
+          <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="download-debug-recording" ${!hasRecording || busy ? "disabled" : ""}>${renderDebugRecordingButtonIcon("download")}Download supportbestand</button>
+          <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="copy-debug-recording" ${!hasRecording || busy ? "disabled" : ""}>${renderDebugRecordingButtonIcon("copy")}Kopieer data</button>
         </div>
         ${state.debugRecordingError ? `<p class="oq-settings-action-note oq-settings-action-note--warning">${escapeHtml(state.debugRecordingError)}</p>` : ""}
         ${state.debugRecordingNotice ? `<p class="oq-settings-action-note">${escapeHtml(state.debugRecordingNotice)}</p>` : ""}

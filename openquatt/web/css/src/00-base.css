@@ -826,8 +826,8 @@ body.oq-surface-native {
 }
 
 .oq-debug-recording-modal {
-  width: min(100%, 860px);
-  padding: 28px;
+  width: min(100%, 820px);
+  padding: 26px;
 }
 
 .oq-helper-modal--scrollable {
@@ -1563,7 +1563,7 @@ body.oq-surface-native {
 
 .oq-debug-recording-card {
   overflow: hidden;
-  margin-top: 22px;
+  margin-top: 18px;
   border: 1px solid rgba(203, 213, 225, 0.82);
   border-radius: var(--oq-helper-radius-md);
   background: rgba(255, 255, 255, 0.78);
@@ -1579,7 +1579,7 @@ body.oq-surface-native {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 18px 20px;
+  padding: 15px 18px;
   border-bottom: 1px solid rgba(226, 232, 240, 0.82);
 }
 
@@ -1603,38 +1603,53 @@ body.oq-surface-native {
   color: #f8fafc;
 }
 
-.oq-debug-recording-pulse {
-  position: relative;
-  width: 18px;
-  height: 18px;
+.oq-debug-recording-heading-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
   color: var(--oq-helper-accent);
 }
 
-.oq-debug-recording-pulse::before,
-.oq-debug-recording-pulse::after {
-  content: "";
-  position: absolute;
-  inset: 8px auto auto 0;
-  width: 18px;
-  height: 2px;
+.oq-debug-recording-heading-dot {
+  display: inline-flex;
+  width: 9px;
+  height: 9px;
+  margin: 0 6px 0 4px;
   border-radius: 999px;
-  background: currentColor;
+  background: var(--oq-helper-accent);
+  box-shadow: 0 0 0 5px rgba(249, 115, 22, 0.1);
 }
 
-.oq-debug-recording-pulse::after {
-  inset: 3px auto auto 5px;
-  width: 8px;
-  height: 12px;
-  border: solid currentColor;
-  border-width: 0 0 2px 2px;
-  transform: skewX(-18deg);
-  background: transparent;
+.oq-debug-recording-heading-icon svg,
+.oq-debug-recording-icon svg,
+.oq-debug-recording-button-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.oq-debug-recording-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.oq-debug-recording-icon svg path,
+.oq-debug-recording-icon svg circle,
+.oq-debug-recording-icon svg rect,
+.oq-debug-recording-icon svg ellipse {
+  vector-effect: non-scaling-stroke;
 }
 
 .oq-debug-recording-progress {
   display: grid;
   gap: 8px;
-  padding: 14px 20px 0;
+  padding: 12px 18px 0;
 }
 
 .oq-debug-recording-progress-head {
@@ -1685,26 +1700,26 @@ body.oq-surface-native {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin: 0;
-  padding: 0 20px 12px;
+  padding: 0 18px 10px;
 }
 
 .oq-debug-recording-stat {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(92px, 0.62fr);
+  grid-template-columns: minmax(0, 1fr) minmax(104px, 0.58fr);
   align-items: center;
-  gap: 14px;
-  min-height: 56px;
+  gap: 12px;
+  min-height: 50px;
   margin: 0;
   border-bottom: 1px solid rgba(226, 232, 240, 0.82);
 }
 
 .oq-debug-recording-stat:nth-child(odd) {
-  padding-right: 20px;
+  padding-right: 18px;
   border-right: 1px solid rgba(226, 232, 240, 0.82);
 }
 
 .oq-debug-recording-stat:nth-child(even) {
-  padding-left: 20px;
+  padding-left: 18px;
 }
 
 .oq-helper-shell--dark .oq-debug-recording-stat,
@@ -1718,9 +1733,9 @@ body.oq-surface-native {
   display: inline-flex;
   align-items: center;
   min-width: 0;
-  gap: 12px;
+  gap: 10px;
   color: var(--oq-helper-soft);
-  font-size: 0.9rem;
+  font-size: 0.86rem;
   font-weight: 700;
 }
 
@@ -1728,6 +1743,7 @@ body.oq-surface-native {
   min-width: 0;
   margin: 0;
   color: var(--oq-helper-ink);
+  font-size: 0.95rem;
   font-weight: 800;
   text-align: left;
   overflow-wrap: anywhere;
@@ -1748,13 +1764,11 @@ body.oq-surface-native {
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  width: 30px;
-  height: 30px;
-  border-radius: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
   background: rgba(241, 245, 249, 0.9);
   color: #475569;
-  font-size: 0.82rem;
-  font-weight: 900;
 }
 
 .oq-helper-shell--dark .oq-debug-recording-icon,
@@ -1765,16 +1779,16 @@ body.oq-surface-native {
 
 .oq-debug-recording-duration {
   display: grid;
-  gap: 12px;
-  margin-top: 22px;
+  gap: 10px;
+  margin-top: 20px;
 }
 
 .oq-debug-recording-segments {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   overflow: hidden;
-  width: min(100%, 540px);
-  min-height: 56px;
+  width: min(100%, 500px);
+  min-height: 50px;
   border: 1px solid var(--oq-helper-line);
   border-radius: var(--oq-helper-radius-sm);
   background: rgba(255, 255, 255, 0.72);
@@ -1788,6 +1802,7 @@ body.oq-surface-native {
 
 .oq-debug-recording-segment {
   appearance: none;
+  position: relative;
   min-width: 0;
   border: 0;
   border-left: 1px solid var(--oq-helper-line);
@@ -1795,7 +1810,7 @@ body.oq-surface-native {
   color: var(--oq-helper-soft);
   cursor: pointer;
   font: inherit;
-  font-weight: 800;
+  font-weight: 750;
   padding: 0 16px;
 }
 
@@ -1818,7 +1833,23 @@ body.oq-surface-native {
 .oq-debug-recording-segment--selected:hover {
   color: var(--oq-helper-accent-deep);
   background: linear-gradient(180deg, rgba(255, 247, 237, 0.98), rgba(255, 255, 255, 0.78));
-  box-shadow: inset 0 0 0 1px var(--oq-helper-accent);
+  box-shadow: none;
+}
+
+.oq-debug-recording-segment--selected::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  inset: -1px;
+  border: 1px solid var(--oq-helper-accent);
+}
+
+.oq-debug-recording-segment--selected:first-child::after {
+  border-radius: var(--oq-helper-radius-sm) 0 0 var(--oq-helper-radius-sm);
+}
+
+.oq-debug-recording-segment--selected:last-child::after {
+  border-radius: 0 var(--oq-helper-radius-sm) var(--oq-helper-radius-sm) 0;
 }
 
 .oq-debug-recording-segment:disabled {
@@ -1829,9 +1860,9 @@ body.oq-surface-native {
 .oq-debug-recording-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
-  margin: 26px -28px -28px;
-  padding: 22px 28px 28px;
+  gap: 12px;
+  margin: 24px -26px -26px;
+  padding: 20px 26px 24px;
   border-top: 1px solid rgba(226, 232, 240, 0.9);
 }
 
@@ -1841,12 +1872,24 @@ body.oq-surface-native {
 }
 
 .oq-debug-recording-actions .oq-helper-button {
-  min-height: 48px;
-  padding-inline: 22px;
+  gap: 9px;
+  min-height: 44px;
+  padding-inline: 18px;
 }
 
 .oq-debug-recording-primary {
-  min-width: 160px;
+  min-width: 148px;
+}
+
+.oq-debug-recording-button-icon {
+  display: inline-flex;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+}
+
+.oq-helper-button:disabled .oq-debug-recording-button-icon {
+  opacity: 0.55;
 }
 
 @media (max-width: 720px) {
