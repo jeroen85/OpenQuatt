@@ -60,9 +60,7 @@ openquatt_mqtt_publisher:
   total_cop_sensor: oq_total_cop
   lowflow_fault_binary_sensor: oq_lowflow_fault_active_bs
   strategy_phase_text_sensor: oq_strategy_phase_text
-  strategy_debug_state_text_sensor: oq_strategy_debug_state
   request_reason_text_sensor: oq_request_reason
-  heating_debug_state_text_sensor: oq_heating_debug_state
   duo_optimizer_reason_text_sensor: oq_duo_optimizer_reason
   flow_control_mode_select: oq_flow_control_mode
   flow_mode_text_sensor: oq_flow_mode

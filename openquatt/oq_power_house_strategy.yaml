@@ -1112,4 +1112,4 @@ interval:
             debug_buf, sizeof(debug_buf),
             "ph f=%d raw=%d preq=%.0f owner=%d reason=%d",
             f, raw, id(oq_phouse_req_w), request_owner_hp, request_reason_code);
-          id(oq_strategy_debug_state).publish_state(debug_buf);
+          ESP_LOGD("quatt.strategy", "%s", debug_buf);

@@ -21,9 +21,7 @@ CONF_TOTAL_HEAT_POWER_SENSOR = "total_heat_power_sensor"
 CONF_TOTAL_COP_SENSOR = "total_cop_sensor"
 CONF_LOWFLOW_FAULT_BINARY_SENSOR = "lowflow_fault_binary_sensor"
 CONF_STRATEGY_PHASE_TEXT_SENSOR = "strategy_phase_text_sensor"
-CONF_STRATEGY_DEBUG_STATE_TEXT_SENSOR = "strategy_debug_state_text_sensor"
 CONF_REQUEST_REASON_TEXT_SENSOR = "request_reason_text_sensor"
-CONF_HEATING_DEBUG_STATE_TEXT_SENSOR = "heating_debug_state_text_sensor"
 CONF_DUO_OPTIMIZER_REASON_TEXT_SENSOR = "duo_optimizer_reason_text_sensor"
 CONF_FLOW_CONTROL_MODE_SELECT = "flow_control_mode_select"
 CONF_FLOW_MODE_TEXT_SENSOR = "flow_mode_text_sensor"
@@ -70,9 +68,7 @@ ENTITY_SPECS = [
     (CONF_TOTAL_COP_SENSOR, sensor.Sensor, "set_total_cop_sensor"),
     (CONF_LOWFLOW_FAULT_BINARY_SENSOR, binary_sensor.BinarySensor, "set_lowflow_fault_binary_sensor"),
     (CONF_STRATEGY_PHASE_TEXT_SENSOR, text_sensor.TextSensor, "set_strategy_phase_text_sensor"),
-    (CONF_STRATEGY_DEBUG_STATE_TEXT_SENSOR, text_sensor.TextSensor, "set_strategy_debug_state_text_sensor"),
     (CONF_REQUEST_REASON_TEXT_SENSOR, text_sensor.TextSensor, "set_request_reason_text_sensor"),
-    (CONF_HEATING_DEBUG_STATE_TEXT_SENSOR, text_sensor.TextSensor, "set_heating_debug_state_text_sensor"),
     (CONF_DUO_OPTIMIZER_REASON_TEXT_SENSOR, text_sensor.TextSensor, "set_duo_optimizer_reason_text_sensor"),
     (CONF_FLOW_CONTROL_MODE_SELECT, select.Select, "set_flow_control_mode_select"),
     (CONF_FLOW_MODE_TEXT_SENSOR, text_sensor.TextSensor, "set_flow_mode_text_sensor"),

@@ -379,8 +379,6 @@ const LOGO_MARKUP = `
     coolingEnableEffectiveSource: { domain: "text_sensor", name: "Cooling Enable Effective Source", optional: true },
     curveSupplyTarget: { domain: "sensor", name: "Heating Curve Supply Target" },
     requestReason: { domain: "text_sensor", name: "Request Reason", optional: true },
-    heatingDebugState: { domain: "text_sensor", name: "Heating Debug State", optional: true },
-    strategyDebugState: { domain: "text_sensor", name: "Strategy debug state", optional: true },
     strategyActiveCode: { domain: "sensor", name: "Strategy active code", optional: true },
     strategyPhaseCode: { domain: "sensor", name: "Strategy phase code", optional: true },
     strategyRequestedPower: { domain: "sensor", name: "Strategy requested power", optional: true },

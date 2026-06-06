@@ -596,17 +596,6 @@ text_sensor:
       return std::string("HP1");
       #endif
 
-  - platform: template
-    id: oq_heating_debug_state
-    name: "Heating Debug State"
-    internal: true
-    icon: mdi:bug-outline
-    entity_category: diagnostic
-    disabled_by_default: true
-    update_interval: never
-    web_server:
-      sorting_group_id: oq_heating_strategy
-
 # ----------------------------
 # MAIN LOOP
 # ----------------------------
@@ -798,7 +787,7 @@ interval:
               id(hp1_minutes), rt2);
             const std::string s(buf);
             if (s != last_debug) {
-              id(oq_heating_debug_state).publish_state(s.c_str());
+              ESP_LOGD("quatt.req", "%s", s.c_str());
               last_debug = s;
             }
           };
