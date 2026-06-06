@@ -265,6 +265,7 @@ text_sensor:
   - platform: template
     id: oq_duo_optimizer_reason
     name: "Duo optimizer reason"
+    internal: true
     icon: mdi:swap-horizontal
     entity_category: diagnostic
     disabled_by_default: true

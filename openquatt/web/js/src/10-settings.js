@@ -3962,6 +3962,20 @@
               Openen
             </button>
           </div>
+          <div class="oq-settings-system-row oq-settings-system-row--with-action" data-oq-diagnostics-row="debugRecording">
+            <div class="oq-settings-system-row-copy">
+              <p class="oq-settings-system-row-label">Debugopname</p>
+              <strong class="oq-settings-system-row-value">${escapeHtml(getDebugRecordingStatusLabel())}</strong>
+              <p class="oq-settings-system-row-note">${escapeHtml(getDebugRecordingStatusCopy())}</p>
+            </div>
+            <button
+              class="oq-helper-button oq-helper-button--ghost"
+              type="button"
+              data-oq-action="open-debug-recording-modal"
+            >
+              Openen
+            </button>
+          </div>
           <div class="oq-settings-system-row" data-oq-diagnostics-row="datetime">
             <span class="oq-settings-system-row-label">Datum/tijd</span>
             <strong class="oq-settings-system-row-value">${escapeHtml(dateTime)}</strong>

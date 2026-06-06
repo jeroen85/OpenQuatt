@@ -2048,6 +2048,10 @@
       return renderWebServerLogsModal();
     }
 
+    if (state.systemModal === "debug-recording") {
+      return renderDebugRecordingModal();
+    }
+
     if (state.systemModal === "openquatt-pause") {
       const enabled = isEntityActive("openquattEnabled");
       const busy = state.busyAction === "openquatt-regulation";

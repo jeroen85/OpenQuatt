@@ -2888,6 +2888,19 @@
       return;
     }
 
+    if (action === "open-debug-recording-modal") {
+      state.systemModal = "debug-recording";
+      state.debugRecordingError = "";
+      state.debugRecordingNotice = "";
+      render();
+      void refreshEntities(DEBUG_RECORDING_KEYS, "all", { concurrency: FAST_VIEW_ENTITY_REFRESH_CONCURRENCY }).then(() => {
+        if (state.systemModal === "debug-recording") {
+          render();
+        }
+      });
+      return;
+    }
+
     if (action === "open-login-modal") {
       state.systemModal = "login";
       syncAuthDraftsFromStatus();
@@ -3303,6 +3316,26 @@
 
     if (action === "copy-webserver-log-output") {
       void copyWebServerLogOutput();
+      return;
+    }
+
+    if (action === "start-debug-recording") {
+      startDebugRecording(button.dataset.debugMinutes || 15);
+      return;
+    }
+
+    if (action === "stop-debug-recording") {
+      stopDebugRecording();
+      return;
+    }
+
+    if (action === "download-debug-recording") {
+      void downloadDebugRecordingBundle();
+      return;
+    }
+
+    if (action === "copy-debug-recording") {
+      void copyDebugRecordingBundle();
       return;
     }
 
