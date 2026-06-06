@@ -395,14 +395,7 @@ function buildDebugRecordingCorePayload(extra = {}) {
 
 async function buildDebugRecordingBundle() {
   const logs = await fetchDebugRecordingLogs();
-  const source = typeof getSettingsBackupSourceMeta === "function"
-    ? getSettingsBackupSourceMeta()
-    : {
-      device: getFirmwareDeviceLabel(),
-      installation: getInstallationLabel(),
-      topology: typeof getInstallationTopology === "function" ? getInstallationTopology() : "",
-      firmware_version: getFirmwareCurrentVersion(),
-    };
+  const source = getDebugRecordingSourceMeta();
 
   return buildDebugRecordingCorePayload({ source, logs });
 }
@@ -417,6 +410,19 @@ function getDebugRecordingEstimatedBytes() {
   } catch (_error) {
     return getDebugRecordingCompactJson(buildDebugRecordingCorePayload()).length;
   }
+}
+
+function getDebugRecordingSourceMeta() {
+  const releaseChannel = String(getEntityValue("releaseChannelText") || "").trim();
+  const updateChannel = String(getEntityValue("firmwareUpdateChannel") || "").trim();
+  return {
+    device: getFirmwareDeviceLabel(),
+    installation: getInstallationLabel(),
+    topology: typeof getInstallationTopology === "function" ? getInstallationTopology() : "",
+    firmware_version: getFirmwareCurrentVersion(),
+    firmware_channel: releaseChannel || updateChannel,
+    firmware_update_channel: updateChannel || releaseChannel,
+  };
 }
 
 function formatDebugRecordingBytes(bytes) {
