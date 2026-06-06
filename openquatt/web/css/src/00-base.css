@@ -1833,23 +1833,7 @@ body.oq-surface-native {
 .oq-debug-recording-segment--selected:hover {
   color: var(--oq-helper-accent-deep);
   background: linear-gradient(180deg, rgba(255, 247, 237, 0.98), rgba(255, 255, 255, 0.78));
-  box-shadow: none;
-}
-
-.oq-debug-recording-segment--selected::after {
-  content: "";
-  position: absolute;
-  pointer-events: none;
-  inset: -1px;
-  border: 1px solid var(--oq-helper-accent);
-}
-
-.oq-debug-recording-segment--selected:first-child::after {
-  border-radius: var(--oq-helper-radius-sm) 0 0 var(--oq-helper-radius-sm);
-}
-
-.oq-debug-recording-segment--selected:last-child::after {
-  border-radius: 0 var(--oq-helper-radius-sm) var(--oq-helper-radius-sm) 0;
+  box-shadow: inset 0 -3px 0 var(--oq-helper-accent);
 }
 
 .oq-debug-recording-segment:disabled {
