@@ -26,24 +26,55 @@ function getDebugRecordingDurationMs() {
 
 function getDebugRecordingStatusLabel() {
   if (state.debugRecordingActive) {
-    const remainingMs = Math.max(0, Number(state.debugRecordingEndsAt || 0) - Date.now());
-    return `Loopt nog ${formatDebugRecordingDuration(remainingMs)}`;
+    return "Bezig met opnemen";
   }
   const count = getDebugRecordingSampleCount();
   if (count > 0) {
-    return `${count} sample${count === 1 ? "" : "s"} klaar`;
+    return "Voltooid";
   }
   return "Niet gestart";
 }
 
 function getDebugRecordingStatusCopy() {
   if (state.debugRecordingActive) {
-    return "Compacte opname loopt in browsergeheugen. Download het supportbestand na afloop.";
+    return "De opname loopt in browsergeheugen. Download het supportbestand na afloop.";
   }
   if (getDebugRecordingSampleCount() > 0) {
-    return "Het supportbestand staat klaar als compacte JSON met schema, startstaat en wijzigingen.";
+    return "De opname is klaar. Download het supportbestand en voeg dit toe aan je supportverzoek.";
   }
-  return "Start een vaste supportopname. De web-app bewaart elke 10 seconden alleen de gewijzigde waarden.";
+  return "Neem tijdelijk supportgegevens op voor analyse. Alleen gewijzigde waarden worden lokaal in de browser opgeslagen. Er wordt niets automatisch verzonden.";
+}
+
+function getDebugRecordingSelectedMinutes() {
+  const selected = Number(state.debugRecordingSelectedMinutes || 15);
+  const allowed = DEBUG_RECORDING_DURATION_OPTIONS.map((option) => Number(option.minutes));
+  return allowed.includes(selected) ? selected : Number(DEBUG_RECORDING_DURATION_OPTIONS[0]?.minutes || 15);
+}
+
+function setDebugRecordingSelectedMinutes(minutes) {
+  if (state.debugRecordingActive) {
+    return;
+  }
+  state.debugRecordingSelectedMinutes = Math.max(1, Number(minutes) || 15);
+  state.debugRecordingNotice = "";
+  state.debugRecordingError = "";
+  render();
+}
+
+function getDebugRecordingRemainingMs() {
+  if (!state.debugRecordingActive) {
+    return 0;
+  }
+  return Math.max(0, Number(state.debugRecordingEndsAt || 0) - Date.now());
+}
+
+function getDebugRecordingProgressPercent() {
+  if (!state.debugRecordingActive || !state.debugRecordingStartedAt || !state.debugRecordingEndsAt) {
+    return getDebugRecordingSampleCount() > 0 ? 100 : 0;
+  }
+  const totalMs = Math.max(1, Number(state.debugRecordingEndsAt) - Number(state.debugRecordingStartedAt));
+  const elapsedMs = Math.max(0, Date.now() - Number(state.debugRecordingStartedAt));
+  return Math.max(0, Math.min(100, (elapsedMs / totalMs) * 100));
 }
 
 function getDebugRecordingColumnSchema() {
@@ -441,9 +472,14 @@ function renderDebugRecordingModal() {
   const busy = state.debugRecordingBusy;
   const estimatedSize = formatDebugRecordingBytes(getDebugRecordingEstimatedBytes());
   const eventCount = Array.isArray(state.debugRecordingEvents) ? state.debugRecordingEvents.length : 0;
+  const selectedMinutes = getDebugRecordingSelectedMinutes();
+  const remainingMs = getDebugRecordingRemainingMs();
+  const progressPercent = getDebugRecordingProgressPercent();
+  const hasRecording = sampleCount > 0;
+  const progressWidth = `${progressPercent.toFixed(1)}%`;
   return `
     <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
-      <section class="oq-helper-modal oq-helper-modal--wide" role="dialog" aria-modal="true" aria-labelledby="oq-debug-recording-modal-title">
+      <section class="oq-helper-modal oq-debug-recording-modal" role="dialog" aria-modal="true" aria-labelledby="oq-debug-recording-modal-title">
         <div class="oq-helper-modal-head">
           <div>
             <p class="oq-helper-modal-kicker">Diagnostiek</p>
@@ -452,40 +488,77 @@ function renderDebugRecordingModal() {
           <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit debugopname">×</button>
         </div>
         <p class="oq-helper-modal-copy">${escapeHtml(getDebugRecordingStatusCopy())}</p>
-        <div class="oq-helper-modal-grid">
-          <div class="oq-helper-modal-row">
-            <span class="oq-helper-modal-label">Status</span>
-            <strong class="oq-helper-modal-value">${escapeHtml(getDebugRecordingStatusLabel())}</strong>
+        <section class="oq-debug-recording-card" aria-label="Opname">
+          <div class="oq-debug-recording-card-head">
+            <span class="oq-debug-recording-pulse" aria-hidden="true"></span>
+            <h3>Opname</h3>
           </div>
-          <div class="oq-helper-modal-row">
-            <span class="oq-helper-modal-label">Duur</span>
-            <strong class="oq-helper-modal-value">${escapeHtml(formatDebugRecordingDuration(getDebugRecordingDurationMs()))}</strong>
-          </div>
-          <div class="oq-helper-modal-row">
-            <span class="oq-helper-modal-label">Samples</span>
-            <strong class="oq-helper-modal-value">${escapeHtml(String(sampleCount))}</strong>
-          </div>
-          <div class="oq-helper-modal-row">
-            <span class="oq-helper-modal-label">Statuswijzigingen</span>
-            <strong class="oq-helper-modal-value">${escapeHtml(String(eventCount))}</strong>
-          </div>
-          <div class="oq-helper-modal-row">
-            <span class="oq-helper-modal-label">Opname</span>
-            <strong class="oq-helper-modal-value">${escapeHtml(`± ${estimatedSize}`)}</strong>
-          </div>
-          <div class="oq-helper-modal-row">
-            <span class="oq-helper-modal-label">Opslag</span>
-            <strong class="oq-helper-modal-value">Browser</strong>
-          </div>
-        </div>
-        <div class="oq-helper-modal-actions">
           ${active ? `
-            <button class="oq-helper-button oq-helper-button--warning" type="button" data-oq-action="stop-debug-recording" ${busy ? "disabled" : ""}>Stop opname</button>
-          ` : DEBUG_RECORDING_DURATION_OPTIONS.map((option) => `
-            <button class="oq-helper-button oq-helper-button--primary" type="button" data-oq-action="start-debug-recording" data-debug-minutes="${option.minutes}" ${busy ? "disabled" : ""}>Start ${escapeHtml(option.label)}</button>
-          `).join("")}
-          <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="download-debug-recording" ${sampleCount === 0 || busy ? "disabled" : ""}>Download</button>
-          <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="copy-debug-recording" ${sampleCount === 0 || busy ? "disabled" : ""}>Kopieer</button>
+            <div class="oq-debug-recording-progress">
+              <div class="oq-debug-recording-progress-head">
+                <span>Nog ${escapeHtml(formatDebugRecordingDuration(remainingMs))}</span>
+                <strong>${escapeHtml(Math.round(progressPercent).toString())}%</strong>
+              </div>
+              <div class="oq-debug-recording-progress-track" aria-hidden="true">
+                <span class="oq-debug-recording-progress-fill" style="width: ${escapeHtml(progressWidth)}"></span>
+              </div>
+            </div>
+          ` : ""}
+          <dl class="oq-debug-recording-stats">
+            <div class="oq-debug-recording-stat">
+              <dt><span class="oq-debug-recording-icon" aria-hidden="true">•</span>Status</dt>
+              <dd>${escapeHtml(getDebugRecordingStatusLabel())}</dd>
+            </div>
+            <div class="oq-debug-recording-stat">
+              <dt><span class="oq-debug-recording-icon" aria-hidden="true">T</span>Duur</dt>
+              <dd>${escapeHtml(formatDebugRecordingDuration(getDebugRecordingDurationMs()))}</dd>
+            </div>
+            <div class="oq-debug-recording-stat">
+              <dt><span class="oq-debug-recording-icon" aria-hidden="true">S</span>Samples</dt>
+              <dd>${escapeHtml(String(sampleCount))}</dd>
+            </div>
+            <div class="oq-debug-recording-stat">
+              <dt><span class="oq-debug-recording-icon" aria-hidden="true">Δ</span>Statuswijzigingen</dt>
+              <dd>${escapeHtml(String(eventCount))}</dd>
+            </div>
+            <div class="oq-debug-recording-stat">
+              <dt><span class="oq-debug-recording-icon" aria-hidden="true">B</span>Geschatte grootte</dt>
+              <dd>${escapeHtml(`± ${estimatedSize}`)}</dd>
+            </div>
+            <div class="oq-debug-recording-stat">
+              <dt><span class="oq-debug-recording-icon" aria-hidden="true">O</span>Opslag</dt>
+              <dd>Browser</dd>
+            </div>
+          </dl>
+        </section>
+        <section class="oq-debug-recording-duration" aria-label="Duur">
+          <h3>Duur</h3>
+          <div class="oq-debug-recording-segments" role="group" aria-label="Kies opnameduur">
+            ${DEBUG_RECORDING_DURATION_OPTIONS.map((option) => {
+              const selected = Number(option.minutes) === selectedMinutes;
+              return `
+                <button
+                  class="oq-debug-recording-segment${selected ? " oq-debug-recording-segment--selected" : ""}"
+                  type="button"
+                  data-oq-action="select-debug-recording-duration"
+                  data-debug-minutes="${option.minutes}"
+                  aria-pressed="${selected ? "true" : "false"}"
+                  ${active || busy ? "disabled" : ""}
+                >
+                  ${escapeHtml(option.label)}
+                </button>
+              `;
+            }).join("")}
+          </div>
+        </section>
+        <div class="oq-debug-recording-actions">
+          ${active ? `
+            <button class="oq-helper-button oq-helper-button--warning oq-debug-recording-primary" type="button" data-oq-action="stop-debug-recording" ${busy ? "disabled" : ""}>Stop opname</button>
+          ` : `
+            <button class="oq-helper-button oq-helper-button--primary oq-debug-recording-primary" type="button" data-oq-action="start-debug-recording" data-debug-minutes="${selectedMinutes}" ${busy ? "disabled" : ""}>Start opname</button>
+          `}
+          <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="download-debug-recording" ${!hasRecording || busy ? "disabled" : ""}>Download supportbestand</button>
+          <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="copy-debug-recording" ${!hasRecording || busy ? "disabled" : ""}>Kopieer data</button>
         </div>
         ${state.debugRecordingError ? `<p class="oq-settings-action-note oq-settings-action-note--warning">${escapeHtml(state.debugRecordingError)}</p>` : ""}
         ${state.debugRecordingNotice ? `<p class="oq-settings-action-note">${escapeHtml(state.debugRecordingNotice)}</p>` : ""}

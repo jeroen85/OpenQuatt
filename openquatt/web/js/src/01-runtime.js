@@ -81,6 +81,7 @@
     debugRecordingInitialValues: null,
     debugRecordingLastValues: null,
     debugRecordingEvents: [],
+    debugRecordingSelectedMinutes: 15,
     complete: false,
     lastKnownInstallationTopology: "",
     quickStartModalOpen: true,

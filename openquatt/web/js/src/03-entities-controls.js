@@ -3324,6 +3324,11 @@
       return;
     }
 
+    if (action === "select-debug-recording-duration") {
+      setDebugRecordingSelectedMinutes(button.dataset.debugMinutes || 15);
+      return;
+    }
+
     if (action === "stop-debug-recording") {
       stopDebugRecording();
       return;
