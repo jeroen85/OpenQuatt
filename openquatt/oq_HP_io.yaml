@@ -230,6 +230,7 @@ number:
     modbus_controller_id: ${hp_id}
     id: ${hp_id}_pump_speed
     name: "${prefix}Set Pump Speed"
+    internal: true
     icon: "mdi:speedometer"
     register_type: holding
     address: 2015
