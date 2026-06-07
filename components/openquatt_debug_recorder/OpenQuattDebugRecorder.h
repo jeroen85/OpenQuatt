@@ -34,7 +34,7 @@ class OpenQuattDebugRecorder : public Component {
   static constexpr uint32_t DEFAULT_DURATION_S = 15 * 60;
   static constexpr uint32_t MIN_DURATION_S = 60;
   static constexpr uint32_t MAX_DURATION_S = 60 * 60;
-  static constexpr size_t SAMPLE_CAPACITY = MAX_DURATION_S / (SAMPLE_INTERVAL_MS / 1000) + 1;
+  static constexpr size_t BUFFER_BYTES = 1024U * 1024U;
 
   struct DebugSample {
     uint32_t offset_s{0};
@@ -44,6 +44,8 @@ class OpenQuattDebugRecorder : public Component {
     uint32_t min_free_heap{0};
   };
 
+  static constexpr size_t SAMPLE_CAPACITY = BUFFER_BYTES / sizeof(DebugSample);
+
   time::RealTimeClock *clock_{nullptr};
   PsramBuffer<DebugSample> samples_{};
   bool active_{false};
@@ -52,6 +54,7 @@ class OpenQuattDebugRecorder : public Component {
   uint32_t duration_s_{DEFAULT_DURATION_S};
   uint32_t last_sample_ms_{0};
   size_t count_{0};
+  size_t write_index_{0};
 
   bool available_() const { return static_cast<bool>(this->samples_) && this->samples_.is_external(); }
   bool time_is_valid_() const;
@@ -60,6 +63,7 @@ class OpenQuattDebugRecorder : public Component {
   uint64_t ended_time_ms_() const;
   uint32_t elapsed_s_() const;
   uint32_t remaining_s_() const;
+  uint32_t retained_duration_s_() const;
   uint32_t sanitize_duration_s_(uint32_t duration_s) const;
   void clear_();
   void capture_sample_();

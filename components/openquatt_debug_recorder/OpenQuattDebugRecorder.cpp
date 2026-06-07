@@ -230,6 +230,18 @@ uint32_t OpenQuattDebugRecorder::remaining_s_() const {
   return elapsed >= this->duration_s_ ? 0 : this->duration_s_ - elapsed;
 }
 
+uint32_t OpenQuattDebugRecorder::retained_duration_s_() const {
+  if (this->count_ == 0) {
+    return 0;
+  }
+  const DebugSample *first = this->sample_at_(0);
+  const DebugSample *last = this->sample_at_(this->count_ - 1);
+  if (first == nullptr || last == nullptr || last->offset_s < first->offset_s) {
+    return 0;
+  }
+  return last->offset_s - first->offset_s;
+}
+
 uint32_t OpenQuattDebugRecorder::sanitize_duration_s_(uint32_t duration_s) const {
   if (duration_s == 0) {
     duration_s = DEFAULT_DURATION_S;
@@ -239,6 +251,7 @@ uint32_t OpenQuattDebugRecorder::sanitize_duration_s_(uint32_t duration_s) const
 
 void OpenQuattDebugRecorder::clear_() {
   this->count_ = 0;
+  this->write_index_ = 0;
   this->last_sample_ms_ = 0;
 }
 
@@ -246,7 +259,10 @@ const OpenQuattDebugRecorder::DebugSample *OpenQuattDebugRecorder::sample_at_(si
   if (!this->samples_ || index >= this->count_) {
     return nullptr;
   }
-  return &this->samples_[index];
+  if (this->count_ < SAMPLE_CAPACITY) {
+    return &this->samples_[index];
+  }
+  return &this->samples_[(this->write_index_ + index) % SAMPLE_CAPACITY];
 }
 
 void OpenQuattDebugRecorder::capture_sample_() {
@@ -255,7 +271,7 @@ void OpenQuattDebugRecorder::capture_sample_() {
   }
 
   const uint32_t now_ms = millis();
-  if (this->count_ >= SAMPLE_CAPACITY || this->elapsed_s_() >= this->duration_s_) {
+  if (this->elapsed_s_() >= this->duration_s_) {
     this->stop();
     return;
   }
@@ -267,7 +283,11 @@ void OpenQuattDebugRecorder::capture_sample_() {
   sample.free_psram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
   sample.min_free_heap = heap_caps_get_minimum_free_size(MALLOC_CAP_8BIT);
 
-  this->samples_[this->count_++] = sample;
+  this->samples_[this->write_index_] = sample;
+  this->write_index_ = (this->write_index_ + 1) % SAMPLE_CAPACITY;
+  if (this->count_ < SAMPLE_CAPACITY) {
+    this->count_++;
+  }
   this->last_sample_ms_ = now_ms;
 }
 
@@ -328,13 +348,15 @@ void OpenQuattDebugRecorder::dump_config() {
   ESP_LOGCONFIG(TAG, "OpenQuatt debug recorder");
   ESP_LOGCONFIG(TAG, "  Clock: %s", this->clock_ == nullptr ? "<missing>" : "configured");
   ESP_LOGCONFIG(TAG, "  Samples: %u / %u", static_cast<unsigned>(this->count_), static_cast<unsigned>(SAMPLE_CAPACITY));
-  ESP_LOGCONFIG(TAG, "  Buffer: %s", this->available_() ? "PSRAM" : "unavailable");
+  ESP_LOGCONFIG(TAG, "  Buffer: %s (%u bytes)", this->available_() ? "PSRAM" : "unavailable",
+                static_cast<unsigned>(BUFFER_BYTES));
 }
 
 void OpenQuattDebugRecorder::write_status(httpd_req_t *req) const {
   ChunkedJsonWriter writer(req);
   const uint32_t elapsed = this->elapsed_s_();
   const uint32_t remaining = this->remaining_s_();
+  const uint32_t retained_duration = this->retained_duration_s_();
   const uint32_t estimated_size = 520U + static_cast<uint32_t>(this->count_) * 48U;
 
   if (!writer.write_literal(R"({"ok":true,"available":)") || !writer.write_bool(this->available_()) ||
@@ -344,8 +366,10 @@ void OpenQuattDebugRecorder::write_status(httpd_req_t *req) const {
       !writer.write_literal(R"(,"duration_s":)") ||
       !writer.write_uint32(this->duration_s_) || !writer.write_literal(R"(,"elapsed_s":)") ||
       !writer.write_uint32(elapsed) || !writer.write_literal(R"(,"remaining_s":)") || !writer.write_uint32(remaining) ||
+      !writer.write_literal(R"(,"retained_duration_s":)") || !writer.write_uint32(retained_duration) ||
       !writer.write_literal(R"(,"sample_count":)") || !writer.write_uint32(static_cast<uint32_t>(this->count_)) ||
       !writer.write_literal(R"(,"sample_capacity":)") || !writer.write_uint32(static_cast<uint32_t>(SAMPLE_CAPACITY)) ||
+      !writer.write_literal(R"(,"buffer_size":)") || !writer.write_uint32(static_cast<uint32_t>(BUFFER_BYTES)) ||
       !writer.write_literal(R"(,"estimated_size":)") || !writer.write_uint32(estimated_size) ||
       !writer.write_literal(R"(,"buffer":")")) {
     httpd_resp_send_chunk(req, nullptr, 0);
@@ -375,8 +399,11 @@ void OpenQuattDebugRecorder::write_recording(httpd_req_t *req) const {
       !writer.write_literal(R"(,"ended_at_ms":)") || !writer.write_uint64(ended_time_ms) ||
       !writer.write_literal(R"(,"active":)") || !writer.write_bool(this->active_) ||
       !writer.write_literal(R"(,"duration_s":)") || !writer.write_uint32(this->elapsed_s_()) ||
+      !writer.write_literal(R"(,"retained_duration_s":)") || !writer.write_uint32(this->retained_duration_s_()) ||
       !writer.write_literal(R"(,"interval_s":)") || !writer.write_uint32(SAMPLE_INTERVAL_MS / 1000U) ||
       !writer.write_literal(R"(,"sample_count":)") || !writer.write_uint32(static_cast<uint32_t>(this->count_)) ||
+      !writer.write_literal(R"(,"sample_capacity":)") || !writer.write_uint32(static_cast<uint32_t>(SAMPLE_CAPACITY)) ||
+      !writer.write_literal(R"(,"buffer_size":)") || !writer.write_uint32(static_cast<uint32_t>(BUFFER_BYTES)) ||
       !writer.write_literal(R"(,"column_count":4,"storage":")") ||
       !writer.write_literal(this->available_() ? "psram" : "unavailable") || !writer.write_literal(R"("})") ||
       !writer.write_literal(R"(,"columns":["uptimeMs","freeHeap","freePsram","minFreeHeap"])") ||

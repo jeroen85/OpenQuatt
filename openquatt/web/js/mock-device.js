@@ -2,6 +2,9 @@
   const DOMAINS = new Set(["select", "number", "sensor", "text", "text_sensor", "binary_sensor", "button", "time", "datetime", "update", "switch"]);
   const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
   const OPENQUATT_AUTH_RECOVERY_WINDOW_MS = 600000;
+  const DEBUG_RECORDING_BUFFER_BYTES = 1024 * 1024;
+  const DEBUG_RECORDING_SAMPLE_BYTES = 20;
+  const DEBUG_RECORDING_SAMPLE_CAPACITY = Math.floor(DEBUG_RECORDING_BUFFER_BYTES / DEBUG_RECORDING_SAMPLE_BYTES);
   const entities = new Map();
   let devControlsRoot = null;
   const state = {
@@ -99,6 +102,7 @@
       startedAt: 0,
       stoppedAt: 0,
       durationS: 15 * 60,
+      nextOffsetS: 0,
       samples: [],
     },
   };
@@ -2811,9 +2815,15 @@
       return;
     }
     const elapsedS = Math.min(getDebugRecordingElapsedS(recording), Number(recording.durationS || 0));
-    const nextCount = Math.floor(elapsedS / 10) + 1;
-    while (recording.samples.length < nextCount) {
-      recording.samples.push(makeDebugRecordingSample(recording.samples.length * 10));
+    if (!Number.isFinite(Number(recording.nextOffsetS))) {
+      recording.nextOffsetS = 0;
+    }
+    while (Number(recording.nextOffsetS || 0) <= elapsedS) {
+      recording.samples.push(makeDebugRecordingSample(Number(recording.nextOffsetS || 0)));
+      recording.nextOffsetS = Number(recording.nextOffsetS || 0) + 10;
+      if (recording.samples.length > DEBUG_RECORDING_SAMPLE_CAPACITY) {
+        recording.samples.shift();
+      }
     }
     if (recording.active && elapsedS >= Number(recording.durationS || 0)) {
       recording.active = false;
@@ -2826,6 +2836,9 @@
     const recording = state.debugRecording;
     const elapsedS = Math.min(getDebugRecordingElapsedS(recording), Number(recording.durationS || 0));
     const remainingS = recording.active ? Math.max(0, Number(recording.durationS || 0) - elapsedS) : 0;
+    const firstSample = recording.samples[0] || null;
+    const lastSample = recording.samples[recording.samples.length - 1] || null;
+    const retainedDurationS = firstSample && lastSample ? Math.max(0, lastSample.offset_s - firstSample.offset_s) : 0;
     return {
       ok: true,
       available: true,
@@ -2835,8 +2848,10 @@
       duration_s: Number(recording.durationS || 0),
       elapsed_s: elapsedS,
       remaining_s: remainingS,
+      retained_duration_s: retainedDurationS,
       sample_count: recording.samples.length,
-      sample_capacity: 361,
+      sample_capacity: DEBUG_RECORDING_SAMPLE_CAPACITY,
+      buffer_size: DEBUG_RECORDING_BUFFER_BYTES,
       estimated_size: 520 + recording.samples.length * 48,
       buffer: "psram",
     };
@@ -2849,6 +2864,7 @@
       startedAt: Date.now(),
       stoppedAt: 0,
       durationS,
+      nextOffsetS: 0,
       samples: [],
     };
     syncDebugRecordingSamples();
@@ -2903,8 +2919,13 @@
         ended_at_ms: endedAtMs,
         active: Boolean(recording.active),
         duration_s: Math.max(0, Math.floor((endedAtMs - startedAtMs) / 1000)),
+        retained_duration_s: initial && recording.samples.length
+          ? Math.max(0, recording.samples[recording.samples.length - 1].offset_s - initial.offset_s)
+          : 0,
         interval_s: 10,
         sample_count: recording.samples.length,
+        sample_capacity: DEBUG_RECORDING_SAMPLE_CAPACITY,
+        buffer_size: DEBUG_RECORDING_BUFFER_BYTES,
         column_count: 4,
         storage: "psram",
       },
