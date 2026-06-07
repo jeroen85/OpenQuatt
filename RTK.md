@@ -1,10 +1,10 @@
 # RTK For OpenQuatt
 
-Every shell command in this repository must be run through `rtk`.
+Use `rtk` for all output-producing or inspection shell commands in this repository.
 
 ## RTK Requirement
 
-- Before using `exec_command`, verify the command starts with `rtk`.
+- Before running output-heavy commands, prefer an `rtk`-wrapped form.
 - Raw shell commands are allowed only when `rtk` is unavailable or technically incompatible.
 - If a raw command is used, explain why before running it.
 - This applies to small git inspection commands too, including `git status`, `git diff`, `git rev-parse`, `git branch`, and `git worktree`.

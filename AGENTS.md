@@ -4,8 +4,8 @@
 
 ## RTK Requirement
 
-- Every shell command in this repository must be run through `rtk`.
-- Before using `exec_command`, verify the command starts with `rtk`.
+- Use `rtk` for all output-producing or inspection shell commands in this repository.
+- Before running output-heavy commands, prefer an `rtk`-wrapped form.
 - Raw shell commands are allowed only when `rtk` is unavailable or technically incompatible.
 - If a raw command is used, explain why before running it.
 - This applies to small git inspection commands too, including `git status`, `git diff`, `git rev-parse`, `git branch`, and `git worktree`.
@@ -64,3 +64,4 @@
 
 - Mention changed files, behavior change if any, checks run or skipped, and remaining risks.
 - Keep the final answer short and task-focused.
+- Do not include long reasoning, raw command output, or full diffs unless requested.
