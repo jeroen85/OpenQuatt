@@ -55,15 +55,22 @@
 
 - Keep progress updates and final responses compact.
 - Avoid verbose explanations unless the user asks for them.
-- Do not narrate every command or small step.
-- For routine edits, give only the final result unless a decision, error, or risk needs attention.
 - Use concise technical Dutch when explaining changes.
 - Do not compress, rename, translate, or simplify code, paths, registers, YAML keys, entity IDs, constants, units, or commands.
 - Preserve technical precision over brevity.
 - If a detail is safety-critical, control-related, or affects embedded behavior, explain it clearly even if that costs more tokens.
+
+## Progress Updates
+
+- Do not narrate routine steps, commands, staging, commits, or pushes.
+- Give progress updates only for meaningful decisions, blockers, risks, or completed milestones.
+- For routine edits, prefer no intermediate updates and provide only the final summary.
+- Keep progress updates to 1-3 short bullets.
 
 ## Final Response
 
 - Mention changed files, behavior change if any, checks run or skipped, and remaining risks.
 - Keep the final answer short and task-focused.
 - Do not include long reasoning, raw command output, or full diffs unless requested.
+- Do not list every command that was run.
+- Summarize only relevant commands/checks and their result.
