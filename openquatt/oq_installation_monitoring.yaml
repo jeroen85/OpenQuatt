@@ -1,10 +1,10 @@
 # ==============================================================================
 # OpenQuatt - Local Installation Monitoring
 # ==============================================================================
-# Curated diagnostics for users without Home Assistant. Compressor starts are
-# tracked from measured compressor frequency transitions and reset after reboot.
-# Short-term and structural cycling incidents remain available until the user
-# explicitly acknowledges them.
+# Curated local diagnostics. Compressor starts are tracked from measured
+# compressor frequency transitions and reset after reboot. Short-term and
+# structural cycling incidents remain available in the local web UI until the
+# user explicitly acknowledges them.
 # ==============================================================================
 
 globals:
@@ -72,6 +72,7 @@ number:
   - platform: template
     id: oq_compressor_starts_warning_limit_2h
     name: "Compressor starts 2h warning limit"
+    internal: true
     icon: mdi:alert-decagram-outline
     entity_category: config
     optimistic: true
@@ -87,6 +88,7 @@ number:
   - platform: template
     id: oq_compressor_starts_warning_limit_72h
     name: "Compressor starts 72h warning limit"
+    internal: true
     icon: mdi:calendar-clock-outline
     entity_category: config
     optimistic: true
@@ -103,6 +105,7 @@ sensor:
   - platform: template
     id: oq_hp1_compressor_starts_2h
     name: "HP1 - Compressor starts 2h"
+    internal: true
     icon: mdi:counter
     entity_category: diagnostic
     accuracy_decimals: 0
@@ -116,6 +119,7 @@ sensor:
   - platform: template
     id: oq_hp1_compressor_starts_6h
     name: "HP1 - Compressor starts 6h"
+    internal: true
     icon: mdi:counter
     entity_category: diagnostic
     accuracy_decimals: 0
@@ -129,6 +133,7 @@ sensor:
   - platform: template
     id: oq_hp1_compressor_starts_24h
     name: "HP1 - Compressor starts 24h"
+    internal: true
     icon: mdi:counter
     entity_category: diagnostic
     accuracy_decimals: 0
@@ -142,6 +147,7 @@ sensor:
   - platform: template
     id: oq_hp1_compressor_starts_72h
     name: "HP1 - Compressor starts 72h"
+    internal: true
     icon: mdi:counter
     entity_category: diagnostic
     accuracy_decimals: 0
@@ -155,6 +161,7 @@ sensor:
   - platform: template
     id: oq_hp1_compressor_last_start_age
     name: "HP1 - Compressor last start age"
+    internal: true
     icon: mdi:clock-outline
     entity_category: diagnostic
     unit_of_measurement: min
@@ -170,7 +177,7 @@ sensor:
     id: oq_hp2_compressor_starts_2h
     name: "HP2 - Compressor starts 2h"
     icon: mdi:counter
-    internal: ${monitoring_hp2_internal}
+    internal: true
     entity_category: diagnostic
     accuracy_decimals: 0
     update_interval: 60s
@@ -184,7 +191,7 @@ sensor:
     id: oq_hp2_compressor_starts_6h
     name: "HP2 - Compressor starts 6h"
     icon: mdi:counter
-    internal: ${monitoring_hp2_internal}
+    internal: true
     entity_category: diagnostic
     accuracy_decimals: 0
     update_interval: 60s
@@ -198,7 +205,7 @@ sensor:
     id: oq_hp2_compressor_starts_24h
     name: "HP2 - Compressor starts 24h"
     icon: mdi:counter
-    internal: ${monitoring_hp2_internal}
+    internal: true
     entity_category: diagnostic
     accuracy_decimals: 0
     update_interval: 60s
@@ -212,7 +219,7 @@ sensor:
     id: oq_hp2_compressor_starts_72h
     name: "HP2 - Compressor starts 72h"
     icon: mdi:counter
-    internal: ${monitoring_hp2_internal}
+    internal: true
     entity_category: diagnostic
     accuracy_decimals: 0
     update_interval: 60s
@@ -226,7 +233,7 @@ sensor:
     id: oq_hp2_compressor_last_start_age
     name: "HP2 - Compressor last start age"
     icon: mdi:clock-outline
-    internal: ${monitoring_hp2_internal}
+    internal: true
     entity_category: diagnostic
     unit_of_measurement: min
     accuracy_decimals: 0
@@ -348,6 +355,7 @@ binary_sensor:
   - platform: template
     id: oq_compressor_cycling_warning_2h
     name: "Compressor cycling warning 2h"
+    internal: true
     icon: mdi:alert-decagram-outline
     device_class: problem
     entity_category: diagnostic
@@ -359,6 +367,7 @@ binary_sensor:
   - platform: template
     id: oq_compressor_cycling_warning_72h
     name: "Compressor cycling warning 72h"
+    internal: true
     icon: mdi:calendar-alert-outline
     device_class: problem
     entity_category: diagnostic
@@ -371,7 +380,7 @@ binary_sensor:
     id: oq_compressor_alternating_warning
     name: "Alternating compressor starts warning"
     icon: mdi:swap-horizontal-bold
-    internal: ${monitoring_hp2_internal}
+    internal: true
     device_class: problem
     entity_category: diagnostic
     lambda: |-
