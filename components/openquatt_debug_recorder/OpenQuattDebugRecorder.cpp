@@ -570,12 +570,18 @@ bool OpenQuattDebugRecorder::configure(const std::string &entities, bool reset) 
       return false;
     }
 
-    if (field.source != nullptr) {
-      auto *entity = static_cast<EntityBase *>(field.source);
-      const StringRef unit = entity->get_unit_of_measurement_ref();
-      copy_text(field.unit, sizeof(field.unit), unit.c_str(), std::min(unit.size(), sizeof(field.unit) - 1));
-    } else {
+    if (field.source == nullptr) {
       this->missing_field_count_++;
+    } else if (field.type == FieldType::SENSOR) {
+#ifdef USE_SENSOR
+      const StringRef unit = static_cast<sensor::Sensor *>(field.source)->get_unit_of_measurement_ref();
+      copy_text(field.unit, sizeof(field.unit), unit.c_str(), std::min(unit.size(), sizeof(field.unit) - 1));
+#endif
+    } else if (field.type == FieldType::NUMBER) {
+#ifdef USE_NUMBER
+      const StringRef unit = static_cast<number::Number *>(field.source)->get_unit_of_measurement_ref();
+      copy_text(field.unit, sizeof(field.unit), unit.c_str(), std::min(unit.size(), sizeof(field.unit) - 1));
+#endif
     }
     this->fields_[this->field_count_++] = field;
     if (end == std::string::npos) break;
