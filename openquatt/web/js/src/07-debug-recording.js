@@ -100,6 +100,49 @@ function getDebugRecordingProgressPercent() {
   return Math.max(0, Math.min(100, (elapsedMs / totalMs) * 100));
 }
 
+function renderDebugRecordingHeaderStatus() {
+  const status = state.debugRecordingDeviceStatus;
+  const sampleCount = Math.max(0, Number(status?.sample_count || 0));
+  if (!status || status.available === false || (!status.active && sampleCount === 0)) {
+    return "";
+  }
+
+  const active = Boolean(status.active);
+  const remaining = formatDebugRecordingDuration(Math.max(0, Number(status.remaining_s || 0)) * 1000);
+  const label = active ? `Debug loopt · ${remaining}` : "Debug klaar";
+  const title = active ? `Debugopname loopt, nog ${remaining}` : "Debugopname klaar om te downloaden";
+  return `
+    <button
+      class="oq-debug-recording-header-status${active ? " oq-debug-recording-header-status--active" : " oq-debug-recording-header-status--ready"}"
+      type="button"
+      data-oq-action="open-debug-recording-modal"
+      aria-label="${escapeHtml(title)}"
+      title="${escapeHtml(title)}"
+    >
+      <span class="oq-debug-recording-header-status-dot" aria-hidden="true"></span>
+      <span>${escapeHtml(label)}</span>
+    </button>
+  `;
+}
+
+function patchDebugRecordingSettingsStatus() {
+  if (!state.root) {
+    return;
+  }
+  const row = state.root.querySelector('[data-oq-diagnostics-row="debugRecording"]');
+  if (!row) {
+    return;
+  }
+  const value = row.querySelector(".oq-settings-system-row-value");
+  const note = row.querySelector(".oq-settings-system-row-note");
+  if (value) {
+    value.textContent = getDebugRecordingStatusLabel();
+  }
+  if (note) {
+    note.textContent = getDebugRecordingStatusCopy();
+  }
+}
+
 function renderDebugRecordingSvgIcon(name) {
   const icons = {
     activity: '<svg viewBox="0 0 24 24" focusable="false"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>',
@@ -316,12 +359,12 @@ async function fetchDebugRecordingDeviceStatus() {
 
 function scheduleDebugRecordingDeviceStatusPoll(delayMs = 2000) {
   clearDebugRecordingDevicePollTimer();
-  if (state.systemModal !== "debug-recording" || !state.debugRecordingActive) {
+  if (!state.debugRecordingActive) {
     return;
   }
   state.debugRecordingDevicePollTimer = window.setTimeout(() => {
     void refreshDebugRecordingDeviceStatus({ silent: true });
-  }, Math.max(0, Number(delayMs) || 0));
+  }, Math.max(0, Number(state.systemModal === "debug-recording" ? delayMs : 5000) || 0));
 }
 
 async function refreshDebugRecordingDeviceStatus(options = {}) {
@@ -343,7 +386,12 @@ async function refreshDebugRecordingDeviceStatus(options = {}) {
     if (!options.silent) {
       state.debugRecordingBusy = false;
     }
-    render();
+    if (!options.silent || state.systemModal === "debug-recording") {
+      render();
+    } else {
+      patchDebugRecordingHeaderStatus();
+      patchDebugRecordingSettingsStatus();
+    }
   }
 }
 

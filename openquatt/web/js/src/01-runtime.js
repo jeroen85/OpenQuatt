@@ -619,6 +619,7 @@
     syncNativeVisibility();
     if (!state.nativeOpen) {
       void syncEntities();
+      void refreshDebugRecordingDeviceStatus({ silent: true });
     }
   }
 
