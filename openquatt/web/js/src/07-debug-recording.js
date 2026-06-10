@@ -390,6 +390,34 @@ async function captureDebugRecordingSample() {
   }
 }
 
+async function configureDebugRecordingDevice() {
+  const chunks = buildBulkEntityChunks(DEBUG_RECORDING_KEYS, "state");
+  let status = null;
+  for (let index = 0; index < chunks.length; index += 1) {
+    const response = await window.fetch(
+      getDebugRecordingEndpoint(`configure?reset=${index === 0 ? "1" : "0"}`),
+      {
+        method: "POST",
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-store",
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: chunks[index].body,
+      }
+    );
+    if (!response.ok) {
+      throw new Error(`configuratie HTTP ${response.status}`);
+    }
+    status = await response.json();
+  }
+
+  if (Number(status?.entity_field_count || 0) !== DEBUG_RECORDING_KEYS.length) {
+    throw new Error(`onvolledige debugset (${Number(status?.entity_field_count || 0)}/${DEBUG_RECORDING_KEYS.length})`);
+  }
+  return status;
+}
+
 async function startDebugRecording(durationMinutes) {
   const minutes = Math.max(1, Number(durationMinutes) || 15);
   clearDebugRecordingTimer();
@@ -406,6 +434,7 @@ async function startDebugRecording(durationMinutes) {
   state.debugRecordingSequence = 0;
   render();
   try {
+    await configureDebugRecordingDevice();
     const response = await window.fetch(getDebugRecordingEndpoint(`start?duration_s=${encodeURIComponent(minutes * 60)}`), {
       method: "POST",
       cache: "no-store",
