@@ -1,6 +1,7 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import time
+from esphome.components.esp32 import include_builtin_idf_component
 from esphome.const import CONF_ID
 
 AUTO_LOAD = ["time", "web_server_base"]
@@ -22,6 +23,8 @@ CONFIG_SCHEMA = cv.Schema(
 
 
 async def to_code(config):
+    include_builtin_idf_component("esp_http_server")
+
     cg.add_global(openquatt_debug_recorder_ns.using)
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)

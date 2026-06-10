@@ -2,6 +2,9 @@
   const DOMAINS = new Set(["select", "number", "sensor", "text", "text_sensor", "binary_sensor", "button", "time", "datetime", "update", "switch"]);
   const OPENQUATT_RESUME_CLEAR_VALUE = "2000-01-01 00:00:00";
   const OPENQUATT_AUTH_RECOVERY_WINDOW_MS = 600000;
+  const DEBUG_RECORDING_BUFFER_BYTES = 1024 * 1024;
+  const DEBUG_RECORDING_SAMPLE_BYTES = 516;
+  const DEBUG_RECORDING_SAMPLE_CAPACITY = Math.floor(DEBUG_RECORDING_BUFFER_BYTES / DEBUG_RECORDING_SAMPLE_BYTES);
   const entities = new Map();
   let devControlsRoot = null;
   const state = {
@@ -99,6 +102,8 @@
       startedAt: 0,
       stoppedAt: 0,
       durationS: 15 * 60,
+      nextOffsetS: 0,
+      fields: [],
       samples: [],
     },
   };
@@ -2796,12 +2801,29 @@
   function makeDebugRecordingSample(offsetS) {
     const uptimeMs = Math.max(0, Math.round(Date.now() - state.bootedAt));
     const wobble = Math.round(Math.sin(offsetS / 17) * 4200);
+    const systemValues = [
+      uptimeMs,
+      192000 - Math.round(offsetS * 7) + wobble,
+      5148000 - Math.round(offsetS * 13),
+      184000 - Math.round(offsetS * 5),
+    ];
     return {
       offset_s: offsetS,
-      uptimeMs,
-      freeHeap: 192000 - Math.round(offsetS * 7) + wobble,
-      freePsram: 5148000 - Math.round(offsetS * 13),
-      minFreeHeap: 184000 - Math.round(offsetS * 5),
+      values: state.debugRecording.fields.map((field, index) => {
+        if (index < systemValues.length) {
+          return systemValues[index];
+        }
+        const entity = getEntity(field.domain, field.name);
+        const value = entity?.value ?? entity?.state ?? null;
+        if (field.domain === "binary_sensor" || field.domain === "switch") {
+          return value === true || value === "ON" || value === "on";
+        }
+        if (field.domain === "sensor" || field.domain === "number") {
+          const numeric = Number(value);
+          return Number.isFinite(numeric) ? numeric : null;
+        }
+        return value == null ? null : String(value);
+      }),
     };
   }
 
@@ -2811,9 +2833,15 @@
       return;
     }
     const elapsedS = Math.min(getDebugRecordingElapsedS(recording), Number(recording.durationS || 0));
-    const nextCount = Math.floor(elapsedS / 10) + 1;
-    while (recording.samples.length < nextCount) {
-      recording.samples.push(makeDebugRecordingSample(recording.samples.length * 10));
+    if (!Number.isFinite(Number(recording.nextOffsetS))) {
+      recording.nextOffsetS = 0;
+    }
+    while (Number(recording.nextOffsetS || 0) <= elapsedS) {
+      recording.samples.push(makeDebugRecordingSample(Number(recording.nextOffsetS || 0)));
+      recording.nextOffsetS = Number(recording.nextOffsetS || 0) + 10;
+      if (recording.samples.length > DEBUG_RECORDING_SAMPLE_CAPACITY) {
+        recording.samples.shift();
+      }
     }
     if (recording.active && elapsedS >= Number(recording.durationS || 0)) {
       recording.active = false;
@@ -2826,20 +2854,48 @@
     const recording = state.debugRecording;
     const elapsedS = Math.min(getDebugRecordingElapsedS(recording), Number(recording.durationS || 0));
     const remainingS = recording.active ? Math.max(0, Number(recording.durationS || 0) - elapsedS) : 0;
+    const firstSample = recording.samples[0] || null;
+    const lastSample = recording.samples[recording.samples.length - 1] || null;
+    const retainedDurationS = firstSample && lastSample ? Math.max(0, lastSample.offset_s - firstSample.offset_s) : 0;
     return {
       ok: true,
       available: true,
       active: Boolean(recording.active),
+      recording_id: Number(recording.startedAt || 0),
       storage: "psram",
       interval_s: 10,
       duration_s: Number(recording.durationS || 0),
       elapsed_s: elapsedS,
       remaining_s: remainingS,
+      retained_duration_s: retainedDurationS,
       sample_count: recording.samples.length,
-      sample_capacity: 361,
-      estimated_size: 520 + recording.samples.length * 48,
+      sample_capacity: DEBUG_RECORDING_SAMPLE_CAPACITY,
+      field_count: recording.fields.length,
+      entity_field_count: Math.max(0, recording.fields.length - 4),
+      missing_field_count: 0,
+      buffer_size: DEBUG_RECORDING_BUFFER_BYTES,
+      estimated_size: 2048 + recording.samples.length * (16 + recording.fields.length * 3),
       buffer: "psram",
     };
+  }
+
+  function handleDebugRecordingConfigure(url, init) {
+    const params = new URLSearchParams(String(init?.body || ""));
+    if (url.searchParams.get("reset") === "1") {
+      state.debugRecording.fields = [
+        { key: "uptimeMs", domain: "system", name: "uptimeMs", unit: "ms" },
+        { key: "freeHeap", domain: "system", name: "freeHeap", unit: "B" },
+        { key: "freePsram", domain: "system", name: "freePsram", unit: "B" },
+        { key: "minFreeHeap", domain: "system", name: "minFreeHeap", unit: "B" },
+      ];
+    }
+    String(params.get("entities") || "").split("\n").forEach((line) => {
+      const [key, domain, name] = line.split("\t");
+      if (key && domain && name) {
+        state.debugRecording.fields.push({ key, domain, name, unit: getEntity(domain, name)?.uom || "" });
+      }
+    });
+    return mockResponse(200, getDebugRecordingStatusPayload());
   }
 
   function handleDebugRecordingStart(url) {
@@ -2849,6 +2905,8 @@
       startedAt: Date.now(),
       stoppedAt: 0,
       durationS,
+      nextOffsetS: 0,
+      fields: [...state.debugRecording.fields],
       samples: [],
     };
     syncDebugRecordingSamples();
@@ -2874,18 +2932,11 @@
     const samples = recording.samples.map((sample, index) => {
       const previous = index > 0 ? recording.samples[index - 1] : initial;
       const deltas = [];
-      if (previous && sample.uptimeMs !== previous.uptimeMs) {
-        deltas.push([0, sample.uptimeMs]);
-      }
-      if (previous && sample.freeHeap !== previous.freeHeap) {
-        deltas.push([1, sample.freeHeap]);
-      }
-      if (previous && sample.freePsram !== previous.freePsram) {
-        deltas.push([2, sample.freePsram]);
-      }
-      if (previous && sample.minFreeHeap !== previous.minFreeHeap) {
-        deltas.push([3, sample.minFreeHeap]);
-      }
+      sample.values.forEach((value, valueIndex) => {
+        if (previous && !Object.is(value, previous.values[valueIndex])) {
+          deltas.push([valueIndex, value]);
+        }
+      });
       return [sample.offset_s, deltas];
     });
     return {
@@ -2900,19 +2951,23 @@
       },
       recording: {
         started_at_ms: startedAtMs,
+        recording_id: Number(recording.startedAt || 0),
         ended_at_ms: endedAtMs,
         active: Boolean(recording.active),
         duration_s: Math.max(0, Math.floor((endedAtMs - startedAtMs) / 1000)),
+        retained_duration_s: initial && recording.samples.length
+          ? Math.max(0, recording.samples[recording.samples.length - 1].offset_s - initial.offset_s)
+          : 0,
         interval_s: 10,
         sample_count: recording.samples.length,
-        column_count: 4,
+        sample_capacity: DEBUG_RECORDING_SAMPLE_CAPACITY,
+        buffer_size: DEBUG_RECORDING_BUFFER_BYTES,
+        column_count: recording.fields.length,
         storage: "psram",
       },
-      columns: ["uptimeMs", "freeHeap", "freePsram", "minFreeHeap"],
-      units: [[0, "ms"], [1, "B"], [2, "B"], [3, "B"]],
-      initial: initial
-        ? [[0, initial.uptimeMs], [1, initial.freeHeap], [2, initial.freePsram], [3, initial.minFreeHeap]]
-        : [],
+      columns: recording.fields.map((field) => field.key),
+      units: recording.fields.flatMap((field, index) => field.unit ? [[index, field.unit]] : []),
+      initial: initial ? initial.values.flatMap((value, index) => value == null ? [] : [[index, value]]) : [],
       samples,
       events: [],
     };
@@ -2978,6 +3033,9 @@
       }
       if (url.pathname.endsWith("/openquatt/debug-recording/status") && method === "GET") {
         return mockResponse(200, getDebugRecordingStatusPayload());
+      }
+      if (url.pathname.endsWith("/openquatt/debug-recording/configure") && method === "POST") {
+        return handleDebugRecordingConfigure(url, init || {});
       }
       if (url.pathname.endsWith("/openquatt/debug-recording/start") && method === "POST") {
         return handleDebugRecordingStart(url);

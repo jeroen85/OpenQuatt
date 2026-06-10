@@ -3303,6 +3303,7 @@
       state.mqttError = "";
       clearSettingsBackupDraft();
       render();
+      scheduleDebugRecordingDeviceStatusPoll();
       return;
     }
 

@@ -1607,10 +1607,12 @@
   function renderHeaderStatus() {
     const surface = state.nativeOpen ? "native" : "app";
     const hasUpdateAttention = hasFirmwareUpdateAttention();
+    const debugRecordingStatus = renderDebugRecordingHeaderStatus();
     if (!state.interfacePanelOpen) {
       return `
         <aside class="oq-helper-hub oq-helper-hub--collapsed" aria-label="Weergave en systeem">
           <div class="oq-helper-hub-head-actions">
+            ${debugRecordingStatus}
             <button
               class="oq-helper-hub-toggle${hasUpdateAttention ? " oq-helper-hub-toggle--attention" : ""}"
               type="button"
@@ -1629,6 +1631,7 @@
         <div class="oq-helper-hub-head">
           <h2 class="oq-helper-hub-title">Weergave en systeem</h2>
           <div class="oq-helper-hub-head-actions">
+            ${debugRecordingStatus}
             <button
               class="oq-helper-hub-toggle oq-helper-hub-toggle--close"
               type="button"
@@ -1665,6 +1668,27 @@
         </div>
       </aside>
     `;
+  }
+
+  function patchDebugRecordingHeaderStatus() {
+    if (!state.root) {
+      return;
+    }
+    const actions = state.root.querySelector(".oq-helper-hub .oq-helper-hub-head-actions");
+    if (!actions) {
+      return;
+    }
+    const current = actions.querySelector(".oq-debug-recording-header-status");
+    const markup = renderDebugRecordingHeaderStatus();
+    if (!markup) {
+      current?.remove();
+      return;
+    }
+    if (current) {
+      current.outerHTML = markup;
+      return;
+    }
+    actions.insertAdjacentHTML("afterbegin", markup);
   }
 
   function renderNativeSurfaceShell() {

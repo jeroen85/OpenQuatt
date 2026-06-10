@@ -83,6 +83,7 @@
     debugRecordingEvents: [],
     debugRecordingSelectedMinutes: 15,
     debugRecordingDeviceStatus: null,
+    debugRecordingAcknowledgedId: getStoredDebugRecordingAcknowledgedId(),
     debugRecordingDeviceBundle: null,
     debugRecordingDevicePollTimer: null,
     complete: false,
@@ -619,6 +620,7 @@
     syncNativeVisibility();
     if (!state.nativeOpen) {
       void syncEntities();
+      void refreshDebugRecordingDeviceStatus({ silent: true });
     }
   }
 
