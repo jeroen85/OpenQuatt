@@ -794,20 +794,13 @@
     };
   }
 
-  function getOverviewTempsRenderSignature(model = getOverviewTempsModel()) {
-    return getRenderSignature({
-      ...model,
-      values: model.rows.map((row) => row.value || getEntityStateText(row.key)),
-    });
-  }
-
   function renderOverviewTempsPanel() {
     const model = getOverviewTempsModel();
     return renderOverviewShell({
       className: "oq-overview-temps",
       title: model.title,
       copy: model.copy,
-      signature: getOverviewTempsRenderSignature(model),
+      signature: getRenderSignature(model),
       body: `
         <div class="oq-overview-temps-list">
           ${model.rows.map((row) => renderTempRow(row.label, row.key, row.value || "")).join("")}
@@ -968,7 +961,6 @@
     const windowText = formatOverviewTrendWindowText(windowHours);
     const samples = getOverviewTrendSamples();
     const isMockData = isDevPreviewEnvironment() && samples.length === 0;
-    const coolingActive = isCoolingOverviewActive();
     return [
       {
         id: "temperatures",
@@ -979,8 +971,8 @@
         mock: isMockData,
         windowHours,
         series: [
-          { id: "outside", sampleKey: "outside", currentKey: "outsideTempSelected", label: "Buiten", tone: "orange", decimals: 1, unit: " °C" },
-          { id: "supply", sampleKey: "supply", currentKey: "supplyTemp", label: "Aanvoer", tone: "blue", decimals: 1, unit: " °C" },
+          { id: "outside", sampleKey: "outside", label: "Buiten", tone: "orange", decimals: 1, unit: " °C" },
+          { id: "supply", sampleKey: "supply", label: "Aanvoer", tone: "blue", decimals: 1, unit: " °C" },
         ],
       },
       {
@@ -992,8 +984,8 @@
         mock: isMockData,
         windowHours,
         series: [
-          { id: "input", sampleKey: "input", currentKey: "totalPower", label: "Elektrisch vermogen", tone: "green", decimals: 0, unit: " W" },
-          { id: "output", sampleKey: "output", currentKey: coolingActive ? "totalCoolingPower" : "totalHeat", label: coolingActive ? "Koelvermogen" : "Verwarmingsvermogen", tone: "sky", decimals: 0, unit: " W" },
+          { id: "input", sampleKey: "input", label: "Elektrisch vermogen", tone: "green", decimals: 0, unit: " W" },
+          { id: "output", sampleKey: "output", label: "Verwarmingsvermogen", tone: "sky", decimals: 0, unit: " W" },
         ],
       },
       {
@@ -1011,7 +1003,6 @@
             tone: "slate",
             decimals: 1,
             unit: "",
-            currentKey: coolingActive ? "totalEer" : "totalCop",
             derive: (sample) => {
               const input = Number(sample?.input);
               const output = Number(sample?.output);
@@ -1032,8 +1023,8 @@
         mock: isMockData,
         windowHours,
         series: [
-          { id: "roomTemp", sampleKey: "room", currentKey: "roomTemp", label: "Kamertemperatuur", tone: "blue", decimals: 1, unit: " °C" },
-          { id: "roomSetpoint", sampleKey: "roomSetpoint", currentKey: "roomSetpoint", label: "Kamer setpoint", tone: "orange", decimals: 1, unit: " °C" },
+          { id: "roomTemp", sampleKey: "room", label: "Kamertemperatuur", tone: "blue", decimals: 1, unit: " °C" },
+          { id: "roomSetpoint", sampleKey: "roomSetpoint", label: "Kamer setpoint", tone: "orange", decimals: 1, unit: " °C" },
         ],
       },
       {
@@ -1045,7 +1036,7 @@
         mock: isMockData,
         windowHours,
         series: [
-          { id: "flow", sampleKey: "flow", currentKey: "flowSelected", label: "Flow", tone: "sky", decimals: 0, unit: " L/h", axisMin: 0, axisTickStep: 250 },
+          { id: "flow", sampleKey: "flow", label: "Flow", tone: "sky", decimals: 0, unit: " L/h", axisMin: 0, axisTickStep: 250 },
         ],
       },
     ];
@@ -1314,7 +1305,6 @@
       windowHours: getOverviewTrendWindowHours(),
       trendSignature: state.trendHistorySignature || "",
       trendNowMs: Number.isFinite(state.trendHistoryNowMs) ? state.trendHistoryNowMs : 0,
-      coolingActive: isCoolingOverviewActive(),
     });
   }
 
@@ -1340,48 +1330,13 @@
   }
 
   function renderOverviewTrendLatestPill(series, sample) {
-    const value = getOverviewTrendSeriesCurrentValue(series, sample);
+    const value = getOverviewTrendSeriesValue(series, sample);
     return `
-      <div class="oq-overview-trend-pill oq-overview-trend-pill--${escapeHtml(series.tone)}" data-oq-trend-current="${escapeHtml(series.id)}">
+      <div class="oq-overview-trend-pill oq-overview-trend-pill--${escapeHtml(series.tone)}">
         <span>${escapeHtml(series.label)}</span>
         <strong>${escapeHtml(formatNumericState(value, series.decimals, series.unit))}</strong>
       </div>
     `;
-  }
-
-  function getOverviewTrendSeriesCurrentValue(series, fallbackSample) {
-    if (series?.currentKey) {
-      const current = getEntityNumericValue(series.currentKey);
-      if (Number.isFinite(current)) {
-        return current;
-      }
-    }
-    return getOverviewTrendSeriesValue(series, fallbackSample);
-  }
-
-  function patchOverviewTrendCurrentValues(root) {
-    if (!root) {
-      return;
-    }
-    getOverviewTrendCardsModel().forEach((card) => {
-      const cardElement = root.querySelector(`[data-oq-trend-card="${card.id}"]`);
-      const latest = card.samples[card.samples.length - 1] || null;
-      if (!cardElement) {
-        return;
-      }
-      card.series.forEach((series) => {
-        const pill = cardElement.querySelector(`[data-oq-trend-current="${series.id}"]`);
-        const valueElement = pill?.querySelector("strong");
-        const nextValue = formatNumericState(
-          getOverviewTrendSeriesCurrentValue(series, latest),
-          series.decimals,
-          series.unit,
-        );
-        if (valueElement && valueElement.textContent !== nextValue) {
-          valueElement.textContent = nextValue;
-        }
-      });
-    });
   }
 
   function renderOverviewTrendChart(samples, series, mockData = false, windowHours = getOverviewTrendWindowHours()) {
@@ -1536,7 +1491,7 @@
   function renderTrendsInfoToggle() {
     const infoId = "overview-trends-history";
     const open = state.settingsInfoOpen === infoId;
-    const copy = "De waarden boven de grafieken zijn live. De grafieken bewaren elke 5 minuten een meetpunt, standaard 7 dagen in het werkgeheugen. Met flashopslag blijft historie ook na herstart of OTA beschikbaar, tot 30 dagen terug.";
+    const copy = "Standaard bewaren we trenddata 7 dagen in het werkgeheugen. Met flashopslag blijft historie ook na herstart of OTA beschikbaar, tot 30 dagen terug.";
     return `
       <div class="oq-settings-info oq-overview-trends-info${open ? " is-open" : ""}" data-oq-settings-info="${escapeHtml(infoId)}">
         <button
@@ -1605,7 +1560,6 @@
       getOverviewTrendRenderSignature(),
       renderOverviewTrendsPanel(),
     );
-    patchOverviewTrendCurrentValues(board);
     syncOverviewTrendInteractions(board);
     return true;
   }

@@ -1409,10 +1409,9 @@
     }
 
     if (temps) {
-      const tempsModel = getOverviewTempsModel();
       replaceOuterHtmlIfSignatureChanged(
         temps,
-        getOverviewTempsRenderSignature(tempsModel),
+        getRenderSignature(getOverviewTempsModel()),
         renderOverviewTempsPanel(),
       );
     }
@@ -1423,7 +1422,6 @@
         getOverviewTrendRenderSignature(),
         renderOverviewTrendsPanel(),
       );
-      patchOverviewTrendCurrentValues(board);
     }
 
     syncOverviewTrendInteractions(board);
