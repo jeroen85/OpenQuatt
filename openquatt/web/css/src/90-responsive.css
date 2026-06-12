@@ -250,7 +250,7 @@ esp-app.oq-native-app.oq-native-app--collapsed {
   }
 
   .oq-helper-fields--review {
-    grid-template-columns: 1fr;
+    columns: 1;
   }
 
   .oq-overview-top,

@@ -2444,7 +2444,7 @@ Kenmerken: Flowmeter in de buitenunit ge\xEFntegreerd. Onder CV-ketel enkel een 
         ${t.controlNotice?`<p class="oq-helper-notice">${i(t.controlNotice)}</p>`:""}
         ${t.controlError?`<p class="oq-helper-error">${i(t.controlError)}</p>`:""}
       </section>
-    `}function yg(){const e=Ae(W("hpGeneration")),o=re()?"Stooklijn":"Power House",n=w=>Ae(W(w)),r=[["Quatt Hybrid-versie",n("hpGeneration")]],a=re()?[["Regelprofiel",n("curveControlProfile")],["Aanvoer bij -20\xB0C",j("curveM20")],["Aanvoer bij -10\xB0C",j("curveM10")],["Aanvoer bij 0\xB0C",j("curve0")],["Aanvoer bij 5\xB0C",j("curve5")],["Aanvoer bij 10\xB0C",j("curve10")],["Aanvoer bij 15\xB0C",j("curve15")],["Fallback-aanvoer",j("curveFallbackSupply")]]:[["Profiel",n("phResponseProfile")],["Rated maximum house power",j("housePower")],["Maximum heating outdoor temperature",j("houseOutdoorMax")],["Temperatuurreactie",j("phKp")],["Comfort onder setpoint",j("phComfortBelow")],["Comfort boven setpoint",j("phComfortAbove")]],s=String(A("flowControlMode")||""),l=Vr(),d=[["Flowmeting",l.sourceLabel],["Hardware",l.hardwareLabel],["Status",l.status],["Actuele flow",l.flowAvailable?`${Math.round(l.flowValue)} L/h`:"Nog geen actuele waarde"]],u=jr(),c=[["Thermostaatgegevens",u.sourceLabel],["Hardware",u.hardwareLabel],["Status",u.status],["Kamertemperatuur",Number.isFinite(u.roomTempValue)?`${u.roomTempValue.toFixed(1)} \xB0C`:"Nog geen actuele waarde"],["Kamer-setpoint",Number.isFinite(u.roomSetpointValue)?`${u.roomSetpointValue.toFixed(1)} \xB0C`:"Nog geen actuele waarde"]],m=[["Flowregeling",s==="Manual PWM"?"Vaste pompstand":"Gewenste flow"],s==="Manual PWM"?["Vaste pompstand",j("manualIpwm")]:["Gewenste flow",j("flowSetpoint")]],f=y("boilerCvAssistEnabled")?[["CV-ketel/boiler aanwezig",M("boilerCvAssistEnabled")?"Ja":"Nee"],...M("boilerCvAssistEnabled")?[["Boiler rated heat power",j("boilerRatedHeatPower")]]:[]]:[],g=[["Maximale watertemperatuur",j("maxWater")]],b=[["Start stille uren",Cn(A("silentStartTime"))||"\u2014"],["Einde stille uren",Cn(A("silentEndTime"))||"\u2014"],["Maximaal niveau tijdens stille uren",j("silentMax")],["Maximaal niveau overdag",j("dayMax")]],k=w=>`
+    `}function yg(){const e=Ae(W("hpGeneration")),o=re()?"Stooklijn":"Power House",n=w=>Ae(W(w)),r=[],a=re()?[["Regelprofiel",n("curveControlProfile")],["Aanvoer bij -20\xB0C",j("curveM20")],["Aanvoer bij -10\xB0C",j("curveM10")],["Aanvoer bij 0\xB0C",j("curve0")],["Aanvoer bij 5\xB0C",j("curve5")],["Aanvoer bij 10\xB0C",j("curve10")],["Aanvoer bij 15\xB0C",j("curve15")],["Fallback-aanvoer",j("curveFallbackSupply")]]:[["Profiel",n("phResponseProfile")],["Rated maximum house power",j("housePower")],["Maximum heating outdoor temperature",j("houseOutdoorMax")],["Temperatuurreactie",j("phKp")],["Comfort onder setpoint",j("phComfortBelow")],["Comfort boven setpoint",j("phComfortAbove")]],s=String(A("flowControlMode")||""),l=Vr(),d=[["Status",l.status],["Actuele flow",l.flowAvailable?`${Math.round(l.flowValue)} L/h`:"Nog geen actuele waarde"]],u=jr(),c=[["Status",u.status],["Kamertemperatuur",Number.isFinite(u.roomTempValue)?`${u.roomTempValue.toFixed(1)} \xB0C`:"Nog geen actuele waarde"],["Kamer-setpoint",Number.isFinite(u.roomSetpointValue)?`${u.roomSetpointValue.toFixed(1)} \xB0C`:"Nog geen actuele waarde"]],m=[["Flowregeling",s==="Manual PWM"?"Vaste pompstand":"Gewenste flow"],s==="Manual PWM"?["Vaste pompstand",j("manualIpwm")]:["Gewenste flow",j("flowSetpoint")]],f=y("boilerCvAssistEnabled")?[["CV-ketel/boiler aanwezig",M("boilerCvAssistEnabled")?"Ja":"Nee"],...M("boilerCvAssistEnabled")?[["Boiler rated heat power",j("boilerRatedHeatPower")]]:[]]:[],g=[["Maximale watertemperatuur",j("maxWater")]],b=[["Start stille uren",Cn(A("silentStartTime"))||"\u2014"],["Einde stille uren",Cn(A("silentEndTime"))||"\u2014"],["Maximaal niveau tijdens stille uren",j("silentMax")],["Maximaal niveau overdag",j("dayMax")]],k=w=>`
       <div class="oq-helper-review-list">
         ${w.filter(v=>v&&v[1]).map(([v,q])=>`
               <div class="oq-helper-review-row">
@@ -2461,18 +2461,14 @@ Kenmerken: Flowmeter in de buitenunit ge\xEFntegreerd. Onder CV-ketel enkel een 
       </article>
     `;return`
       <div class="oq-helper-fields oq-helper-fields--review">
-        <div class="oq-helper-review-column">
-          ${h("Quatt Hybrid-versie",r,e)}
-          ${h("Flowmeting",d,l.sourceLabel)}
-          ${h("Thermostaatgegevens",c,u.sourceLabel)}
-          ${h("Verwarmingsstrategie",a,o)}
-          ${h("Watertemperatuur",g)}
-        </div>
-        <div class="oq-helper-review-column">
-          ${h("Flowregeling",m)}
-          ${f.length?h("CV-ketel / boiler",f):""}
-          ${h("Stille uren",b)}
-        </div>
+        ${h("Quatt Hybrid-versie",r,e)}
+        ${h("Flowmeting",d,l.sourceLabel)}
+        ${h("Verwarmingsstrategie",a,o)}
+        ${h("Watertemperatuur",g)}
+        ${h("Thermostaatgegevens",c,u.sourceLabel)}
+        ${h("Flowregeling",m)}
+        ${f.length?h("CV-ketel / boiler",f):""}
+        ${h("Stille uren",b)}
       </div>
     `}function Sg({label:e,value:o,tone:n,note:r,status:a=!1}){return`
       <article class="oq-overview-stat oq-overview-stat--${i(n)}${a?" oq-overview-stat--status":""}">

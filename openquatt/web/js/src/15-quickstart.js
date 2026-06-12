@@ -731,9 +731,7 @@
     const generationTitle = formatSettingsOptionLabel(getEntityStateText("hpGeneration"));
     const strategyTitle = isCurveMode() ? "Stooklijn" : "Power House";
     const formatReviewOption = (key) => formatSettingsOptionLabel(getEntityStateText(key));
-    const generationLines = [
-      ["Quatt Hybrid-versie", formatReviewOption("hpGeneration")],
-    ];
+    const generationLines = [];
     const strategyLines = isCurveMode()
       ? [
           ["Regelprofiel", formatReviewOption("curveControlProfile")],
@@ -757,15 +755,11 @@
     const flowMode = String(getEntityValue("flowControlMode") || "");
     const flowSourceModel = getQuickStartFlowSourceModel();
     const flowSourceLines = [
-      ["Flowmeting", flowSourceModel.sourceLabel],
-      ["Hardware", flowSourceModel.hardwareLabel],
       ["Status", flowSourceModel.status],
       ["Actuele flow", flowSourceModel.flowAvailable ? `${Math.round(flowSourceModel.flowValue)} L/h` : "Nog geen actuele waarde"],
     ];
     const thermostatSourceModel = getQuickStartThermostatSourceModel();
     const thermostatSourceLines = [
-      ["Thermostaatgegevens", thermostatSourceModel.sourceLabel],
-      ["Hardware", thermostatSourceModel.hardwareLabel],
       ["Status", thermostatSourceModel.status],
       ["Kamertemperatuur", Number.isFinite(thermostatSourceModel.roomTempValue) ? `${thermostatSourceModel.roomTempValue.toFixed(1)} °C` : "Nog geen actuele waarde"],
       ["Kamer-setpoint", Number.isFinite(thermostatSourceModel.roomSetpointValue) ? `${thermostatSourceModel.roomSetpointValue.toFixed(1)} °C` : "Nog geen actuele waarde"],
@@ -822,18 +816,14 @@
 
     return `
       <div class="oq-helper-fields oq-helper-fields--review">
-        <div class="oq-helper-review-column">
-          ${renderReviewCard("Quatt Hybrid-versie", generationLines, generationTitle)}
-          ${renderReviewCard("Flowmeting", flowSourceLines, flowSourceModel.sourceLabel)}
-          ${renderReviewCard("Thermostaatgegevens", thermostatSourceLines, thermostatSourceModel.sourceLabel)}
-          ${renderReviewCard("Verwarmingsstrategie", strategyLines, strategyTitle)}
-          ${renderReviewCard("Watertemperatuur", waterLines)}
-        </div>
-        <div class="oq-helper-review-column">
-          ${renderReviewCard("Flowregeling", flowLines)}
-          ${boilerLines.length ? renderReviewCard("CV-ketel / boiler", boilerLines) : ""}
-          ${renderReviewCard("Stille uren", silentLines)}
-        </div>
+        ${renderReviewCard("Quatt Hybrid-versie", generationLines, generationTitle)}
+        ${renderReviewCard("Flowmeting", flowSourceLines, flowSourceModel.sourceLabel)}
+        ${renderReviewCard("Verwarmingsstrategie", strategyLines, strategyTitle)}
+        ${renderReviewCard("Watertemperatuur", waterLines)}
+        ${renderReviewCard("Thermostaatgegevens", thermostatSourceLines, thermostatSourceModel.sourceLabel)}
+        ${renderReviewCard("Flowregeling", flowLines)}
+        ${boilerLines.length ? renderReviewCard("CV-ketel / boiler", boilerLines) : ""}
+        ${renderReviewCard("Stille uren", silentLines)}
       </div>
     `;
   }
