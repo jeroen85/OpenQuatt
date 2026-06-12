@@ -2076,6 +2076,11 @@
   line-height: 1.5;
 }
 
+.oq-settings-action-note a {
+  color: var(--oq-helper-accent-deep);
+  font-weight: 750;
+}
+
 .oq-settings-action-note--warning {
   color: var(--oq-helper-accent-deep);
 }

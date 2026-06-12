@@ -275,6 +275,7 @@
     "hpGeneration",
     "openquattEnabled",
     ...QUICK_START_FLOW_SOURCE_KEYS,
+    ...QUICK_START_THERMOSTAT_SOURCE_KEYS,
     "boilerCvAssistEnabled",
     "boilerRatedHeatPower",
     "strategy",
@@ -2296,6 +2297,9 @@
     const quickStartFlowSourceKeys = state.quickStartModalOpen && state.currentStep === "flow-source"
       ? QUICK_START_FLOW_SOURCE_KEYS
       : [];
+    const quickStartThermostatSourceKeys = state.quickStartModalOpen && state.currentStep === "thermostat-source"
+      ? QUICK_START_THERMOSTAT_SOURCE_KEYS
+      : [];
     const keys = isPrefetchOverview
       ? [
           ...FAST_OVERVIEW_KEYS,
@@ -2338,7 +2342,7 @@
         }
         return;
       }
-      await refreshEntities([...new Set([...keys, ...quickStartFlowSourceKeys])], isPrefetchOverview ? "state" : appView === "settings" ? "all" : "state", {
+      await refreshEntities([...new Set([...keys, ...quickStartFlowSourceKeys, ...quickStartThermostatSourceKeys])], isPrefetchOverview ? "state" : appView === "settings" ? "all" : "state", {
         concurrency: forceFast && isOverviewLike ? FAST_VIEW_ENTITY_REFRESH_CONCURRENCY : ENTITY_REFRESH_CONCURRENCY,
       });
       state.lastFastEntitySyncAt = Date.now();
@@ -2571,6 +2575,11 @@
     if (!field) {
       if (event.target.dataset.oqQuickstartCicUrl !== undefined) {
         state.quickStartCicFeedUrlDraft = String(event.target.value || "");
+        return;
+      }
+      if (event.target.dataset.oqQuickstartThermostatSource !== undefined) {
+        state.quickStartThermostatSourceDraft = String(event.target.value || "");
+        render();
         return;
       }
       const authField = event.target.dataset.oqAuthField;
@@ -3431,6 +3440,11 @@
       return;
     }
 
+    if (action === "apply-quickstart-thermostat-source") {
+      void applyQuickStartThermostatSourceConfiguration();
+      return;
+    }
+
     if (action === "previous-step") {
       selectQuickStepByOffset(-1);
       render();
@@ -3726,6 +3740,62 @@
       await refreshEntities(QUICK_START_FLOW_SOURCE_KEYS, "all");
     } catch (error) {
       state.controlError = `Flowconfiguratie kon niet volledig worden toegepast. ${error.message}`;
+    } finally {
+      state.busyAction = "";
+      render();
+    }
+  }
+
+  async function applyQuickStartThermostatSourceConfiguration() {
+    const model = getQuickStartThermostatSourceModel();
+    if (!model.canApply) {
+      state.controlError = model.selectedSource === "CIC"
+        ? "Vul eerst een geldig CiC-adres of een geldige feed-URL in."
+        : "De vereiste thermostaatbroninstelling is niet beschikbaar in deze firmware.";
+      render();
+      return;
+    }
+
+    state.busyAction = "quickstart-thermostat-source";
+    state.controlNotice = "";
+    state.controlError = "";
+    render();
+
+    const applyValue = async (key, value) => {
+      if (!hasEntity(key)) {
+        return;
+      }
+      const current = getEntityValue(key);
+      if ((typeof value === "boolean" && isEntityActive(key) === value)
+        || (typeof value !== "boolean" && String(current) === String(value))) {
+        return;
+      }
+      const applied = await setEntityBackupValue(key, value);
+      state.entities[key] = {
+        ...(state.entities[key] || {}),
+        value: applied,
+        state: applied,
+      };
+    };
+
+    try {
+      if (model.selectedSource === "OT thermostat") {
+        await applyValue("otEnabled", true);
+      } else if (model.selectedSource === "CIC") {
+        await applyValue("cicFeedUrl", model.normalizedDraftUrl);
+        await applyValue("cicPollingEnabled", true);
+        state.quickStartCicFeedUrlDraft = null;
+      }
+      await applyValue("roomTempSource", model.selectedSource);
+      await applyValue("roomSetpointSource", model.selectedSource);
+      state.controlNotice = model.selectedSource === "OT thermostat"
+        ? "Kamertemperatuur en setpoint zijn gekoppeld aan OpenTherm."
+        : model.selectedSource === "CIC"
+          ? "Kamertemperatuur en setpoint zijn gekoppeld aan de CiC JSON-feed."
+          : "Kamertemperatuur en setpoint zijn gekoppeld aan Home Assistant.";
+      await refreshEntities(QUICK_START_THERMOSTAT_SOURCE_KEYS, "all");
+    } catch (error) {
+      state.controlError = `Thermostaatconfiguratie kon niet volledig worden toegepast. ${error.message}`;
     } finally {
       state.busyAction = "";
       render();

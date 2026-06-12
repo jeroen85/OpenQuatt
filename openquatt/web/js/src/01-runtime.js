@@ -64,6 +64,7 @@
     serviceTaskModalScrollRestoreToken: 0,
     quickStartScrollRestoreToken: 0,
     quickStartCicFeedUrlDraft: null,
+    quickStartThermostatSourceDraft: null,
     webServerLogCopyMessage: "",
     webServerLogCopyError: "",
     webServerLogRecentTail: [],
