@@ -295,6 +295,7 @@ const LOGO_MARKUP = `
     manualFlowStatus: { domain: "text_sensor", name: "Manual flow status", optional: true },
     manualFlowSetpoint: { domain: "number", name: "Manual flow service setpoint", optional: true },
     manualFlowTargetIpwm: { domain: "sensor", name: "Manual flow target iPWM", optional: true },
+    quickFlowTest: { domain: "switch", name: "Quick flow test", optional: true },
     manualHpStart: { domain: "button", name: "Manual HP Start", optional: true },
     manualHpAbort: { domain: "button", name: "Manual HP Abort", optional: true },
     manualHpActive: { domain: "binary_sensor", name: "Manual HP active", optional: true },
@@ -827,6 +828,11 @@ const LOGO_MARKUP = `
     "flowLocal",
     "hp1Flow",
     "hp2Flow",
+    "commissioningCm100Start",
+    "commissioningCm100Stop",
+    "commissioningStatus",
+    "cm100Active",
+    "quickFlowTest",
   ];
   const QUICK_START_THERMOSTAT_SOURCE_KEYS = [
     "hardwareProfileText",

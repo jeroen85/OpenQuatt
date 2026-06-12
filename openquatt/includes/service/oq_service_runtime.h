@@ -49,6 +49,9 @@ inline void reset_task_runtime_state() {
   id(oq_hp_water_calibration_result_hp2_in_raw_avg_c) = NAN;
   id(oq_hp_water_calibration_result_hp2_out_raw_avg_c) = NAN;
   id(oq_manual_flow_active) = false;
+  id(oq_quick_flow_test_active) = false;
+  id(oq_quick_flow_test_started_ms) = 0;
+  id(oq_quick_flow_test_remaining_s) = 0;
   id(oq_manual_hp_active) = false;
   id(oq_manual_hp_stop_requested) = false;
   id(oq_manual_hp_mode_allowed) = false;

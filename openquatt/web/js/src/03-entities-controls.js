@@ -3445,6 +3445,16 @@
       return;
     }
 
+    if (action === "start-quickstart-flow-test") {
+      void startQuickStartFlowTest();
+      return;
+    }
+
+    if (action === "abort-quickstart-flow-test") {
+      void abortQuickStartFlowTest();
+      return;
+    }
+
     if (action === "apply-quickstart-thermostat-source") {
       void applyQuickStartThermostatSourceConfiguration();
       return;
@@ -3767,6 +3777,116 @@
           : "Het flowsignaal is beschikbaar; momenteel is er geen circulatie.";
     } catch (error) {
       state.controlError = `Flowsignaal controleren mislukt. ${error.message}`;
+    } finally {
+      state.busyAction = "";
+      render();
+    }
+  }
+
+  async function setQuickStartSwitch(key, enabled) {
+    const entity = ENTITY_DEFS[key];
+    if (!entity || !hasEntity(key)) {
+      throw new Error("Deze firmware bevat de vereiste testbediening niet.");
+    }
+    const response = await fetch(buildEntityPath(entity.domain, entity.name, enabled ? "turn_on" : "turn_off"), {
+      method: "POST",
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+  }
+
+  async function monitorQuickStartFlowTest() {
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      await new Promise((resolve) => window.setTimeout(resolve, 1000));
+      try {
+        await refreshEntities(QUICK_START_FLOW_SOURCE_KEYS, "state");
+      } catch {
+        return;
+      }
+      if (isEntityActive("quickFlowTest")) {
+        continue;
+      }
+      if (state.busyAction !== "quickstart-flow-test-abort") {
+        state.controlNotice = "Waterpomptest afgerond. OpenQuatt is teruggekeerd naar de normale regeling.";
+      }
+      render();
+      return;
+    }
+  }
+
+  async function startQuickStartFlowTest() {
+    const model = getQuickStartFlowSourceModel();
+    if (!model.canRunFlowTest) {
+      state.controlError = "Activeer eerst de flowconfiguratie of installeer firmware met de waterpomptest.";
+      render();
+      return;
+    }
+
+    state.busyAction = "quickstart-flow-test-start";
+    state.controlNotice = "";
+    state.controlError = "";
+    render();
+
+    let openedCm100 = false;
+    try {
+      if (!isEntityActive("cm100Active")) {
+        const cm100 = ENTITY_DEFS.commissioningCm100Start;
+        const response = await fetch(buildEntityPath(cm100.domain, cm100.name, "press"), { method: "POST" });
+        if (!response.ok) {
+          throw new Error(`CM100 starten gaf HTTP ${response.status}`);
+        }
+        openedCm100 = true;
+        let ready = false;
+        for (let attempt = 0; attempt < 20; attempt += 1) {
+          await new Promise((resolve) => window.setTimeout(resolve, 500));
+          await refreshEntities(["commissioningStatus", "cm100Active"], "state");
+          if (isEntityActive("cm100Active")) {
+            ready = true;
+            break;
+          }
+        }
+        if (!ready) {
+          throw new Error("Service-stand CM100 werd niet op tijd actief.");
+        }
+      }
+
+      await setQuickStartSwitch("quickFlowTest", true);
+      await refreshEntities(QUICK_START_FLOW_SOURCE_KEYS, "all");
+      const status = String(getEntityValue("commissioningStatus") || "").trim();
+      if (!isEntityActive("quickFlowTest")) {
+        throw new Error(status || "De waterpomptest kon niet worden gestart.");
+      }
+      state.controlNotice = "Waterpomptest gestart: alleen de pomp draait 30 seconden op 400 iPWM.";
+      void monitorQuickStartFlowTest();
+    } catch (error) {
+      if (openedCm100 && !isEntityActive("quickFlowTest")) {
+        try {
+          const cm100Stop = ENTITY_DEFS.commissioningCm100Stop;
+          await fetch(buildEntityPath(cm100Stop.domain, cm100Stop.name, "press"), { method: "POST" });
+        } catch {
+          // Firmware safety behavior remains the final fallback.
+        }
+      }
+      state.controlError = `Waterpomptest starten mislukt. ${error.message}`;
+    } finally {
+      state.busyAction = "";
+      render();
+    }
+  }
+
+  async function abortQuickStartFlowTest() {
+    state.busyAction = "quickstart-flow-test-abort";
+    state.controlNotice = "";
+    state.controlError = "";
+    render();
+
+    try {
+      await setQuickStartSwitch("quickFlowTest", false);
+      await refreshEntities(QUICK_START_FLOW_SOURCE_KEYS, "all");
+      state.controlNotice = "Waterpomptest gestopt. OpenQuatt keert terug naar de normale regeling.";
+    } catch (error) {
+      state.controlError = `Waterpomptest stoppen mislukt. ${error.message}`;
     } finally {
       state.busyAction = "";
       render();

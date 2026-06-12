@@ -158,6 +158,7 @@
           : "hp1Flow";
     const flowValue = getEntityNumericValue(sensorKey);
     const flowAvailable = Number.isFinite(flowValue);
+    const flowTestActive = isEntityActive("quickFlowTest");
 
     let status = hardwareKnown ? requiresCic ? "Nog configureren" : "Nog activeren" : "Hardwareprofiel niet herkend";
     if (requiresCic && configurationApplied) {
@@ -197,6 +198,11 @@
       status,
       flowValue,
       flowAvailable,
+      flowTestActive,
+      canRunFlowTest: configurationApplied
+        && hasEntity("commissioningCm100Start")
+        && hasEntity("commissioningCm100Stop")
+        && hasEntity("quickFlowTest"),
       ...cicUrl,
       canApply: hardwareKnown
         && hasEntity("flowSource")
@@ -280,9 +286,11 @@
   function renderFlowSourceWorkspace() {
     const model = getQuickStartFlowSourceModel();
     const busy = state.busyAction === "quickstart-flow-source" || state.busyAction === "quickstart-flow-refresh";
+    const flowTestBusy = state.busyAction === "quickstart-flow-test-start" || state.busyAction === "quickstart-flow-test-abort";
+    const controlsBusy = busy || flowTestBusy || model.flowTestActive;
     const statusClass = model.status === "Geldig" || model.status === "Bron actief, geen circulatie" ? " is-active" : "";
     const flowLabel = model.flowAvailable ? `${Math.round(model.flowValue)} L/h` : "Nog geen actuele waarde";
-    const cicField = model.requiresCic ? renderQuickStartCicFeedUrlField(model, busy) : "";
+    const cicField = model.requiresCic ? renderQuickStartCicFeedUrlField(model, controlsBusy) : "";
 
     return `
       <section class="oq-helper-panel">
@@ -318,7 +326,7 @@
             class="oq-helper-button oq-helper-button--primary"
             type="button"
             data-oq-action="apply-quickstart-flow-source"
-            ${busy || !model.canApply ? "disabled" : ""}
+            ${controlsBusy || !model.canApply ? "disabled" : ""}
           >
             ${state.busyAction === "quickstart-flow-source" ? "Flowconfiguratie opslaan..." : model.configurationApplied ? "Flowconfiguratie opnieuw opslaan" : model.requiresCic ? "CiC-flowconfiguratie opslaan" : "Flowconfiguratie activeren"}
           </button>
@@ -326,15 +334,35 @@
             class="oq-helper-button oq-helper-button--ghost"
             type="button"
             data-oq-action="refresh-quickstart-flow-signal"
-            ${busy || !model.configurationApplied ? "disabled" : ""}
+            ${controlsBusy || !model.configurationApplied ? "disabled" : ""}
           >
             ${state.busyAction === "quickstart-flow-refresh" ? "Signaal controleren..." : "Signaal opnieuw controleren"}
           </button>
+          ${model.canRunFlowTest ? `
+            <button
+              class="oq-helper-button ${model.flowTestActive ? "" : "oq-helper-button--ghost"}"
+              type="button"
+              data-oq-action="${model.flowTestActive ? "abort-quickstart-flow-test" : "start-quickstart-flow-test"}"
+              ${busy || flowTestBusy ? "disabled" : ""}
+            >
+              ${flowTestBusy
+                ? model.flowTestActive ? "Waterpomptest stoppen..." : "Waterpomptest starten..."
+                : model.flowTestActive
+                  ? "Waterpomptest stoppen"
+                  : "Waterpomptest starten (30 sec)"}
+            </button>
+          ` : ""}
         </div>
-        <p class="oq-settings-action-note">0 L/h kan normaal zijn als de circulatiepomp stilstaat. Een actieve pomptest staat onder Instellingen → Installatie → Service & commissioning.</p>
+        <p class="oq-settings-action-note">${model.flowTestActive
+          ? "Alleen de waterpomp draait op 400 iPWM. De firmware stopt de test automatisch na maximaal 30 seconden."
+          : "0 L/h kan normaal zijn als de circulatiepomp stilstaat. De waterpomptest gebruikt 400 iPWM, start geen compressor en stopt automatisch na 30 seconden."}</p>
         ${renderQuickStartStepNav({
-          nextDisabled: !model.configurationApplied,
-          nextDisabledLabel: model.requiresCic ? "Sla eerst op" : "Activeer eerst",
+          nextDisabled: !model.configurationApplied || model.flowTestActive || flowTestBusy,
+          nextDisabledLabel: flowTestBusy
+            ? "Even wachten"
+            : model.flowTestActive
+              ? "Test loopt"
+              : model.requiresCic ? "Sla eerst op" : "Activeer eerst",
         })}
       </section>
     `;

@@ -691,6 +691,26 @@ interval:
             return;
           }
 
+          // Quick Start flow test: pump-only fixed output with a firmware timeout.
+          if (id(oq_quick_flow_test_active) &&
+              (cm_code == 100) &&
+              (id(oq_commissioning_task_code) == oq_commissioning::TASK_MANUAL_FLOW) &&
+              !is_frost) {
+            int test_pwm = clamp_iPWM((int) id(oq_quick_flow_test_target_ipwm));
+            id(oq_flow_last_pwm) = test_pwm;
+            stable_cnt = 0;
+            pi_failsafe = false;
+            write_pump_pwm_if_changed(id(hp1_pump_speed), test_pwm);
+            if (${flow_secondary_enabled} != 0) {
+              write_pump_pwm_if_changed(id(${secondary_pump_speed_id}), test_pwm);
+            }
+            if (last_mode != "QUICK FLOW TEST") {
+              id(oq_flow_mode).publish_state("QUICK FLOW TEST");
+              last_mode = "QUICK FLOW TEST";
+            }
+            return;
+          }
+
           // Edge 2: leaving MANUAL to AUTO
           if (was_manual && !want_manual) {
             start_auto_transition("MANUAL->AUTO");

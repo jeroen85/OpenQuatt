@@ -14,6 +14,26 @@ globals:
     restore_value: false
     initial_value: 'false'
 
+  - id: oq_quick_flow_test_active
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+  - id: oq_quick_flow_test_started_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_quick_flow_test_remaining_s
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+  - id: oq_quick_flow_test_target_ipwm
+    type: int
+    restore_value: false
+    initial_value: '400'
+
 number:
   - platform: template
     id: oq_manual_flow_setpoint_lph
@@ -81,6 +101,24 @@ button:
       - lambda: |-
           oq_manual_flow::runtime().apply_to_cooling();
 
+switch:
+  - platform: template
+    id: oq_quick_flow_test_switch
+    name: "Quick flow test"
+    internal: true
+    icon: mdi:water-pump
+    entity_category: config
+    lambda: |-
+      return id(oq_quick_flow_test_active);
+    turn_on_action:
+      - lambda: |-
+          oq_manual_flow::runtime().start_quick_test((uint32_t) millis());
+    turn_off_action:
+      - lambda: |-
+          oq_manual_flow::runtime().abort_quick_test();
+    web_server:
+      sorting_group_id: oq_hydraulics
+
 binary_sensor:
   - platform: template
     id: oq_manual_flow_active_sensor
@@ -122,4 +160,4 @@ interval:
   - interval: 1s
     then:
       - lambda: |-
-          oq_manual_flow::runtime().tick();
+          oq_manual_flow::runtime().tick((uint32_t) millis());

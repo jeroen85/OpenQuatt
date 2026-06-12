@@ -28,6 +28,7 @@
       alternating: false,
     },
     commissioningTimers: [],
+    quickFlowTestTimer: null,
     bootedAt: Date.now() - ((2 * 3600) + (13 * 60)) * 1000,
     commissioning: {
       cm100Active: false,
@@ -277,6 +278,13 @@
   function clearCommissioningTimers() {
     state.commissioningTimers.forEach((timer) => window.clearTimeout(timer));
     state.commissioningTimers = [];
+  }
+
+  function clearQuickFlowTestTimer() {
+    if (state.quickFlowTestTimer) {
+      window.clearTimeout(state.quickFlowTestTimer);
+      state.quickFlowTestTimer = null;
+    }
   }
 
   function resetHpWaterCalibrationMock(status = "IDLE") {
@@ -867,6 +875,7 @@
     setEntity("button", "Manual Flow Abort", {});
     setEntity("button", "Apply Manual Flow To Heating", {});
     setEntity("button", "Apply Manual Flow To Cooling", {});
+    setEntity("switch", "Quick flow test", { value: false, state: false });
     setEntity("button", "Manual HP Start", {});
     setEntity("button", "Manual HP Abort", {});
     setEntity("button", "HP Water Calibration Start", {});
@@ -2181,6 +2190,12 @@
     }
     entity.value = Boolean(enabled);
     entity.state = Boolean(enabled);
+    if (name === "Quick flow test") {
+      handleButtonPress(enabled ? "Quick Flow Test Start" : "Quick Flow Test Abort");
+      updateSummary();
+      notifyMockUpdated();
+      return;
+    }
     if (name === "OpenQuatt Enabled" && enabled && getEntity("datetime", "OpenQuatt resume at")) {
       setText("datetime", "OpenQuatt resume at", OPENQUATT_RESUME_CLEAR_VALUE);
     }
@@ -2194,6 +2209,7 @@
 
   function handleButtonPress(name) {
     if (name === "CM100 Start") {
+      clearQuickFlowTestTimer();
       clearCommissioningTimers();
       state.commissioning.cm100Active = true;
       state.commissioning.globalStatus = "CM100 READY";
@@ -2235,9 +2251,15 @@
       setBinary("Boiler power test active", false);
       setBinary("Air purge active", false);
       setBinary("Manual flow active", false);
+      const quickFlowTest = getEntity("switch", "Quick flow test");
+      if (quickFlowTest) {
+        quickFlowTest.value = false;
+        quickFlowTest.state = false;
+      }
       setBinary("Manual HP active", false);
       setBinary("Boiler active", false);
     } else if (name === "CM100 Stop") {
+      clearQuickFlowTestTimer();
       clearCommissioningTimers();
       state.commissioning.cm100Active = false;
       state.commissioning.globalStatus = "CM100 STOPPED";
@@ -2274,6 +2296,11 @@
       setBinary("Boiler power test active", false);
       setBinary("Air purge active", false);
       setBinary("Manual flow active", false);
+      const quickFlowTest = getEntity("switch", "Quick flow test");
+      if (quickFlowTest) {
+        quickFlowTest.value = false;
+        quickFlowTest.state = false;
+      }
       setBinary("Manual HP active", false);
       setBinary("Boiler active", false);
     } else if (name === "Boiler Power Test Start") {
@@ -2281,6 +2308,7 @@
         state.commissioning.boilerStatusText = "REFUSED: CM100 required";
         setText("text_sensor", "Boiler power test status", "REFUSED: CM100 required");
       } else {
+        clearQuickFlowTestTimer();
         clearCommissioningTimers();
         state.commissioning.globalStatus = "BOILER TEST STARTED";
         setCommissioningPhase("boiler", "requested", {
@@ -2631,6 +2659,61 @@
       setText("text_sensor", "Manual flow status", "STOPPED");
       setText("text_sensor", "Flow Mode", state.commissioning.cm100Active ? "CM100 idle" : "Gepauzeerd");
       setBinary("Manual flow active", false);
+      setNumber("Flow average (Selected)", 0, "L/h");
+    } else if (name === "Quick Flow Test Start") {
+      if (!state.commissioning.cm100Active) {
+        setText("text_sensor", "Commissioning status", "REFUSED: CM100 required");
+        const quickFlowTest = getEntity("switch", "Quick flow test");
+        if (quickFlowTest) {
+          quickFlowTest.value = false;
+          quickFlowTest.state = false;
+        }
+      } else {
+        clearQuickFlowTestTimer();
+        clearCommissioningTimers();
+        state.commissioning.globalStatus = "QUICK FLOW TEST ACTIVE";
+        setCommissioningPhase("manual-flow", "active");
+        setText("text_sensor", "Commissioning status", "QUICK FLOW TEST ACTIVE");
+        setText("text_sensor", "Flow Mode", "QUICK FLOW TEST");
+        setBinary("Manual flow active", true);
+        setNumber("Flow average (Selected)", 640, "L/h");
+        state.quickFlowTestTimer = window.setTimeout(() => {
+          state.quickFlowTestTimer = null;
+          state.commissioning.cm100Active = false;
+          state.commissioning.globalStatus = "IDLE";
+          setCommissioningPhase("none", "idle");
+          setText("text_sensor", "Control Mode (Label)", "CM0 - Standby");
+          setText("text_sensor", "Commissioning status", "IDLE");
+          setText("text_sensor", "Flow Mode", "Gepauzeerd");
+          setBinary("CM100 active", false);
+          setBinary("Manual flow active", false);
+          const quickFlowTest = getEntity("switch", "Quick flow test");
+          if (quickFlowTest) {
+            quickFlowTest.value = false;
+            quickFlowTest.state = false;
+          }
+          setNumber("Flow average (Selected)", 0, "L/h");
+          applyScenario(state.scenario);
+          updateSummary();
+          notifyMockUpdated();
+        }, 3000);
+      }
+    } else if (name === "Quick Flow Test Abort") {
+      clearQuickFlowTestTimer();
+      clearCommissioningTimers();
+      state.commissioning.cm100Active = false;
+      state.commissioning.globalStatus = "IDLE";
+      setCommissioningPhase("none", "idle");
+      setText("text_sensor", "Control Mode (Label)", "CM0 - Standby");
+      setText("text_sensor", "Commissioning status", "IDLE");
+      setText("text_sensor", "Flow Mode", "Gepauzeerd");
+      setBinary("CM100 active", false);
+      setBinary("Manual flow active", false);
+      const quickFlowTest = getEntity("switch", "Quick flow test");
+      if (quickFlowTest) {
+        quickFlowTest.value = false;
+        quickFlowTest.state = false;
+      }
       setNumber("Flow average (Selected)", 0, "L/h");
     } else if (name === "Apply Manual Flow To Heating") {
       setNumber("Flow Setpoint", Number(getEntity("number", "Manual flow service setpoint")?.value || 0), "L/h");
