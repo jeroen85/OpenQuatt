@@ -1146,6 +1146,15 @@ const LOGO_MARKUP = `
     ...INSTALLATION_MONITORING_OVERVIEW_KEYS,
   ];
   const OVERVIEW_METADATA_KEYS = [
+    "hpGeneration",
+    "boilerCvAssistEnabled",
+    "boilerRatedHeatPower",
+    "strategy",
+    ...POWER_HOUSE_KEYS,
+    ...CURVE_SETTING_KEYS,
+    ...FLOW_SETTING_KEYS,
+    "maxWater",
+    ...SILENT_SETTING_KEYS,
     "coolingDewPointSelected",
     "coolingMinimumSafeSupplyTemp",
     "coolingEffectiveMinSupplyTemp",

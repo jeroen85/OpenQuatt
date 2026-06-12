@@ -274,10 +274,14 @@
     ...TOPOLOGY_HINT_KEYS,
     "hpGeneration",
     "openquattEnabled",
-    "flowControlMode",
-    "silentStartTime",
-    "silentEndTime",
+    "boilerCvAssistEnabled",
+    "boilerRatedHeatPower",
+    "strategy",
+    ...POWER_HOUSE_KEYS,
+    ...CURVE_SETTING_KEYS,
+    ...FLOW_SETTING_KEYS,
     "maxWater",
+    ...SILENT_SETTING_KEYS,
     "minRuntime",
   ];
   const SETTINGS_GROUP_KEY_MAP = {
