@@ -3796,6 +3796,19 @@
     }
   }
 
+  async function refreshQuickStartFlowTestControls() {
+    const keys = ["commissioningCm100Start", "commissioningCm100Stop", "quickFlowTest"];
+    keys.forEach((key) => {
+      if (state.optionalMissingEntities) {
+        delete state.optionalMissingEntities[key];
+      }
+    });
+    await refreshEntities(keys, "all");
+    if (!keys.every((key) => hasEntity(key))) {
+      throw new Error("Deze firmware bevat de interne waterpomptest nog niet.");
+    }
+  }
+
   async function monitorQuickStartFlowTest() {
     for (let attempt = 0; attempt < 40; attempt += 1) {
       await new Promise((resolve) => window.setTimeout(resolve, 1000));
@@ -3830,6 +3843,7 @@
 
     let openedCm100 = false;
     try {
+      await refreshQuickStartFlowTestControls();
       if (!isEntityActive("cm100Active")) {
         const cm100 = ENTITY_DEFS.commissioningCm100Start;
         const response = await fetch(buildEntityPath(cm100.domain, cm100.name, "press"), { method: "POST" });

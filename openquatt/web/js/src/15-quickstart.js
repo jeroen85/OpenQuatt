@@ -199,10 +199,7 @@
       flowValue,
       flowAvailable,
       flowTestActive,
-      canRunFlowTest: configurationApplied
-        && hasEntity("commissioningCm100Start")
-        && hasEntity("commissioningCm100Stop")
-        && hasEntity("quickFlowTest"),
+      canRunFlowTest: configurationApplied,
       ...cicUrl,
       canApply: hardwareKnown
         && hasEntity("flowSource")
