@@ -297,10 +297,10 @@ The custom partition tables leave different data headroom:
 
 | Partition table | `openquatt_data` size | Trends archive | Remaining data partition space |
 |---|---:|---:|---:|
-| `openquatt_8mb.csv` | 384 KiB | 360 KiB | 24 KiB |
+| `openquatt_8mb.csv` | 1920 KiB | 360 KiB | 1560 KiB |
 | `openquatt_16mb.csv` | 6016 KiB | 360 KiB | 5656 KiB |
 
-The 8 MB profile therefore has only a small `openquatt_data` margin after Trends flash history. Keep any future data-partition features explicit about their storage budget.
+The 8 MB profile uses the remaining flash after both OTA slots for `openquatt_data`. Keep any future data-partition features explicit about their storage budget.
 
 
 ## 10. UI and Observability Organization
