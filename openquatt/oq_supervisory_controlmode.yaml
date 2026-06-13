@@ -11,7 +11,7 @@
 # What this package DOES do:
 #   - Determines base mode (idle / heating / cooling / frost) based on demand and conditions
 #   - Applies flow override: with insufficient flow -> CM1 (holding)
-#   - Supports test override: Force CM0/CM1 and Diagnostic Force CM98 (auto-expire)
+#   - Supports test overrides: Force CM0/CM1/CM98 (auto-expire)
 #   - Exposes CM100 commissioning when a service task is explicitly requested
 #   - Automatically switches CM2 <-> CM3 based on thermal deficit (`oq_P_deficit_w`) with timers/hysteresis
 #   - Publishes current CM as text_sensor (for example 'CM2', 'CM3', 'CM5', 'CM100')
@@ -131,12 +131,12 @@ globals:
 
   # ----------------------------
   # Supervisory override (test/commissioning)
-  # AUTO / FORCE_CM0 / FORCE_CM1 / FORCE_CM98_DIAG (auto-expire)
+  # AUTO / FORCE_CM0 / FORCE_CM1 / FORCE_CM98 (auto-expire)
   - id: oq_override_last_mode
     type: int
     restore_value: false
-    initial_value: '0'  # 0=AUTO,1=CM0,2=CM1,3=CM98_DIAG
-  - id: oq_override_cm98_since_ms
+    initial_value: '0'  # 0=AUTO,1=CM0,2=CM1,3=CM98
+  - id: oq_override_since_ms
     type: uint32_t
     restore_value: false
     initial_value: '0'
@@ -1102,27 +1102,28 @@ interval:
 
             // Supervisory override (test/commissioning)
             // - Auto (normal logic)
-            // - Force CM0 / Force CM1
-            // - Force CM98 (auto-expire after 30 min)
-            int override_mode = id(oq_cm_override).active_index().value_or(0); // 0=AUTO,1=CM0,2=CM1,3=CM98_DIAG
+            // - Force CM0 / Force CM1 / Force CM98 (auto-expire)
+            int override_mode = id(oq_cm_override).active_index().value_or(0); // 0=AUTO,1=CM0,2=CM1,3=CM98
             if (override_mode < 0 || override_mode > 3) override_mode = 0;
-            // Track entry into CM98 diagnostic override for auto-expire
+            // Track entry into each override; switching override starts a fresh timeout.
             if (override_mode != id(oq_override_last_mode)) {
               id(oq_override_last_mode) = override_mode;
-              id(oq_override_cm98_since_ms) = (override_mode == 3) ? now_ms : 0;
+              id(oq_override_since_ms) = (override_mode != 0) ? now_ms : 0;
             }
-            // Auto-expire Diagnostic CM98 after 30 minutes
-            if (override_mode == 3) {
-              const uint32_t MAX_MS = (uint32_t)(${oq_cm98_diag_max_s}UL * 1000UL);
-              if (id(oq_override_cm98_since_ms) != 0 && (uint32_t)(now_ms - id(oq_override_cm98_since_ms)) >= MAX_MS) {
-                ESP_LOGI("supervisory", "CM98 diagnostic override expired after %u s; returning to Auto.",
-                         (unsigned int) ${oq_cm98_diag_max_s});
+            // Auto-expire every forced control mode.
+            if (override_mode != 0) {
+              const uint32_t MAX_MS = (uint32_t)(${oq_cm_override_max_s}UL * 1000UL);
+              if (id(oq_override_since_ms) != 0 && (uint32_t)(now_ms - id(oq_override_since_ms)) >= MAX_MS) {
+                const char *override_name =
+                    (override_mode == 1) ? "CM0" : (override_mode == 2) ? "CM1" : "CM98";
+                ESP_LOGI("supervisory", "%s override expired after %u s; returning to Auto.",
+                         override_name, (unsigned int) ${oq_cm_override_max_s});
                 auto call = id(oq_cm_override).make_call();
                 call.set_option("Auto");
                 call.perform();
                 override_mode = 0;
                 id(oq_override_last_mode) = 0;
-                id(oq_override_cm98_since_ms) = 0;
+                id(oq_override_since_ms) = 0;
               }
             }
 
