@@ -25,12 +25,15 @@ oq_connection: "unknown"                              # Compile-time connection 
 alternate_connection: ""                              # Optional connection target used for controlled Wi-Fi/Ethernet switching.
 alternate_main_release_manifest_url: ""               # Optional main-channel OTA manifest for the alternate connection target.
 alternate_dev_release_manifest_url: ""                # Optional dev-channel OTA manifest for the alternate connection target.
-oq_cpp_headers_dir: "../../openquatt/includes"              # Copy and include the grouped OpenQuatt C++ runtime headers.
-oq_component_psram_buffer_header: "../../components/openquatt_common/PsramBuffer.h" # Shared PSRAM-backed buffer helper for custom components.
-external_components_path: "../../components"              # Local custom component directory from nested config entrypoints.
+openquatt_root: "../../openquatt"                    # OpenQuatt package root relative to the active config file.
+components_root: "../../components"                  # Custom component root relative to the active config file.
+scripts_root: "../../../scripts"                     # Build script root relative to the active config file.
+oq_cpp_headers_dir: "${openquatt_root}/includes"     # Copy and include the grouped OpenQuatt C++ runtime headers.
+oq_component_psram_buffer_header: "${components_root}/openquatt_common/PsramBuffer.h" # Shared PSRAM-backed buffer helper for custom components.
+external_components_path: "${components_root}"      # Local custom component directory.
 oq_timezone: "Europe/Amsterdam"                         # SNTP timezone used by runtime timestamps.
-oq_webserver_css_include: "../../openquatt/web/css/openquatt-app.css" # Bundled OpenQuatt web UI stylesheet.
-oq_webserver_js_include: "../../openquatt/web/js/openquatt-app.js" # Bundled OpenQuatt web UI script.
+oq_webserver_css_include: "${openquatt_root}/web/css/openquatt-app.css" # Bundled OpenQuatt web UI stylesheet.
+oq_webserver_js_include: "${openquatt_root}/web/js/openquatt-app.js" # Bundled OpenQuatt web UI script.
 oq_webserver_css_url: ""                            # Optional external CSS for the ESPHome web UI.
 oq_webserver_js_url: ""                               # Custom OpenQuatt app is primary; load ESPHome fallback lazily on demand.
 web_auth_bootstrap_username: "admin"                  # Bootstrap username used to keep web auth support compiled in.

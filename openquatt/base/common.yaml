@@ -18,8 +18,8 @@ esphome:
     - ${oq_component_psram_buffer_header}
   platformio_options:
     extra_scripts:
-      - pre:../../../scripts/normalize_factory_merge_inputs.py
-      - post:../../../scripts/repair_factory_bin.py
+      - pre:${scripts_root}/normalize_factory_merge_inputs.py
+      - post:${scripts_root}/repair_factory_bin.py
     build_flags:
       # Hard-pinned by the topology entrypoint to prevent accidental topology drift.
       - ${oq_topology_build_flag}
