@@ -1146,9 +1146,6 @@ views:
             features:
               - type: toggle
             features_position: inline
-          - type: tile
-            entity: input_boolean.koeling_aan
-            name: HA helper cooling
           - type: entities
             show_header_toggle: false
             entities:
