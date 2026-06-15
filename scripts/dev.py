@@ -42,6 +42,8 @@ EFUSE_PATCH_MARKER = (
 )
 SYSTEM_TIME_SOURCE = '"src/system_time.c"'
 SYSTEM_TIME_RENAMED = '"src/esp_timer_system_time.c"'
+PHY_LIB_PRINTF_SOURCE = '"src/lib_printf.c"'
+PHY_LIB_PRINTF_RENAMED = '"src/phy_lib_printf.c"'
 HAL_TARGET_EFUSE_SOURCE = '"${target}/efuse_hal.c"'
 HAL_TARGET_EFUSE_RENAMED = '"${target}/efuse_hal_${target}.c"'
 
@@ -325,6 +327,23 @@ def patch_framework_espidf_system_time_source(package_dir: Path) -> bool:
     return True
 
 
+def patch_framework_espidf_phy_lib_printf_source(package_dir: Path) -> bool:
+    cmake_path = package_dir / "components" / "esp_phy" / "CMakeLists.txt"
+    source_path = package_dir / "components" / "esp_phy" / "src" / "lib_printf.c"
+    renamed_path = source_path.with_name("phy_lib_printf.c")
+    if not cmake_path.is_file() or not source_path.is_file():
+        return False
+
+    text = cmake_path.read_text(encoding="utf-8")
+    if PHY_LIB_PRINTF_SOURCE not in text:
+        return False
+
+    if not renamed_path.exists():
+        renamed_path.write_text(source_path.read_text(encoding="utf-8"), encoding="utf-8")
+    cmake_path.write_text(text.replace(PHY_LIB_PRINTF_SOURCE, PHY_LIB_PRINTF_RENAMED, 1), encoding="utf-8")
+    return True
+
+
 def patch_framework_espidf_hal_target_efuse_source(package_dir: Path) -> bool:
     cmake_path = package_dir / "components" / "hal" / "CMakeLists.txt"
     hal_dir = package_dir / "components" / "hal"
@@ -352,8 +371,9 @@ def apply_framework_espidf_source_workarounds(pio_core_dir: Path) -> list[Path]:
         main_patched = patch_framework_espidf_efuse_main_cmake(package_dir)
         sources_patched = patch_framework_espidf_efuse_sources(package_dir)
         system_time_patched = patch_framework_espidf_system_time_source(package_dir)
+        phy_lib_printf_patched = patch_framework_espidf_phy_lib_printf_source(package_dir)
         hal_patched = patch_framework_espidf_hal_target_efuse_source(package_dir)
-        if main_patched or sources_patched or system_time_patched or hal_patched:
+        if main_patched or sources_patched or system_time_patched or phy_lib_printf_patched or hal_patched:
             patched.append(package_dir)
     return patched
 
@@ -380,6 +400,16 @@ def has_framework_espidf_system_time_workaround(package_dir: Path) -> bool:
     )
 
 
+def has_framework_espidf_phy_lib_printf_workaround(package_dir: Path) -> bool:
+    cmake_path = package_dir / "components" / "esp_phy" / "CMakeLists.txt"
+    renamed_source = package_dir / "components" / "esp_phy" / "src" / "phy_lib_printf.c"
+    return (
+        cmake_path.is_file()
+        and PHY_LIB_PRINTF_RENAMED in cmake_path.read_text(encoding="utf-8")
+        and renamed_source.is_file()
+    )
+
+
 def has_framework_espidf_hal_target_efuse_workaround(package_dir: Path) -> bool:
     cmake_path = package_dir / "components" / "hal" / "CMakeLists.txt"
     renamed_source = package_dir / "components" / "hal" / "esp32s3" / "efuse_hal_esp32s3.c"
@@ -397,6 +427,8 @@ def has_framework_espidf_source_workaround(pio_core_dir: Path, duplicate_object:
         if duplicate_object == "efuse_hal.c.o" and has_framework_espidf_hal_target_efuse_workaround(package_dir):
             return True
         if duplicate_object == "system_time.c.o" and has_framework_espidf_system_time_workaround(package_dir):
+            return True
+        if duplicate_object == "lib_printf.c.o" and has_framework_espidf_phy_lib_printf_workaround(package_dir):
             return True
     return False
 
@@ -744,7 +776,7 @@ def validate_command(args: argparse.Namespace) -> int:
                 duplicate_object = next(
                     (
                         object_name
-                        for object_name in ("esp_efuse_fields.c.o", "efuse_hal.c.o", "system_time.c.o")
+                        for object_name in ("esp_efuse_fields.c.o", "efuse_hal.c.o", "system_time.c.o", "lib_printf.c.o")
                         if object_name in tail
                     ),
                     "",
