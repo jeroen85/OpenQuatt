@@ -2,6 +2,7 @@ from typing import Dict, Generic, NotRequired, TypedDict, TypeVar
 
 from esphome.const import (
     DEVICE_CLASS_COLD,
+    DEVICE_CLASS_CONNECTIVITY,
     DEVICE_CLASS_HEAT,
     DEVICE_CLASS_PROBLEM,
     DEVICE_CLASS_TEMPERATURE,
@@ -129,6 +130,18 @@ BINARY_SENSORS: Schema[BinarySensorSchema] = Schema(
                 "icon": "mdi:snowflake",
                 "message": "Status",
                 "message_data": "flag8_hb_2",
+                "init": False,
+                "update_time": -1,
+            }
+        ),
+        "master_status_valid": BinarySensorSchema(
+            {
+                "description": "Signals whether a recent master status frame is available",
+                "device_class": DEVICE_CLASS_CONNECTIVITY,
+                "icon": "mdi:check-decagram",
+                "entity_category": ENTITY_CATEGORY_DIAGNOSTIC,
+                "message": "Status",
+                "message_data": "flag8_hb_0",
                 "init": False,
                 "update_time": -1,
             }

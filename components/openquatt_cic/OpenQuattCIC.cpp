@@ -389,6 +389,7 @@ void OpenQuattCIC::apply_payload_(const ParsedPayload &payload) {
   if (payload.cic_ch_enabled.present) {
     this->publish_binary_if_changed_(this->cic_ch_enabled_, payload.cic_ch_enabled.value);
   }
+  this->publish_binary_if_changed_(this->cic_ch_enable_valid_, payload.cic_ch_enabled.present);
   if (payload.cic_cooling_enabled.present) {
     this->publish_binary_if_changed_(this->cic_cooling_enabled_, payload.cic_cooling_enabled.value);
   }
@@ -452,6 +453,7 @@ void OpenQuattCIC::invalidate_feed_signals_() {
   this->publish_float_if_changed_(this->cic_room_setpoint_, NAN);
   this->publish_float_if_changed_(this->cic_room_temp_, NAN);
   this->publish_binary_if_changed_(this->cic_ch_enabled_, false);
+  this->publish_binary_if_changed_(this->cic_ch_enable_valid_, false);
   this->publish_binary_if_changed_(this->cic_cooling_enabled_, false);
 }
 

@@ -173,6 +173,22 @@ select:
     web_server:
       sorting_group_id: oq_sensor_selection
 
+  - platform: template
+    name: "Heating Enable Source"
+    id: heating_enable_source
+    icon: mdi:source-branch
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    options:
+      - Disabled
+      - OT thermostat
+      - CIC
+      - HA input
+    initial_option: Disabled
+    web_server:
+      sorting_group_id: oq_sensor_selection
+
 switch:
   - platform: template
     id: oq_manual_cooling_enable
@@ -184,6 +200,55 @@ switch:
       sorting_group_id: oq_control
 
 binary_sensor:
+  - platform: template
+    id: heating_enable_valid
+    name: "Heating Enable Valid"
+    icon: mdi:check-decagram
+    entity_category: diagnostic
+    lambda: |-
+      if (!id(heating_enable_source).has_state()) return false;
+      const auto source = id(heating_enable_source).current_option();
+      if (source == "Disabled") return true;
+      if (source == "OT thermostat") return id(ot_thermostat_status_valid).has_state() && id(ot_thermostat_status_valid).state;
+      if (source == "CIC") {
+        return id(feed_ok).has_state() && id(feed_ok).state &&
+               id(cic_data_stale).has_state() && !id(cic_data_stale).state &&
+               id(cic_ch_enable_valid).has_state() && id(cic_ch_enable_valid).state;
+      }
+      if (source == "HA input") return id(heating_enable_valid_ha).state && id(heating_enable_ha).has_state();
+      return false;
+    web_server:
+      sorting_group_id: oq_sensor_selection
+
+  - platform: template
+    id: heating_enable_selected
+    name: "Heating Enable (Selected)"
+    icon: mdi:radiator
+    device_class: heat
+    lambda: |-
+      if (!id(heating_enable_source).has_state()) return false;
+      const auto source = id(heating_enable_source).current_option();
+      if (source == "Disabled") return true;
+      if (!id(heating_enable_valid).state) return false;
+      if (source == "OT thermostat") return id(ot_thermostat_ch_enable).state;
+      if (source == "CIC") return id(cic_ch_enabled).state;
+      if (source == "HA input") return id(heating_enable_ha).state;
+      return false;
+    web_server:
+      sorting_group_id: oq_sensor_selection
+
+  - platform: template
+    id: heating_blocked_by_thermostat
+    name: "Heating blocked by thermostat"
+    icon: mdi:radiator-off
+    device_class: problem
+    entity_category: diagnostic
+    lambda: |-
+      if (!id(heating_enable_source).has_state() || id(heating_enable_source).current_option() == "Disabled") return false;
+      return id(oq_enabled).state && id(oq_strategy_heat_request_active) && !id(heating_enable_selected).state;
+    web_server:
+      sorting_group_id: oq_sensor_selection
+
   - platform: template
     id: cooling_enable_selected
     name: "Cooling Enable (Selected)"
@@ -203,6 +268,20 @@ binary_sensor:
       sorting_group_id: oq_sensor_selection
 
 text_sensor:
+  - platform: template
+    id: oq_heating_enable_effective_source
+    name: "Heating Enable Effective Source"
+    icon: mdi:source-branch
+    entity_category: diagnostic
+    update_interval: 5s
+    lambda: |-
+      if (!id(heating_enable_source).has_state()) return {"Unknown"};
+      const auto source = id(heating_enable_source).current_option();
+      if (source == "Disabled") return {"None"};
+      return {source.c_str()};
+    web_server:
+      sorting_group_id: oq_sensor_selection
+
   - platform: template
     id: oq_room_temperature_effective_source
     name: "Room Temperature Effective Source"

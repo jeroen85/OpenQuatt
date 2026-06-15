@@ -1214,9 +1214,6 @@ views:
             features:
               - type: toggle
             features_position: inline
-          - type: tile
-            entity: input_boolean.koeling_aan
-            name: HA helper koeling
           - type: entities
             show_header_toggle: false
             entities:
@@ -2174,6 +2171,34 @@ views:
           - type: vertical-stack
             cards:
               - type: heading
+                icon: mdi:radiator
+                heading: Warmtetoestemming bronnen
+                heading_style: subtitle
+                grid_options:
+                  columns: 12
+                  rows: 1
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: select.openquatt_heating_enable_source
+                    name: Warmtetoestemming bron
+                  - entity: sensor.openquatt_heating_enable_effective_source
+                    name: Gebruikte externe bron
+                  - entity: binary_sensor.openquatt_heating_enable_selected
+                    name: Verwarming toegestaan
+                  - entity: binary_sensor.openquatt_heating_enable_valid
+                    name: Bronselectie geldig
+                  - entity: binary_sensor.openquatt_heating_blocked_by_thermostat
+                    name: Verwarming geblokkeerd door thermostaat
+                  - entity: binary_sensor.openquatt_ot_thermostat_ch_enable
+                    name: Warmtetoestemming (OT-thermostaat)
+                  - entity: binary_sensor.openquatt_cic_ch_enabled
+                    name: Warmtetoestemming (CIC)
+                  - entity: binary_sensor.openquatt_ha_heating_enable
+                    name: Warmtetoestemming (HA-invoer)
+          - type: vertical-stack
+            cards:
+              - type: heading
                 icon: mdi:snowflake-check
                 heading: Koeltoestemming bronnen
                 heading_style: subtitle
@@ -2220,6 +2245,7 @@ views:
                   - `sensor.water_supply_temperature`
                   - `sensor.thermostat_setpoint`
                   - `sensor.thermostat_room_temperature`
+                  - `input_boolean.heating_enable`
                   - `input_boolean.cooling_enable`
                   - `climate.woonkamer | current_temperature`
                   - `climate.woonkamer | hvac_mode`
@@ -2241,6 +2267,8 @@ views:
                     name: Bronentity setpoint
                   - entity: input_text.openquatt_source_room_temperature
                     name: Bronentity ruimtetemperatuur
+                  - entity: input_text.openquatt_source_heating_enable
+                    name: Bronentity warmtetoestemming
                   - entity: input_text.openquatt_source_cooling_enable
                     name: Bronentity koeltoestemming
           - type: vertical-stack
@@ -2261,9 +2289,9 @@ views:
                   OpenQuatt dienen.
 
 
-                  De status `Valid` hoort voor alle vijf signalen op `on` te staan.
+                  De status `Valid` hoort voor alle zes signalen op `on` te staan.
 
-                  Als `Valid` op `off` staat, is de huidige bron niet numeriek.
+                  Als `Valid` op `off` staat, is de huidige bron ongeldig of niet beschikbaar.
 
                   Dan wordt de proxywaarde `Unavailable` totdat de bron weer geldig
 
@@ -2290,6 +2318,10 @@ views:
                     name: Proxy ruimtetemperatuur
                   - entity: binary_sensor.openquatt_ext_room_temperature_valid
                     name: Ruimtetemperatuur bron valid
+                  - entity: binary_sensor.openquatt_ext_heating_enable
+                    name: Proxy warmtetoestemming
+                  - entity: binary_sensor.openquatt_ext_heating_enable_valid
+                    name: Warmtetoestemming bron valid
                   - entity: binary_sensor.openquatt_ext_cooling_enable
                     name: Proxy koeltoestemming
                   - entity: binary_sensor.openquatt_ext_cooling_enable_valid
@@ -2305,7 +2337,7 @@ views:
                   <details>
                   <summary><strong>Uitleg</strong></summary>
 
-                  Dit zijn de vijf HA-invoerwaarden zoals OpenQuatt ze ontvangt. Deze horen de proxywaarden uit het middelste blok te volgen.
+                  Dit zijn de zes HA-invoerwaarden zoals OpenQuatt ze ontvangt. Deze horen de proxywaarden uit het middelste blok te volgen.
 
                   Blijft een waarde op `Unknown`, controleer dan eerst of de bijbehorende `... bron valid` op `on` staat.
 
@@ -2322,6 +2354,8 @@ views:
                     name: HA - Thermostat Doeltemperatuur
                   - entity: sensor.openquatt_ha_thermostat_room_temperature
                     name: HA - Thermostaat kamertemperatuur
+                  - entity: binary_sensor.openquatt_ha_heating_enable
+                    name: HA - Warmtetoestemming
                   - entity: binary_sensor.openquatt_ha_cooling_enable
                     name: HA - Koeltoestemming
         column_span: 3

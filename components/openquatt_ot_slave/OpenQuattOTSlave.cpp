@@ -446,6 +446,13 @@ namespace esphome {
 			#ifdef OPENQUATT_OT_SLAVE_HAS_BINARY_SENSOR_master_cooling_enable
 			publish_binary_if_changed(this->master_cooling_enable_binary_sensor, m_master_state.cooling_enable, m_lastPublishedMasterCoolingEnableBinary);
 			#endif
+			#ifdef OPENQUATT_OT_SLAVE_HAS_BINARY_SENSOR_master_status_valid
+			const unsigned long status_now_ms = now_millis();
+			const bool master_status_valid =
+				m_enabled && m_lastMasterStatusMs != 0 &&
+				(status_now_ms - m_lastMasterStatusMs) <= MASTER_STATUS_TIMEOUT_MS;
+			publish_binary_if_changed(this->master_status_valid_binary_sensor, master_status_valid, m_lastPublishedMasterStatusValid);
+			#endif
 			#ifdef OPENQUATT_OT_SLAVE_HAS_BINARY_SENSOR_link_problem
 			bool link_problem = false;
 			if (m_enabled && m_otStarted && !m_otaActive && !m_updatePrepareActive) {

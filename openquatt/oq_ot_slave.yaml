@@ -62,6 +62,13 @@ binary_sensor:
       icon: mdi:snowflake
       web_server:
         sorting_group_id: oq_opentherm
+    master_status_valid:
+      id: ot_thermostat_status_valid
+      name: "OT - Thermostat Status Valid"
+      icon: mdi:check-decagram
+      entity_category: diagnostic
+      web_server:
+        sorting_group_id: oq_opentherm
     link_problem:
       id: ot_link_problem
       name: "OT - Link Problem"

@@ -41,6 +41,7 @@ class OpenQuattCIC : public PollingComponent {
   void set_cic_room_setpoint(sensor::Sensor *sensor) { this->cic_room_setpoint_ = sensor; }
   void set_cic_room_temp(sensor::Sensor *sensor) { this->cic_room_temp_ = sensor; }
   void set_cic_ch_enabled(binary_sensor::BinarySensor *binary_sensor) { this->cic_ch_enabled_ = binary_sensor; }
+  void set_cic_ch_enable_valid(binary_sensor::BinarySensor *binary_sensor) { this->cic_ch_enable_valid_ = binary_sensor; }
   void set_cic_cooling_enabled(binary_sensor::BinarySensor *binary_sensor) { this->cic_cooling_enabled_ = binary_sensor; }
   void set_feed_ok(binary_sensor::BinarySensor *binary_sensor) { this->feed_ok_ = binary_sensor; }
   void set_data_stale(binary_sensor::BinarySensor *binary_sensor) { this->data_stale_ = binary_sensor; }
@@ -117,6 +118,7 @@ class OpenQuattCIC : public PollingComponent {
   sensor::Sensor *cic_room_setpoint_{nullptr};
   sensor::Sensor *cic_room_temp_{nullptr};
   binary_sensor::BinarySensor *cic_ch_enabled_{nullptr};
+  binary_sensor::BinarySensor *cic_ch_enable_valid_{nullptr};
   binary_sensor::BinarySensor *cic_cooling_enabled_{nullptr};
   binary_sensor::BinarySensor *feed_ok_{nullptr};
   binary_sensor::BinarySensor *data_stale_{nullptr};

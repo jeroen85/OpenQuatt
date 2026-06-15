@@ -1158,9 +1158,6 @@ views:
             features:
               - type: toggle
             features_position: inline
-          - type: tile
-            entity: input_boolean.koeling_aan
-            name: HA helper cooling
           - type: entities
             show_header_toggle: false
             entities:
@@ -2073,6 +2070,34 @@ views:
           - type: vertical-stack
             cards:
               - type: heading
+                icon: mdi:radiator
+                heading: Heating enable sources
+                heading_style: subtitle
+                grid_options:
+                  columns: 12
+                  rows: 1
+              - type: entities
+                show_header_toggle: false
+                entities:
+                  - entity: select.openquatt_heating_enable_source
+                    name: Heating enable source
+                  - entity: sensor.openquatt_heating_enable_effective_source
+                    name: External source in use
+                  - entity: binary_sensor.openquatt_heating_enable_selected
+                    name: Heating permitted
+                  - entity: binary_sensor.openquatt_heating_enable_valid
+                    name: Source selection valid
+                  - entity: binary_sensor.openquatt_heating_blocked_by_thermostat
+                    name: Heating blocked by thermostat
+                  - entity: binary_sensor.openquatt_ot_thermostat_ch_enable
+                    name: Heating enable (OT thermostat)
+                  - entity: binary_sensor.openquatt_cic_ch_enabled
+                    name: Heating enable (CIC)
+                  - entity: binary_sensor.openquatt_ha_heating_enable
+                    name: Heating enable (HA Input)
+          - type: vertical-stack
+            cards:
+              - type: heading
                 icon: mdi:snowflake-check
                 heading: Cooling enable sources
                 heading_style: subtitle
@@ -2119,6 +2144,7 @@ views:
                   - `sensor.water_supply_temperature`
                   - `sensor.thermostat_setpoint`
                   - `sensor.thermostat_room_temperature`
+                  - `input_boolean.heating_enable`
                   - `input_boolean.cooling_enable`
                   - `climate.living_room | current_temperature`
                   - `climate.living_room | hvac_mode`
@@ -2140,6 +2166,8 @@ views:
                     name: Setpoint source entity
                   - entity: input_text.openquatt_source_room_temperature
                     name: Room temperature source entity
+                  - entity: input_text.openquatt_source_heating_enable
+                    name: Heating enable source entity
                   - entity: input_text.openquatt_source_cooling_enable
                     name: Cooling enable source entity
           - type: vertical-stack
@@ -2155,7 +2183,7 @@ views:
 
                   These are the stable HA proxy entities used as the contract towards OpenQuatt.
 
-                  `Valid` should be `on` for all five signals. If `Valid` is `off`, the current source is not numeric. In that case the proxy value is `Unavailable` until the source becomes valid again.
+                  `Valid` should be `on` for all six signals. If `Valid` is `off`, the current source is invalid. In that case the proxy value is `Unavailable` until the source becomes valid again.
                   </details>
                 text_only: true
               - type: entities
@@ -2177,6 +2205,10 @@ views:
                     name: Proxy room temperature
                   - entity: binary_sensor.openquatt_ext_room_temperature_valid
                     name: Room temperature source valid
+                  - entity: binary_sensor.openquatt_ext_heating_enable
+                    name: Proxy heating enable
+                  - entity: binary_sensor.openquatt_ext_heating_enable_valid
+                    name: Heating enable source valid
                   - entity: binary_sensor.openquatt_ext_cooling_enable
                     name: Proxy cooling enable
                   - entity: binary_sensor.openquatt_ext_cooling_enable_valid
@@ -2192,7 +2224,7 @@ views:
                   <details>
                   <summary><strong>Explanation</strong></summary>
 
-                  These are the five HA input signals as received by OpenQuatt. They should follow the proxy values shown in the middle panel.
+                  These are the six HA input signals as received by OpenQuatt. They should follow the proxy values shown in the middle panel.
 
                   If a value stays `Unknown`, first check whether the matching `... source valid` sensor is `on`.
 
@@ -2209,6 +2241,8 @@ views:
                     name: HA - Thermostat Setpoint
                   - entity: sensor.openquatt_ha_thermostat_room_temperature
                     name: HA - Thermostat Room Temperature
+                  - entity: binary_sensor.openquatt_ha_heating_enable
+                    name: HA - Heating Enable
                   - entity: binary_sensor.openquatt_ha_cooling_enable
                     name: HA - Cooling Enable
         column_span: 3

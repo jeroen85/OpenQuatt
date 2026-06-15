@@ -69,7 +69,7 @@ Ethernet is alleen beschikbaar voor de Heatpump Controller Q. ESPHome ondersteun
 5. Laat bij Wi-Fi het browsertabblad open, zodat de Wi-Fi-configuratie direct daarna kan worden aangeboden. Sluit bij Ethernet na de flash de netwerkkabel aan.
 6. Open na de eerste start `http://openquatt.local`.
 7. Rond de Quick Start in de web-app af.
-8. Voeg het apparaat daarna toe in Home Assistant.
+8. Voeg het apparaat daarna toe in Home Assistant. Selecteer tijdens het toevoegen nog geen area; ken die pas toe nadat de OpenQuatt-entiteiten zijn aangemaakt.
 
 Praktisch voor een DS18B20: sluit die sensor bij voorkeur aan voordat OpenQuatt opstart. De 1-Wire sensor wordt tijdens het opstarten gedetecteerd; als je hem later aansluit, moet je het bord eerst herstarten voordat de sensor zichtbaar wordt.
 
@@ -105,6 +105,9 @@ Zie voor de lokale web-app:
 - [Web-app gebruiken](web-app.md)
 
 ## Daarna: Home Assistant
+
+> [!IMPORTANT]
+> Selecteer bij het toevoegen van OpenQuatt nog geen Home Assistant-area. Sinds Home Assistant 2026.6 kan de gekozen area tijdens de eerste aanmaak in de `entity_id` terechtkomen, bijvoorbeeld `sensor.zolder_openquatt_flow`. De meegeleverde dashboards verwachten `sensor.openquatt_...`. Wacht daarom tot alle OpenQuatt-entiteiten bestaan en ken pas daarna een area toe. Een latere area-toewijzing verandert bestaande entity-ID's niet.
 
 Controleer na Quick Start bij voorkeur in deze volgorde:
 
@@ -151,6 +154,7 @@ Controleer in Home Assistant eerst welke bron is geselecteerd voor flow, buitent
 
 - Gebruik de ruwe YAML-editor in Home Assistant.
 - Controleer of je het juiste dashboardbestand voor `Single` of `Duo` hebt gekozen.
+- Controleer of de OpenQuatt-entity-ID's met `openquatt_` beginnen en niet met een area-prefix zoals `zolder_openquatt_`.
 
 ## Als de installer niet werkt
 

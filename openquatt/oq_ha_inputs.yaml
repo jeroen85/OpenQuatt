@@ -7,6 +7,7 @@
 #
 # Scope:
 #   - Fixed HA-backed temperature and thermostat proxy inputs
+#   - HA heating/cooling enable proxy contracts
 #   - Aggregate HA cooling proxy contract used for cooling safety
 #
 # Notes:
@@ -83,6 +84,16 @@ sensor:
 
 binary_sensor:
   - platform: homeassistant
+    id: heating_enable_ha
+    name: "HA - Heating Enable"
+    entity_id: ${ha_heating_enable_entity_id}
+    internal: false
+    icon: mdi:radiator
+    device_class: heat
+    web_server:
+      sorting_group_id: oq_ha_inputs
+
+  - platform: homeassistant
     id: cooling_enable_ha
     name: "HA - Cooling Enable"
     entity_id: ${ha_cooling_enable_entity_id}
@@ -123,6 +134,15 @@ binary_sensor:
     id: room_temp_valid_ha
     name: "HA - Room Temperature Valid"
     entity_id: ${ha_room_temp_valid_entity_id}
+    internal: true
+    icon: mdi:check-decagram
+    web_server:
+      sorting_group_id: oq_ha_inputs
+
+  - platform: homeassistant
+    id: heating_enable_valid_ha
+    name: "HA - Heating Enable Valid"
+    entity_id: ${ha_heating_enable_valid_entity_id}
     internal: true
     icon: mdi:check-decagram
     web_server:

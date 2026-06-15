@@ -24,6 +24,7 @@ CONF_CIC_CONTROL_SETPOINT = "cic_control_setpoint"
 CONF_CIC_ROOM_SETPOINT = "cic_room_setpoint"
 CONF_CIC_ROOM_TEMP = "cic_room_temp"
 CONF_CIC_CH_ENABLED = "cic_ch_enabled"
+CONF_CIC_CH_ENABLE_VALID = "cic_ch_enable_valid"
 CONF_CIC_COOLING_ENABLED = "cic_cooling_enabled"
 CONF_FEED_OK = "feed_ok"
 CONF_DATA_STALE = "data_stale"
@@ -57,6 +58,7 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Required(CONF_CIC_ROOM_SETPOINT): cv.use_id(sensor.Sensor),
         cv.Required(CONF_CIC_ROOM_TEMP): cv.use_id(sensor.Sensor),
         cv.Required(CONF_CIC_CH_ENABLED): cv.use_id(binary_sensor.BinarySensor),
+        cv.Required(CONF_CIC_CH_ENABLE_VALID): cv.use_id(binary_sensor.BinarySensor),
         cv.Required(CONF_CIC_COOLING_ENABLED): cv.use_id(binary_sensor.BinarySensor),
         cv.Required(CONF_FEED_OK): cv.use_id(binary_sensor.BinarySensor),
         cv.Required(CONF_DATA_STALE): cv.use_id(binary_sensor.BinarySensor),
@@ -99,6 +101,7 @@ async def to_code(config):
         CONF_CIC_ROOM_SETPOINT,
         CONF_CIC_ROOM_TEMP,
         CONF_CIC_CH_ENABLED,
+        CONF_CIC_CH_ENABLE_VALID,
         CONF_CIC_COOLING_ENABLED,
         CONF_FEED_OK,
         CONF_DATA_STALE,

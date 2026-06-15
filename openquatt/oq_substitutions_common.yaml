@@ -214,6 +214,8 @@ ha_room_temp_entity_id: "sensor.openquatt_ext_room_temperature"             # HA
 ha_room_temp_valid_entity_id: "binary_sensor.openquatt_ext_room_temperature_valid" # HA validity flag for thermostat room temperature.
 ha_cooling_enable_entity_id: "binary_sensor.openquatt_ext_cooling_enable"   # HA proxy entity for external cooling enable.
 ha_cooling_enable_valid_entity_id: "binary_sensor.openquatt_ext_cooling_enable_valid" # HA validity flag for external cooling enable.
+ha_heating_enable_entity_id: "binary_sensor.openquatt_ext_heating_enable"   # HA proxy entity for external heating enable.
+ha_heating_enable_valid_entity_id: "binary_sensor.openquatt_ext_heating_enable_valid" # HA validity flag for external heating enable.
 ha_cooling_dew_point_entity_id: "sensor.openquatt_ext_cooling_dew_point" # HA aggregate cooling dew point [degC].
 ha_cooling_dew_point_valid_entity_id: "binary_sensor.openquatt_ext_cooling_dew_point_valid" # HA validity flag for aggregate cooling dew point.
 

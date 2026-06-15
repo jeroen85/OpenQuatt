@@ -928,6 +928,13 @@ interval:
             }
           }
 
+          const bool heating_enable_permitted =
+              id(heating_enable_valid).has_state() && id(heating_enable_valid).state &&
+              id(heating_enable_selected).has_state() && id(heating_enable_selected).state;
+          if (heating_req && !heating_enable_permitted) {
+            heating_req = false;
+          }
+
           const uint32_t cm2_idle_exit_ms = (uint32_t)(${oq_cm2_idle_exit_s}UL * 1000UL);
           const bool curve_mode_active = (strategy_active_code == 2);
           const uint32_t cm2_startup_grace_ms = (uint32_t)(${oq_cm2_min_run_s}UL * 1000UL);

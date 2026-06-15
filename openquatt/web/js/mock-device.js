@@ -999,6 +999,11 @@
       state: "HA input",
       option: ["CIC", "HA input", "CIC or HA input"],
     });
+    setEntity("select", "Heating Enable Source", {
+      value: "Disabled",
+      state: "Disabled",
+      option: ["Disabled", "OT thermostat", "CIC", "HA input"],
+    });
     setEntity("select", "Firmware Update Channel", {
       value: "dev",
       state: "dev",
@@ -1191,6 +1196,7 @@
       ["HP1 - Active Failures List", "None"],
       ["Room Temperature Effective Source", "OT thermostat"],
       ["Room Setpoint Effective Source", "OT thermostat"],
+      ["Heating Enable Effective Source", "None"],
       ["Cooling Enable Effective Source", "HA input"],
     ].forEach(([name, value]) => {
       setEntity("text_sensor", name, { state: value, value });
@@ -1200,6 +1206,9 @@
       ["Silent active", false],
       ["Sticky pump active", false],
       ["Cooling Enable (Selected)", false],
+      ["Heating Enable (Selected)", true],
+      ["Heating Enable Valid", true],
+      ["Heating blocked by thermostat", false],
       ["Cooling Request Active", false],
       ["Cooling Permitted", false],
       ["Boiler active", false],
@@ -1211,14 +1220,18 @@
       ["Lowflow fault active", false],
       ["Flow mismatch (HP1 vs HP2)", false],
       ["OT - Thermostat CH Enable", false],
+      ["OT - Thermostat Status Valid", true],
       ["OT - Thermostat Cooling Enable", false],
       ["CIC - CH enabled", false],
+      ["CIC - CH enable valid", true],
       ["CIC - Cooling enabled", false],
       ["CIC - JSON Feed OK", true],
       ["HA - Outside Temperature Valid", true],
       ["HA - Water Supply Temperature Valid", true],
       ["HA - Room Setpoint Valid", true],
       ["HA - Room Temperature Valid", true],
+      ["HA - Heating Enable", false],
+      ["HA - Heating Enable Valid", true],
       ["HA - Cooling Enable", false],
       ["HA - Cooling Enable Valid", true],
       ["CIC - Data stale", false],
@@ -1349,13 +1362,29 @@
     setBinary("OT - Thermostat CH Enable", state.scenario !== "idle");
     setBinary("OT - Thermostat Cooling Enable", state.scenario === "cooling");
     setBinary("CIC - CH enabled", state.scenario !== "idle");
+    setBinary("CIC - CH enable valid", true);
     setBinary("CIC - Cooling enabled", state.scenario === "cooling");
     setBinary("CIC - JSON Feed OK", true);
+    setBinary("HA - Heating Enable", state.scenario !== "idle");
     setBinary("HA - Cooling Enable", state.scenario === "cooling");
     setBinary("CIC - Data stale", !isSwitchEnabled("CIC - Enable polling"));
     setBinary("OT - Link Problem", false);
+    setBinary("OT - Thermostat Status Valid", true);
+    const heatingEnableSource = String(getEntity("select", "Heating Enable Source")?.value || "Disabled");
+    const heatingEnableValid = heatingEnableSource === "Disabled"
+      || (heatingEnableSource === "OT thermostat" && Boolean(getEntity("binary_sensor", "OT - Thermostat Status Valid")?.value))
+      || (heatingEnableSource === "CIC" && Boolean(getEntity("binary_sensor", "CIC - CH enable valid")?.value))
+      || (heatingEnableSource === "HA input" && Boolean(getEntity("binary_sensor", "HA - Heating Enable Valid")?.value));
+    const heatingEnableSelected = heatingEnableSource === "Disabled"
+      || (heatingEnableValid && heatingEnableSource === "OT thermostat" && Boolean(getEntity("binary_sensor", "OT - Thermostat CH Enable")?.value))
+      || (heatingEnableValid && heatingEnableSource === "CIC" && Boolean(getEntity("binary_sensor", "CIC - CH enabled")?.value))
+      || (heatingEnableValid && heatingEnableSource === "HA input" && Boolean(getEntity("binary_sensor", "HA - Heating Enable")?.value));
+    setBinary("Heating Enable Valid", heatingEnableValid);
+    setBinary("Heating Enable (Selected)", heatingEnableSelected);
+    setBinary("Heating blocked by thermostat", state.scenario !== "idle" && !heatingEnableSelected);
     setText("text_sensor", "Room Temperature Effective Source", String(getEntity("select", "Room Temperature Source")?.value || "Unknown"));
     setText("text_sensor", "Room Setpoint Effective Source", String(getEntity("select", "Room Setpoint Source")?.value || "Unknown"));
+    setText("text_sensor", "Heating Enable Effective Source", heatingEnableSource === "Disabled" ? "None" : heatingEnableSource);
     setText("text_sensor", "Cooling Enable Effective Source", String(getEntity("select", "Cooling Enable Source")?.value || "Unknown"));
     setNumber("OT - Control Setpoint", state.scenario === "cooling" ? 18.0 : 30.0, "\u00B0C");
     setNumber("OT - Room Setpoint", state.scenario === "cooling" ? 23.0 : 21.0, "\u00B0C");

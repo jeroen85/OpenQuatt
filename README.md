@@ -39,7 +39,7 @@ Alle Wi-Fi-combinaties van bovenstaande opstelling en hardware worden ondersteun
 3. Flash de firmware via USB in Chrome of Edge.
 4. Rond Wi-Fi-configuratie af, of sluit bij een Ethernet-build de netwerkkabel aan.
 5. Open `http://openquatt.local` en loop de Quick Start door.
-6. Voeg OpenQuatt daarna toe in Home Assistant en importeer het dashboard.
+6. Voeg OpenQuatt daarna toe in Home Assistant, maar selecteer tijdens het toevoegen nog geen area. Wacht tot de entiteiten zijn aangemaakt, ken daarna de area toe en importeer het dashboard.
 
 Alleen de nieuwste stabiele eerste-installatiebestanden worden standaard via de installer aangeboden.
 

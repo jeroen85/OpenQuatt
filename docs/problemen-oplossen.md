@@ -40,6 +40,12 @@ Controleer eerst of de web-app wel bereikbaar is. Als de web-app werkt maar Home
 - controleer of API-encryptie in Home Assistant overeenkomt met de web-app;
 - herstart Home Assistant of herlaad de ESPHome-integratie.
 
+## Dashboardkaarten melden ontbrekende entiteiten
+
+Controleer een ontbrekende OpenQuatt-entiteit via **Instellingen -> Apparaten & diensten -> Entiteiten**. Begint de `entity_id` met een area, zoals `sensor.zolder_openquatt_flow`, dan is die area waarschijnlijk geselecteerd tijdens de eerste toevoeging in Home Assistant 2026.6 of nieuwer. Het dashboard verwacht `sensor.openquatt_flow`.
+
+Hernoem de betrokken entity-ID's en verwijder alleen de area-prefix. De area mag toegewezen blijven, omdat Home Assistant bestaande entity-ID's niet opnieuw wijzigt wanneer je een area later aanpast. Zie [Dashboard installeren](dashboard/README.md#area-was-al-geselecteerd) voor de volledige herstelroute.
+
 ## Ik zie geen warmtepompgegevens
 
 Ga niet afstellen zolang basisdata ontbreekt.

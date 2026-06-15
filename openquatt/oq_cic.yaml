@@ -150,6 +150,14 @@ binary_sensor:
       sorting_group_id: oq_cic
 
   - platform: template
+    id: cic_ch_enable_valid
+    name: "CIC - CH enable valid"
+    icon: mdi:check-decagram
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: oq_cic
+
+  - platform: template
     id: cic_cooling_enabled
     name: "CIC - Cooling enabled"
     icon: mdi:snowflake
@@ -194,6 +202,7 @@ openquatt_cic:
   cic_room_setpoint: cic_room_setpoint
   cic_room_temp: cic_room_temp
   cic_ch_enabled: cic_ch_enabled
+  cic_ch_enable_valid: cic_ch_enable_valid
   cic_cooling_enabled: cic_cooling_enabled
   feed_ok: feed_ok
   data_stale: cic_data_stale
