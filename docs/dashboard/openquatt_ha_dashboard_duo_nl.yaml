@@ -2183,11 +2183,11 @@ views:
                   - entity: select.openquatt_heating_enable_source
                     name: Warmtetoestemming bron
                   - entity: sensor.openquatt_heating_enable_effective_source
-                    name: Effectieve warmtetoestemmingsbron
+                    name: Gebruikte externe bron
                   - entity: binary_sensor.openquatt_heating_enable_selected
-                    name: Geselecteerde warmtetoestemming
+                    name: Verwarming toegestaan
                   - entity: binary_sensor.openquatt_heating_enable_valid
-                    name: Warmtetoestemming bron geldig
+                    name: Bronselectie geldig
                   - entity: binary_sensor.openquatt_heating_blocked_by_thermostat
                     name: Verwarming geblokkeerd door thermostaat
                   - entity: binary_sensor.openquatt_ot_thermostat_ch_enable

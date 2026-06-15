@@ -1729,11 +1729,11 @@ views:
                   - entity: select.openquatt_heating_enable_source
                     name: Heating enable source
                   - entity: sensor.openquatt_heating_enable_effective_source
-                    name: Effective heating enable source
+                    name: External source in use
                   - entity: binary_sensor.openquatt_heating_enable_selected
-                    name: Selected heating enable
+                    name: Heating permitted
                   - entity: binary_sensor.openquatt_heating_enable_valid
-                    name: Heating enable source valid
+                    name: Source selection valid
                   - entity: binary_sensor.openquatt_heating_blocked_by_thermostat
                     name: Heating blocked by thermostat
                   - entity: binary_sensor.openquatt_ot_thermostat_ch_enable
