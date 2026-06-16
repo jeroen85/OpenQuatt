@@ -787,8 +787,12 @@ void OpenQuattTrends::set_flash_enabled(bool enabled) {
     return;
   }
 
+  if (this->flash_builder_.active && this->flash_builder_.sample_count > 0 &&
+      this->flash_partition_ != nullptr && this->time_is_valid_() &&
+      this->write_flash_block_(this->flash_builder_)) {
+    this->reset_flash_builder_();
+  }
   this->flash_enabled_ = false;
-  this->clear_flash_archive_();
 }
 
 bool OpenQuattTrends::force_flush() {

@@ -1667,7 +1667,7 @@ Kenmerken: Flowmeter in de buitenunit ge\xEFntegreerd. Onder CV-ketel enkel een 
       `)}function Ym(){if(!y("trendHistoryEnabled"))return"";const e=A("trendHistoryEnabled"),o=e&&A("trendHistoryFlashEnabled");return te("Trends","Trendopslag","Bewaar de laatste 7 dagen in werkgeheugen en optioneel tot 30 dagen in flash.",`
         <div class="oq-settings-grid">
           ${Ua("trendHistoryEnabled","Trendopslag","Schakel de trendopslag voor de grafieken in of uit.","OpenQuatt bewaart live trenddata in het werkgeheugen zodat je de grafieken kunt blijven gebruiken.","OpenQuatt bewaart geen trenddata en verbergt de Trends-tab.")}
-          ${e?Ua("trendHistoryFlashEnabled","Trendhistorie opslaan in flash","Bewaart trenddata ook na herstart of OTA.","Trendhistorie wordt bewaard in flash zodat je later verder kunt terugkijken.","Trendhistorie blijft alleen in het werkgeheugen en is na herstart weg."):""}
+          ${e?Ua("trendHistoryFlashEnabled","Trendhistorie opslaan in flash","Bewaart trenddata ook na herstart of OTA.","Trendhistorie wordt bewaard in flash zodat je later verder kunt terugkijken.","Bestaande flashhistorie blijft bewaard, maar nieuwe trenddata wordt alleen in het werkgeheugen bijgehouden."):""}
           ${o?Mm("trendHistoryFlush","Trendhistorie nu opslaan","Schrijf de huidige trendbuffer direct weg naar flash.","Nu opslaan","flush-trend-history","",{disabled:!o,note:"Handig voor een OTA of een geplande herstart."}):""}
           ${o?$m():""}
         </div>

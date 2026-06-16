@@ -3028,7 +3028,7 @@
             "Trendhistorie opslaan in flash",
             "Bewaart trenddata ook na herstart of OTA.",
             "Trendhistorie wordt bewaard in flash zodat je later verder kunt terugkijken.",
-            "Trendhistorie blijft alleen in het werkgeheugen en is na herstart weg."
+            "Bestaande flashhistorie blijft bewaard, maar nieuwe trenddata wordt alleen in het werkgeheugen bijgehouden."
           ) : ""}
           ${trendHistoryFlashEnabled ? renderSettingsButtonField(
             "trendHistoryFlush",
