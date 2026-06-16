@@ -100,7 +100,7 @@ Zie je hier al vreemde waarden, ga dan niet meteen tunen. Controleer eerst de br
 - schakelt het systeem vaak;
 - reageert de regeling logisch op setpoint en kamertemperatuur.
 
-Trendopslag kan onder `Instellingen -> Systeem` worden beheerd. Als trendopslag uit staat, kan de tab minder of geen historie tonen.
+Trendopslag kan onder `Instellingen -> Systeem` worden beheerd. Als trendopslag uit staat, stopt OpenQuatt met nieuwe trendpunten bijhouden en kan de tab minder of geen historie tonen. Bestaande flashhistorie wordt daarbij niet gewist.
 
 OpenQuatt bewaart de korte trendhistorie in PSRAM en kan aanvullend tot 30 dagen trendhistorie in flash bewaren. Als je flashopslag uitzet, blijft bestaande flashhistorie staan; OpenQuatt stopt dan alleen met nieuwe trenddata naar flash schrijven. Alle ondersteunde OpenQuatt-profielen gebruiken PSRAM; ontbrekende PSRAM wijst dus op een hardware- of profielprobleem. De flashhistorie reserveert 360 KiB in de `openquatt_data` partitie. Op het 8 MB hardwareprofiel is die partitie 1920 KiB groot, waardoor na de trendhistorie nog 1560 KiB overblijft voor andere data in dezelfde partitie.
 

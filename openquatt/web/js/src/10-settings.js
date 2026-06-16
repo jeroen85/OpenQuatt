@@ -184,7 +184,7 @@
   }
 
   function renderSettingsTrendStatsField() {
-    if (!isEntityActive("trendHistoryEnabled") || !isEntityActive("trendHistoryFlashEnabled")) {
+    if (!isEntityActive("trendHistoryEnabled") || !hasEntity("trendHistoryFlashAvailable")) {
       return "";
     }
 
@@ -234,7 +234,9 @@
       "Overzicht van wat er nu in flash is opgeslagen.",
       controlMarkup,
       "oq-settings-field--span-2",
-      `<p class="oq-settings-action-note">Wordt ongeveer elk uur opgeslagen en ook bij herstart of OTA.</p>`,
+      isEntityActive("trendHistoryFlashEnabled")
+        ? `<p class="oq-settings-action-note">Wordt ongeveer elk uur opgeslagen en ook bij herstart of OTA.</p>`
+        : `<p class="oq-settings-action-note">Nieuwe opslag in flash staat uit; bestaande flashhistorie blijft beschikbaar.</p>`,
     );
   }
 
@@ -3009,6 +3011,7 @@
 
     const trendHistoryEnabled = isEntityActive("trendHistoryEnabled");
     const trendHistoryFlashEnabled = trendHistoryEnabled && isEntityActive("trendHistoryFlashEnabled");
+    const showTrendHistoryFlashStats = trendHistoryEnabled && hasEntity("trendHistoryFlashAvailable");
 
     return renderSettingsSection(
       "Trends",
@@ -3021,7 +3024,7 @@
             "Trendopslag",
             "Schakel de trendopslag voor de grafieken in of uit.",
             "OpenQuatt bewaart live trenddata in het werkgeheugen zodat je de grafieken kunt blijven gebruiken.",
-            "OpenQuatt bewaart geen trenddata en verbergt de Trends-tab."
+            "OpenQuatt stopt met nieuwe trenddata bijhouden en verbergt de Trends-tab. Bestaande flashhistorie blijft bewaard."
           )}
           ${trendHistoryEnabled ? renderSettingsSwitchField(
             "trendHistoryFlashEnabled",
@@ -3042,7 +3045,7 @@
               note: "Handig voor een OTA of een geplande herstart.",
             }
           ) : ""}
-          ${trendHistoryFlashEnabled ? renderSettingsTrendStatsField() : ""}
+          ${showTrendHistoryFlashStats ? renderSettingsTrendStatsField() : ""}
         </div>
       `,
     );
