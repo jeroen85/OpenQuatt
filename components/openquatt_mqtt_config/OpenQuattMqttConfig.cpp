@@ -261,7 +261,7 @@ class OpenQuattMqttConfigRequestHandler : public AsyncWebHandler {
         request->send(409, "application/json", R"({"ok":false,"error":"invalid_port"})");
         return;
       }
-      if (essential_interval_s == 0U || standard_interval_s == 0U) {
+      if (essential_interval_s == 0U || standard_interval_s == 0U || diagnostic_interval_s == 0U) {
         request->send(409, "application/json", R"({"ok":false,"error":"invalid_publish_interval"})");
         return;
       }
