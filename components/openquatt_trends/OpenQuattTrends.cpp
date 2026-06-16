@@ -783,15 +783,13 @@ void OpenQuattTrends::capture_sample(float outside_c, float supply_c, float room
 void OpenQuattTrends::set_flash_enabled(bool enabled) {
   if (enabled) {
     this->flash_enabled_ = true;
+    this->flash_archive_scanned_ = false;
     this->load_archive_if_needed_();
     return;
   }
 
-  if (this->flash_builder_.active && this->flash_builder_.sample_count > 0 &&
-      this->flash_partition_ != nullptr && this->time_is_valid_() &&
-      this->write_flash_block_(this->flash_builder_)) {
-    this->reset_flash_builder_();
-  }
+  this->reset_flash_builder_();
+  this->flash_dirty_ = false;
   this->flash_enabled_ = false;
 }
 
@@ -803,10 +801,6 @@ bool OpenQuattTrends::force_flush() {
 }
 
 void OpenQuattTrends::clear_history() {
-  if (this->flash_builder_.active && this->flash_builder_.sample_count > 0 &&
-      this->flash_partition_ != nullptr && this->time_is_valid_()) {
-    this->write_flash_block_(this->flash_builder_);
-  }
   this->ram_head_ = 0;
   this->ram_count_ = 0;
   this->last_capture_ms_ = 0;
