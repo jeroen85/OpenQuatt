@@ -1,110 +1,92 @@
 # Contributing
 
-Deze gids is bedoeld voor repo-onderhoud en reviews. Het doel is niet om generieke YAML-stijl af te dwingen, maar om ESPHome-packages voorspelbaar en snel leesbaar te houden.
+This guide is intended for repo maintenance and reviews. Its goal is not to enforce generic YAML style, but to keep ESPHome packages predictable and quick to review.
 
-## Doel
+## Purpose
 
-- Houd high-churn control-packages logisch opgebouwd.
-- Maak runtime state en ownership snel vindbaar.
-- Forceer alleen regels die weinig ruis geven en echt helpen bij reviews.
+- Keep high-churn control packages logically organized.
+- Make runtime state and ownership easy to find.
+- Enforce only rules that create little noise and genuinely help reviews.
 
 ## Scope
 
-De automatische style-check is bewust smal, maar geldt nu volledig voor alle ESPHome YAML-entrypoints en package-gerelateerde bestanden:
+The automatic style check is intentionally narrow, but now fully applies to all ESPHome YAML entrypoints and package-related files:
 
-- Voor alle hoofdconfiguraties, base-configs, profile-files en package YAML's:
-  - geen tabs
-  - geen trailing whitespace
-  - consistente banner header bovenaan
-- Voor alle package YAML's in `openquatt/*.yaml`:
-  - vaste top-level groepsvolgorde
-  - lambda-opbouw voor grotere blokken
-- Voor alle hoofdconfiguraties en base-configs:
-  - vaste top-level volgorde van `substitutions`, `packages`, `esphome`, `esp32` waar van toepassing
-  - vaste child-volgorde binnen kleine wiring-mappings zoals `packages:`
-- Voor package include manifests en substitution-bestanden:
-  - vaste include-volgorde in `oq_packages*.yaml`
-  - vaste section-volgorde in `oq_substitutions_common.yaml`
-  - vaste key-volgorde in hardware-profile `substitutions:`
+- For all main configs, base configs, profile files, and package YAML files:
+  - no tabs
+  - no trailing whitespace
+  - consistent banner header at the top
+- For all package YAML files in `openquatt/*.yaml`:
+  - fixed top-level group order
+  - structured lambda layout for larger blocks
+- For all main configs and base configs:
+  - fixed top-level order of `substitutions`, `packages`, `esphome`, `esp32` where applicable
+  - fixed child order inside small wiring mappings such as `packages:`
+- For package include manifests and substitution files:
+  - fixed include order in `oq_packages*.yaml`
+  - fixed section order in `oq_substitutions_common.yaml`
+  - fixed key order in hardware-profile `substitutions:`
 
 ## Package Layout
 
-Gebruik deze groepsvolgorde wanneer een package deze blokken bevat:
+Use this group order when a package contains these blocks:
 
-1. banner + verantwoordelijkheidsblok
-2. infrastructuur zoals `logger:`, `api:`, `ota:`, `wifi:`, `http_request:`, `uart:`, `modbus:`, `modbus_controller:`, `modbus_server:`, `one_wire:`, `time:`, `web_server:`
-3. interne state via `globals:`
-4. control/helper-blokken zoals `script:`, `output:`, `climate:`, `switch:`, `select:`, `number:`, `datetime:`, `text:`, `button:`
-5. gepubliceerde entities via `binary_sensor:`, `sensor:`, `text_sensor:`, `update:`
-6. periodieke loop via `interval:`
+1. banner + responsibility block
+2. infrastructure such as `logger:`, `api:`, `ota:`, `wifi:`, `http_request:`, `uart:`, `modbus:`, `modbus_controller:`, `modbus_server:`, `one_wire:`, `time:`, `web_server:`
+3. internal state via `globals:`
+4. control/helper blocks such as `script:`, `output:`, `climate:`, `switch:`, `select:`, `number:`, `datetime:`, `text:`, `button:`
+5. published entities via `binary_sensor:`, `sensor:`, `text_sensor:`, `update:`
+6. periodic loop via `interval:`
 
 Rationale:
 
-- infrastructuur bovenaan maakt externe afhankelijkheden en board/runtime setup direct zichtbaar
-- `globals:` vroeg in het bestand maakt latches, timers en ownership snel vindbaar
-- control/helper-blokken staan voor gepubliceerde entities, zodat eerst duidelijk is wat het package aanstuurt en beheert
-- `datetime`, `climate` en `output` horen expliciet in die control/helper-laag en niet ad hoc verspreid door het bestand
-- `interval:` onderaan houdt de hoofdloop bij de uitvoerende logica
+- infrastructure at the top makes external dependencies and board/runtime setup immediately visible
+- `globals:` early in the file makes latches, timers, and ownership easy to find
+- control/helper blocks come before published entities, so the package first shows what it drives and manages
+- `datetime`, `climate`, and `output` explicitly belong in the control/helper layer, not scattered through the file
+- `interval:` at the bottom keeps the main loop close to the executing logic
 
-Binnen een groep is de exacte volgorde minder belangrijk dan leesbaarheid en samenhang.
+Within a group, exact order matters less than readability and cohesion.
 
-## Reviewregels
+## Review Rules
 
-Niet alles wordt automatisch gecontroleerd. Bij reviews blijven deze regels leidend:
+Not everything is checked automatically. These rules remain leading during reviews:
 
-- Houd lambda's gefaseerd: inputs lezen, state berekenen, outputs toepassen, diagnostics publiceren.
-- Gebruik korte sectieheaders boven top-level blokken.
-- Houd single-writer ownership expliciet; vermijd verborgen schrijvers naar dezelfde state.
-- Voeg alleen comments toe waar de intentie anders niet direct duidelijk is.
+- Keep lambdas phased: read inputs, compute state, apply outputs, publish diagnostics.
+- Use short section headers above top-level blocks.
+- Keep single-writer ownership explicit; avoid hidden writers to the same state.
+- Add comments only where intent is not immediately clear.
+- Write new and changed code comments in English, including YAML comments and `//` comments inside ESPHome lambdas.
 
 ## Lambda Style
 
-Voor ESPHome-lambda's gebruiken we een smalle maar harde stijl:
+For ESPHome lambdas, we use a narrow but strict style:
 
-- gebruik altijd `lambda: |-`, niet inline one-liners
-- houd de lambda-body als blok duidelijk onder de `lambda:`-regel ingesprongen
-- gebruik maximaal één lege regel tussen logische blokken
-- voeg bij lambda's van 12 of meer niet-lege regels minimaal één korte `//` fase- of intentiecomment toe
+- always use `lambda: |-`, not inline one-liners
+- keep the lambda body clearly indented below the `lambda:` line
+- use at most one blank line between logical blocks
+- add at least one short `//` phase or intent comment to lambdas with 12 or more non-empty lines
 
-Voor grotere lambda's is de voorkeursopbouw:
+For larger lambdas, prefer this structure:
 
-1. inputs lezen / valideren
-2. interne berekening of state updates
-3. output of returnwaarde publiceren
+1. read / validate inputs
+2. internal calculation or state updates
+3. publish output or return value
 
-Als een lambda meerdere verantwoordelijkheden heeft, geef die blokken dan expliciet namen met korte comments.
+If a lambda has multiple responsibilities, give those blocks explicit names with short comments.
 
-## Lokale Validatie
+## Local Validation
 
-Aanbevolen ontwikkelomgeving:
-
-- macOS
-- Linux
-- WSL2 op Windows
-
-Gebruik op Windows bij voorkeur WSL en clone de repo in het Linux-filesystem, niet onder `C:\...` of `/mnt/c/...`. Native Windows blijft bruikbaar voor lichte checks en compatibiliteit, maar is niet de voorkeursroute voor dagelijkse compile-runs of parallel builds.
-
-Gebruik:
+Use the project helper for normal local checks:
 
 - `python3 scripts/dev.py bootstrap`
 - `python3 scripts/dev.py validate`
 - `python3 scripts/dev.py validate --config-only`
 - `python3 scripts/dev.py validate --jobs 2`
 
-Convenience wrappers blijven beschikbaar:
-
-- `./scripts/bootstrap_esphome_local.sh`
-- `.\scripts\wsl_dev.ps1 bootstrap`
-- `.\scripts\wsl_dev.ps1 validate --jobs 2`
-- `./scripts/validate_local.sh`
-- `.\scripts\bootstrap_esphome_local.ps1`
-- `.\scripts\validate_local.ps1`
-
-Losse checks blijven bruikbaar voor snelle iteraties:
+For quick iterations, the standalone checks remain useful:
 
 - `python3 scripts/check_style_consistency.py`
 - `python3 scripts/check_docs_consistency.py`
 
-Meer achtergrond en een concrete WSL/macOS workflow staan in [docs/ontwikkelen-op-mac-en-wsl.md](docs/ontwikkelen-op-mac-en-wsl.md).
-
-De checker is bedoeld als lokale kwaliteitsgate. Nieuwe regels horen pas toegevoegd te worden als de huidige codebase er stabiel mee om kan gaan.
+The checker is intended as a local quality gate. Add new rules only once the current codebase can satisfy them consistently.
