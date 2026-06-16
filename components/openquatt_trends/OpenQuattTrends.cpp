@@ -1092,3 +1092,4 @@ uint32_t OpenQuattTrends::get_flash_write_count() const {
 
 }  // namespace openquatt_trends
 }  // namespace esphome
+// OpenQuatt Workspace Target Lock

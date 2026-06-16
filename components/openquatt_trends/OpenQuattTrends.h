@@ -193,3 +193,4 @@ class OpenQuattTrends : public Component {
 
 }  // namespace openquatt_trends
 }  // namespace esphome
+// OpenQuatt Workspace Target Lock
