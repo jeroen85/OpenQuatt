@@ -53,6 +53,10 @@ void OpenQuattMqttPublisher::loop() {
   const bool just_connected = !this->last_connected_;
   this->last_connected_ = true;
   const bool force_publish = config_changed || just_connected;
+  const bool publish_state_profile = profile == PublishProfile::ESSENTIAL || profile == PublishProfile::STANDARD ||
+                                     profile == PublishProfile::DIAGNOSTIC;
+  const bool publish_heat_pumps_profile = profile == PublishProfile::STANDARD || profile == PublishProfile::DIAGNOSTIC;
+  const bool publish_diagnostics_profile = profile == PublishProfile::DIAGNOSTIC;
 
   if (force_publish) {
     if (profile == PublishProfile::OFF) {
@@ -69,17 +73,17 @@ void OpenQuattMqttPublisher::loop() {
 
   const uint32_t now_ms = millis();
 
-  if (profile == PublishProfile::ESSENTIAL || profile == PublishProfile::STANDARD) {
+  if (publish_state_profile) {
     const uint32_t state_interval_ms = this->config_->get_essential_interval_s() * 1000UL;
     this->publish_state_(force_publish, now_ms, state_interval_ms);
   }
 
-  if (profile == PublishProfile::STANDARD) {
+  if (publish_heat_pumps_profile) {
     const uint32_t heat_pumps_interval_ms = this->config_->get_standard_interval_s() * 1000UL;
     this->publish_heat_pumps_(force_publish, now_ms, heat_pumps_interval_ms);
   }
 
-  if (profile == PublishProfile::DIAGNOSTIC) {
+  if (publish_diagnostics_profile) {
     const uint32_t diagnostics_interval_ms = this->config_->get_diagnostic_interval_s() * 1000UL;
     this->publish_diagnostics_(force_publish, now_ms, diagnostics_interval_ms);
   }
