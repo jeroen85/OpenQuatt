@@ -43,6 +43,26 @@ function renderSettingsView() {
       : renderSettingsView();
   }
 
+  function renderPoweredByFooter() {
+    const version = getDeviceVersionLabel();
+    const versionMarkup = version && version !== "—"
+      ? `<span class="oq-helper-footer-version">OpenQuatt ${escapeHtml(version)}</span>`
+      : "";
+    return `
+      <footer class="oq-helper-powered-by" aria-label="Platform">
+        ${versionMarkup}
+        <nav class="oq-helper-footer-links" aria-label="OpenQuatt links">
+          <a href="https://jeroen85.github.io/OpenQuatt/" target="_blank" rel="noreferrer">Docs</a>
+          <a href="https://github.com/jeroen85/OpenQuatt" target="_blank" rel="noreferrer">GitHub</a>
+        </nav>
+        <a class="oq-helper-powered-by-link" href="https://esphome.io/" target="_blank" rel="noreferrer" aria-label="Built with ESPHome">
+          <span>Built with</span>
+          <img class="oq-helper-powered-by-logo" src="https://media.esphome.io/logo/logo-text-on-light.svg" alt="ESPHome" loading="lazy" decoding="async">
+        </a>
+      </footer>
+    `;
+  }
+
   function getActiveDevControlSelect() {
     const active = typeof document !== "undefined" ? document.activeElement : null;
     if (!active || typeof active.matches !== "function") {
@@ -135,6 +155,7 @@ function renderSettingsView() {
           </div>
       ${renderAppNav()}
       ${mainContent}
+      ${renderPoweredByFooter()}
         </div>
       </div>
       ${renderQuickStartModal()}

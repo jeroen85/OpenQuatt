@@ -51,6 +51,10 @@
 - For docs/tooling changes, prefer the specific script touched by the task.
 - Summarize build/test output by command, pass/fail, and the few relevant error lines.
 
+## GitHub And PRs
+
+- Do not prefix PR titles with `[codex]`; use a concise human-readable title instead.
+
 ## Concise Mode
 
 - Keep progress updates and final responses compact.
