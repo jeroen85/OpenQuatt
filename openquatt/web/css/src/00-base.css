@@ -141,6 +141,75 @@ body.oq-surface-native {
   font-size: 1rem;
 }
 
+.oq-helper-powered-by {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--oq-helper-line);
+  color: var(--oq-helper-faint);
+  font-size: 0.72rem;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.oq-helper-footer-version,
+.oq-helper-footer-links,
+.oq-helper-powered-by-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.oq-helper-footer-version,
+.oq-helper-footer-links {
+  position: relative;
+  padding-right: 10px;
+}
+
+.oq-helper-footer-version::after,
+.oq-helper-footer-links::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: 2px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.55;
+  transform: translateY(-50%);
+}
+
+.oq-helper-footer-version,
+.oq-helper-footer-links a,
+.oq-helper-powered-by-link {
+  color: inherit;
+}
+
+.oq-helper-footer-links a,
+.oq-helper-powered-by-link {
+  text-decoration: none;
+}
+
+.oq-helper-footer-links a:hover,
+.oq-helper-footer-links a:focus-visible,
+.oq-helper-powered-by-link:hover,
+.oq-helper-powered-by-link:focus-visible {
+  color: var(--oq-helper-accent-deep);
+  text-decoration: underline;
+  outline: none;
+}
+
+.oq-helper-powered-by-logo {
+  display: block;
+  width: auto;
+  height: 14px;
+}
+
 .oq-helper-devdock {
   position: fixed;
   top: 14px;

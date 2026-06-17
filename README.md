@@ -81,3 +81,5 @@ Meer heb je voor normaal gebruik meestal niet nodig.
 ## Licentie
 
 Dit project bevat een `LICENSE`-bestand in de root van de repository.
+
+Built with <a href="https://esphome.io/"><img src="https://media.esphome.io/logo/logo-text-on-light.svg" alt="ESPHome" height="24" align="absmiddle" /></a>
