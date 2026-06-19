@@ -109,6 +109,7 @@ select:
     options:
       - Dew point required
       - Allow without dew point
+      - Allow without dew point, user responsibility
     initial_option: Dew point required
     web_server:
       sorting_group_id: oq_cooling
@@ -121,6 +122,14 @@ binary_sensor:
     lambda: |-
       return id(cooling_without_dew_point_mode).has_state() &&
              id(cooling_without_dew_point_mode).current_option() == "Allow without dew point";
+
+  - platform: template
+    id: cooling_without_dew_point_user_responsibility_enabled
+    name: "Cooling Without Dew Point User Responsibility Enabled"
+    internal: true
+    lambda: |-
+      return id(cooling_without_dew_point_mode).has_state() &&
+             id(cooling_without_dew_point_mode).current_option() == "Allow without dew point, user responsibility";
 
   - platform: template
     id: cooling_fallback_active
@@ -153,7 +162,10 @@ binary_sensor:
       const bool fallback_ok =
           id(cooling_without_dew_point_enabled).state &&
           id(cooling_fallback_min_supply_temp).has_state() && !isnan(id(cooling_fallback_min_supply_temp).state);
-      return dew_point_ok || fallback_ok;
+      const bool user_responsibility_ok =
+          id(cooling_without_dew_point_user_responsibility_enabled).state &&
+          id(cooling_min_supply_temp).has_state() && !isnan(id(cooling_min_supply_temp).state);
+      return dew_point_ok || fallback_ok || user_responsibility_ok;
 
   - platform: template
     id: cooling_request_active
@@ -217,25 +229,31 @@ text_sensor:
   - platform: template
     id: cooling_guard_mode
     name: "Cooling Guard Mode"
-    disabled_by_default: true
     icon: mdi:shield-half-full
     entity_category: diagnostic
     update_interval: ${oq_diagnostic_update_interval_s}s
     lambda: |-
+      // Summarize which cooling safety route is currently active.
       if (id(cooling_dew_point_available).state) {
         return {"Dew point"};
       }
-      if (id(cooling_without_dew_point_enabled).state) {
+      if (id(cooling_without_dew_point_user_responsibility_enabled).state) {
+        return {"User responsibility"};
+      }
+      if (!id(cooling_without_dew_point_enabled).state) {
+        return {"Blocked"};
+      }
+      if (id(cooling_fallback_min_supply_temp).has_state() &&
+          !isnan(id(cooling_fallback_min_supply_temp).state)) {
         return {"Fallback"};
       }
-      return {"Blocked"};
+      return {"Fallback blocked"};
     web_server:
       sorting_group_id: oq_cooling
 
   - platform: template
     id: cooling_block_reason
     name: "Cooling Block Reason"
-    disabled_by_default: true
     icon: mdi:information-outline
     entity_category: diagnostic
     update_interval: ${oq_diagnostic_update_interval_s}s
@@ -249,6 +267,12 @@ text_sensor:
       }
       if (!id(cooling_dew_point_available).state) {
         if (!id(cooling_without_dew_point_enabled).state) {
+          if (id(cooling_without_dew_point_user_responsibility_enabled).state) {
+            if (!id(cooling_min_supply_temp).has_state() || isnan(id(cooling_min_supply_temp).state)) {
+              return {"Cooling minimum unavailable"};
+            }
+            return {"User responsibility (no dew point or fallback)"};
+          }
           return {"No dew point source"};
         }
         if (!id(outside_temp_selected).has_state() || isnan(id(outside_temp_selected).state)) {
@@ -257,23 +281,19 @@ text_sensor:
         if (id(outside_temp_selected).state < 20.0f) {
           return {"Fallback blocked below 20°C outdoor"};
         }
-        if (id(cooling_fallback_night_min_outdoor_temp).has_state() &&
-            !isnan(id(cooling_fallback_night_min_outdoor_temp).state) &&
-            id(cooling_fallback_night_min_outdoor_temp).state >= 20.0f) {
-          return {"Fallback blocked by tropical night"};
-        }
         if (!id(cooling_fallback_min_supply_temp).has_state() || isnan(id(cooling_fallback_min_supply_temp).state)) {
           return {"Fallback minimum unavailable"};
         }
         if (id(cooling_fallback_night_min_outdoor_temp).has_state() &&
             !isnan(id(cooling_fallback_night_min_outdoor_temp).state) &&
-            id(cooling_fallback_night_min_outdoor_temp).state >= 19.0f) {
-          return {"Fallback active (+2°C very warm night)"};
-        }
-        if (id(cooling_fallback_night_min_outdoor_temp).has_state() &&
-            !isnan(id(cooling_fallback_night_min_outdoor_temp).state) &&
             id(cooling_fallback_night_min_outdoor_temp).state >= 18.0f) {
-          return {"Fallback active (+1°C warm night)"};
+          if (id(cooling_fallback_night_min_outdoor_temp).state >= 19.0f) {
+            if (id(cooling_fallback_night_min_outdoor_temp).state >= 20.0f) {
+              return {"Fallback active (+1.5°C tropical night)"};
+            }
+            return {"Fallback active (+1.0°C very warm night)"};
+          }
+          return {"Fallback active (+0.5°C warm night)"};
         }
         return {"Fallback active"};
       }
@@ -410,21 +430,35 @@ sensor:
       const float outside_c = id(outside_temp_selected).state;
       if (outside_c < 20.0f) return NAN;
 
-      float base_floor_c = 19.0f;
-      if (outside_c >= 32.0f) base_floor_c = 22.0f;
-      else if (outside_c >= 28.0f) base_floor_c = 21.0f;
-      else if (outside_c >= 24.0f) base_floor_c = 20.0f;
+      // Smooth equivalent of the old 20/24/28/32°C step table:
+      // 19°C at 20°C outdoor, rising linearly to 22°C at 32°C outdoor.
+      float base_floor_c = 19.0f + ((outside_c - 20.0f) * 0.25f);
+      if (base_floor_c < 19.0f) base_floor_c = 19.0f;
+      if (base_floor_c > 22.0f) base_floor_c = 22.0f;
 
       float correction_c = 0.0f;
       if (id(cooling_fallback_night_min_outdoor_temp).has_state() &&
           !isnan(id(cooling_fallback_night_min_outdoor_temp).state)) {
         const float night_min_c = id(cooling_fallback_night_min_outdoor_temp).state;
-        if (night_min_c >= 20.0f) return NAN;
-        if (night_min_c >= 19.0f) correction_c = 2.0f;
-        else if (night_min_c >= 18.0f) correction_c = 1.0f;
+        if (night_min_c >= 20.0f) correction_c = 1.5f;
+        else if (night_min_c >= 19.0f) correction_c = 1.0f;
+        else if (night_min_c >= 18.0f) correction_c = 0.5f;
       }
 
-      return base_floor_c + correction_c;
+      float fallback_floor_c = base_floor_c + correction_c;
+      if (id(room_temp_selected).has_state() && !isnan(id(room_temp_selected).state)) {
+        // Usability limiter, not a condensation safety boundary: without a dew-point
+        // source, avoid raising the fallback floor so far above room temperature
+        // that fallback cooling becomes practically useless.
+        const float room_usability_relief_c = 1.0f;
+        const float room_usability_min_floor_c = 20.0f;
+        const float room_usability_floor_c = id(room_temp_selected).state - room_usability_relief_c;
+        if (room_usability_floor_c >= room_usability_min_floor_c) {
+          fallback_floor_c = fminf(fallback_floor_c, room_usability_floor_c);
+        }
+      }
+
+      return fallback_floor_c;
     web_server:
       sorting_group_id: oq_cooling
 
@@ -438,6 +472,7 @@ sensor:
     accuracy_decimals: 1
     update_interval: 10s
     lambda: |-
+      // Publish the active floor that raises the configured cooling target.
       if (id(minimum_safe_supply_temp).has_state() && !isnan(id(minimum_safe_supply_temp).state)) {
         return id(minimum_safe_supply_temp).state;
       }
@@ -445,6 +480,11 @@ sensor:
           id(cooling_fallback_min_supply_temp).has_state() &&
           !isnan(id(cooling_fallback_min_supply_temp).state)) {
         return id(cooling_fallback_min_supply_temp).state;
+      }
+      if (id(cooling_without_dew_point_user_responsibility_enabled).state &&
+          id(cooling_min_supply_temp).has_state() &&
+          !isnan(id(cooling_min_supply_temp).state)) {
+        return id(cooling_min_supply_temp).state;
       }
       return NAN;
     web_server:

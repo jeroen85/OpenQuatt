@@ -952,7 +952,11 @@
     setEntity("select", "Cooling Without Dew Point", {
       value: "Dew point required",
       state: "Dew point required",
-      option: ["Dew point required", "Allow without dew point"],
+      option: [
+        "Dew point required",
+        "Allow without dew point",
+        "Allow without dew point, user responsibility",
+      ],
     });
     setEntity("select", "Water Supply Source", {
       value: "Local",
