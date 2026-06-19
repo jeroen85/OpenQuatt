@@ -633,6 +633,36 @@ interval:
           if (isnan(restart_delta_c) || restart_delta_c < 0.0f) restart_delta_c = 1.0f;
           if (restart_delta_c > 2.0f) restart_delta_c = 2.0f;
 
+          const bool user_responsibility_mode =
+              id(cooling_without_dew_point_user_responsibility_enabled).has_state() &&
+              id(cooling_without_dew_point_user_responsibility_enabled).state;
+          const bool dew_mode =
+              !user_responsibility_mode &&
+              id(cooling_dew_point_available).has_state() && id(cooling_dew_point_available).state &&
+              id(cooling_dew_point_selected).has_state() && !isnan(id(cooling_dew_point_selected).state);
+          const bool fallback_mode =
+              !user_responsibility_mode &&
+              !dew_mode && id(cooling_fallback_active).has_state() && id(cooling_fallback_active).state;
+          const int guard_mode =
+              user_responsibility_mode ? 3 : (dew_mode ? 1 : (fallback_mode ? 2 : 0));
+          static int last_guard_mode = -1;
+          if (last_guard_mode >= 0 && guard_mode != last_guard_mode) {
+            id(oq_cooling_water_cycle_active) = false;
+            id(oq_cooling_gap_filter_ready) = false;
+            id(oq_cooling_simmer_allowed) = false;
+            id(oq_cooling_trend_safe) = true;
+            id(oq_cooling_stop_reason_code) = 0;
+            id(oq_cooling_stop_buffer_gap_c) = 0.0f;
+            id(oq_cooling_last_demand_change_ms) = 0;
+            id(oq_cooling_stop_candidate_since_ms) = 0;
+            id(oq_cooling_dew_stop_candidate_since_ms) = 0;
+            id(oq_cooling_buffer_gap_rate_ref_ms) = 0;
+            id(oq_cooling_pid_integral) = 0.0f;
+            id(oq_cooling_pid_last_error_c) = buffer_gap_c;
+            ESP_LOGI("quatt.cool", "Cooling guard mode changed: reset restart latch");
+          }
+          last_guard_mode = guard_mode;
+
           // Use raw temperatures for hard safety, but filter the water-side gap
           // before modulation. Small systems can move 0.1-0.2 C in seconds; the
           // 60s EMA/rate prevents that noise from becoming level chatter.
@@ -663,16 +693,6 @@ interval:
           filtered_gap_c = id(oq_cooling_buffer_gap_filtered_c);
           const float gap_rate_c_per_min = id(oq_cooling_buffer_gap_rate_c_per_min);
 
-          const bool user_responsibility_mode =
-              id(cooling_without_dew_point_user_responsibility_enabled).has_state() &&
-              id(cooling_without_dew_point_user_responsibility_enabled).state;
-          const bool dew_mode =
-              !user_responsibility_mode &&
-              id(cooling_dew_point_available).has_state() && id(cooling_dew_point_available).state &&
-              id(cooling_dew_point_selected).has_state() && !isnan(id(cooling_dew_point_selected).state);
-          const bool fallback_mode =
-              !user_responsibility_mode &&
-              !dew_mode && id(cooling_fallback_active).has_state() && id(cooling_fallback_active).state;
           const float dew_gap_c = dew_mode ? (supply_c - id(cooling_dew_point_selected).state) : NAN;
           id(oq_cooling_dew_gap_c) = dew_gap_c;
           float safety_margin_c = 0.0f;
