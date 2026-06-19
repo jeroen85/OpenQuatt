@@ -274,11 +274,9 @@ text_sensor:
           (!id(cooling_min_supply_temp).has_state() || isnan(id(cooling_min_supply_temp).state))) {
         return {"Cooling minimum unavailable"};
       }
-      if (!id(cooling_dew_point_available).state) {
+      if (!id(cooling_dew_point_available).state &&
+          !id(cooling_without_dew_point_user_responsibility_enabled).state) {
         if (!id(cooling_without_dew_point_enabled).state) {
-          if (id(cooling_without_dew_point_user_responsibility_enabled).state) {
-            return {"User responsibility (no dew point or fallback)"};
-          }
           return {"No dew point source"};
         }
         if (!id(outside_temp_selected).has_state() || isnan(id(outside_temp_selected).state)) {
