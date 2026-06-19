@@ -107,9 +107,9 @@ select:
     optimistic: true
     restore_value: true
     options:
-      - Dew point required
-      - Allow without dew point
-      - Allow without dew point, user responsibility
+      - "Dew point required"
+      - "Allow without dew point, use dew point approximation"
+      - "Allow without dew point, user responsibility"
     initial_option: Dew point required
     web_server:
       sorting_group_id: oq_cooling
@@ -121,7 +121,9 @@ binary_sensor:
     internal: true
     lambda: |-
       return id(cooling_without_dew_point_mode).has_state() &&
-             id(cooling_without_dew_point_mode).current_option() == "Allow without dew point";
+             (id(cooling_without_dew_point_mode).current_option() == "Allow without dew point, use dew point approximation" ||
+              id(cooling_without_dew_point_mode).current_option() == "Allow without dew point, use fallback" ||
+              id(cooling_without_dew_point_mode).current_option() == "Allow without dew point");
 
   - platform: template
     id: cooling_without_dew_point_user_responsibility_enabled
@@ -165,6 +167,9 @@ binary_sensor:
       const bool user_responsibility_ok =
           id(cooling_without_dew_point_user_responsibility_enabled).state &&
           id(cooling_min_supply_temp).has_state() && !isnan(id(cooling_min_supply_temp).state);
+      if (id(cooling_without_dew_point_user_responsibility_enabled).state) {
+        return user_responsibility_ok;
+      }
       return dew_point_ok || fallback_ok || user_responsibility_ok;
 
   - platform: template
@@ -234,11 +239,11 @@ text_sensor:
     update_interval: ${oq_diagnostic_update_interval_s}s
     lambda: |-
       // Summarize which cooling safety route is currently active.
-      if (id(cooling_dew_point_available).state) {
-        return {"Dew point"};
-      }
       if (id(cooling_without_dew_point_user_responsibility_enabled).state) {
         return {"User responsibility"};
+      }
+      if (id(cooling_dew_point_available).state) {
+        return {"Dew point"};
       }
       if (!id(cooling_without_dew_point_enabled).state) {
         return {"Blocked"};
@@ -265,12 +270,13 @@ text_sensor:
       if (!id(oq_enabled).state) {
         return {"OpenQuatt paused"};
       }
+      if (id(cooling_without_dew_point_user_responsibility_enabled).state &&
+          (!id(cooling_min_supply_temp).has_state() || isnan(id(cooling_min_supply_temp).state))) {
+        return {"Cooling minimum unavailable"};
+      }
       if (!id(cooling_dew_point_available).state) {
         if (!id(cooling_without_dew_point_enabled).state) {
           if (id(cooling_without_dew_point_user_responsibility_enabled).state) {
-            if (!id(cooling_min_supply_temp).has_state() || isnan(id(cooling_min_supply_temp).state)) {
-              return {"Cooling minimum unavailable"};
-            }
             return {"User responsibility (no dew point or fallback)"};
           }
           return {"No dew point source"};
@@ -473,6 +479,11 @@ sensor:
     update_interval: 10s
     lambda: |-
       // Publish the active floor that raises the configured cooling target.
+      if (id(cooling_without_dew_point_user_responsibility_enabled).state &&
+          id(cooling_min_supply_temp).has_state() &&
+          !isnan(id(cooling_min_supply_temp).state)) {
+        return id(cooling_min_supply_temp).state;
+      }
       if (id(minimum_safe_supply_temp).has_state() && !isnan(id(minimum_safe_supply_temp).state)) {
         return id(minimum_safe_supply_temp).state;
       }
@@ -480,11 +491,6 @@ sensor:
           id(cooling_fallback_min_supply_temp).has_state() &&
           !isnan(id(cooling_fallback_min_supply_temp).state)) {
         return id(cooling_fallback_min_supply_temp).state;
-      }
-      if (id(cooling_without_dew_point_user_responsibility_enabled).state &&
-          id(cooling_min_supply_temp).has_state() &&
-          !isnan(id(cooling_min_supply_temp).state)) {
-        return id(cooling_min_supply_temp).state;
       }
       return NAN;
     web_server:

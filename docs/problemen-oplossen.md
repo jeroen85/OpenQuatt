@@ -124,7 +124,7 @@ Controleer:
 - is flow beschikbaar;
 - is dauwpuntinformatie beschikbaar;
 - blokkeert de veilige minimale watertemperatuur;
-- staat fallback zonder dauwpunt bewust aan of juist uit.
+- staat de koelbeveiliging bewust op `Dauwpuntmeting vereist`, `Dauwpuntsbenadering` of `Expliciet toestaan`.
 
 Koeling is bewust terughoudend. Zonder goede dauwpuntinformatie kan blokkeren precies het veilige gedrag zijn.
 

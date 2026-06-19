@@ -1243,8 +1243,7 @@ views:
             content: >-
               <details>
 
-              <summary><strong>Uitleg fallback zonder
-              dauwpunt</strong></summary>
+              <summary><strong>Uitleg koelbeveiliging</strong></summary>
 
 
               Normaal gebruikt OpenQuatt het hoogste geldige dauwpunt plus de
@@ -1252,34 +1251,41 @@ views:
 
 
               Zonder dauwpuntbron blijft koeling standaard geblokkeerd. Alleen
-              als `Koeling zonder dauwpunt` expliciet is toegestaan, gebruikt
-              OpenQuatt een conservatieve fallback:
+              als `Allow without dew point, use dew point approximation`
+              expliciet is gekozen, gebruikt OpenQuatt bij ontbrekende
+              dauwpuntmeting een conservatieve dauwpuntsbenadering:
 
 
-              - `< 20°C` buiten: uit
+              - buiten `< 20,0°C`: uit
 
-              - `20–24°C`: minimum water `19°C`
+              - vanaf `20,0°C`: minimum water `19,0°C`
 
-              - `24–28°C`: minimum water `20°C`
+              - daarna geleidelijk `+0,25°C` per graad buiten
 
-              - `28–32°C`: minimum water `21°C`
-
-              - `> 32°C`: minimum water `22°C`
+              - vanaf `32,0°C`: minimum water `22,0°C`
 
 
               Nachtcorrectie:
 
-              - nachtminimum `< 18°C`: `+0°C`
+              - nachtminimum `< 18,0°C`: `+0,0°C`
 
-              - `18–19°C`: `+1°C`
+              - `18,0–19,0°C`: `+0,5°C`
 
-              - `19–20°C`: `+2°C`
+              - `19,0–20,0°C`: `+1,0°C`
 
-              - `>= 20°C`: fallback uit
+              - `>= 20,0°C`: `+1,5°C`
 
 
-              Deze staffel vervangt de normale dauwpuntmarge; er komt dus niet
-              nog eens extra `+2K` bovenop.
+              Als deze berekende grens te hoog wordt terwijl de kamer al koel is,
+              begrenst OpenQuatt hem op ongeveer kamertemperatuur min `1,0°C`,
+              maar nooit lager dan `20,0°C`. Dit is een bruikbaarheidslimiet,
+              geen echte condensbeveiliging.
+
+
+              De optie `Allow without dew point, user responsibility` slaat de
+              dauwpuntgrens volledig over. Ook een beschikbare dauwpuntmeting
+              wordt dan genegeerd; alleen de ingestelde minimale koel-aanvoer
+              geldt en het condensrisico ligt bij de gebruiker.
 
               </details>
             text_only: true

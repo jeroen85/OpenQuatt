@@ -124,7 +124,7 @@ Het pakket publiceert daarna:
 - `binary_sensor.openquatt_ext_cooling_dew_point_valid`
 - `sensor.openquatt_ha_cooling_room_1_dew_point_effective` tot en met room 6
 
-OpenQuatt gebruikt het hoogste geldige dauwpunt als veilige grens. Als er geen geldige dauwpuntbron is, blijft koeling standaard geblokkeerd tenzij je in OpenQuatt bewust de fallback zonder dauwpunt toestaat.
+OpenQuatt gebruikt standaard het hoogste geldige dauwpunt als veilige grens. Met `Dauwpuntsbenadering` blijft die echte meting leidend zodra hij beschikbaar is; ontbreekt hij, dan gebruikt OpenQuatt een conservatieve benadering. Met `Expliciet toestaan` wordt de dauwpuntgrens volledig overgeslagen, ook als er wel een dauwpuntmeting beschikbaar is.
 
 ## Belangrijk om te onthouden
 

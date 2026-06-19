@@ -141,7 +141,9 @@ Hier staan de instellingen voor koeling en dauwpuntbeveiliging.
 
 Koeling is gevoeliger dan verwarming, omdat condensrisico een echte beperking is. Normaal gebruikt OpenQuatt een dauwpuntbron plus veiligheidsmarge. Zonder goede dauwpuntinformatie blijft koeling standaard geblokkeerd.
 
-De optie `Koeling zonder dauwpuntbeveiliging` is bewust een opt-in. Gebruik die alleen als je begrijpt dat OpenQuatt dan met een conservatieve fallback werkt en geen echte dauwpuntmeting heeft.
+Bij `Dauwpuntsbenadering` gebruikt OpenQuatt een echte dauwpuntmeting zodra die beschikbaar is. Alleen als die meting ontbreekt, gebruikt OpenQuatt een conservatieve benadering op basis van buitentemperatuur, nachtminimum en kamertemperatuur.
+
+Bij `Expliciet toestaan` gebruikt OpenQuatt geen dauwpuntgrens: ook een beschikbare dauwpuntmeting wordt dan genegeerd. Alleen de ingestelde minimale koel-aanvoer blijft gelden. Gebruik dit alleen als je de installatie zelf bewaakt en het condensrisico bewust accepteert.
 
 Wil je dauwpuntbronnen uit Home Assistant gebruiken, kijk dan bij [Dashboard installeren](dashboard/README.md#optioneel-dynamische-koelbronnen-via-home-assistant). De bronselectie zelf gebeurt in Home Assistant; de web-app toont en beheert vooral de OpenQuatt-kant van de koelveiligheid.
 

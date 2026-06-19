@@ -954,7 +954,7 @@
       state: "Dew point required",
       option: [
         "Dew point required",
-        "Allow without dew point",
+        "Allow without dew point, use dew point approximation",
         "Allow without dew point, user responsibility",
       ],
     });

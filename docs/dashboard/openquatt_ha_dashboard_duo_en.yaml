@@ -1186,25 +1186,26 @@ views:
           - type: markdown
             content: |-
               <details>
-              <summary><strong>Fallback without dew point</strong></summary>
+              <summary><strong>Cooling safety explanation</strong></summary>
 
               Normally OpenQuatt uses the highest valid dew point plus the configured safety margin.
 
-              Without a dew point source, cooling stays blocked by default. Only when `Cooling without dew point` is explicitly allowed, OpenQuatt uses a conservative fallback:
+              Without a dew point source, cooling stays blocked by default. Only when `Allow without dew point, use dew point approximation` is explicitly selected, OpenQuatt uses a conservative dew-point approximation when the dew point measurement is missing:
 
-              - outdoor `< 20°C`: off
-              - `20–24°C`: minimum water `19°C`
-              - `24–28°C`: minimum water `20°C`
-              - `28–32°C`: minimum water `21°C`
-              - `> 32°C`: minimum water `22°C`
+              - outdoor `< 20.0°C`: off
+              - from `20.0°C`: minimum water `19.0°C`
+              - then gradually `+0.25°C` per degree outdoor temperature
+              - from `32.0°C`: minimum water `22.0°C`
 
               Night correction:
-              - night minimum `< 18°C`: `+0°C`
-              - `18–19°C`: `+1°C`
-              - `19–20°C`: `+2°C`
-              - `>= 20°C`: fallback off
+              - night minimum `< 18.0°C`: `+0.0°C`
+              - `18.0–19.0°C`: `+0.5°C`
+              - `19.0–20.0°C`: `+1.0°C`
+              - `>= 20.0°C`: `+1.5°C`
 
-              This table replaces the normal dew-point safety margin, so no extra `+2K` is added on top.
+              If this calculated floor becomes too high while the room is already cool, OpenQuatt limits it to about room temperature minus `1.0°C`, but never below `20.0°C`. This is a usability limit, not real condensation protection.
+
+              The option `Allow without dew point, user responsibility` skips the dew-point limit completely. Even an available dew point measurement is ignored; only the configured minimum cooling supply temperature applies, and condensation risk is the user's responsibility.
               </details>
             text_only: true
             grid_options:
