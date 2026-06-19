@@ -663,10 +663,15 @@ interval:
           filtered_gap_c = id(oq_cooling_buffer_gap_filtered_c);
           const float gap_rate_c_per_min = id(oq_cooling_buffer_gap_rate_c_per_min);
 
+          const bool user_responsibility_mode =
+              id(cooling_without_dew_point_user_responsibility_enabled).has_state() &&
+              id(cooling_without_dew_point_user_responsibility_enabled).state;
           const bool dew_mode =
+              !user_responsibility_mode &&
               id(cooling_dew_point_available).has_state() && id(cooling_dew_point_available).state &&
               id(cooling_dew_point_selected).has_state() && !isnan(id(cooling_dew_point_selected).state);
           const bool fallback_mode =
+              !user_responsibility_mode &&
               !dew_mode && id(cooling_fallback_active).has_state() && id(cooling_fallback_active).state;
           const float dew_gap_c = dew_mode ? (supply_c - id(cooling_dew_point_selected).state) : NAN;
           id(oq_cooling_dew_gap_c) = dew_gap_c;
