@@ -30,7 +30,7 @@
 
   function hasEntity(key) {
     const entity = state.entities[key];
-    return Boolean(entity && (entity.state !== undefined || entity.value !== undefined));
+    return Boolean(entity);
   }
 
   function getEntityStateText(key, fallback = "—") {
