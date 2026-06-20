@@ -1095,7 +1095,8 @@
     const prNumber = getFirmwareTestPrNumber();
     const target = getFirmwareTestTargetModel();
     const urls = getFirmwareTestAssetUrls(prNumber, target);
-    const ready = Boolean(prNumber && target.available && hasEntity("firmwareTestOtaUrl") && hasEntity("firmwareTestOtaMd5Url") && hasEntity("installFirmwareTestOta"));
+    const controlsAvailable = Boolean(target.available && hasEntity("firmwareTestOtaUrl") && hasEntity("firmwareTestOtaMd5Url") && hasEntity("installFirmwareTestOta"));
+    const ready = Boolean(prNumber && controlsAvailable);
     const build = state.updateTestFirmwareBuild || null;
     const helper = target.available
       ? `Doelbuild: ${target.label}`
@@ -1111,7 +1112,7 @@
         <div class="oq-helper-modal-row">
           <span class="oq-helper-modal-label">PR-nummer</span>
           <input
-            class="oq-settings-backup-input oq-settings-backup-import-input"
+            class="oq-helper-input oq-helper-input--compact-number oq-firmware-test-pr-input"
             type="text"
             inputmode="numeric"
             autocomplete="off"
@@ -1124,19 +1125,19 @@
         </div>
         <div class="oq-helper-modal-row">
           <span class="oq-helper-modal-label">OTA-bestand</span>
-          <strong class="oq-helper-modal-value">${escapeHtml(assetNote)}</strong>
+          <strong class="oq-helper-modal-value" data-oq-firmware-test-asset-note="true">${escapeHtml(assetNote)}</strong>
         </div>
         ${build ? `
-          <div class="oq-helper-modal-row">
+          <div class="oq-helper-modal-row" data-oq-firmware-test-build-row="true">
             <span class="oq-helper-modal-label">Build</span>
             <strong class="oq-helper-modal-value">${escapeHtml(build)}</strong>
           </div>
         ` : ""}
         <p class="oq-helper-modal-note">De webapp zet alleen de URL klaar. Het device downloadt en flasht de binary daarna zelf via dezelfde OTA-backend.</p>
-        ${!ready ? `<p class="oq-helper-modal-note oq-helper-modal-note--error">${escapeHtml(prNumber && target.available ? "Deze firmware mist de testfirmware-bediening. Installeer eerst een nieuwere build." : "Vul een geldig PR-nummer in.")}</p>` : ""}
-        ${state.updateTestFirmwareError ? `<p class="oq-helper-modal-note oq-helper-modal-note--error">${escapeHtml(state.updateTestFirmwareError)}</p>` : ""}
+        ${!controlsAvailable ? `<p class="oq-helper-modal-note oq-helper-modal-note--error">${escapeHtml(target.available ? "Deze firmware mist de testfirmware-bediening. Installeer eerst een nieuwere build." : target.error)}</p>` : ""}
+        ${state.updateTestFirmwareError ? `<p class="oq-helper-modal-note oq-helper-modal-note--error" data-oq-firmware-test-runtime-error="true">${escapeHtml(state.updateTestFirmwareError)}</p>` : ""}
         <label class="oq-helper-modal-check">
-          <input type="checkbox" data-oq-firmware-test-confirm="true" ${state.updateTestFirmwareConfirmed ? "checked" : ""} ${busy || !ready ? "disabled" : ""}>
+          <input type="checkbox" data-oq-firmware-test-confirm="true" ${state.updateTestFirmwareConfirmed ? "checked" : ""} ${busy || !controlsAvailable ? "disabled" : ""}>
           <span>Ik begrijp dat dit testfirmware uit een PR is.</span>
         </label>
         <div class="oq-helper-modal-actions">
@@ -1193,8 +1194,6 @@
       getEntitySignatureFragment("hardwareProfileText"),
       getEntitySignatureFragment("connectionText"),
       state.updateTestFirmwareOpen ? "test-open" : "test-closed",
-      state.updateTestFirmwarePr,
-      state.updateTestFirmwareConfirmed ? "test-confirmed" : "test-unconfirmed",
       state.updateTestFirmwareError,
       getEntitySignatureFragment("hpGeneration"),
       getEntitySignatureFragment("projectVersionText"),

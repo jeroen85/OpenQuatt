@@ -241,6 +241,7 @@ text:
   - platform: template
     name: "Firmware Test OTA URL"
     id: oq_firmware_test_ota_url
+    internal: true
     icon: mdi:link-variant
     mode: text
     optimistic: true
@@ -254,6 +255,7 @@ text:
   - platform: template
     name: "Firmware Test OTA MD5 URL"
     id: oq_firmware_test_ota_md5_url
+    internal: true
     icon: mdi:link-variant
     mode: text
     optimistic: true
@@ -410,6 +412,7 @@ button:
   - platform: template
     name: "Install Firmware Test OTA"
     id: oq_install_firmware_test_ota
+    internal: true
     icon: mdi:test-tube
     disabled_by_default: true
     entity_category: config

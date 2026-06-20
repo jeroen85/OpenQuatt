@@ -2573,7 +2573,13 @@
 
     if (event.target.dataset.oqFirmwareTestConfirm) {
       state.updateTestFirmwareConfirmed = Boolean(event.target.checked);
-      render();
+      state.updateTestFirmwareError = "";
+      const section = event.target.closest(".oq-helper-modal-callout");
+      const installButton = section?.querySelector('[data-oq-action="install-firmware-test"]');
+      if (installButton) {
+        installButton.disabled = !state.updateTestFirmwareConfirmed || !getFirmwareTestPrNumber();
+      }
+      section?.querySelector('[data-oq-firmware-test-runtime-error="true"]')?.remove();
       return;
     }
 
@@ -2582,7 +2588,23 @@
       state.updateTestFirmwareConfirmed = false;
       state.updateTestFirmwareError = "";
       state.updateTestFirmwareBuild = null;
-      render();
+      const section = event.target.closest(".oq-helper-modal-callout");
+      const confirmInput = section?.querySelector('[data-oq-firmware-test-confirm="true"]');
+      if (confirmInput) {
+        confirmInput.checked = false;
+      }
+      const installButton = section?.querySelector('[data-oq-action="install-firmware-test"]');
+      if (installButton) {
+        installButton.disabled = true;
+      }
+      const target = getFirmwareTestTargetModel();
+      const urls = getFirmwareTestAssetUrls(getFirmwareTestPrNumber(), target);
+      const assetNote = section?.querySelector('[data-oq-firmware-test-asset-note="true"]');
+      if (assetNote) {
+        assetNote.textContent = urls ? target.otaFileName : "Vul een PR-nummer in om de OTA-build te kiezen.";
+      }
+      section?.querySelector('[data-oq-firmware-test-build-row="true"]')?.remove();
+      section?.querySelector('[data-oq-firmware-test-runtime-error="true"]')?.remove();
       return;
     }
 

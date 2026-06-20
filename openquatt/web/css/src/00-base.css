@@ -1398,6 +1398,11 @@ body.oq-surface-native {
   font-weight: 700;
 }
 
+.oq-firmware-test-pr-input {
+  width: 100%;
+  max-width: 160px;
+}
+
 .oq-helper-modal-loading {
   display: inline-flex;
   align-items: center;
