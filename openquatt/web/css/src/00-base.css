@@ -1538,6 +1538,16 @@ body.oq-surface-native {
   line-height: 1.35;
 }
 
+.oq-firmware-test-card--build {
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(110px, 0.24fr) minmax(0, 1fr);
+  align-items: center;
+}
+
+.oq-firmware-test-card--build .oq-helper-modal-value {
+  font-size: 0.9rem;
+}
+
 .oq-firmware-test-note {
   margin-top: 0;
 }
@@ -1622,6 +1632,10 @@ body.oq-surface-native {
 
   .oq-firmware-test-card--asset {
     grid-column: auto;
+  }
+
+  .oq-firmware-test-card--build {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .oq-firmware-advanced-footer .oq-helper-button {

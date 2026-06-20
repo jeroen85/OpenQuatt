@@ -1195,7 +1195,7 @@
             <strong class="oq-helper-modal-value" data-oq-firmware-test-asset-note="true">${escapeHtml(assetNote)}</strong>
           </div>
           ${build ? `
-            <div class="oq-firmware-advanced-card" data-oq-firmware-test-build-row="true">
+            <div class="oq-firmware-advanced-card oq-firmware-test-card--build" data-oq-firmware-test-build-row="true">
               <span class="oq-helper-modal-label">Build</span>
               <strong class="oq-helper-modal-value">${escapeHtml(build)}</strong>
             </div>
@@ -2080,7 +2080,7 @@
 
     return `
       <div class="oq-helper-modal-backdrop${checking || installing || progress ? " is-busy" : ""}${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="firmware-update">
-        <section class="oq-helper-modal oq-helper-modal--firmware" role="dialog" aria-modal="true" aria-labelledby="oq-update-modal-title">
+        <section class="oq-helper-modal oq-helper-modal--firmware oq-helper-modal--scrollable" role="dialog" aria-modal="true" aria-labelledby="oq-update-modal-title">
           <div class="oq-helper-modal-head">
             <div>
               <p class="oq-helper-modal-kicker">OTA-update</p>
