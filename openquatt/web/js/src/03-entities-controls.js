@@ -822,7 +822,8 @@
 
   async function refreshEntities(keys, detail = "state", options = {}) {
     const now = Date.now();
-    const refreshKeys = keys.filter((key) => !isKnownOptionalMissingEntity(key, now));
+    const forceMissing = options.forceMissing === true;
+    const refreshKeys = keys.filter((key) => forceMissing || !isKnownOptionalMissingEntity(key, now));
     if (!refreshKeys.length) {
       return;
     }
@@ -4066,7 +4067,7 @@
 
   async function hydrateFirmwareUpdateModal() {
     try {
-      await refreshEntities(FIRMWARE_MODAL_KEYS, "all", { concurrency: ENTITY_REFRESH_CONCURRENCY });
+      await refreshEntities(FIRMWARE_MODAL_KEYS, "all", { concurrency: ENTITY_REFRESH_CONCURRENCY, forceMissing: true });
       if (state.updateModalOpen) {
         render();
       }

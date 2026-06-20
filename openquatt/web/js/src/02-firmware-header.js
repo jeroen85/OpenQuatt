@@ -955,7 +955,7 @@
   async function pollFirmwareUpdateState() {
     for (let attempt = 0; attempt < 6; attempt += 1) {
       await wait(attempt === 0 ? 900 : 1200);
-      await refreshEntities(FIRMWARE_MODAL_KEYS, "all");
+      await refreshEntities(FIRMWARE_MODAL_KEYS, "all", { forceMissing: true });
       const entityAligned = isFirmwareEntityAlignedWithChannel();
       const knownTarget = hasKnownFirmwareTargetVersion();
       const checking = isFirmwareUpdateChecking();
@@ -972,7 +972,7 @@
     for (let attempt = 0; attempt < 45; attempt += 1) {
       await wait(attempt === 0 ? 700 : 1000);
       try {
-        await refreshEntities(FIRMWARE_MODAL_KEYS, "all");
+        await refreshEntities(FIRMWARE_MODAL_KEYS, "all", { forceMissing: true });
         if (getFirmwareProgressPhase() === "rebooting") {
           beginDeviceReconnect("ota");
         }
