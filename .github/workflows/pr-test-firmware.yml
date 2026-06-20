@@ -150,4 +150,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          gh release delete "pr-${PR_NUMBER}" --yes --cleanup-tag || true
+          TAG="pr-${PR_NUMBER}"
+          if gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>release-view.err; then
+            gh release delete "${TAG}" --repo "${GITHUB_REPOSITORY}" --yes --cleanup-tag
+          elif grep -qi "not found" release-view.err; then
+            echo "No PR test release ${TAG} found."
+          else
+            cat release-view.err >&2
+            exit 1
+          fi
