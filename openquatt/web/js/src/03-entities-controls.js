@@ -2715,6 +2715,7 @@
       const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
       event.target.value = "";
       if (file) {
+        state.firmwareAdvancedOpen = true;
         state.updateManualUploadOpen = true;
         state.updateManualUploadFile = file;
         state.updateManualUploadFileName = file.name || "";
@@ -2847,6 +2848,13 @@
         }
         if (state.updateModalOpen) {
           state.updateModalOpen = false;
+          state.firmwareAdvancedOpen = false;
+          state.firmwareConnectionSwitchOpen = false;
+          state.updateManualUploadOpen = false;
+          state.updateTestFirmwareOpen = false;
+          state.firmwareConnectionSwitchConfirmed = false;
+          resetFirmwareManualUploadSelection();
+          resetFirmwareTestSelection();
           shouldRender = true;
         }
         if (state.systemModal) {
@@ -3088,10 +3096,13 @@
       state.updateModalOpen = false;
       state.updateInstallCompleted = false;
       state.updateInstallCompletedVersion = "";
+      state.firmwareAdvancedOpen = false;
       state.firmwareConnectionSwitchOpen = false;
       state.updateManualUploadOpen = false;
+      state.updateTestFirmwareOpen = false;
       state.firmwareConnectionSwitchConfirmed = false;
       resetFirmwareManualUploadSelection();
+      resetFirmwareTestSelection();
       render();
       return;
     }
@@ -3430,6 +3441,13 @@
       state.controlNotice = "";
       state.settingsInfoOpen = "";
       state.updateModalOpen = false;
+      state.firmwareAdvancedOpen = false;
+      state.firmwareConnectionSwitchOpen = false;
+      state.updateManualUploadOpen = false;
+      state.updateTestFirmwareOpen = false;
+      state.firmwareConnectionSwitchConfirmed = false;
+      resetFirmwareManualUploadSelection();
+      resetFirmwareTestSelection();
       stopLoginAuthStatusPolling();
       state.systemModal = "";
       if (state.nativeOpen) {
@@ -3565,10 +3583,27 @@
       return;
     }
 
+    if (action === "toggle-firmware-advanced") {
+      if (state.firmwareAdvancedOpen || state.firmwareConnectionSwitchOpen || state.updateManualUploadOpen || state.updateTestFirmwareOpen) {
+        state.firmwareAdvancedOpen = false;
+        state.firmwareConnectionSwitchOpen = false;
+        state.firmwareConnectionSwitchConfirmed = false;
+        state.updateManualUploadOpen = false;
+        state.updateTestFirmwareOpen = false;
+        resetFirmwareManualUploadSelection();
+        resetFirmwareTestSelection();
+      } else {
+        state.firmwareAdvancedOpen = true;
+      }
+      render();
+      return;
+    }
+
     if (action === "toggle-firmware-connection-switch") {
       state.firmwareConnectionSwitchOpen = !state.firmwareConnectionSwitchOpen;
       state.firmwareConnectionSwitchConfirmed = false;
       if (state.firmwareConnectionSwitchOpen) {
+        state.firmwareAdvancedOpen = true;
         state.updateManualUploadOpen = false;
         state.updateTestFirmwareOpen = false;
         resetFirmwareManualUploadSelection();
@@ -3583,6 +3618,7 @@
         state.updateManualUploadOpen = false;
         resetFirmwareManualUploadSelection();
       } else {
+        state.firmwareAdvancedOpen = true;
         state.updateManualUploadOpen = true;
         state.firmwareConnectionSwitchOpen = false;
         state.firmwareConnectionSwitchConfirmed = false;
@@ -3604,6 +3640,7 @@
         state.updateTestFirmwareOpen = false;
         resetFirmwareTestSelection();
       } else {
+        state.firmwareAdvancedOpen = true;
         state.updateTestFirmwareOpen = true;
         state.updateManualUploadOpen = false;
         state.firmwareConnectionSwitchOpen = false;
@@ -4114,10 +4151,13 @@
       return;
     }
 
+    state.firmwareAdvancedOpen = false;
     state.updateManualUploadOpen = false;
     state.firmwareConnectionSwitchOpen = false;
+    state.updateTestFirmwareOpen = false;
     state.firmwareConnectionSwitchConfirmed = false;
     resetFirmwareManualUploadSelection();
+    resetFirmwareTestSelection();
     state.updateInstallCompleted = false;
     state.updateInstallCompletedVersion = "";
     state.updateInstallBusy = true;
