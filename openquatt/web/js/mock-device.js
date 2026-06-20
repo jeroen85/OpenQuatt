@@ -802,9 +802,12 @@
     setEntity("text_sensor", "OpenQuatt Hardware Profile", { state: state.hardware, value: state.hardware });
     setEntity("text_sensor", "OpenQuatt Connection", { state: state.connection, value: state.connection });
     setEntity("button", "Check Firmware Updates", { state: "" });
+    setEntity("button", "Install Firmware Test OTA", { state: "" });
     setEntity("button", "Install Firmware Update Target", { state: "" });
     setEntity("button", "Restart", { state: "" });
     setEntity("button", "Acknowledge compressor cycling alert", { state: "" });
+    setEntity("text", "Firmware Test OTA URL", { state: "", value: "" });
+    setEntity("text", "Firmware Test OTA MD5 URL", { state: "", value: "" });
     setEntity("text_sensor", "OpenQuatt Version", { state: "v0.26.0", value: "v0.26.0" });
     setEntity("text_sensor", "OpenQuatt Release Channel", { state: "dev", value: "dev" });
     setEntity("sensor", "Uptime", { value: 0, uom: "h" });
@@ -2825,6 +2828,8 @@
       }
     } else if (name === "Install Firmware Update Target") {
       handleUpdateInstall("Firmware Update");
+    } else if (name === "Install Firmware Test OTA") {
+      handleUpdateInstall("Firmware Test OTA");
     } else if (name === "Trendhistorie nu opslaan") {
       state.trendFlashLastFlushAt = Date.now();
       state.trendFlashNewestAt = Date.now() - (2 * 60 * 1000);
@@ -2841,10 +2846,11 @@
   }
 
   function handleUpdateInstall(name) {
-    if (name !== "Firmware Update") {
+    if (name !== "Firmware Update" && name !== "Firmware Test OTA") {
       return;
     }
-    const updateEntity = getEntity("update", name);
+    const testFirmware = name === "Firmware Test OTA";
+    const updateEntity = getEntity("update", "Firmware Update");
     if (!updateEntity) {
       return;
     }
@@ -2854,7 +2860,9 @@
     const targetConnection = updateTarget === "alternate connection"
       ? state.connection === "wifi" ? "eth" : "wifi"
       : state.connection;
-    const targetVersion = String(updateEntity.latest_version || updateEntity.current_version || "v0.26.0");
+    const targetVersion = testFirmware
+      ? "v0.26.0-pr.test"
+      : String(updateEntity.latest_version || updateEntity.current_version || "v0.26.0");
     const scheduleStep = (delay, callback) => {
       const timer = window.setTimeout(() => {
         callback();
@@ -2866,13 +2874,17 @@
 
     updateEntity.state = "installing";
     updateEntity.value = "installing";
-    updateEntity.summary = "Firmware wordt voorbereid voor upload in deze preview.";
+    updateEntity.summary = testFirmware
+      ? "Testfirmware wordt voorbereid in deze preview."
+      : "Firmware wordt voorbereid voor upload in deze preview.";
     setText("text_sensor", "Firmware Update Status", "Starting");
     setNumber("Firmware Update Progress", 0, "%");
     notifyMockUpdated();
 
     scheduleStep(700, () => {
-      updateEntity.summary = "Firmware wordt geüpload in deze preview.";
+      updateEntity.summary = testFirmware
+        ? "Testfirmware wordt gedownload in deze preview."
+        : "Firmware wordt geüpload in deze preview.";
       setText("text_sensor", "Firmware Update Status", "Uploading");
       setNumber("Firmware Update Progress", 18, "%");
     });
@@ -2896,7 +2908,9 @@
       updateEntity.value = "up_to_date";
       updateEntity.current_version = targetVersion;
       updateEntity.latest_version = targetVersion;
-      updateEntity.summary = "De preview draait nu op de nieuwste firmware.";
+      updateEntity.summary = testFirmware
+        ? "De preview draait nu op testfirmware."
+        : "De preview draait nu op de nieuwste firmware.";
       setText("text_sensor", "OpenQuatt Version", targetVersion);
       state.connection = targetConnection;
       setText("text_sensor", "OpenQuatt Connection", state.connection);

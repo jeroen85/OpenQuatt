@@ -183,6 +183,65 @@
     };
   }
 
+  function getFirmwareTestPrNumber(value = state.updateTestFirmwarePr) {
+    const normalized = String(value || "").trim().replace(/^#?pr[-\s]*/i, "").replace(/^#/, "");
+    return /^\d{1,6}$/.test(normalized) ? normalized : "";
+  }
+
+  function getFirmwareTestTargetModel() {
+    const hardware = getFirmwareHardwareProfile();
+    const topology = getInstallationTopology();
+    const connection = getFirmwareBuildConnection();
+    const hardwareMap = {
+      waveshare: {
+        slug: "waveshare",
+        label: "Waveshare",
+        connections: ["wifi"],
+      },
+      heatpump_listener: {
+        slug: "heatpump-listener",
+        label: "Heatpump Listener",
+        connections: ["wifi"],
+      },
+      heatpump_controller_q: {
+        slug: "heatpump-controller-q",
+        label: "Heatpump Controller Q",
+        connections: ["wifi", "eth"],
+      },
+    };
+    const profile = hardwareMap[hardware];
+    if (!profile || (topology !== "single" && topology !== "duo") || !profile.connections.includes(connection)) {
+      return {
+        available: false,
+        label: "Onbekend target",
+        error: "Deze firmware meldt geen herkenbaar hardware-, opstelling- of verbindingsprofiel.",
+      };
+    }
+
+    const artifactName = `openquatt-${profile.slug}-${topology}-${connection}`;
+    const topologyLabel = topology === "duo" ? "Duo" : "Single";
+    return {
+      available: true,
+      artifactName,
+      otaFileName: `${artifactName}.firmware.ota.bin`,
+      md5FileName: `${artifactName}.firmware.ota.bin.md5`,
+      label: `${profile.label} ${topologyLabel} ${getFirmwareConnectionLabel(connection)}`,
+    };
+  }
+
+  function getFirmwareTestAssetUrls(prNumber = getFirmwareTestPrNumber(), target = getFirmwareTestTargetModel()) {
+    if (!prNumber || !target.available) {
+      return null;
+    }
+    const baseUrl = `https://github.com/jeroen85/OpenQuatt/releases/download/pr-${prNumber}`;
+    const otaUrl = `${baseUrl}/${target.otaFileName}`;
+    return {
+      otaUrl,
+      md5Url: `${otaUrl}.md5`,
+      releaseApiUrl: `https://api.github.com/repos/jeroen85/OpenQuatt/releases/tags/pr-${prNumber}`,
+    };
+  }
+
   function formatDeviceClock() {
     const timeValid = isEntityActive("timeValid");
     const deviceClock = String(getEntityValue("timeNowHhmm") || "").trim();
@@ -414,6 +473,15 @@
     state.updateManualUploadError = "";
   }
 
+  function resetFirmwareTestSelection(options = {}) {
+    if (options.clearPr) {
+      state.updateTestFirmwarePr = "";
+    }
+    state.updateTestFirmwareConfirmed = false;
+    state.updateTestFirmwareError = "";
+    state.updateTestFirmwareBuild = null;
+  }
+
   function syncFirmwareInstallHints() {
     const phase = getFirmwareProgressPhase();
     const percent = getFirmwareProgressPercent();
@@ -467,7 +535,9 @@
       return {
         phaseLabel: "Herstarten",
         percent: Math.max(basePercent, 100),
-        copy: state.updateInstallMode === "connection-switch"
+        copy: state.updateInstallMode === "test-firmware"
+          ? "Testfirmware is geplaatst. Het device start opnieuw op en komt daarna vanzelf terug."
+          : state.updateInstallMode === "connection-switch"
           ? "Firmware is geplaatst. Het device start opnieuw op en komt daarna via de gekozen verbinding terug."
           : "Firmware is geplaatst. Het device start nu opnieuw op en komt daarna vanzelf terug.",
       };
@@ -477,7 +547,9 @@
       return {
         phaseLabel: "Uploaden",
         percent: basePercent,
-        copy: state.updateInstallMode === "connection-switch"
+        copy: state.updateInstallMode === "test-firmware"
+          ? `Testfirmware wordt nu door ${getFirmwareDeviceLabel()} gedownload en geïnstalleerd.`
+          : state.updateInstallMode === "connection-switch"
           ? `De ${getFirmwareConnectionLabel(state.updateInstallTargetConnection)}-build wordt nu naar ${getFirmwareDeviceLabel()} verzonden.`
           : `Firmware wordt nu naar ${getFirmwareDeviceLabel()} verzonden.`,
       };
@@ -486,7 +558,9 @@
     return {
       phaseLabel: "Installeren",
       percent: basePercent,
-      copy: state.updateInstallMode === "connection-switch"
+      copy: state.updateInstallMode === "test-firmware"
+        ? `Testfirmware-installatie is gestart voor ${getFirmwareDeviceLabel()}.`
+        : state.updateInstallMode === "connection-switch"
         ? `Verbindingswissel naar ${getFirmwareConnectionLabel(state.updateInstallTargetConnection)} is gestart.`
         : `OTA-update is gestart voor ${getFirmwareDeviceLabel()}.`,
     };
@@ -1011,6 +1085,68 @@
     `;
   }
 
+  function renderFirmwareTestSection() {
+    if (!state.updateTestFirmwareOpen) {
+      return "";
+    }
+
+    const progress = getFirmwareProgressModel();
+    const busy = Boolean(progress || state.updateInstallBusy || isFirmwareUpdateChecking());
+    const prNumber = getFirmwareTestPrNumber();
+    const target = getFirmwareTestTargetModel();
+    const urls = getFirmwareTestAssetUrls(prNumber, target);
+    const ready = Boolean(prNumber && target.available && hasEntity("firmwareTestOtaUrl") && hasEntity("firmwareTestOtaMd5Url") && hasEntity("installFirmwareTestOta"));
+    const build = state.updateTestFirmwareBuild || null;
+    const helper = target.available
+      ? `Doelbuild: ${target.label}`
+      : target.error;
+    const assetNote = urls
+      ? target.otaFileName
+      : "Vul een PR-nummer in om de OTA-build te kiezen.";
+
+    return `
+      <div class="oq-helper-modal-callout oq-helper-modal-callout--subtle">
+        <strong>Testfirmware</strong>
+        <span>Installeer een maintainer-build uit een PR-release. Gebruik dit alleen als iemand je expliciet vraagt om een PR te testen.</span>
+        <div class="oq-helper-modal-row">
+          <span class="oq-helper-modal-label">PR-nummer</span>
+          <input
+            class="oq-settings-backup-input oq-settings-backup-import-input"
+            type="text"
+            inputmode="numeric"
+            autocomplete="off"
+            placeholder="244"
+            value="${escapeHtml(state.updateTestFirmwarePr || "")}"
+            data-oq-firmware-test-pr="true"
+            ${busy ? "disabled" : ""}
+          >
+          <span class="oq-helper-modal-subvalue">${escapeHtml(helper)}</span>
+        </div>
+        <div class="oq-helper-modal-row">
+          <span class="oq-helper-modal-label">OTA-bestand</span>
+          <strong class="oq-helper-modal-value">${escapeHtml(assetNote)}</strong>
+        </div>
+        ${build ? `
+          <div class="oq-helper-modal-row">
+            <span class="oq-helper-modal-label">Build</span>
+            <strong class="oq-helper-modal-value">${escapeHtml(build)}</strong>
+          </div>
+        ` : ""}
+        <p class="oq-helper-modal-note">De webapp zet alleen de URL klaar. Het device downloadt en flasht de binary daarna zelf via dezelfde OTA-backend.</p>
+        ${!ready ? `<p class="oq-helper-modal-note oq-helper-modal-note--error">${escapeHtml(prNumber && target.available ? "Deze firmware mist de testfirmware-bediening. Installeer eerst een nieuwere build." : "Vul een geldig PR-nummer in.")}</p>` : ""}
+        ${state.updateTestFirmwareError ? `<p class="oq-helper-modal-note oq-helper-modal-note--error">${escapeHtml(state.updateTestFirmwareError)}</p>` : ""}
+        <label class="oq-helper-modal-check">
+          <input type="checkbox" data-oq-firmware-test-confirm="true" ${state.updateTestFirmwareConfirmed ? "checked" : ""} ${busy || !ready ? "disabled" : ""}>
+          <span>Ik begrijp dat dit testfirmware uit een PR is.</span>
+        </label>
+        <div class="oq-helper-modal-actions">
+          <button class="oq-helper-button" type="button" data-oq-action="install-firmware-test" ${busy || !ready || !state.updateTestFirmwareConfirmed ? "disabled" : ""}>PR-firmware installeren</button>
+          <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="toggle-firmware-test" ${busy ? "disabled" : ""}>Verbergen</button>
+        </div>
+      </div>
+    `;
+  }
+
   function renderFirmwareManualUploadSection() {
     if (!state.updateManualUploadOpen) {
       return "";
@@ -1056,6 +1192,10 @@
       getEntitySignatureFragment("installationTopology"),
       getEntitySignatureFragment("hardwareProfileText"),
       getEntitySignatureFragment("connectionText"),
+      state.updateTestFirmwareOpen ? "test-open" : "test-closed",
+      state.updateTestFirmwarePr,
+      state.updateTestFirmwareConfirmed ? "test-confirmed" : "test-unconfirmed",
+      state.updateTestFirmwareError,
       getEntitySignatureFragment("hpGeneration"),
       getEntitySignatureFragment("projectVersionText"),
       getEntitySignatureFragment("releaseChannelText"),
@@ -1937,6 +2077,9 @@
             <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="toggle-firmware-upload" ${checking || installing || progress ? "disabled" : ""}>
               ${state.updateManualUploadOpen ? "Handmatige upload verbergen" : "Handmatige upload"}
             </button>
+            <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="toggle-firmware-test" ${checking || installing || progress ? "disabled" : ""}>
+              ${state.updateTestFirmwareOpen ? "Testfirmware verbergen" : "Testfirmware"}
+            </button>
             ${showConnectionSwitchAction ? `
               <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="toggle-firmware-connection-switch" ${checking || installing || progress ? "disabled" : ""}>
                 ${state.firmwareConnectionSwitchOpen ? "Verbinding wisselen verbergen" : `Verbinding wisselen naar ${escapeHtml(connectionSwitchModel.targetLabel)}`}
@@ -1945,6 +2088,7 @@
             ${releaseUrl ? `<a class="oq-helper-button oq-helper-button--ghost oq-helper-modal-link" href="${escapeHtml(releaseUrl)}" target="_blank" rel="noreferrer">Release notes</a>` : ""}
           </div>
           ${renderFirmwareConnectionSwitchSection()}
+          ${renderFirmwareTestSection()}
           ${renderFirmwareManualUploadSection()}
         </section>
       </div>
