@@ -130,6 +130,52 @@ def prepare_release_assets(version: str, base_url: str, release_url: str) -> Non
         manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 
 
+def prepare_pr_test_assets(pr_number: str, version: str, head_sha: str, base_url: str, release_url: str) -> None:
+    dist_dir = REPO_ROOT / "dist"
+    dist_dir.mkdir(parents=True, exist_ok=True)
+    short_sha = head_sha[:7] if head_sha else ""
+    assets: list[dict[str, str]] = []
+
+    for target in filter_targets(load_targets(), "enabled"):
+        artifact_name = target["artifact_name"]
+        artifact_dir = find_artifact_dir(dist_dir, artifact_name)
+        ota_source = artifact_dir / "firmware.ota.bin"
+        if not ota_source.is_file():
+            raise SystemExit(f"Artifact {artifact_name} is missing firmware.ota.bin")
+
+        ota_name = f"{artifact_name}.firmware.ota.bin"
+        ota_dest = dist_dir / ota_name
+        shutil.copy2(ota_source, ota_dest)
+        digest = md5sum(ota_dest)
+        md5_name = f"{ota_name}.md5"
+        (dist_dir / md5_name).write_text(f"{digest}\n", encoding="utf-8")
+
+        assets.append(
+            {
+                "target": target["id"],
+                "hardware": target["hardware"],
+                "topology": target["topology"],
+                "connection": target["connection"],
+                "display_name": target["display_name"],
+                "ota_file": ota_name,
+                "ota_url": f"{base_url}/{ota_name}",
+                "md5_file": md5_name,
+                "md5_url": f"{base_url}/{md5_name}",
+                "md5": digest,
+            }
+        )
+
+    catalog = {
+        "pr": str(pr_number),
+        "version": version,
+        "head_sha": head_sha,
+        "short_sha": short_sha,
+        "release_url": release_url,
+        "assets": assets,
+    }
+    (dist_dir / "pr-firmware.json").write_text(json.dumps(catalog, indent=2) + "\n", encoding="utf-8")
+
+
 def command_list_configs(args: argparse.Namespace) -> int:
     for target in filter_targets(load_targets(), args.status):
         print(target["config"])
@@ -150,6 +196,11 @@ def command_github_matrix(args: argparse.Namespace) -> int:
 
 def command_prepare_release_assets(args: argparse.Namespace) -> int:
     prepare_release_assets(args.version, args.base_url, args.release_url)
+    return 0
+
+
+def command_prepare_pr_test_assets(args: argparse.Namespace) -> int:
+    prepare_pr_test_assets(args.pr_number, args.version, args.head_sha, args.base_url, args.release_url)
     return 0
 
 
@@ -182,6 +233,14 @@ def create_parser() -> argparse.ArgumentParser:
     prepare_parser.add_argument("base_url")
     prepare_parser.add_argument("release_url")
     prepare_parser.set_defaults(func=command_prepare_release_assets)
+
+    pr_prepare_parser = subparsers.add_parser("prepare-pr-test-assets", help="Prepare PR test OTA assets.")
+    pr_prepare_parser.add_argument("pr_number")
+    pr_prepare_parser.add_argument("version")
+    pr_prepare_parser.add_argument("head_sha")
+    pr_prepare_parser.add_argument("base_url")
+    pr_prepare_parser.add_argument("release_url")
+    pr_prepare_parser.set_defaults(func=command_prepare_pr_test_assets)
 
     return parser
 

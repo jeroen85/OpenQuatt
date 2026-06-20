@@ -822,7 +822,8 @@
 
   async function refreshEntities(keys, detail = "state", options = {}) {
     const now = Date.now();
-    const refreshKeys = keys.filter((key) => !isKnownOptionalMissingEntity(key, now));
+    const forceMissing = options.forceMissing === true;
+    const refreshKeys = keys.filter((key) => forceMissing || !isKnownOptionalMissingEntity(key, now));
     if (!refreshKeys.length) {
       return;
     }
@@ -2571,6 +2572,43 @@
       return;
     }
 
+    if (event.target.dataset.oqFirmwareTestConfirm) {
+      state.updateTestFirmwareConfirmed = Boolean(event.target.checked);
+      state.updateTestFirmwareError = "";
+      const section = event.target.closest(".oq-helper-modal-callout");
+      const installButton = section?.querySelector('[data-oq-action="install-firmware-test"]');
+      if (installButton) {
+        installButton.disabled = !state.updateTestFirmwareConfirmed || !getFirmwareTestPrNumber();
+      }
+      section?.querySelector('[data-oq-firmware-test-runtime-error="true"]')?.remove();
+      return;
+    }
+
+    if (event.target.dataset.oqFirmwareTestPr) {
+      state.updateTestFirmwarePr = String(event.target.value || "");
+      state.updateTestFirmwareConfirmed = false;
+      state.updateTestFirmwareError = "";
+      state.updateTestFirmwareBuild = null;
+      const section = event.target.closest(".oq-helper-modal-callout");
+      const confirmInput = section?.querySelector('[data-oq-firmware-test-confirm="true"]');
+      if (confirmInput) {
+        confirmInput.checked = false;
+      }
+      const installButton = section?.querySelector('[data-oq-action="install-firmware-test"]');
+      if (installButton) {
+        installButton.disabled = true;
+      }
+      const target = getFirmwareTestTargetModel();
+      const urls = getFirmwareTestAssetUrls(getFirmwareTestPrNumber(), target);
+      const assetNote = section?.querySelector('[data-oq-firmware-test-asset-note="true"]');
+      if (assetNote) {
+        assetNote.textContent = urls ? target.otaFileName : "Vul een PR-nummer in om de OTA-build te kiezen.";
+      }
+      section?.querySelector('[data-oq-firmware-test-build-row="true"]')?.remove();
+      section?.querySelector('[data-oq-firmware-test-runtime-error="true"]')?.remove();
+      return;
+    }
+
     const field = event.target.dataset.oqField;
     if (!field) {
       if (event.target.dataset.oqQuickstartCicUrl !== undefined) {
@@ -2677,6 +2715,7 @@
       const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
       event.target.value = "";
       if (file) {
+        state.firmwareAdvancedOpen = true;
         state.updateManualUploadOpen = true;
         state.updateManualUploadFile = file;
         state.updateManualUploadFileName = file.name || "";
@@ -2809,6 +2848,13 @@
         }
         if (state.updateModalOpen) {
           state.updateModalOpen = false;
+          state.firmwareAdvancedOpen = false;
+          state.firmwareConnectionSwitchOpen = false;
+          state.updateManualUploadOpen = false;
+          state.updateTestFirmwareOpen = false;
+          state.firmwareConnectionSwitchConfirmed = false;
+          resetFirmwareManualUploadSelection();
+          resetFirmwareTestSelection();
           shouldRender = true;
         }
         if (state.systemModal) {
@@ -3050,10 +3096,13 @@
       state.updateModalOpen = false;
       state.updateInstallCompleted = false;
       state.updateInstallCompletedVersion = "";
+      state.firmwareAdvancedOpen = false;
       state.firmwareConnectionSwitchOpen = false;
       state.updateManualUploadOpen = false;
+      state.updateTestFirmwareOpen = false;
       state.firmwareConnectionSwitchConfirmed = false;
       resetFirmwareManualUploadSelection();
+      resetFirmwareTestSelection();
       render();
       return;
     }
@@ -3392,6 +3441,13 @@
       state.controlNotice = "";
       state.settingsInfoOpen = "";
       state.updateModalOpen = false;
+      state.firmwareAdvancedOpen = false;
+      state.firmwareConnectionSwitchOpen = false;
+      state.updateManualUploadOpen = false;
+      state.updateTestFirmwareOpen = false;
+      state.firmwareConnectionSwitchConfirmed = false;
+      resetFirmwareManualUploadSelection();
+      resetFirmwareTestSelection();
       stopLoginAuthStatusPolling();
       state.systemModal = "";
       if (state.nativeOpen) {
@@ -3527,12 +3583,31 @@
       return;
     }
 
+    if (action === "toggle-firmware-advanced") {
+      if (state.firmwareAdvancedOpen || state.firmwareConnectionSwitchOpen || state.updateManualUploadOpen || state.updateTestFirmwareOpen) {
+        state.firmwareAdvancedOpen = false;
+        state.firmwareConnectionSwitchOpen = false;
+        state.firmwareConnectionSwitchConfirmed = false;
+        state.updateManualUploadOpen = false;
+        state.updateTestFirmwareOpen = false;
+        resetFirmwareManualUploadSelection();
+        resetFirmwareTestSelection();
+      } else {
+        state.firmwareAdvancedOpen = true;
+      }
+      render();
+      return;
+    }
+
     if (action === "toggle-firmware-connection-switch") {
       state.firmwareConnectionSwitchOpen = !state.firmwareConnectionSwitchOpen;
       state.firmwareConnectionSwitchConfirmed = false;
       if (state.firmwareConnectionSwitchOpen) {
+        state.firmwareAdvancedOpen = true;
         state.updateManualUploadOpen = false;
+        state.updateTestFirmwareOpen = false;
         resetFirmwareManualUploadSelection();
+        resetFirmwareTestSelection();
       }
       render();
       return;
@@ -3543,9 +3618,12 @@
         state.updateManualUploadOpen = false;
         resetFirmwareManualUploadSelection();
       } else {
+        state.firmwareAdvancedOpen = true;
         state.updateManualUploadOpen = true;
         state.firmwareConnectionSwitchOpen = false;
         state.firmwareConnectionSwitchConfirmed = false;
+        state.updateTestFirmwareOpen = false;
+        resetFirmwareTestSelection();
         state.updateManualUploadError = "";
       }
       render();
@@ -3554,6 +3632,28 @@
 
     if (action === "upload-firmware-file") {
       void uploadFirmwareUpdate();
+      return;
+    }
+
+    if (action === "toggle-firmware-test") {
+      if (state.updateTestFirmwareOpen) {
+        state.updateTestFirmwareOpen = false;
+        resetFirmwareTestSelection();
+      } else {
+        state.firmwareAdvancedOpen = true;
+        state.updateTestFirmwareOpen = true;
+        state.updateManualUploadOpen = false;
+        state.firmwareConnectionSwitchOpen = false;
+        state.firmwareConnectionSwitchConfirmed = false;
+        resetFirmwareManualUploadSelection();
+        state.updateTestFirmwareError = "";
+      }
+      render();
+      return;
+    }
+
+    if (action === "install-firmware-test") {
+      void installFirmwareTestUpdate();
       return;
     }
 
@@ -4004,7 +4104,7 @@
 
   async function hydrateFirmwareUpdateModal() {
     try {
-      await refreshEntities(FIRMWARE_MODAL_KEYS, "all", { concurrency: ENTITY_REFRESH_CONCURRENCY });
+      await refreshEntities(FIRMWARE_MODAL_KEYS, "all", { concurrency: ENTITY_REFRESH_CONCURRENCY, forceMissing: true });
       if (state.updateModalOpen) {
         render();
       }
@@ -4051,10 +4151,13 @@
       return;
     }
 
+    state.firmwareAdvancedOpen = false;
     state.updateManualUploadOpen = false;
     state.firmwareConnectionSwitchOpen = false;
+    state.updateTestFirmwareOpen = false;
     state.firmwareConnectionSwitchConfirmed = false;
     resetFirmwareManualUploadSelection();
+    resetFirmwareTestSelection();
     state.updateInstallCompleted = false;
     state.updateInstallCompletedVersion = "";
     state.updateInstallBusy = true;
@@ -4144,6 +4247,137 @@
       }
     } catch (error) {
       state.controlError = `Verbindingswissel kon niet worden gestart. ${error.message}`;
+    } finally {
+      resetFirmwareInstallUiState();
+      render();
+    }
+  }
+
+  async function fetchFirmwareTestReleaseAsset(prNumber, target) {
+    const urls = getFirmwareTestAssetUrls(prNumber, target);
+    if (!urls) {
+      throw new Error("Geen geldig PR-target gevonden.");
+    }
+
+    const response = await fetch(urls.releaseApiUrl, {
+      cache: "no-store",
+      headers: { Accept: "application/vnd.github+json" },
+    });
+    if (response.status === 404) {
+      throw new Error(`Geen testfirmware gevonden voor PR ${prNumber}. Controleer of het label de build al heeft gepubliceerd.`);
+    }
+    if (!response.ok) {
+      throw new Error(`GitHub API gaf HTTP ${response.status}`);
+    }
+
+    const release = await response.json();
+    const assets = Array.isArray(release.assets) ? release.assets : [];
+    const otaAsset = assets.find((asset) => asset && asset.name === target.otaFileName);
+    const md5Asset = assets.find((asset) => asset && asset.name === target.md5FileName);
+    if (!otaAsset || !otaAsset.browser_download_url) {
+      throw new Error(`PR ${prNumber} bevat geen OTA-build voor ${target.label}.`);
+    }
+    if (!md5Asset || !md5Asset.browser_download_url) {
+      throw new Error(`PR ${prNumber} mist de md5-controle voor ${target.label}.`);
+    }
+
+    const releaseName = String(release.name || release.tag_name || `PR ${prNumber}`).trim();
+    const updatedAt = String(otaAsset.updated_at || release.published_at || "").trim();
+    return {
+      otaUrl: otaAsset.browser_download_url,
+      md5Url: md5Asset.browser_download_url,
+      label: updatedAt ? `${releaseName} · ${updatedAt.replace("T", " ").replace("Z", " UTC")}` : releaseName,
+    };
+  }
+
+  async function setFirmwareTestTextEntity(key, value) {
+    if (!hasEntity(key)) {
+      throw new Error(`${ENTITY_DEFS[key]?.name || key} is niet beschikbaar op deze firmware.`);
+    }
+    const applied = await setEntityBackupValue(key, value);
+    state.entities[key] = {
+      ...(state.entities[key] || {}),
+      state: applied,
+      value: applied,
+    };
+  }
+
+  async function installFirmwareTestUpdate() {
+    const prNumber = getFirmwareTestPrNumber();
+    const target = getFirmwareTestTargetModel();
+    const buttonEntity = ENTITY_DEFS.installFirmwareTestOta;
+    if (!prNumber) {
+      state.updateTestFirmwareError = "Vul een geldig PR-nummer in.";
+      render();
+      return;
+    }
+    if (!target.available) {
+      state.updateTestFirmwareError = target.error || "Dit firmwaretarget wordt niet herkend.";
+      render();
+      return;
+    }
+    if (!state.updateTestFirmwareConfirmed) {
+      state.updateTestFirmwareError = "Bevestig eerst dat je testfirmware wilt installeren.";
+      render();
+      return;
+    }
+    if (!buttonEntity || !hasEntity("installFirmwareTestOta")) {
+      state.updateTestFirmwareError = "Deze firmware bevat de testfirmware-installatieknop nog niet.";
+      render();
+      return;
+    }
+
+    state.updateManualUploadOpen = false;
+    state.firmwareConnectionSwitchOpen = false;
+    state.firmwareConnectionSwitchConfirmed = false;
+    resetFirmwareManualUploadSelection();
+    state.updateInstallCompleted = false;
+    state.updateInstallCompletedVersion = "";
+    state.updateInstallBusy = true;
+    state.updateInstallTargetVersion = "";
+    state.updateInstallPhaseHint = "starting";
+    state.updateInstallProgressHint = 0;
+    state.updateInstallMode = "test-firmware";
+    state.updateInstallTargetConnection = "";
+    state.controlError = "";
+    state.controlNotice = "";
+    state.updateTestFirmwareError = "";
+    state.updateTestFirmwareBuild = null;
+    render();
+
+    let flashRequested = false;
+    try {
+      const releaseAsset = await fetchFirmwareTestReleaseAsset(prNumber, target);
+      state.updateTestFirmwareBuild = releaseAsset.label;
+      render();
+
+      await setFirmwareTestTextEntity("firmwareTestOtaUrl", releaseAsset.otaUrl);
+      await setFirmwareTestTextEntity("firmwareTestOtaMd5Url", releaseAsset.md5Url);
+
+      flashRequested = true;
+      const response = await fetch(buildEntityPath(buttonEntity.domain, buttonEntity.name, "press"), {
+        method: "POST",
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const completed = await pollFirmwareInstallState();
+      if (completed) {
+        state.updateInstallCompleted = true;
+        state.updateInstallCompletedVersion = getFirmwareCurrentVersion() || `PR ${prNumber}`;
+        state.updateTestFirmwareOpen = false;
+        resetFirmwareTestSelection();
+        state.controlNotice = "";
+      } else {
+        state.controlNotice = `Testfirmware uit PR ${prNumber} is gestart. Wacht tot het device weer online is.`;
+      }
+    } catch (error) {
+      if (flashRequested && isLikelyDeviceConnectionError(error.message)) {
+        state.controlNotice = `Testfirmware uit PR ${prNumber} is gestart. Wacht tot het device weer online is.`;
+      } else {
+        state.updateTestFirmwareError = `Testfirmware installeren mislukte. ${error.message}`;
+      }
     } finally {
       resetFirmwareInstallUiState();
       render();

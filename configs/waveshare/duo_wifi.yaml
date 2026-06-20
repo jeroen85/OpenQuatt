@@ -5,6 +5,7 @@ substitutions:
   <<: !include ../../openquatt/oq_substitutions_common.yaml
   <<: !include ../../openquatt/topology/duo.yaml
   oq_hardware_profile: "waveshare"
+  oq_connection: "wifi"
   oq_topology_build_flag: "-DOQ_TOPOLOGY_DUO=1"
   main_release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-waveshare-duo-wifi-ota.manifest.json"
   dev_release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/download/dev-latest/openquatt-waveshare-duo-wifi-ota.manifest.json"
