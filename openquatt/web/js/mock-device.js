@@ -108,6 +108,16 @@
       fields: [],
       samples: [],
     },
+    oduRuntimeFrequency: {
+      HP1: {
+        cooling: [0, 20, 26, 30, 36, 43, 48, 55, 69, 74, 82],
+        heating: [0, 20, 26, 30, 36, 43, 48, 55, 69, 82, 90],
+      },
+      HP2: {
+        cooling: [0, 21, 27, 31, 37, 44, 49, 56, 68, 73, 81],
+        heating: [0, 21, 27, 31, 37, 44, 49, 56, 68, 81, 89],
+      },
+    },
   };
 
   const HP2_ENTITIES = [
@@ -159,6 +169,66 @@
     "L9 (H85/C71)",
     "L10 (H90/C74)",
   ];
+  const ODU_RUNTIME_FREQUENCY_LEVELS = Array.from({ length: 11 }, (_item, index) => index);
+  const ODU_RUNTIME_FREQUENCY_MODES = ["cooling", "heating"];
+
+  function oduRuntimePrefix(hp) {
+    return `${hp} - EXPERIMENTAL`;
+  }
+
+  function oduRuntimeControlName(hp, suffix) {
+    const prefix = oduRuntimePrefix(hp);
+    if (suffix === "enable") return `${prefix} ODU runtime frequency write enable`;
+    if (suffix === "load") return `${prefix} load ODU runtime frequency table`;
+    if (suffix === "apply") return `${prefix} apply ODU runtime frequency table`;
+    return `${prefix} ODU runtime frequency status`;
+  }
+
+  function oduRuntimeValueName(hp, mode, level) {
+    return `${oduRuntimePrefix(hp)} ${mode} F${level} runtime Hz`;
+  }
+
+  function parseOduRuntimeButtonName(name) {
+    const match = String(name || "").match(/^(HP[12]) - EXPERIMENTAL (load|apply) ODU runtime frequency table$/);
+    return match ? { hp: match[1], action: match[2] } : null;
+  }
+
+  function clearOduRuntimeFrequencyEntities(hp) {
+    ["enable", "load", "apply", "status"].forEach((suffix) => {
+      const domain = suffix === "enable" ? "switch" : suffix === "status" ? "text_sensor" : "button";
+      entities.delete(entityKey(domain, oduRuntimeControlName(hp, suffix)));
+    });
+    ODU_RUNTIME_FREQUENCY_MODES.forEach((mode) => {
+      ODU_RUNTIME_FREQUENCY_LEVELS.forEach((level) => {
+        entities.delete(entityKey("number", oduRuntimeValueName(hp, mode, level)));
+      });
+    });
+  }
+
+  function seedOduRuntimeFrequencyEntities(hp) {
+    const table = state.oduRuntimeFrequency[hp];
+    if (!table) {
+      return;
+    }
+    setEntity("switch", oduRuntimeControlName(hp, "enable"), { value: false, state: false });
+    setEntity("button", oduRuntimeControlName(hp, "load"), {});
+    setEntity("button", oduRuntimeControlName(hp, "apply"), {});
+    setEntity("text_sensor", oduRuntimeControlName(hp, "status"), {
+      state: "IDLE: runtime values are mock data",
+      value: "IDLE: runtime values are mock data",
+    });
+    ODU_RUNTIME_FREQUENCY_MODES.forEach((mode) => {
+      ODU_RUNTIME_FREQUENCY_LEVELS.forEach((level) => {
+        setEntity("number", oduRuntimeValueName(hp, mode, level), {
+          value: table[mode][level],
+          min_value: 0,
+          max_value: 120,
+          step: 1,
+          uom: "Hz",
+        });
+      });
+    });
+  }
 
   function entityKey(domain, name) {
     return `${domain}/${name}`;
@@ -1251,7 +1321,9 @@
       setEntity("binary_sensor", name, { value });
     });
 
+    seedOduRuntimeFrequencyEntities("HP1");
     seedHp2Entities();
+    seedOduRuntimeFrequencyEntities("HP2");
 
     setEntity("button", "Complete setup", {});
     setEntity("button", "Reset setup state", {});
@@ -1274,11 +1346,13 @@
     setText("text_sensor", "OpenQuatt Installation Topology", state.installation);
     if (state.installation === "single") {
       clearHp2Entities();
+      clearOduRuntimeFrequencyEntities("HP2");
       if (state.scenario === "dual") {
         state.scenario = "heating";
       }
     } else {
       seedHp2Entities();
+      seedOduRuntimeFrequencyEntities("HP2");
     }
   }
 
@@ -2243,7 +2317,94 @@
     notifyMockUpdated();
   }
 
+  function getOduRuntimeDesiredTable(hp, mode) {
+    return ODU_RUNTIME_FREQUENCY_LEVELS.map((level) => (
+      Number(getEntity("number", oduRuntimeValueName(hp, mode, level))?.value)
+    ));
+  }
+
+  function validateOduRuntimeTable(values) {
+    let previous = -Infinity;
+    for (const value of values) {
+      if (!Number.isFinite(value) || value < 0 || value > 120 || value < previous) {
+        return false;
+      }
+      previous = value;
+    }
+    return true;
+  }
+
+  function setOduRuntimeStatus(hp, status) {
+    setText("text_sensor", oduRuntimeControlName(hp, "status"), status);
+  }
+
+  function handleOduRuntimeLoad(hp) {
+    const table = state.oduRuntimeFrequency[hp];
+    if (!table) {
+      return;
+    }
+    setOduRuntimeStatus(hp, "LOAD_REQUESTED");
+    window.setTimeout(() => {
+      ODU_RUNTIME_FREQUENCY_MODES.forEach((mode) => {
+        ODU_RUNTIME_FREQUENCY_LEVELS.forEach((level) => {
+          setNumber(oduRuntimeValueName(hp, mode, level), table[mode][level], "Hz");
+        });
+      });
+      setOduRuntimeStatus(hp, "LOADED: 22/22 runtime registers");
+      notifyMockUpdated();
+    }, 320);
+  }
+
+  function handleOduRuntimeApply(hp) {
+    const enable = getEntity("switch", oduRuntimeControlName(hp, "enable"));
+    if (!enable?.value) {
+      setOduRuntimeStatus(hp, "BLOCKED: enable switch is off");
+      return;
+    }
+
+    const mode = String(getEntity("text_sensor", `${hp} - Working Mode Label`)?.value || "").trim();
+    const compressorHz = Number(getEntity("sensor", `${hp} - Compressor frequency`)?.value || 0);
+    if (mode && !/standby|stand-by/i.test(mode)) {
+      setOduRuntimeStatus(hp, "BLOCKED: ODU is not in standby");
+      return;
+    }
+    if (Number.isFinite(compressorHz) && compressorHz > 0.5) {
+      setOduRuntimeStatus(hp, "BLOCKED: compressor is running");
+      return;
+    }
+
+    const cooling = getOduRuntimeDesiredTable(hp, "cooling");
+    const heating = getOduRuntimeDesiredTable(hp, "heating");
+    if (!validateOduRuntimeTable(cooling)) {
+      setOduRuntimeStatus(hp, "BLOCKED: invalid cooling table");
+      return;
+    }
+    if (!validateOduRuntimeTable(heating)) {
+      setOduRuntimeStatus(hp, "BLOCKED: invalid heating table");
+      return;
+    }
+
+    state.oduRuntimeFrequency[hp].cooling = cooling;
+    state.oduRuntimeFrequency[hp].heating = heating;
+    enable.value = false;
+    enable.state = false;
+    setOduRuntimeStatus(hp, "APPLIED: runtime table written, not persisted");
+  }
+
   function handleButtonPress(name) {
+    const oduRuntimeButton = parseOduRuntimeButtonName(name);
+    if (oduRuntimeButton) {
+      if (oduRuntimeButton.action === "load") {
+        handleOduRuntimeLoad(oduRuntimeButton.hp);
+      } else {
+        handleOduRuntimeApply(oduRuntimeButton.hp);
+      }
+      updateSummary();
+      notifyMockUpdated();
+      notifyDevControlsChanged();
+      return;
+    }
+
     if (name === "CM100 Start") {
       clearQuickFlowTestTimer();
       clearCommissioningTimers();

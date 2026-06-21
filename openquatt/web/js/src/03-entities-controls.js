@@ -311,6 +311,7 @@
       "flowSelected",
       "flowKp",
       "flowKi",
+      ...ODU_RUNTIME_FREQUENCY_KEYS,
     ],
     heating: [
       "strategy",
@@ -3237,6 +3238,9 @@
           state.commissioningTaskLock = "manual-hp";
         }
         const refreshKeys = [];
+        let refreshDelayMs = 0;
+        let successNotice = "";
+        let errorPrefix = "";
         if (buttonKey === "acknowledgeCompressorCyclingAlert") {
           refreshKeys.push(...INSTALLATION_MONITORING_STATE_KEYS);
         } else if (buttonKey === "commissioningCm100Start" || buttonKey === "commissioningCm100Stop") {
@@ -3352,8 +3356,23 @@
             "hp1Mode",
             "hp2Mode",
           );
+        } else if (ODU_RUNTIME_FREQUENCY_BUTTON_KEYS.has(buttonKey)) {
+          const hpIndex = getOduRuntimeFrequencyButtonHp(buttonKey);
+          if (hpIndex) {
+            refreshKeys.push(...getOduRuntimeFrequencyHpKeys(hpIndex));
+            refreshDelayMs = buttonKey.endsWith("Load") ? 1200 : 350;
+            successNotice = buttonKey.endsWith("Load")
+              ? `HP${hpIndex} ODU runtime tabel lezen aangevraagd.`
+              : `HP${hpIndex} ODU runtime tabel geschreven; niet opgeslagen in EEPROM.`;
+            errorPrefix = `ODU runtime actie mislukt voor HP${hpIndex}`;
+          }
         }
-        void triggerNamedButton(buttonKey, refreshKeys.length ? { refreshKeys } : {});
+        void triggerNamedButton(buttonKey, {
+          ...(refreshKeys.length ? { refreshKeys } : {}),
+          ...(refreshDelayMs ? { refreshDelayMs } : {}),
+          ...(successNotice ? { successNotice } : {}),
+          ...(errorPrefix ? { errorPrefix } : {}),
+        });
       }
       return;
     }
@@ -4892,7 +4911,7 @@
         "manualFlowApplyCooling",
         "manualHpStart",
         "manualHpAbort",
-      ].includes(key);
+      ].includes(key) || ODU_RUNTIME_FREQUENCY_BUTTON_KEYS.has(key);
       if (!keepCommissioningModalOpen) {
         stopLoginAuthStatusPolling();
         state.systemModal = "";
@@ -4902,6 +4921,10 @@
         beginDeviceReconnect(options.reconnectMode);
       }
       if (Array.isArray(options.refreshKeys) && options.refreshKeys.length) {
+        const refreshDelayMs = Number(options.refreshDelayMs || 0);
+        if (Number.isFinite(refreshDelayMs) && refreshDelayMs > 0) {
+          await new Promise((resolve) => window.setTimeout(resolve, refreshDelayMs));
+        }
         await refreshEntities(options.refreshKeys, "state");
       }
     } catch (error) {

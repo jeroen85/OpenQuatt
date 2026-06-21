@@ -1,0 +1,9 @@
+# ==============================================================================
+# OpenQuatt - EXPERIMENTAL HP1 ODU Runtime Frequency Table
+# ==============================================================================
+packages:
+  hp1_odu_runtime_frequency_table: !include
+    file: oq_odu_runtime_frequency_table_hp.yaml
+    vars:
+      hp_id: "hp1"
+      prefix: "HP1 - "

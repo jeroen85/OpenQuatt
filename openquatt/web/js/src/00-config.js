@@ -136,6 +136,51 @@ const LOGO_MARKUP = `
     },
   ];
 
+  const ODU_RUNTIME_FREQUENCY_HP_IDS = [1, 2];
+  const ODU_RUNTIME_FREQUENCY_LEVELS = Array.from({ length: 11 }, (_item, index) => index);
+  const ODU_RUNTIME_FREQUENCY_MODES = ["cooling", "heating"];
+
+  function getOduRuntimeFrequencyModeLabel(mode) {
+    return mode === "cooling" ? "cooling" : "heating";
+  }
+
+  function getOduRuntimeFrequencyModeKey(mode) {
+    return mode === "cooling" ? "Cooling" : "Heating";
+  }
+
+  function getOduRuntimeFrequencyValueKey(hpIndex, mode, level) {
+    return `hp${hpIndex}OduRuntime${getOduRuntimeFrequencyModeKey(mode)}F${level}`;
+  }
+
+  function getOduRuntimeFrequencyControlKey(hpIndex, suffix) {
+    return `hp${hpIndex}OduRuntimeFrequency${suffix}`;
+  }
+
+  function getOduRuntimeFrequencyHpKeys(hpIndex) {
+    return [
+      getOduRuntimeFrequencyControlKey(hpIndex, "Enable"),
+      getOduRuntimeFrequencyControlKey(hpIndex, "Load"),
+      getOduRuntimeFrequencyControlKey(hpIndex, "Apply"),
+      getOduRuntimeFrequencyControlKey(hpIndex, "Status"),
+      ...ODU_RUNTIME_FREQUENCY_MODES.flatMap((mode) => (
+        ODU_RUNTIME_FREQUENCY_LEVELS.map((level) => getOduRuntimeFrequencyValueKey(hpIndex, mode, level))
+      )),
+    ];
+  }
+
+  function getOduRuntimeFrequencyButtonHp(key) {
+    const match = String(key || "").match(/^hp([12])OduRuntimeFrequency(?:Load|Apply)$/);
+    return match ? Number(match[1]) : 0;
+  }
+
+  const ODU_RUNTIME_FREQUENCY_KEYS = ODU_RUNTIME_FREQUENCY_HP_IDS.flatMap(getOduRuntimeFrequencyHpKeys);
+  const ODU_RUNTIME_FREQUENCY_BUTTON_KEYS = new Set(
+    ODU_RUNTIME_FREQUENCY_HP_IDS.flatMap((hpIndex) => [
+      getOduRuntimeFrequencyControlKey(hpIndex, "Load"),
+      getOduRuntimeFrequencyControlKey(hpIndex, "Apply"),
+    ]),
+  );
+
   const ENTITY_DEFS = {
     setupComplete: { domain: "binary_sensor", name: "Setup Complete", optional: true },
     status: { domain: "binary_sensor", name: "Status", optional: true },
@@ -526,6 +571,39 @@ const LOGO_MARKUP = `
     apply: { domain: "button", name: "Complete setup" },
     reset: { domain: "button", name: "Reset setup state" },
   };
+
+  ODU_RUNTIME_FREQUENCY_HP_IDS.forEach((hpIndex) => {
+    const prefix = `HP${hpIndex} - EXPERIMENTAL`;
+    ENTITY_DEFS[getOduRuntimeFrequencyControlKey(hpIndex, "Enable")] = {
+      domain: "switch",
+      name: `${prefix} ODU runtime frequency write enable`,
+      optional: true,
+    };
+    ENTITY_DEFS[getOduRuntimeFrequencyControlKey(hpIndex, "Load")] = {
+      domain: "button",
+      name: `${prefix} load ODU runtime frequency table`,
+      optional: true,
+    };
+    ENTITY_DEFS[getOduRuntimeFrequencyControlKey(hpIndex, "Apply")] = {
+      domain: "button",
+      name: `${prefix} apply ODU runtime frequency table`,
+      optional: true,
+    };
+    ENTITY_DEFS[getOduRuntimeFrequencyControlKey(hpIndex, "Status")] = {
+      domain: "text_sensor",
+      name: `${prefix} ODU runtime frequency status`,
+      optional: true,
+    };
+    ODU_RUNTIME_FREQUENCY_MODES.forEach((mode) => {
+      ODU_RUNTIME_FREQUENCY_LEVELS.forEach((level) => {
+        ENTITY_DEFS[getOduRuntimeFrequencyValueKey(hpIndex, mode, level)] = {
+          domain: "number",
+          name: `${prefix} ${getOduRuntimeFrequencyModeLabel(mode)} F${level} runtime Hz`,
+          optional: true,
+        };
+      });
+    });
+  });
 
   const APP_VIEWS = [
     { id: "overview", label: "Overzicht" },
@@ -1415,12 +1493,14 @@ const LOGO_MARKUP = `
     ...CURVE_SETTING_KEYS,
     ...COMPRESSOR_SETTING_KEYS,
     ...SILENT_SETTING_KEYS,
+    ...ODU_RUNTIME_FREQUENCY_KEYS,
   ];
   const SETTINGS_BACKUP_WRITABLE_DOMAINS = new Set(["number", "select", "switch", "text", "time", "datetime"]);
   const SETTINGS_BACKUP_EXPECTED_EXTRA_KEYS = new Set(["setupComplete", "openquattResumeAt", "firmwareUpdateChannel"]);
   const SETTINGS_BACKUP_EXCLUDED_KEYS = new Set([
     "installationTopology",
     ...COMMISSIONING_STATE_KEYS,
+    ...ODU_RUNTIME_FREQUENCY_KEYS,
     "trendHistoryFlashAvailable",
     "trendHistoryFlashOldest",
     "trendHistoryFlashNewest",

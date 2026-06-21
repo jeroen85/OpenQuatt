@@ -1,0 +1,749 @@
+# ==============================================================================
+# OpenQuatt - EXPERIMENTAL ODU Runtime Frequency Table
+# ==============================================================================
+#
+# WARNING:
+#   This package writes outdoor-unit runtime EEPROM shadow registers over Modbus.
+#   The changes are expected to become active immediately, but are NOT persisted
+#   to ODU EEPROM. A full ODU power cycle should restore the original table.
+#
+#   Use only for short controlled tests. Keep the ODU in standby, verify that the
+#   compressor is stopped, and monitor the installation while testing.
+#
+# Register mapping:
+#   Excel register maps are one-based; ODU communication uses sheet address - 1.
+#   Cooling F0-F10: Excel 3001..3011 -> ODU 3000..3010
+#   Heating F0-F10: Excel 3012..3022 -> ODU 3011..3021
+#
+# Required vars:
+#   - hp_id
+#   - prefix
+#
+# ==============================================================================
+
+esphome:
+  includes:
+    - ${openquatt_root}/includes/experimental/oq_odu_runtime_frequency_table.h
+
+switch:
+  - platform: template
+    id: ${hp_id}_odu_runtime_frequency_table_enable
+    name: "${prefix}EXPERIMENTAL ODU runtime frequency write enable"
+    internal: true
+    icon: mdi:alert-decagram
+    optimistic: true
+    restore_mode: ALWAYS_OFF
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels
+
+number:
+  # Editable desired runtime table. Defaults are intentionally experimental and
+  # mirror the first low-frequency test profile; tune before pressing apply.
+  - platform: template
+    id: ${hp_id}_odu_runtime_cooling_f0
+    name: "${prefix}EXPERIMENTAL cooling F0 runtime Hz"
+    internal: true
+    icon: mdi:sine-wave
+    mode: box
+    min_value: 0
+    max_value: 120
+    step: 1
+    restore_value: true
+    optimistic: true
+    initial_value: 0
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels
+
+  - platform: template
+    id: ${hp_id}_odu_runtime_cooling_f1
+    name: "${prefix}EXPERIMENTAL cooling F1 runtime Hz"
+    internal: true
+    icon: mdi:sine-wave
+    mode: box
+    min_value: 0
+    max_value: 120
+    step: 1
+    restore_value: true
+    optimistic: true
+    initial_value: 20
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels
+
+  - platform: template
+    id: ${hp_id}_odu_runtime_cooling_f2
+    name: "${prefix}EXPERIMENTAL cooling F2 runtime Hz"
+    internal: true
+    icon: mdi:sine-wave
+    mode: box
+    min_value: 0
+    max_value: 120
+    step: 1
+    restore_value: true
+    optimistic: true
+    initial_value: 26
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels
+
+  - platform: template
+    id: ${hp_id}_odu_runtime_cooling_f3
+    name: "${prefix}EXPERIMENTAL cooling F3 runtime Hz"
+    internal: true
+    icon: mdi:sine-wave
+    mode: box
+    min_value: 0
+    max_value: 120
+    step: 1
+    restore_value: true
+    optimistic: true
+    initial_value: 30
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels
+
+  - platform: template
+    id: ${hp_id}_odu_runtime_cooling_f4
+    name: "${prefix}EXPERIMENTAL cooling F4 runtime Hz"
+    internal: true
+    icon: mdi:sine-wave
+    mode: box
+    min_value: 0
+    max_value: 120
+    step: 1
+    restore_value: true
+    optimistic: true
+    initial_value: 36
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels
+
+  - platform: template
+    id: ${hp_id}_odu_runtime_cooling_f5
+    name: "${prefix}EXPERIMENTAL cooling F5 runtime Hz"
+    internal: true
+    icon: mdi:sine-wave
+    mode: box
+    min_value: 0
+    max_value: 120
+    step: 1
+    restore_value: true
+    optimistic: true
+    initial_value: 43
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels
+
+  - platform: template
+    id: ${hp_id}_odu_runtime_cooling_f6
+    name: "${prefix}EXPERIMENTAL cooling F6 runtime Hz"
+    internal: true
+    icon: mdi:sine-wave
+    mode: box
+    min_value: 0
+    max_value: 120
+    step: 1
+    restore_value: true
+    optimistic: true
+    initial_value: 48
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels
+
+  - platform: template
+    id: ${hp_id}_odu_runtime_cooling_f7
+    name: "${prefix}EXPERIMENTAL cooling F7 runtime Hz"
+    internal: true
+    icon: mdi:sine-wave
+    mode: box
+    min_value: 0
+    max_value: 120
+    step: 1
+    restore_value: true
+    optimistic: true
+    initial_value: 55
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels
+
+  - platform: template
+    id: ${hp_id}_odu_runtime_cooling_f8
+    name: "${prefix}EXPERIMENTAL cooling F8 runtime Hz"
+    internal: true
+    icon: mdi:sine-wave
+    mode: box
+    min_value: 0
+    max_value: 120
+    step: 1
+    restore_value: true
+    optimistic: true
+    initial_value: 69
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels
+
+  - platform: template
+    id: ${hp_id}_odu_runtime_cooling_f9
+    name: "${prefix}EXPERIMENTAL cooling F9 runtime Hz"
+    internal: true
+    icon: mdi:sine-wave
+    mode: box
+    min_value: 0
+    max_value: 120
+    step: 1
+    restore_value: true
+    optimistic: true
+    initial_value: 74
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels
+
+  - platform: template
+    id: ${hp_id}_odu_runtime_cooling_f10
+    name: "${prefix}EXPERIMENTAL cooling F10 runtime Hz"
+    internal: true
+    icon: mdi:sine-wave
+    mode: box
+    min_value: 0
+    max_value: 120
+    step: 1
+    restore_value: true
+    optimistic: true
+    initial_value: 82
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels
+
+  - platform: template
+    id: ${hp_id}_odu_runtime_heating_f0
+    name: "${prefix}EXPERIMENTAL heating F0 runtime Hz"
+    internal: true
+    icon: mdi:sine-wave
+    mode: box
+    min_value: 0
+    max_value: 120
+    step: 1
+    restore_value: true
+    optimistic: true
+    initial_value: 0
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels
+
+  - platform: template
+    id: ${hp_id}_odu_runtime_heating_f1
+    name: "${prefix}EXPERIMENTAL heating F1 runtime Hz"
+    internal: true
+    icon: mdi:sine-wave
+    mode: box
+    min_value: 0
+    max_value: 120
+    step: 1
+    restore_value: true
+    optimistic: true
+    initial_value: 20
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels
+
+  - platform: template
+    id: ${hp_id}_odu_runtime_heating_f2
+    name: "${prefix}EXPERIMENTAL heating F2 runtime Hz"
+    internal: true
+    icon: mdi:sine-wave
+    mode: box
+    min_value: 0
+    max_value: 120
+    step: 1
+    restore_value: true
+    optimistic: true
+    initial_value: 26
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels
+
+  - platform: template
+    id: ${hp_id}_odu_runtime_heating_f3
+    name: "${prefix}EXPERIMENTAL heating F3 runtime Hz"
+    internal: true
+    icon: mdi:sine-wave
+    mode: box
+    min_value: 0
+    max_value: 120
+    step: 1
+    restore_value: true
+    optimistic: true
+    initial_value: 30
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels
+
+  - platform: template
+    id: ${hp_id}_odu_runtime_heating_f4
+    name: "${prefix}EXPERIMENTAL heating F4 runtime Hz"
+    internal: true
+    icon: mdi:sine-wave
+    mode: box
+    min_value: 0
+    max_value: 120
+    step: 1
+    restore_value: true
+    optimistic: true
+    initial_value: 36
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels
+
+  - platform: template
+    id: ${hp_id}_odu_runtime_heating_f5
+    name: "${prefix}EXPERIMENTAL heating F5 runtime Hz"
+    internal: true
+    icon: mdi:sine-wave
+    mode: box
+    min_value: 0
+    max_value: 120
+    step: 1
+    restore_value: true
+    optimistic: true
+    initial_value: 43
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels
+
+  - platform: template
+    id: ${hp_id}_odu_runtime_heating_f6
+    name: "${prefix}EXPERIMENTAL heating F6 runtime Hz"
+    internal: true
+    icon: mdi:sine-wave
+    mode: box
+    min_value: 0
+    max_value: 120
+    step: 1
+    restore_value: true
+    optimistic: true
+    initial_value: 48
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels
+
+  - platform: template
+    id: ${hp_id}_odu_runtime_heating_f7
+    name: "${prefix}EXPERIMENTAL heating F7 runtime Hz"
+    internal: true
+    icon: mdi:sine-wave
+    mode: box
+    min_value: 0
+    max_value: 120
+    step: 1
+    restore_value: true
+    optimistic: true
+    initial_value: 55
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels
+
+  - platform: template
+    id: ${hp_id}_odu_runtime_heating_f8
+    name: "${prefix}EXPERIMENTAL heating F8 runtime Hz"
+    internal: true
+    icon: mdi:sine-wave
+    mode: box
+    min_value: 0
+    max_value: 120
+    step: 1
+    restore_value: true
+    optimistic: true
+    initial_value: 69
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels
+
+  - platform: template
+    id: ${hp_id}_odu_runtime_heating_f9
+    name: "${prefix}EXPERIMENTAL heating F9 runtime Hz"
+    internal: true
+    icon: mdi:sine-wave
+    mode: box
+    min_value: 0
+    max_value: 120
+    step: 1
+    restore_value: true
+    optimistic: true
+    initial_value: 82
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels
+
+  - platform: template
+    id: ${hp_id}_odu_runtime_heating_f10
+    name: "${prefix}EXPERIMENTAL heating F10 runtime Hz"
+    internal: true
+    icon: mdi:sine-wave
+    mode: box
+    min_value: 0
+    max_value: 120
+    step: 1
+    restore_value: true
+    optimistic: true
+    initial_value: 90
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels
+
+  # Hidden Modbus writers/readers for the ODU runtime shadow registers.
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    id: ${hp_id}_odu_runtime_cooling_f0_register
+    internal: true
+    register_type: holding
+    address: 3000
+    value_type: U_WORD
+    skip_updates: 65535
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    id: ${hp_id}_odu_runtime_cooling_f1_register
+    internal: true
+    register_type: holding
+    address: 3001
+    value_type: U_WORD
+    skip_updates: 65535
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    id: ${hp_id}_odu_runtime_cooling_f2_register
+    internal: true
+    register_type: holding
+    address: 3002
+    value_type: U_WORD
+    skip_updates: 65535
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    id: ${hp_id}_odu_runtime_cooling_f3_register
+    internal: true
+    register_type: holding
+    address: 3003
+    value_type: U_WORD
+    skip_updates: 65535
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    id: ${hp_id}_odu_runtime_cooling_f4_register
+    internal: true
+    register_type: holding
+    address: 3004
+    value_type: U_WORD
+    skip_updates: 65535
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    id: ${hp_id}_odu_runtime_cooling_f5_register
+    internal: true
+    register_type: holding
+    address: 3005
+    value_type: U_WORD
+    skip_updates: 65535
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    id: ${hp_id}_odu_runtime_cooling_f6_register
+    internal: true
+    register_type: holding
+    address: 3006
+    value_type: U_WORD
+    skip_updates: 65535
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    id: ${hp_id}_odu_runtime_cooling_f7_register
+    internal: true
+    register_type: holding
+    address: 3007
+    value_type: U_WORD
+    skip_updates: 65535
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    id: ${hp_id}_odu_runtime_cooling_f8_register
+    internal: true
+    register_type: holding
+    address: 3008
+    value_type: U_WORD
+    skip_updates: 65535
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    id: ${hp_id}_odu_runtime_cooling_f9_register
+    internal: true
+    register_type: holding
+    address: 3009
+    value_type: U_WORD
+    skip_updates: 65535
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    id: ${hp_id}_odu_runtime_cooling_f10_register
+    internal: true
+    register_type: holding
+    address: 3010
+    value_type: U_WORD
+    skip_updates: 65535
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    id: ${hp_id}_odu_runtime_heating_f0_register
+    internal: true
+    register_type: holding
+    address: 3011
+    value_type: U_WORD
+    skip_updates: 65535
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    id: ${hp_id}_odu_runtime_heating_f1_register
+    internal: true
+    register_type: holding
+    address: 3012
+    value_type: U_WORD
+    skip_updates: 65535
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    id: ${hp_id}_odu_runtime_heating_f2_register
+    internal: true
+    register_type: holding
+    address: 3013
+    value_type: U_WORD
+    skip_updates: 65535
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    id: ${hp_id}_odu_runtime_heating_f3_register
+    internal: true
+    register_type: holding
+    address: 3014
+    value_type: U_WORD
+    skip_updates: 65535
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    id: ${hp_id}_odu_runtime_heating_f4_register
+    internal: true
+    register_type: holding
+    address: 3015
+    value_type: U_WORD
+    skip_updates: 65535
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    id: ${hp_id}_odu_runtime_heating_f5_register
+    internal: true
+    register_type: holding
+    address: 3016
+    value_type: U_WORD
+    skip_updates: 65535
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    id: ${hp_id}_odu_runtime_heating_f6_register
+    internal: true
+    register_type: holding
+    address: 3017
+    value_type: U_WORD
+    skip_updates: 65535
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    id: ${hp_id}_odu_runtime_heating_f7_register
+    internal: true
+    register_type: holding
+    address: 3018
+    value_type: U_WORD
+    skip_updates: 65535
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    id: ${hp_id}_odu_runtime_heating_f8_register
+    internal: true
+    register_type: holding
+    address: 3019
+    value_type: U_WORD
+    skip_updates: 65535
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    id: ${hp_id}_odu_runtime_heating_f9_register
+    internal: true
+    register_type: holding
+    address: 3020
+    value_type: U_WORD
+    skip_updates: 65535
+
+  - platform: modbus_controller
+    modbus_controller_id: ${hp_id}
+    id: ${hp_id}_odu_runtime_heating_f10_register
+    internal: true
+    register_type: holding
+    address: 3021
+    value_type: U_WORD
+    skip_updates: 65535
+
+button:
+  - platform: template
+    id: ${hp_id}_odu_runtime_frequency_table_load
+    name: "${prefix}EXPERIMENTAL load ODU runtime frequency table"
+    internal: true
+    icon: mdi:download-alert-outline
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels
+    on_press:
+      - lambda: |-
+          oq_odu_runtime_frequency::RuntimeFrequencyTableRefs refs = {
+              id(${hp_id}),
+              id(${hp_id}_odu_runtime_frequency_table_enable),
+              id(${hp_id}_odu_runtime_frequency_table_status),
+              "${prefix}",
+              {
+                  id(${hp_id}_odu_runtime_cooling_f0),
+                  id(${hp_id}_odu_runtime_cooling_f1),
+                  id(${hp_id}_odu_runtime_cooling_f2),
+                  id(${hp_id}_odu_runtime_cooling_f3),
+                  id(${hp_id}_odu_runtime_cooling_f4),
+                  id(${hp_id}_odu_runtime_cooling_f5),
+                  id(${hp_id}_odu_runtime_cooling_f6),
+                  id(${hp_id}_odu_runtime_cooling_f7),
+                  id(${hp_id}_odu_runtime_cooling_f8),
+                  id(${hp_id}_odu_runtime_cooling_f9),
+                  id(${hp_id}_odu_runtime_cooling_f10),
+              },
+              {
+                  id(${hp_id}_odu_runtime_heating_f0),
+                  id(${hp_id}_odu_runtime_heating_f1),
+                  id(${hp_id}_odu_runtime_heating_f2),
+                  id(${hp_id}_odu_runtime_heating_f3),
+                  id(${hp_id}_odu_runtime_heating_f4),
+                  id(${hp_id}_odu_runtime_heating_f5),
+                  id(${hp_id}_odu_runtime_heating_f6),
+                  id(${hp_id}_odu_runtime_heating_f7),
+                  id(${hp_id}_odu_runtime_heating_f8),
+                  id(${hp_id}_odu_runtime_heating_f9),
+                  id(${hp_id}_odu_runtime_heating_f10),
+              },
+              {
+                  id(${hp_id}_odu_runtime_cooling_f0_register),
+                  id(${hp_id}_odu_runtime_cooling_f1_register),
+                  id(${hp_id}_odu_runtime_cooling_f2_register),
+                  id(${hp_id}_odu_runtime_cooling_f3_register),
+                  id(${hp_id}_odu_runtime_cooling_f4_register),
+                  id(${hp_id}_odu_runtime_cooling_f5_register),
+                  id(${hp_id}_odu_runtime_cooling_f6_register),
+                  id(${hp_id}_odu_runtime_cooling_f7_register),
+                  id(${hp_id}_odu_runtime_cooling_f8_register),
+                  id(${hp_id}_odu_runtime_cooling_f9_register),
+                  id(${hp_id}_odu_runtime_cooling_f10_register),
+              },
+              {
+                  id(${hp_id}_odu_runtime_heating_f0_register),
+                  id(${hp_id}_odu_runtime_heating_f1_register),
+                  id(${hp_id}_odu_runtime_heating_f2_register),
+                  id(${hp_id}_odu_runtime_heating_f3_register),
+                  id(${hp_id}_odu_runtime_heating_f4_register),
+                  id(${hp_id}_odu_runtime_heating_f5_register),
+                  id(${hp_id}_odu_runtime_heating_f6_register),
+                  id(${hp_id}_odu_runtime_heating_f7_register),
+                  id(${hp_id}_odu_runtime_heating_f8_register),
+                  id(${hp_id}_odu_runtime_heating_f9_register),
+                  id(${hp_id}_odu_runtime_heating_f10_register),
+              },
+          };
+          oq_odu_runtime_frequency::load_runtime_table(refs);
+
+  - platform: template
+    id: ${hp_id}_odu_runtime_frequency_table_apply
+    name: "${prefix}EXPERIMENTAL apply ODU runtime frequency table"
+    internal: true
+    icon: mdi:alert-circle-check-outline
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels
+    on_press:
+      - lambda: |-
+          oq_odu_runtime_frequency::RuntimeFrequencyTableRefs refs = {
+              id(${hp_id}),
+              id(${hp_id}_odu_runtime_frequency_table_enable),
+              id(${hp_id}_odu_runtime_frequency_table_status),
+              "${prefix}",
+              {
+                  id(${hp_id}_odu_runtime_cooling_f0),
+                  id(${hp_id}_odu_runtime_cooling_f1),
+                  id(${hp_id}_odu_runtime_cooling_f2),
+                  id(${hp_id}_odu_runtime_cooling_f3),
+                  id(${hp_id}_odu_runtime_cooling_f4),
+                  id(${hp_id}_odu_runtime_cooling_f5),
+                  id(${hp_id}_odu_runtime_cooling_f6),
+                  id(${hp_id}_odu_runtime_cooling_f7),
+                  id(${hp_id}_odu_runtime_cooling_f8),
+                  id(${hp_id}_odu_runtime_cooling_f9),
+                  id(${hp_id}_odu_runtime_cooling_f10),
+              },
+              {
+                  id(${hp_id}_odu_runtime_heating_f0),
+                  id(${hp_id}_odu_runtime_heating_f1),
+                  id(${hp_id}_odu_runtime_heating_f2),
+                  id(${hp_id}_odu_runtime_heating_f3),
+                  id(${hp_id}_odu_runtime_heating_f4),
+                  id(${hp_id}_odu_runtime_heating_f5),
+                  id(${hp_id}_odu_runtime_heating_f6),
+                  id(${hp_id}_odu_runtime_heating_f7),
+                  id(${hp_id}_odu_runtime_heating_f8),
+                  id(${hp_id}_odu_runtime_heating_f9),
+                  id(${hp_id}_odu_runtime_heating_f10),
+              },
+              {
+                  id(${hp_id}_odu_runtime_cooling_f0_register),
+                  id(${hp_id}_odu_runtime_cooling_f1_register),
+                  id(${hp_id}_odu_runtime_cooling_f2_register),
+                  id(${hp_id}_odu_runtime_cooling_f3_register),
+                  id(${hp_id}_odu_runtime_cooling_f4_register),
+                  id(${hp_id}_odu_runtime_cooling_f5_register),
+                  id(${hp_id}_odu_runtime_cooling_f6_register),
+                  id(${hp_id}_odu_runtime_cooling_f7_register),
+                  id(${hp_id}_odu_runtime_cooling_f8_register),
+                  id(${hp_id}_odu_runtime_cooling_f9_register),
+                  id(${hp_id}_odu_runtime_cooling_f10_register),
+              },
+              {
+                  id(${hp_id}_odu_runtime_heating_f0_register),
+                  id(${hp_id}_odu_runtime_heating_f1_register),
+                  id(${hp_id}_odu_runtime_heating_f2_register),
+                  id(${hp_id}_odu_runtime_heating_f3_register),
+                  id(${hp_id}_odu_runtime_heating_f4_register),
+                  id(${hp_id}_odu_runtime_heating_f5_register),
+                  id(${hp_id}_odu_runtime_heating_f6_register),
+                  id(${hp_id}_odu_runtime_heating_f7_register),
+                  id(${hp_id}_odu_runtime_heating_f8_register),
+                  id(${hp_id}_odu_runtime_heating_f9_register),
+                  id(${hp_id}_odu_runtime_heating_f10_register),
+              },
+          };
+          oq_odu_runtime_frequency::apply_runtime_table(
+              refs,
+              id(${hp_id}_odu_runtime_frequency_table_enable)->state,
+              id(${hp_id}_is_online),
+              id(${hp_id}_working_mode).state,
+              id(${hp_id}_compressor_frequency).state);
+
+text_sensor:
+  - platform: template
+    id: ${hp_id}_odu_runtime_frequency_table_status
+    name: "${prefix}EXPERIMENTAL ODU runtime frequency status"
+    internal: true
+    icon: mdi:alert-decagram-outline
+    entity_category: diagnostic
+    update_interval: never
+    web_server:
+      sorting_group_id: oq_advanced_hp_levels

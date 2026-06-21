@@ -520,6 +520,227 @@
   margin-top: 0;
 }
 
+.oq-settings-odu-runtime {
+  display: grid;
+  gap: 16px;
+}
+
+.oq-settings-odu-runtime-warning {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: var(--oq-helper-radius-md);
+  border: 1px solid rgba(234, 88, 12, 0.24);
+  background: rgba(255, 247, 237, 0.86);
+  color: var(--oq-helper-ink);
+}
+
+.oq-helper-shell--dark .oq-settings-odu-runtime-warning {
+  border-color: rgba(249, 115, 22, 0.32);
+  background: rgba(66, 32, 14, 0.34);
+}
+
+.oq-settings-odu-runtime-warning strong {
+  font-size: 0.98rem;
+  line-height: 1.3;
+}
+
+.oq-settings-odu-runtime-warning p {
+  margin: 0;
+  color: var(--oq-helper-soft);
+  line-height: 1.5;
+}
+
+.oq-settings-odu-runtime-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 14px;
+}
+
+.oq-settings-odu-runtime-panel {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px;
+  border-radius: var(--oq-helper-radius-lg);
+  border: 1px solid var(--oq-helper-line);
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.oq-helper-shell--dark .oq-settings-odu-runtime-panel {
+  background: rgba(15, 23, 42, 0.28);
+}
+
+.oq-settings-odu-runtime-panel-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, auto);
+  align-items: start;
+  gap: 14px;
+}
+
+.oq-settings-odu-runtime-panel-head h4 {
+  margin: 0;
+  color: var(--oq-helper-ink);
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+
+.oq-settings-odu-runtime-panel-head p:last-child {
+  margin: 4px 0 0;
+  color: var(--oq-helper-soft);
+  line-height: 1.42;
+}
+
+.oq-settings-odu-runtime-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  justify-items: stretch;
+}
+
+.oq-settings-odu-runtime-actions .oq-helper-button,
+.oq-settings-odu-runtime-actions .oq-settings-compact-switch-row {
+  width: 100%;
+}
+
+.oq-settings-odu-runtime-status {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: var(--oq-helper-radius-md);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(248, 250, 252, 0.82);
+}
+
+.oq-helper-shell--dark .oq-settings-odu-runtime-status {
+  background: rgba(15, 23, 42, 0.36);
+}
+
+.oq-settings-odu-runtime-status.is-warning {
+  border-color: rgba(234, 88, 12, 0.24);
+  background: rgba(255, 247, 237, 0.74);
+}
+
+.oq-helper-shell--dark .oq-settings-odu-runtime-status.is-warning {
+  background: rgba(66, 32, 14, 0.26);
+}
+
+.oq-settings-odu-runtime-status.is-success {
+  border-color: rgba(22, 163, 74, 0.2);
+  background: rgba(240, 253, 244, 0.76);
+}
+
+.oq-helper-shell--dark .oq-settings-odu-runtime-status.is-success {
+  background: rgba(20, 83, 45, 0.22);
+}
+
+.oq-settings-odu-runtime-status span {
+  display: block;
+  color: var(--oq-helper-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.oq-settings-odu-runtime-status strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--oq-helper-ink);
+  font-size: 0.92rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.oq-settings-odu-runtime-status p {
+  margin: 0;
+  color: var(--oq-helper-soft);
+  line-height: 1.42;
+}
+
+.oq-settings-odu-runtime-table {
+  display: grid;
+  border-radius: var(--oq-helper-radius-md);
+  border: 1px solid var(--oq-helper-line);
+  overflow: hidden;
+}
+
+.oq-settings-odu-runtime-row {
+  display: grid;
+  grid-template-columns: 56px repeat(2, minmax(0, 1fr));
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 6px 8px;
+  border-top: 1px solid var(--oq-helper-line);
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.oq-helper-shell--dark .oq-settings-odu-runtime-row {
+  background: rgba(15, 23, 42, 0.22);
+}
+
+.oq-settings-odu-runtime-row:first-child {
+  border-top: 0;
+}
+
+.oq-settings-odu-runtime-row--head {
+  min-height: 34px;
+  background: rgba(248, 250, 252, 0.94);
+  color: var(--oq-helper-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.oq-helper-shell--dark .oq-settings-odu-runtime-row--head {
+  background: rgba(15, 23, 42, 0.46);
+}
+
+.oq-settings-odu-runtime-level {
+  color: var(--oq-helper-ink);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.oq-settings-odu-runtime-control {
+  width: 100%;
+}
+
+.oq-settings-odu-runtime-input {
+  min-width: 0;
+  width: 100%;
+}
+
+.oq-settings-odu-runtime-missing {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  color: var(--oq-helper-muted);
+}
+
+.oq-settings-odu-runtime-validation {
+  margin: 0;
+  color: var(--oq-helper-soft);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.oq-settings-odu-runtime-validation.is-warning {
+  color: var(--oq-helper-accent-deep);
+}
+
+.oq-settings-odu-runtime-validation.is-ok {
+  color: rgb(22, 101, 52);
+}
+
+.oq-helper-shell--dark .oq-settings-odu-runtime-validation.is-ok {
+  color: #86efac;
+}
+
 .oq-settings-monitoring-summary,
 .oq-settings-monitoring-card {
   border: 1px solid var(--oq-helper-line);
@@ -1615,6 +1836,23 @@
 
   .oq-settings-service-toolbar-actions {
     justify-content: stretch;
+  }
+
+  .oq-settings-odu-runtime-panels,
+  .oq-settings-odu-runtime-panel-head,
+  .oq-settings-odu-runtime-status {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .oq-settings-odu-runtime-row {
+    grid-template-columns: 44px repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .oq-settings-odu-runtime-input {
+    padding-left: 10px;
+    padding-right: 10px;
   }
 
   .oq-settings-monitoring-summary,
