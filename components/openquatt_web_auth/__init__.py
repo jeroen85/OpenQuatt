@@ -14,7 +14,9 @@ CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(OpenQuattWebAuth),
         cv.Required(CONF_BOOTSTRAP_USERNAME): cv.All(cv.string_strict, cv.Length(min=1, max=32)),
-        cv.Required(CONF_BOOTSTRAP_PASSWORD): cv.All(cv.string_strict, cv.Length(min=1, max=64)),
+        cv.Required(CONF_BOOTSTRAP_PASSWORD): cv.sensitive(
+            cv.All(cv.string_strict, cv.Length(min=1, max=64))
+        ),
         cv.Optional(CONF_DEFAULT_AUTH_ENABLED, default=True): cv.boolean,
     }
 ).extend(cv.COMPONENT_SCHEMA)

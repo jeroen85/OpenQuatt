@@ -36,7 +36,9 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Optional(CONF_BOOTSTRAP_BROKER, default=""): cv.All(cv.string_strict, cv.Length(max=64)),
         cv.Optional(CONF_BOOTSTRAP_PORT, default=1883): cv.port,
         cv.Optional(CONF_BOOTSTRAP_USERNAME, default=""): cv.All(cv.string_strict, cv.Length(max=64)),
-        cv.Optional(CONF_BOOTSTRAP_PASSWORD, default=""): cv.All(cv.string_strict, cv.Length(max=128)),
+        cv.Optional(CONF_BOOTSTRAP_PASSWORD, default=""): cv.sensitive(
+            cv.All(cv.string_strict, cv.Length(max=128))
+        ),
         cv.Optional(CONF_BOOTSTRAP_BASE_TOPIC, default="openquatt"): cv.All(cv.publish_topic, cv.Length(max=64)),
         cv.Optional(CONF_DEFAULT_ENABLED, default=False): cv.boolean,
         cv.Optional(CONF_DEFAULT_PUBLISH_PROFILE, default="standard"): cv.enum(PUBLISH_PROFILE_ENUM, lower=True),
