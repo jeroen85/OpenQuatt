@@ -28,9 +28,9 @@
 #   5. The safe-floor limiter caps the PI output before it reaches the compressor:
 #      it projects the filtered water gap forward with its current trend, allows
 #      the PI output while that projection stays safely above the floor, brakes
-#      back to level 1 when higher levels move toward the floor too quickly, pulses
-#      to 0 when level 1 is still too much, and stops hard only at/under the stop
-#      zone or too close to the real/fallback floor.
+#      back to level 1 when higher levels move toward the floor too quickly, and
+#      stops hard only at/under the stop zone or too close to the real/fallback
+#      floor. Projection never creates a stop by itself.
 #   6. `Cooling Restart Delta` only applies after a real water-side stop. Normal
 #      room-demand stops can restart from the current limiter state.
 #
@@ -120,7 +120,7 @@ globals:
     restore_value: false
     initial_value: '0'
 
-  # 0=none, 1=limiter, 2=dew, 3=fallback, 4=projected_floor
+  # 0=none, 1=limiter, 2=dew, 3=fallback, 4=projected_floor (legacy)
   - id: oq_cooling_stop_reason_code
     type: int
     restore_value: false
@@ -152,11 +152,6 @@ globals:
     initial_value: '0'
 
   - id: oq_cooling_oil_return_hold_until_ms
-    type: uint32_t
-    restore_value: false
-    initial_value: '0'
-
-  - id: oq_cooling_projection_level1_probe_until_ms
     type: uint32_t
     restore_value: false
     initial_value: '0'
@@ -590,7 +585,6 @@ interval:
           const float projected_floor_fast_fall_rate_c_per_min = 0.20f;
           const float projected_floor_fast_fall_brake_gain = 1.0f;
           const float projected_floor_fast_fall_brake_max_c = 0.15f;
-          const uint32_t projection_level1_probe_ms = rate_window_ms + 5000UL;
           const float simmer_enable_gap_c = -0.20f;
           const float simmer_disable_gap_c = -0.30f;
           const float buffer_hard_stop_gap_c = -0.70f;
@@ -661,7 +655,6 @@ interval:
             id(oq_cooling_last_demand_change_ms) = 0;
             id(oq_cooling_stop_candidate_since_ms) = 0;
             id(oq_cooling_dew_stop_candidate_since_ms) = 0;
-            id(oq_cooling_projection_level1_probe_until_ms) = 0;
             return;
           }
 
@@ -700,7 +693,6 @@ interval:
             id(oq_cooling_stop_candidate_since_ms) = 0;
             id(oq_cooling_dew_stop_candidate_since_ms) = 0;
             id(oq_cooling_buffer_gap_rate_ref_ms) = 0;
-            id(oq_cooling_projection_level1_probe_until_ms) = 0;
             id(oq_cooling_pid_integral) = 0.0f;
             id(oq_cooling_pid_last_error_c) = buffer_gap_c;
             ESP_LOGI("quatt.cool", "Cooling guard mode changed: reset restart latch");
@@ -767,7 +759,6 @@ interval:
             projection_brake_active = true;
           }
           id(oq_cooling_projection_brake_active) = projection_brake_active;
-          if (!projection_brake_active) id(oq_cooling_projection_level1_probe_until_ms) = 0;
 
           bool simmer_allowed = id(oq_cooling_simmer_allowed);
           if (filtered_gap_c > simmer_enable_gap_c) simmer_allowed = true;
@@ -892,28 +883,11 @@ interval:
               gap_rate_c_per_min < 0.0f &&
               projected_gap_c <= projected_floor_release_gap_c;
           if ((projection_brake_active || projection_caution_active) && safe_floor_cap > 0 && fallback_cap > 0) {
-            const int previous_limited_demand = id(oq_cooling_limited_demand);
-            uint32_t level1_probe_until_ms = id(oq_cooling_projection_level1_probe_until_ms);
-            if (previous_limited_demand > 1) {
-              level1_probe_until_ms = now_ms + projection_level1_probe_ms;
-              id(oq_cooling_projection_level1_probe_until_ms) = level1_probe_until_ms;
+            if (id(oq_cooling_limited_demand) > 1) {
               id(oq_cooling_buffer_gap_rate_ref_c) = filtered_gap_c;
               id(oq_cooling_buffer_gap_rate_ref_ms) = now_ms;
             }
-            const bool level1_probe_active =
-                previous_limited_demand > 1 ||
-                (level1_probe_until_ms > 0 && now_ms < level1_probe_until_ms);
-            const bool level1_is_minimum_power =
-                previous_limited_demand <= 1 || demand_max <= 1;
-            const bool level1_still_safe = filtered_gap_c > 0.0f && dew_gap_allows_simmer;
-            if (projection_brake_active) {
-              projection_cap =
-                  (level1_still_safe && (level1_probe_active || !level1_is_minimum_power))
-                      ? std::min(projection_cap, 1)
-                      : 0;
-            } else {
-              projection_cap = level1_still_safe ? std::min(projection_cap, 1) : 0;
-            }
+            projection_cap = std::min(projection_cap, 1);
             reason_code = 2;
           }
 
@@ -941,8 +915,7 @@ interval:
           // while raw gap is still positive or only slightly negative. Hard dew and
           // fallback floor stops remain immediate safety exits.
           const bool immediate_stop = (reason_code == 6 || reason_code == 7);
-          const bool projected_floor_stop = (reason_code == 2 && allowed_max <= 0);
-          if (!immediate_stop && !projected_floor_stop && allowed_max <= 0) {
+          if (!immediate_stop && allowed_max <= 0) {
             if (buffer_gap_c > 0.0f) {
               allowed_max = 1;
               reason_code = 11;
@@ -1018,7 +991,7 @@ interval:
             id(oq_cooling_water_cycle_active) = false;
             id(oq_cooling_stop_buffer_gap_c) = filtered_gap_c;
             id(oq_cooling_stop_reason_code) =
-                reason_code == 6 ? 2 : (reason_code == 7 ? 3 : (reason_code == 2 ? 4 : 1));
+                reason_code == 6 ? 2 : (reason_code == 7 ? 3 : 1);
             id(oq_cooling_pid_last_error_c) = buffer_gap_c;
             if (reason_code == 6 || reason_code == 7) id(oq_cooling_pid_integral) = 0.0f;
             else if (reason_code != 2) integral = fminf(integral, 0.0f);
