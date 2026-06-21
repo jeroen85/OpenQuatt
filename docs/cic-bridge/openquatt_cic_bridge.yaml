@@ -24,7 +24,7 @@ logger:
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
-  min_version: 2026.5.1
+  min_version: 2026.6.2
   name_add_mac_suffix: false
   on_boot:
     priority: -100
