@@ -2703,6 +2703,51 @@
     handleOduRuntimeFrequencyInputKeyDown(event);
   }
 
+  function getWheelDeltaPixels(event, value) {
+    if (event.deltaMode === 1) {
+      return value * 16;
+    }
+    if (event.deltaMode === 2) {
+      return value * window.innerHeight;
+    }
+    return value;
+  }
+
+  function getWheelScrollContainer(element) {
+    let node = element ? element.parentElement : null;
+    while (node && node !== document.body && node !== document.documentElement) {
+      const style = window.getComputedStyle(node);
+      const canScrollY = /(auto|scroll)/.test(style.overflowY) && node.scrollHeight > node.clientHeight;
+      const canScrollX = /(auto|scroll)/.test(style.overflowX) && node.scrollWidth > node.clientWidth;
+      if (canScrollY || canScrollX) {
+        return node;
+      }
+      node = node.parentElement;
+    }
+    return document.scrollingElement || document.documentElement;
+  }
+
+  function handleWheel(event) {
+    const input = event.target && event.target.closest
+      ? event.target.closest('input[type="number"]')
+      : null;
+    if (!input || !state.root || !state.root.contains(input) || document.activeElement !== input) {
+      return;
+    }
+
+    event.preventDefault();
+    input.blur();
+
+    const scroller = getWheelScrollContainer(input);
+    if (scroller && typeof scroller.scrollBy === "function") {
+      scroller.scrollBy({
+        left: getWheelDeltaPixels(event, event.deltaX || 0),
+        top: getWheelDeltaPixels(event, event.deltaY || 0),
+        behavior: "auto",
+      });
+    }
+  }
+
   function handleChange(event) {
     if (event.target.dataset.oqDevControl === "boiler" && typeof window.__OQ_SET_MOCK_BOILER__ === "function") {
       window.__OQ_SET_MOCK_BOILER__(event.target.value);
