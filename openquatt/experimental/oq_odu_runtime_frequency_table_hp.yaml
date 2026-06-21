@@ -38,8 +38,8 @@ switch:
       sorting_group_id: oq_advanced_hp_levels
 
 number:
-  # Editable desired runtime table. Defaults are intentionally experimental and
-  # mirror the first low-frequency test profile; tune before pressing apply.
+  # Editable desired runtime table. Defaults mirror the known ODU factory table;
+  # use Load before applying to confirm the current runtime values.
   - platform: template
     id: ${hp_id}_odu_runtime_cooling_f0
     name: "${prefix}EXPERIMENTAL cooling F0 runtime Hz"
@@ -67,7 +67,7 @@ number:
     step: 1
     restore_value: true
     optimistic: true
-    initial_value: 20
+    initial_value: 30
     entity_category: config
     web_server:
       sorting_group_id: oq_advanced_hp_levels
@@ -83,7 +83,7 @@ number:
     step: 1
     restore_value: true
     optimistic: true
-    initial_value: 26
+    initial_value: 36
     entity_category: config
     web_server:
       sorting_group_id: oq_advanced_hp_levels
@@ -99,7 +99,7 @@ number:
     step: 1
     restore_value: true
     optimistic: true
-    initial_value: 30
+    initial_value: 42
     entity_category: config
     web_server:
       sorting_group_id: oq_advanced_hp_levels
@@ -115,7 +115,7 @@ number:
     step: 1
     restore_value: true
     optimistic: true
-    initial_value: 36
+    initial_value: 47
     entity_category: config
     web_server:
       sorting_group_id: oq_advanced_hp_levels
@@ -131,7 +131,7 @@ number:
     step: 1
     restore_value: true
     optimistic: true
-    initial_value: 43
+    initial_value: 52
     entity_category: config
     web_server:
       sorting_group_id: oq_advanced_hp_levels
@@ -147,7 +147,7 @@ number:
     step: 1
     restore_value: true
     optimistic: true
-    initial_value: 48
+    initial_value: 56
     entity_category: config
     web_server:
       sorting_group_id: oq_advanced_hp_levels
@@ -163,7 +163,7 @@ number:
     step: 1
     restore_value: true
     optimistic: true
-    initial_value: 55
+    initial_value: 61
     entity_category: config
     web_server:
       sorting_group_id: oq_advanced_hp_levels
@@ -179,7 +179,7 @@ number:
     step: 1
     restore_value: true
     optimistic: true
-    initial_value: 69
+    initial_value: 66
     entity_category: config
     web_server:
       sorting_group_id: oq_advanced_hp_levels
@@ -195,7 +195,7 @@ number:
     step: 1
     restore_value: true
     optimistic: true
-    initial_value: 74
+    initial_value: 71
     entity_category: config
     web_server:
       sorting_group_id: oq_advanced_hp_levels
@@ -211,7 +211,7 @@ number:
     step: 1
     restore_value: true
     optimistic: true
-    initial_value: 82
+    initial_value: 74
     entity_category: config
     web_server:
       sorting_group_id: oq_advanced_hp_levels
@@ -243,7 +243,7 @@ number:
     step: 1
     restore_value: true
     optimistic: true
-    initial_value: 20
+    initial_value: 30
     entity_category: config
     web_server:
       sorting_group_id: oq_advanced_hp_levels
@@ -259,7 +259,7 @@ number:
     step: 1
     restore_value: true
     optimistic: true
-    initial_value: 26
+    initial_value: 39
     entity_category: config
     web_server:
       sorting_group_id: oq_advanced_hp_levels
@@ -275,7 +275,7 @@ number:
     step: 1
     restore_value: true
     optimistic: true
-    initial_value: 30
+    initial_value: 49
     entity_category: config
     web_server:
       sorting_group_id: oq_advanced_hp_levels
@@ -291,7 +291,7 @@ number:
     step: 1
     restore_value: true
     optimistic: true
-    initial_value: 36
+    initial_value: 55
     entity_category: config
     web_server:
       sorting_group_id: oq_advanced_hp_levels
@@ -307,7 +307,7 @@ number:
     step: 1
     restore_value: true
     optimistic: true
-    initial_value: 43
+    initial_value: 61
     entity_category: config
     web_server:
       sorting_group_id: oq_advanced_hp_levels
@@ -323,7 +323,7 @@ number:
     step: 1
     restore_value: true
     optimistic: true
-    initial_value: 48
+    initial_value: 67
     entity_category: config
     web_server:
       sorting_group_id: oq_advanced_hp_levels
@@ -339,7 +339,7 @@ number:
     step: 1
     restore_value: true
     optimistic: true
-    initial_value: 55
+    initial_value: 72
     entity_category: config
     web_server:
       sorting_group_id: oq_advanced_hp_levels
@@ -355,7 +355,7 @@ number:
     step: 1
     restore_value: true
     optimistic: true
-    initial_value: 69
+    initial_value: 79
     entity_category: config
     web_server:
       sorting_group_id: oq_advanced_hp_levels
@@ -371,7 +371,7 @@ number:
     step: 1
     restore_value: true
     optimistic: true
-    initial_value: 82
+    initial_value: 85
     entity_category: config
     web_server:
       sorting_group_id: oq_advanced_hp_levels
