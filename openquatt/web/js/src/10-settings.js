@@ -1974,8 +1974,35 @@
     return formatFailures(getEntityStateText(key, "None"));
   }
 
+  const NON_WARNING_FAILURE_NAMES = new Set([
+    "compressor oil return",
+  ]);
+
+  function getWarningFailureItems(value) {
+    const formatted = formatFailures(value);
+    if (formatted === "Geen actieve storingen") {
+      return [];
+    }
+    return formatted
+      .split(",")
+      .map((item) => item.trim())
+      .filter((item) => item && !NON_WARNING_FAILURE_NAMES.has(item.toLowerCase()));
+  }
+
+  function formatWarningFailures(value) {
+    const warningItems = getWarningFailureItems(value);
+    return warningItems.length > 0 ? warningItems.join(", ") : "Geen actieve storingen";
+  }
+
+  function getInstallationMonitoringWarningFailureText(key) {
+    if (!hasEntity(key)) {
+      return "";
+    }
+    return formatWarningFailures(getEntityStateText(key, "None"));
+  }
+
   function isInstallationMonitoringFailureActive(key) {
-    const normalized = getInstallationMonitoringFailureText(key).trim().toLowerCase();
+    const normalized = getInstallationMonitoringWarningFailureText(key).trim().toLowerCase();
     return Boolean(normalized) && normalized !== "geen actieve storingen";
   }
 
@@ -2004,10 +2031,10 @@
       addBinaryProblem("otLinkProblem", "OpenTherm-verbinding meldt een probleem");
     }
     if (isInstallationMonitoringFailureActive("hp1Failures")) {
-      problems.push({ key: "hp1Failures", label: `Warmtepomp 1: ${getInstallationMonitoringFailureText("hp1Failures")}` });
+      problems.push({ key: "hp1Failures", label: `Warmtepomp 1: ${getInstallationMonitoringWarningFailureText("hp1Failures")}` });
     }
     if (isInstallationMonitoringFailureActive("hp2Failures")) {
-      problems.push({ key: "hp2Failures", label: `Warmtepomp 2: ${getInstallationMonitoringFailureText("hp2Failures")}` });
+      problems.push({ key: "hp2Failures", label: `Warmtepomp 2: ${getInstallationMonitoringWarningFailureText("hp2Failures")}` });
     }
     const activeProblemCount = problems.length;
     if (cyclingAlertLatched && !cyclingActive) {

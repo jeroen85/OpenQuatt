@@ -2,14 +2,16 @@
     const mode = formatWorkingMode(getEntityStateText(keys.mode, "Unknown"));
     const defrostActive = isEntityActive(keys.defrost);
     const failures = formatFailures(getEntityStateText(keys.failures, "None"));
+    const warningFailures = formatWarningFailures(failures);
     const running = mode === "Verwarmen" || mode === "Koelen" || defrostActive;
     return {
       mode,
       defrostActive,
       failures,
+      warningFailures,
       running,
       thermalKey: mode === "Koelen" ? keys.cooling : keys.heat,
-      schematic: buildHeatPumpSchematicModel(title, keys, accent, mode, defrostActive, failures, running),
+      schematic: buildHeatPumpSchematicModel(title, keys, accent, mode, defrostActive, warningFailures, running),
     };
   }
 
