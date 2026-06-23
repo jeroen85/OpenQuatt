@@ -48,6 +48,7 @@ class OpenQuattTrends : public Component {
   static constexpr uint32_t TAG_MAGIC = 0x4F545247;  // "OTRG"
   static constexpr uint16_t TAG_VERSION = 1;
   static constexpr uint32_t SAMPLE_INTERVAL_MS = 5UL * 60UL * 1000UL;
+  static constexpr float INTERVAL_DEVIATION_RATIO = 0.05f;
   static constexpr uint32_t RAM_WINDOW_MS = 7UL * 24UL * 60UL * 60UL * 1000UL;
   static constexpr uint32_t ARCHIVE_WINDOW_MS = 30UL * 24UL * 60UL * 60UL * 1000UL;
   static constexpr size_t RAM_CAPACITY = 7UL * 24UL * 12UL;
@@ -97,6 +98,14 @@ class OpenQuattTrends : public Component {
     uint32_t slot_index{0};
   };
 
+  struct IntervalMetricState {
+    float sum{0.0f};
+    uint32_t count{0};
+    float min{0.0f};
+    float max{0.0f};
+    float last_saved{0.0f};
+  };
+
   struct FlashBlockBuilder {
     bool active{false};
     uint64_t start_timestamp_ms{0};
@@ -122,6 +131,11 @@ class OpenQuattTrends : public Component {
   static float decode_temp_(int16_t value);
   static float decode_unsigned_(uint16_t value);
   static uint32_t fnv1a_hash_(const uint8_t *data, size_t len);
+  static bool valid_unsigned_metric_(float value);
+  static void reset_interval_metric_samples_(IntervalMetricState &state);
+  static void update_interval_metric_(IntervalMetricState &state, float value);
+  static float select_interval_metric_value_(const IntervalMetricState &state, float fallback);
+  static void update_last_saved_metric_(IntervalMetricState &state, float value);
 
   TrendValues pack_values_(float outside_c, float supply_c, float room_c, float room_setpoint_c, float flow_lph,
                            float input_w, float output_w) const;
@@ -155,6 +169,8 @@ class OpenQuattTrends : public Component {
   uint64_t get_latest_archive_timestamp_ms_() const;
   void update_flash_metadata_(uint64_t latest_timestamp_ms);
   void reset_flash_metadata_();
+  void reset_interval_samples_();
+  void reset_interval_filters_();
   uint64_t get_flash_oldest_timestamp_ms_() const;
   uint64_t get_flash_newest_timestamp_ms_() const;
   uint64_t get_flash_last_flush_timestamp_ms_() const;
@@ -189,6 +205,9 @@ class OpenQuattTrends : public Component {
   size_t flash_index_count_{0};
 
   FlashBlockBuilder flash_builder_{};
+  IntervalMetricState flow_interval_{};
+  IntervalMetricState input_w_interval_{};
+  IntervalMetricState output_w_interval_{};
 };
 
 }  // namespace openquatt_trends

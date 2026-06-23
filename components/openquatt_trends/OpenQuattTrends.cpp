@@ -302,6 +302,57 @@ uint32_t OpenQuattTrends::fnv1a_hash_(const uint8_t *data, size_t len) {
   return hash;
 }
 
+bool OpenQuattTrends::valid_unsigned_metric_(float value) {
+  return std::isfinite(value) && value >= 0.0f;
+}
+
+void OpenQuattTrends::reset_interval_metric_samples_(IntervalMetricState &state) {
+  state.sum = 0.0f;
+  state.count = 0;
+  state.min = 0.0f;
+  state.max = 0.0f;
+}
+
+void OpenQuattTrends::update_interval_metric_(IntervalMetricState &state, float value) {
+  if (!valid_unsigned_metric_(value)) {
+    return;
+  }
+  if (state.count == 0) {
+    state.min = value;
+    state.max = value;
+  } else {
+    state.min = std::min(state.min, value);
+    state.max = std::max(state.max, value);
+  }
+  state.sum += value;
+  state.count++;
+}
+
+float OpenQuattTrends::select_interval_metric_value_(const IntervalMetricState &state, float fallback) {
+  if (state.count == 0) {
+    return fallback;
+  }
+
+  const float average = state.sum / static_cast<float>(state.count);
+  if (state.last_saved == 0.0f && state.max > 0.0f) {
+    return state.max;
+  }
+
+  const float min_deviation = std::abs(state.min - average);
+  const float max_deviation = std::abs(state.max - average);
+  const bool max_is_furthest = max_deviation > min_deviation;
+  const float furthest_value = max_is_furthest ? state.max : state.min;
+  const float furthest_deviation = max_is_furthest ? max_deviation : min_deviation;
+
+  return furthest_deviation > (INTERVAL_DEVIATION_RATIO * average) ? furthest_value : average;
+}
+
+void OpenQuattTrends::update_last_saved_metric_(IntervalMetricState &state, float value) {
+  if (valid_unsigned_metric_(value)) {
+    state.last_saved = value;
+  }
+}
+
 OpenQuattTrends::TrendValues OpenQuattTrends::pack_values_(float outside_c, float supply_c, float room_c,
                                                             float room_setpoint_c, float flow_lph, float input_w,
                                                             float output_w) const {
@@ -750,11 +801,28 @@ bool OpenQuattTrends::read_flash_block_(uint32_t slot_index, uint32_t expected_s
   return true;
 }
 
+void OpenQuattTrends::reset_interval_samples_() {
+  reset_interval_metric_samples_(this->flow_interval_);
+  reset_interval_metric_samples_(this->input_w_interval_);
+  reset_interval_metric_samples_(this->output_w_interval_);
+}
+
+void OpenQuattTrends::reset_interval_filters_() {
+  this->reset_interval_samples_();
+  this->flow_interval_.last_saved = 0.0f;
+  this->input_w_interval_.last_saved = 0.0f;
+  this->output_w_interval_.last_saved = 0.0f;
+}
+
 void OpenQuattTrends::capture_sample(float outside_c, float supply_c, float room_c, float room_setpoint_c, float flow_lph,
                                      float input_w, float output_w) {
   if (!this->capture_enabled_()) {
     return;
   }
+
+  this->update_interval_metric_(this->flow_interval_, flow_lph);
+  this->update_interval_metric_(this->input_w_interval_, input_w);
+  this->update_interval_metric_(this->output_w_interval_, output_w);
 
   const uint32_t now_monotonic_ms = static_cast<uint32_t>(millis());
   if (this->last_capture_ms_ != 0 &&
@@ -762,12 +830,19 @@ void OpenQuattTrends::capture_sample(float outside_c, float supply_c, float room
     return;
   }
 
+  const float flow_to_save = select_interval_metric_value_(this->flow_interval_, flow_lph);
+  const float input_w_to_save = select_interval_metric_value_(this->input_w_interval_, input_w);
+  const float output_w_to_save = select_interval_metric_value_(this->output_w_interval_, output_w);
+
   const uint64_t now_ms = this->current_time_ms_();
-  const TrendValues values = this->pack_values_(outside_c, supply_c, room_c, room_setpoint_c, flow_lph, input_w, output_w);
+  const TrendValues values = this->pack_values_(outside_c, supply_c, room_c, room_setpoint_c, flow_to_save,
+                                                input_w_to_save, output_w_to_save);
   const bool any_valid = values.outside_c_x10 != INT16_MIN || values.supply_c_x10 != INT16_MIN ||
                          values.room_c_x10 != INT16_MIN || values.room_setpoint_c_x10 != INT16_MIN ||
                          values.flow_lph != UINT16_MAX || values.input_w != UINT16_MAX || values.output_w != UINT16_MAX;
   if (!any_valid) {
+    this->last_capture_ms_ = now_monotonic_ms;
+    this->reset_interval_samples_();
     return;
   }
 
@@ -778,6 +853,11 @@ void OpenQuattTrends::capture_sample(float outside_c, float supply_c, float room
   if (this->flash_switch_enabled_()) {
     this->append_sample_to_flash_(sample);
   }
+
+  update_last_saved_metric_(this->flow_interval_, flow_to_save);
+  update_last_saved_metric_(this->input_w_interval_, input_w_to_save);
+  update_last_saved_metric_(this->output_w_interval_, output_w_to_save);
+  this->reset_interval_samples_();
 }
 
 void OpenQuattTrends::set_flash_enabled(bool enabled) {
@@ -806,6 +886,7 @@ void OpenQuattTrends::clear_history() {
   this->last_capture_ms_ = 0;
   this->flash_dirty_ = false;
   this->flash_archive_seeded_ = false;
+  this->reset_interval_filters_();
   this->reset_flash_builder_();
 }
 
