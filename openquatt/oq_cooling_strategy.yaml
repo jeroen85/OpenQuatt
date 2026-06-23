@@ -617,18 +617,6 @@ interval:
           if (oil_return_active) {
             id(oq_cooling_oil_return_hold_until_ms) = now_ms + oil_return_hold_ms;
           }
-          const bool oil_return_mask_active =
-              oil_return_active ||
-              (id(oq_cooling_oil_return_hold_until_ms) > 0 &&
-               now_ms < id(oq_cooling_oil_return_hold_until_ms));
-          static bool last_oil_return_mask_active = false;
-          if (oil_return_mask_active != last_oil_return_mask_active) {
-            ESP_LOGI(
-                "quatt.cool",
-                "Cooling oil-return hold %s",
-                oil_return_mask_active ? "active" : "cleared");
-            last_oil_return_mask_active = oil_return_mask_active;
-          }
 
           const bool active =
               id(cooling_enable_selected).state &&
@@ -740,6 +728,36 @@ interval:
           const float hard_dew_stop_gap_c =
               hard_dew_stop_base_gap_c + (hard_dew_stop_margin_gain_c * safety_margin_c);
           const float hard_dew_restart_gap_c = hard_dew_stop_gap_c + hard_dew_restart_hyst_c;
+
+          const bool oil_return_hold_window_active =
+              id(oq_cooling_oil_return_hold_until_ms) > 0 &&
+              now_ms < id(oq_cooling_oil_return_hold_until_ms);
+          bool oil_return_mask_active = oil_return_active || oil_return_hold_window_active;
+          const bool oil_return_dew_recovered =
+              dew_mode && !isnan(dew_gap_c) && dew_gap_c > hard_dew_restart_gap_c;
+          const bool oil_return_fallback_recovered =
+              fallback_mode && filtered_gap_c > fallback_cap1_gap_c;
+          const bool oil_return_recovery_not_needed = !dew_mode && !fallback_mode;
+          if (!oil_return_active && oil_return_hold_window_active &&
+              (oil_return_recovery_not_needed ||
+               oil_return_dew_recovered ||
+               oil_return_fallback_recovered)) {
+            id(oq_cooling_oil_return_hold_until_ms) = 0;
+            oil_return_mask_active = false;
+          } else if (!oil_return_active &&
+              id(oq_cooling_oil_return_hold_until_ms) > 0 &&
+              !oil_return_hold_window_active) {
+            id(oq_cooling_oil_return_hold_until_ms) = 0;
+            oil_return_mask_active = false;
+          }
+          static bool last_oil_return_mask_active = false;
+          if (oil_return_mask_active != last_oil_return_mask_active) {
+            ESP_LOGI(
+                "quatt.cool",
+                "Cooling oil-return recovery %s",
+                oil_return_mask_active ? "active" : "cleared");
+            last_oil_return_mask_active = oil_return_mask_active;
+          }
 
           const float projected_gap_c =
               filtered_gap_c + (gap_rate_c_per_min * projection_horizon_min);

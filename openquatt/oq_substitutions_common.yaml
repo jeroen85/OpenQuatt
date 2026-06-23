@@ -140,7 +140,7 @@ oq_heat_loop_tick_s: "5"                              # Scheduler tick for heat-
 oq_heat_loop_curve_s: "30"                            # Effective heat-control cadence in Heating Curve mode [s].
 oq_heat_loop_powerhouse_s: "60"                       # Effective heat-control cadence in Power House mode [s].
 oq_cooling_limiter_stop_confirm_s: "30"               # Confirm time before soft-stop and dew hard-stop take effect [s].
-oq_cooling_oil_return_hold_s: "600"                   # Keep cooling dew/floor limiter masked this long after oil-return clears [s].
+oq_cooling_oil_return_hold_s: "1200"                  # Maximum oil-return recovery window; floor-guard modes clear earlier after recovery [s].
 oq_cop_min_input_w: "10.0"                            # Minimum electrical input for a valid COP calculation [W].
 oq_hp_min_off_s: "240"                                # Minimum per-HP off-time before any restart [s].
 oq_optimizer_penalty_per_w: "5.0"                     # Cost factor above soft limit [cost/W].
