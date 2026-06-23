@@ -21,10 +21,6 @@
 #
 # ==============================================================================
 
-esphome:
-  includes:
-    - ${openquatt_root}/includes/experimental/oq_odu_runtime_frequency_table.h
-
 switch:
   - platform: template
     id: ${hp_id}_odu_runtime_frequency_table_enable

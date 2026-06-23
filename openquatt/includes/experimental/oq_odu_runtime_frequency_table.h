@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef OPENQUATT_OQ_ODU_RUNTIME_FREQUENCY_TABLE_H
+#define OPENQUATT_OQ_ODU_RUNTIME_FREQUENCY_TABLE_H
+
 #include <array>
 #include <cmath>
 #include <cstdio>
@@ -233,3 +236,5 @@ inline void apply_runtime_table(RuntimeFrequencyTableRefs refs, bool enabled) {
 }
 
 }  // namespace oq_odu_runtime_frequency
+
+#endif  // OPENQUATT_OQ_ODU_RUNTIME_FREQUENCY_TABLE_H
