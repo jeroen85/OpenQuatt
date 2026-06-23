@@ -228,10 +228,42 @@ script:
 
           id(oq_trends_endpoint).capture_sample(outside_c, supply_c, room_c, room_sp_c, flow_lph, input_w, output_w);
 
+  - id: oq_capture_energy_history_sample
+    mode: single
+    then:
+      - lambda: |-
+          if (!id(oq_lifetime_energy_history_switch).state) {
+            return;
+          }
+
+          // Capture the current daily energy totals; the component writes only at day rollover/shutdown.
+          const float electrical_input_kwh = id(oq_electrical_energy_daily).has_state() ? id(oq_electrical_energy_daily).state : NAN;
+          const float heating_input_kwh = id(oq_heating_electrical_energy_daily).has_state() ? id(oq_heating_electrical_energy_daily).state : NAN;
+          const float cooling_input_kwh = id(oq_cooling_electrical_energy_daily).has_state() ? id(oq_cooling_electrical_energy_daily).state : NAN;
+          const float heatpump_heat_output_kwh = id(oq_heatpump_thermal_energy_daily).has_state() ? id(oq_heatpump_thermal_energy_daily).state : NAN;
+          const float heatpump_cooling_output_kwh = id(oq_heatpump_cooling_energy_daily).has_state() ? id(oq_heatpump_cooling_energy_daily).state : NAN;
+          const float boiler_heat_output_kwh = id(oq_boiler_thermal_energy_daily).has_state() ? id(oq_boiler_thermal_energy_daily).state : NAN;
+          const float system_heat_output_kwh = id(oq_system_thermal_energy_daily).has_state() ? id(oq_system_thermal_energy_daily).state : NAN;
+
+          id(oq_energy_history_endpoint).capture_day_totals(
+            electrical_input_kwh,
+            heating_input_kwh,
+            cooling_input_kwh,
+            heatpump_heat_output_kwh,
+            heatpump_cooling_output_kwh,
+            boiler_heat_output_kwh,
+            system_heat_output_kwh
+          );
+
 openquatt_trends:
   id: oq_trends_endpoint
   capture_switch: oq_trend_history_enabled_switch
   flash_switch: oq_trend_history_flash_switch
+  clock: oq_time
+
+openquatt_energy_history:
+  id: oq_energy_history_endpoint
+  enabled_switch: oq_lifetime_energy_history_switch
   clock: oq_time
 
 # ==============================================================================
@@ -493,6 +525,19 @@ button:
           id(oq_trends_endpoint).force_flush();
 
   - platform: template
+    id: oq_lifetime_energy_history_clear_button
+    name: Lifetime energiehistorie wissen
+    internal: true
+    disabled_by_default: true
+    icon: mdi:delete-clock
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_system_diagnostics
+    on_press:
+      - lambda: |-
+          id(oq_energy_history_endpoint).clear_history();
+
+  - platform: template
     id: oq_check_firmware_updates
     name: Check Firmware Updates
     icon: mdi:update
@@ -562,6 +607,19 @@ switch:
     turn_off_action:
       - lambda: |-
           id(oq_trends_endpoint).set_flash_enabled(false);
+    web_server:
+      sorting_group_id: oq_system_diagnostics
+
+  - platform: template
+    id: oq_lifetime_energy_history_switch
+    name: Lifetime energiehistorie opslaan
+    internal: true
+    icon: mdi:database-clock
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    turn_on_action:
+      - script.execute: oq_capture_energy_history_sample
     web_server:
       sorting_group_id: oq_system_diagnostics
 
@@ -687,6 +745,35 @@ sensor:
     web_server:
       sorting_group_id: oq_system_diagnostics
 
+  - platform: template
+    id: oq_lifetime_energy_history_size
+    name: Lifetime energiehistorie grootte
+    internal: true
+    disabled_by_default: true
+    icon: mdi:database-outline
+    unit_of_measurement: kB
+    accuracy_decimals: 1
+    update_interval: 60s
+    entity_category: diagnostic
+    lambda: |-
+      return id(oq_energy_history_endpoint).get_storage_kib();
+    web_server:
+      sorting_group_id: oq_system_diagnostics
+
+  - platform: template
+    id: oq_lifetime_energy_history_writes
+    name: Lifetime energiehistorie schrijfacties
+    internal: true
+    disabled_by_default: true
+    icon: mdi:pencil-box-multiple-outline
+    accuracy_decimals: 0
+    update_interval: 60s
+    entity_category: diagnostic
+    lambda: |-
+      return id(oq_energy_history_endpoint).get_write_count();
+    web_server:
+      sorting_group_id: oq_system_diagnostics
+
 text_sensor:
   - platform: template
     id: oq_firmware_update_status
@@ -764,6 +851,58 @@ text_sensor:
     update_interval: 60s
     lambda: |-
       return id(oq_trends_endpoint).get_flash_last_flush_label();
+    web_server:
+      sorting_group_id: oq_system_diagnostics
+
+  - platform: template
+    id: oq_lifetime_energy_history_available
+    name: Lifetime energiehistorie beschikbaar
+    internal: true
+    disabled_by_default: true
+    icon: mdi:calendar-range
+    entity_category: diagnostic
+    update_interval: 60s
+    lambda: |-
+      return id(oq_energy_history_endpoint).get_available_label();
+    web_server:
+      sorting_group_id: oq_system_diagnostics
+
+  - platform: template
+    id: oq_lifetime_energy_history_oldest
+    name: Lifetime energiehistorie oudste dag
+    internal: true
+    disabled_by_default: true
+    icon: mdi:calendar-start
+    entity_category: diagnostic
+    update_interval: 60s
+    lambda: |-
+      return id(oq_energy_history_endpoint).get_oldest_day_label();
+    web_server:
+      sorting_group_id: oq_system_diagnostics
+
+  - platform: template
+    id: oq_lifetime_energy_history_newest
+    name: Lifetime energiehistorie nieuwste dag
+    internal: true
+    disabled_by_default: true
+    icon: mdi:clock-end
+    entity_category: diagnostic
+    update_interval: 60s
+    lambda: |-
+      return id(oq_energy_history_endpoint).get_newest_day_label();
+    web_server:
+      sorting_group_id: oq_system_diagnostics
+
+  - platform: template
+    id: oq_lifetime_energy_history_last_write
+    name: Lifetime energiehistorie laatste opslag
+    internal: true
+    disabled_by_default: true
+    icon: mdi:content-save-clock-outline
+    entity_category: diagnostic
+    update_interval: 60s
+    lambda: |-
+      return id(oq_energy_history_endpoint).get_last_write_label();
     web_server:
       sorting_group_id: oq_system_diagnostics
 
@@ -882,3 +1021,4 @@ interval:
     startup_delay: 45s
     then:
       - script.execute: oq_capture_overview_trend_sample
+      - script.execute: oq_capture_energy_history_sample

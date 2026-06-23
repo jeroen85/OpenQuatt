@@ -37,6 +37,19 @@
     trendHistoryNowMs: Number.NaN,
     trendHistoryLastFetchAt: 0,
     trendHistoryFetchPromise: null,
+    energyHistoryRaw: "",
+    energyHistoryError: "",
+    energyHistorySignature: "",
+    energyHistoryNowMs: Number.NaN,
+    energyHistoryLastFetchAt: 0,
+    energyHistoryFetchPromise: null,
+    energyHistoryView: "month",
+    energyHistoryPeriodSelection: {
+      day: "",
+      week: "",
+      month: "",
+      year: "",
+    },
     deviceReconnectMode: "",
     deviceReconnectStartedAt: 0,
     deviceReconnectRecoveryStartedAt: 0,
@@ -467,10 +480,13 @@
   }
 
   function normalizeAppView(view) {
+    if (view === "trends") {
+      view = "diagnosis";
+    }
     if (!APP_VIEW_IDS.has(view)) {
       return "";
     }
-    if (view === "trends" && !isTrendHistoryEnabled()) {
+    if (view === "diagnosis" && !isTrendHistoryEnabled()) {
       return "";
     }
     return view;

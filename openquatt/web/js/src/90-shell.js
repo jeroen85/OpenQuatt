@@ -36,10 +36,12 @@ function renderSettingsView() {
   function renderCurrentAppView() {
     return state.appView === "overview"
       ? renderOverviewView()
-      : state.appView === "trends"
-      ? renderTrendsView()
       : state.appView === "energy"
       ? renderEnergyView()
+      : state.appView === "diagnosis"
+      ? renderDiagnosisView()
+      : state.appView === "results"
+      ? renderResultsView()
       : renderSettingsView();
   }
 
@@ -135,7 +137,8 @@ function renderSettingsView() {
     const mainContent = state.loadingEntities
       ? `${currentViewContent}${renderInitialLoadingView()}`
       : currentViewContent;
-    const wideFlushCard = state.appView === "overview" || state.appView === "trends" || state.appView === "energy";
+    const wideFlushCard = state.appView === "overview" || state.appView === "energy" ||
+      state.appView === "diagnosis" || state.appView === "results";
 
     state.root.innerHTML = `
       ${renderDevPanel()}

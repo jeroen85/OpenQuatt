@@ -1494,7 +1494,7 @@
   function renderOverviewTrendsPanel() {
     const cards = getOverviewTrendCardsModel();
     return `
-      <section class="oq-overview-trends" aria-label="Trends" data-render-signature="${escapeHtml(getOverviewTrendRenderSignature())}">
+      <section class="oq-overview-trends" aria-label="Diagnose" data-render-signature="${escapeHtml(getOverviewTrendRenderSignature())}">
         <div class="oq-overview-trends-grid">
           ${cards.map(renderOverviewTrendCard).join("")}
         </div>
@@ -1555,7 +1555,7 @@
           type="button"
           data-oq-action="toggle-settings-info"
           data-info-id="${escapeHtml(infoId)}"
-          aria-label="${escapeHtml("Uitleg bij Trendoverzicht")}"
+          aria-label="${escapeHtml("Uitleg bij Diagnose")}"
           aria-expanded="${open ? "true" : "false"}"
         >i</button>
         <div class="oq-settings-info-popover" ${open ? "" : "hidden"}>
@@ -1565,7 +1565,7 @@
     `;
   }
 
-  function renderTrendsView() {
+  function renderDiagnosisView() {
     const trendHistoryEnabled = isTrendHistoryEnabled();
     const trendSamples = getOverviewTrendSamples();
     const hasTrendSamples = trendSamples.length > 0;
@@ -1577,9 +1577,9 @@
           </div>
           <div class="oq-overview-head oq-overview-trends-head">
             <div>
-              <p class="oq-helper-label">Trends</p>
-              <h2 class="oq-helper-section-title">Trendoverzicht</h2>
-              <p class="oq-helper-section-copy">Bekijk temperatuur, vermogen, rendement, comfort en flow tot 30 dagen terug.</p>
+              <p class="oq-helper-label">Diagnose</p>
+              <h2 class="oq-helper-section-title">Technische trends</h2>
+              <p class="oq-helper-section-copy">Analyseer temperaturen, vermogen, flow en statuslijnen voor troubleshooting.</p>
             </div>
             <div class="oq-overview-trends-meta">
               ${trendHistoryEnabled ? `
@@ -1596,8 +1596,8 @@
     `;
   }
 
-  function patchTrendsDom() {
-    if (!state.root || state.appView !== "trends") {
+  function patchDiagnosisDom() {
+    if (!state.root || state.appView !== "diagnosis") {
       return false;
     }
 

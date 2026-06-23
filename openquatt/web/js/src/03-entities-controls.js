@@ -397,7 +397,7 @@
   }
 
   function isInitialOverviewView() {
-    return state.appView === "overview" || state.appView === "trends" || state.appView === "energy";
+    return state.appView === "overview" || state.appView === "diagnosis" || state.appView === "energy";
   }
 
   function getOverviewMetadataHydrationKeys() {
@@ -2116,11 +2116,77 @@
     }
   }
 
+  async function refreshEnergyHistoryData(options = {}) {
+    if (!hasEntity("lifetimeEnergyHistoryEnabled") && !isDevPreviewEnvironmentForFetches()) {
+      const changed = Boolean(state.energyHistoryRaw || state.energyHistoryError);
+      state.energyHistoryRaw = "";
+      state.energyHistoryError = "";
+      state.energyHistorySignature = "";
+      state.energyHistoryNowMs = Number.NaN;
+      state.energyHistoryLastFetchAt = 0;
+      return changed;
+    }
+
+    const force = options.force === true;
+    const now = Date.now();
+    if (!force && state.energyHistoryFetchPromise) {
+      return state.energyHistoryFetchPromise;
+    }
+    if (!force && (state.energyHistoryRaw || state.energyHistoryError) &&
+        (now - Number(state.energyHistoryLastFetchAt || 0)) < TREND_HISTORY_REFRESH_INTERVAL_MS) {
+      return false;
+    }
+
+    state.energyHistoryFetchPromise = (async () => {
+      const response = await fetch(`${getBasePath()}/energy/history`, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const raw = await response.text();
+      const lines = raw.split(/\r?\n/);
+      let nowMs = Number.NaN;
+      lines.forEach((line) => {
+        if (line.startsWith("@now|")) {
+          nowMs = Number(line.slice(5));
+        }
+      });
+      const signature = `${raw.length}|${raw.slice(0, 120)}|${raw.slice(-120)}`;
+      const currentNowValid = Number.isFinite(state.energyHistoryNowMs);
+      const nextNowValid = Number.isFinite(nowMs);
+      const nowChanged = nextNowValid
+        ? !currentNowValid || state.energyHistoryNowMs !== nowMs
+        : currentNowValid;
+      const changed = raw !== state.energyHistoryRaw || state.energyHistoryError !== "" ||
+        state.energyHistorySignature !== signature || nowChanged;
+      state.energyHistoryRaw = raw;
+      state.energyHistoryError = "";
+      state.energyHistorySignature = signature;
+      state.energyHistoryNowMs = Number.isFinite(nowMs) ? nowMs : Number.NaN;
+      state.energyHistoryLastFetchAt = Date.now();
+      return changed;
+    })();
+
+    try {
+      return await state.energyHistoryFetchPromise;
+    } catch (error) {
+      const nextError = `Energiehistorie kon niet worden geladen. ${error.message}`;
+      const changed = state.energyHistoryError !== nextError;
+      state.energyHistoryError = nextError;
+      state.energyHistoryRaw = "";
+      state.energyHistorySignature = "";
+      state.energyHistoryNowMs = Number.NaN;
+      state.energyHistoryLastFetchAt = Date.now();
+      return changed;
+    } finally {
+      state.energyHistoryFetchPromise = null;
+    }
+  }
+
   function applyDerivedState() {
     state.complete = getSetupCompleteState();
     state.stage = state.complete === true ? "Gereed" : state.complete === false ? "Quick Start" : "Laden...";
     state.summary = renderAppSummary();
-    if (state.appView === "trends" && !isTrendHistoryEnabled()) {
+    if (state.appView === "diagnosis" && !isTrendHistoryEnabled()) {
       setAppView(getDefaultAppView(), { syncMode: "replace", forceSync: true });
     }
     if (!state.appView) {
@@ -2136,7 +2202,7 @@
     if (state.appView === "energy") {
       return [...new Set([...base, ...OVERVIEW_KEYS])];
     }
-    if (state.appView === "overview" || state.appView === "trends") {
+    if (state.appView === "overview" || state.appView === "diagnosis") {
       return [...new Set([...base, ...FAST_OVERVIEW_KEYS])];
     }
     return [...new Set(base)];
@@ -2146,7 +2212,8 @@
     const initial = new Set(initialKeys);
     const fullKeys = state.appView === "settings"
       ? [...new Set(["setupComplete", "strategy", ...HEADER_ENTITY_KEYS, ...getSettingsRefreshKeys()])]
-      : state.appView === "overview" || state.appView === "trends" || state.appView === "energy"
+      : state.appView === "overview" || state.appView === "diagnosis" ||
+          state.appView === "energy" || state.appView === "results"
         ? [...new Set(["setupComplete", "strategy", ...HEADER_ENTITY_KEYS, ...OVERVIEW_KEYS, ...FIRMWARE_ENTITY_KEYS])]
         : [...new Set(["setupComplete", "strategy", ...HEADER_ENTITY_KEYS])];
     return fullKeys.filter((key) => !initial.has(key));
@@ -2218,8 +2285,11 @@
       if (isInitialOverviewView()) {
         await hydrateOverviewMetadata();
       }
-      if (state.appView === "overview" || state.appView === "trends") {
+      if (state.appView === "overview" || state.appView === "diagnosis") {
         await refreshTrendHistoryData({ force: true });
+      }
+      if (state.appView === "results") {
+        await refreshEnergyHistoryData({ force: true });
       }
       await refreshAuthStatus({ force: true });
       if (isSystemSettingsGroupActive()) {
@@ -2289,7 +2359,8 @@
     const appView = state.appView;
     const isPrefetchOverview = options.prefetchView === "overview" && !options.forceBulk && appView === "settings";
     const syncView = isPrefetchOverview ? "overview" : appView;
-    const isOverviewLike = syncView === "overview" || syncView === "trends" || syncView === "energy";
+    const isOverviewLike = syncView === "overview" || syncView === "diagnosis" ||
+      syncView === "energy" || syncView === "results";
     const forceFast = options.forceFast === true && !options.forceBulk;
     const isBulkDue = !forceFast && !isPrefetchOverview && isBulkEntitySyncDue(now, options);
     const isStaticDue = (now - Number(state.lastStaticEntitySyncAt || 0)) >= STATIC_POLL_INTERVAL_MS;
@@ -2364,8 +2435,13 @@
       const shouldDeferSupplementary = forceFast && isOverviewLike;
       const trendChanged = shouldDeferSupplementary
         ? false
-        : isOverviewLike
+        : syncView === "overview" || syncView === "diagnosis"
           ? await refreshTrendHistoryData()
+          : false;
+      const energyHistoryChanged = shouldDeferSupplementary
+        ? false
+        : state.appView === "results"
+          ? await refreshEnergyHistoryData()
           : false;
       const authChanged = shouldDeferSupplementary || !shouldRefreshAuthStatusForCurrentSurface() ? false : await refreshAuthStatus();
       const apiSecurityChanged = shouldDeferSupplementary || !shouldRefreshApiSecurityStatusForCurrentSurface() ? false : await refreshApiSecurityStatus();
@@ -2375,7 +2451,11 @@
         render();
         return;
       }
-      if (trendChanged && state.appView === "trends" && !state.root?.querySelector(".oq-overview-trends")) {
+      if (trendChanged && state.appView === "diagnosis" && !state.root?.querySelector(".oq-overview-trends")) {
+        render();
+        return;
+      }
+      if (energyHistoryChanged && state.appView === "results" && !state.root?.querySelector(".oq-energy-history")) {
         render();
         return;
       }
@@ -2431,14 +2511,20 @@
         }
         return;
       }
-      if (state.appView === "trends") {
-        if (!patchTrendsDom()) {
+      if (state.appView === "diagnosis") {
+        if (!patchDiagnosisDom()) {
           render();
         }
         return;
       }
       if (state.appView === "energy") {
         if (!patchEnergyDom()) {
+          render();
+        }
+        return;
+      }
+      if (state.appView === "results") {
+        if (!patchResultsDom()) {
           render();
         }
         return;
@@ -2777,6 +2863,13 @@
       return;
     }
 
+    if (event.target.dataset.oqEnergyHistoryPeriodInput) {
+      if (typeof setEnergyHistoryPeriodValue === "function") {
+        setEnergyHistoryPeriodValue(event.target.dataset.oqEnergyHistoryPeriodInput, event.target.value);
+      }
+      return;
+    }
+
     const field = event.target.dataset.oqField;
     if (!field) {
       return;
@@ -2966,13 +3059,15 @@
     }
 
     if (action === "select-view") {
-      if ((button.dataset.viewId || "") === "trends" && !isTrendHistoryEnabled()) {
+      if ((button.dataset.viewId || "") === "diagnosis" && !isTrendHistoryEnabled()) {
         return;
       }
       const nextView = button.dataset.viewId || "overview";
       setAppView(nextView, { syncMode: "push" });
       render();
-      syncEntities(nextView === "settings" || nextView === "energy" ? { forceBulk: true } : { forceFast: true });
+      syncEntities(nextView === "settings" || nextView === "energy" || nextView === "results"
+        ? { forceBulk: true }
+        : { forceFast: true });
       return;
     }
 
@@ -2987,6 +3082,30 @@
           render();
         }
       });
+      return;
+    }
+
+    if (action === "select-energy-history-view") {
+      if (button.disabled || typeof setEnergyHistoryView !== "function") {
+        return;
+      }
+      setEnergyHistoryView(button.dataset.energyHistoryView || "month");
+      return;
+    }
+
+    if (action === "shift-energy-history-period") {
+      if (button.disabled || typeof shiftEnergyHistoryPeriod !== "function") {
+        return;
+      }
+      shiftEnergyHistoryPeriod(state.energyHistoryView || "month", button.dataset.energyHistoryDirection || "1");
+      return;
+    }
+
+    if (action === "select-energy-history-now") {
+      if (button.disabled || typeof setEnergyHistoryPeriodToNow !== "function") {
+        return;
+      }
+      setEnergyHistoryPeriodToNow(state.energyHistoryView || "month");
       return;
     }
 
@@ -3083,6 +3202,21 @@
       void triggerNamedButton("trendHistoryFlush", {
         successNotice: "Trendhistorie is opgeslagen in flash.",
         errorPrefix: "Trendhistorie kon niet worden opgeslagen",
+      });
+      return;
+    }
+
+    if (action === "clear-lifetime-energy-history") {
+      void triggerNamedButton("lifetimeEnergyHistoryClear", {
+        successNotice: "Lifetime energiehistorie is gewist.",
+        errorPrefix: "Lifetime energiehistorie kon niet worden gewist",
+      }).then(() => {
+        state.energyHistoryRaw = "";
+        state.energyHistorySignature = "";
+        state.energyHistoryLastFetchAt = 0;
+        if (state.appView === "results") {
+          void refreshEnergyHistoryData({ force: true }).then(() => render());
+        }
       });
       return;
     }
@@ -3766,6 +3900,9 @@
   }
 
   function handlePointerMove(event) {
+    if (typeof handleEnergyHistoryPointerMove === "function") {
+      handleEnergyHistoryPointerMove(event);
+    }
     if (!state.draggingCurveKey) {
       return;
     }

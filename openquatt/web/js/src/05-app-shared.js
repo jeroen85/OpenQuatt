@@ -188,7 +188,7 @@
   function renderAppNav() {
     return `
       <div class="oq-helper-app-nav">
-        ${APP_VIEWS.filter((view) => view.id !== "trends" || isTrendHistoryEnabled()).map((view) => `
+        ${APP_VIEWS.filter((view) => view.id !== "diagnosis" || isTrendHistoryEnabled()).map((view) => `
           <button
             class="oq-helper-app-tab ${state.appView === view.id ? "is-active" : ""}"
             type="button"
