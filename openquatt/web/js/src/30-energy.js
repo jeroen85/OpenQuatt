@@ -131,6 +131,40 @@
     return (now.getFullYear() * 10000) + ((now.getMonth() + 1) * 100) + now.getDate();
   }
 
+  function getEnergyHistoryCurrentDateKeyFromRaw() {
+    const raw = String(state.energyHistoryRaw || "");
+    let currentKey = null;
+    raw.split(/\r?\n/).forEach((line) => {
+      const record = parseEnergyHistoryCurrentLine(line);
+      if (record) {
+        currentKey = record.dateKey;
+      }
+    });
+    return currentKey;
+  }
+
+  function getEnergyHistoryReferenceDateKey(records = [], includeHours = true) {
+    const currentKey = getEnergyHistoryCurrentDateKeyFromRaw();
+    const dateKeys = (Array.isArray(records) ? records : [])
+      .map((record) => Number(record?.dateKey))
+      .filter(Number.isFinite);
+
+    if (Number.isFinite(Number(currentKey))) {
+      dateKeys.push(Number(currentKey));
+    }
+
+    if (includeHours) {
+      getEnergyHistoryHourRecords().forEach((record) => {
+        const dateKey = Number(record?.dateKey);
+        if (Number.isFinite(dateKey)) {
+          dateKeys.push(dateKey);
+        }
+      });
+    }
+
+    return dateKeys.length ? Math.max(...dateKeys) : getEnergyHistoryTodayKey();
+  }
+
   function getEnergyHistoryDateKeyFromDate(date) {
     return (date.getFullYear() * 10000) + ((date.getMonth() + 1) * 100) + date.getDate();
   }
@@ -409,7 +443,7 @@
   }
 
   function getEnergyHistoryTodayRecord() {
-    const dateKey = getEnergyHistoryTodayKey();
+    const dateKey = getEnergyHistoryCurrentDateKeyFromRaw() || getEnergyHistoryTodayKey();
     const parsed = parseEnergyHistoryDateKey(dateKey);
     if (!parsed) {
       return null;
@@ -604,32 +638,32 @@
   }
 
   function getEnergyHistoryPeriodBounds(records, view) {
-    const today = parseEnergyHistoryDateKey(getEnergyHistoryTodayKey());
     const normalizedView = normalizeEnergyHistoryView(view);
-    const hourRecords = normalizedView === "day" ? getEnergyHistoryHourRecords() : [];
+    const reference = parseEnergyHistoryDateKey(getEnergyHistoryReferenceDateKey(records, true));
+    const hourRecords = getEnergyHistoryHourRecords();
     const dateKeys = [
       ...records.map((record) => record.dateKey),
       ...hourRecords.map((record) => record.dateKey),
     ].filter((key) => Number.isFinite(Number(key)));
-    const oldestKey = dateKeys.length ? Math.min(...dateKeys.map(Number)) : today?.key;
-    const oldest = oldestKey ? parseEnergyHistoryDateKey(oldestKey) : today;
-    const oldestDate = oldest?.date || today?.date || new Date();
-    const todayDate = today?.date || new Date();
-    let min = today?.key || getEnergyHistoryTodayKey();
+    const oldestKey = dateKeys.length ? Math.min(...dateKeys.map(Number)) : reference?.key;
+    const oldest = oldestKey ? parseEnergyHistoryDateKey(oldestKey) : reference;
+    const oldestDate = oldest?.date || reference?.date || new Date();
+    const referenceDate = reference?.date || new Date();
+    let min = reference?.key || getEnergyHistoryTodayKey();
     let max = min;
 
     if (normalizedView === "week") {
       min = getEnergyHistoryWeekStartKeyFromDate(oldestDate);
-      max = getEnergyHistoryWeekStartKeyFromDate(todayDate);
+      max = getEnergyHistoryWeekStartKeyFromDate(referenceDate);
     } else if (normalizedView === "month") {
       min = getEnergyHistoryMonthKeyFromDate(oldestDate);
-      max = getEnergyHistoryMonthKeyFromDate(todayDate);
+      max = getEnergyHistoryMonthKeyFromDate(referenceDate);
     } else if (normalizedView === "year") {
       min = oldestDate.getFullYear();
-      max = todayDate.getFullYear();
+      max = referenceDate.getFullYear();
     } else {
       min = getEnergyHistoryDateKeyFromDate(oldestDate);
-      max = getEnergyHistoryDateKeyFromDate(todayDate);
+      max = getEnergyHistoryDateKeyFromDate(referenceDate);
     }
 
     if (Number(min) > Number(max)) {
@@ -829,7 +863,8 @@
         };
       }
       const record = byDate.get(selected.key);
-      const label = selected.key === getEnergyHistoryTodayKey() ? "Vandaag" : formatEnergyHistoryDateLabel(selected.key);
+      const currentDateKey = getEnergyHistoryCurrentDateKeyFromRaw() || getEnergyHistoryTodayKey();
+      const label = selected.key === currentDateKey ? "Vandaag" : formatEnergyHistoryDateLabel(selected.key);
       const bucket = createEnergyHistoryBucket({
         dateKey: selected.key,
         year: selected.year,
