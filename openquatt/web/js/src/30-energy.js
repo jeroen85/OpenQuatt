@@ -1412,10 +1412,6 @@
           ${renderEnergyHistoryChart(model.buckets)}
           <div class="oq-energy-history-tooltip" aria-hidden="true"></div>
         </div>
-        <div class="oq-energy-history-foot">
-          ${renderEnergyHistoryStat("COP verwarmen", formatEnergyRatio(summary.heatOutputWh, summary.heatingInputWh), "warmtepomp warmte / input")}
-          ${renderEnergyHistoryStat("EER koelen", formatEnergyRatio(summary.coolingOutputWh, summary.coolingInputWh), "koeling / input")}
-        </div>
         ${renderEnergyHistoryLegend(summary)}
       </section>
     `;

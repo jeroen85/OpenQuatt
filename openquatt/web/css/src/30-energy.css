@@ -708,12 +708,6 @@
   font-size: 0.9rem;
 }
 
-.oq-energy-history-foot {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
 .oq-energy-history-empty {
   display: grid;
   place-items: center;
@@ -785,8 +779,7 @@
   }
 
   .oq-energy-history-stats,
-  .oq-energy-history-balance-list,
-  .oq-energy-history-foot {
+  .oq-energy-history-balance-list {
     grid-template-columns: minmax(0, 1fr);
   }
 
