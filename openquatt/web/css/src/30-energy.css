@@ -620,14 +620,13 @@
 .oq-energy-history-chart-wrap {
   position: relative;
   min-width: 0;
-  padding: 8px 0 0;
+  padding: 2px 0 0;
 }
 
 .oq-energy-history-chart {
   display: block;
   width: 100%;
   height: auto;
-  min-height: 260px;
 }
 
 .oq-energy-history-chart-bg {
@@ -639,26 +638,26 @@
 }
 
 .oq-energy-history-grid-line {
-  stroke: var(--oq-energy-history-border);
-  stroke-dasharray: 8 8;
+  stroke: color-mix(in srgb, var(--oq-energy-history-border) 72%, transparent);
+  stroke-dasharray: 6 10;
   stroke-linecap: round;
-  stroke-width: 1.1;
+  stroke-width: 0.9;
 }
 
 .oq-energy-history-axis-unit {
-  fill: var(--oq-energy-history-text-muted);
-  font-size: 12px;
+  fill: var(--oq-energy-history-text-soft);
+  font-size: 11px;
   font-weight: 800;
 }
 
 .oq-energy-history-axis-label {
-  fill: var(--oq-energy-history-text-muted);
-  font-size: 11px;
+  fill: var(--oq-energy-history-text-soft);
+  font-size: 10px;
   font-weight: 700;
 }
 
 .oq-energy-history-bar {
-  rx: 1.5px;
+  rx: 2px;
   shape-rendering: geometricPrecision;
 }
 
@@ -668,7 +667,7 @@
 
 .oq-energy-history-bar-group:hover .oq-energy-history-bar,
 .oq-energy-history-bar-group:focus-visible .oq-energy-history-bar {
-  filter: brightness(1.08);
+  filter: saturate(1.05) brightness(1.04);
 }
 
 .oq-energy-history-hit {
