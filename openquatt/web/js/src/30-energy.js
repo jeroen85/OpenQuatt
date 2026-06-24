@@ -110,7 +110,7 @@
 
   function normalizeEnergyHistoryView(view) {
     const value = String(view || "").trim();
-    return ENERGY_HISTORY_VIEW_OPTIONS.some((option) => option.id === value) ? value : "month";
+    return ENERGY_HISTORY_VIEW_OPTIONS.some((option) => option.id === value) ? value : "day";
   }
 
   function setEnergyHistoryView(view) {

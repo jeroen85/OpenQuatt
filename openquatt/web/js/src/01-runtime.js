@@ -43,7 +43,7 @@
     energyHistoryNowMs: Number.NaN,
     energyHistoryLastFetchAt: 0,
     energyHistoryFetchPromise: null,
-    energyHistoryView: "month",
+    energyHistoryView: "day",
     energyHistoryPeriodSelection: {
       day: "",
       week: "",

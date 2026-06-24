@@ -3089,7 +3089,7 @@
       if (button.disabled || typeof setEnergyHistoryView !== "function") {
         return;
       }
-      setEnergyHistoryView(button.dataset.energyHistoryView || "month");
+      setEnergyHistoryView(button.dataset.energyHistoryView || "day");
       return;
     }
 
@@ -3097,7 +3097,7 @@
       if (button.disabled || typeof shiftEnergyHistoryPeriod !== "function") {
         return;
       }
-      shiftEnergyHistoryPeriod(state.energyHistoryView || "month", button.dataset.energyHistoryDirection || "1");
+      shiftEnergyHistoryPeriod(state.energyHistoryView || "day", button.dataset.energyHistoryDirection || "1");
       return;
     }
 
@@ -3105,7 +3105,7 @@
       if (button.disabled || typeof setEnergyHistoryPeriodToNow !== "function") {
         return;
       }
-      setEnergyHistoryPeriodToNow(state.energyHistoryView || "month");
+      setEnergyHistoryPeriodToNow(state.energyHistoryView || "day");
       return;
     }
 
