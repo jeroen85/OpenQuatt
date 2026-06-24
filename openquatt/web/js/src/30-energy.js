@@ -1237,7 +1237,7 @@
     const maxWh = Math.max(1000, ...records.map(getEnergyHistoryStackWh));
     const axisMax = getEnergyHistoryNiceAxisMax(maxWh);
     const barSlot = records.length ? plotWidth / records.length : plotWidth;
-    const barWidth = Math.max(3.2, Math.min(22, barSlot * 0.36));
+    const barWidth = Math.max(6, Math.min(38, barSlot * 0.68));
     const yOf = (wh) => top + ((1 - Math.min(1, Math.max(0, Number(wh || 0) / axisMax))) * plotHeight);
 
     return { width, height, left, right, top, bottom, plotWidth, plotHeight, axisMax, barSlot, barWidth, yOf };

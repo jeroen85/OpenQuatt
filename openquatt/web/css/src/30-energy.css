@@ -638,22 +638,22 @@
 }
 
 .oq-energy-history-grid-line {
-  stroke: color-mix(in srgb, var(--oq-energy-history-border) 72%, transparent);
-  stroke-dasharray: 6 10;
+  stroke: color-mix(in srgb, var(--oq-energy-history-border) 86%, transparent);
+  stroke-dasharray: 7 9;
   stroke-linecap: round;
-  stroke-width: 0.9;
+  stroke-width: 1;
 }
 
 .oq-energy-history-axis-unit {
-  fill: var(--oq-energy-history-text-soft);
-  font-size: 11px;
+  fill: color-mix(in srgb, var(--oq-energy-history-text-muted) 90%, var(--oq-energy-history-text-soft));
+  font-size: 12.5px;
   font-weight: 800;
 }
 
 .oq-energy-history-axis-label {
-  fill: var(--oq-energy-history-text-soft);
-  font-size: 10px;
-  font-weight: 700;
+  fill: color-mix(in srgb, var(--oq-energy-history-text-muted) 88%, var(--oq-energy-history-text-soft));
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .oq-energy-history-bar {
