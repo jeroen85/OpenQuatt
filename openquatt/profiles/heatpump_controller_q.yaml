@@ -29,7 +29,7 @@ substitutions:
   hpcq_pt1000_miso_pin: "GPIO2"                         # MAX31865 MISO / SDO.
   hpcq_pt1000_clk_pin: "GPIO4"                          # MAX31865 SPI clock.
   hpcq_pt1000_cs_pin: "GPIO3"                           # MAX31865 chip select.
-  hpcq_pt1000_reference_resistance_ohm: "4300"          # PT1000 MAX31865 reference resistor.
+  hpcq_pt1000_reference_resistance_ohm: "1500"          # PT1000 MAX31865 reference resistor.
   hpcq_pt1000_nominal_resistance_ohm: "1000"            # PT1000 nominal resistance at 0 degrees C.
   hpcq_pt1000_rtd_wires: "2"                            # Probe wiring mode; board jumpers must match.
   hpcq_flow_pin: "GPIO6"                                # V1 central flowmeter pulse input.
