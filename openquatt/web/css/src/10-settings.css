@@ -3576,6 +3576,16 @@
   gap: 8px;
 }
 
+.oq-settings-storage-select {
+  position: relative;
+  min-width: 160px;
+}
+
+.oq-settings-storage-select .oq-helper-select {
+  min-height: 42px;
+  padding-right: 38px;
+}
+
 .oq-settings-storage-row-copy h4,
 .oq-settings-storage-inline-action h4 {
   margin: 0;

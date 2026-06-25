@@ -338,6 +338,37 @@
     `;
   }
 
+  function renderSettingsStorageSelectRow(key, title, copy, meta = "") {
+    if (!hasEntity(key)) {
+      return "";
+    }
+
+    const entity = state.entities[key];
+    const options = Array.isArray(entity?.option) ? entity.option : [];
+    const value = String(getEntityValue(key) || "");
+    if (!options.length) {
+      return "";
+    }
+
+    return `
+      <article class="oq-settings-storage-row oq-settings-storage-row--select" data-oq-settings-field="${escapeHtml(key)}">
+        <div class="oq-settings-storage-row-copy">
+          <div class="oq-settings-storage-row-title">
+            <h4>${escapeHtml(title)}</h4>
+            ${meta ? `<span>${escapeHtml(meta)}</span>` : ""}
+          </div>
+          <p>${escapeHtml(copy)}</p>
+        </div>
+        <label class="oq-settings-storage-select">
+          <select class="oq-helper-select" data-oq-field="${escapeHtml(key)}" ${state.loadingEntities ? "disabled" : ""}>
+            ${options.map((option) => `<option value="${escapeHtml(option)}" ${option === value ? "selected" : ""}>${escapeHtml(formatSettingsOptionLabel(option))}</option>`).join("")}
+          </select>
+          <span class="oq-settings-select-caret" aria-hidden="true"></span>
+        </label>
+      </article>
+    `;
+  }
+
   function shouldRenderSettingsStorageActionButton(key) {
     return hasEntity(key) || (Boolean(ENTITY_DEFS[key]) && !state.optionalMissingEntities?.[key]);
   }
@@ -3550,6 +3581,12 @@
                   "Zo blijven je resultaten ook na een herstart of update beschikbaar. OpenQuatt slaat dit op aan het einde van de dag en bij een normale afsluiting.",
                   "Nieuwe dagtotalen worden niet bewaard; bestaande historie blijft staan.",
                   "Permanent geheugen"
+                )}
+                ${renderSettingsStorageSelectRow(
+                  "lifetimeEnergyHourRetention",
+                  "Uurdetail bewaren",
+                  "Kies hoelang OpenQuatt detail per uur mag bewaren voor de daggrafiek.",
+                  "Geavanceerd"
                 )}
                 ${showLifetimeActions ? `
                   <div class="oq-settings-storage-inline-action oq-settings-storage-inline-action--split">

@@ -275,6 +275,7 @@ openquatt_trends:
 openquatt_energy_history:
   id: oq_energy_history_endpoint
   enabled_switch: oq_lifetime_energy_history_switch
+  hourly_retention_select: oq_lifetime_energy_hour_retention
   clock: oq_time
 
 # ==============================================================================
@@ -450,6 +451,22 @@ select:
 
             ESP_LOGI("oq_fw", "Runtime logger level updated to %s", x.c_str());
             esphome::logger::global_logger->set_log_level(lvl);
+
+  - platform: template
+    name: "Uurdetail bewaren"
+    id: oq_lifetime_energy_hour_retention
+    icon: mdi:chart-bar
+    web_server:
+      sorting_group_id: oq_system_diagnostics
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    options: ["30 dagen", "90 dagen", "180 dagen", "365 dagen"]
+    initial_option: "180 dagen"
+    on_value:
+      then:
+        - lambda: |-
+            id(oq_energy_history_endpoint).refresh_hourly_retention();
 
 button:
   - platform: template

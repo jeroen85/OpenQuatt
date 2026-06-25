@@ -42,6 +42,8 @@
     energyHistorySignature: "",
     energyHistoryNowMs: Number.NaN,
     energyHistoryLastFetchAt: 0,
+    energyHistoryRequestQuery: "",
+    energyHistoryFetchQuery: "",
     energyHistoryFetchPromise: null,
     energyHistoryView: "day",
     energyHistoryPeriodSelection: {
