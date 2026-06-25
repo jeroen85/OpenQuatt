@@ -36,10 +36,12 @@ function renderSettingsView() {
   function renderCurrentAppView() {
     return state.appView === "overview"
       ? renderOverviewView()
-      : state.appView === "trends"
-      ? renderTrendsView()
       : state.appView === "energy"
       ? renderEnergyView()
+      : state.appView === "diagnosis"
+      ? renderDiagnosisView()
+      : state.appView === "results"
+      ? renderResultsView()
       : renderSettingsView();
   }
 
@@ -107,6 +109,9 @@ function renderSettingsView() {
     const serviceTaskModalScrollState = String(state.systemModal || "").startsWith("service-task-")
       ? captureServiceTaskModalScrollState()
       : null;
+    const historyStorageModalScrollState = state.systemModal === "history-storage"
+      ? captureHistoryStorageModalScrollState()
+      : null;
     const quickStartScrollState = state.quickStartModalOpen
       ? captureQuickStartScrollState()
       : null;
@@ -127,6 +132,7 @@ function renderSettingsView() {
       queueWebServerLogScrollRestore(webServerLogScrollState);
       queueCm100CommissioningScrollRestore(cm100CommissioningScrollState);
       queueServiceTaskModalScrollRestore(serviceTaskModalScrollState);
+      queueHistoryStorageModalScrollRestore(historyStorageModalScrollState);
       queueQuickStartScrollRestore(quickStartScrollState);
       return;
     }
@@ -135,7 +141,8 @@ function renderSettingsView() {
     const mainContent = state.loadingEntities
       ? `${currentViewContent}${renderInitialLoadingView()}`
       : currentViewContent;
-    const wideFlushCard = state.appView === "overview" || state.appView === "trends" || state.appView === "energy";
+    const wideFlushCard = state.appView === "overview" || state.appView === "energy" ||
+      state.appView === "diagnosis" || state.appView === "results";
 
     state.root.innerHTML = `
       ${renderDevPanel()}
@@ -177,6 +184,7 @@ function renderSettingsView() {
     queueWebServerLogScrollRestore(webServerLogScrollState);
     queueCm100CommissioningScrollRestore(cm100CommissioningScrollState);
     queueServiceTaskModalScrollRestore(serviceTaskModalScrollState);
+    queueHistoryStorageModalScrollRestore(historyStorageModalScrollState);
     queueQuickStartScrollRestore(quickStartScrollState);
   }
 

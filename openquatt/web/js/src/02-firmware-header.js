@@ -2215,6 +2215,10 @@
       return renderSettingsBackupImportModal();
     }
 
+    if (state.systemModal === "history-storage") {
+      return renderSettingsHistoryStorageModal();
+    }
+
     if (String(state.systemModal || "").startsWith("service-task-")) {
       return renderSettingsServiceTaskModal();
     }

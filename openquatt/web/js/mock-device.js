@@ -97,6 +97,11 @@
     trendFlashOldestAt: Date.now() - Math.round(18.4 * 24 * 60 * 60 * 1000),
     trendFlashNewestAt: Date.now() - (2 * 60 * 1000),
     trendFlashLastFlushAt: Date.now() - (12 * 60 * 1000),
+    energyHistoryRecords: [],
+    energyHistoryHourRecords: [],
+    energyHistoryStoredKiB: 1024,
+    energyHistoryWrites: 0,
+    energyHistoryLastWriteAt: Date.now() - (9 * 60 * 60 * 1000),
     logHistoryEnabled: true,
     logHistoryEntries: [],
     debugRecording: {
@@ -894,6 +899,25 @@
     setEntity("text_sensor", "Trendhistorie laatste opslag", { state: "02-05 11:35", value: "02-05 11:35" });
     setEntity("sensor", "Trendhistorie grootte", { value: 182.5, uom: "kB" });
     setEntity("sensor", "Trendhistorie schrijfacties", { value: 437 });
+    if (!state.energyHistoryRecords.length) {
+      state.energyHistoryRecords = buildEnergyHistoryRecords();
+      state.energyHistoryWrites = state.energyHistoryRecords.length;
+    }
+    if (!state.energyHistoryHourRecords.length) {
+      state.energyHistoryHourRecords = buildEnergyHistoryHourRecords();
+    }
+    setEntity("button", "Lifetime energiehistorie nu opslaan", { state: "" });
+    setEntity("button", "Lifetime energiehistorie wissen", { state: "" });
+    const energyHistoryRecordCountText = `${state.energyHistoryRecords.length} records`;
+    setEntity("text_sensor", "Lifetime energiehistorie beschikbaar", {
+      state: energyHistoryRecordCountText,
+      value: energyHistoryRecordCountText,
+    });
+    setEntity("text_sensor", "Lifetime energiehistorie oudste dag", { state: "", value: "" });
+    setEntity("text_sensor", "Lifetime energiehistorie nieuwste dag", { state: "", value: "" });
+    setEntity("text_sensor", "Lifetime energiehistorie laatste opslag", { state: "", value: "" });
+    setEntity("sensor", "Lifetime energiehistorie grootte", { value: state.energyHistoryStoredKiB, uom: "kB" });
+    setEntity("sensor", "Lifetime energiehistorie schrijfacties", { value: state.energyHistoryWrites });
     setEntity("update", "Firmware Update", {
       state: "available",
       value: "available",
@@ -918,7 +942,9 @@
     setEntity("switch", "CiC Compatibility Mode", { value: false, state: false });
     setEntity("switch", "Trendopslag", { value: true, state: true });
     setEntity("switch", "Trendhistorie opslaan in flash", { value: true, state: true });
+    setEntity("switch", "Lifetime energiehistorie opslaan", { value: true, state: true });
     setEntity("switch", "RAM log history", { value: true, state: true });
+    updateEnergyHistoryStats();
     setEntity("select", "Debug Level", {
       value: "INFO",
       state: "INFO",
@@ -1392,6 +1418,7 @@
 
   function notifyMockUpdated() {
     updateTrendFlashStats();
+    updateEnergyHistoryStats();
     syncDevMeta();
     window.dispatchEvent(new Event("oq-mock-updated"));
   }
@@ -1658,6 +1685,218 @@
     setText("text_sensor", "Trendhistorie laatste opslag", formatTrendFlashDate(new Date(state.trendFlashLastFlushAt)));
     setNumber("Trendhistorie grootte", state.trendFlashStoredKiB, "kB");
     setNumber("Trendhistorie schrijfacties", state.trendFlashWrites, "");
+  }
+
+  function dateKeyFromDate(date) {
+    return (date.getFullYear() * 10000) + ((date.getMonth() + 1) * 100) + date.getDate();
+  }
+
+  function formatEnergyHistoryDate(dateKey) {
+    const year = Math.floor(dateKey / 10000);
+    const month = Math.floor(dateKey / 100) % 100;
+    const day = dateKey % 100;
+    return `${String(day).padStart(2, "0")}-${String(month).padStart(2, "0")}-${year}`;
+  }
+
+  function buildEnergyHistoryRecords() {
+    const records = [];
+    const recordCount = 900;
+    const today = new Date();
+    today.setHours(12, 0, 0, 0);
+    const start = new Date(today.getTime());
+    start.setDate(start.getDate() - recordCount);
+    for (let index = 0; index < recordCount; index += 1) {
+      const date = new Date(start.getTime());
+      date.setDate(start.getDate() + index);
+      const month = date.getMonth();
+      const winter = month <= 2 || month >= 10;
+      const shoulder = month === 3 || month === 4 || month === 8 || month === 9;
+      const summer = month >= 5 && month <= 7;
+      const wave = 0.65 + (Math.sin(index / 8) * 0.18) + (Math.sin(index / 23) * 0.11);
+      const heatingInput = winter
+        ? Math.max(2600, Math.round((6600 + (month === 0 ? 1800 : 0)) * wave))
+        : shoulder
+          ? Math.max(600, Math.round(2600 * wave))
+          : Math.round(180 * Math.max(0, Math.sin(index / 5)));
+      const coolingInput = summer ? Math.max(0, Math.round((900 + (month === 6 ? 850 : 0)) * (0.55 + Math.sin(index / 6) * 0.28))) : 0;
+      const boilerHeat = winter && index % 9 === 0 ? Math.round((1800 + (index % 5) * 260) * wave) : 0;
+      const heatOutput = Math.round(heatingInput * (3.2 + Math.sin(index / 17) * 0.38));
+      const coolingOutput = Math.round(coolingInput * (3.5 + Math.cos(index / 13) * 0.42));
+      records.push({
+        sequence: index,
+        dateKey: dateKeyFromDate(date),
+        flags: 0,
+        electricalInputWh: heatingInput + coolingInput,
+        heatingInputWh: heatingInput,
+        coolingInputWh: coolingInput,
+        heatpumpHeatOutputWh: heatingInput > 0 ? heatOutput : 0,
+        heatpumpCoolingOutputWh: coolingInput > 0 ? coolingOutput : 0,
+        boilerHeatOutputWh: boilerHeat,
+        systemHeatOutputWh: (heatingInput > 0 ? heatOutput : 0) + boilerHeat,
+      });
+    }
+    return records;
+  }
+
+  function buildEnergyHistoryHourRecords(days = 7) {
+    const records = [];
+    const now = new Date();
+    now.setMinutes(30, 0, 0);
+    let sequence = 0;
+    for (let dayOffset = days - 1; dayOffset >= 0; dayOffset -= 1) {
+      const date = new Date(now.getTime());
+      date.setDate(now.getDate() - dayOffset);
+      const dateKey = dateKeyFromDate(date);
+      const month = date.getMonth();
+      const summer = month >= 5 && month <= 7;
+      for (let hour = 0; hour < 24; hour += 1) {
+        if (dayOffset === 0 && hour > now.getHours()) {
+          continue;
+        }
+        const morning = Math.exp(-Math.pow((hour - 7) / 3.2, 2));
+        const evening = Math.exp(-Math.pow((hour - 19) / 4.0, 2));
+        const coolingPeak = Math.exp(-Math.pow((hour - 15) / 3.6, 2));
+        const dayWave = 0.78 + (Math.sin((sequence + 8) / 11) * 0.14);
+        const heatingInput = summer
+          ? Math.round(Math.max(0, 80 * morning * dayWave))
+          : Math.round(Math.max(0, (520 * morning + 760 * evening + 120) * dayWave));
+        const coolingInput = summer ? Math.round(Math.max(0, (320 * coolingPeak + 35) * dayWave)) : 0;
+        const boilerHeat = !summer && hour >= 6 && hour <= 8 && sequence % 13 === 0 ? 360 : 0;
+        const heatOutput = Math.round(heatingInput * (3.5 + Math.sin(sequence / 9) * 0.32));
+        const coolingOutput = Math.round(coolingInput * (3.2 + Math.cos(sequence / 7) * 0.25));
+        records.push({
+          sequence,
+          dateKey,
+          hour,
+          electricalInputWh: heatingInput + coolingInput,
+          heatingInputWh: heatingInput,
+          coolingInputWh: coolingInput,
+          heatpumpHeatOutputWh: heatingInput > 0 ? heatOutput : 0,
+          heatpumpCoolingOutputWh: coolingInput > 0 ? coolingOutput : 0,
+          boilerHeatOutputWh: boilerHeat,
+          systemHeatOutputWh: (heatingInput > 0 ? heatOutput : 0) + boilerHeat,
+        });
+        sequence += 1;
+      }
+    }
+    return records;
+  }
+
+  function updateEnergyHistoryStats() {
+    if (!getEntity("text_sensor", "Lifetime energiehistorie beschikbaar")) {
+      return;
+    }
+    const records = state.energyHistoryRecords || [];
+    const oldest = records[0];
+    const newest = records[records.length - 1];
+    setText("text_sensor", "Lifetime energiehistorie beschikbaar", records.length ? `${records.length} records` : "Geen data");
+    setText("text_sensor", "Lifetime energiehistorie oudste dag", oldest ? formatEnergyHistoryDate(oldest.dateKey) : "Geen data");
+    setText("text_sensor", "Lifetime energiehistorie nieuwste dag", newest ? formatEnergyHistoryDate(newest.dateKey) : "Geen data");
+    setText("text_sensor", "Lifetime energiehistorie laatste opslag", records.length ? formatTrendFlashDate(new Date(state.energyHistoryLastWriteAt)) : "Geen data");
+    setNumber("Lifetime energiehistorie grootte", state.energyHistoryStoredKiB, "kB");
+    setNumber("Lifetime energiehistorie schrijfacties", state.energyHistoryWrites, "");
+  }
+
+  function getCurrentEnergyHistoryValues() {
+    const readKwh = (name) => {
+      const entity = getEntity("sensor", name);
+      const value = Number(entity?.value ?? entity?.state);
+      return Number.isFinite(value) && value >= 0 ? Math.round(value * 1000) : -1;
+    };
+    return {
+      dateKey: dateKeyFromDate(new Date()),
+      electricalInputWh: readKwh("Electrical Energy Daily"),
+      heatingInputWh: readKwh("Heating Electrical Energy Daily"),
+      coolingInputWh: readKwh("Cooling Electrical Energy Daily"),
+      heatpumpHeatOutputWh: readKwh("HeatPump Thermal Energy Daily"),
+      heatpumpCoolingOutputWh: readKwh("HeatPump Cooling Energy Daily"),
+      boilerHeatOutputWh: readKwh("Boiler Thermal Energy Daily"),
+      systemHeatOutputWh: readKwh("System Thermal Energy Daily"),
+    };
+  }
+
+  function captureCurrentEnergyHistoryRecord() {
+    const current = getCurrentEnergyHistoryValues();
+    const records = Array.isArray(state.energyHistoryRecords) ? state.energyHistoryRecords : [];
+    const existingIndex = records.findIndex((record) => record.dateKey === current.dateKey);
+    const nextSequence = records.length
+      ? Math.max(...records.map((record) => Number(record.sequence) || 0)) + 1
+      : 0;
+    const record = {
+      sequence: existingIndex >= 0 ? records[existingIndex].sequence : nextSequence,
+      dateKey: current.dateKey,
+      flags: 0,
+      electricalInputWh: current.electricalInputWh,
+      heatingInputWh: current.heatingInputWh,
+      coolingInputWh: current.coolingInputWh,
+      heatpumpHeatOutputWh: current.heatpumpHeatOutputWh,
+      heatpumpCoolingOutputWh: current.heatpumpCoolingOutputWh,
+      boilerHeatOutputWh: current.boilerHeatOutputWh,
+      systemHeatOutputWh: current.systemHeatOutputWh,
+    };
+
+    if (existingIndex >= 0) {
+      records[existingIndex] = record;
+    } else {
+      records.push(record);
+      records.sort((left, right) => left.dateKey - right.dateKey);
+    }
+
+    state.energyHistoryRecords = records;
+    state.energyHistoryWrites += 1;
+    state.energyHistoryStoredKiB = Math.max(1, Number((state.energyHistoryStoredKiB + 0.04).toFixed(2)));
+    state.energyHistoryLastWriteAt = Date.now();
+    updateEnergyHistoryStats();
+  }
+
+  function buildEnergyHistoryTextPayload() {
+    const records = state.energyHistoryRecords || [];
+    const hourRecords = state.energyHistoryHourRecords || [];
+    const current = getCurrentEnergyHistoryValues();
+    const lines = [
+      "@schema|2",
+      `@enabled|${isSwitchEnabled("Lifetime energiehistorie opslaan") ? 1 : 0}`,
+      `@now|${Date.now()}`,
+      `@records|${records.length}`,
+      `@hours|${hourRecords.length}|7`,
+      ...records.map((record) => [
+        record.sequence,
+        record.dateKey,
+        record.flags || 0,
+        record.electricalInputWh,
+        record.heatingInputWh,
+        record.coolingInputWh,
+        record.heatpumpHeatOutputWh,
+        record.heatpumpCoolingOutputWh,
+        record.boilerHeatOutputWh,
+        record.systemHeatOutputWh,
+      ].join("|")),
+      [
+        "@current",
+        current.dateKey,
+        current.electricalInputWh,
+        current.heatingInputWh,
+        current.coolingInputWh,
+        current.heatpumpHeatOutputWh,
+        current.heatpumpCoolingOutputWh,
+        current.boilerHeatOutputWh,
+        current.systemHeatOutputWh,
+      ].join("|"),
+      ...hourRecords.map((record) => [
+        "@hour",
+        record.sequence,
+        record.dateKey,
+        record.hour,
+        record.electricalInputWh,
+        record.heatingInputWh,
+        record.coolingInputWh,
+        record.heatpumpHeatOutputWh,
+        record.heatpumpCoolingOutputWh,
+        record.boilerHeatOutputWh,
+        record.systemHeatOutputWh,
+      ].join("|")),
+    ];
+    return `${lines.join("\n")}\n`;
   }
 
   function applyPreset(value) {
@@ -3015,6 +3254,14 @@
       state.trendFlashNewestAt = Date.now() - (2 * 60 * 1000);
       state.trendFlashWrites += 1;
       state.trendFlashStoredKiB = Math.min(360, Number((state.trendFlashStoredKiB + 0.5).toFixed(1)));
+    } else if (name === "Lifetime energiehistorie nu opslaan") {
+      captureCurrentEnergyHistoryRecord();
+    } else if (name === "Lifetime energiehistorie wissen") {
+      state.energyHistoryRecords = [];
+      state.energyHistoryHourRecords = [];
+      state.energyHistoryWrites = 0;
+      state.energyHistoryLastWriteAt = Date.now();
+      updateEnergyHistoryStats();
     } else if (name === "Restart") {
       state.apiSecurity.transportActive = Boolean(state.apiSecurity.enabled);
       state.apiSecurity.pendingRestart = false;
@@ -3335,6 +3582,15 @@
     });
   }
 
+  function mockTextResponse(status, text) {
+    return Promise.resolve({
+      ok: status >= 200 && status < 300,
+      status,
+      json: async () => ({ text }),
+      text: async () => String(text || ""),
+    });
+  }
+
   function installFetchMock() {
     const realFetch = window.fetch ? window.fetch.bind(window) : null;
     window.fetch = async function fetchMock(input, init) {
@@ -3366,6 +3622,9 @@
           enabled: Boolean(state.logHistoryEnabled),
           entries: clone(state.logHistoryEntries),
         });
+      }
+      if (url.pathname.endsWith("/energy/history") && method === "GET") {
+        return mockTextResponse(200, buildEnergyHistoryTextPayload());
       }
       if (url.pathname.endsWith("/openquatt/debug-recording/status") && method === "GET") {
         return mockResponse(200, getDebugRecordingStatusPayload());
