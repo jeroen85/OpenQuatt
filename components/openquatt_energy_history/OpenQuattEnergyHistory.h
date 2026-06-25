@@ -43,9 +43,10 @@ class OpenQuattEnergyHistory : public Component {
   static constexpr uint32_t RECORD_MAGIC = 0x3148454F;  // "OEH1"
   static constexpr uint16_t RECORD_VERSION = 1;
   static constexpr uint16_t FLAG_PARTIAL = 1U << 0U;
-  static constexpr uint32_t BASE_OFFSET = 0x60000;
   static constexpr size_t FLASH_SECTOR_SIZE = 4096;
   static constexpr size_t FLASH_SLOT_SIZE = 64;
+  static constexpr size_t TREND_FLASH_RESERVED_SECTOR_COUNT = 90;
+  static constexpr uint32_t BASE_OFFSET = TREND_FLASH_RESERVED_SECTOR_COUNT * FLASH_SECTOR_SIZE;
   static constexpr size_t MAX_FLASH_SECTOR_COUNT = 256;
   static constexpr uint8_t HOURLY_RETENTION_DAYS = 7;
   static constexpr size_t HOURLY_SLOT_COUNT = static_cast<size_t>(HOURLY_RETENTION_DAYS) * 24U;

@@ -82,7 +82,8 @@ void OpenQuattEnergyHistory::setup() {
         this->flash_partition_->size > BASE_OFFSET ? this->flash_partition_->size - BASE_OFFSET : 0U;
     const size_t sector_count = std::min(MAX_FLASH_SECTOR_COUNT, available_bytes / FLASH_SECTOR_SIZE);
     if (sector_count == 0U) {
-      ESP_LOGW(TAG, "Energy history flash window does not fit in 'openquatt_data'");
+      ESP_LOGW(TAG, "Energy history flash window does not fit in 'openquatt_data' (partition=%u, base=%u)",
+               static_cast<unsigned>(this->flash_partition_->size), static_cast<unsigned>(BASE_OFFSET));
     } else {
       this->flash_sector_count_ = sector_count;
       this->flash_slot_count_ = (FLASH_SECTOR_SIZE / FLASH_SLOT_SIZE) * this->flash_sector_count_;
