@@ -338,13 +338,18 @@
     `;
   }
 
+  function shouldRenderSettingsStorageActionButton(key) {
+    return hasEntity(key) || (Boolean(ENTITY_DEFS[key]) && !state.optionalMissingEntities?.[key]);
+  }
+
   function renderSettingsStorageActionButton(key, buttonLabel, action, options = {}) {
-    if (!hasEntity(key)) {
+    if (!shouldRenderSettingsStorageActionButton(key)) {
       return "";
     }
 
-    const busy = state.loadingEntities || state.busyAction === key;
-    const disabled = options.disabled === true;
+    const entityAvailable = hasEntity(key);
+    const busy = entityAvailable && (state.loadingEntities || state.busyAction === key);
+    const disabled = options.disabled === true || !entityAvailable;
     const buttonClass = options.buttonClass || "oq-helper-button oq-helper-button--ghost";
     return `
       <button

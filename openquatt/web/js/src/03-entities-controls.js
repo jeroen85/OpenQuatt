@@ -3257,6 +3257,19 @@
     if (action === "open-history-storage-modal") {
       state.systemModal = "history-storage";
       render();
+      void refreshEntities(
+        [
+          "trendHistoryFlush",
+          "lifetimeEnergyHistoryCapture",
+          "lifetimeEnergyHistoryClear",
+        ],
+        "all",
+        { concurrency: FAST_VIEW_ENTITY_REFRESH_CONCURRENCY, forceMissing: true }
+      ).finally(() => {
+        if (state.systemModal === "history-storage") {
+          render();
+        }
+      });
       return;
     }
 
