@@ -208,6 +208,53 @@
     return [...new Set(["setupComplete", ...SETTINGS_KEYS])];
   }
 
+  const SETTINGS_STORAGE_KEYS = [
+    "trendHistoryEnabled",
+    "trendHistoryFlashEnabled",
+    "trendHistoryFlush",
+    "trendHistoryFlashAvailable",
+    "trendHistoryFlashOldest",
+    "trendHistoryFlashNewest",
+    "trendHistoryFlashLastFlush",
+    "trendHistoryFlashSize",
+    "trendHistoryFlashWrites",
+    "lifetimeEnergyHistoryEnabled",
+    "lifetimeEnergyHistoryCapture",
+    "lifetimeEnergyHistoryClear",
+    "lifetimeEnergyHistoryAvailable",
+    "lifetimeEnergyHistoryOldest",
+    "lifetimeEnergyHistoryNewest",
+    "lifetimeEnergyHistoryLastWrite",
+    "lifetimeEnergyHistorySize",
+    "lifetimeEnergyHistoryWrites",
+  ];
+
+  function getSettingsStorageRefreshKeys() {
+    return [...new Set(SETTINGS_STORAGE_KEYS)];
+  }
+
+  async function refreshSettingsStorageState(options = {}) {
+    await refreshEntities(getSettingsStorageRefreshKeys(), "all", {
+      concurrency: FAST_VIEW_ENTITY_REFRESH_CONCURRENCY,
+      forceMissing: options.forceMissing === true,
+    });
+  }
+
+  function refreshSettingsStorageStateSoon(delays = [250, 1000, 2500]) {
+    delays.forEach((delayMs) => {
+      window.setTimeout(() => {
+        if (state.nativeOpen || state.appView !== "settings") {
+          return;
+        }
+        void refreshSettingsStorageState({ forceMissing: delayMs === 0 }).finally(() => {
+          if (state.appView === "settings" && state.mounted && !state.nativeOpen) {
+            render();
+          }
+        });
+      }, delayMs);
+    });
+  }
+
   function isSystemSettingsGroupActive() {
     return state.appView === "settings" && state.settingsGroup === "system";
   }
@@ -344,16 +391,9 @@
       "firmwareUpdateChannel",
       "projectVersionText",
       "releaseChannelText",
-      "trendHistoryEnabled",
-      "trendHistoryFlashEnabled",
+      ...SETTINGS_STORAGE_KEYS,
       "webServerLogHistoryEnabled",
       "debugLevel",
-      "trendHistoryFlashAvailable",
-      "trendHistoryFlashOldest",
-      "trendHistoryFlashNewest",
-      "trendHistoryFlashLastFlush",
-      "trendHistoryFlashSize",
-      "trendHistoryFlashWrites",
     ],
   };
 
@@ -2373,6 +2413,9 @@
     const quickStartThermostatSourceKeys = state.quickStartModalOpen && state.currentStep === "thermostat-source"
       ? QUICK_START_THERMOSTAT_SOURCE_KEYS
       : [];
+    const settingsStorageKeys = state.appView === "settings" && state.systemModal === "history-storage"
+      ? getSettingsStorageRefreshKeys()
+      : [];
     const keys = isPrefetchOverview
       ? [
           ...FAST_OVERVIEW_KEYS,
@@ -2388,7 +2431,7 @@
           ...staticKeys,
         ]
       : appView === "settings"
-        ? [...new Set([...getSettingsGroupHydrationKeys(), ...staticKeys])]
+        ? [...new Set([...getSettingsGroupHydrationKeys(), ...settingsStorageKeys, ...staticKeys])]
         : isBulkDue
           ? [
               "setupComplete",
@@ -3202,15 +3245,10 @@
       void triggerNamedButton("trendHistoryFlush", {
         successNotice: "Trendhistorie is opgeslagen in flash.",
         errorPrefix: "Trendhistorie kon niet worden opgeslagen",
-        refreshKeys: [
-          "trendHistoryFlashAvailable",
-          "trendHistoryFlashOldest",
-          "trendHistoryFlashNewest",
-          "trendHistoryFlashLastFlush",
-          "trendHistoryFlashSize",
-          "trendHistoryFlashWrites",
-        ],
-        refreshDelayMs: 1000,
+        refreshKeys: getSettingsStorageRefreshKeys(),
+        refreshDelayMs: 500,
+      }).then(() => {
+        refreshSettingsStorageStateSoon();
       });
       return;
     }
@@ -3219,19 +3257,13 @@
       void triggerNamedButton("lifetimeEnergyHistoryCapture", {
         successNotice: "Energiehistorie is opgeslagen.",
         errorPrefix: "Energiehistorie kon niet worden opgeslagen",
-        refreshKeys: [
-          "lifetimeEnergyHistoryAvailable",
-          "lifetimeEnergyHistoryOldest",
-          "lifetimeEnergyHistoryNewest",
-          "lifetimeEnergyHistoryLastWrite",
-          "lifetimeEnergyHistorySize",
-          "lifetimeEnergyHistoryWrites",
-        ],
-        refreshDelayMs: 1000,
+        refreshKeys: getSettingsStorageRefreshKeys(),
+        refreshDelayMs: 500,
       }).then(() => {
         state.energyHistoryRaw = "";
         state.energyHistorySignature = "";
         state.energyHistoryLastFetchAt = 0;
+        refreshSettingsStorageStateSoon();
         if (state.appView === "results") {
           void refreshEnergyHistoryData({ force: true }).then(() => render());
         }
@@ -3243,10 +3275,13 @@
       void triggerNamedButton("lifetimeEnergyHistoryClear", {
         successNotice: "Lifetime energiehistorie is gewist.",
         errorPrefix: "Lifetime energiehistorie kon niet worden gewist",
+        refreshKeys: getSettingsStorageRefreshKeys(),
+        refreshDelayMs: 500,
       }).then(() => {
         state.energyHistoryRaw = "";
         state.energyHistorySignature = "";
         state.energyHistoryLastFetchAt = 0;
+        refreshSettingsStorageStateSoon();
         if (state.appView === "results") {
           void refreshEnergyHistoryData({ force: true }).then(() => render());
         }
@@ -3257,19 +3292,12 @@
     if (action === "open-history-storage-modal") {
       state.systemModal = "history-storage";
       render();
-      void refreshEntities(
-        [
-          "trendHistoryFlush",
-          "lifetimeEnergyHistoryCapture",
-          "lifetimeEnergyHistoryClear",
-        ],
-        "all",
-        { concurrency: FAST_VIEW_ENTITY_REFRESH_CONCURRENCY, forceMissing: true }
-      ).finally(() => {
+      void refreshSettingsStorageState({ forceMissing: true }).finally(() => {
         if (state.systemModal === "history-storage") {
           render();
         }
       });
+      refreshSettingsStorageStateSoon([1000, 3000, 7000]);
       return;
     }
 
@@ -4066,6 +4094,9 @@
         await refreshEntities([...OVERVIEW_KEYS, ...HEADER_ENTITY_KEYS, "setupComplete", ...FIRMWARE_ENTITY_KEYS], "state");
       } else if (state.appView === "settings") {
         await refreshEntities(getSettingsRefreshKeys(), "all");
+        if (SETTINGS_STORAGE_KEYS.includes(key)) {
+          refreshSettingsStorageStateSoon();
+        }
       } else {
         await refreshEntities(["setupComplete", "strategy", "openquattEnabled", "manualCoolingEnable", "silentModeOverride", ...FLOW_SETTING_KEYS, ...LIMIT_KEYS], "state");
       }
