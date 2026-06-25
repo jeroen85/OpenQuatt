@@ -387,6 +387,8 @@ esp-app.oq-native-app.oq-native-app--collapsed {
   .oq-settings-choice-grid,
   .oq-settings-response-grid,
   .oq-settings-choice-inline-grid,
+  .oq-settings-storage-summary,
+  .oq-settings-storage-domain-grid,
   .oq-settings-trend-stats-grid,
   .oq-settings-rule-groups,
   .oq-settings-curve-grid,
@@ -395,12 +397,58 @@ esp-app.oq-native-app.oq-native-app--collapsed {
     grid-template-columns: 1fr;
   }
 
+  .oq-settings-storage-summary-metrics {
+    grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  }
+
+  .oq-settings-storage-summary-action {
+    width: 100%;
+  }
+
+  .oq-settings-storage-row,
+  .oq-settings-storage-inline-action {
+    grid-template-columns: 1fr;
+  }
+
+  .oq-settings-storage-row,
+  .oq-settings-storage-inline-action {
+    align-items: stretch;
+  }
+
+  .oq-settings-storage-action-stack {
+    justify-content: stretch;
+  }
+
+  .oq-settings-storage-action-stack .oq-helper-button {
+    flex: 1 1 150px;
+  }
+
+  .oq-settings-storage-domain + .oq-settings-storage-domain {
+    border-top: 1px solid var(--oq-helper-line);
+    border-left: 0;
+  }
+
   .oq-settings-trend-stats-summary {
     flex-direction: column;
   }
 
   .oq-settings-trend-stats-badges {
     grid-template-columns: 1fr;
+  }
+
+  .oq-settings-storage-stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .oq-settings-storage-stat-grid > div,
+  .oq-settings-storage-stat-grid > div:nth-child(3n),
+  .oq-settings-storage-stat-grid > div:nth-last-child(-n + 3) {
+    border-right: 0;
+    border-bottom: 1px solid var(--oq-helper-line);
+  }
+
+  .oq-settings-storage-stat-grid > div:last-child {
+    border-bottom: 0;
   }
 
   .oq-settings-quickstart-status-row {

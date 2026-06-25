@@ -538,6 +538,18 @@ button:
           id(oq_energy_history_endpoint).clear_history();
 
   - platform: template
+    id: oq_lifetime_energy_history_capture_button
+    name: Lifetime energiehistorie nu opslaan
+    internal: true
+    disabled_by_default: true
+    icon: mdi:content-save
+    entity_category: config
+    web_server:
+      sorting_group_id: oq_system_diagnostics
+    on_press:
+      - script.execute: oq_capture_energy_history_sample
+
+  - platform: template
     id: oq_check_firmware_updates
     name: Check Firmware Updates
     icon: mdi:update

@@ -3202,6 +3202,39 @@
       void triggerNamedButton("trendHistoryFlush", {
         successNotice: "Trendhistorie is opgeslagen in flash.",
         errorPrefix: "Trendhistorie kon niet worden opgeslagen",
+        refreshKeys: [
+          "trendHistoryFlashAvailable",
+          "trendHistoryFlashOldest",
+          "trendHistoryFlashNewest",
+          "trendHistoryFlashLastFlush",
+          "trendHistoryFlashSize",
+          "trendHistoryFlashWrites",
+        ],
+        refreshDelayMs: 1000,
+      });
+      return;
+    }
+
+    if (action === "save-lifetime-energy-history") {
+      void triggerNamedButton("lifetimeEnergyHistoryCapture", {
+        successNotice: "Energiehistorie is opgeslagen.",
+        errorPrefix: "Energiehistorie kon niet worden opgeslagen",
+        refreshKeys: [
+          "lifetimeEnergyHistoryAvailable",
+          "lifetimeEnergyHistoryOldest",
+          "lifetimeEnergyHistoryNewest",
+          "lifetimeEnergyHistoryLastWrite",
+          "lifetimeEnergyHistorySize",
+          "lifetimeEnergyHistoryWrites",
+        ],
+        refreshDelayMs: 1000,
+      }).then(() => {
+        state.energyHistoryRaw = "";
+        state.energyHistorySignature = "";
+        state.energyHistoryLastFetchAt = 0;
+        if (state.appView === "results") {
+          void refreshEnergyHistoryData({ force: true }).then(() => render());
+        }
       });
       return;
     }
@@ -3218,6 +3251,12 @@
           void refreshEnergyHistoryData({ force: true }).then(() => render());
         }
       });
+      return;
+    }
+
+    if (action === "open-history-storage-modal") {
+      state.systemModal = "history-storage";
+      render();
       return;
     }
 
@@ -5115,6 +5154,9 @@
         "manualFlowApplyCooling",
         "manualHpStart",
         "manualHpAbort",
+        "trendHistoryFlush",
+        "lifetimeEnergyHistoryCapture",
+        "lifetimeEnergyHistoryClear",
       ].includes(key) || ODU_RUNTIME_FREQUENCY_BUTTON_KEYS.has(key);
       if (!keepCommissioningModalOpen) {
         stopLoginAuthStatusPolling();

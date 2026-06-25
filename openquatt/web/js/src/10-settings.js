@@ -297,6 +297,80 @@
     );
   }
 
+  function renderSettingsStorageSummaryMetric(label, value, meta = "", enabled = false) {
+    return `
+      <div class="oq-settings-storage-summary-metric${enabled ? " is-on" : ""}">
+        <span>${escapeHtml(label)}</span>
+        <strong>${escapeHtml(value)}</strong>
+        ${meta ? `<em>${escapeHtml(meta)}</em>` : ""}
+      </div>
+    `;
+  }
+
+  function renderSettingsStorageSwitchRow(key, title, copy, enabledCopy = "", disabledCopy = "", meta = "") {
+    if (!hasEntity(key)) {
+      return "";
+    }
+
+    const enabled = Boolean(getEntityValue(key));
+    const busy = state.loadingEntities || state.busyAction === `switch-${key}`;
+    return `
+      <article class="oq-settings-storage-row" data-oq-settings-field="${escapeHtml(key)}">
+        <div class="oq-settings-storage-row-copy">
+          <div class="oq-settings-storage-row-title">
+            <h4>${escapeHtml(title)}</h4>
+            ${meta ? `<span>${escapeHtml(meta)}</span>` : ""}
+          </div>
+          <p>${escapeHtml(copy)}</p>
+          ${renderSettingsSwitchCopy(key, enabled, enabledCopy, disabledCopy)}
+        </div>
+        ${renderSettingsCompactSwitchControl(key, title, enabled, busy)}
+      </article>
+    `;
+  }
+
+  function renderSettingsStorageActionButton(key, buttonLabel, action, options = {}) {
+    if (!hasEntity(key)) {
+      return "";
+    }
+
+    const busy = state.loadingEntities || state.busyAction === key;
+    const disabled = options.disabled === true;
+    const buttonClass = options.buttonClass || "oq-helper-button oq-helper-button--ghost";
+    return `
+      <button
+        class="${escapeHtml(buttonClass)}"
+        type="button"
+        data-oq-action="${escapeHtml(action)}"
+        ${busy || disabled ? "disabled" : ""}
+      >
+        ${escapeHtml(busy ? (options.busyLabel || buttonLabel) : buttonLabel)}
+      </button>
+    `;
+  }
+
+  function renderSettingsStorageStatGrid(stats) {
+    const visibleStats = stats.filter((stat) => stat.value || hasEntity(stat.key));
+    if (!visibleStats.length) {
+      return "";
+    }
+
+    return `
+      <div class="oq-settings-storage-stat-grid">
+        ${visibleStats.map((stat) => {
+          const value = stat.value || getSettingsStatValue(stat.key);
+          return `
+            <div>
+              <span>${escapeHtml(stat.label)}</span>
+              <strong>${escapeHtml(value)}</strong>
+              ${stat.note ? `<em>${escapeHtml(stat.note)}</em>` : ""}
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `;
+  }
+
   function formatSettingsOptionLabel(option) {
     const value = String(option || "").trim();
     if (!value) {
@@ -416,34 +490,33 @@
   }
 
   function renderSettingsSwitchPill(key, enabled, onLabel = "Aan", offLabel = "Uit") {
-    return `<span class="oq-settings-integration-pill${enabled ? " is-on" : ""}" data-oq-switch-pill="${escapeHtml(key)}" data-on-label="${escapeHtml(onLabel)}" data-off-label="${escapeHtml(offLabel)}">${escapeHtml(enabled ? onLabel : offLabel)}</span>`;
+    return `<span class="oq-settings-toggle-state${enabled ? " is-on" : ""}" data-oq-switch-pill="${escapeHtml(key)}" data-on-label="${escapeHtml(onLabel)}" data-off-label="${escapeHtml(offLabel)}">${escapeHtml(enabled ? onLabel : offLabel)}</span>`;
   }
 
-  function renderSettingsCompactSwitchControl(key, title, enabled, busy, onLabel = "Aan", offLabel = "Uit", showPill = true) {
-    const renderButton = (label, targetState) => {
-      const active = targetState === (enabled ? "on" : "off");
-      return `
-        <button
-          class="oq-settings-integration-toggle-button${active ? " is-active" : ""}"
-          type="button"
-          data-oq-action="toggle-overview-control"
-          data-control-key="${escapeHtml(key)}"
-          data-control-state="${escapeHtml(targetState)}"
-          aria-pressed="${active ? "true" : "false"}"
-          ${busy ? "disabled" : ""}
-        >
-          ${escapeHtml(label)}
-        </button>
-      `;
-    };
-
+  function renderSettingsCompactSwitchControl(key, title, enabled, busy, onLabel = "Aan", offLabel = "Uit", showStatus = true) {
+    const stateLabel = enabled ? onLabel : offLabel;
+    const nextState = enabled ? "off" : "on";
     return `
       <div class="oq-settings-compact-switch-row">
-        ${showPill ? renderSettingsSwitchPill(key, enabled, onLabel, offLabel) : ""}
-        <div class="oq-settings-integration-toggle" role="group" aria-label="${escapeHtml(title)}">
-          ${renderButton(offLabel, "off")}
-          ${renderButton(onLabel, "on")}
-        </div>
+        ${showStatus ? renderSettingsSwitchPill(key, enabled, onLabel, offLabel) : ""}
+        <button
+          class="oq-settings-toggle-switch${enabled ? " is-on" : ""}"
+          type="button"
+          role="switch"
+          data-oq-action="toggle-overview-control"
+          data-control-key="${escapeHtml(key)}"
+          data-control-state="${escapeHtml(nextState)}"
+          data-switch-title="${escapeHtml(title)}"
+          data-on-label="${escapeHtml(onLabel)}"
+          data-off-label="${escapeHtml(offLabel)}"
+          aria-checked="${enabled ? "true" : "false"}"
+          aria-label="${escapeHtml(`${title}: ${stateLabel}`)}"
+          ${busy ? "disabled" : ""}
+        >
+          <span class="oq-settings-toggle-switch-track" aria-hidden="true">
+            <span class="oq-settings-toggle-switch-knob"></span>
+          </span>
+        </button>
       </div>
     `;
   }
@@ -509,10 +582,9 @@
       <article class="oq-settings-integration-card" data-oq-settings-field="${escapeHtml(key)}">
         <div class="oq-settings-integration-card-head">
           <h4>${escapeHtml(title)}</h4>
-          ${renderSettingsSwitchPill(key, enabled)}
         </div>
         <p>${escapeHtml(copy)}</p>
-        ${renderSettingsCompactSwitchControl(key, title, enabled, busy, "Aan", "Uit", false)}
+        ${renderSettingsCompactSwitchControl(key, title, enabled, busy)}
       </article>
     `;
   }
@@ -876,13 +948,17 @@
       });
     }
 
-    stack.querySelectorAll('[data-control-key]').forEach((button) => {
+    stack.querySelectorAll('[data-oq-action="toggle-overview-control"][data-control-key]').forEach((button) => {
       const key = String(button.dataset.controlKey || "");
-      const targetState = String(button.dataset.controlState || "");
       const current = Boolean(getEntityValue(key));
-      const active = targetState === (current ? "on" : "off");
-      button.classList.toggle("is-active", active);
-      button.setAttribute("aria-pressed", active ? "true" : "false");
+      const onLabel = String(button.dataset.onLabel || "Aan");
+      const offLabel = String(button.dataset.offLabel || "Uit");
+      const title = String(button.dataset.switchTitle || key);
+      const stateLabel = current ? onLabel : offLabel;
+      button.dataset.controlState = current ? "off" : "on";
+      button.classList.toggle("is-on", current);
+      button.setAttribute("aria-checked", current ? "true" : "false");
+      button.setAttribute("aria-label", `${title}: ${stateLabel}`);
       button.disabled = state.loadingEntities || state.busyAction === `switch-${key}`;
     });
 
@@ -1495,7 +1571,7 @@
           </div>
           <div class="oq-settings-odu-runtime-actions">
             ${hasEntity(loadKey) ? renderNamedActionButton(loadKey, state.busyAction === loadKey ? "Lezen..." : "Uit ODU laden", "oq-helper-button oq-helper-button--ghost", busy) : ""}
-            ${hasEntity(enableKey) ? renderSettingsCompactSwitchControl(enableKey, `HP${hpIndex} writes vrijgeven`, enabled, busy, "Enable", "Locked", false) : ""}
+      ${hasEntity(enableKey) ? renderSettingsCompactSwitchControl(enableKey, `HP${hpIndex} writes vrijgeven`, enabled, busy, "Enable", "Locked") : ""}
             ${hasEntity(applyKey) ? renderNamedActionButton(applyKey, state.busyAction === applyKey ? "Schrijven..." : "Runtime toepassen", "oq-helper-button oq-helper-button--warning", applyDisabled) : ""}
           </div>
         </div>
@@ -3324,7 +3400,7 @@
   }
 
   function renderSettingsTrendSection() {
-    if (!hasEntity("trendHistoryEnabled")) {
+    if (!hasEntity("trendHistoryEnabled") && !hasEntity("lifetimeEnergyHistoryEnabled")) {
       return "";
     }
 
@@ -3334,63 +3410,182 @@
     const lifetimeEnergyHistoryAvailable = hasEntity("lifetimeEnergyHistoryEnabled");
     const lifetimeEnergyHistoryEnabled = lifetimeEnergyHistoryAvailable && isEntityActive("lifetimeEnergyHistoryEnabled");
     const showLifetimeEnergyHistoryStats = hasEntity("lifetimeEnergyHistoryAvailable");
-
+    const trendAvailableValue = showTrendHistoryFlashStats ? getSettingsStatValue("trendHistoryFlashAvailable") : "Alleen RAM";
+    const lifetimeAvailableValue = showLifetimeEnergyHistoryStats ? getSettingsStatValue("lifetimeEnergyHistoryAvailable") : "Geen data";
     return renderSettingsSection(
       "Diagnose",
-      "Trendopslag",
-      "Bewaar de laatste 7 dagen in werkgeheugen en optioneel tot 30 dagen in flash.",
+      "Opslagbeheer",
+      "Beheer trendbuffers, flashhistorie en lifetime energiehistorie vanuit één overzicht.",
       `
-        <div class="oq-settings-grid">
-          ${renderSettingsSwitchField(
-            "trendHistoryEnabled",
-            "Trendopslag",
-            "Schakel de trendopslag voor de grafieken in of uit.",
-            "OpenQuatt bewaart live trenddata in het werkgeheugen zodat je de grafieken kunt blijven gebruiken.",
-            "OpenQuatt stopt met nieuwe trenddata bijhouden en verbergt de Diagnose-tab. Bestaande flashhistorie blijft bewaard."
-          )}
-          ${trendHistoryEnabled ? renderSettingsSwitchField(
-            "trendHistoryFlashEnabled",
-            "Trendhistorie opslaan in flash",
-            "Bewaart trenddata ook na herstart of OTA.",
-            "Trendhistorie wordt bewaard in flash zodat je later verder kunt terugkijken.",
-            "Bestaande flashhistorie blijft bewaard, maar nieuwe trenddata wordt alleen in het werkgeheugen bijgehouden."
-          ) : ""}
-          ${trendHistoryFlashEnabled ? renderSettingsButtonField(
-            "trendHistoryFlush",
-            "Trendhistorie nu opslaan",
-            "Schrijf de huidige trendbuffer direct weg naar flash.",
-            "Nu opslaan",
-            "flush-trend-history",
-            "",
-            {
-              disabled: !trendHistoryFlashEnabled,
-              note: "Handig voor een OTA of een geplande herstart.",
-            }
-          ) : ""}
-          ${showTrendHistoryFlashStats ? renderSettingsTrendStatsField() : ""}
-          ${lifetimeEnergyHistoryAvailable ? renderSettingsSwitchField(
-            "lifetimeEnergyHistoryEnabled",
-            "Lifetime energiehistorie opslaan",
-            "Bewaart dagtotalen voor langere energiegrafieken.",
-            "OpenQuatt schrijft dagrecords naar flash bij dagwissel en nette shutdown.",
-            "OpenQuatt stopt met nieuwe dagrecords opslaan. Bestaande lifetime historie blijft beschikbaar."
-          ) : ""}
-          ${showLifetimeEnergyHistoryStats ? renderSettingsEnergyHistoryStatsField() : ""}
-          ${showLifetimeEnergyHistoryStats ? renderSettingsButtonField(
-            "lifetimeEnergyHistoryClear",
-            "Lifetime energiehistorie wissen",
-            "Verwijder alle opgeslagen dagrecords uit flash.",
-            "Wissen",
-            "clear-lifetime-energy-history",
-            "",
-            {
-              disabled: !lifetimeEnergyHistoryEnabled && getSettingsStatValue("lifetimeEnergyHistoryAvailable") === "Geen data",
-              note: "Gebruik dit alleen als je bewust opnieuw wilt beginnen met lifetime grafieken.",
-            }
-          ) : ""}
-        </div>
+        <article class="oq-settings-storage-summary">
+          <div class="oq-settings-storage-summary-copy">
+            <h3>Geheugen en flash</h3>
+            <p>Beheer wat tijdelijk in RAM blijft en welke historie bewust naar flash wordt geschreven.</p>
+          </div>
+          <div class="oq-settings-storage-summary-metrics" aria-label="Opslagstatus">
+            ${hasEntity("trendHistoryEnabled") ? renderSettingsStorageSummaryMetric("Trenddata", trendHistoryEnabled ? "Aan" : "Uit", "RAM", trendHistoryEnabled) : ""}
+            ${hasEntity("trendHistoryFlashEnabled") ? renderSettingsStorageSummaryMetric("Trendflash", trendAvailableValue, trendHistoryFlashEnabled ? "Aan" : "Uit", trendHistoryFlashEnabled) : ""}
+            ${lifetimeEnergyHistoryAvailable ? renderSettingsStorageSummaryMetric("Energie", lifetimeAvailableValue, lifetimeEnergyHistoryEnabled ? "Aan" : "Uit", lifetimeEnergyHistoryEnabled) : ""}
+          </div>
+          <button class="oq-helper-button oq-helper-button--ghost oq-settings-storage-summary-action" type="button" data-oq-action="open-history-storage-modal">
+            Aanpassen
+          </button>
+        </article>
       `,
     );
+  }
+
+  function renderSettingsHistoryStorageModal() {
+    const trendHistoryEnabled = hasEntity("trendHistoryEnabled") && isEntityActive("trendHistoryEnabled");
+    const trendHistoryFlashEnabled = trendHistoryEnabled && hasEntity("trendHistoryFlashEnabled") && isEntityActive("trendHistoryFlashEnabled");
+    const lifetimeEnergyHistoryAvailable = hasEntity("lifetimeEnergyHistoryEnabled");
+    const lifetimeEnergyHistoryEnabled = lifetimeEnergyHistoryAvailable && isEntityActive("lifetimeEnergyHistoryEnabled");
+    const lifetimeAvailableLabel = hasEntity("lifetimeEnergyHistoryAvailable")
+      ? getSettingsStatValue("lifetimeEnergyHistoryAvailable")
+      : "Geen data";
+    const canClearLifetime = hasEntity("lifetimeEnergyHistoryClear")
+      && lifetimeAvailableLabel !== "Geen data"
+      && lifetimeAvailableLabel !== "—";
+    const trendAvailableLabel = hasEntity("trendHistoryFlashAvailable")
+      ? getSettingsStatValue("trendHistoryFlashAvailable")
+      : "Geen flashdata";
+    const canFlushTrend = trendHistoryEnabled && hasEntity("trendHistoryFlush");
+    const canCaptureLifetime = hasEntity("lifetimeEnergyHistoryCapture");
+    const showLifetimeActions = canCaptureLifetime || hasEntity("lifetimeEnergyHistoryClear");
+    const trendStats = [
+      { key: "trendHistoryFlashAvailable", label: "Omvang", note: "opgeslagen" },
+      { key: "trendHistoryFlashSize", label: "Grootte" },
+      { key: "trendHistoryFlashWrites", label: "Schrijfacties" },
+      { key: "trendHistoryFlashOldest", label: "Oudste punt" },
+      { key: "trendHistoryFlashNewest", label: "Nieuwste punt" },
+      { key: "trendHistoryFlashLastFlush", label: "Laatste opslag" },
+    ];
+    const lifetimeStats = [
+      { key: "lifetimeEnergyHistoryAvailable", label: "Records", note: "lifetime" },
+      { key: "lifetimeEnergyHistorySize", label: "Grootte" },
+      { key: "lifetimeEnergyHistoryWrites", label: "Schrijfacties" },
+      { key: "lifetimeEnergyHistoryOldest", label: "Oudste dag" },
+      { key: "lifetimeEnergyHistoryNewest", label: "Nieuwste dag" },
+      { key: "lifetimeEnergyHistoryLastWrite", label: "Laatste opslag" },
+    ];
+
+    return `
+      <div class="oq-helper-modal-backdrop${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="system">
+        <section class="oq-helper-modal oq-helper-modal--wide oq-helper-modal--scrollable oq-settings-storage-modal" role="dialog" aria-modal="true" aria-labelledby="oq-history-storage-modal-title">
+          <div class="oq-helper-modal-head">
+            <div>
+              <p class="oq-helper-modal-kicker">Diagnose</p>
+              <h2 class="oq-helper-modal-title" id="oq-history-storage-modal-title">Opslagbeheer</h2>
+            </div>
+            <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit opslagbeheer">×</button>
+          </div>
+          <p class="oq-helper-modal-copy">Beheer welke historie tijdelijk in RAM blijft en wat bewust naar flash mag. Handmatig opslaan is vooral nuttig vlak voor OTA of herstart.</p>
+          <div class="oq-settings-storage-domain-grid">
+            <section class="oq-settings-storage-domain oq-settings-storage-domain--trend">
+              <div class="oq-settings-storage-domain-head">
+                <p class="oq-helper-label">RAM + optionele flash</p>
+                <h3>Trenddata</h3>
+                <p>Technische signalen voor Diagnose, zoals temperatuur, flow en vermogen.</p>
+              </div>
+              <div class="oq-settings-storage-domain-rows">
+                ${renderSettingsStorageSwitchRow(
+                  "trendHistoryEnabled",
+                  "Trenddata in RAM",
+                  "Houdt technische signalen vast voor Diagnose-grafieken zolang de controller online is.",
+                  "Diagnose blijft live beschikbaar.",
+                  "Nieuwe trendpunten worden niet bijgehouden.",
+                  "vluchtig"
+                )}
+                ${renderSettingsStorageSwitchRow(
+                  "trendHistoryFlashEnabled",
+                  "Trenddata in flash",
+                  "Maakt technische trendhistorie beschikbaar na herstart of OTA.",
+                  "Wordt periodiek opgeslagen.",
+                  "Alleen RAM; bestaande flashdata blijft staan.",
+                  trendAvailableLabel
+                )}
+                ${canFlushTrend ? `
+                  <div class="oq-settings-storage-inline-action">
+                    <div>
+                      <h4>Trendbuffer nu opslaan</h4>
+                      <p>Schrijf de huidige trendbuffer direct naar flash.</p>
+                    </div>
+                    ${renderSettingsStorageActionButton(
+                      "trendHistoryFlush",
+                      "Nu opslaan",
+                      "flush-trend-history",
+                      {
+                        disabled: !trendHistoryFlashEnabled,
+                        busyLabel: "Opslaan...",
+                      }
+                    )}
+                  </div>
+                ` : ""}
+              </div>
+              ${renderSettingsStorageStatGrid(trendStats)}
+            </section>
+            <section class="oq-settings-storage-domain oq-settings-storage-domain--energy">
+              <div class="oq-settings-storage-domain-head">
+                <p class="oq-helper-label">Dagrecords in flash</p>
+                <h3>Energiehistorie</h3>
+                <p>Dagtotalen voor Resultaten: opbrengst, verbruik, COP/EER en besparing.</p>
+              </div>
+              <div class="oq-settings-storage-domain-rows">
+                ${renderSettingsStorageSwitchRow(
+                  "lifetimeEnergyHistoryEnabled",
+                  "Energiehistorie in flash",
+                  "Bewaart dagtotalen voor langere energiegrafieken.",
+                  "Dagrecords bij dagwissel en nette shutdown.",
+                  "Nieuwe dagrecords worden niet opgeslagen.",
+                  lifetimeAvailableLabel
+                )}
+                ${showLifetimeActions ? `
+                  <div class="oq-settings-storage-inline-action oq-settings-storage-inline-action--split">
+                    <div>
+                      <h4>Energiehistorie nu opslaan</h4>
+                      <p>Leg het huidige dagrecord direct vast.</p>
+                    </div>
+                    <div class="oq-settings-storage-action-stack">
+                      ${renderSettingsStorageActionButton(
+                        "lifetimeEnergyHistoryCapture",
+                        "Nu opslaan",
+                        "save-lifetime-energy-history",
+                        {
+                          disabled: !lifetimeEnergyHistoryEnabled,
+                          busyLabel: "Opslaan...",
+                        }
+                      )}
+                    </div>
+                  </div>
+                  <div class="oq-settings-storage-inline-action oq-settings-storage-inline-action--danger">
+                    <div>
+                      <h4>Energiehistorie wissen</h4>
+                      <p>Verwijder alle opgeslagen dagrecords uit flash.</p>
+                    </div>
+                    <div class="oq-settings-storage-action-stack">
+                      ${renderSettingsStorageActionButton(
+                        "lifetimeEnergyHistoryClear",
+                        "Wissen",
+                        "clear-lifetime-energy-history",
+                        {
+                          disabled: !canClearLifetime,
+                          buttonClass: "oq-helper-button oq-helper-button--warning",
+                          busyLabel: "Wissen...",
+                        }
+                      )}
+                    </div>
+                  </div>
+                ` : ""}
+              </div>
+              ${renderSettingsStorageStatGrid(lifetimeStats)}
+            </section>
+          </div>
+          <div class="oq-helper-modal-actions">
+            <button class="oq-helper-button oq-helper-button--primary" type="button" data-oq-action="close-system-modal">Gereed</button>
+          </div>
+        </section>
+      </div>
+    `;
   }
 
   function renderSettingsHeatingSection() {

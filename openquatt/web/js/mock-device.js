@@ -906,6 +906,7 @@
     if (!state.energyHistoryHourRecords.length) {
       state.energyHistoryHourRecords = buildEnergyHistoryHourRecords();
     }
+    setEntity("button", "Lifetime energiehistorie nu opslaan", { state: "" });
     setEntity("button", "Lifetime energiehistorie wissen", { state: "" });
     const energyHistoryRecordCountText = `${state.energyHistoryRecords.length} records`;
     setEntity("text_sensor", "Lifetime energiehistorie beschikbaar", {
@@ -1812,6 +1813,40 @@
       boilerHeatOutputWh: readKwh("Boiler Thermal Energy Daily"),
       systemHeatOutputWh: readKwh("System Thermal Energy Daily"),
     };
+  }
+
+  function captureCurrentEnergyHistoryRecord() {
+    const current = getCurrentEnergyHistoryValues();
+    const records = Array.isArray(state.energyHistoryRecords) ? state.energyHistoryRecords : [];
+    const existingIndex = records.findIndex((record) => record.dateKey === current.dateKey);
+    const nextSequence = records.length
+      ? Math.max(...records.map((record) => Number(record.sequence) || 0)) + 1
+      : 0;
+    const record = {
+      sequence: existingIndex >= 0 ? records[existingIndex].sequence : nextSequence,
+      dateKey: current.dateKey,
+      flags: 0,
+      electricalInputWh: current.electricalInputWh,
+      heatingInputWh: current.heatingInputWh,
+      coolingInputWh: current.coolingInputWh,
+      heatpumpHeatOutputWh: current.heatpumpHeatOutputWh,
+      heatpumpCoolingOutputWh: current.heatpumpCoolingOutputWh,
+      boilerHeatOutputWh: current.boilerHeatOutputWh,
+      systemHeatOutputWh: current.systemHeatOutputWh,
+    };
+
+    if (existingIndex >= 0) {
+      records[existingIndex] = record;
+    } else {
+      records.push(record);
+      records.sort((left, right) => left.dateKey - right.dateKey);
+    }
+
+    state.energyHistoryRecords = records;
+    state.energyHistoryWrites += 1;
+    state.energyHistoryStoredKiB = Math.max(1, Number((state.energyHistoryStoredKiB + 0.04).toFixed(2)));
+    state.energyHistoryLastWriteAt = Date.now();
+    updateEnergyHistoryStats();
   }
 
   function buildEnergyHistoryTextPayload() {
@@ -3219,6 +3254,8 @@
       state.trendFlashNewestAt = Date.now() - (2 * 60 * 1000);
       state.trendFlashWrites += 1;
       state.trendFlashStoredKiB = Math.min(360, Number((state.trendFlashStoredKiB + 0.5).toFixed(1)));
+    } else if (name === "Lifetime energiehistorie nu opslaan") {
+      captureCurrentEnergyHistoryRecord();
     } else if (name === "Lifetime energiehistorie wissen") {
       state.energyHistoryRecords = [];
       state.energyHistoryHourRecords = [];
