@@ -3243,8 +3243,8 @@
 
     if (action === "flush-trend-history") {
       void triggerNamedButton("trendHistoryFlush", {
-        successNotice: "Trendhistorie is opgeslagen in flash.",
-        errorPrefix: "Trendhistorie kon niet worden opgeslagen",
+        successNotice: "Diagnosegeschiedenis is opgeslagen.",
+        errorPrefix: "Diagnosegeschiedenis kon niet worden opgeslagen",
         refreshKeys: getSettingsStorageRefreshKeys(),
         refreshDelayMs: 500,
       }).then(() => {
@@ -3272,9 +3272,12 @@
     }
 
     if (action === "clear-lifetime-energy-history") {
+      if (!window.confirm("Energiehistorie wissen?\n\nAlle bewaarde dagtotalen worden verwijderd. Dit heeft geen invloed op de werking van je warmtepomp.")) {
+        return;
+      }
       void triggerNamedButton("lifetimeEnergyHistoryClear", {
-        successNotice: "Lifetime energiehistorie is gewist.",
-        errorPrefix: "Lifetime energiehistorie kon niet worden gewist",
+        successNotice: "Energiehistorie is gewist.",
+        errorPrefix: "Energiehistorie kon niet worden gewist",
         refreshKeys: getSettingsStorageRefreshKeys(),
         refreshDelayMs: 500,
       }).then(() => {

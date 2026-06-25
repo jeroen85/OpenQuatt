@@ -3592,8 +3592,10 @@
 }
 
 .oq-settings-storage-row-copy p[data-oq-switch-copy] {
-  color: var(--oq-helper-ink);
-  font-weight: 700;
+  color: var(--oq-helper-faint);
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.32;
 }
 
 .oq-settings-storage-inline-action > div:first-child {
@@ -3671,6 +3673,17 @@
   line-height: 1.25;
 }
 
+.oq-settings-storage-footnote {
+  margin: 14px 0 0;
+  color: var(--oq-helper-soft);
+  font-size: 0.9rem;
+  line-height: 1.38;
+}
+
+.oq-settings-storage-footnote strong {
+  color: var(--oq-helper-ink);
+}
+
 .oq-helper-shell--dark .oq-settings-storage-summary-copy h3,
 .oq-helper-shell--dark .oq-settings-storage-summary-metric strong,
 .oq-helper-modal-backdrop--dark .oq-settings-storage-summary-copy h3,
@@ -3679,7 +3692,8 @@
 .oq-helper-modal-backdrop--dark .oq-settings-storage-row-copy h4,
 .oq-helper-modal-backdrop--dark .oq-settings-storage-row-copy p[data-oq-switch-copy],
 .oq-helper-modal-backdrop--dark .oq-settings-storage-inline-action h4,
-.oq-helper-modal-backdrop--dark .oq-settings-storage-stat-grid strong {
+.oq-helper-modal-backdrop--dark .oq-settings-storage-stat-grid strong,
+.oq-helper-modal-backdrop--dark .oq-settings-storage-footnote strong {
   color: #f8fafc;
 }
 
