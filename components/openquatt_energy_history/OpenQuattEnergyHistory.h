@@ -29,6 +29,7 @@ class OpenQuattEnergyHistory : public Component {
   void capture_day_totals(float electrical_input_kwh, float heating_input_kwh, float cooling_input_kwh,
                           float heatpump_heat_output_kwh, float heatpump_cooling_output_kwh,
                           float boiler_heat_output_kwh, float system_heat_output_kwh);
+  bool force_flush();
   void clear_history();
   void write_history(httpd_req_t *req);
   std::string get_available_label() const;
@@ -45,9 +46,7 @@ class OpenQuattEnergyHistory : public Component {
   static constexpr uint32_t BASE_OFFSET = 0x60000;
   static constexpr size_t FLASH_SECTOR_SIZE = 4096;
   static constexpr size_t FLASH_SLOT_SIZE = 64;
-  static constexpr size_t FLASH_SECTOR_COUNT = 256;
-  static constexpr size_t FLASH_SLOT_COUNT = (FLASH_SECTOR_SIZE / FLASH_SLOT_SIZE) * FLASH_SECTOR_COUNT;
-  static constexpr size_t FLASH_TOTAL_BYTES = FLASH_SECTOR_SIZE * FLASH_SECTOR_COUNT;
+  static constexpr size_t MAX_FLASH_SECTOR_COUNT = 256;
   static constexpr uint8_t HOURLY_RETENTION_DAYS = 7;
   static constexpr size_t HOURLY_SLOT_COUNT = static_cast<size_t>(HOURLY_RETENTION_DAYS) * 24U;
   static constexpr uint32_t UNKNOWN_WH = 0xFFFFFFFFU;
@@ -117,6 +116,9 @@ class OpenQuattEnergyHistory : public Component {
   const esp_partition_t *flash_partition_{nullptr};
 
   bool partition_available_{false};
+  size_t flash_sector_count_{0};
+  size_t flash_slot_count_{0};
+  size_t flash_total_bytes_{0};
   bool has_current_day_{false};
   uint32_t active_date_key_{0};
   EnergyHistoryValues current_values_{UNKNOWN_WH, UNKNOWN_WH, UNKNOWN_WH, UNKNOWN_WH,

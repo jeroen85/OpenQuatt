@@ -491,6 +491,36 @@
       byDate.set(todayRecord.dateKey, todayRecord);
     }
 
+    const datesWithDayRecords = new Set(byDate.keys());
+    const hourSummaries = new Map();
+    getEnergyHistoryHourRecords().forEach((record) => {
+      if (datesWithDayRecords.has(record.dateKey)) {
+        return;
+      }
+      let bucket = hourSummaries.get(record.dateKey);
+      if (!bucket) {
+        const parsed = parseEnergyHistoryDateKey(record.dateKey);
+        if (!parsed) {
+          return;
+        }
+        bucket = createEnergyHistoryBucket({
+          dateKey: parsed.key,
+          year: parsed.year,
+          month: parsed.month,
+          day: parsed.day,
+          label: formatEnergyHistoryDateLabel(parsed.key),
+          sortKey: parsed.key,
+          source: "hour-summary",
+        });
+        bucket.tooltipLabel = `${formatEnergyHistoryDateLabel(record.dateKey)} · uurdata sinds herstart`;
+        hourSummaries.set(record.dateKey, bucket);
+      }
+      mergeEnergyHistoryRecordIntoBucket(bucket, record);
+    });
+    hourSummaries.forEach((bucket, dateKey) => {
+      byDate.set(dateKey, bucket);
+    });
+
     return [...byDate.values()].sort((a, b) => a.dateKey - b.dateKey);
   }
 

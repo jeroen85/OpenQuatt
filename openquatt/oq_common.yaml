@@ -548,6 +548,8 @@ button:
       sorting_group_id: oq_system_diagnostics
     on_press:
       - script.execute: oq_capture_energy_history_sample
+      - lambda: |-
+          id(oq_energy_history_endpoint).force_flush();
 
   - platform: template
     id: oq_check_firmware_updates

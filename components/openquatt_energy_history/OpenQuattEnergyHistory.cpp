@@ -77,11 +77,19 @@ void OpenQuattEnergyHistory::setup() {
   this->flash_partition_ = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, "openquatt_data");
   if (this->flash_partition_ == nullptr) {
     ESP_LOGW(TAG, "Energy history flash partition 'openquatt_data' not found");
-  } else if (this->flash_partition_->size < BASE_OFFSET + FLASH_TOTAL_BYTES) {
-    ESP_LOGW(TAG, "Energy history flash window does not fit in 'openquatt_data'");
   } else {
-    this->partition_available_ = true;
-    this->scan_archive_();
+    const size_t available_bytes =
+        this->flash_partition_->size > BASE_OFFSET ? this->flash_partition_->size - BASE_OFFSET : 0U;
+    const size_t sector_count = std::min(MAX_FLASH_SECTOR_COUNT, available_bytes / FLASH_SECTOR_SIZE);
+    if (sector_count == 0U) {
+      ESP_LOGW(TAG, "Energy history flash window does not fit in 'openquatt_data'");
+    } else {
+      this->flash_sector_count_ = sector_count;
+      this->flash_slot_count_ = (FLASH_SECTOR_SIZE / FLASH_SLOT_SIZE) * this->flash_sector_count_;
+      this->flash_total_bytes_ = FLASH_SECTOR_SIZE * this->flash_sector_count_;
+      this->partition_available_ = true;
+      this->scan_archive_();
+    }
   }
 
   web_server_base::global_web_server_base->add_handler(new OpenQuattEnergyHistoryRequestHandler(this));
@@ -95,11 +103,20 @@ void OpenQuattEnergyHistory::on_shutdown() {
   }
 }
 
+bool OpenQuattEnergyHistory::force_flush() {
+  if (!this->enabled_() || !this->has_current_day_ || !record_has_values_(this->current_values_)) {
+    return false;
+  }
+  return this->write_record_(this->active_date_key_, this->current_values_, true);
+}
+
 void OpenQuattEnergyHistory::dump_config() {
   ESP_LOGCONFIG(TAG, "OpenQuatt energy history");
   ESP_LOGCONFIG(TAG, "  Clock: %s", this->clock_ == nullptr ? "<missing>" : "configured");
   ESP_LOGCONFIG(TAG, "  Enabled switch: %s", this->enabled_switch_ == nullptr ? "<missing>" : "configured");
   ESP_LOGCONFIG(TAG, "  Flash partition: %s", this->is_partition_ready_() ? "configured" : "<missing>");
+  ESP_LOGCONFIG(TAG, "  Flash window: %u KiB / %u slots", static_cast<unsigned>(this->flash_total_bytes_ / 1024U),
+                static_cast<unsigned>(this->flash_slot_count_));
   ESP_LOGCONFIG(TAG, "  Records: %u", static_cast<unsigned>(this->record_count_));
   ESP_LOGCONFIG(TAG, "  Hour records: %u / %u", static_cast<unsigned>(this->get_hour_record_count_()),
                 static_cast<unsigned>(HOURLY_SLOT_COUNT));
@@ -223,7 +240,7 @@ OpenQuattEnergyHistory::EnergyHistoryValues OpenQuattEnergyHistory::pack_values_
 }
 
 bool OpenQuattEnergyHistory::read_record_(uint32_t slot_index, EnergyHistoryRecord *record) const {
-  if (record == nullptr || !this->is_partition_ready_() || slot_index >= FLASH_SLOT_COUNT) {
+  if (record == nullptr || !this->is_partition_ready_() || slot_index >= this->flash_slot_count_) {
     return false;
   }
   const uint32_t slot_offset = BASE_OFFSET + (slot_index * FLASH_SLOT_SIZE);
@@ -254,7 +271,7 @@ bool OpenQuattEnergyHistory::scan_archive_() {
   uint32_t newest_date = 0;
   uint32_t newest_write_ts = 0;
 
-  for (uint32_t slot_index = 0; slot_index < FLASH_SLOT_COUNT; ++slot_index) {
+  for (uint32_t slot_index = 0; slot_index < this->flash_slot_count_; ++slot_index) {
     EnergyHistoryRecord record{};
     if (!this->read_record_(slot_index, &record) || !this->record_valid_(record)) {
       continue;
@@ -285,13 +302,13 @@ bool OpenQuattEnergyHistory::scan_archive_() {
 }
 
 bool OpenQuattEnergyHistory::write_record_(uint32_t date_key, const EnergyHistoryValues &values, bool partial) {
-  if (!this->enabled_() || !this->is_partition_ready_() || !this->time_is_valid_() || date_key == 0 ||
-      !record_has_values_(values)) {
+  if (!this->enabled_() || !this->is_partition_ready_() || this->flash_slot_count_ == 0U ||
+      !this->time_is_valid_() || date_key == 0 || !record_has_values_(values)) {
     return false;
   }
 
   const uint32_t sequence = this->next_sequence_;
-  const uint32_t slot_index = sequence % FLASH_SLOT_COUNT;
+  const uint32_t slot_index = sequence % static_cast<uint32_t>(this->flash_slot_count_);
   const uint32_t slot_offset = BASE_OFFSET + (slot_index * FLASH_SLOT_SIZE);
   if ((slot_offset - BASE_OFFSET) % FLASH_SECTOR_SIZE == 0) {
     const esp_err_t erase_result = esp_partition_erase_range(this->flash_partition_, slot_offset, FLASH_SECTOR_SIZE);
@@ -434,7 +451,7 @@ void OpenQuattEnergyHistory::clear_history() {
   if (!this->is_partition_ready_()) {
     return;
   }
-  const esp_err_t erase_result = esp_partition_erase_range(this->flash_partition_, BASE_OFFSET, FLASH_TOTAL_BYTES);
+  const esp_err_t erase_result = esp_partition_erase_range(this->flash_partition_, BASE_OFFSET, this->flash_total_bytes_);
   if (erase_result != ESP_OK) {
     ESP_LOGW(TAG, "Could not erase energy history: %s", esp_err_to_name(erase_result));
   }
@@ -461,7 +478,7 @@ void OpenQuattEnergyHistory::write_history(httpd_req_t *req) {
     return;
   }
 
-  for (uint32_t slot_index = 0; slot_index < FLASH_SLOT_COUNT; ++slot_index) {
+  for (uint32_t slot_index = 0; slot_index < this->flash_slot_count_; ++slot_index) {
     EnergyHistoryRecord record{};
     if (!this->read_record_(slot_index, &record) || !this->record_valid_(record)) {
       continue;
@@ -541,7 +558,7 @@ std::string OpenQuattEnergyHistory::get_last_write_label() const {
   return formatted.empty() ? "Onbekend" : formatted;
 }
 
-float OpenQuattEnergyHistory::get_storage_kib() const { return static_cast<float>(FLASH_TOTAL_BYTES) / 1024.0f; }
+float OpenQuattEnergyHistory::get_storage_kib() const { return static_cast<float>(this->flash_total_bytes_) / 1024.0f; }
 
 uint32_t OpenQuattEnergyHistory::get_write_count() const { return this->next_sequence_; }
 

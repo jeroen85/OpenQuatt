@@ -3351,7 +3351,7 @@
 
 .oq-settings-storage-summary {
   display: grid;
-  grid-template-columns: minmax(260px, 1fr) minmax(420px, 0.9fr) auto;
+  grid-template-columns: minmax(220px, 0.72fr) minmax(520px, 1.28fr) auto;
   gap: 14px;
   align-items: center;
   margin-top: 16px;
@@ -3387,7 +3387,7 @@
 
 .oq-settings-storage-summary-metrics {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(150px, 1fr));
   gap: 8px;
   min-width: 0;
 }
@@ -3412,12 +3412,14 @@
   display: flex;
   align-items: center;
   gap: 7px;
+  min-width: 0;
   color: var(--oq-helper-soft);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 850;
-  line-height: 1;
+  line-height: 1.12;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
 }
 
 .oq-settings-storage-summary-metric span::before {
@@ -3452,6 +3454,20 @@
 .oq-helper-modal-backdrop--dark .oq-settings-storage-summary-metric {
   border-color: rgba(71, 85, 105, 0.45);
   background: rgba(15, 23, 42, 0.24);
+}
+
+@media (max-width: 1120px) {
+  .oq-settings-storage-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .oq-settings-storage-summary-metrics {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+
+  .oq-settings-storage-summary-action {
+    width: 100%;
+  }
 }
 
 .oq-settings-storage-modal {

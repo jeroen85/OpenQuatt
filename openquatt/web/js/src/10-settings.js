@@ -189,9 +189,9 @@
     }
 
     const detailStats = [
-      { key: "trendHistoryFlashOldest", label: "Oudste punt" },
-      { key: "trendHistoryFlashNewest", label: "Nieuwste punt" },
-      { key: "trendHistoryFlashLastFlush", label: "Laatste opslag" },
+      { key: "trendHistoryFlashOldest", label: "Eerste meting" },
+      { key: "trendHistoryFlashNewest", label: "Laatste meting" },
+      { key: "trendHistoryFlashLastFlush", label: "Laatst vastgelegd" },
     ];
     const availableValue = getSettingsStatValue("trendHistoryFlashAvailable");
     const newestValue = getSettingsStatValue("trendHistoryFlashNewest");
@@ -202,17 +202,17 @@
         <div class="oq-settings-trend-stats-shell">
         <div class="oq-settings-trend-stats-summary">
           <div class="oq-settings-trend-stats-summary-copy">
-            <span class="oq-settings-trend-stats-summary-label">Flashhistorie</span>
+            <span class="oq-settings-trend-stats-summary-label">Diagnosegeschiedenis</span>
             <strong class="oq-settings-trend-stats-summary-value">${escapeHtml(availableValue)}</strong>
-            <p class="oq-settings-trend-stats-summary-note">Nieuwste punt in flash: ${escapeHtml(newestValue)}.</p>
+            <p class="oq-settings-trend-stats-summary-note">Laatste meting in Flash-geheugen: ${escapeHtml(newestValue)}.</p>
           </div>
-          <div class="oq-settings-trend-stats-badges" aria-label="Flashhistorie statistieken">
+          <div class="oq-settings-trend-stats-badges" aria-label="Diagnosegeschiedenis statistieken">
             <div class="oq-settings-trend-stats-badge">
-              <span class="oq-settings-trend-stats-badge-label">Grootte</span>
+              <span class="oq-settings-trend-stats-badge-label">Opslagruimte</span>
               <strong class="oq-settings-trend-stats-badge-value">${escapeHtml(storageValue)}</strong>
             </div>
             <div class="oq-settings-trend-stats-badge">
-              <span class="oq-settings-trend-stats-badge-label">Schrijfacties</span>
+              <span class="oq-settings-trend-stats-badge-label">Schrijvingen</span>
               <strong class="oq-settings-trend-stats-badge-value">${escapeHtml(writesValue)}</strong>
             </div>
           </div>
@@ -230,13 +230,13 @@
 
     return renderSettingsFieldCard(
       "trendHistoryFlashStats",
-      "Flashhistorie",
-      "Overzicht van wat er nu in flash is opgeslagen.",
+      "Diagnosegeschiedenis",
+      "Overzicht van wat er nu in Flash-geheugen is opgeslagen.",
       controlMarkup,
       "oq-settings-field--span-2",
       isEntityActive("trendHistoryFlashEnabled")
-        ? `<p class="oq-settings-action-note">Wordt ongeveer elk uur opgeslagen en ook bij herstart of OTA.</p>`
-        : `<p class="oq-settings-action-note">Nieuwe opslag in flash staat uit; bestaande flashhistorie blijft beschikbaar.</p>`,
+        ? `<p class="oq-settings-action-note">Wordt ongeveer elk uur vastgelegd en ook bij herstart of update.</p>`
+        : `<p class="oq-settings-action-note">Nieuwe opslag staat uit; bestaande diagnosegeschiedenis blijft beschikbaar.</p>`,
     );
   }
 
@@ -246,9 +246,9 @@
     }
 
     const detailStats = [
-      { key: "lifetimeEnergyHistoryOldest", label: "Oudste dag" },
-      { key: "lifetimeEnergyHistoryNewest", label: "Nieuwste dag" },
-      { key: "lifetimeEnergyHistoryLastWrite", label: "Laatste opslag" },
+      { key: "lifetimeEnergyHistoryOldest", label: "Eerste dag" },
+      { key: "lifetimeEnergyHistoryNewest", label: "Laatste dag" },
+      { key: "lifetimeEnergyHistoryLastWrite", label: "Laatst vastgelegd" },
     ];
     const availableValue = getSettingsStatValue("lifetimeEnergyHistoryAvailable");
     const newestValue = getSettingsStatValue("lifetimeEnergyHistoryNewest");
@@ -259,17 +259,17 @@
       <div class="oq-settings-trend-stats-shell">
         <div class="oq-settings-trend-stats-summary">
           <div class="oq-settings-trend-stats-summary-copy">
-            <span class="oq-settings-trend-stats-summary-label">Lifetime energie</span>
-            <strong class="oq-settings-trend-stats-summary-value">${escapeHtml(availableValue)}</strong>
-            <p class="oq-settings-trend-stats-summary-note">Nieuwste dag in flash: ${escapeHtml(newestValue)}.</p>
+            <span class="oq-settings-trend-stats-summary-label">Energiehistorie</span>
+            <strong class="oq-settings-trend-stats-summary-value">${escapeHtml(formatSettingsStoredDaysLabel(availableValue))}</strong>
+            <p class="oq-settings-trend-stats-summary-note">Laatste dag in Flash-geheugen: ${escapeHtml(newestValue)}.</p>
           </div>
-          <div class="oq-settings-trend-stats-badges" aria-label="Lifetime energiehistorie statistieken">
+          <div class="oq-settings-trend-stats-badges" aria-label="Energiehistorie statistieken">
             <div class="oq-settings-trend-stats-badge">
-              <span class="oq-settings-trend-stats-badge-label">Grootte</span>
+              <span class="oq-settings-trend-stats-badge-label">Opslagruimte</span>
               <strong class="oq-settings-trend-stats-badge-value">${escapeHtml(storageValue)}</strong>
             </div>
             <div class="oq-settings-trend-stats-badge">
-              <span class="oq-settings-trend-stats-badge-label">Schrijfacties</span>
+              <span class="oq-settings-trend-stats-badge-label">Schrijvingen</span>
               <strong class="oq-settings-trend-stats-badge-value">${escapeHtml(writesValue)}</strong>
             </div>
           </div>
@@ -287,13 +287,13 @@
 
     return renderSettingsFieldCard(
       "lifetimeEnergyHistoryStats",
-      "Lifetime energiehistorie",
+      "Energiehistorie",
       "Dagtotalen voor langere energiegrafieken in de lokale web-app.",
       controlMarkup,
       "oq-settings-field--span-2",
       isEntityActive("lifetimeEnergyHistoryEnabled")
-        ? `<p class="oq-settings-action-note">Schrijft alleen bij dagwissel en nette shutdown; geen continue flash-log.</p>`
-        : `<p class="oq-settings-action-note">Nieuwe lifetime opslag staat uit; bestaande records blijven beschikbaar.</p>`,
+        ? `<p class="oq-settings-action-note">Wordt alleen bij dagwissel en normale afsluiting vastgelegd; geen continue Flash-log.</p>`
+        : `<p class="oq-settings-action-note">Nieuwe dagtotalen worden niet bewaard; bestaande historie blijft beschikbaar.</p>`,
     );
   }
 
@@ -305,6 +305,15 @@
         ${meta ? `<em>${escapeHtml(meta)}</em>` : ""}
       </div>
     `;
+  }
+
+  function formatSettingsStoredDaysLabel(value) {
+    const text = String(value || "").trim();
+    const match = text.match(/^(\d+(?:[.,]\d+)?)\s+records?$/i);
+    if (!match) {
+      return text;
+    }
+    return `${match[1]} ${match[1] === "1" ? "dag" : "dagen"}`;
   }
 
   function renderSettingsStorageSwitchRow(key, title, copy, enabledCopy = "", disabledCopy = "", meta = "") {
@@ -3410,25 +3419,25 @@
     const lifetimeEnergyHistoryAvailable = hasEntity("lifetimeEnergyHistoryEnabled");
     const lifetimeEnergyHistoryEnabled = lifetimeEnergyHistoryAvailable && isEntityActive("lifetimeEnergyHistoryEnabled");
     const showLifetimeEnergyHistoryStats = hasEntity("lifetimeEnergyHistoryAvailable");
-    const trendAvailableValue = showTrendHistoryFlashStats ? getSettingsStatValue("trendHistoryFlashAvailable") : "Alleen RAM";
-    const lifetimeAvailableValue = showLifetimeEnergyHistoryStats ? getSettingsStatValue("lifetimeEnergyHistoryAvailable") : "Geen data";
+    const trendAvailableValue = showTrendHistoryFlashStats ? getSettingsStatValue("trendHistoryFlashAvailable") : "Alleen live";
+    const lifetimeAvailableValue = showLifetimeEnergyHistoryStats ? formatSettingsStoredDaysLabel(getSettingsStatValue("lifetimeEnergyHistoryAvailable")) : "Geen data";
     return renderSettingsSection(
       "Diagnose",
       "Opslagbeheer",
-      "Beheer trendbuffers, flashhistorie en lifetime energiehistorie vanuit één overzicht.",
+      "Bekijk en beheer welke diagnose- en energiegegevens OpenQuatt bewaart.",
       `
         <article class="oq-settings-storage-summary">
           <div class="oq-settings-storage-summary-copy">
-            <h3>Geheugen en flash</h3>
-            <p>Beheer wat tijdelijk in RAM blijft en welke historie bewust naar flash wordt geschreven.</p>
+            <h3>Wat wordt bewaard?</h3>
+            <p>Kies welke gegevens tijdelijk beschikbaar blijven en wat in Flash-geheugen wordt bewaard.</p>
           </div>
           <div class="oq-settings-storage-summary-metrics" aria-label="Opslagstatus">
-            ${hasEntity("trendHistoryEnabled") ? renderSettingsStorageSummaryMetric("Trenddata", trendHistoryEnabled ? "Aan" : "Uit", "RAM", trendHistoryEnabled) : ""}
-            ${hasEntity("trendHistoryFlashEnabled") ? renderSettingsStorageSummaryMetric("Trendflash", trendAvailableValue, trendHistoryFlashEnabled ? "Aan" : "Uit", trendHistoryFlashEnabled) : ""}
-            ${lifetimeEnergyHistoryAvailable ? renderSettingsStorageSummaryMetric("Energie", lifetimeAvailableValue, lifetimeEnergyHistoryEnabled ? "Aan" : "Uit", lifetimeEnergyHistoryEnabled) : ""}
+            ${hasEntity("trendHistoryEnabled") ? renderSettingsStorageSummaryMetric("Live diagnose", trendHistoryEnabled ? "Aan" : "Uit", "Live", trendHistoryEnabled) : ""}
+            ${hasEntity("trendHistoryFlashEnabled") ? renderSettingsStorageSummaryMetric("Diagnosehistorie", trendAvailableValue, trendHistoryFlashEnabled ? "Flash-geheugen" : "Uit", trendHistoryFlashEnabled) : ""}
+            ${lifetimeEnergyHistoryAvailable ? renderSettingsStorageSummaryMetric("Energiehistorie", lifetimeAvailableValue, lifetimeEnergyHistoryEnabled ? "Flash-geheugen" : "Uit", lifetimeEnergyHistoryEnabled) : ""}
           </div>
           <button class="oq-helper-button oq-helper-button--ghost oq-settings-storage-summary-action" type="button" data-oq-action="open-history-storage-modal">
-            Aanpassen
+            Beheren
           </button>
         </article>
       `,
@@ -3448,25 +3457,26 @@
       && lifetimeAvailableLabel !== "—";
     const trendAvailableLabel = hasEntity("trendHistoryFlashAvailable")
       ? getSettingsStatValue("trendHistoryFlashAvailable")
-      : "Geen flashdata";
+      : "Geen geschiedenis";
+    const lifetimeAvailableDaysLabel = formatSettingsStoredDaysLabel(lifetimeAvailableLabel);
     const canFlushTrend = trendHistoryEnabled && hasEntity("trendHistoryFlush");
     const canCaptureLifetime = hasEntity("lifetimeEnergyHistoryCapture");
     const showLifetimeActions = canCaptureLifetime || hasEntity("lifetimeEnergyHistoryClear");
     const trendStats = [
-      { key: "trendHistoryFlashAvailable", label: "Omvang", note: "opgeslagen" },
-      { key: "trendHistoryFlashSize", label: "Grootte" },
-      { key: "trendHistoryFlashWrites", label: "Schrijfacties" },
-      { key: "trendHistoryFlashOldest", label: "Oudste punt" },
-      { key: "trendHistoryFlashNewest", label: "Nieuwste punt" },
-      { key: "trendHistoryFlashLastFlush", label: "Laatste opslag" },
+      { key: "trendHistoryFlashAvailable", label: "Periode", note: "bewaard" },
+      { key: "trendHistoryFlashSize", label: "Opslagruimte" },
+      { key: "trendHistoryFlashWrites", label: "Schrijvingen" },
+      { key: "trendHistoryFlashOldest", label: "Eerste meting" },
+      { key: "trendHistoryFlashNewest", label: "Laatste meting" },
+      { key: "trendHistoryFlashLastFlush", label: "Laatst vastgelegd" },
     ];
     const lifetimeStats = [
-      { key: "lifetimeEnergyHistoryAvailable", label: "Records", note: "lifetime" },
-      { key: "lifetimeEnergyHistorySize", label: "Grootte" },
-      { key: "lifetimeEnergyHistoryWrites", label: "Schrijfacties" },
-      { key: "lifetimeEnergyHistoryOldest", label: "Oudste dag" },
-      { key: "lifetimeEnergyHistoryNewest", label: "Nieuwste dag" },
-      { key: "lifetimeEnergyHistoryLastWrite", label: "Laatste opslag" },
+      { key: "lifetimeEnergyHistoryAvailable", label: "Dagen bewaard", value: lifetimeAvailableDaysLabel },
+      { key: "lifetimeEnergyHistorySize", label: "Opslagruimte" },
+      { key: "lifetimeEnergyHistoryWrites", label: "Schrijvingen" },
+      { key: "lifetimeEnergyHistoryOldest", label: "Eerste dag" },
+      { key: "lifetimeEnergyHistoryNewest", label: "Laatste dag" },
+      { key: "lifetimeEnergyHistoryLastWrite", label: "Laatst vastgelegd" },
     ];
 
     return `
@@ -3479,44 +3489,44 @@
             </div>
             <button class="oq-helper-modal-close" type="button" data-oq-action="close-system-modal" aria-label="Sluit opslagbeheer">×</button>
           </div>
-          <p class="oq-helper-modal-copy">Beheer welke historie tijdelijk in RAM blijft en wat bewust naar flash mag. Handmatig opslaan is vooral nuttig vlak voor OTA of herstart.</p>
+          <p class="oq-helper-modal-copy">Kies welke gegevens OpenQuatt tijdelijk bijhoudt en welke historie bewaard blijft in Flash-geheugen. Handmatig vastleggen is handig vóór een update of geplande herstart.</p>
           <div class="oq-settings-storage-domain-grid">
             <section class="oq-settings-storage-domain oq-settings-storage-domain--trend">
               <div class="oq-settings-storage-domain-head">
-                <p class="oq-helper-label">RAM + optionele flash</p>
-                <h3>Trenddata</h3>
-                <p>Technische signalen voor Diagnose, zoals temperatuur, flow en vermogen.</p>
+                <p class="oq-helper-label">Diagnose</p>
+                <h3>Diagnosegegevens</h3>
+                <p>Gegevens voor grafieken en troubleshooting, zoals temperatuur, flow en vermogen.</p>
               </div>
               <div class="oq-settings-storage-domain-rows">
                 ${renderSettingsStorageSwitchRow(
                   "trendHistoryEnabled",
-                  "Trenddata in RAM",
-                  "Houdt technische signalen vast voor Diagnose-grafieken zolang de controller online is.",
-                  "Diagnose blijft live beschikbaar.",
-                  "Nieuwe trendpunten worden niet bijgehouden.",
-                  "vluchtig"
+                  "Live diagnosegegevens",
+                  "Bewaar recente meetpunten voor de Diagnose-grafieken.",
+                  "Beschikbaar zolang de controller online is.",
+                  "Nieuwe diagnosepunten worden niet bijgehouden.",
+                  "Tijdelijk"
                 )}
                 ${renderSettingsStorageSwitchRow(
                   "trendHistoryFlashEnabled",
-                  "Trenddata in flash",
-                  "Maakt technische trendhistorie beschikbaar na herstart of OTA.",
-                  "Wordt periodiek opgeslagen.",
-                  "Alleen RAM; bestaande flashdata blijft staan.",
+                  "Diagnosegeschiedenis bewaren",
+                  "Bewaar diagnosegegevens ook na een update of herstart.",
+                  "Wordt ongeveer elk uur vastgelegd.",
+                  "Alleen live gegevens; bestaande geschiedenis blijft staan.",
                   trendAvailableLabel
                 )}
                 ${canFlushTrend ? `
                   <div class="oq-settings-storage-inline-action">
                     <div>
-                      <h4>Trendbuffer nu opslaan</h4>
-                      <p>Schrijf de huidige trendbuffer direct naar flash.</p>
+                      <h4>Diagnose nu vastleggen</h4>
+                      <p>Leg de huidige diagnosebuffer direct vast.</p>
                     </div>
                     ${renderSettingsStorageActionButton(
                       "trendHistoryFlush",
-                      "Nu opslaan",
+                      "Vastleggen",
                       "flush-trend-history",
                       {
                         disabled: !trendHistoryFlashEnabled,
-                        busyLabel: "Opslaan...",
+                        busyLabel: "Vastleggen...",
                       }
                     )}
                   </div>
@@ -3526,33 +3536,33 @@
             </section>
             <section class="oq-settings-storage-domain oq-settings-storage-domain--energy">
               <div class="oq-settings-storage-domain-head">
-                <p class="oq-helper-label">Dagrecords in flash</p>
+                <p class="oq-helper-label">Resultaten</p>
                 <h3>Energiehistorie</h3>
                 <p>Dagtotalen voor Resultaten: opbrengst, verbruik, COP/EER en besparing.</p>
               </div>
               <div class="oq-settings-storage-domain-rows">
                 ${renderSettingsStorageSwitchRow(
                   "lifetimeEnergyHistoryEnabled",
-                  "Energiehistorie in flash",
-                  "Bewaart dagtotalen voor langere energiegrafieken.",
-                  "Dagrecords bij dagwissel en nette shutdown.",
-                  "Nieuwe dagrecords worden niet opgeslagen.",
-                  lifetimeAvailableLabel
+                  "Dagtotalen bewaren",
+                  "Bewaar dagtotalen zodat Resultaten over langere periodes beschikbaar blijven.",
+                  "Wordt opgeslagen bij dagwissel en normale afsluiting.",
+                  "Nieuwe dagtotalen worden niet bewaard; bestaande historie blijft staan.",
+                  lifetimeAvailableDaysLabel
                 )}
                 ${showLifetimeActions ? `
                   <div class="oq-settings-storage-inline-action oq-settings-storage-inline-action--split">
                     <div>
-                      <h4>Energiehistorie nu opslaan</h4>
-                      <p>Leg het huidige dagrecord direct vast.</p>
+                      <h4>Vandaag nu vastleggen</h4>
+                      <p>Leg de huidige dag alvast vast, bijvoorbeeld vóór een update.</p>
                     </div>
                     <div class="oq-settings-storage-action-stack">
                       ${renderSettingsStorageActionButton(
                         "lifetimeEnergyHistoryCapture",
-                        "Nu opslaan",
+                        "Vastleggen",
                         "save-lifetime-energy-history",
                         {
                           disabled: !lifetimeEnergyHistoryEnabled,
-                          busyLabel: "Opslaan...",
+                          busyLabel: "Vastleggen...",
                         }
                       )}
                     </div>
@@ -3560,12 +3570,12 @@
                   <div class="oq-settings-storage-inline-action oq-settings-storage-inline-action--danger">
                     <div>
                       <h4>Energiehistorie wissen</h4>
-                      <p>Verwijder alle opgeslagen dagrecords uit flash.</p>
+                      <p>Verwijder alle bewaarde dagtotalen uit Flash-geheugen.</p>
                     </div>
                     <div class="oq-settings-storage-action-stack">
                       ${renderSettingsStorageActionButton(
                         "lifetimeEnergyHistoryClear",
-                        "Wissen",
+                        "Alles wissen",
                         "clear-lifetime-energy-history",
                         {
                           disabled: !canClearLifetime,
