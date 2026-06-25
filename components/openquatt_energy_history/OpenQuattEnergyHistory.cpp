@@ -118,7 +118,8 @@ void OpenQuattEnergyHistory::dump_config() {
   ESP_LOGCONFIG(TAG, "  Flash partition: %s", this->is_partition_ready_() ? "configured" : "<missing>");
   ESP_LOGCONFIG(TAG, "  Flash window: %u KiB / %u slots", static_cast<unsigned>(this->flash_total_bytes_ / 1024U),
                 static_cast<unsigned>(this->flash_slot_count_));
-  ESP_LOGCONFIG(TAG, "  Records: %u", static_cast<unsigned>(this->record_count_));
+  ESP_LOGCONFIG(TAG, "  Records: %u / days: %u", static_cast<unsigned>(this->record_count_),
+                static_cast<unsigned>(this->stored_day_count_));
   ESP_LOGCONFIG(TAG, "  Hour records: %u / %u", static_cast<unsigned>(this->get_hour_record_count_()),
                 static_cast<unsigned>(HOURLY_SLOT_COUNT));
 }
@@ -257,6 +258,7 @@ bool OpenQuattEnergyHistory::record_valid_(const EnergyHistoryRecord &record) co
 bool OpenQuattEnergyHistory::scan_archive_() {
   if (!this->is_partition_ready_()) {
     this->record_count_ = 0;
+    this->stored_day_count_ = 0;
     this->next_sequence_ = 0;
     this->oldest_date_key_ = 0;
     this->newest_date_key_ = 0;
@@ -268,14 +270,31 @@ bool OpenQuattEnergyHistory::scan_archive_() {
   uint32_t min_sequence = 0;
   uint32_t max_sequence = 0;
   uint32_t count = 0;
+  uint32_t stored_day_count = 0;
   uint32_t oldest_date = 0;
   uint32_t newest_date = 0;
   uint32_t newest_write_ts = 0;
+  uint8_t seen_dates[DATE_BITMAP_BYTES];
+  std::memset(seen_dates, 0, sizeof(seen_dates));
 
   for (uint32_t slot_index = 0; slot_index < this->flash_slot_count_; ++slot_index) {
     EnergyHistoryRecord record{};
     if (!this->read_record_(slot_index, &record) || !this->record_valid_(record)) {
       continue;
+    }
+    const uint16_t year = static_cast<uint16_t>(record.date_key / 10000U);
+    const uint8_t month = static_cast<uint8_t>((record.date_key / 100U) % 100U);
+    const uint8_t day = static_cast<uint8_t>(record.date_key % 100U);
+    if (year >= MIN_DATE_YEAR && year <= MAX_DATE_YEAR && month >= 1U && month <= 12U && day >= 1U && day <= 31U) {
+      const size_t date_index =
+          ((static_cast<size_t>(year - MIN_DATE_YEAR) * 12U) + static_cast<size_t>(month - 1U)) * 31U +
+          static_cast<size_t>(day - 1U);
+      const size_t byte_index = date_index / 8U;
+      const uint8_t bit_mask = static_cast<uint8_t>(1U << (date_index % 8U));
+      if ((seen_dates[byte_index] & bit_mask) == 0U) {
+        seen_dates[byte_index] |= bit_mask;
+        ++stored_day_count;
+      }
     }
     if (!found || record.sequence < min_sequence) {
       min_sequence = record.sequence;
@@ -295,6 +314,7 @@ bool OpenQuattEnergyHistory::scan_archive_() {
   }
 
   this->record_count_ = count;
+  this->stored_day_count_ = stored_day_count;
   this->next_sequence_ = found ? max_sequence + 1U : 0U;
   this->oldest_date_key_ = oldest_date;
   this->newest_date_key_ = newest_date;
@@ -536,11 +556,12 @@ std::string OpenQuattEnergyHistory::get_available_label() const {
   if (!this->is_partition_ready_()) {
     return "Niet beschikbaar";
   }
-  if (this->record_count_ == 0) {
+  if (this->stored_day_count_ == 0) {
     return "Geen data";
   }
   char buffer[48];
-  std::snprintf(buffer, sizeof(buffer), "%u records", static_cast<unsigned>(this->record_count_));
+  std::snprintf(buffer, sizeof(buffer), "%u %s", static_cast<unsigned>(this->stored_day_count_),
+                this->stored_day_count_ == 1U ? "dag" : "dagen");
   return buffer;
 }
 

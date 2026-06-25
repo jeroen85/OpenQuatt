@@ -423,6 +423,59 @@ function queueServiceTaskModalScrollRestore(scrollState, defer = true) {
   applyScrollState();
 }
 
+function getHistoryStorageModalScrollerElement() {
+  if (!state.root) {
+    return null;
+  }
+  return state.root.querySelector("[data-oq-history-storage-scroller]");
+}
+
+function captureHistoryStorageModalScrollState() {
+  const scroller = getHistoryStorageModalScrollerElement();
+  if (!scroller) {
+    return null;
+  }
+
+  return {
+    scrollTop: scroller.scrollTop,
+  };
+}
+
+function restoreHistoryStorageModalScrollState(scrollState) {
+  if (!scrollState) {
+    return;
+  }
+
+  const scroller = getHistoryStorageModalScrollerElement();
+  if (!scroller) {
+    return;
+  }
+
+  scroller.scrollTop = Math.max(0, scrollState.scrollTop);
+}
+
+function queueHistoryStorageModalScrollRestore(scrollState, defer = true) {
+  if (!scrollState) {
+    return;
+  }
+
+  const restoreToken = Number(state.historyStorageModalScrollRestoreToken || 0) + 1;
+  state.historyStorageModalScrollRestoreToken = restoreToken;
+  const applyScrollState = () => {
+    if (state.historyStorageModalScrollRestoreToken !== restoreToken || state.systemModal !== "history-storage") {
+      return;
+    }
+    restoreHistoryStorageModalScrollState(scrollState);
+  };
+
+  if (defer) {
+    window.requestAnimationFrame(applyScrollState);
+    return;
+  }
+
+  applyScrollState();
+}
+
 async function refreshWebServerLogHistory(options = {}) {
   if (state.nativeOpen || typeof window.fetch !== "function") {
     return;

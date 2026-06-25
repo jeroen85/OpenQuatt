@@ -623,6 +623,8 @@
   position: relative;
   min-width: 0;
   padding: 2px 0 0;
+  overflow-x: visible;
+  overflow-y: hidden;
 }
 
 .oq-energy-history-chart {
@@ -648,13 +650,13 @@
 
 .oq-energy-history-axis-unit {
   fill: color-mix(in srgb, var(--oq-energy-history-text-muted) 90%, var(--oq-energy-history-text-soft));
-  font-size: 12.5px;
+  font-size: 15px;
   font-weight: 800;
 }
 
 .oq-energy-history-axis-label {
   fill: color-mix(in srgb, var(--oq-energy-history-text-muted) 88%, var(--oq-energy-history-text-soft));
-  font-size: 12px;
+  font-size: 14.5px;
   font-weight: 800;
 }
 
@@ -783,7 +785,33 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .oq-energy-history-chart-head {
+    align-items: flex-start;
+  }
+
+  .oq-energy-history-chart-head span {
+    max-width: 66%;
+    white-space: normal;
+    text-align: right;
+    line-height: 1.25;
+  }
+
+  .oq-energy-history-chart-wrap {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
   .oq-energy-history-chart {
-    min-height: 230px;
+    width: max(100%, 720px);
+    height: auto;
+    min-height: 0;
+  }
+
+  .oq-energy-history-chart--day,
+  .oq-energy-history-chart--month {
+    width: max(100%, 860px);
   }
 }

@@ -109,6 +109,9 @@ function renderSettingsView() {
     const serviceTaskModalScrollState = String(state.systemModal || "").startsWith("service-task-")
       ? captureServiceTaskModalScrollState()
       : null;
+    const historyStorageModalScrollState = state.systemModal === "history-storage"
+      ? captureHistoryStorageModalScrollState()
+      : null;
     const quickStartScrollState = state.quickStartModalOpen
       ? captureQuickStartScrollState()
       : null;
@@ -129,6 +132,7 @@ function renderSettingsView() {
       queueWebServerLogScrollRestore(webServerLogScrollState);
       queueCm100CommissioningScrollRestore(cm100CommissioningScrollState);
       queueServiceTaskModalScrollRestore(serviceTaskModalScrollState);
+      queueHistoryStorageModalScrollRestore(historyStorageModalScrollState);
       queueQuickStartScrollRestore(quickStartScrollState);
       return;
     }
@@ -180,6 +184,7 @@ function renderSettingsView() {
     queueWebServerLogScrollRestore(webServerLogScrollState);
     queueCm100CommissioningScrollRestore(cm100CommissioningScrollState);
     queueServiceTaskModalScrollRestore(serviceTaskModalScrollState);
+    queueHistoryStorageModalScrollRestore(historyStorageModalScrollState);
     queueQuickStartScrollRestore(quickStartScrollState);
   }
 

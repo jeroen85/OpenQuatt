@@ -1289,7 +1289,7 @@
     ].join("\n");
   }
 
-  function renderEnergyHistoryChart(records) {
+  function renderEnergyHistoryChart(records, activeView = "") {
     if (!records.length) {
       return `
         <div class="oq-energy-history-empty">
@@ -1352,7 +1352,7 @@
     }).join("");
 
     return `
-      <svg class="oq-energy-history-chart" viewBox="0 0 ${model.width} ${model.height}" role="img" aria-label="Energiehistorie">
+      <svg class="oq-energy-history-chart oq-energy-history-chart--${escapeHtml(normalizeEnergyHistoryView(activeView))}" viewBox="0 0 ${model.width} ${model.height}" role="img" aria-label="Energiehistorie">
         <rect x="0" y="0" width="${model.width}" height="${model.height}" rx="18" class="oq-energy-history-chart-bg"></rect>
         <text x="${model.left}" y="18" class="oq-energy-history-axis-unit">${escapeHtml(axisUnit)}</text>
         ${gridValues.map((value) => {
@@ -1439,7 +1439,7 @@
           <span>${escapeHtml(model.viewModel.detail)}</span>
         </div>
         <div class="oq-energy-history-chart-wrap">
-          ${renderEnergyHistoryChart(model.buckets)}
+          ${renderEnergyHistoryChart(model.buckets, model.activeView)}
           <div class="oq-energy-history-tooltip" aria-hidden="true"></div>
         </div>
         ${renderEnergyHistoryLegend(summary)}

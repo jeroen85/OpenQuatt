@@ -48,6 +48,11 @@ class OpenQuattEnergyHistory : public Component {
   static constexpr size_t TREND_FLASH_RESERVED_SECTOR_COUNT = 90;
   static constexpr uint32_t BASE_OFFSET = TREND_FLASH_RESERVED_SECTOR_COUNT * FLASH_SECTOR_SIZE;
   static constexpr size_t MAX_FLASH_SECTOR_COUNT = 256;
+  static constexpr uint16_t MIN_DATE_YEAR = 2020;
+  static constexpr uint16_t MAX_DATE_YEAR = 2099;
+  static constexpr size_t DATE_BITMAP_YEAR_COUNT = (MAX_DATE_YEAR - MIN_DATE_YEAR) + 1U;
+  static constexpr size_t DATE_BITMAP_BITS = DATE_BITMAP_YEAR_COUNT * 12U * 31U;
+  static constexpr size_t DATE_BITMAP_BYTES = (DATE_BITMAP_BITS + 7U) / 8U;
   static constexpr uint8_t HOURLY_RETENTION_DAYS = 7;
   static constexpr size_t HOURLY_SLOT_COUNT = static_cast<size_t>(HOURLY_RETENTION_DAYS) * 24U;
   static constexpr uint32_t UNKNOWN_WH = 0xFFFFFFFFU;
@@ -135,6 +140,7 @@ class OpenQuattEnergyHistory : public Component {
 
   uint32_t next_sequence_{0};
   uint32_t record_count_{0};
+  uint32_t stored_day_count_{0};
   uint32_t oldest_date_key_{0};
   uint32_t newest_date_key_{0};
   uint32_t last_write_timestamp_s_{0};
