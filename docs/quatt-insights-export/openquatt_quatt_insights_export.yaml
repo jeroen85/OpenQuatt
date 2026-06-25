@@ -1,0 +1,40 @@
+# Home Assistant package example.
+# Requires:
+# - home-assistant-quatt with the quatt.get_cic_insights action
+# - HACS Pyscript
+# - docs/quatt-insights-export/openquatt_quatt_insights_export.py copied to /config/pyscript/
+
+script:
+  openquatt_export_quatt_insights_daily:
+    alias: OpenQuatt export Quatt insights daily
+    mode: single
+    fields:
+      from_date:
+        name: From date
+        description: First date to export from Quatt CiC insights.
+        example: "2024-01-01"
+        selector:
+          date:
+      to_date:
+        name: To date
+        description: Last date to export from Quatt CiC insights. Defaults to today.
+        example: "2024-01-31"
+        selector:
+          date:
+    sequence:
+      - variables:
+          selected_from_date: "{{ from_date | default('2024-01-01', true) }}"
+          selected_to_date: "{{ to_date | default(now().strftime('%Y-%m-%d'), true) }}"
+      - action: pyscript.openquatt_export_quatt_insights
+        data:
+          from_date: "{{ selected_from_date }}"
+          to_date: "{{ selected_to_date }}"
+          timeframe: month
+          daily: true
+          daily_source: month
+          advanced_insights: true
+          output_dir: /config/www/openquatt-insights
+          base_name: "openquatt-quatt-insights-daily-{{ selected_from_date }}-{{ selected_to_date }}"
+          include_raw: false
+          day_delay_ms: 750
+          local_timezone: Europe/Amsterdam
