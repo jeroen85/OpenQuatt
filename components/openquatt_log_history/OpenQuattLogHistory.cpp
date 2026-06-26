@@ -5,6 +5,10 @@
 #include <cstdio>
 #include <cstring>
 
+#include "esphome/core/defines.h"
+#ifdef USE_ESP32_CRASH_HANDLER
+#include "esphome/components/esp32/crash_handler.h"
+#endif
 #include "esphome/components/logger/logger.h"
 #include "esphome/core/log.h"
 
@@ -419,6 +423,12 @@ void OpenQuattLogHistory::setup() {
                                                    size_t message_len) {
     static_cast<OpenQuattLogHistory *>(self)->on_log_(level, tag, message, message_len);
   });
+
+#ifdef USE_ESP32_CRASH_HANDLER
+  if (esp32::crash_handler_has_data()) {
+    esp32::crash_handler_log();
+  }
+#endif
 
   web_server_base::global_web_server_base->add_handler(new OpenQuattLogHistoryRequestHandler(this));
   this->sync_time_state_();
