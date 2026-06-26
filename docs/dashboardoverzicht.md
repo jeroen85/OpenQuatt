@@ -110,7 +110,9 @@ Voor een attribuut van een klimaatentiteit gebruik je:
 climate.woonkamer|current_temperature
 ```
 
-Het package berekent daarna het hoogste geldige dauwpunt en publiceert dat als `sensor.openquatt_ext_cooling_dew_point`. De geldigheid staat in `binary_sensor.openquatt_ext_cooling_dew_point_valid`.
+Het package berekent daarna het hoogste geldige dauwpunt van kamers die niet zijn uitgesloten en publiceert dat als `sensor.openquatt_ext_cooling_dew_point`. De geldigheid staat in `binary_sensor.openquatt_ext_cooling_dew_point_valid`.
+
+Wil je een zichtbare kamer tijdelijk uitsluiten, zet dan de bijbehorende `OpenQuatt cooling room X excluded` aan. Het kamer-dauwpunt blijft zichtbaar via `sensor.openquatt_ha_cooling_room_X_dew_point_effective`, maar telt niet mee voor de systeemselectie.
 
 Zie [Dashboard installeren](dashboard/README.md#optioneel-dynamische-koelbronnen-via-home-assistant) voor de installatie van het package.
 

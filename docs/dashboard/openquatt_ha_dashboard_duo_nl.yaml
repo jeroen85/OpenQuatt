@@ -2420,7 +2420,9 @@ views:
 
               Gebruik per kamer bij voorkeur een directe dauwpuntentity. Heb je die niet, vul dan temperatuur en relatieve luchtvochtigheid in.
 
-              OpenQuatt gebruikt per kamer eerst het directe dauwpunt en berekent anders zelf het dauwpunt uit temperatuur + RH. Voor de systeembeveiliging telt daarna de hoogste geldige kamerwaarde.
+              OpenQuatt gebruikt per kamer eerst het directe dauwpunt en berekent anders zelf het dauwpunt uit temperatuur + RH. Voor de systeembeveiliging telt daarna de hoogste geldige kamerwaarde van kamers die niet zijn uitgesloten van de dauwpuntselectie.
+
+              Zet `Uitsluiten uit dauwpuntselectie` aan om een kamer zichtbaar te houden en het kamer-dauwpunt te blijven berekenen, maar die kamer niet mee te laten tellen voor de geselecteerde systeemwaarde.
 
               Verhoog eerst `Aantal kamers`; daarna verschijnen de invoervelden per kamer.
               </details>
@@ -2463,6 +2465,8 @@ views:
               - type: entities
                 show_header_toggle: false
                 entities:
+                  - entity: input_boolean.openquatt_cooling_room_1_excluded
+                    name: Uitsluiten uit dauwpuntselectie
                   - entity: input_text.openquatt_source_cooling_room_1_dew_point
                     name: Cooling room 1 dauwpuntentity
                   - entity: input_text.openquatt_source_cooling_room_1_temperature
@@ -2470,7 +2474,7 @@ views:
                   - entity: input_text.openquatt_source_cooling_room_1_humidity
                     name: Cooling room 1 luchtvochtigheidentity
                   - entity: sensor.openquatt_ha_cooling_room_1_dew_point_effective
-                    name: Actief dauwpunt
+                    name: Kamer-dauwpunt
             visibility:
               - condition: numeric_state
                 entity: input_number.openquatt_cooling_room_count
@@ -2487,6 +2491,8 @@ views:
               - type: entities
                 show_header_toggle: false
                 entities:
+                  - entity: input_boolean.openquatt_cooling_room_2_excluded
+                    name: Uitsluiten uit dauwpuntselectie
                   - entity: input_text.openquatt_source_cooling_room_2_dew_point
                     name: Cooling room 2 dauwpuntentity
                   - entity: input_text.openquatt_source_cooling_room_2_temperature
@@ -2494,7 +2500,7 @@ views:
                   - entity: input_text.openquatt_source_cooling_room_2_humidity
                     name: Cooling room 2 luchtvochtigheidentity
                   - entity: sensor.openquatt_ha_cooling_room_2_dew_point_effective
-                    name: Actief dauwpunt
+                    name: Kamer-dauwpunt
             visibility:
               - condition: numeric_state
                 entity: input_number.openquatt_cooling_room_count
@@ -2511,6 +2517,8 @@ views:
               - type: entities
                 show_header_toggle: false
                 entities:
+                  - entity: input_boolean.openquatt_cooling_room_3_excluded
+                    name: Uitsluiten uit dauwpuntselectie
                   - entity: input_text.openquatt_source_cooling_room_3_dew_point
                     name: Cooling room 3 dauwpuntentity
                   - entity: input_text.openquatt_source_cooling_room_3_temperature
@@ -2518,7 +2526,7 @@ views:
                   - entity: input_text.openquatt_source_cooling_room_3_humidity
                     name: Cooling room 3 luchtvochtigheidentity
                   - entity: sensor.openquatt_ha_cooling_room_3_dew_point_effective
-                    name: Actief dauwpunt
+                    name: Kamer-dauwpunt
             visibility:
               - condition: numeric_state
                 entity: input_number.openquatt_cooling_room_count
@@ -2535,6 +2543,8 @@ views:
               - type: entities
                 show_header_toggle: false
                 entities:
+                  - entity: input_boolean.openquatt_cooling_room_4_excluded
+                    name: Uitsluiten uit dauwpuntselectie
                   - entity: input_text.openquatt_source_cooling_room_4_dew_point
                     name: Cooling room 4 dauwpuntentity
                   - entity: input_text.openquatt_source_cooling_room_4_temperature
@@ -2542,7 +2552,7 @@ views:
                   - entity: input_text.openquatt_source_cooling_room_4_humidity
                     name: Cooling room 4 luchtvochtigheidentity
                   - entity: sensor.openquatt_ha_cooling_room_4_dew_point_effective
-                    name: Actief dauwpunt
+                    name: Kamer-dauwpunt
             visibility:
               - condition: numeric_state
                 entity: input_number.openquatt_cooling_room_count
@@ -2559,6 +2569,8 @@ views:
               - type: entities
                 show_header_toggle: false
                 entities:
+                  - entity: input_boolean.openquatt_cooling_room_5_excluded
+                    name: Uitsluiten uit dauwpuntselectie
                   - entity: input_text.openquatt_source_cooling_room_5_dew_point
                     name: Cooling room 5 dauwpuntentity
                   - entity: input_text.openquatt_source_cooling_room_5_temperature
@@ -2566,7 +2578,7 @@ views:
                   - entity: input_text.openquatt_source_cooling_room_5_humidity
                     name: Cooling room 5 luchtvochtigheidentity
                   - entity: sensor.openquatt_ha_cooling_room_5_dew_point_effective
-                    name: Actief dauwpunt
+                    name: Kamer-dauwpunt
             visibility:
               - condition: numeric_state
                 entity: input_number.openquatt_cooling_room_count
@@ -2583,6 +2595,8 @@ views:
               - type: entities
                 show_header_toggle: false
                 entities:
+                  - entity: input_boolean.openquatt_cooling_room_6_excluded
+                    name: Uitsluiten uit dauwpuntselectie
                   - entity: input_text.openquatt_source_cooling_room_6_dew_point
                     name: Cooling room 6 dauwpuntentity
                   - entity: input_text.openquatt_source_cooling_room_6_temperature
@@ -2590,7 +2604,7 @@ views:
                   - entity: input_text.openquatt_source_cooling_room_6_humidity
                     name: Cooling room 6 luchtvochtigheidentity
                   - entity: sensor.openquatt_ha_cooling_room_6_dew_point_effective
-                    name: Actief dauwpunt
+                    name: Kamer-dauwpunt
             visibility:
               - condition: numeric_state
                 entity: input_number.openquatt_cooling_room_count
