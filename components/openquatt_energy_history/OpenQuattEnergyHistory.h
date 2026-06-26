@@ -147,6 +147,7 @@ class OpenQuattEnergyHistory : public Component {
   EnergyHistoryValues delta_values_(const EnergyHistoryValues &current, const EnergyHistoryValues &previous) const;
   void capture_hour_delta_(uint32_t date_key, uint8_t hour, const EnergyHistoryValues &values);
   uint16_t requested_flash_hourly_retention_days_() const;
+  size_t max_hour_flash_total_bytes_() const;
   void configure_hour_flash_window_();
   bool is_hour_partition_ready_() const;
   bool snapshot_hour_day_values_(uint32_t date_key, EnergyHistoryValues hours[24], uint32_t *hour_mask) const;

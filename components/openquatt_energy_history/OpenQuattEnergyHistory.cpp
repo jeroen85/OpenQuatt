@@ -341,6 +341,19 @@ uint16_t OpenQuattEnergyHistory::requested_flash_hourly_retention_days_() const 
   return DEFAULT_FLASH_HOURLY_RETENTION_DAYS;
 }
 
+size_t OpenQuattEnergyHistory::max_hour_flash_total_bytes_() const {
+  if (this->flash_partition_ == nullptr || this->flash_partition_->size <= HOUR_FLASH_BASE_OFFSET) {
+    return 0U;
+  }
+
+  const size_t available_bytes = this->flash_partition_->size - HOUR_FLASH_BASE_OFFSET;
+  const size_t available_sectors = available_bytes / FLASH_SECTOR_SIZE;
+  const size_t slots_per_sector = FLASH_SECTOR_SIZE / HOUR_FLASH_SLOT_SIZE;
+  const size_t max_requested_sectors =
+      (static_cast<size_t>(MAX_FLASH_HOURLY_RETENTION_DAYS) + slots_per_sector - 1U) / slots_per_sector;
+  return std::min(max_requested_sectors, available_sectors) * FLASH_SECTOR_SIZE;
+}
+
 void OpenQuattEnergyHistory::configure_hour_flash_window_() {
   this->hour_flash_requested_retention_days_ = this->requested_flash_hourly_retention_days_();
   this->hour_partition_available_ = false;
@@ -749,9 +762,10 @@ void OpenQuattEnergyHistory::clear_history() {
   if (erase_result != ESP_OK) {
     ESP_LOGW(TAG, "Could not erase energy history: %s", esp_err_to_name(erase_result));
   }
-  if (this->is_hour_partition_ready_()) {
+  const size_t max_hour_flash_total_bytes = this->max_hour_flash_total_bytes_();
+  if (max_hour_flash_total_bytes > 0U) {
     const esp_err_t erase_hour_result =
-        esp_partition_erase_range(this->flash_partition_, HOUR_FLASH_BASE_OFFSET, this->hour_flash_total_bytes_);
+        esp_partition_erase_range(this->flash_partition_, HOUR_FLASH_BASE_OFFSET, max_hour_flash_total_bytes);
     if (erase_hour_result != ESP_OK) {
       ESP_LOGW(TAG, "Could not erase energy hour history: %s", esp_err_to_name(erase_hour_result));
     }
