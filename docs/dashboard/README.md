@@ -84,6 +84,7 @@ Dit pakket is vooral nuttig als:
 - je in meerdere kamers wilt koelen;
 - je per kamer een eigen dauwpunt, temperatuur of luchtvochtigheid hebt;
 - je OpenQuatt het hoogste geldige dauwpunt wilt laten gebruiken;
+- je een zichtbare kamer tijdelijk niet wilt laten meetellen;
 - je dauwpuntbronnen wilt aanpassen zonder opnieuw te flashen.
 
 Installatie in Home Assistant:
@@ -93,6 +94,7 @@ Installatie in Home Assistant:
 3. Herlaad de template-entiteiten of herstart Home Assistant.
 4. Zet `input_number.openquatt_cooling_room_count` op het aantal kamers dat je wilt gebruiken.
 5. Vul per kamer de bronhelpers in.
+6. Zet `input_boolean.openquatt_cooling_room_X_excluded` alleen aan voor kamers die niet moeten meetellen in de dauwpuntselectie.
 
 Per kamer heb je twee keuzes.
 
@@ -124,7 +126,9 @@ Het pakket publiceert daarna:
 - `binary_sensor.openquatt_ext_cooling_dew_point_valid`
 - `sensor.openquatt_ha_cooling_room_1_dew_point_effective` tot en met room 6
 
-OpenQuatt gebruikt standaard het hoogste geldige dauwpunt als veilige grens. Met `Dauwpuntsbenadering` blijft die echte meting leidend zodra hij beschikbaar is; ontbreekt hij, dan gebruikt OpenQuatt een conservatieve benadering. Met `Expliciet toestaan` wordt de dauwpuntgrens volledig overgeslagen, ook als er wel een dauwpuntmeting beschikbaar is.
+OpenQuatt gebruikt standaard het hoogste geldige dauwpunt van kamers die niet zijn uitgesloten als veilige grens. Zet je een kamer uit via de bijbehorende `input_boolean.openquatt_cooling_room_X_excluded`, dan blijft `sensor.openquatt_ha_cooling_room_X_dew_point_effective` wel berekend, maar telt die kamer niet mee voor `sensor.openquatt_ext_cooling_dew_point`.
+
+Met `Dauwpuntsbenadering` blijft die echte meting leidend zodra hij beschikbaar is; ontbreekt hij, dan gebruikt OpenQuatt een conservatieve benadering. Met `Expliciet toestaan` wordt de dauwpuntgrens volledig overgeslagen, ook als er wel een dauwpuntmeting beschikbaar is.
 
 ## Belangrijk om te onthouden
 

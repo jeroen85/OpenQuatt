@@ -1949,7 +1949,9 @@ views:
 
               Prefer a direct dew point entity per room. If you do not have one, enter temperature and relative humidity instead.
 
-              OpenQuatt prefers the direct dew point per room and otherwise computes dew point from temperature + RH. For system safety it then uses the highest valid room value.
+              OpenQuatt prefers the direct dew point per room and otherwise computes dew point from temperature + RH. For system safety it then uses the highest valid room value from rooms not excluded from dew point selection.
+
+              Turn `Exclude from dew point selection` on to keep a room visible and keep calculating its room dew point, without including that room in the selected system value.
 
               Increase `Number of rooms` first; the input fields per room will appear below.
               </details>
@@ -1992,6 +1994,8 @@ views:
               - type: entities
                 show_header_toggle: false
                 entities:
+                  - entity: input_boolean.openquatt_cooling_room_1_excluded
+                    name: Exclude from dew point selection
                   - entity: input_text.openquatt_source_cooling_room_1_dew_point
                     name: Cooling room 1 dew point entity
                   - entity: input_text.openquatt_source_cooling_room_1_temperature
@@ -1999,7 +2003,7 @@ views:
                   - entity: input_text.openquatt_source_cooling_room_1_humidity
                     name: Cooling room 1 humidity entity
                   - entity: sensor.openquatt_ha_cooling_room_1_dew_point_effective
-                    name: Effective dew point
+                    name: Room dew point
             visibility:
               - condition: numeric_state
                 entity: input_number.openquatt_cooling_room_count
@@ -2016,6 +2020,8 @@ views:
               - type: entities
                 show_header_toggle: false
                 entities:
+                  - entity: input_boolean.openquatt_cooling_room_2_excluded
+                    name: Exclude from dew point selection
                   - entity: input_text.openquatt_source_cooling_room_2_dew_point
                     name: Cooling room 2 dew point entity
                   - entity: input_text.openquatt_source_cooling_room_2_temperature
@@ -2023,7 +2029,7 @@ views:
                   - entity: input_text.openquatt_source_cooling_room_2_humidity
                     name: Cooling room 2 humidity entity
                   - entity: sensor.openquatt_ha_cooling_room_2_dew_point_effective
-                    name: Effective dew point
+                    name: Room dew point
             visibility:
               - condition: numeric_state
                 entity: input_number.openquatt_cooling_room_count
@@ -2040,6 +2046,8 @@ views:
               - type: entities
                 show_header_toggle: false
                 entities:
+                  - entity: input_boolean.openquatt_cooling_room_3_excluded
+                    name: Exclude from dew point selection
                   - entity: input_text.openquatt_source_cooling_room_3_dew_point
                     name: Cooling room 3 dew point entity
                   - entity: input_text.openquatt_source_cooling_room_3_temperature
@@ -2047,7 +2055,7 @@ views:
                   - entity: input_text.openquatt_source_cooling_room_3_humidity
                     name: Cooling room 3 humidity entity
                   - entity: sensor.openquatt_ha_cooling_room_3_dew_point_effective
-                    name: Effective dew point
+                    name: Room dew point
             visibility:
               - condition: numeric_state
                 entity: input_number.openquatt_cooling_room_count
@@ -2064,6 +2072,8 @@ views:
               - type: entities
                 show_header_toggle: false
                 entities:
+                  - entity: input_boolean.openquatt_cooling_room_4_excluded
+                    name: Exclude from dew point selection
                   - entity: input_text.openquatt_source_cooling_room_4_dew_point
                     name: Cooling room 4 dew point entity
                   - entity: input_text.openquatt_source_cooling_room_4_temperature
@@ -2071,7 +2081,7 @@ views:
                   - entity: input_text.openquatt_source_cooling_room_4_humidity
                     name: Cooling room 4 humidity entity
                   - entity: sensor.openquatt_ha_cooling_room_4_dew_point_effective
-                    name: Effective dew point
+                    name: Room dew point
             visibility:
               - condition: numeric_state
                 entity: input_number.openquatt_cooling_room_count
@@ -2088,6 +2098,8 @@ views:
               - type: entities
                 show_header_toggle: false
                 entities:
+                  - entity: input_boolean.openquatt_cooling_room_5_excluded
+                    name: Exclude from dew point selection
                   - entity: input_text.openquatt_source_cooling_room_5_dew_point
                     name: Cooling room 5 dew point entity
                   - entity: input_text.openquatt_source_cooling_room_5_temperature
@@ -2095,7 +2107,7 @@ views:
                   - entity: input_text.openquatt_source_cooling_room_5_humidity
                     name: Cooling room 5 humidity entity
                   - entity: sensor.openquatt_ha_cooling_room_5_dew_point_effective
-                    name: Effective dew point
+                    name: Room dew point
             visibility:
               - condition: numeric_state
                 entity: input_number.openquatt_cooling_room_count
@@ -2112,6 +2124,8 @@ views:
               - type: entities
                 show_header_toggle: false
                 entities:
+                  - entity: input_boolean.openquatt_cooling_room_6_excluded
+                    name: Exclude from dew point selection
                   - entity: input_text.openquatt_source_cooling_room_6_dew_point
                     name: Cooling room 6 dew point entity
                   - entity: input_text.openquatt_source_cooling_room_6_temperature
@@ -2119,7 +2133,7 @@ views:
                   - entity: input_text.openquatt_source_cooling_room_6_humidity
                     name: Cooling room 6 humidity entity
                   - entity: sensor.openquatt_ha_cooling_room_6_dew_point_effective
-                    name: Effective dew point
+                    name: Room dew point
             visibility:
               - condition: numeric_state
                 entity: input_number.openquatt_cooling_room_count

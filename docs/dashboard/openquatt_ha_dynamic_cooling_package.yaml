@@ -7,6 +7,8 @@
 #   - Per room, users may provide either:
 #       1) a direct dew point entity, or
 #       2) a temperature + humidity entity pair.
+#   - Per visible room, users can disable selection participation while keeping
+#     the room's effective dew point sensor calculated for inspection.
 #   - Home Assistant calculates the highest valid dew point and publishes one
 #     stable aggregate proxy consumed by OpenQuatt ESPHome:
 #       sensor.openquatt_ext_cooling_dew_point
@@ -40,6 +42,26 @@ input_number:
     max: 6
     step: 1
     mode: box
+
+input_boolean:
+  openquatt_cooling_room_1_excluded:
+    name: OpenQuatt cooling room 1 excluded
+    icon: mdi:toggle-switch
+  openquatt_cooling_room_2_excluded:
+    name: OpenQuatt cooling room 2 excluded
+    icon: mdi:toggle-switch
+  openquatt_cooling_room_3_excluded:
+    name: OpenQuatt cooling room 3 excluded
+    icon: mdi:toggle-switch
+  openquatt_cooling_room_4_excluded:
+    name: OpenQuatt cooling room 4 excluded
+    icon: mdi:toggle-switch
+  openquatt_cooling_room_5_excluded:
+    name: OpenQuatt cooling room 5 excluded
+    icon: mdi:toggle-switch
+  openquatt_cooling_room_6_excluded:
+    name: OpenQuatt cooling room 6 excluded
+    icon: mdi:toggle-switch
 
 input_text:
   openquatt_source_cooling_room_1_dew_point:
@@ -149,6 +171,12 @@ template:
       - platform: state
         entity_id:
           - input_number.openquatt_cooling_room_count
+          - input_boolean.openquatt_cooling_room_1_excluded
+          - input_boolean.openquatt_cooling_room_2_excluded
+          - input_boolean.openquatt_cooling_room_3_excluded
+          - input_boolean.openquatt_cooling_room_4_excluded
+          - input_boolean.openquatt_cooling_room_5_excluded
+          - input_boolean.openquatt_cooling_room_6_excluded
           - input_text.openquatt_source_cooling_room_1_dew_point
           - input_text.openquatt_source_cooling_room_1_temperature
           - input_text.openquatt_source_cooling_room_1_humidity
@@ -180,7 +208,8 @@ template:
           {% set count = states('input_number.openquatt_cooling_room_count') | int(0) %}
           {% set ns = namespace(values=[]) %}
           {% for room in range(1, 7) %}
-            {% if room <= count %}
+            {% set excluded = is_state('input_boolean.openquatt_cooling_room_' ~ room ~ '_excluded', 'on') %}
+            {% if room <= count and not excluded %}
               {% set direct_selector = states('input_text.openquatt_source_cooling_room_' ~ room ~ '_dew_point') | trim %}
               {% set direct_entity, direct_attr = (direct_selector.split('|', 1) + [''])[:2] %}
               {% set direct_entity = direct_entity | trim %}
@@ -448,7 +477,8 @@ template:
           {% set count = states('input_number.openquatt_cooling_room_count') | int(0) %}
           {% set ns = namespace(valid=false) %}
           {% for room in range(1, 7) %}
-            {% if room <= count %}
+            {% set excluded = is_state('input_boolean.openquatt_cooling_room_' ~ room ~ '_excluded', 'on') %}
+            {% if room <= count and not excluded %}
               {% set direct_selector = states('input_text.openquatt_source_cooling_room_' ~ room ~ '_dew_point') | trim %}
               {% set direct_entity, direct_attr = (direct_selector.split('|', 1) + [''])[:2] %}
               {% set direct_entity = direct_entity | trim %}
