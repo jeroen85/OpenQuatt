@@ -416,6 +416,103 @@
     `;
   }
 
+  function getSettingsStorageStatOrFallback(key, fallback = "—") {
+    return hasEntity(key) ? getSettingsStatValue(key) : fallback;
+  }
+
+  function formatSettingsStorageDayCount(value, fallback = "Geen data") {
+    const count = Number(value);
+    if (!Number.isFinite(count) || count <= 0) {
+      return fallback;
+    }
+    return `${Math.round(count)} ${Math.round(count) === 1 ? "dag" : "dagen"}`;
+  }
+
+  function formatSettingsStorageKb(value, fallback = "—") {
+    const amount = Number(value);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return fallback;
+    }
+    return `${Math.round(amount)} kB`;
+  }
+
+  function formatSettingsStorageCount(value, fallback = "0") {
+    const count = Number(value);
+    if (!Number.isFinite(count) || count <= 0) {
+      return fallback;
+    }
+    return String(Math.round(count));
+  }
+
+  function formatSettingsStorageDateKey(dateKey) {
+    const parsed = typeof parseEnergyHistoryDateKey === "function" ? parseEnergyHistoryDateKey(dateKey) : null;
+    if (!parsed) {
+      return "Geen data";
+    }
+    return parsed.date.toLocaleDateString("nl-NL", { day: "2-digit", month: "2-digit", year: "numeric" });
+  }
+
+  function formatSettingsStorageTimestamp(seconds, fallback = "Geen data") {
+    const timestamp = Number(seconds);
+    if (!Number.isFinite(timestamp) || timestamp <= 0) {
+      return fallback;
+    }
+    const date = new Date(timestamp * 1000);
+    const day = date.toLocaleDateString("nl-NL", { day: "2-digit", month: "2-digit" });
+    const time = date.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" });
+    return `${day} ${time}`;
+  }
+
+  function getSettingsEnergyHistoryMetadata() {
+    if (typeof getEnergyHistoryMetadataFromRaw !== "function") {
+      return {};
+    }
+    return getEnergyHistoryMetadataFromRaw();
+  }
+
+  function renderSettingsStorageTechnicalRow(row) {
+    const items = Array.isArray(row.items) ? row.items : [];
+    return `
+      <article class="oq-settings-storage-technical-row">
+        <div class="oq-settings-storage-technical-row-head">
+          <span>${escapeHtml(row.meta || "")}</span>
+          <strong>${escapeHtml(row.title)}</strong>
+          ${row.note ? `<em>${escapeHtml(row.note)}</em>` : ""}
+        </div>
+        <div class="oq-settings-storage-technical-metrics">
+          ${items.map((item) => `
+            <div>
+              <span>${escapeHtml(item.label)}</span>
+              <strong>${escapeHtml(item.value)}</strong>
+            </div>
+          `).join("")}
+        </div>
+      </article>
+    `;
+  }
+
+  function renderSettingsStorageTechnicalDetails(rows) {
+    const visibleRows = rows.filter(Boolean);
+    if (!visibleRows.length) {
+      return "";
+    }
+
+    return `
+      <details class="oq-settings-storage-technical"${state.settingsStorageDetailsOpen ? " open" : ""}>
+        <summary data-oq-action="toggle-storage-technical-details">
+          <span>
+            <strong>Opslagdetails</strong>
+            <em>Diagnose, dagtotalen en uurdetail</em>
+          </span>
+          <span class="oq-settings-storage-technical-summary">${escapeHtml(visibleRows.map((row) => `${row.shortLabel}: ${row.primary}`).join(" · "))}</span>
+        </summary>
+        <div class="oq-settings-storage-technical-list">
+          ${visibleRows.map(renderSettingsStorageTechnicalRow).join("")}
+        </div>
+      </details>
+    `;
+  }
+
   function formatSettingsOptionLabel(option) {
     const value = String(option || "").trim();
     if (!value) {
@@ -3495,21 +3592,63 @@
     const canFlushTrend = trendHistoryEnabled && hasEntity("trendHistoryFlush");
     const canCaptureLifetime = hasEntity("lifetimeEnergyHistoryCapture");
     const showLifetimeActions = canCaptureLifetime || hasEntity("lifetimeEnergyHistoryClear");
-    const trendStats = [
-      { key: "trendHistoryFlashAvailable", label: "Bewaarperiode" },
-      { key: "trendHistoryFlashSize", label: "Opslagruimte" },
-      { key: "trendHistoryFlashWrites", label: "Opslagacties" },
-      { key: "trendHistoryFlashOldest", label: "Eerste meting" },
-      { key: "trendHistoryFlashNewest", label: "Laatste meting" },
-      { key: "trendHistoryFlashLastFlush", label: "Laatst opgeslagen" },
-    ];
-    const lifetimeStats = [
-      { key: "lifetimeEnergyHistoryAvailable", label: "Dagen bewaard", value: lifetimeAvailableDaysLabel },
-      { key: "lifetimeEnergyHistorySize", label: "Opslagruimte" },
-      { key: "lifetimeEnergyHistoryWrites", label: "Opslagacties" },
-      { key: "lifetimeEnergyHistoryOldest", label: "Eerste dag" },
-      { key: "lifetimeEnergyHistoryNewest", label: "Laatste dag" },
-      { key: "lifetimeEnergyHistoryLastWrite", label: "Laatst opgeslagen" },
+    const energyMetadata = getSettingsEnergyHistoryMetadata();
+    const hasHourMetadata = String(state.energyHistoryRaw || "").includes("@hour_retention|");
+    const hourStoredLabel = hasHourMetadata
+      ? formatSettingsStorageDayCount(energyMetadata.hourStoredDayCount, "Geen uurdata")
+      : "Laden...";
+    const hourStorageLabel = hasHourMetadata ? formatSettingsStorageKb(energyMetadata.hourStorageKb) : "Laden...";
+    const hourWriteLabel = hasHourMetadata ? formatSettingsStorageCount(energyMetadata.hourWriteCount) : "Laden...";
+    const hourLastWriteLabel = hasHourMetadata
+      ? formatSettingsStorageTimestamp(energyMetadata.hourLastWriteTimestampS)
+      : "Laden...";
+    const hourOldestLabel = formatSettingsStorageDateKey(energyMetadata.hourOldestDateKey);
+    const hourNewestLabel = formatSettingsStorageDateKey(energyMetadata.hourNewestDateKey);
+    const hourNote = hasHourMetadata
+      ? energyMetadata.hourPartitionAvailable
+        ? `${hourOldestLabel} t/m ${hourNewestLabel}`
+        : "Niet beschikbaar op deze Flash-indeling."
+      : "Uurdetailstatus wordt opgehaald.";
+    const storageDetails = [
+      {
+        title: "Diagnosegeschiedenis",
+        meta: "Diagnose",
+        shortLabel: "Diagnose",
+        primary: getSettingsStorageStatOrFallback("trendHistoryFlashAvailable", "Alleen live"),
+        note: `Laatste meting: ${getSettingsStorageStatOrFallback("trendHistoryFlashNewest", "Geen data")}`,
+        items: [
+          { label: "Bewaarperiode", value: getSettingsStorageStatOrFallback("trendHistoryFlashAvailable", "Alleen live") },
+          { label: "Opslagruimte", value: getSettingsStorageStatOrFallback("trendHistoryFlashSize") },
+          { label: "Opslagacties", value: getSettingsStorageStatOrFallback("trendHistoryFlashWrites", "0") },
+          { label: "Laatst opgeslagen", value: getSettingsStorageStatOrFallback("trendHistoryFlashLastFlush", "Geen data") },
+        ],
+      },
+      {
+        title: "Dagtotalen",
+        meta: "Resultaten",
+        shortLabel: "Dag",
+        primary: lifetimeAvailableDaysLabel,
+        note: `${getSettingsStorageStatOrFallback("lifetimeEnergyHistoryOldest", "Geen data")} t/m ${getSettingsStorageStatOrFallback("lifetimeEnergyHistoryNewest", "Geen data")}`,
+        items: [
+          { label: "Dagen bewaard", value: lifetimeAvailableDaysLabel },
+          { label: "Opslagruimte", value: getSettingsStorageStatOrFallback("lifetimeEnergyHistorySize") },
+          { label: "Opslagacties", value: getSettingsStorageStatOrFallback("lifetimeEnergyHistoryWrites", "0") },
+          { label: "Laatst opgeslagen", value: getSettingsStorageStatOrFallback("lifetimeEnergyHistoryLastWrite", "Geen data") },
+        ],
+      },
+      hasEntity("lifetimeEnergyHourRetention") ? {
+        title: "Uurdetail",
+        meta: "Resultaten",
+        shortLabel: "Uur",
+        primary: hourStoredLabel,
+        note: hourNote,
+        items: [
+          { label: "Dagen bewaard", value: hourStoredLabel },
+          { label: "Opslagruimte", value: hourStorageLabel },
+          { label: "Opslagacties", value: hourWriteLabel },
+          { label: "Laatst opgeslagen", value: hourLastWriteLabel },
+        ],
+      } : null,
     ];
 
     return `
@@ -3565,7 +3704,6 @@
                   </div>
                 ` : ""}
               </div>
-              ${renderSettingsStorageStatGrid(trendStats)}
             </section>
             <section class="oq-settings-storage-domain oq-settings-storage-domain--energy">
               <div class="oq-settings-storage-domain-head">
@@ -3626,9 +3764,9 @@
                   </div>
                 ` : ""}
               </div>
-              ${renderSettingsStorageStatGrid(lifetimeStats)}
             </section>
           </div>
+          ${renderSettingsStorageTechnicalDetails(storageDetails)}
           <p class="oq-settings-storage-footnote"><strong>Goed om te weten:</strong> OpenQuatt schrijft deze gegevens niet continu weg, maar alleen op vaste momenten. Zo blijft duidelijk wat er wordt bewaard en hoeveel geheugen daarvoor wordt gebruikt.</p>
           <div class="oq-helper-modal-actions">
             <button class="oq-helper-button oq-helper-button--primary" type="button" data-oq-action="close-system-modal">Gereed</button>

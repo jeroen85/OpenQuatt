@@ -1873,6 +1873,7 @@
     const newest = records[records.length - 1]?.dateKey || 0;
     const hourDates = [...new Set(hourRecords.map((record) => Number(record.dateKey)).filter(Number.isFinite))].sort((a, b) => a - b);
     const retentionDays = Number.parseInt(state.energyHistoryHourRetention, 10) || 180;
+    const hourLastWriteTimestampS = hourDates.length ? Math.floor(Date.now() / 1000) : 0;
     const lines = [
       "@schema|3",
       `@enabled|${isSwitchEnabled("Lifetime energiehistorie opslaan") ? 1 : 0}`,
@@ -1881,7 +1882,7 @@
       `@hours|${hourRecords.length}|7`,
       `@range|${fromDate}|${toDate}|${includeHours ? 1 : 0}`,
       `@bounds|${records.length}|${oldest}|${newest}|${hourDates.length}|${hourDates[0] || 0}|${hourDates[hourDates.length - 1] || 0}`,
-      `@hour_retention|${retentionDays}|${retentionDays}|1|${hourDates.length}|${hourDates.length}|${retentionDays}`,
+      `@hour_retention|${retentionDays}|${retentionDays}|1|${hourDates.length}|${hourDates.length}|${retentionDays}|${hourLastWriteTimestampS}`,
       ...filteredRecords.map((record) => [
         record.sequence,
         record.dateKey,

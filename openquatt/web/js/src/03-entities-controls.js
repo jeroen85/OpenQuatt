@@ -239,6 +239,7 @@
       concurrency: FAST_VIEW_ENTITY_REFRESH_CONCURRENCY,
       forceMissing: options.forceMissing === true,
     });
+    await refreshEnergyHistoryData({ force: options.forceEnergyHistory === true, metaOnly: true });
   }
 
   function refreshSettingsStorageStateSoon(delays = [250, 1000, 2500]) {
@@ -2172,7 +2173,9 @@
 
     const force = options.force === true;
     const now = Date.now();
-    const query = typeof getEnergyHistoryRequestQuery === "function" ? getEnergyHistoryRequestQuery() : "";
+    const query = options.metaOnly === true
+      ? "?meta=1"
+      : typeof getEnergyHistoryRequestQuery === "function" ? getEnergyHistoryRequestQuery() : "";
     if (!force && state.energyHistoryFetchPromise && state.energyHistoryFetchQuery === query) {
       return state.energyHistoryFetchPromise;
     }
@@ -2192,7 +2195,7 @@
       };
       let finalQuery = query;
       let raw = await fetchEnergyHistoryText(finalQuery);
-      if (finalQuery.includes("meta=1") && typeof getEnergyHistoryRequestQuery === "function") {
+      if (options.metaOnly !== true && finalQuery.includes("meta=1") && typeof getEnergyHistoryRequestQuery === "function") {
         const previousRaw = state.energyHistoryRaw;
         state.energyHistoryRaw = raw;
         const nextQuery = getEnergyHistoryRequestQuery();
@@ -3118,6 +3121,14 @@
       event.preventDefault();
       const details = button.closest(".oq-settings-odu-runtime-details");
       state.oduRuntimeFrequencyDetailsOpen = !(details && details.hasAttribute("open"));
+      render();
+      return;
+    }
+
+    if (action === "toggle-storage-technical-details") {
+      event.preventDefault();
+      const details = button.closest(".oq-settings-storage-technical");
+      state.settingsStorageDetailsOpen = !(details && details.hasAttribute("open"));
       render();
       return;
     }

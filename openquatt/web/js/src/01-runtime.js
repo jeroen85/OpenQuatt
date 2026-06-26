@@ -46,6 +46,7 @@
     energyHistoryFetchQuery: "",
     energyHistoryFetchPromise: null,
     energyHistoryView: "day",
+    settingsStorageDetailsOpen: false,
     energyHistoryPeriodSelection: {
       day: "",
       week: "",

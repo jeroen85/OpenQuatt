@@ -451,6 +451,23 @@ esp-app.oq-native-app.oq-native-app--collapsed {
     border-bottom: 0;
   }
 
+  .oq-settings-storage-technical > summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .oq-settings-storage-technical-summary {
+    text-align: left;
+  }
+
+  .oq-settings-storage-technical-row {
+    grid-template-columns: 1fr;
+  }
+
+  .oq-settings-storage-technical-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .oq-settings-quickstart-status-row {
     flex-direction: column;
     align-items: stretch;
