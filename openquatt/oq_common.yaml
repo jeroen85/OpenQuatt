@@ -184,6 +184,10 @@ globals:
     type: int
     restore_value: false
     initial_value: '0'
+  - id: oq_trend_capture_force_once
+    type: bool
+    restore_value: false
+    initial_value: 'false'
 
 # ==============================================================================
 # OVERVIEW TRENDS
@@ -194,6 +198,8 @@ script:
     then:
       - lambda: |-
           // Verzamel een compacte trendregel en sla alleen echte meetwaarden op.
+          const bool force_sample = id(oq_trend_capture_force_once);
+          id(oq_trend_capture_force_once) = false;
           if (id(oq_runtime_polling_paused).state) {
             return;
           }
@@ -226,7 +232,7 @@ script:
             return;
           }
 
-          id(oq_trends_endpoint).capture_sample(outside_c, supply_c, room_c, room_sp_c, flow_lph, input_w, output_w);
+          id(oq_trends_endpoint).capture_sample(outside_c, supply_c, room_c, room_sp_c, flow_lph, input_w, output_w, force_sample);
 
   - id: oq_capture_energy_history_sample
     mode: single
@@ -266,6 +272,17 @@ script:
           id(oq_lifetime_energy_history_size).publish_state(id(oq_energy_history_endpoint).get_storage_kib());
           id(oq_lifetime_energy_history_writes).publish_state(id(oq_energy_history_endpoint).get_write_count());
 
+  - id: oq_publish_trend_history_stats
+    mode: single
+    then:
+      - lambda: |-
+          id(oq_trend_history_flash_available).publish_state(id(oq_trends_endpoint).get_flash_available_label());
+          id(oq_trend_history_flash_oldest).publish_state(id(oq_trends_endpoint).get_flash_oldest_point_label());
+          id(oq_trend_history_flash_newest).publish_state(id(oq_trends_endpoint).get_flash_newest_point_label());
+          id(oq_trend_history_flash_last_flush).publish_state(id(oq_trends_endpoint).get_flash_last_flush_label());
+          id(oq_trend_history_flash_size).publish_state(id(oq_trends_endpoint).get_flash_storage_kib());
+          id(oq_trend_history_flash_writes).publish_state(id(oq_trends_endpoint).get_flash_write_count());
+
 openquatt_trends:
   id: oq_trends_endpoint
   capture_switch: oq_trend_history_enabled_switch
@@ -275,6 +292,7 @@ openquatt_trends:
 openquatt_energy_history:
   id: oq_energy_history_endpoint
   enabled_switch: oq_lifetime_energy_history_switch
+  hourly_retention_select: oq_lifetime_energy_hour_retention
   clock: oq_time
 
 # ==============================================================================
@@ -451,6 +469,22 @@ select:
             ESP_LOGI("oq_fw", "Runtime logger level updated to %s", x.c_str());
             esphome::logger::global_logger->set_log_level(lvl);
 
+  - platform: template
+    name: "Uurdetail bewaren"
+    id: oq_lifetime_energy_hour_retention
+    icon: mdi:chart-bar
+    web_server:
+      sorting_group_id: oq_system_diagnostics
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    options: ["30 dagen", "90 dagen", "180 dagen", "365 dagen"]
+    initial_option: "180 dagen"
+    on_value:
+      then:
+        - lambda: |-
+            id(oq_energy_history_endpoint).refresh_hourly_retention();
+
 button:
   - platform: template
     name: "Install Firmware Test OTA"
@@ -533,7 +567,13 @@ button:
       sorting_group_id: oq_system_diagnostics
     on_press:
       - lambda: |-
+          id(oq_trend_capture_force_once) = true;
+      - script.execute: oq_capture_overview_trend_sample
+      - script.wait: oq_capture_overview_trend_sample
+      - lambda: |-
           id(oq_trends_endpoint).force_flush();
+      - script.execute: oq_publish_trend_history_stats
+      - script.wait: oq_publish_trend_history_stats
 
   - platform: template
     id: oq_lifetime_energy_history_clear_button

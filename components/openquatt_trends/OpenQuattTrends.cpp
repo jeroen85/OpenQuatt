@@ -815,7 +815,7 @@ void OpenQuattTrends::reset_interval_filters_() {
 }
 
 void OpenQuattTrends::capture_sample(float outside_c, float supply_c, float room_c, float room_setpoint_c, float flow_lph,
-                                     float input_w, float output_w) {
+                                     float input_w, float output_w, bool force) {
   if (!this->capture_enabled_()) {
     return;
   }
@@ -825,7 +825,7 @@ void OpenQuattTrends::capture_sample(float outside_c, float supply_c, float room
   this->update_interval_metric_(this->output_w_interval_, output_w);
 
   const uint32_t now_monotonic_ms = static_cast<uint32_t>(millis());
-  if (this->last_capture_ms_ != 0 &&
+  if (!force && this->last_capture_ms_ != 0 &&
       static_cast<uint32_t>(now_monotonic_ms - static_cast<uint32_t>(this->last_capture_ms_)) < SAMPLE_INTERVAL_MS) {
     return;
   }

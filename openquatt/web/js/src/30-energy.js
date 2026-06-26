@@ -119,7 +119,20 @@
       return;
     }
     state.energyHistoryView = nextView;
+    state.energyHistoryLastFetchAt = 0;
     render();
+    requestEnergyHistoryDataRefresh();
+  }
+
+  function requestEnergyHistoryDataRefresh() {
+    if (typeof refreshEnergyHistoryData !== "function") {
+      return;
+    }
+    void refreshEnergyHistoryData({ force: true }).then((changed) => {
+      if (changed) {
+        render();
+      }
+    });
   }
 
   function isEnergyHistoryPeriodView(view) {
@@ -129,6 +142,48 @@
   function getEnergyHistoryTodayKey() {
     const now = new Date();
     return (now.getFullYear() * 10000) + ((now.getMonth() + 1) * 100) + now.getDate();
+  }
+
+  function getEnergyHistoryMetadataFromRaw() {
+    const raw = String(state.energyHistoryRaw || "");
+    const metadata = {
+      storedDayCount: 0,
+      oldestDateKey: null,
+      newestDateKey: null,
+      hourStoredDayCount: 0,
+      hourOldestDateKey: null,
+      hourNewestDateKey: null,
+      hourRequestedRetentionDays: 0,
+      hourSlotCount: 0,
+      hourPartitionAvailable: false,
+      hourRecordCount: 0,
+      hourWriteCount: 0,
+      hourStorageKb: 0,
+      hourLastWriteTimestampS: 0,
+    };
+    raw.split(/\r?\n/).forEach((line) => {
+      if (!line.startsWith("@bounds|") && !line.startsWith("@hour_retention|")) {
+        return;
+      }
+      const parts = line.split("|");
+      if (line.startsWith("@bounds|")) {
+        metadata.storedDayCount = Number(parts[1]) || 0;
+        metadata.oldestDateKey = Number(parts[2]) || null;
+        metadata.newestDateKey = Number(parts[3]) || null;
+        metadata.hourStoredDayCount = Number(parts[4]) || 0;
+        metadata.hourOldestDateKey = Number(parts[5]) || null;
+        metadata.hourNewestDateKey = Number(parts[6]) || null;
+      } else if (line.startsWith("@hour_retention|")) {
+        metadata.hourRequestedRetentionDays = Number(parts[1]) || 0;
+        metadata.hourSlotCount = Number(parts[2]) || 0;
+        metadata.hourPartitionAvailable = Number(parts[3]) === 1;
+        metadata.hourRecordCount = Number(parts[4]) || 0;
+        metadata.hourWriteCount = Number(parts[5]) || 0;
+        metadata.hourStorageKb = Number(parts[6]) || 0;
+        metadata.hourLastWriteTimestampS = Number(parts[7]) || 0;
+      }
+    });
+    return metadata;
   }
 
   function getEnergyHistoryCurrentDateKeyFromRaw() {
@@ -145,9 +200,14 @@
 
   function getEnergyHistoryReferenceDateKey(records = [], includeHours = true) {
     const currentKey = getEnergyHistoryCurrentDateKeyFromRaw();
+    const metadata = getEnergyHistoryMetadataFromRaw();
     const dateKeys = (Array.isArray(records) ? records : [])
       .map((record) => Number(record?.dateKey))
       .filter(Number.isFinite);
+
+    if (Number.isFinite(Number(metadata.newestDateKey))) {
+      dateKeys.push(Number(metadata.newestDateKey));
+    }
 
     if (Number.isFinite(Number(currentKey))) {
       dateKeys.push(Number(currentKey));
@@ -670,11 +730,18 @@
   function getEnergyHistoryPeriodBounds(records, view) {
     const normalizedView = normalizeEnergyHistoryView(view);
     const reference = parseEnergyHistoryDateKey(getEnergyHistoryReferenceDateKey(records, true));
+    const metadata = getEnergyHistoryMetadataFromRaw();
     const hourRecords = getEnergyHistoryHourRecords();
     const dateKeys = [
       ...records.map((record) => record.dateKey),
       ...hourRecords.map((record) => record.dateKey),
     ].filter((key) => Number.isFinite(Number(key)));
+    if (Number.isFinite(Number(metadata.oldestDateKey))) {
+      dateKeys.push(Number(metadata.oldestDateKey));
+    }
+    if (Number.isFinite(Number(metadata.newestDateKey))) {
+      dateKeys.push(Number(metadata.newestDateKey));
+    }
     const oldestKey = dateKeys.length ? Math.min(...dateKeys.map(Number)) : reference?.key;
     const oldest = oldestKey ? parseEnergyHistoryDateKey(oldestKey) : reference;
     const oldestDate = oldest?.date || reference?.date || new Date();
@@ -799,6 +866,68 @@
     };
   }
 
+  function getEnergyHistoryRequestRange(records, view) {
+    const normalizedView = normalizeEnergyHistoryView(view);
+    if (!isEnergyHistoryPeriodView(normalizedView)) {
+      return { from: "", to: "", hours: "0" };
+    }
+
+    const period = getEnergyHistoryPeriodControlModel(records, normalizedView);
+    if (normalizedView === "day") {
+      return { from: period.selectedValue, to: period.selectedValue, hours: "1" };
+    }
+    if (normalizedView === "week") {
+      const selected = parseEnergyHistoryDateKey(period.selectedValue);
+      if (!selected) {
+        return { from: "", to: "", hours: "0" };
+      }
+      const start = getEnergyHistoryWeekStart(selected.date);
+      const end = addEnergyHistoryDays(start, 6);
+      return {
+        from: String(getEnergyHistoryDateKeyFromDate(start)),
+        to: String(getEnergyHistoryDateKeyFromDate(end)),
+        hours: "0",
+      };
+    }
+    if (normalizedView === "month") {
+      const selected = parseEnergyHistoryMonthKey(period.selectedValue);
+      if (!selected) {
+        return { from: "", to: "", hours: "0" };
+      }
+      return {
+        from: String((selected.year * 10000) + (selected.month * 100) + 1),
+        to: String((selected.year * 10000) + (selected.month * 100) + getEnergyHistoryDaysInMonth(selected.year, selected.month)),
+        hours: "0",
+      };
+    }
+    if (normalizedView === "year") {
+      const year = Number(period.selectedValue);
+      if (!Number.isInteger(year)) {
+        return { from: "", to: "", hours: "0" };
+      }
+      return { from: `${year}0101`, to: `${year}1231`, hours: "0" };
+    }
+    return { from: "", to: "", hours: "0" };
+  }
+
+  function getEnergyHistoryRequestQuery() {
+    if (!String(state.energyHistoryRaw || "").trim()) {
+      return "?meta=1";
+    }
+    const records = getEnergyHistoryRecords();
+    const range = getEnergyHistoryRequestRange(records, state.energyHistoryView || "day");
+    const params = new URLSearchParams();
+    if (range.from) {
+      params.set("from", range.from);
+    }
+    if (range.to) {
+      params.set("to", range.to);
+    }
+    params.set("hours", range.hours);
+    const query = params.toString();
+    return query ? `?${query}` : "";
+  }
+
   function setEnergyHistoryPeriodValue(view, value) {
     const normalizedView = normalizeEnergyHistoryView(view);
     if (!isEnergyHistoryPeriodView(normalizedView)) {
@@ -812,7 +941,9 @@
       ...state.energyHistoryPeriodSelection,
       [normalizedView]: nextValue,
     };
+    state.energyHistoryLastFetchAt = 0;
     render();
+    requestEnergyHistoryDataRefresh();
   }
 
   function shiftEnergyHistoryPeriod(view, direction) {

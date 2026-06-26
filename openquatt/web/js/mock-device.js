@@ -102,6 +102,7 @@
     energyHistoryStoredKiB: 1024,
     energyHistoryWrites: 0,
     energyHistoryLastWriteAt: Date.now() - (9 * 60 * 60 * 1000),
+    energyHistoryHourRetention: "180 dagen",
     logHistoryEnabled: true,
     logHistoryEntries: [],
     debugRecording: {
@@ -908,6 +909,11 @@
     }
     setEntity("button", "Lifetime energiehistorie nu opslaan", { state: "" });
     setEntity("button", "Lifetime energiehistorie wissen", { state: "" });
+    setEntity("select", "Uurdetail bewaren", {
+      value: state.energyHistoryHourRetention,
+      state: state.energyHistoryHourRetention,
+      option: ["30 dagen", "90 dagen", "180 dagen", "365 dagen"],
+    });
     const energyHistoryRecordCountText = `${state.energyHistoryRecords.length} records`;
     setEntity("text_sensor", "Lifetime energiehistorie beschikbaar", {
       state: energyHistoryRecordCountText,
@@ -1849,17 +1855,35 @@
     updateEnergyHistoryStats();
   }
 
-  function buildEnergyHistoryTextPayload() {
+  function buildEnergyHistoryTextPayload(url = null) {
     const records = state.energyHistoryRecords || [];
     const hourRecords = state.energyHistoryHourRecords || [];
     const current = getCurrentEnergyHistoryValues();
+    const fromDate = Number(url?.searchParams?.get("from")) || 0;
+    const toDate = Number(url?.searchParams?.get("to")) || 0;
+    const includeHours = url?.searchParams?.get("hours") !== "0";
+    const metaOnly = url?.searchParams?.get("meta") === "1";
+    const inRange = (dateKey) => {
+      const key = Number(dateKey);
+      return Number.isFinite(key) && (!fromDate || key >= fromDate) && (!toDate || key <= toDate);
+    };
+    const filteredRecords = metaOnly ? [] : records.filter((record) => inRange(record.dateKey));
+    const filteredHours = includeHours && !metaOnly ? hourRecords.filter((record) => inRange(record.dateKey)) : [];
+    const oldest = records[0]?.dateKey || 0;
+    const newest = records[records.length - 1]?.dateKey || 0;
+    const hourDates = [...new Set(hourRecords.map((record) => Number(record.dateKey)).filter(Number.isFinite))].sort((a, b) => a - b);
+    const retentionDays = Number.parseInt(state.energyHistoryHourRetention, 10) || 180;
+    const hourLastWriteTimestampS = hourDates.length ? Math.floor(Date.now() / 1000) : 0;
     const lines = [
-      "@schema|2",
+      "@schema|3",
       `@enabled|${isSwitchEnabled("Lifetime energiehistorie opslaan") ? 1 : 0}`,
       `@now|${Date.now()}`,
       `@records|${records.length}`,
       `@hours|${hourRecords.length}|7`,
-      ...records.map((record) => [
+      `@range|${fromDate}|${toDate}|${includeHours ? 1 : 0}`,
+      `@bounds|${records.length}|${oldest}|${newest}|${hourDates.length}|${hourDates[0] || 0}|${hourDates[hourDates.length - 1] || 0}`,
+      `@hour_retention|${retentionDays}|${retentionDays}|1|${hourDates.length}|${hourDates.length}|${retentionDays}|${hourLastWriteTimestampS}`,
+      ...filteredRecords.map((record) => [
         record.sequence,
         record.dateKey,
         record.flags || 0,
@@ -1882,7 +1906,7 @@
         current.boilerHeatOutputWh,
         current.systemHeatOutputWh,
       ].join("|"),
-      ...hourRecords.map((record) => [
+      ...filteredHours.map((record) => [
         "@hour",
         record.sequence,
         record.dateKey,
@@ -2480,6 +2504,8 @@
       }
     } else if (name === "Debug Level") {
       appendLogHistoryEntry(`[I][oq_fw:376]: Runtime logger level updated to ${value}`);
+    } else if (name === "Uurdetail bewaren") {
+      state.energyHistoryHourRetention = value;
     } else if (name === "Power House response profile") {
       if (value === "Calm") {
         setNumber("Power House demand rise time", 12);
@@ -3624,7 +3650,7 @@
         });
       }
       if (url.pathname.endsWith("/energy/history") && method === "GET") {
-        return mockTextResponse(200, buildEnergyHistoryTextPayload());
+        return mockTextResponse(200, buildEnergyHistoryTextPayload(url));
       }
       if (url.pathname.endsWith("/openquatt/debug-recording/status") && method === "GET") {
         return mockResponse(200, getDebugRecordingStatusPayload());

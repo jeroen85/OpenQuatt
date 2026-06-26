@@ -219,6 +219,7 @@
     "trendHistoryFlashSize",
     "trendHistoryFlashWrites",
     "lifetimeEnergyHistoryEnabled",
+    "lifetimeEnergyHourRetention",
     "lifetimeEnergyHistoryCapture",
     "lifetimeEnergyHistoryClear",
     "lifetimeEnergyHistoryAvailable",
@@ -238,6 +239,7 @@
       concurrency: FAST_VIEW_ENTITY_REFRESH_CONCURRENCY,
       forceMissing: options.forceMissing === true,
     });
+    await refreshEnergyHistoryData({ force: options.forceEnergyHistory === true, metaOnly: true });
   }
 
   function refreshSettingsStorageStateSoon(delays = [250, 1000, 2500]) {
@@ -2164,25 +2166,45 @@
       state.energyHistorySignature = "";
       state.energyHistoryNowMs = Number.NaN;
       state.energyHistoryLastFetchAt = 0;
+      state.energyHistoryRequestQuery = "";
+      state.energyHistoryFetchQuery = "";
       return changed;
     }
 
     const force = options.force === true;
     const now = Date.now();
-    if (!force && state.energyHistoryFetchPromise) {
+    const query = options.metaOnly === true
+      ? "?meta=1"
+      : typeof getEnergyHistoryRequestQuery === "function" ? getEnergyHistoryRequestQuery() : "";
+    if (!force && state.energyHistoryFetchPromise && state.energyHistoryFetchQuery === query) {
       return state.energyHistoryFetchPromise;
     }
-    if (!force && (state.energyHistoryRaw || state.energyHistoryError) &&
+    if (!force && state.energyHistoryRequestQuery === query && (state.energyHistoryRaw || state.energyHistoryError) &&
         (now - Number(state.energyHistoryLastFetchAt || 0)) < TREND_HISTORY_REFRESH_INTERVAL_MS) {
       return false;
     }
 
+    state.energyHistoryFetchQuery = query;
     state.energyHistoryFetchPromise = (async () => {
-      const response = await fetch(`${getBasePath()}/energy/history`, { cache: "no-store" });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+      const fetchEnergyHistoryText = async (requestQuery) => {
+        const response = await fetch(`${getBasePath()}/energy/history${requestQuery}`, { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return response.text();
+      };
+      let finalQuery = query;
+      let raw = await fetchEnergyHistoryText(finalQuery);
+      if (options.metaOnly !== true && finalQuery.includes("meta=1") && typeof getEnergyHistoryRequestQuery === "function") {
+        const previousRaw = state.energyHistoryRaw;
+        state.energyHistoryRaw = raw;
+        const nextQuery = getEnergyHistoryRequestQuery();
+        state.energyHistoryRaw = previousRaw;
+        if (nextQuery && nextQuery !== finalQuery) {
+          finalQuery = nextQuery;
+          raw = await fetchEnergyHistoryText(finalQuery);
+        }
       }
-      const raw = await response.text();
       const lines = raw.split(/\r?\n/);
       let nowMs = Number.NaN;
       lines.forEach((line) => {
@@ -2203,6 +2225,7 @@
       state.energyHistorySignature = signature;
       state.energyHistoryNowMs = Number.isFinite(nowMs) ? nowMs : Number.NaN;
       state.energyHistoryLastFetchAt = Date.now();
+      state.energyHistoryRequestQuery = finalQuery;
       return changed;
     })();
 
@@ -2216,6 +2239,7 @@
       state.energyHistorySignature = "";
       state.energyHistoryNowMs = Number.NaN;
       state.energyHistoryLastFetchAt = Date.now();
+      state.energyHistoryRequestQuery = query;
       return changed;
     } finally {
       state.energyHistoryFetchPromise = null;
@@ -3097,6 +3121,14 @@
       event.preventDefault();
       const details = button.closest(".oq-settings-odu-runtime-details");
       state.oduRuntimeFrequencyDetailsOpen = !(details && details.hasAttribute("open"));
+      render();
+      return;
+    }
+
+    if (action === "toggle-storage-technical-details") {
+      event.preventDefault();
+      const details = button.closest(".oq-settings-storage-technical");
+      state.settingsStorageDetailsOpen = !(details && details.hasAttribute("open"));
       render();
       return;
     }
