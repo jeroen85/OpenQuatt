@@ -3594,20 +3594,33 @@
     const showLifetimeActions = canCaptureLifetime || hasEntity("lifetimeEnergyHistoryClear");
     const energyMetadata = getSettingsEnergyHistoryMetadata();
     const hasHourMetadata = String(state.energyHistoryRaw || "").includes("@hour_retention|");
+    const hourFlashUnavailable = hasHourMetadata && !energyMetadata.hourPartitionAvailable;
     const hourStoredLabel = hasHourMetadata
-      ? formatSettingsStorageDayCount(energyMetadata.hourStoredDayCount, "Geen uurdata")
+      ? hourFlashUnavailable
+        ? "Alleen live"
+        : formatSettingsStorageDayCount(energyMetadata.hourStoredDayCount, "Geen uurdata")
       : "Laden...";
-    const hourStorageLabel = hasHourMetadata ? formatSettingsStorageKb(energyMetadata.hourStorageKb) : "Laden...";
-    const hourWriteLabel = hasHourMetadata ? formatSettingsStorageCount(energyMetadata.hourWriteCount) : "Laden...";
+    const hourStorageLabel = hasHourMetadata
+      ? hourFlashUnavailable
+        ? "Niet beschikbaar"
+        : formatSettingsStorageKb(energyMetadata.hourStorageKb)
+      : "Laden...";
+    const hourWriteLabel = hasHourMetadata
+      ? hourFlashUnavailable
+        ? "Niet beschikbaar"
+        : formatSettingsStorageCount(energyMetadata.hourWriteCount)
+      : "Laden...";
     const hourLastWriteLabel = hasHourMetadata
-      ? formatSettingsStorageTimestamp(energyMetadata.hourLastWriteTimestampS)
+      ? hourFlashUnavailable
+        ? "Niet beschikbaar"
+        : formatSettingsStorageTimestamp(energyMetadata.hourLastWriteTimestampS)
       : "Laden...";
     const hourOldestLabel = formatSettingsStorageDateKey(energyMetadata.hourOldestDateKey);
     const hourNewestLabel = formatSettingsStorageDateKey(energyMetadata.hourNewestDateKey);
     const hourNote = hasHourMetadata
       ? energyMetadata.hourPartitionAvailable
         ? `${hourOldestLabel} t/m ${hourNewestLabel}`
-        : "Niet beschikbaar op deze Flash-indeling."
+        : "Live beschikbaar; bewaren in Flash vraagt een nieuwere Flash-indeling."
       : "Uurdetailstatus wordt opgehaald.";
     const storageDetails = [
       {

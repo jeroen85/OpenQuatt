@@ -32,7 +32,7 @@ class OpenQuattTrends : public Component {
   float get_setup_priority() const override;
 
   void capture_sample(float outside_c, float supply_c, float room_c, float room_setpoint_c, float flow_lph, float input_w,
-                      float output_w);
+                      float output_w, bool force = false);
   void set_flash_enabled(bool enabled);
   bool force_flush();
   void clear_history();

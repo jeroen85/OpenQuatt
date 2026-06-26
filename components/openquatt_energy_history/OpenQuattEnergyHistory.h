@@ -185,6 +185,9 @@ class OpenQuattEnergyHistory : public Component {
   uint32_t hour_flash_oldest_date_key_{0};
   uint32_t hour_flash_newest_date_key_{0};
   uint32_t hour_flash_last_write_timestamp_s_{0};
+  EnergyHistoryValues hour_snapshot_values_[24]{};
+  EnergyHistoryHourDayRecord hour_flash_record_buffer_{};
+  uint8_t hour_flash_slot_buffer_[HOUR_FLASH_SLOT_SIZE]{};
 
   uint32_t next_sequence_{0};
   uint32_t record_count_{0};

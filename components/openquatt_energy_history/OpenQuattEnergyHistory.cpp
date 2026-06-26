@@ -479,7 +479,7 @@ bool OpenQuattEnergyHistory::scan_hour_archive_() {
   std::memset(seen_dates, 0, sizeof(seen_dates));
 
   for (uint32_t slot_index = 0; slot_index < this->hour_flash_slot_count_; ++slot_index) {
-    EnergyHistoryHourDayRecord record{};
+    auto &record = this->hour_flash_record_buffer_;
     if (!this->read_hour_day_record_(slot_index, &record) || !this->hour_day_record_valid_(record)) {
       continue;
     }
@@ -590,7 +590,7 @@ bool OpenQuattEnergyHistory::write_hour_day_record_(uint32_t date_key, bool part
     return false;
   }
 
-  EnergyHistoryValues hours[24];
+  auto *hours = this->hour_snapshot_values_;
   uint32_t hour_mask = 0;
   if (!this->snapshot_hour_day_values_(date_key, hours, &hour_mask)) {
     return false;
@@ -609,7 +609,8 @@ bool OpenQuattEnergyHistory::write_hour_day_record_(uint32_t date_key, bool part
     }
   }
 
-  EnergyHistoryHourDayRecord record{};
+  auto &record = this->hour_flash_record_buffer_;
+  record = EnergyHistoryHourDayRecord{};
   record.magic = HOUR_DAY_RECORD_MAGIC;
   record.version = HOUR_DAY_RECORD_VERSION;
   record.flags = partial ? FLAG_PARTIAL : 0U;
@@ -620,11 +621,11 @@ bool OpenQuattEnergyHistory::write_hour_day_record_(uint32_t date_key, bool part
   std::memcpy(record.hours, hours, sizeof(record.hours));
   record.crc32 = hour_day_record_crc_(record);
 
-  uint8_t slot_buffer[HOUR_FLASH_SLOT_SIZE];
-  std::memset(slot_buffer, 0xFF, sizeof(slot_buffer));
+  auto *slot_buffer = this->hour_flash_slot_buffer_;
+  std::memset(slot_buffer, 0xFF, HOUR_FLASH_SLOT_SIZE);
   std::memcpy(slot_buffer, &record, sizeof(record));
   const esp_err_t write_result =
-      esp_partition_write(this->flash_partition_, slot_offset, slot_buffer, sizeof(slot_buffer));
+      esp_partition_write(this->flash_partition_, slot_offset, slot_buffer, HOUR_FLASH_SLOT_SIZE);
   if (write_result != ESP_OK) {
     ESP_LOGW(TAG, "Could not write energy hour history slot %u: %s", static_cast<unsigned>(slot_index),
              esp_err_to_name(write_result));
@@ -839,7 +840,7 @@ void OpenQuattEnergyHistory::write_history(httpd_req_t *req) {
 
   if (include_hours && !meta_only) {
     for (uint32_t slot_index = 0; slot_index < this->hour_flash_slot_count_; ++slot_index) {
-      EnergyHistoryHourDayRecord record{};
+      auto &record = this->hour_flash_record_buffer_;
       if (!this->read_hour_day_record_(slot_index, &record) || !this->hour_day_record_valid_(record) ||
           !date_key_in_range_(record.date_key, from_date_key, to_date_key)) {
         continue;
