@@ -33,8 +33,8 @@ substitutions:
   hpcq_pt1000_nominal_resistance_ohm: "1000"            # PT1000 nominal resistance at 0 degrees C.
   hpcq_pt1000_rtd_wires: "2"                            # Probe wiring mode; board jumpers must match.
   hpcq_flow_pin: "GPIO6"                                # V1 central flowmeter pulse input.
-  hpcq_flow_kf_lpm_per_hz: "0.1836"                     # Flow coefficient: Qv[l/min] = Kf * f[Hz] + Q0.
-  hpcq_flow_q0_lpm: "-0.2"                              # Flow intercept [l/min].
+  hpcq_flow_kf_lpm_per_hz: "0.05"                       # DN15 datasheet Kff: Qv[l/min] = Kf * f[Hz] + Q0.
+  hpcq_flow_q0_lpm: "0"                                 # DN15 datasheet intercept [l/min].
 
 packages:
   oq_cic_compatibility: !include heatpump_controller_q_cic_compatibility.yaml
@@ -125,9 +125,12 @@ sensor:
           // pulse_meter publishes pulses/minute. Convert to Hz first:
           // Qv[l/min] = Kf * f[Hz] + Q0, then convert to l/h.
           const float hz = x / 60.0f;
-          const float lpm = (${hpcq_flow_kf_lpm_per_hz}f * hz) + (${hpcq_flow_q0_lpm}f);
+          const float lpm =
+            (static_cast<float>(${hpcq_flow_kf_lpm_per_hz}) * hz)
+            + static_cast<float>(${hpcq_flow_q0_lpm});
           if (isnan(lpm)) return NAN;
           const float lph = lpm * 60.0f;
           return lph > 0.0f ? lph : 0.0f;
+      - throttle_average: 10s
     web_server:
       sorting_group_id: oq_hydraulics
