@@ -1284,6 +1284,7 @@
       ["HP1 - Fan speed", 0, "rpm"],
       ["HP1 - Flow", 0, "L/h"],
       ["Water Supply Temp", 29.5, "\u00B0C"],
+      ["Water Supply Temp (PT1000)", 29.5, "\u00B0C"],
       ["Water Supply Temp (DS18B20)", 29.2, "\u00B0C"],
       ["Outside Temperature (Local aggregated)", 15.8, "\u00B0C"],
       ["HP1 - Evaporator coil temperature", 0, "\u00B0C"],

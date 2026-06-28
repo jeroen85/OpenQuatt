@@ -139,7 +139,7 @@ select:
       - CIC
       - OT thermostat
       - HA input
-    initial_option: CIC
+    initial_option: OT thermostat
     web_server:
       sorting_group_id: oq_sensor_selection
 
@@ -154,7 +154,7 @@ select:
       - CIC
       - OT thermostat
       - HA input
-    initial_option: CIC
+    initial_option: OT thermostat
     web_server:
       sorting_group_id: oq_sensor_selection
 

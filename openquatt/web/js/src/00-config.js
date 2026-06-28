@@ -456,6 +456,7 @@ const LOGO_MARKUP = `
     supplyTemp: { domain: "sensor", name: "Water Supply Temp (Selected)" },
     outsideTempSelected: { domain: "sensor", name: "Outside Temperature (Selected)", optional: true },
     waterSupplyTempEsp: { domain: "sensor", name: "Water Supply Temp", optional: true },
+    waterSupplyTempPt1000: { domain: "sensor", name: "Water Supply Temp (PT1000)", optional: true },
     waterSupplyTempDs18b20: { domain: "sensor", name: "Water Supply Temp (DS18B20)", optional: true },
     outsideTempLocalAggregated: { domain: "sensor", name: "Outside Temperature (Local aggregated)", optional: true },
     outsideTempHa: { domain: "sensor", name: "HA - Outside Temperature", optional: true },
@@ -898,6 +899,7 @@ const LOGO_MARKUP = `
   const SENSOR_SELECTION_STATE_KEYS = [
     "supplyTemp",
     "waterSupplyTempEsp",
+    "waterSupplyTempPt1000",
     "waterSupplyTempDs18b20",
     "waterSupplyTempHa",
     "waterSupplyTempHaValid",

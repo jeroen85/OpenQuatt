@@ -4243,7 +4243,8 @@
         rows: [
           renderSourceRow({ label: "Actieve waarde", key: "supplyTemp" }),
           renderSourceRow({ label: "Gebruikte bron", value: getWaterSupplyUsedSource() }),
-          renderSourceRow({ label: "Lokaal", key: "waterSupplyTempEsp" }),
+          renderSourceRow({ label: "Lokale selectie", key: "waterSupplyTempEsp" }),
+          renderSourceRow({ label: "PT1000", key: "waterSupplyTempPt1000" }),
           renderSourceRow({ label: "DS18B20", key: "waterSupplyTempDs18b20" }),
           cicAvailable ? renderSourceRow({ label: "CIC", key: "cicWaterSupplyTemp" }) : "",
           ...renderHaSourceRows({ valueKey: "waterSupplyTempHa", validKey: "waterSupplyTempHaValid" }),
