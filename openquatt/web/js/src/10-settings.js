@@ -922,6 +922,7 @@
             data-group-id="${escapeHtml(group.id)}"
             aria-pressed="${group.id === activeGroup ? "true" : "false"}"
           >
+            ${renderOqIcon(group.icon, "oq-settings-group-button-icon")}
             <span class="oq-settings-group-button-label">${escapeHtml(group.label)}</span>
           </button>
         `).join("")}
