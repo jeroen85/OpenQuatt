@@ -246,6 +246,22 @@ number:
 # SENSOR
 # ----------------------------
 sensor:
+  - platform: template
+    id: ${hp_id}_pump_ipwm_command
+    name: "${prefix}Pump iPWM command"
+    icon: "mdi:speedometer"
+    unit_of_measurement: "iPWM"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    update_interval: 30s
+    force_update: true
+    lambda: |-
+      const float pump_speed = id(${hp_id}_pump_speed).state;
+      if (isnan(pump_speed)) return {};
+      return pump_speed;
+    web_server:
+      sorting_group_id: oq_${hp_id}
+
   - platform: modbus_controller
     modbus_controller_id: ${hp_id}
     id: ${hp_id}_working_mode
