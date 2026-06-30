@@ -255,7 +255,9 @@ class ImprovSerialClient {
             }
             continue;
           }
-          if (packet.length === 0 && byte === 10) {
+
+          if (!expectedLength && packet.length < 6 && (byte === 10 || byte === 13)) {
+            packet = [];
             continue;
           }
 
