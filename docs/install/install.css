@@ -5,23 +5,82 @@
   margin-bottom: 28px;
 }
 
-.install-quicklist {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: 22px 0 0;
-  padding: 0;
-  list-style: none;
+.install-page .doc-header h1 {
+  overflow-wrap: anywhere;
 }
 
-.install-quicklist li {
-  padding: 10px 14px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--panel);
+.install-warning-inline {
+  display: inline-flex;
+  gap: 10px;
+  align-items: baseline;
+  max-width: 860px;
+  margin: 16px 0 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
   color: var(--ink-soft);
-  font-size: 0.92rem;
-  line-height: 1.4;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.install-warning-inline span {
+  flex: 0 0 auto;
+  color: var(--accent-strong);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.install-route-switcher {
+  display: grid;
+  gap: 18px;
+}
+
+.install-route-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  width: fit-content;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.install-route-tab {
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: calc(var(--radius-md) - 4px);
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 0.94rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.install-route-tab:hover {
+  color: var(--accent-strong);
+}
+
+.install-route-tab[aria-selected="true"] {
+  background: var(--accent);
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(234, 88, 12, 0.16);
+}
+
+.install-route-tab:focus-visible {
+  outline: 2px solid rgba(234, 88, 12, 0.65);
+  outline-offset: 2px;
+}
+
+.install-route-panel[hidden] {
+  display: none !important;
 }
 
 .install-layout {
@@ -40,6 +99,152 @@
 
 .install-flow {
   padding: 28px;
+}
+
+.install-flow > .install-section-label {
+  margin-bottom: 22px;
+}
+
+.install-provision {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 440px);
+  gap: 28px;
+  align-items: start;
+  margin-bottom: 0;
+  padding: 28px;
+}
+
+.install-provision-copy h2 {
+  margin: 10px 0 0;
+  color: var(--ink);
+  font-size: 1.6rem;
+  line-height: 1.12;
+}
+
+.install-provision-copy p:not(.install-section-label),
+.install-provision-list {
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.install-provision-copy p:not(.install-section-label) {
+  margin: 12px 0 0;
+}
+
+.install-provision-list {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0 0;
+  padding-left: 20px;
+}
+
+.install-provision-tool {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: var(--radius-md);
+  background: #111827;
+}
+
+.install-provision [hidden] {
+  display: none !important;
+}
+
+.install-provision-device {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.install-provision-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.install-provision-actions .install-cta,
+.install-provision-actions .install-secondary-button {
+  flex: 1 1 180px;
+}
+
+.install-provision-form {
+  display: grid;
+  gap: 12px;
+}
+
+.install-field {
+  display: grid;
+  gap: 7px;
+}
+
+.install-field span {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.install-field input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  font: inherit;
+}
+
+.install-field input:focus {
+  outline: 2px solid rgba(234, 88, 12, 0.65);
+  outline-offset: 2px;
+}
+
+.install-secondary-button,
+.install-link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.install-secondary-button {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.install-link-button {
+  border: 1px solid rgba(234, 88, 12, 0.3);
+  background: var(--accent);
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.install-secondary-button:hover,
+.install-link-button:hover {
+  border-color: rgba(255, 255, 255, 0.42);
+}
+
+.install-provision-tool[data-state="ok"] .install-state {
+  color: #bbf7d0;
+}
+
+.install-provision-tool[data-state="warning"] .install-state {
+  color: #fed7aa;
+}
+
+.install-provision-tool[data-state="error"] .install-state {
+  color: #fecaca;
 }
 
 .install-step + .install-step {
@@ -245,6 +450,7 @@ esp-web-install-button {
 
 .install-cta {
   width: 100%;
+  min-height: 46px;
   padding: 14px 16px;
   border: 0;
   border-radius: var(--radius-sm);
@@ -256,10 +462,16 @@ esp-web-install-button {
   transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
 }
 
-.install-cta:hover {
+.install-cta:hover:not(:disabled) {
   background: var(--accent-strong);
   transform: translateY(-1px);
   box-shadow: 0 14px 26px rgba(234, 88, 12, 0.24);
+}
+
+.install-cta:disabled,
+.install-secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .install-fallback {
@@ -335,6 +547,10 @@ esp-web-install-button {
     padding: 32px 24px 56px;
   }
 
+  .install-provision {
+    grid-template-columns: 1fr;
+  }
+
   .install-follow-up-grid {
     grid-template-columns: 1fr;
   }
@@ -345,11 +561,22 @@ esp-web-install-button {
     padding: 26px 8px 44px;
   }
 
-  .install-quicklist {
+  .install-page .doc-header h1 {
+    font-size: clamp(1.85rem, 10.5vw, 2.25rem);
+  }
+
+  .install-warning-inline {
     display: grid;
+    gap: 6px;
+  }
+
+  .install-route-tabs {
+    display: grid;
+    width: 100%;
   }
 
   .install-flow,
+  .install-provision,
   .install-summary-card,
   .install-follow-up {
     padding: 20px;

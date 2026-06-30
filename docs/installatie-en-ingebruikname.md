@@ -1,12 +1,21 @@
 # Installatie en ingebruikname
 
-Deze handleiding beschrijft de eerste installatie van OpenQuatt. Voor de meeste gebruikers is de web installer de juiste en enige normale route. Na het flashen ga je eerst naar de lokale web-app via `http://openquatt.local`; Home Assistant komt daarna.
+Deze handleiding beschrijft de eerste installatie van OpenQuatt. Heb je een module gekocht waar OpenQuatt al op staat, dan gebruik je de web installer alleen om Wi-Fi in te stellen. Flashen is dan niet nodig. Na het verbinden ga je eerst naar de lokale web-app via `http://openquatt.local`; Home Assistant komt daarna.
 
 ## Installatieroute
 
-Voor een eerste installatie gebruik je de web installer uit de [README](../README.md). Daarmee flash je de juiste firmware en kun je bij Wi-Fi direct daarna de Wi-Fi-configuratie afronden. Bij Ethernet sluit je na het flashen de netwerkkabel aan.
+Voor een eerste installatie gebruik je de web installer uit de [README](../README.md). Daarmee stel je bij een voorgeïnstalleerde module alleen Wi-Fi in, of flash je zelf de juiste firmware. Bij Ethernet sluit je na het flashen de netwerkkabel aan.
 
-De route is:
+Voor een voorgeïnstalleerde Wi-Fi-module is de route:
+
+1. installer openen;
+2. module via USB aansluiten;
+3. `Alleen Wi-Fi instellen` gebruiken;
+4. `openquatt.local` openen;
+5. Quick Start afronden;
+6. Home Assistant-dashboard importeren.
+
+Als je zelf firmware flasht, is de route:
 
 1. installer openen;
 2. opstelling en hardware kiezen;
@@ -23,6 +32,7 @@ Gebruik [Handmatige installatie](handmatige-installatie.md) alleen als fallback.
 
 | Moment | Wat zie je? | Volgende actie |
 |---|---|---|
+| Voorgeïnstalleerde module | Wi-Fi configureren via USB | Sluit de module aan, kies de USB-poort en sla je Wi-Fi-netwerk op. |
 | Installer | Keuzes voor `Single` of `Duo`, ESP-module en verbinding | Kies de exacte combinatie die bij je hardware past. |
 | ESP Web Tools | Browserdialoog voor verbinden, wissen en flashen | Laat het tabblad bij Wi-Fi open tot de Wi-Fi-configuratie is afgerond. Bij Ethernet sluit je na de flash de netwerkkabel aan. |
 | Web-app | `http://openquatt.local` met Quick Start | Kies Quatt Hybrid V1, V1.5 of V2 en rond de basisinstellingen af. |
@@ -36,7 +46,7 @@ Gebruik [Handmatige installatie](handmatige-installatie.md) alleen als fallback.
   - Electropaultje Heatpump Listener
 - een USB-kabel voor de eerste flash
 - een werkend Wi-Fi-netwerk of, bij Heatpump Controller Q Ethernet, een aangesloten netwerkkabel
-- Chrome of Edge voor de web installer
+- Chrome, Edge of Firefox op desktop voor de web installer
 - Home Assistant wordt sterk aanbevolen
 
 ## Kies het juiste profiel in de installer
@@ -61,6 +71,21 @@ Ethernet is alleen beschikbaar voor de Heatpump Controller Q. ESPHome ondersteun
 ## Installatie via de web installer
 
 > Let op: gebruik van OpenQuatt kan gevolgen hebben voor je Quatt-garantie. De standaard commerciële Quatt-garantie vervalt in principe bij gebruik van externe aansturing zoals OpenQuatt. De wettelijke garantie blijft bestaan, maar een garantieclaim kan daardoor in de praktijk wel ingewikkelder worden.
+
+### Voorgeïnstalleerde module: alleen Wi-Fi instellen
+
+Gebruik deze route als je module al met OpenQuatt is geleverd.
+
+1. Open de [OpenQuatt installer](https://jeroen85.github.io/OpenQuatt/install/).
+2. Sluit het ESP32-bord via USB aan.
+3. Gebruik `Alleen Wi-Fi instellen`.
+4. Kies de USB-poort van de module.
+5. Vul je Wi-Fi-netwerk en wachtwoord in.
+6. Open na het verbinden `http://openquatt.local`.
+7. Rond de Quick Start in de web-app af.
+8. Voeg het apparaat daarna toe in Home Assistant. Selecteer tijdens het toevoegen nog geen area; ken die pas toe nadat de OpenQuatt-entiteiten zijn aangemaakt.
+
+### Zelf firmware flashen
 
 1. Open de [OpenQuatt installer](https://jeroen85.github.io/OpenQuatt/install/).
 2. Kies de combinatie die past bij je opstelling, hardware en verbinding.
