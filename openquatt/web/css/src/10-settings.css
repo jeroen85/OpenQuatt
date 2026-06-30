@@ -467,6 +467,13 @@
   max-width: 240px;
 }
 
+@media (min-width: 641px) {
+  .oq-settings-generation-grid .oq-settings-choice-card-shell:not(:last-child) .oq-settings-info-popover {
+    right: auto;
+    left: 0;
+  }
+}
+
 .oq-settings-generation-field {
   min-width: 0;
 }

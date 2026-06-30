@@ -483,6 +483,16 @@ body.oq-surface-native {
   box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
 }
 
+.oq-helper-hub-toggle-icon {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .oq-helper-hub-toggle--attention {
   border-color: rgba(249, 115, 22, 0.3);
   box-shadow: 0 12px 26px rgba(249, 115, 22, 0.08);
@@ -1853,6 +1863,10 @@ body.oq-surface-native {
   align-items: start;
 }
 
+.oq-helper-grid--quickstart-modal > * {
+  min-width: 0;
+}
+
 .oq-helper-modal-presets {
   display: flex;
   flex-wrap: wrap;
@@ -2395,10 +2409,14 @@ body.oq-surface-native {
 }
 
 .oq-helper-app-tab-icon {
-  width: 0.95rem;
-  height: 0.95rem;
+  width: 1.05rem;
+  height: 1.05rem;
   flex: 0 0 auto;
-  fill: currentColor;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .oq-helper-app-tab:hover {

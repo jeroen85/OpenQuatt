@@ -623,13 +623,31 @@ const LOGO_MARKUP = `
   });
 
   const APP_VIEWS = [
-    { id: "overview", label: "Overzicht" },
-    { id: "energy", label: "Energie" },
-    { id: "diagnosis", label: "Diagnose" },
-    { id: "results", label: "Resultaten" },
-    { id: "settings", label: "Instellingen" },
+    { id: "overview", label: "Overzicht", icon: "monitor-dashboard" },
+    { id: "energy", label: "Energie", icon: "zap" },
+    { id: "diagnosis", label: "Diagnose", icon: "activity" },
+    { id: "results", label: "Resultaten", icon: "bar-chart" },
+    { id: "settings", label: "Instellingen", icon: "settings" },
   ];
   const APP_VIEW_IDS = new Set(APP_VIEWS.map((view) => view.id));
+
+  const OQ_ICON_PATHS = {
+    activity: '<path d="M3 12h4l2-7 4 14 2-7h6"/>',
+    "bar-chart": '<path d="M4 19V5"/><path d="M20 19H4"/><rect x="7" y="11" width="3" height="5" rx="1"/><rect x="12" y="7" width="3" height="9" rx="1"/><rect x="17" y="3" width="3" height="13" rx="1"/>',
+    "monitor-dashboard": '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8"/><path d="M12 16v4"/><path d="M6.5 7h7v4h-7z"/><path d="M16 7h2"/><path d="M16 10h2"/><path d="M6.5 13h3"/><path d="M11 13h2.5"/>',
+    "more-horizontal": '<path d="M5 12h.01"/><path d="M12 12h.01"/><path d="M19 12h.01"/>',
+    settings: '<path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15z"/>',
+    zap: '<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/>',
+  };
+
+  function renderOqIcon(name, className = "") {
+    const paths = OQ_ICON_PATHS[name];
+    if (!paths) {
+      return "";
+    }
+    const classAttr = className ? ` class="${escapeHtml(className)}"` : "";
+    return `<svg${classAttr} viewBox="0 0 24 24" aria-hidden="true" focusable="false">${paths}</svg>`;
+  }
   const SETTINGS_GROUPS = [
     { id: "installation", label: "Installatie" },
     { id: "heating", label: "Verwarmen" },

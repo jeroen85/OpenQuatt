@@ -1666,6 +1666,9 @@
     if (key === "debugRecording") {
       return "open-debug-recording-modal";
     }
+    if (key === "webserverLog") {
+      return "open-webserver-log-modal";
+    }
     if (key === "login") {
       return "open-login-modal";
     }
@@ -1680,6 +1683,7 @@
       ["time", "Tijd", formatDeviceClock()],
       ["version", "Versie", getFirmwareVersionChipValue(), Boolean(getFirmwareUpdateEntity())],
       ["debugRecording", "Debugopname", getDebugRecordingHubStatusLabel(), true],
+      ["webserverLog", "Logboek", getWebServerLogStatusLabel(), true],
     ];
   }
 
@@ -1838,7 +1842,7 @@
               aria-expanded="false"
               aria-label="Open interfacepaneel"
               title="Open interfacepaneel"
-            >⚙${hasUpdateAttention ? '<span class="oq-helper-hub-toggle-dot" aria-hidden="true"></span>' : ""}</button>
+            >${renderOqIcon("more-horizontal", "oq-helper-hub-toggle-icon")}${hasUpdateAttention ? '<span class="oq-helper-hub-toggle-dot" aria-hidden="true"></span>' : ""}</button>
           </div>
         </aside>
       `;

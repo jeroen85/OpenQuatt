@@ -195,6 +195,7 @@
             data-oq-action="select-view"
             data-view-id="${escapeHtml(view.id)}"
           >
+            ${renderOqIcon(view.icon, "oq-helper-app-tab-icon")}
             <span>${escapeHtml(view.label)}</span>
           </button>
         `).join("")}
