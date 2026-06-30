@@ -484,8 +484,15 @@
   max-width: 240px;
 }
 
-@media (min-width: 641px) {
+@media (min-width: 861px) {
   .oq-settings-generation-grid .oq-settings-choice-card-shell:not(:last-child) .oq-settings-info-popover {
+    right: auto;
+    left: 0;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 860px) {
+  .oq-settings-generation-grid .oq-settings-choice-card-shell:nth-child(odd) .oq-settings-info-popover {
     right: auto;
     left: 0;
   }
