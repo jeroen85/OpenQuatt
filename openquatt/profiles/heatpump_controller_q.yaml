@@ -12,9 +12,9 @@ substitutions:
   esp_flash_size: "16MB"                                # Active ESP flash size.
   esp_variant: "esp32s3"                                # Active ESP variant.
   esp_partitions: "${openquatt_root}/partitions/openquatt_16mb.csv" # Active partition table.
-  uart_tx_pin: "GPIO42"                                 # Modbus 1 TX; primary heat-pump bus.
-  uart_rx_pin: "GPIO45"                                 # Modbus 1 RX; primary heat-pump bus.
-  uart_rts_pin: "GPIO41"                                # Modbus 1 DE/RE; primary heat-pump bus.
+  uart_tx_pin: "GPIO40"                                 # Modbus 2 TX; primary heat-pump bus.
+  uart_rx_pin: "GPIO39"                                 # Modbus 2 RX; primary heat-pump bus.
+  uart_rts_pin: "GPIO38"                                # Modbus 2 DE/RE; primary heat-pump bus.
   oq_ot_thermostat_in_pin: "GPIO16"                     # OpenTherm thermostat input.
   oq_ot_thermostat_out_pin: "GPIO15"                    # OpenTherm thermostat output.
   ds18b20_pin: "GPIO14"                                 # Dallas DS18B20 1-Wire input.
