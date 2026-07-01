@@ -2407,6 +2407,10 @@
     if (state.nativeOpen || state.loadingEntities || state.draggingCurveKey || state.busyAction || state.settingsInteractionLock) {
       return;
     }
+    if (state.updateInstallBusy || isFirmwareOtaQuietActive()) {
+      state.pendingEntitySyncOptions = null;
+      return;
+    }
     if (state.focusedField && state.appView !== "settings") {
       return;
     }
@@ -4506,6 +4510,10 @@
       return false;
     }
 
+    if (String(getEntityValue("firmwareUpdateTarget") || "").trim() === value) {
+      return true;
+    }
+
     state.entities.firmwareUpdateTarget = {
       ...(state.entities.firmwareUpdateTarget || {}),
       state: value,
@@ -4556,15 +4564,19 @@
     render();
 
     try {
-      await setFirmwareUpdateTarget("current build");
+      await setFirmwareUpdateTarget("current build", { poll: false });
       state.updateInstallTargetVersion = getFirmwareLatestVersion(getFirmwareUpdateEntity() || {}) || state.updateInstallTargetVersion;
+      beginFirmwareOtaQuietWindow();
       const response = await fetch(buildEntityPath("update", "Firmware Update", "install"), {
         method: "POST",
       });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      const completed = await pollFirmwareInstallState();
+      const completed = await pollFirmwareInstallState({
+        initialDelayMs: FIRMWARE_OTA_START_QUIET_MS,
+        pollDelayMs: FIRMWARE_OTA_INSTALL_POLL_INTERVAL_MS,
+      });
       if (completed) {
         state.updateInstallCompleted = true;
         state.updateInstallCompletedVersion = getFirmwareCurrentVersion() || state.updateInstallTargetVersion;
@@ -4616,6 +4628,7 @@
       state.updateInstallProgressHint = 0;
       render();
 
+      beginFirmwareOtaQuietWindow();
       const response = await fetch(buildEntityPath(buttonEntity.domain, buttonEntity.name, "press"), {
         method: "POST",
       });
@@ -4623,7 +4636,10 @@
         throw new Error(`HTTP ${response.status}`);
       }
 
-      const completed = await pollFirmwareInstallState();
+      const completed = await pollFirmwareInstallState({
+        initialDelayMs: FIRMWARE_OTA_START_QUIET_MS,
+        pollDelayMs: FIRMWARE_OTA_INSTALL_POLL_INTERVAL_MS,
+      });
       if (completed) {
         state.updateInstallCompleted = true;
         state.updateInstallCompletedVersion = getFirmwareCurrentVersion() || state.updateInstallTargetVersion || "";
@@ -4679,6 +4695,7 @@
       state.updateInstallProgressHint = 0;
       render();
 
+      beginFirmwareOtaQuietWindow();
       const response = await fetch(buildEntityPath(buttonEntity.domain, buttonEntity.name, "press"), {
         method: "POST",
       });
@@ -4686,7 +4703,10 @@
         throw new Error(`HTTP ${response.status}`);
       }
 
-      const completed = await pollFirmwareInstallState();
+      const completed = await pollFirmwareInstallState({
+        initialDelayMs: FIRMWARE_OTA_START_QUIET_MS,
+        pollDelayMs: FIRMWARE_OTA_INSTALL_POLL_INTERVAL_MS,
+      });
       if (completed) {
         state.updateInstallCompleted = true;
         state.updateInstallCompletedVersion = getFirmwareCurrentVersion() || state.updateInstallTargetVersion || "";
@@ -4809,6 +4829,7 @@
       await setFirmwareTestTextEntity("firmwareTestOtaMd5Url", releaseAsset.md5Url);
 
       flashRequested = true;
+      beginFirmwareOtaQuietWindow();
       const response = await fetch(buildEntityPath(buttonEntity.domain, buttonEntity.name, "press"), {
         method: "POST",
       });
@@ -4816,7 +4837,10 @@
         throw new Error(`HTTP ${response.status}`);
       }
 
-      const completed = await pollFirmwareInstallState();
+      const completed = await pollFirmwareInstallState({
+        initialDelayMs: FIRMWARE_OTA_START_QUIET_MS,
+        pollDelayMs: FIRMWARE_OTA_INSTALL_POLL_INTERVAL_MS,
+      });
       if (completed) {
         state.updateInstallCompleted = true;
         state.updateInstallCompletedVersion = getFirmwareCurrentVersion() || `PR ${prNumber}`;
