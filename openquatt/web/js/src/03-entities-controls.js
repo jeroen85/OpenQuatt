@@ -4563,7 +4563,11 @@
       await setFirmwareUpdateTarget("current build", { poll: false, force: true });
       state.updateInstallTargetVersion = getFirmwareLatestVersion(getFirmwareUpdateEntity() || {}) || state.updateInstallTargetVersion;
       beginFirmwareOtaQuietWindow();
-      const response = await fetch(buildEntityPath("update", "Firmware Update", "install"), {
+      const installButtonEntity = ENTITY_DEFS.installFirmwareUpdateTarget;
+      const installPath = installButtonEntity && hasEntity("installFirmwareUpdateTarget")
+        ? buildEntityPath(installButtonEntity.domain, installButtonEntity.name, "press")
+        : buildEntityPath("update", "Firmware Update", "install");
+      const response = await fetch(installPath, {
         method: "POST",
       });
       if (!response.ok) {

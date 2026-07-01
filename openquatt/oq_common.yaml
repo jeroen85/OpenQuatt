@@ -219,6 +219,101 @@ script:
                    target.c_str(), channel.c_str(), source_url);
           id(oq_firmware_update).set_source_url(source_url);
 
+  - id: oq_install_firmware_update_target_deferred
+    mode: restart
+    then:
+      # Let the web_server/API button response finish before TLS-heavy GitHub OTA starts.
+      - delay: 1500ms
+      - script.execute: oq_apply_firmware_update_source
+      - script.wait: oq_apply_firmware_update_source
+      - update.check:
+          id: oq_firmware_update
+      - wait_until:
+          condition:
+            lambda: |-
+              // Wait until the parsed manifest OTA file matches the selected target.
+              std::string hardware_slug;
+              const std::string hardware = "${oq_hardware_profile}";
+              if (hardware == "waveshare") {
+                hardware_slug = "waveshare";
+              } else if (hardware == "heatpump_listener") {
+                hardware_slug = "heatpump-listener";
+              } else if (hardware == "heatpump_controller_q") {
+                hardware_slug = "heatpump-controller-q";
+              } else {
+                return false;
+              }
+              #if OQ_TOPOLOGY_DUO
+              std::string topology = "duo";
+              #else
+              std::string topology = "single";
+              #endif
+              std::string connection = "${oq_connection}";
+              const std::string target = id(oq_firmware_update_target).current_option();
+              if (target == "alternate connection" && std::string("${alternate_connection}") != "") {
+                connection = "${alternate_connection}";
+              } else if (target == "alternate topology" && std::string("${alternate_topology}") != "") {
+                topology = "${alternate_topology}";
+              }
+              const std::string expected_file =
+                  "openquatt-" + hardware_slug + "-" + topology + "-" + connection + ".firmware.ota.bin";
+              const std::string firmware_url = id(oq_firmware_update).update_info.firmware_url;
+              return firmware_url.size() >= expected_file.size() &&
+                     firmware_url.compare(firmware_url.size() - expected_file.size(),
+                                          expected_file.size(), expected_file) == 0;
+          timeout: 20s
+      - if:
+          condition:
+            lambda: |-
+              // Block installation when http_request.update still contains stale OTA metadata.
+              std::string hardware_slug;
+              const std::string hardware = "${oq_hardware_profile}";
+              if (hardware == "waveshare") {
+                hardware_slug = "waveshare";
+              } else if (hardware == "heatpump_listener") {
+                hardware_slug = "heatpump-listener";
+              } else if (hardware == "heatpump_controller_q") {
+                hardware_slug = "heatpump-controller-q";
+              } else {
+                ESP_LOGW("oq_fw", "Firmware install blocked: unsupported hardware profile '%s'.", hardware.c_str());
+                id(oq_firmware_update_status).publish_state("Error");
+                return false;
+              }
+              #if OQ_TOPOLOGY_DUO
+              std::string topology = "duo";
+              #else
+              std::string topology = "single";
+              #endif
+              std::string connection = "${oq_connection}";
+              const std::string target = id(oq_firmware_update_target).current_option();
+              if (target == "alternate connection" && std::string("${alternate_connection}") != "") {
+                connection = "${alternate_connection}";
+              } else if (target == "alternate topology" && std::string("${alternate_topology}") != "") {
+                topology = "${alternate_topology}";
+              }
+              const std::string expected_file =
+                  "openquatt-" + hardware_slug + "-" + topology + "-" + connection + ".firmware.ota.bin";
+              const std::string firmware_url = id(oq_firmware_update).update_info.firmware_url;
+              const bool matched = firmware_url.size() >= expected_file.size() &&
+                  firmware_url.compare(firmware_url.size() - expected_file.size(),
+                                       expected_file.size(), expected_file) == 0;
+              if (!matched) {
+                ESP_LOGW("oq_fw", "Firmware install blocked: cached OTA URL '%s' does not match target file '%s'.",
+                         firmware_url.c_str(), expected_file.c_str());
+                id(oq_firmware_update_status).publish_state("Error");
+              }
+              return matched;
+          then:
+            - lambda: |-
+                id(oq_runtime_polling_paused).publish_state(true);
+                ESP_LOGI("oq_fw", "Runtime polling paused before deferred OTA.");
+                id(oq_firmware_update_status).publish_state("Starting");
+                id(oq_firmware_update_progress).publish_state(0.0f);
+            - delay: 1500ms
+            - update.perform:
+                id: oq_firmware_update
+                force_update: true
+
   - id: oq_capture_overview_trend_sample
     mode: single
     then:
@@ -684,89 +779,7 @@ button:
     web_server:
       sorting_group_id: oq_system_diagnostics
     on_press:
-      - script.execute: oq_apply_firmware_update_source
-      - script.wait: oq_apply_firmware_update_source
-      - update.check:
-          id: oq_firmware_update
-      - wait_until:
-          condition:
-            lambda: |-
-              // Wait until the parsed manifest OTA file matches the selected target.
-              std::string hardware_slug;
-              const std::string hardware = "${oq_hardware_profile}";
-              if (hardware == "waveshare") {
-                hardware_slug = "waveshare";
-              } else if (hardware == "heatpump_listener") {
-                hardware_slug = "heatpump-listener";
-              } else if (hardware == "heatpump_controller_q") {
-                hardware_slug = "heatpump-controller-q";
-              } else {
-                return false;
-              }
-              #if OQ_TOPOLOGY_DUO
-              std::string topology = "duo";
-              #else
-              std::string topology = "single";
-              #endif
-              std::string connection = "${oq_connection}";
-              const std::string target = id(oq_firmware_update_target).current_option();
-              if (target == "alternate connection" && std::string("${alternate_connection}") != "") {
-                connection = "${alternate_connection}";
-              } else if (target == "alternate topology" && std::string("${alternate_topology}") != "") {
-                topology = "${alternate_topology}";
-              }
-              const std::string expected_file =
-                  "openquatt-" + hardware_slug + "-" + topology + "-" + connection + ".firmware.ota.bin";
-              const std::string firmware_url = id(oq_firmware_update).update_info.firmware_url;
-              return firmware_url.size() >= expected_file.size() &&
-                     firmware_url.compare(firmware_url.size() - expected_file.size(),
-                                          expected_file.size(), expected_file) == 0;
-          timeout: 20s
-      - if:
-          condition:
-            lambda: |-
-              // Block installation when http_request.update still contains stale OTA metadata.
-              std::string hardware_slug;
-              const std::string hardware = "${oq_hardware_profile}";
-              if (hardware == "waveshare") {
-                hardware_slug = "waveshare";
-              } else if (hardware == "heatpump_listener") {
-                hardware_slug = "heatpump-listener";
-              } else if (hardware == "heatpump_controller_q") {
-                hardware_slug = "heatpump-controller-q";
-              } else {
-                ESP_LOGW("oq_fw", "Firmware install blocked: unsupported hardware profile '%s'.", hardware.c_str());
-                id(oq_firmware_update_status).publish_state("Error");
-                return false;
-              }
-              #if OQ_TOPOLOGY_DUO
-              std::string topology = "duo";
-              #else
-              std::string topology = "single";
-              #endif
-              std::string connection = "${oq_connection}";
-              const std::string target = id(oq_firmware_update_target).current_option();
-              if (target == "alternate connection" && std::string("${alternate_connection}") != "") {
-                connection = "${alternate_connection}";
-              } else if (target == "alternate topology" && std::string("${alternate_topology}") != "") {
-                topology = "${alternate_topology}";
-              }
-              const std::string expected_file =
-                  "openquatt-" + hardware_slug + "-" + topology + "-" + connection + ".firmware.ota.bin";
-              const std::string firmware_url = id(oq_firmware_update).update_info.firmware_url;
-              const bool matched = firmware_url.size() >= expected_file.size() &&
-                  firmware_url.compare(firmware_url.size() - expected_file.size(),
-                                       expected_file.size(), expected_file) == 0;
-              if (!matched) {
-                ESP_LOGW("oq_fw", "Firmware install blocked: cached OTA URL '%s' does not match target file '%s'.",
-                         firmware_url.c_str(), expected_file.c_str());
-                id(oq_firmware_update_status).publish_state("Error");
-              }
-              return matched;
-          then:
-            - update.perform:
-                id: oq_firmware_update
-                force_update: true
+      - script.execute: oq_install_firmware_update_target_deferred
 
 switch:
   - platform: template
