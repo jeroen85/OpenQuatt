@@ -4566,6 +4566,12 @@
     try {
       await setFirmwareUpdateTarget("current build", { poll: false });
       state.updateInstallTargetVersion = getFirmwareLatestVersion(getFirmwareUpdateEntity() || {}) || state.updateInstallTargetVersion;
+      if (hasInstalledFirmwareTargetVersion() || isFirmwareEffectivelyCurrent()) {
+        state.updateInstallCompleted = true;
+        state.updateInstallCompletedVersion = getFirmwareCurrentVersion() || state.updateInstallTargetVersion;
+        state.controlNotice = "Deze firmware draait al. OTA-install overgeslagen.";
+        return;
+      }
       beginFirmwareOtaQuietWindow();
       const response = await fetch(buildEntityPath("update", "Firmware Update", "install"), {
         method: "POST",
