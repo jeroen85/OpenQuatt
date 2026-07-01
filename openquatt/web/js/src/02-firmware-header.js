@@ -545,6 +545,7 @@
     state.updateInstallMode = "";
     state.updateInstallTargetConnection = "";
     state.updateInstallTargetTopology = "";
+    clearFirmwareOtaQuietWindow();
   }
 
   function resetFirmwareManualUploadSelection() {
@@ -888,6 +889,42 @@
     return new Promise((resolve) => window.setTimeout(resolve, ms));
   }
 
+  function isFirmwareOtaQuietActive(now = Date.now()) {
+    return Number(state.firmwareOtaQuietUntil || 0) > now;
+  }
+
+  function beginFirmwareOtaQuietWindow(durationMs = FIRMWARE_OTA_START_QUIET_MS) {
+    const now = Date.now();
+    const until = now + durationMs;
+    state.firmwareOtaQuietUntil = Math.max(Number(state.firmwareOtaQuietUntil || 0), until);
+    state.pendingEntitySyncOptions = null;
+    stopEntityPolling();
+    if (typeof closeWebServerLogStream === "function") {
+      closeWebServerLogStream();
+    }
+    if (state.firmwareOtaQuietTimer) {
+      window.clearTimeout(state.firmwareOtaQuietTimer);
+    }
+    state.firmwareOtaQuietTimer = window.setTimeout(() => {
+      state.firmwareOtaQuietTimer = null;
+      state.firmwareOtaQuietUntil = 0;
+      if (!state.updateInstallBusy && !state.nativeOpen) {
+        startEntityPolling();
+      }
+    }, durationMs);
+  }
+
+  function clearFirmwareOtaQuietWindow() {
+    if (state.firmwareOtaQuietTimer) {
+      window.clearTimeout(state.firmwareOtaQuietTimer);
+      state.firmwareOtaQuietTimer = null;
+    }
+    state.firmwareOtaQuietUntil = 0;
+    if (!state.nativeOpen) {
+      startEntityPolling();
+    }
+  }
+
   const DEVICE_RECONNECT_RECOVERY_CLEAR_DELAY_MS = 1500;
 
   function clearDeviceReconnectRecoveryTimer() {
@@ -1052,11 +1089,17 @@
     }
   }
 
-  async function pollFirmwareInstallState() {
+  async function pollFirmwareInstallState(options = {}) {
     let waitingForReconnect = false;
+    const initialDelayMs = Number.isFinite(Number(options.initialDelayMs))
+      ? Math.max(0, Number(options.initialDelayMs))
+      : 700;
+    const pollDelayMs = Number.isFinite(Number(options.pollDelayMs))
+      ? Math.max(250, Number(options.pollDelayMs))
+      : 1000;
 
     for (let attempt = 0; attempt < 45; attempt += 1) {
-      await wait(attempt === 0 ? 700 : 1000);
+      await wait(attempt === 0 ? initialDelayMs : pollDelayMs);
       try {
         await refreshEntities(FIRMWARE_MODAL_KEYS, "all", { forceMissing: true });
         if (getFirmwareProgressPhase() === "rebooting") {

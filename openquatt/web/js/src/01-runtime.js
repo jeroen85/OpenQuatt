@@ -58,6 +58,8 @@
     deviceReconnectRecoveryStartedAt: 0,
     deviceReconnectRecoveryTimer: null,
     deviceReconnectLastError: "",
+    firmwareOtaQuietUntil: 0,
+    firmwareOtaQuietTimer: null,
     entitySyncFailureCount: 0,
     lastEntitySyncAt: 0,
     lastEntitySyncSuccessAt: 0,
@@ -428,7 +430,10 @@
   }
 
   function scheduleEntityPolling(delayMs = getEntityPollDelayMs()) {
-    if (state.pollTimer || state.nativeOpen) {
+    if (state.pollTimer || state.nativeOpen || state.updateInstallBusy) {
+      return;
+    }
+    if (isFirmwareOtaQuietActive()) {
       return;
     }
     state.pollTimer = window.setTimeout(async () => {
