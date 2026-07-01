@@ -425,8 +425,10 @@ void OpenQuattLogHistory::setup() {
   });
 
 #ifdef USE_ESP32_CRASH_HANDLER
-  if (this->capture_enabled_() && esp32::crash_handler_has_data()) {
-    esp32::crash_handler_log();
+  if (esp32::crash_handler_has_data()) {
+    if (this->capture_enabled_()) {
+      esp32::crash_handler_log();
+    }
     esp32::crash_handler_clear();
   }
 #endif
