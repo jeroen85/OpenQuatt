@@ -32,22 +32,30 @@ esphome:
           state: "${release_channel}"
       - lambda: |-
           // Pick the OTA manifest for the active channel and selected update target.
-          const bool alternate_update_target =
+          const bool alternate_connection_update_target =
             id(oq_firmware_update_target).current_option() == "alternate connection";
+          const bool alternate_topology_update_target =
+            id(oq_firmware_update_target).current_option() == "alternate topology";
           if (id(oq_firmware_update_channel).current_option() == "dev") {
-            const char *alternate_url = "${alternate_dev_release_manifest_url}";
-            id(oq_firmware_update).set_source_url(
-              alternate_update_target && alternate_url[0] != '\0'
-                ? alternate_url
-                : "${dev_release_manifest_url}"
-            );
+            const char *source_url = "${dev_release_manifest_url}";
+            const char *alternate_connection_url = "${alternate_dev_release_manifest_url}";
+            const char *alternate_topology_url = "${alternate_topology_dev_release_manifest_url}";
+            if (alternate_connection_update_target && alternate_connection_url[0] != '\0') {
+              source_url = alternate_connection_url;
+            } else if (alternate_topology_update_target && alternate_topology_url[0] != '\0') {
+              source_url = alternate_topology_url;
+            }
+            id(oq_firmware_update).set_source_url(source_url);
           } else {
-            const char *alternate_url = "${alternate_main_release_manifest_url}";
-            id(oq_firmware_update).set_source_url(
-              alternate_update_target && alternate_url[0] != '\0'
-                ? alternate_url
-                : "${main_release_manifest_url}"
-            );
+            const char *source_url = "${main_release_manifest_url}";
+            const char *alternate_connection_url = "${alternate_main_release_manifest_url}";
+            const char *alternate_topology_url = "${alternate_topology_main_release_manifest_url}";
+            if (alternate_connection_update_target && alternate_connection_url[0] != '\0') {
+              source_url = alternate_connection_url;
+            } else if (alternate_topology_update_target && alternate_topology_url[0] != '\0') {
+              source_url = alternate_topology_url;
+            }
+            id(oq_firmware_update).set_source_url(source_url);
           }
 
 esp32:

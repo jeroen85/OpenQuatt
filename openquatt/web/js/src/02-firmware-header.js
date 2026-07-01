@@ -126,6 +126,16 @@
     return "Onbekend";
   }
 
+  function getFirmwareTopologyLabel(topology = getInstallationTopology()) {
+    if (topology === "single") {
+      return "Single";
+    }
+    if (topology === "duo") {
+      return "Duo";
+    }
+    return "Onbekende opstelling";
+  }
+
   function getFirmwareHardwareProfile() {
     const entityProfile = String(getEntityValue("hardwareProfileText") || "").trim().toLowerCase();
     if (entityProfile && entityProfile !== "unknown" && entityProfile !== "onbekend") {
@@ -149,11 +159,48 @@
     return "";
   }
 
+  function getFirmwareAlternateTopology() {
+    const current = getInstallationTopology();
+    if (current === "single") {
+      return "duo";
+    }
+    if (current === "duo") {
+      return "single";
+    }
+    return "";
+  }
+
+  function getFirmwareUpdateTargetOptions() {
+    const targetEntity = state.entities.firmwareUpdateTarget || {};
+    if (Array.isArray(targetEntity.option)) {
+      return targetEntity.option;
+    }
+    if (Array.isArray(targetEntity.options)) {
+      return targetEntity.options;
+    }
+    return [];
+  }
+
+  function hasFirmwareUpdateTargetOption(option) {
+    return getFirmwareUpdateTargetOptions().includes(option);
+  }
+
   function getFirmwareBuildLabel(connection = getFirmwareBuildConnection()) {
     const topology = getInstallationTopology();
-    const topologyLabel = topology === "duo" ? "Duo" : topology === "single" ? "Single" : "Onbekende opstelling";
-    if (getFirmwareHardwareProfile() === "heatpump_controller_q") {
+    return getFirmwareBuildLabelFor(topology, connection);
+  }
+
+  function getFirmwareBuildLabelFor(topology = getInstallationTopology(), connection = getFirmwareBuildConnection()) {
+    const topologyLabel = getFirmwareTopologyLabel(topology);
+    const hardware = getFirmwareHardwareProfile();
+    if (hardware === "heatpump_controller_q") {
       return `Heatpump Controller Q ${topologyLabel} ${getFirmwareConnectionLabel(connection)}`;
+    }
+    if (hardware === "heatpump_listener") {
+      return `Heatpump Listener ${topologyLabel} ${getFirmwareConnectionLabel(connection)}`;
+    }
+    if (hardware === "waveshare") {
+      return `Waveshare ${topologyLabel} ${getFirmwareConnectionLabel(connection)}`;
     }
     return `${getFirmwareDeviceLabel()} ${topologyLabel} ${getFirmwareConnectionLabel(connection)}`;
   }
@@ -173,13 +220,45 @@
     }
 
     return {
-      canSwitch: hasEntity("firmwareUpdateTarget") && hasEntity("installFirmwareUpdateTarget"),
+      canSwitch: hasEntity("firmwareUpdateTarget")
+        && hasFirmwareUpdateTargetOption("alternate connection")
+        && hasEntity("installFirmwareUpdateTarget"),
       currentConnection,
       targetConnection,
       currentLabel: getFirmwareConnectionLabel(currentConnection),
       targetLabel: getFirmwareConnectionLabel(targetConnection),
-      currentBuildLabel: getFirmwareBuildLabel(currentConnection),
-      targetBuildLabel: getFirmwareBuildLabel(targetConnection),
+      currentBuildLabel: getFirmwareBuildLabelFor(topology, currentConnection),
+      targetBuildLabel: getFirmwareBuildLabelFor(topology, targetConnection),
+    };
+  }
+
+  function getFirmwareTopologySwitchModel() {
+    const hardware = getFirmwareHardwareProfile();
+    const currentTopology = getInstallationTopology();
+    const targetTopology = getFirmwareAlternateTopology();
+    const currentConnection = getFirmwareBuildConnection();
+    const supportedConnections = hardware === "heatpump_controller_q" ? ["wifi", "eth"] : ["wifi"];
+    if (
+      !["heatpump_controller_q", "heatpump_listener", "waveshare"].includes(hardware)
+      || (currentTopology !== "single" && currentTopology !== "duo")
+      || !targetTopology
+      || !supportedConnections.includes(currentConnection)
+    ) {
+      return null;
+    }
+
+    return {
+      canSwitch: hasEntity("firmwareUpdateTarget")
+        && hasFirmwareUpdateTargetOption("alternate topology")
+        && hasEntity("installFirmwareUpdateTarget"),
+      currentTopology,
+      targetTopology,
+      currentConnection,
+      targetConnection: currentConnection,
+      currentLabel: getFirmwareTopologyLabel(currentTopology),
+      targetLabel: getFirmwareTopologyLabel(targetTopology),
+      currentBuildLabel: getFirmwareBuildLabelFor(currentTopology, currentConnection),
+      targetBuildLabel: getFirmwareBuildLabelFor(targetTopology, currentConnection),
     };
   }
 
@@ -465,6 +544,7 @@
     state.updateInstallProgressHint = Number.NaN;
     state.updateInstallMode = "";
     state.updateInstallTargetConnection = "";
+    state.updateInstallTargetTopology = "";
   }
 
   function resetFirmwareManualUploadSelection() {
@@ -539,6 +619,8 @@
           ? "Testfirmware is geplaatst. Het device start opnieuw op en komt daarna vanzelf terug."
           : state.updateInstallMode === "connection-switch"
           ? "Firmware is geplaatst. Het device start opnieuw op en komt daarna via de gekozen verbinding terug."
+          : state.updateInstallMode === "topology-switch"
+          ? "Firmware is geplaatst. Het device start opnieuw op en komt daarna met de gekozen opstelling terug."
           : "Firmware is geplaatst. Het device start nu opnieuw op en komt daarna vanzelf terug.",
       };
     }
@@ -551,6 +633,8 @@
           ? `Testfirmware wordt nu door ${getFirmwareDeviceLabel()} gedownload en geïnstalleerd.`
           : state.updateInstallMode === "connection-switch"
           ? `De ${getFirmwareConnectionLabel(state.updateInstallTargetConnection)}-build wordt nu naar ${getFirmwareDeviceLabel()} verzonden.`
+          : state.updateInstallMode === "topology-switch"
+          ? `De ${getFirmwareBuildLabelFor(state.updateInstallTargetTopology, state.updateInstallTargetConnection)}-build wordt nu naar ${getFirmwareDeviceLabel()} verzonden.`
           : `Firmware wordt nu naar ${getFirmwareDeviceLabel()} verzonden.`,
       };
     }
@@ -562,6 +646,8 @@
         ? `Testfirmware-installatie is gestart voor ${getFirmwareDeviceLabel()}.`
         : state.updateInstallMode === "connection-switch"
         ? `Verbindingswissel naar ${getFirmwareConnectionLabel(state.updateInstallTargetConnection)} is gestart.`
+        : state.updateInstallMode === "topology-switch"
+        ? `Opstellingswissel naar ${getFirmwareTopologyLabel(state.updateInstallTargetTopology)} is gestart.`
         : `OTA-update is gestart voor ${getFirmwareDeviceLabel()}.`,
     };
   }
@@ -988,6 +1074,16 @@
           ) {
             return true;
           }
+        } else if (state.updateInstallMode === "topology-switch") {
+          const expectedTopology = normalizeInstallationTopologyLabel(state.updateInstallTargetTopology);
+          if (
+            expectedTopology
+            && getInstallationTopology() === expectedTopology
+            && !isFirmwareProgressActive()
+            && !isFirmwareUpdateInstalling()
+          ) {
+            return true;
+          }
         } else if (
           hasInstalledFirmwareTargetVersion()
           || isFirmwareInstallSettled()
@@ -1037,6 +1133,7 @@
     return Boolean(
       state.firmwareAdvancedOpen
       || state.firmwareConnectionSwitchOpen
+      || state.firmwareTopologySwitchOpen
       || state.updateManualUploadOpen
       || state.updateTestFirmwareOpen
     );
@@ -1057,7 +1154,7 @@
     `;
   }
 
-  function renderFirmwareAdvancedSection(showConnectionSwitchAction, connectionSwitchModel) {
+  function renderFirmwareAdvancedSection(showConnectionSwitchAction, connectionSwitchModel, showTopologySwitchAction, topologySwitchModel) {
     if (!isFirmwareAdvancedOpen()) {
       return "";
     }
@@ -1084,10 +1181,20 @@
               busy,
             )
             : ""}
+          ${showTopologySwitchAction
+            ? renderFirmwareAdvancedOption(
+              "toggle-firmware-topology-switch",
+              "Opstelling wisselen",
+              `Naar ${topologySwitchModel.targetLabel}`,
+              state.firmwareTopologySwitchOpen,
+              busy,
+            )
+            : ""}
           ${renderFirmwareAdvancedOption("toggle-firmware-upload", "Handmatige upload", "Lokaal OTA-bestand", state.updateManualUploadOpen, busy)}
           ${renderFirmwareAdvancedOption("toggle-firmware-test", "Testfirmware", "PR-release installeren", state.updateTestFirmwareOpen, busy)}
         </div>
         ${renderFirmwareConnectionSwitchSection()}
+        ${renderFirmwareTopologySwitchSection()}
         ${renderFirmwareManualUploadSection()}
         ${renderFirmwareTestSection()}
       </div>
@@ -1139,6 +1246,60 @@
             class="oq-helper-button oq-helper-button--ghost"
             type="button"
             data-oq-action="install-firmware-connection-switch"
+            ${busy || unavailable || !confirmed ? "disabled" : ""}
+          >
+            ${escapeHtml(`Wissel naar ${model.targetLabel}`)}
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderFirmwareTopologySwitchSection() {
+    const model = getFirmwareTopologySwitchModel();
+    if (!model || !state.firmwareTopologySwitchOpen) {
+      return "";
+    }
+
+    const progress = getFirmwareProgressModel();
+    const busy = Boolean(progress || state.updateInstallBusy || isFirmwareUpdateChecking());
+    const confirmed = Boolean(state.firmwareTopologySwitchConfirmed);
+    const unavailable = !model.canSwitch;
+    const targetIsDuo = model.targetTopology === "duo";
+    const warning = targetIsDuo
+      ? "Controleer eerst dat de tweede warmtepomp is aangesloten en geconfigureerd. Na de herstart bevat deze firmware HP2-regeling en HP2-diagnostiek."
+      : "Na de herstart verdwijnt HP2-regeling en HP2-diagnostiek uit deze firmware. Gebruik dit alleen als deze controller als Single-installatie verder moet draaien.";
+    const statusNote = unavailable
+      ? '<p class="oq-helper-modal-note oq-helper-modal-note--muted">Opstellingswissel vereist firmware met de target-optie alternate topology. Werk eerst normaal bij als de knop disabled blijft.</p>'
+      : "";
+
+    return `
+      <div class="oq-firmware-advanced-detail">
+        <div class="oq-firmware-advanced-detail-head">
+          <strong>Opstelling wisselen</strong>
+          <span>Installeer dezelfde ${escapeHtml(getFirmwareChannelLabel())}-build voor de andere Single/Duo-opstelling.</span>
+        </div>
+        <div class="oq-helper-modal-grid">
+          <div class="oq-helper-modal-row">
+            <span class="oq-helper-modal-label">Huidige build</span>
+            <strong class="oq-helper-modal-value">${escapeHtml(model.currentBuildLabel)}</strong>
+          </div>
+          <div class="oq-helper-modal-row">
+            <span class="oq-helper-modal-label">Alternatief</span>
+            <strong class="oq-helper-modal-value">${escapeHtml(model.targetBuildLabel)}</strong>
+          </div>
+        </div>
+        <p class="oq-helper-modal-note">${escapeHtml(warning)}</p>
+        ${statusNote}
+        <label class="oq-helper-modal-check">
+          <input type="checkbox" data-oq-firmware-topology-confirm="true" ${confirmed ? "checked" : ""} ${busy || unavailable ? "disabled" : ""}>
+          <span>${escapeHtml(targetIsDuo ? "De tweede warmtepomp is aangesloten en hoort bij deze controller." : "Ik begrijp dat HP2-bediening na reboot verdwijnt.")}</span>
+        </label>
+        <div class="oq-firmware-advanced-footer">
+          <button
+            class="oq-helper-button oq-helper-button--ghost"
+            type="button"
+            data-oq-action="install-firmware-topology-switch"
             ${busy || unavailable || !confirmed ? "disabled" : ""}
           >
             ${escapeHtml(`Wissel naar ${model.targetLabel}`)}
@@ -1263,6 +1424,7 @@
       getEntitySignatureFragment("connectionText"),
       state.firmwareAdvancedOpen ? "firmware-advanced-open" : "firmware-advanced-closed",
       state.firmwareConnectionSwitchOpen ? "connection-open" : "connection-closed",
+      state.firmwareTopologySwitchOpen ? "topology-open" : "topology-closed",
       state.updateManualUploadOpen ? "upload-open" : "upload-closed",
       state.updateTestFirmwareOpen ? "test-open" : "test-closed",
       state.updateTestFirmwareError,
@@ -2088,7 +2250,9 @@
       ? (Array.isArray(channelEntity.option) ? channelEntity.option : Array.isArray(channelEntity.options) ? channelEntity.options : [])
       : [];
     const connectionSwitchModel = getFirmwareConnectionSwitchModel();
+    const topologySwitchModel = getFirmwareTopologySwitchModel();
     const showConnectionSwitchAction = Boolean(connectionSwitchModel && !justCompleted);
+    const showTopologySwitchAction = Boolean(topologySwitchModel && !justCompleted);
 
     return `
       <div class="oq-helper-modal-backdrop${checking || installing || progress ? " is-busy" : ""}${state.overviewTheme === "dark" ? " oq-helper-modal-backdrop--dark" : ""}" data-oq-modal="firmware-update">
@@ -2163,7 +2327,7 @@
               </button>
             `}
           </div>
-          ${renderFirmwareAdvancedSection(showConnectionSwitchAction, connectionSwitchModel)}
+          ${renderFirmwareAdvancedSection(showConnectionSwitchAction, connectionSwitchModel, showTopologySwitchAction, topologySwitchModel)}
         </section>
       </div>
     `;

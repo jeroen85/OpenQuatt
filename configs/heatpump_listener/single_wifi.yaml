@@ -10,6 +10,9 @@ substitutions:
   main_release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-heatpump-listener-single-wifi-ota.manifest.json"
   dev_release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/download/dev-latest/openquatt-heatpump-listener-single-wifi-ota.manifest.json"
   release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-heatpump-listener-single-wifi-ota.manifest.json"
+  alternate_topology: "duo"
+  alternate_topology_main_release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/latest/download/openquatt-heatpump-listener-duo-wifi-ota.manifest.json"
+  alternate_topology_dev_release_manifest_url: "https://github.com/jeroen85/OpenQuatt/releases/download/dev-latest/openquatt-heatpump-listener-duo-wifi-ota.manifest.json"
 
 esphome:
   build_path: ../../../.esphome/build/heatpump_listener_single_wifi

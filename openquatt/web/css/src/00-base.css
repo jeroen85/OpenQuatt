@@ -7,6 +7,7 @@
   --oq-helper-ink: #111827;
   --oq-helper-soft: #4b5563;
   --oq-helper-faint: #6b7280;
+  --oq-helper-muted: #6b7280;
   --oq-helper-accent: #ea580c;
   --oq-helper-accent-deep: #c2410c;
   --oq-helper-accent-soft: #fff7ed;
@@ -67,6 +68,7 @@ body.oq-surface-native {
   --oq-helper-ink: #f8fafc;
   --oq-helper-soft: #dbe4ef;
   --oq-helper-faint: #aec0d4;
+  --oq-helper-muted: #cbd5e1;
   --oq-helper-shadow: 0 1px 2px rgba(15, 23, 42, 0.16), 0 24px 56px rgba(2, 6, 23, 0.2);
 }
 
@@ -1421,6 +1423,8 @@ body.oq-surface-native {
   gap: 12px;
   margin-top: 14px;
   padding: 14px;
+  border-color: rgba(203, 213, 225, 0.72);
+  background: rgba(248, 250, 252, 0.9);
 }
 
 .oq-firmware-advanced-head {
@@ -1434,6 +1438,14 @@ body.oq-surface-native {
   display: grid;
   gap: 2px;
   min-width: 0;
+}
+
+.oq-firmware-advanced-head strong {
+  color: var(--oq-helper-ink);
+}
+
+.oq-firmware-advanced-head span {
+  color: var(--oq-helper-faint);
 }
 
 .oq-firmware-advanced-hide {
@@ -1480,12 +1492,12 @@ body.oq-surface-native {
 
 .oq-firmware-advanced-option:hover,
 .oq-firmware-advanced-option.is-active {
-  border-color: rgba(234, 88, 12, 0.34);
-  background: rgba(255, 247, 237, 0.92);
+  border-color: rgba(14, 116, 144, 0.34);
+  background: rgba(240, 249, 255, 0.92);
 }
 
 .oq-firmware-advanced-option.is-active {
-  box-shadow: inset 0 0 0 1px rgba(234, 88, 12, 0.2);
+  box-shadow: inset 0 0 0 1px rgba(14, 116, 144, 0.18);
 }
 
 .oq-firmware-advanced-option:disabled {
@@ -1510,14 +1522,26 @@ body.oq-surface-native {
 }
 
 .oq-firmware-advanced-detail-head strong {
-  color: #9a3412;
+  color: var(--oq-helper-ink);
   font-size: 0.94rem;
 }
 
 .oq-firmware-advanced-detail-head span {
-  color: #7c2d12;
+  color: var(--oq-helper-faint);
   font-size: 0.9rem;
   line-height: 1.45;
+}
+
+.oq-firmware-advanced-panel .oq-helper-modal-label {
+  color: var(--oq-helper-faint);
+}
+
+.oq-firmware-advanced-panel .oq-helper-modal-value {
+  color: var(--oq-helper-ink);
+}
+
+.oq-firmware-advanced-panel .oq-helper-modal-check span {
+  color: var(--oq-helper-soft);
 }
 
 .oq-firmware-test-grid {
@@ -1589,32 +1613,48 @@ body.oq-surface-native {
   background: rgba(24, 35, 49, 0.78);
 }
 
+.oq-helper-shell--dark .oq-firmware-advanced-panel,
+.oq-helper-modal-backdrop--dark .oq-firmware-advanced-panel {
+  border-color: rgba(71, 85, 105, 0.46);
+  background: rgba(15, 23, 42, 0.76);
+}
+
 .oq-helper-shell--dark .oq-firmware-advanced-option:hover,
 .oq-helper-modal-backdrop--dark .oq-firmware-advanced-option:hover,
 .oq-helper-shell--dark .oq-firmware-advanced-option.is-active,
 .oq-helper-modal-backdrop--dark .oq-firmware-advanced-option.is-active {
-  border-color: rgba(251, 146, 60, 0.42);
-  background: rgba(124, 45, 18, 0.28);
+  border-color: rgba(34, 211, 238, 0.38);
+  background: rgba(8, 47, 73, 0.42);
 }
 
+.oq-helper-shell--dark .oq-firmware-advanced-head strong,
+.oq-helper-modal-backdrop--dark .oq-firmware-advanced-head strong,
 .oq-helper-shell--dark .oq-firmware-advanced-option strong,
-.oq-helper-modal-backdrop--dark .oq-firmware-advanced-option strong {
+.oq-helper-modal-backdrop--dark .oq-firmware-advanced-option strong,
+.oq-helper-shell--dark .oq-firmware-advanced-panel .oq-helper-modal-value,
+.oq-helper-modal-backdrop--dark .oq-firmware-advanced-panel .oq-helper-modal-value {
   color: #f8fafc;
 }
 
+.oq-helper-shell--dark .oq-firmware-advanced-head span,
+.oq-helper-modal-backdrop--dark .oq-firmware-advanced-head span,
 .oq-helper-shell--dark .oq-firmware-advanced-option span,
-.oq-helper-modal-backdrop--dark .oq-firmware-advanced-option span {
+.oq-helper-modal-backdrop--dark .oq-firmware-advanced-option span,
+.oq-helper-shell--dark .oq-firmware-advanced-panel .oq-helper-modal-label,
+.oq-helper-modal-backdrop--dark .oq-firmware-advanced-panel .oq-helper-modal-label,
+.oq-helper-shell--dark .oq-firmware-advanced-panel .oq-helper-modal-check span,
+.oq-helper-modal-backdrop--dark .oq-firmware-advanced-panel .oq-helper-modal-check span {
   color: #cbd5e1;
 }
 
 .oq-helper-shell--dark .oq-firmware-advanced-detail-head strong,
 .oq-helper-modal-backdrop--dark .oq-firmware-advanced-detail-head strong {
-  color: #fdba74;
+  color: #f8fafc;
 }
 
 .oq-helper-shell--dark .oq-firmware-advanced-detail-head span,
 .oq-helper-modal-backdrop--dark .oq-firmware-advanced-detail-head span {
-  color: #ffedd5;
+  color: #cbd5e1;
 }
 
 @media (max-width: 860px) {
@@ -1789,7 +1829,7 @@ body.oq-surface-native {
   align-items: flex-start;
   gap: 10px;
   margin-top: 12px;
-  color: var(--oq-helper-muted);
+  color: var(--oq-helper-soft);
   font-size: 0.95rem;
   line-height: 1.45;
 }

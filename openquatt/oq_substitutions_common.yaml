@@ -25,6 +25,9 @@ oq_connection: "unknown"                              # Compile-time connection 
 alternate_connection: ""                              # Optional connection target used for controlled Wi-Fi/Ethernet switching.
 alternate_main_release_manifest_url: ""               # Optional main-channel OTA manifest for the alternate connection target.
 alternate_dev_release_manifest_url: ""                # Optional dev-channel OTA manifest for the alternate connection target.
+alternate_topology: ""                                # Optional topology target used for controlled single/duo switching.
+alternate_topology_main_release_manifest_url: ""       # Optional main-channel OTA manifest for the alternate topology target.
+alternate_topology_dev_release_manifest_url: ""        # Optional dev-channel OTA manifest for the alternate topology target.
 openquatt_root: "../../openquatt"                    # OpenQuatt package root relative to the active config file.
 components_root: "../../components"                  # Custom component root relative to the active config file.
 scripts_root: "../../../scripts"                     # Build script root relative to the active config file.

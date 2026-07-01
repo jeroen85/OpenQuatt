@@ -346,22 +346,30 @@ select:
       then:
         - lambda: |-
             // Keep the update source aligned with the selected channel and target.
-            const bool alternate_update_target =
+            const bool alternate_connection_update_target =
               id(oq_firmware_update_target).current_option() == "alternate connection";
+            const bool alternate_topology_update_target =
+              id(oq_firmware_update_target).current_option() == "alternate topology";
             if (x == "dev") {
-              const char *alternate_url = "${alternate_dev_release_manifest_url}";
-              id(oq_firmware_update).set_source_url(
-                alternate_update_target && alternate_url[0] != '\0'
-                  ? alternate_url
-                  : "${dev_release_manifest_url}"
-              );
+              const char *source_url = "${dev_release_manifest_url}";
+              const char *alternate_connection_url = "${alternate_dev_release_manifest_url}";
+              const char *alternate_topology_url = "${alternate_topology_dev_release_manifest_url}";
+              if (alternate_connection_update_target && alternate_connection_url[0] != '\0') {
+                source_url = alternate_connection_url;
+              } else if (alternate_topology_update_target && alternate_topology_url[0] != '\0') {
+                source_url = alternate_topology_url;
+              }
+              id(oq_firmware_update).set_source_url(source_url);
             } else {
-              const char *alternate_url = "${alternate_main_release_manifest_url}";
-              id(oq_firmware_update).set_source_url(
-                alternate_update_target && alternate_url[0] != '\0'
-                  ? alternate_url
-                  : "${main_release_manifest_url}"
-              );
+              const char *source_url = "${main_release_manifest_url}";
+              const char *alternate_connection_url = "${alternate_main_release_manifest_url}";
+              const char *alternate_topology_url = "${alternate_topology_main_release_manifest_url}";
+              if (alternate_connection_update_target && alternate_connection_url[0] != '\0') {
+                source_url = alternate_connection_url;
+              } else if (alternate_topology_update_target && alternate_topology_url[0] != '\0') {
+                source_url = alternate_topology_url;
+              }
+              id(oq_firmware_update).set_source_url(source_url);
             }
         - if:
             condition:
@@ -391,27 +399,34 @@ select:
     entity_category: config
     optimistic: true
     restore_value: false
-    options: ["current build", "alternate connection"]
+    options: ["current build", "alternate connection", "alternate topology"]
     initial_option: "current build"
     on_value:
       then:
         - lambda: |-
-            // Switch between the current-build manifest and the alternate connection manifest.
-            const bool alternate_update_target = x == "alternate connection";
+            // Switch between the current-build manifest and alternate target manifests.
+            const bool alternate_connection_update_target = x == "alternate connection";
+            const bool alternate_topology_update_target = x == "alternate topology";
             if (id(oq_firmware_update_channel).current_option() == "dev") {
-              const char *alternate_url = "${alternate_dev_release_manifest_url}";
-              id(oq_firmware_update).set_source_url(
-                alternate_update_target && alternate_url[0] != '\0'
-                  ? alternate_url
-                  : "${dev_release_manifest_url}"
-              );
+              const char *source_url = "${dev_release_manifest_url}";
+              const char *alternate_connection_url = "${alternate_dev_release_manifest_url}";
+              const char *alternate_topology_url = "${alternate_topology_dev_release_manifest_url}";
+              if (alternate_connection_update_target && alternate_connection_url[0] != '\0') {
+                source_url = alternate_connection_url;
+              } else if (alternate_topology_update_target && alternate_topology_url[0] != '\0') {
+                source_url = alternate_topology_url;
+              }
+              id(oq_firmware_update).set_source_url(source_url);
             } else {
-              const char *alternate_url = "${alternate_main_release_manifest_url}";
-              id(oq_firmware_update).set_source_url(
-                alternate_update_target && alternate_url[0] != '\0'
-                  ? alternate_url
-                  : "${main_release_manifest_url}"
-              );
+              const char *source_url = "${main_release_manifest_url}";
+              const char *alternate_connection_url = "${alternate_main_release_manifest_url}";
+              const char *alternate_topology_url = "${alternate_topology_main_release_manifest_url}";
+              if (alternate_connection_update_target && alternate_connection_url[0] != '\0') {
+                source_url = alternate_connection_url;
+              } else if (alternate_topology_update_target && alternate_topology_url[0] != '\0') {
+                source_url = alternate_topology_url;
+              }
+              id(oq_firmware_update).set_source_url(source_url);
             }
         - if:
             condition:

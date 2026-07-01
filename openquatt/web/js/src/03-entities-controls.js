@@ -2726,6 +2726,12 @@
       return;
     }
 
+    if (event.target.dataset.oqFirmwareTopologyConfirm) {
+      state.firmwareTopologySwitchConfirmed = Boolean(event.target.checked);
+      render();
+      return;
+    }
+
     if (event.target.dataset.oqFirmwareTestConfirm) {
       state.updateTestFirmwareConfirmed = Boolean(event.target.checked);
       state.updateTestFirmwareError = "";
@@ -3060,9 +3066,11 @@
           state.updateModalOpen = false;
           state.firmwareAdvancedOpen = false;
           state.firmwareConnectionSwitchOpen = false;
+          state.firmwareTopologySwitchOpen = false;
           state.updateManualUploadOpen = false;
           state.updateTestFirmwareOpen = false;
           state.firmwareConnectionSwitchConfirmed = false;
+          state.firmwareTopologySwitchConfirmed = false;
           resetFirmwareManualUploadSelection();
           resetFirmwareTestSelection();
           shouldRender = true;
@@ -3405,9 +3413,11 @@
       state.updateInstallCompletedVersion = "";
       state.firmwareAdvancedOpen = false;
       state.firmwareConnectionSwitchOpen = false;
+      state.firmwareTopologySwitchOpen = false;
       state.updateManualUploadOpen = false;
       state.updateTestFirmwareOpen = false;
       state.firmwareConnectionSwitchConfirmed = false;
+      state.firmwareTopologySwitchConfirmed = false;
       resetFirmwareManualUploadSelection();
       resetFirmwareTestSelection();
       render();
@@ -3778,9 +3788,11 @@
       state.updateModalOpen = false;
       state.firmwareAdvancedOpen = false;
       state.firmwareConnectionSwitchOpen = false;
+      state.firmwareTopologySwitchOpen = false;
       state.updateManualUploadOpen = false;
       state.updateTestFirmwareOpen = false;
       state.firmwareConnectionSwitchConfirmed = false;
+      state.firmwareTopologySwitchConfirmed = false;
       resetFirmwareManualUploadSelection();
       resetFirmwareTestSelection();
       stopLoginAuthStatusPolling();
@@ -3918,11 +3930,18 @@
       return;
     }
 
+    if (action === "install-firmware-topology-switch") {
+      void installFirmwareTopologySwitch();
+      return;
+    }
+
     if (action === "toggle-firmware-advanced") {
-      if (state.firmwareAdvancedOpen || state.firmwareConnectionSwitchOpen || state.updateManualUploadOpen || state.updateTestFirmwareOpen) {
+      if (state.firmwareAdvancedOpen || state.firmwareConnectionSwitchOpen || state.firmwareTopologySwitchOpen || state.updateManualUploadOpen || state.updateTestFirmwareOpen) {
         state.firmwareAdvancedOpen = false;
         state.firmwareConnectionSwitchOpen = false;
         state.firmwareConnectionSwitchConfirmed = false;
+        state.firmwareTopologySwitchOpen = false;
+        state.firmwareTopologySwitchConfirmed = false;
         state.updateManualUploadOpen = false;
         state.updateTestFirmwareOpen = false;
         resetFirmwareManualUploadSelection();
@@ -3939,6 +3958,24 @@
       state.firmwareConnectionSwitchConfirmed = false;
       if (state.firmwareConnectionSwitchOpen) {
         state.firmwareAdvancedOpen = true;
+        state.firmwareTopologySwitchOpen = false;
+        state.firmwareTopologySwitchConfirmed = false;
+        state.updateManualUploadOpen = false;
+        state.updateTestFirmwareOpen = false;
+        resetFirmwareManualUploadSelection();
+        resetFirmwareTestSelection();
+      }
+      render();
+      return;
+    }
+
+    if (action === "toggle-firmware-topology-switch") {
+      state.firmwareTopologySwitchOpen = !state.firmwareTopologySwitchOpen;
+      state.firmwareTopologySwitchConfirmed = false;
+      if (state.firmwareTopologySwitchOpen) {
+        state.firmwareAdvancedOpen = true;
+        state.firmwareConnectionSwitchOpen = false;
+        state.firmwareConnectionSwitchConfirmed = false;
         state.updateManualUploadOpen = false;
         state.updateTestFirmwareOpen = false;
         resetFirmwareManualUploadSelection();
@@ -3957,6 +3994,8 @@
         state.updateManualUploadOpen = true;
         state.firmwareConnectionSwitchOpen = false;
         state.firmwareConnectionSwitchConfirmed = false;
+        state.firmwareTopologySwitchOpen = false;
+        state.firmwareTopologySwitchConfirmed = false;
         state.updateTestFirmwareOpen = false;
         resetFirmwareTestSelection();
         state.updateManualUploadError = "";
@@ -3980,6 +4019,8 @@
         state.updateManualUploadOpen = false;
         state.firmwareConnectionSwitchOpen = false;
         state.firmwareConnectionSwitchConfirmed = false;
+        state.firmwareTopologySwitchOpen = false;
+        state.firmwareTopologySwitchConfirmed = false;
         resetFirmwareManualUploadSelection();
         state.updateTestFirmwareError = "";
       }
@@ -4495,8 +4536,10 @@
     state.firmwareAdvancedOpen = false;
     state.updateManualUploadOpen = false;
     state.firmwareConnectionSwitchOpen = false;
+    state.firmwareTopologySwitchOpen = false;
     state.updateTestFirmwareOpen = false;
     state.firmwareConnectionSwitchConfirmed = false;
+    state.firmwareTopologySwitchConfirmed = false;
     resetFirmwareManualUploadSelection();
     resetFirmwareTestSelection();
     state.updateInstallCompleted = false;
@@ -4507,6 +4550,7 @@
     state.updateInstallProgressHint = 0;
     state.updateInstallMode = "normal";
     state.updateInstallTargetConnection = "";
+    state.updateInstallTargetTopology = "";
     state.controlError = "";
     state.controlNotice = "";
     render();
@@ -4549,12 +4593,15 @@
     }
 
     state.updateManualUploadOpen = false;
+    state.firmwareTopologySwitchOpen = false;
+    state.firmwareTopologySwitchConfirmed = false;
     resetFirmwareManualUploadSelection();
     state.updateInstallCompleted = false;
     state.updateInstallCompletedVersion = "";
     state.updateInstallBusy = true;
     state.updateInstallMode = "connection-switch";
     state.updateInstallTargetConnection = model.targetConnection;
+    state.updateInstallTargetTopology = getInstallationTopology();
     state.updateInstallTargetVersion = getFirmwareCurrentVersion() || "";
     state.updateInstallPhaseHint = "starting";
     state.updateInstallProgressHint = 0;
@@ -4588,6 +4635,69 @@
       }
     } catch (error) {
       state.controlError = `Verbindingswissel kon niet worden gestart. ${error.message}`;
+    } finally {
+      resetFirmwareInstallUiState();
+      render();
+    }
+  }
+
+  async function installFirmwareTopologySwitch() {
+    const model = getFirmwareTopologySwitchModel();
+    const buttonEntity = ENTITY_DEFS.installFirmwareUpdateTarget;
+    if (!model || !model.canSwitch || !buttonEntity) {
+      return;
+    }
+    if (!state.firmwareTopologySwitchConfirmed) {
+      state.controlError = "Bevestig eerst de waarschuwing voor de opstellingswissel.";
+      render();
+      return;
+    }
+
+    state.updateManualUploadOpen = false;
+    state.firmwareConnectionSwitchOpen = false;
+    state.firmwareConnectionSwitchConfirmed = false;
+    state.firmwareTopologySwitchOpen = false;
+    state.firmwareTopologySwitchConfirmed = false;
+    resetFirmwareManualUploadSelection();
+    state.updateInstallCompleted = false;
+    state.updateInstallCompletedVersion = "";
+    state.updateInstallBusy = true;
+    state.updateInstallMode = "topology-switch";
+    state.updateInstallTargetConnection = model.targetConnection;
+    state.updateInstallTargetTopology = model.targetTopology;
+    state.updateInstallTargetVersion = getFirmwareCurrentVersion() || "";
+    state.updateInstallPhaseHint = "starting";
+    state.updateInstallProgressHint = 0;
+    state.controlError = "";
+    state.controlNotice = "";
+    render();
+
+    try {
+      await setFirmwareUpdateTarget("alternate topology");
+      state.updateInstallTargetVersion = getFirmwareLatestVersion(getFirmwareUpdateEntity() || {}) || getFirmwareCurrentVersion() || "";
+      state.updateInstallPhaseHint = "starting";
+      state.updateInstallProgressHint = 0;
+      render();
+
+      const response = await fetch(buildEntityPath(buttonEntity.domain, buttonEntity.name, "press"), {
+        method: "POST",
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const completed = await pollFirmwareInstallState();
+      if (completed) {
+        state.updateInstallCompleted = true;
+        state.updateInstallCompletedVersion = getFirmwareCurrentVersion() || state.updateInstallTargetVersion || "";
+        state.firmwareTopologySwitchConfirmed = false;
+        state.controlNotice = "";
+      } else {
+        const targetLabel = getFirmwareTopologyLabel(model.targetTopology);
+        state.controlNotice = `Opstellingswissel naar ${targetLabel} is gestart. Wacht tot het device met die opstelling terugkomt.`;
+      }
+    } catch (error) {
+      state.controlError = `Opstellingswissel kon niet worden gestart. ${error.message}`;
     } finally {
       resetFirmwareInstallUiState();
       render();
@@ -4671,6 +4781,8 @@
     state.updateManualUploadOpen = false;
     state.firmwareConnectionSwitchOpen = false;
     state.firmwareConnectionSwitchConfirmed = false;
+    state.firmwareTopologySwitchOpen = false;
+    state.firmwareTopologySwitchConfirmed = false;
     resetFirmwareManualUploadSelection();
     state.updateInstallCompleted = false;
     state.updateInstallCompletedVersion = "";
@@ -4680,6 +4792,7 @@
     state.updateInstallProgressHint = 0;
     state.updateInstallMode = "test-firmware";
     state.updateInstallTargetConnection = "";
+    state.updateInstallTargetTopology = "";
     state.controlError = "";
     state.controlNotice = "";
     state.updateTestFirmwareError = "";
@@ -4739,6 +4852,9 @@
     state.updateInstallTargetVersion = getFirmwareCurrentVersion() || "";
     state.updateInstallPhaseHint = "starting";
     state.updateInstallProgressHint = 0;
+    state.updateInstallMode = "";
+    state.updateInstallTargetConnection = "";
+    state.updateInstallTargetTopology = "";
     state.controlError = "";
     state.controlNotice = "";
     state.updateManualUploadError = "";
