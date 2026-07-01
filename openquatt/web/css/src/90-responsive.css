@@ -406,20 +406,26 @@ esp-app.oq-native-app.oq-native-app--collapsed {
   }
 
   .oq-settings-storage-row,
-  .oq-settings-storage-inline-action {
+  .oq-settings-storage-inline-action,
+  .oq-settings-storage-import-head,
+  .oq-settings-storage-import-card {
     grid-template-columns: 1fr;
   }
 
   .oq-settings-storage-row,
-  .oq-settings-storage-inline-action {
+  .oq-settings-storage-inline-action,
+  .oq-settings-storage-import-head,
+  .oq-settings-storage-import-card {
     align-items: stretch;
   }
 
-  .oq-settings-storage-action-stack {
+  .oq-settings-storage-action-stack,
+  .oq-settings-storage-import-actions {
     justify-content: stretch;
   }
 
-  .oq-settings-storage-action-stack .oq-helper-button {
+  .oq-settings-storage-action-stack .oq-helper-button,
+  .oq-settings-storage-import-actions .oq-helper-button {
     flex: 1 1 150px;
   }
 

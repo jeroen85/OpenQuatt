@@ -257,6 +257,576 @@
     });
   }
 
+  const ENERGY_HISTORY_IMPORT_SCHEMA_LINE = "@schema|openquatt.energy_history_import.v1";
+  const ENERGY_HISTORY_IMPORT_MAX_BODY_CHARS = 850;
+  const ENERGY_HISTORY_IMPORT_ERROR_LABELS = {
+    partition_unavailable: "Niet beschikbaar op deze Flash-indeling. Flash de controller eenmalig via USB met de nieuwe indeling.",
+    time_unavailable: "De controller heeft nog geen geldige tijd. Probeer opnieuw zodra de tijdsync klaar is.",
+    empty_records: "Er zijn geen records verstuurd.",
+    payload_too_large: "Deze importbatch is te groot. Probeer het bestand opnieuw te importeren.",
+  };
+  const ENERGY_HISTORY_IMPORT_VALUE_KEYS = {
+    electricalInput: [
+      "electrical_input_wh",
+      "electricalInputWh",
+      "energy_hp_electric",
+      "hpElectric",
+      "hp_electric_wh",
+      "totalHpElectric",
+    ],
+    heatingInput: ["heating_input_wh", "heatingInputWh"],
+    coolingInput: ["cooling_input_wh", "coolingInputWh"],
+    heatpumpHeatOutput: [
+      "heatpump_heat_output_wh",
+      "heatpumpHeatOutputWh",
+      "energy_hp_heat",
+      "hpHeat",
+      "hp_heat_wh",
+      "totalHpHeat",
+    ],
+    heatpumpCoolingOutput: ["heatpump_cooling_output_wh", "heatpumpCoolingOutputWh"],
+    boilerHeatOutput: [
+      "boiler_heat_output_wh",
+      "boilerHeatOutputWh",
+      "energy_boiler_heat",
+      "boilerHeat",
+      "boiler_heat_wh",
+      "totalBoilerHeat",
+    ],
+    systemHeatOutput: ["system_heat_output_wh", "systemHeatOutputWh"],
+  };
+
+  function resetEnergyHistoryImportState(keepNotice = false) {
+    const notice = keepNotice ? state.energyHistoryImportNotice : "";
+    state.energyHistoryImportFileName = "";
+    state.energyHistoryImportSource = "";
+    state.energyHistoryImportRange = "";
+    state.energyHistoryImportRecords = [];
+    state.energyHistoryImportHourRecords = [];
+    state.energyHistoryImportDuplicateCount = 0;
+    state.energyHistoryImportSkippedCount = 0;
+    state.energyHistoryImportInvalidCount = 0;
+    state.energyHistoryImportUnsupportedCount = 0;
+    state.energyHistoryImportBusy = false;
+    state.energyHistoryImportProgressPercent = 0;
+    state.energyHistoryImportError = "";
+    state.energyHistoryImportNotice = notice;
+  }
+
+  function parseEnergyHistoryImportDateKey(value) {
+    if (value === null || value === undefined || value === "") {
+      return 0;
+    }
+    const text = String(value).trim();
+    let year = 0;
+    let month = 0;
+    let day = 0;
+    const compactMatch = text.match(/^(\d{4})(\d{2})(\d{2})$/);
+    const dashedMatch = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (compactMatch) {
+      year = Number(compactMatch[1]);
+      month = Number(compactMatch[2]);
+      day = Number(compactMatch[3]);
+    } else if (dashedMatch) {
+      year = Number(dashedMatch[1]);
+      month = Number(dashedMatch[2]);
+      day = Number(dashedMatch[3]);
+    } else {
+      const parsedDate = new Date(text);
+      if (Number.isNaN(parsedDate.getTime())) {
+        return 0;
+      }
+      year = parsedDate.getFullYear();
+      month = parsedDate.getMonth() + 1;
+      day = parsedDate.getDate();
+    }
+    if (year < 2020 || year > 2099 || month < 1 || month > 12 || day < 1 || day > 31) {
+      return 0;
+    }
+    const check = new Date(Date.UTC(year, month - 1, day));
+    if (check.getUTCFullYear() !== year || check.getUTCMonth() !== month - 1 || check.getUTCDate() !== day) {
+      return 0;
+    }
+    return (year * 10000) + (month * 100) + day;
+  }
+
+  function formatEnergyHistoryImportDateKey(dateKey) {
+    const key = String(Math.round(Number(dateKey) || 0)).padStart(8, "0");
+    if (!/^\d{8}$/.test(key)) {
+      return "";
+    }
+    return `${key.slice(6, 8)}-${key.slice(4, 6)}-${key.slice(0, 4)}`;
+  }
+
+  function parseEnergyHistoryImportNumber(value) {
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+    const numeric = Number(String(value).trim().replace(",", "."));
+    if (!Number.isFinite(numeric) || numeric < 0 || numeric >= 4294967295) {
+      return null;
+    }
+    return Math.round(numeric);
+  }
+
+  function parseEnergyHistoryImportWh(record, keys, fallback = null) {
+    for (const key of keys) {
+      if (!Object.prototype.hasOwnProperty.call(record, key)) {
+        continue;
+      }
+      const parsed = parseEnergyHistoryImportNumber(record[key]);
+      if (parsed !== null) {
+        return parsed;
+      }
+    }
+    return fallback;
+  }
+
+  function normalizeEnergyHistoryImportDailyRecord(record) {
+    const dateKey = parseEnergyHistoryImportDateKey(record.date_key ?? record.dateKey ?? record.date ?? record.from ?? record.timestamp);
+    if (!dateKey) {
+      return null;
+    }
+
+    const electricalInputWh = parseEnergyHistoryImportWh(record, ENERGY_HISTORY_IMPORT_VALUE_KEYS.electricalInput);
+    const heatpumpHeatOutputWh = parseEnergyHistoryImportWh(record, ENERGY_HISTORY_IMPORT_VALUE_KEYS.heatpumpHeatOutput);
+    if (electricalInputWh === null || heatpumpHeatOutputWh === null) {
+      return null;
+    }
+
+    const heatingInputWh = parseEnergyHistoryImportWh(record, ENERGY_HISTORY_IMPORT_VALUE_KEYS.heatingInput, electricalInputWh);
+    const coolingInputWh = parseEnergyHistoryImportWh(record, ENERGY_HISTORY_IMPORT_VALUE_KEYS.coolingInput, 0);
+    const heatpumpCoolingOutputWh = parseEnergyHistoryImportWh(record, ENERGY_HISTORY_IMPORT_VALUE_KEYS.heatpumpCoolingOutput, 0);
+    const boilerHeatOutputWh = parseEnergyHistoryImportWh(record, ENERGY_HISTORY_IMPORT_VALUE_KEYS.boilerHeatOutput, 0);
+    const systemHeatOutputWh = parseEnergyHistoryImportWh(
+      record,
+      ENERGY_HISTORY_IMPORT_VALUE_KEYS.systemHeatOutput,
+      heatpumpHeatOutputWh + heatpumpCoolingOutputWh + boilerHeatOutputWh,
+    );
+    if ([heatingInputWh, coolingInputWh, heatpumpCoolingOutputWh, boilerHeatOutputWh, systemHeatOutputWh].some((value) => value === null)) {
+      return null;
+    }
+
+    return {
+      dateKey,
+      electricalInputWh,
+      heatingInputWh,
+      coolingInputWh,
+      heatpumpHeatOutputWh,
+      heatpumpCoolingOutputWh,
+      boilerHeatOutputWh,
+      systemHeatOutputWh,
+    };
+  }
+
+  function parseEnergyHistoryImportHour(record) {
+    const directHour = parseEnergyHistoryImportNumber(record.hour ?? record.hour_of_day ?? record.hourOfDay);
+    if (directHour !== null && directHour >= 0 && directHour <= 23) {
+      return directHour;
+    }
+    if (record.timestamp) {
+      const parsedDate = new Date(String(record.timestamp));
+      if (!Number.isNaN(parsedDate.getTime())) {
+        return parsedDate.getHours();
+      }
+    }
+    return -1;
+  }
+
+  function normalizeEnergyHistoryImportHourlyRecord(record) {
+    const normalized = normalizeEnergyHistoryImportDailyRecord(record);
+    const hour = parseEnergyHistoryImportHour(record);
+    if (!normalized || hour < 0 || hour > 23) {
+      return null;
+    }
+    return { ...normalized, hour };
+  }
+
+  function parseEnergyHistoryImportCsv(text) {
+    const rows = [];
+    let row = [];
+    let field = "";
+    let inQuotes = false;
+
+    const pushField = () => {
+      row.push(field);
+      field = "";
+    };
+    const pushRow = () => {
+      pushField();
+      if (row.some((value) => String(value).trim() !== "")) {
+        rows.push(row);
+      }
+      row = [];
+    };
+
+    for (let index = 0; index < text.length; index += 1) {
+      const char = text[index];
+      if (inQuotes) {
+        if (char === '"' && text[index + 1] === '"') {
+          field += '"';
+          index += 1;
+        } else if (char === '"') {
+          inQuotes = false;
+        } else {
+          field += char;
+        }
+      } else if (char === '"') {
+        inQuotes = true;
+      } else if (char === ",") {
+        pushField();
+      } else if (char === "\n") {
+        pushRow();
+      } else if (char !== "\r") {
+        field += char;
+      }
+    }
+    if (field || row.length) {
+      pushRow();
+    }
+    if (!rows.length) {
+      return [];
+    }
+
+    const headers = rows.shift().map((header) => String(header || "").trim());
+    return rows.map((values) => {
+      const record = {};
+      headers.forEach((header, index) => {
+        if (header) {
+          record[header] = values[index] ?? "";
+        }
+      });
+      return record;
+    });
+  }
+
+  function collectEnergyHistoryImportRows(payload) {
+    const dailyRows = [];
+    const hourlyRows = [];
+    if (Array.isArray(payload)) {
+      dailyRows.push(...payload);
+      return { dailyRows, hourlyRows, source: "JSON" };
+    }
+
+    const source = String(payload?.schema || payload?.import_schema || "JSON").trim() || "JSON";
+    const days = Array.isArray(payload?.days)
+      ? payload.days
+      : Array.isArray(payload?.daily)
+        ? payload.daily
+        : Array.isArray(payload?.openquatt_import?.daily)
+          ? payload.openquatt_import.daily
+          : [];
+    const hourly = Array.isArray(payload?.hourly)
+      ? payload.hourly
+      : Array.isArray(payload?.hours)
+        ? payload.hours
+        : Array.isArray(payload?.openquatt_import?.hourly)
+          ? payload.openquatt_import.hourly
+          : [];
+
+    dailyRows.push(...days);
+    hourlyRows.push(...hourly);
+    days.forEach((day) => {
+      if (!Array.isArray(day?.samples)) {
+        return;
+      }
+      day.samples.forEach((sample) => {
+        hourlyRows.push({ ...sample, date: sample.date ?? day.date });
+      });
+    });
+    return { dailyRows, hourlyRows, source };
+  }
+
+  function parseEnergyHistoryImportPayload(fileName, text) {
+    const trimmed = String(text || "").trim();
+    if (!trimmed) {
+      throw new Error("Bestand is leeg.");
+    }
+
+    let dailyRows = [];
+    let hourlyRows = [];
+    let source = "";
+    if (trimmed[0] === "{" || trimmed[0] === "[") {
+      const collected = collectEnergyHistoryImportRows(JSON.parse(trimmed));
+      dailyRows = collected.dailyRows;
+      hourlyRows = collected.hourlyRows;
+      source = collected.source;
+    } else {
+      const rows = parseEnergyHistoryImportCsv(trimmed);
+      const hasHourColumn = rows.some((row) => Object.prototype.hasOwnProperty.call(row, "hour")
+        || Object.prototype.hasOwnProperty.call(row, "hour_of_day")
+        || Object.prototype.hasOwnProperty.call(row, "hourOfDay"));
+      if (hasHourColumn || String(fileName || "").toLowerCase().includes("hour")) {
+        hourlyRows = rows;
+      } else {
+        dailyRows = rows;
+      }
+      source = "CSV";
+    }
+
+    const recordsByDate = new Map();
+    const hourRecordsByKey = new Map();
+    let duplicates = 0;
+    let invalid = 0;
+
+    dailyRows.forEach((row) => {
+      const record = normalizeEnergyHistoryImportDailyRecord(row);
+      if (!record) {
+        invalid += 1;
+        return;
+      }
+      if (recordsByDate.has(record.dateKey)) {
+        duplicates += 1;
+      }
+      recordsByDate.set(record.dateKey, record);
+    });
+
+    hourlyRows.forEach((row) => {
+      const record = normalizeEnergyHistoryImportHourlyRecord(row);
+      if (!record) {
+        invalid += 1;
+        return;
+      }
+      const key = `${record.dateKey}:${record.hour}`;
+      if (hourRecordsByKey.has(key)) {
+        duplicates += 1;
+      }
+      hourRecordsByKey.set(key, record);
+    });
+
+    const records = [...recordsByDate.values()].sort((a, b) => a.dateKey - b.dateKey);
+    const hourRecords = [...hourRecordsByKey.values()].sort((a, b) => (a.dateKey - b.dateKey) || (a.hour - b.hour));
+    if (!records.length && !hourRecords.length) {
+      throw new Error("Geen ondersteunde dag- of uurrecords gevonden.");
+    }
+
+    const dateKeys = [...records.map((record) => record.dateKey), ...hourRecords.map((record) => record.dateKey)].sort((a, b) => a - b);
+    const range = dateKeys.length
+      ? `${formatEnergyHistoryImportDateKey(dateKeys[0])} t/m ${formatEnergyHistoryImportDateKey(dateKeys[dateKeys.length - 1])}`
+      : "";
+
+    return {
+      records,
+      hourRecords,
+      source,
+      range,
+      duplicates,
+      invalid,
+    };
+  }
+
+  function formatEnergyHistoryImportRecordLine(record) {
+    return [
+      "day",
+      record.dateKey,
+      record.electricalInputWh,
+      record.heatpumpHeatOutputWh,
+      record.boilerHeatOutputWh,
+    ].join("|");
+  }
+
+  function formatEnergyHistoryImportHourDayLines(hourRecords) {
+    const byDate = new Map();
+    hourRecords.forEach((record) => {
+      if (!byDate.has(record.dateKey)) {
+        byDate.set(record.dateKey, new Map());
+      }
+      byDate.get(record.dateKey).set(record.hour, record);
+    });
+
+    return [...byDate.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([dateKey, recordsByHour]) => {
+        let hourMask = 0;
+        const values = [];
+        for (let hour = 0; hour < 24; hour += 1) {
+          const record = recordsByHour.get(hour);
+          if (record) {
+            hourMask |= 1 << hour;
+          }
+          values.push(
+            record?.electricalInputWh ?? 0,
+            record?.heatpumpHeatOutputWh ?? 0,
+            record?.boilerHeatOutputWh ?? 0,
+          );
+        }
+        return ["hourday", dateKey, hourMask, ...values].join("|");
+      });
+  }
+
+  function buildEnergyHistoryImportRequestBody(lines) {
+    const body = new URLSearchParams();
+    body.set("records", [ENERGY_HISTORY_IMPORT_SCHEMA_LINE, ...lines].join("\n"));
+    return body;
+  }
+
+  function getEnergyHistoryImportLineBatches(lines) {
+    const batches = [];
+    let batch = [];
+    lines.forEach((line) => {
+      const candidate = [...batch, line];
+      if (batch.length && String(buildEnergyHistoryImportRequestBody(candidate)).length > ENERGY_HISTORY_IMPORT_MAX_BODY_CHARS) {
+        batches.push(batch);
+        batch = [line];
+      } else {
+        batch = candidate;
+      }
+    });
+    if (batch.length) {
+      batches.push(batch);
+    }
+    return batches;
+  }
+
+  function summarizeEnergyHistoryImportResult(result) {
+    const parts = [];
+    if (result.written > 0) {
+      parts.push(`${result.written} dagrecords`);
+    }
+    if (result.hourWritten > 0) {
+      parts.push(`${result.hourWritten} uurdagen`);
+    }
+    const imported = parts.length ? `${parts.join(" en ")} geïmporteerd.` : "Geen nieuwe records geïmporteerd.";
+    const details = [];
+    if (result.duplicates > 0) {
+      details.push(`${result.duplicates} al aanwezig`);
+    }
+    if (result.skipped > 0) {
+      details.push(`${result.skipped} overgeslagen`);
+    }
+    if (result.invalid > 0) {
+      details.push(`${result.invalid} ongeldig`);
+    }
+    if (result.unsupported > 0) {
+      details.push(`${result.unsupported} onbekend`);
+    }
+    return details.length ? `${imported} (${details.join(", ")}.)` : imported;
+  }
+
+  async function postEnergyHistoryImportLines(lines) {
+    const response = await fetch(`${getBasePath()}/energy/history/import`, {
+      method: "POST",
+      cache: "no-store",
+      headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+      body: buildEnergyHistoryImportRequestBody(lines),
+    });
+    const text = await response.text();
+    let payload = {};
+    try {
+      payload = text ? JSON.parse(text) : {};
+    } catch (_error) {
+      payload = {};
+    }
+    if (!response.ok || payload.ok === false) {
+      const errorCode = payload.error ? String(payload.error) : "";
+      throw new Error(ENERGY_HISTORY_IMPORT_ERROR_LABELS[errorCode] || errorCode || `HTTP ${response.status}`);
+    }
+    return payload;
+  }
+
+  function updateEnergyHistoryImportProgress(done, total) {
+    state.energyHistoryImportProgressPercent = total > 0 ? Math.min(99, Math.max(1, Math.round((done / total) * 100))) : 0;
+    render();
+  }
+
+  async function handleEnergyHistoryImportFileSelection(file) {
+    resetEnergyHistoryImportState();
+    if (!file) {
+      render();
+      return;
+    }
+
+    state.energyHistoryImportFileName = file.name || "exportbestand";
+    try {
+      const parsed = parseEnergyHistoryImportPayload(file.name || "", await file.text());
+      state.energyHistoryImportRecords = parsed.records;
+      state.energyHistoryImportHourRecords = parsed.hourRecords;
+      state.energyHistoryImportSource = parsed.source;
+      state.energyHistoryImportRange = parsed.range;
+      state.energyHistoryImportDuplicateCount = parsed.duplicates;
+      state.energyHistoryImportInvalidCount = parsed.invalid;
+    } catch (error) {
+      state.energyHistoryImportError = `Bestand kon niet worden gelezen. ${error.message}`;
+    }
+    render();
+  }
+
+  function openEnergyHistoryImportFilePicker() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json,.csv,application/json,text/csv,text/plain";
+    input.style.position = "fixed";
+    input.style.left = "-1000px";
+    input.style.top = "0";
+    input.addEventListener("change", () => {
+      const file = input.files && input.files[0] ? input.files[0] : null;
+      window.setTimeout(() => input.remove(), 0);
+      void handleEnergyHistoryImportFileSelection(file);
+    }, { once: true });
+    document.body.appendChild(input);
+    input.click();
+  }
+
+  async function importEnergyHistoryRecords() {
+    if (state.energyHistoryImportBusy) {
+      return;
+    }
+    const lines = [
+      ...state.energyHistoryImportRecords.map(formatEnergyHistoryImportRecordLine),
+      ...formatEnergyHistoryImportHourDayLines(state.energyHistoryImportHourRecords),
+    ];
+    if (!lines.length) {
+      state.energyHistoryImportError = "Kies eerst een exportbestand met dag- of uurrecords.";
+      render();
+      return;
+    }
+
+    state.energyHistoryImportBusy = true;
+    state.energyHistoryImportError = "";
+    state.energyHistoryImportNotice = "";
+    state.energyHistoryImportProgressPercent = 1;
+    render();
+
+    if (isDevPreviewEnvironmentForFetches()) {
+      const hourDayCount = new Set(state.energyHistoryImportHourRecords.map((record) => record.dateKey)).size;
+      state.energyHistoryImportBusy = false;
+      state.energyHistoryImportProgressPercent = 0;
+      state.energyHistoryImportNotice = `Preview: ${state.energyHistoryImportRecords.length} dagrecords en ${hourDayCount} uurdagen zouden worden geïmporteerd.`;
+      render();
+      return;
+    }
+
+    const batches = getEnergyHistoryImportLineBatches(lines);
+    const totals = { written: 0, hourWritten: 0, duplicates: 0, skipped: 0, invalid: 0, unsupported: 0 };
+    let processedLines = 0;
+    try {
+      for (const batch of batches) {
+        const result = await postEnergyHistoryImportLines(batch);
+        totals.written += Number(result.written || 0);
+        totals.hourWritten += Number(result.hour_written || 0);
+        totals.duplicates += Number(result.duplicates || 0);
+        totals.skipped += Number(result.skipped || 0);
+        totals.invalid += Number(result.invalid || 0);
+        totals.unsupported += Number(result.unsupported || 0);
+        processedLines += batch.length;
+        updateEnergyHistoryImportProgress(processedLines, lines.length);
+      }
+      state.energyHistoryImportProgressPercent = 100;
+      state.energyHistoryImportNotice = summarizeEnergyHistoryImportResult(totals);
+      state.energyHistoryImportError = "";
+      state.energyHistoryRaw = "";
+      state.energyHistorySignature = "";
+      state.energyHistoryLastFetchAt = 0;
+      await refreshSettingsStorageState({ forceMissing: true, forceEnergyHistory: true });
+    } catch (error) {
+      state.energyHistoryImportError = `Importeren mislukt. ${error.message}`;
+    } finally {
+      state.energyHistoryImportBusy = false;
+      state.energyHistoryImportProgressPercent = 0;
+      render();
+    }
+  }
+
   function isSystemSettingsGroupActive() {
     return state.appView === "settings" && state.settingsGroup === "system";
   }
@@ -3329,6 +3899,22 @@
           void refreshEnergyHistoryData({ force: true }).then(() => render());
         }
       });
+      return;
+    }
+
+    if (action === "select-energy-history-import-file") {
+      openEnergyHistoryImportFilePicker();
+      return;
+    }
+
+    if (action === "clear-energy-history-import-file") {
+      resetEnergyHistoryImportState();
+      render();
+      return;
+    }
+
+    if (action === "import-energy-history-file") {
+      void importEnergyHistoryRecords();
       return;
     }
 

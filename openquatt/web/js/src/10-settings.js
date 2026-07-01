@@ -3578,6 +3578,75 @@
     );
   }
 
+  function renderSettingsEnergyHistoryImportPanel() {
+    if (!hasEntity("lifetimeEnergyHistoryEnabled")) {
+      return "";
+    }
+
+    const dailyCount = state.energyHistoryImportRecords.length;
+    const hourDayCount = new Set(state.energyHistoryImportHourRecords.map((record) => record.dateKey)).size;
+    const recordParts = [];
+    if (dailyCount > 0) {
+      recordParts.push(`${dailyCount} dagrecords`);
+    }
+    if (hourDayCount > 0) {
+      recordParts.push(`${hourDayCount} uurdagen`);
+    }
+    if (state.energyHistoryImportRange) {
+      recordParts.push(state.energyHistoryImportRange);
+    }
+    if (state.energyHistoryImportSource) {
+      recordParts.push(state.energyHistoryImportSource);
+    }
+    if (state.energyHistoryImportInvalidCount > 0) {
+      recordParts.push(`${state.energyHistoryImportInvalidCount} regels niet gebruikt`);
+    }
+
+    const hasFile = Boolean(state.energyHistoryImportFileName);
+    const hasRecords = dailyCount > 0 || hourDayCount > 0;
+    const progress = Number(state.energyHistoryImportProgressPercent || 0);
+    const importLabel = state.energyHistoryImportBusy
+      ? `Importeren...${progress > 0 ? ` (${progress}%)` : ""}`
+      : "Importeren";
+
+    return `
+      <div class="oq-settings-storage-import">
+        <div class="oq-settings-storage-import-head">
+          <div>
+            <h4>Historie importeren</h4>
+            <p>Vul ontbrekende dagtotalen en uurdetail aan vanuit een OpenQuatt- of Quatt-exportbestand.</p>
+          </div>
+          ${!hasFile ? `
+            <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="select-energy-history-import-file">
+              Bestand kiezen
+            </button>
+          ` : ""}
+        </div>
+        ${hasFile ? `
+          <div class="oq-settings-storage-import-card">
+            <div class="oq-settings-storage-import-file">
+              <strong>${escapeHtml(state.energyHistoryImportFileName)}</strong>
+              ${recordParts.length ? `<p>${escapeHtml(recordParts.join(" · "))}</p>` : ""}
+              ${state.energyHistoryImportNotice ? `<p class="oq-settings-storage-import-notice">${escapeHtml(state.energyHistoryImportNotice)}</p>` : ""}
+              ${state.energyHistoryImportError ? `<p class="oq-settings-storage-import-error">${escapeHtml(state.energyHistoryImportError)}</p>` : ""}
+            </div>
+            <div class="oq-settings-storage-import-actions">
+              <button class="oq-helper-button oq-helper-button--ghost" type="button" data-oq-action="clear-energy-history-import-file" ${state.energyHistoryImportBusy ? "disabled" : ""}>
+                Wissen
+              </button>
+              <button class="oq-helper-button oq-helper-button--primary" type="button" data-oq-action="import-energy-history-file" ${state.energyHistoryImportBusy || !hasRecords ? "disabled" : ""}>
+                ${escapeHtml(importLabel)}
+              </button>
+            </div>
+          </div>
+        ` : `
+          ${state.energyHistoryImportNotice ? `<p class="oq-settings-storage-import-notice">${escapeHtml(state.energyHistoryImportNotice)}</p>` : ""}
+          ${state.energyHistoryImportError ? `<p class="oq-settings-storage-import-error">${escapeHtml(state.energyHistoryImportError)}</p>` : ""}
+        `}
+      </div>
+    `;
+  }
+
   function renderSettingsHistoryStorageModal() {
     const trendHistoryEnabled = hasEntity("trendHistoryEnabled") && isEntityActive("trendHistoryEnabled");
     const trendHistoryFlashEnabled = trendHistoryEnabled && hasEntity("trendHistoryFlashEnabled") && isEntityActive("trendHistoryFlashEnabled");
@@ -3740,6 +3809,7 @@
                   "Kies hoelang OpenQuatt detail per uur mag bewaren voor de daggrafiek.",
                   "Geavanceerd"
                 )}
+                ${renderSettingsEnergyHistoryImportPanel()}
                 ${showLifetimeActions ? `
                   <div class="oq-settings-storage-inline-action oq-settings-storage-inline-action--split">
                     <div>

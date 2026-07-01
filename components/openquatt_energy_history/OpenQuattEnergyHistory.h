@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include <esp_http_server.h>
 #include "esphome/components/select/select.h"
@@ -37,6 +38,7 @@ class OpenQuattEnergyHistory : public Component {
   void clear_history();
   void refresh_hourly_retention();
   void write_history(httpd_req_t *req);
+  std::string import_history_records(const std::string &records);
   std::string get_available_label() const;
   std::string get_oldest_day_label() const;
   std::string get_newest_day_label() const;
@@ -127,6 +129,12 @@ class OpenQuattEnergyHistory : public Component {
   static uint32_t record_crc_(const EnergyHistoryRecord &record);
   static uint32_t hour_day_record_crc_(const EnergyHistoryHourDayRecord &record);
   static bool record_has_values_(const EnergyHistoryValues &values);
+  static bool date_key_valid_(uint32_t date_key);
+  static bool date_bitmap_index_(uint32_t date_key, size_t *byte_index, uint8_t *bit_mask);
+  static bool date_bitmap_get_(const uint8_t *bitmap, uint32_t date_key);
+  static void date_bitmap_set_(uint8_t *bitmap, uint32_t date_key);
+  static bool parse_import_uint32_(const std::string &value, uint32_t *out);
+  static std::vector<std::string> split_import_fields_(const std::string &line);
   static uint32_t add_wh_(uint32_t base, uint32_t delta);
   static uint32_t delta_wh_(uint32_t current, uint32_t previous);
   static std::string format_date_key_(uint32_t date_key);
@@ -142,8 +150,11 @@ class OpenQuattEnergyHistory : public Component {
   bool hour_day_record_valid_(const EnergyHistoryHourDayRecord &record) const;
   bool scan_archive_();
   bool scan_hour_archive_();
-  bool write_record_(uint32_t date_key, const EnergyHistoryValues &values, bool partial);
+  bool write_record_(uint32_t date_key, const EnergyHistoryValues &values, bool partial, bool rescan = true,
+                     bool require_enabled = true);
   bool write_hour_day_record_(uint32_t date_key, bool partial);
+  bool write_hour_day_import_record_(uint32_t date_key, uint32_t hour_mask, const EnergyHistoryValues hours[24],
+                                     bool rescan = true);
   EnergyHistoryValues delta_values_(const EnergyHistoryValues &current, const EnergyHistoryValues &previous) const;
   void capture_hour_delta_(uint32_t date_key, uint8_t hour, const EnergyHistoryValues &values);
   uint16_t requested_flash_hourly_retention_days_() const;
@@ -187,8 +198,11 @@ class OpenQuattEnergyHistory : public Component {
   uint32_t hour_flash_newest_date_key_{0};
   uint32_t hour_flash_last_write_timestamp_s_{0};
   EnergyHistoryValues hour_snapshot_values_[24]{};
+  EnergyHistoryValues hour_import_values_[24]{};
   EnergyHistoryHourDayRecord hour_flash_record_buffer_{};
   uint8_t hour_flash_slot_buffer_[HOUR_FLASH_SLOT_SIZE]{};
+  uint8_t stored_day_bitmap_[DATE_BITMAP_BYTES]{};
+  uint8_t stored_hour_day_bitmap_[DATE_BITMAP_BYTES]{};
 
   uint32_t next_sequence_{0};
   uint32_t record_count_{0};
