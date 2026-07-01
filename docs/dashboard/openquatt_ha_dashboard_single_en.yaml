@@ -911,7 +911,7 @@ views:
             hours_to_show: 4
             refresh_interval: 30
             entities:
-              - entity: number.openquatt_hp1_set_pump_speed
+              - entity: sensor.openquatt_hp1_pump_ipwm_command
                 name: HP1 iPWM
             grid_options:
               columns: full
