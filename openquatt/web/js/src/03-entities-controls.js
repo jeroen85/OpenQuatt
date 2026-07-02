@@ -382,6 +382,10 @@
     return fallback;
   }
 
+  function hasEnergyHistoryImportWh(record, keys) {
+    return parseEnergyHistoryImportWh(record, keys) !== null;
+  }
+
   function normalizeEnergyHistoryImportDailyRecord(record) {
     const dateKey = parseEnergyHistoryImportDateKey(record.date_key ?? record.dateKey ?? record.date ?? record.from ?? record.timestamp);
     if (!dateKey) {
@@ -403,6 +407,10 @@
       ENERGY_HISTORY_IMPORT_VALUE_KEYS.systemHeatOutput,
       heatpumpHeatOutputWh + heatpumpCoolingOutputWh + boilerHeatOutputWh,
     );
+    const hasFullImportFields = hasEnergyHistoryImportWh(record, ENERGY_HISTORY_IMPORT_VALUE_KEYS.heatingInput) ||
+      hasEnergyHistoryImportWh(record, ENERGY_HISTORY_IMPORT_VALUE_KEYS.coolingInput) ||
+      hasEnergyHistoryImportWh(record, ENERGY_HISTORY_IMPORT_VALUE_KEYS.heatpumpCoolingOutput) ||
+      hasEnergyHistoryImportWh(record, ENERGY_HISTORY_IMPORT_VALUE_KEYS.systemHeatOutput);
     if ([heatingInputWh, coolingInputWh, heatpumpCoolingOutputWh, boilerHeatOutputWh, systemHeatOutputWh].some((value) => value === null)) {
       return null;
     }
@@ -416,6 +424,7 @@
       heatpumpCoolingOutputWh,
       boilerHeatOutputWh,
       systemHeatOutputWh,
+      hasFullImportFields,
     };
   }
 
@@ -616,6 +625,19 @@
   }
 
   function formatEnergyHistoryImportRecordLine(record) {
+    if (record.hasFullImportFields) {
+      return [
+        "day",
+        record.dateKey,
+        record.electricalInputWh,
+        record.heatingInputWh,
+        record.coolingInputWh,
+        record.heatpumpHeatOutputWh,
+        record.heatpumpCoolingOutputWh,
+        record.boilerHeatOutputWh,
+        record.systemHeatOutputWh,
+      ].join("|");
+    }
     return [
       "day",
       record.dateKey,
@@ -639,16 +661,29 @@
       .map(([dateKey, recordsByHour]) => {
         let hourMask = 0;
         const values = [];
+        const useFullFormat = [...recordsByHour.values()].some((record) => record.hasFullImportFields);
         for (let hour = 0; hour < 24; hour += 1) {
           const record = recordsByHour.get(hour);
           if (record) {
             hourMask |= 1 << hour;
           }
-          values.push(
-            record?.electricalInputWh ?? 0,
-            record?.heatpumpHeatOutputWh ?? 0,
-            record?.boilerHeatOutputWh ?? 0,
-          );
+          if (useFullFormat) {
+            values.push(
+              record?.electricalInputWh ?? 0,
+              record?.heatingInputWh ?? 0,
+              record?.coolingInputWh ?? 0,
+              record?.heatpumpHeatOutputWh ?? 0,
+              record?.heatpumpCoolingOutputWh ?? 0,
+              record?.boilerHeatOutputWh ?? 0,
+              record?.systemHeatOutputWh ?? 0,
+            );
+          } else {
+            values.push(
+              record?.electricalInputWh ?? 0,
+              record?.heatpumpHeatOutputWh ?? 0,
+              record?.boilerHeatOutputWh ?? 0,
+            );
+          }
         }
         return ["hourday", dateKey, hourMask, ...values].join("|");
       });
