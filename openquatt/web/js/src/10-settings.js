@@ -955,7 +955,6 @@
             ? [
                 renderSettingsOpenThermCicSection(),
                 renderSettingsSensorSelectionSection(),
-                renderSettingsMqttSection(),
               ]
             : [
                 renderSettingsQuickStartSection(),
@@ -1229,25 +1228,6 @@
       });
     }
 
-    const mqttRows = stack.querySelectorAll('[data-oq-mqtt-item]');
-    if (mqttRows.length) {
-      mqttRows.forEach((row) => {
-        const valueNode = row.querySelector(".oq-settings-quickstart-status-value");
-        const copyNode = row.querySelector(".oq-settings-quickstart-status-copy");
-        const button = row.querySelector('button[data-oq-action="open-mqtt-modal"]');
-        const statusLabel = getMqttStatusLabel();
-        const statusCopy = getMqttStatusDetail();
-        if (valueNode && valueNode.textContent !== statusLabel) {
-          valueNode.textContent = statusLabel;
-        }
-        if (copyNode && copyNode.textContent !== statusCopy) {
-          copyNode.textContent = statusCopy;
-        }
-        if (button) {
-          button.disabled = false;
-        }
-      });
-    }
 
     const systemSummary = stack.querySelector(".oq-settings-system-summary");
     if (systemSummary) {
@@ -4531,33 +4511,6 @@
           </div>
         </div>
       `,
-    );
-  }
-
-  function renderSettingsMqttSection() {
-    return renderSettingsSection(
-      "Integratie",
-      "MQTT",
-      "Stel hier de broker in voor de experimentele, compacte publish-only telemetry-export van OpenQuatt.",
-      `
-        <div class="oq-settings-quickstart-status" data-oq-mqtt-item="mqtt">
-          <div class="oq-settings-quickstart-status-row">
-            <div>
-              <p class="oq-settings-quickstart-status-label">MQTT-status</p>
-              <strong class="oq-settings-quickstart-status-value">${escapeHtml(getMqttStatusLabel())}</strong>
-              <p class="oq-settings-quickstart-status-copy">${escapeHtml(getMqttStatusDetail())}</p>
-            </div>
-            <button
-              class="oq-helper-button oq-helper-button--ghost"
-              type="button"
-              data-oq-action="open-mqtt-modal"
-            >
-              Aanpassen
-            </button>
-          </div>
-        </div>
-      `,
-      `<span class="oq-settings-section-badge oq-settings-section-badge--experimental">Experimenteel</span>`,
     );
   }
 

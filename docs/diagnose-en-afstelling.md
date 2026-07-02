@@ -7,6 +7,6 @@ De oude diagnose- en afstelpagina was te breed voor normaal gebruik. De nieuwe r
 Gebruik voortaan:
 
 - [Problemen oplossen](problemen-oplossen.md) voor diagnose;
-- [Web-app gebruiken](web-app.md) voor Quick Start, updates, backup en MQTT;
+- [Web-app gebruiken](web-app.md) voor Quick Start, updates, backup en beveiliging;
 - [Instellingen en meetwaarden](instellingen-en-meetwaarden.md) voor naslag bij instellingen;
 - [Power House](power-house.md) of [Water Temperature Control](water-temperature-control.md) voor strategie-afstelling.

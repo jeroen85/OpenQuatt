@@ -1814,42 +1814,6 @@
     ].join(":");
   }
 
-  function getMqttStatusSignature(status = state.mqttStatus || {}) {
-    return [
-      status.enabled ? "on" : "off",
-      status.connected ? "connected" : "disconnected",
-      String(status.broker || ""),
-      String(status.port || ""),
-      String(status.username || ""),
-      String(status.base_topic || ""),
-      String(status.publish_profile || ""),
-      String(status.essential_interval_s || ""),
-      String(status.standard_interval_s || ""),
-      String(status.diagnostic_interval_s || ""),
-      status.retain_snapshots ? "retain" : "volatile",
-      status.password_set ? "set" : "empty",
-      String(status.source || ""),
-      String(status.csrf_token || ""),
-    ].join(":");
-  }
-
-  function syncMqttDraftsFromStatus() {
-    const status = state.mqttStatus || {};
-    state.mqttDraftEnabled = status.enabled === true;
-    state.mqttDraftBroker = String(status.broker || "");
-    state.mqttDraftPort = String(status.port || 1883);
-    state.mqttDraftUsername = String(status.username || "");
-    state.mqttDraftPassword = "";
-    state.mqttDraftBaseTopic = String(status.base_topic || "openquatt");
-    state.mqttDraftPublishProfile = String(status.publish_profile || "standard");
-    state.mqttDraftEssentialIntervalS = String(status.essential_interval_s ?? 10);
-    state.mqttDraftStandardIntervalS = String(status.standard_interval_s ?? 30);
-    state.mqttDraftDiagnosticIntervalS = String(status.diagnostic_interval_s ?? 60);
-    state.mqttDraftRetainSnapshots = status.retain_snapshots !== false;
-    state.mqttNotice = "";
-    state.mqttError = "";
-  }
-
   function shouldRefreshSupplementaryStatus(lastRefreshAt, options = {}, intervalMs = SUPPLEMENTARY_STATUS_REFRESH_INTERVAL_MS) {
     if (options.force === true) {
       return true;
@@ -1864,24 +1828,6 @@
 
   function shouldRefreshApiSecurityStatusForCurrentSurface() {
     return state.systemModal === "api-security" || isSystemSettingsGroupActive();
-  }
-
-  function shouldRefreshMqttStatusForCurrentSurface() {
-    return state.systemModal === "mqtt" || isIntegrationsSettingsGroupActive();
-  }
-
-  function formatMqttPublishProfile(profile) {
-    const normalized = String(profile || "").trim().toLowerCase();
-    if (normalized === "off") {
-      return "Uit";
-    }
-    if (normalized === "essential") {
-      return "Essential";
-    }
-    if (normalized === "diagnostic") {
-      return "Diagnostic";
-    }
-    return "Standard";
   }
 
   async function refreshAuthStatus(options = {}) {
@@ -2001,92 +1947,6 @@
       return previousSignature !== nextSignature;
     } catch (error) {
       state.apiSecurityError = `API-beveiliging kon niet worden geladen. ${error.message}`;
-      return false;
-    }
-  }
-
-  function getMqttStatusLabel() {
-    const status = state.mqttStatus;
-    if (!status) {
-      return "Laden...";
-    }
-    if (status.enabled !== true) {
-      return "Uit";
-    }
-    if (status.connected === true) {
-      return "Verbonden";
-    }
-    if (!String(status.broker || "").trim()) {
-      return "Geen broker";
-    }
-    return "Verbinding maken";
-  }
-
-  function getMqttStatusDetail() {
-    const status = state.mqttStatus;
-    if (!status) {
-      return "MQTT-configuratie wordt geladen.";
-    }
-
-    const broker = String(status.broker || "").trim();
-    const baseTopic = String(status.base_topic || "").trim();
-    const profileLabel = formatMqttPublishProfile(status.publish_profile);
-    if (status.enabled !== true) {
-      return "MQTT staat uit en maakt geen verbinding.";
-    }
-    if (status.connected === true) {
-      return broker
-        ? `Verbonden met ${broker}${baseTopic ? ` en publiceert ${profileLabel.toLowerCase()} telemetry via ${baseTopic}.` : "."}`
-        : "MQTT is verbonden en publiceert met de opgeslagen instellingen.";
-    }
-    if (broker) {
-      return baseTopic
-        ? `De broker staat ingesteld op ${broker}; het device probeert ${profileLabel.toLowerCase()} telemetry via ${baseTopic} te publiceren.`
-        : `De broker staat ingesteld op ${broker}; het device probeert verbinding te maken.`;
-    }
-    return "Er is nog geen broker opgeslagen.";
-  }
-
-  async function refreshMqttStatus(options = {}) {
-    if (!shouldRefreshSupplementaryStatus(state.lastMqttStatusRefreshAt, options)) {
-      return false;
-    }
-    state.lastMqttStatusRefreshAt = Date.now();
-    try {
-      const response = await fetch("/mqtt/status", { cache: "no-store" });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      const payload = await response.json();
-      const nextStatus = {
-        enabled: Boolean(payload.enabled),
-        connected: Boolean(payload.connected),
-        broker: String(payload.broker || ""),
-        port: Number(payload.port || 0),
-        username: String(payload.username || ""),
-        base_topic: String(payload.base_topic || ""),
-        publish_profile: String(payload.publish_profile || "standard"),
-        essential_interval_s: Number(payload.essential_interval_s ?? 10),
-        standard_interval_s: Number(payload.standard_interval_s ?? 30),
-        retain_snapshots: payload.retain_snapshots !== false,
-        password_set: Boolean(payload.password_set),
-        source: String(payload.source || ""),
-        csrf_token: String(payload.csrf_token || ""),
-      };
-      const previousSignature = getMqttStatusSignature();
-      const nextSignature = getMqttStatusSignature(nextStatus);
-      state.mqttStatus = nextStatus;
-      if (previousSignature !== nextSignature) {
-        syncMqttDraftsFromStatus();
-      }
-      if (state.systemModal === "mqtt") {
-        state.mqttError = "";
-      }
-      return previousSignature !== nextSignature;
-    } catch (error) {
-      if (state.systemModal === "mqtt") {
-        state.mqttError = `MQTT-status kon niet worden geladen. ${error.message}`;
-      }
       return false;
     }
   }
@@ -2246,103 +2106,6 @@
       render();
     } finally {
       state.apiSecurityBusy = false;
-      render();
-    }
-  }
-
-  async function commitMqttChanges() {
-    const status = state.mqttStatus || {};
-    const enabled = Boolean(state.mqttDraftEnabled);
-    const broker = String(state.mqttDraftBroker || "").trim();
-    const port = Number(String(state.mqttDraftPort || "").trim());
-    const username = String(state.mqttDraftUsername || "").trim();
-    const password = String(state.mqttDraftPassword || "");
-    const baseTopic = String(state.mqttDraftBaseTopic || "").trim();
-    const publishProfile = String(state.mqttDraftPublishProfile || "standard").trim().toLowerCase();
-    const essentialIntervalS = Number(String(state.mqttDraftEssentialIntervalS || "").trim());
-    const standardIntervalS = Number(String(state.mqttDraftStandardIntervalS || "").trim());
-    const diagnosticIntervalS = Number(String(state.mqttDraftDiagnosticIntervalS || "").trim());
-    const retainSnapshots = Boolean(state.mqttDraftRetainSnapshots);
-
-    if (!baseTopic) {
-      state.mqttError = "Vul een base topic in.";
-      render();
-      return;
-    }
-    if (!Number.isFinite(port) || port < 1 || port > 65535) {
-      state.mqttError = "Vul een geldige poort in.";
-      render();
-      return;
-    }
-    if (enabled && !broker) {
-      state.mqttError = "Vul een broker in als je MQTT inschakelt.";
-      render();
-      return;
-    }
-    if (!status.csrf_token) {
-      state.mqttError = "MQTT-configuratie laden nog. Probeer het zo opnieuw.";
-      render();
-      return;
-    }
-    if (!["off", "essential", "standard", "diagnostic"].includes(publishProfile)) {
-      state.mqttError = "Kies een geldig publish-profiel.";
-      render();
-      return;
-    }
-    if (!Number.isFinite(essentialIntervalS) || essentialIntervalS < 1 || essentialIntervalS > 3600) {
-      state.mqttError = "Vul een geldig essential interval in.";
-      render();
-      return;
-    }
-    if (!Number.isFinite(standardIntervalS) || standardIntervalS < 1 || standardIntervalS > 3600) {
-      state.mqttError = "Vul een geldig standard interval in.";
-      render();
-      return;
-    }
-    if (!Number.isFinite(diagnosticIntervalS) || diagnosticIntervalS < 1 || diagnosticIntervalS > 3600) {
-      state.mqttError = "Vul een geldig diagnostic interval in.";
-      render();
-      return;
-    }
-
-    state.mqttBusy = true;
-    state.mqttError = "";
-    state.mqttNotice = "";
-    render();
-
-    try {
-      const params = new URLSearchParams();
-      params.set("csrf_token", status.csrf_token);
-      params.set("enabled", enabled ? "true" : "false");
-      params.set("broker", broker);
-      params.set("port", String(port));
-      params.set("username", username);
-      params.set("password", password);
-      params.set("base_topic", baseTopic);
-      params.set("publish_profile", publishProfile);
-      params.set("essential_interval_s", String(essentialIntervalS));
-      params.set("standard_interval_s", String(standardIntervalS));
-      params.set("diagnostic_interval_s", String(diagnosticIntervalS));
-      params.set("retain_snapshots", retainSnapshots ? "true" : "false");
-
-      const response = await fetch("/mqtt/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-        body: params.toString(),
-      });
-      const payload = await response.json().catch(() => ({ ok: false, error: "invalid_response" }));
-      if (!response.ok || !payload.ok) {
-        throw new Error(payload.error || `HTTP ${response.status}`);
-      }
-      await refreshMqttStatus({ force: true });
-      state.mqttNotice = enabled ? "MQTT staat nu aan." : "MQTT-configuratie opgeslagen.";
-      state.mqttError = "";
-      render();
-    } catch (error) {
-      state.mqttError = `Opslaan is mislukt. ${error.message}`;
-      render();
-    } finally {
-      state.mqttBusy = false;
       render();
     }
   }
@@ -3185,9 +2948,6 @@
       if (isSystemSettingsGroupActive()) {
         await refreshApiSecurityStatus({ force: true });
       }
-      if (isIntegrationsSettingsGroupActive()) {
-        await refreshMqttStatus({ force: true });
-      }
     } finally {
       if (state.mounted && !state.nativeOpen) {
         render();
@@ -3342,7 +3102,6 @@
           : false;
       const authChanged = shouldDeferSupplementary || !shouldRefreshAuthStatusForCurrentSurface() ? false : await refreshAuthStatus();
       const apiSecurityChanged = shouldDeferSupplementary || !shouldRefreshApiSecurityStatusForCurrentSurface() ? false : await refreshApiSecurityStatus();
-      const mqttChanged = shouldDeferSupplementary || !shouldRefreshMqttStatusForCurrentSurface() ? false : await refreshMqttStatus();
       const nextHeaderSignature = getHeaderRenderSignature();
       if (reconnectChanged) {
         render();
@@ -3361,10 +3120,6 @@
         return;
       }
       if (apiSecurityChanged && state.appView === "settings") {
-        render();
-        return;
-      }
-      if (mqttChanged && state.appView === "settings") {
         render();
         return;
       }
@@ -3519,7 +3274,6 @@
       state.busyAction,
       state.loadingEntities ? "loading" : "ready",
       getApiSecurityStatusSignature(),
-      getMqttStatusSignature(),
       getEntitySignatureFragment("setupComplete"),
       ...SETTINGS_KEYS.map((key) => getEntitySignatureFragment(key)),
     ].join("|");
@@ -3612,36 +3366,6 @@
       }
       const authField = event.target.dataset.oqAuthField;
       if (!authField) {
-        const mqttField = event.target.dataset.oqMqttField;
-        if (!mqttField) {
-          return;
-        }
-
-        state.mqttNotice = "";
-        state.mqttError = "";
-        if (mqttField === "enabled") {
-          state.mqttDraftEnabled = Boolean(event.target.checked);
-        } else if (mqttField === "broker") {
-          state.mqttDraftBroker = String(event.target.value || "");
-        } else if (mqttField === "port") {
-          state.mqttDraftPort = String(event.target.value || "");
-        } else if (mqttField === "username") {
-          state.mqttDraftUsername = String(event.target.value || "");
-        } else if (mqttField === "password") {
-          state.mqttDraftPassword = String(event.target.value || "");
-        } else if (mqttField === "baseTopic") {
-          state.mqttDraftBaseTopic = String(event.target.value || "");
-        } else if (mqttField === "publishProfile") {
-          state.mqttDraftPublishProfile = String(event.target.value || "");
-        } else if (mqttField === "essentialIntervalS") {
-          state.mqttDraftEssentialIntervalS = String(event.target.value || "");
-        } else if (mqttField === "standardIntervalS") {
-          state.mqttDraftStandardIntervalS = String(event.target.value || "");
-        } else if (mqttField === "diagnosticIntervalS") {
-          state.mqttDraftDiagnosticIntervalS = String(event.target.value || "");
-        } else if (mqttField === "retainSnapshots") {
-          state.mqttDraftRetainSnapshots = Boolean(event.target.checked);
-        }
         return;
       }
 
@@ -3828,36 +3552,6 @@
       return;
     }
 
-    const mqttField = event.target.dataset.oqMqttField;
-    if (!mqttField) {
-      return;
-    }
-
-    state.mqttNotice = "";
-    state.mqttError = "";
-    if (mqttField === "enabled") {
-      state.mqttDraftEnabled = Boolean(event.target.checked);
-    } else if (mqttField === "broker") {
-      state.mqttDraftBroker = String(event.target.value || "");
-    } else if (mqttField === "port") {
-      state.mqttDraftPort = String(event.target.value || "");
-    } else if (mqttField === "username") {
-      state.mqttDraftUsername = String(event.target.value || "");
-    } else if (mqttField === "password") {
-      state.mqttDraftPassword = String(event.target.value || "");
-    } else if (mqttField === "baseTopic") {
-      state.mqttDraftBaseTopic = String(event.target.value || "");
-    } else if (mqttField === "publishProfile") {
-      state.mqttDraftPublishProfile = String(event.target.value || "");
-    } else if (mqttField === "essentialIntervalS") {
-      state.mqttDraftEssentialIntervalS = String(event.target.value || "");
-    } else if (mqttField === "standardIntervalS") {
-      state.mqttDraftStandardIntervalS = String(event.target.value || "");
-    } else if (mqttField === "diagnosticIntervalS") {
-      state.mqttDraftDiagnosticIntervalS = String(event.target.value || "");
-    } else if (mqttField === "retainSnapshots") {
-      state.mqttDraftRetainSnapshots = Boolean(event.target.checked);
-    }
   }
 
   function handleClick(event) {
@@ -4077,14 +3771,6 @@
       return;
     }
 
-    if (action === "open-mqtt-modal") {
-      state.systemModal = "mqtt";
-      syncMqttDraftsFromStatus();
-      render();
-      void refreshMqttStatus({ force: true });
-      return;
-    }
-
     if (action === "copy-api-security-key") {
       void copyApiSecurityKey();
       return;
@@ -4107,11 +3793,6 @@
 
     if (action === "restart-api-security") {
       void restartForApiSecurityChange();
-      return;
-    }
-
-    if (action === "save-mqtt-config") {
-      void commitMqttChanges();
       return;
     }
 
@@ -4559,8 +4240,6 @@
       state.authError = "";
       state.apiSecurityNotice = "";
       state.apiSecurityError = "";
-      state.mqttNotice = "";
-      state.mqttError = "";
       clearSettingsBackupDraft();
       render();
       scheduleDebugRecordingDeviceStatusPoll();
