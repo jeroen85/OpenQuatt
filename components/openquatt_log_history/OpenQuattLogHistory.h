@@ -52,12 +52,28 @@ class OpenQuattLogHistory : public Component {
   size_t count_{0};
   uint32_t next_seq_{1};
 
+#ifdef USE_ESP32_CRASH_HANDLER
+  bool pending_crash_report_{false};
+  bool pending_crash_breadcrumb_valid_{false};
+  uint32_t pending_crash_report_since_ms_{0};
+  uint32_t pending_crash_epoch_s_{0};
+  uint32_t pending_crash_uptime_s_{0};
+  uint32_t last_crash_breadcrumb_update_ms_{0};
+#endif
+
   bool capture_enabled_() const;
   bool time_is_valid_() const;
   uint64_t current_time_ms_() const;
   uint64_t current_epoch_offset_ms_() const;
   void sync_time_state_();
   void rebase_history_(uint32_t offset_s);
+
+#ifdef USE_ESP32_CRASH_HANDLER
+  void load_crash_time_breadcrumb_();
+  void update_crash_time_breadcrumb_();
+  void maybe_log_pending_crash_report_();
+  static void format_epoch_(uint32_t epoch_s, char *out, size_t out_size);
+#endif
 
   void on_log_(uint8_t level, const char *tag, const char *message, size_t message_len);
   void push_entry_(const LogEntry &entry);
