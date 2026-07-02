@@ -69,6 +69,7 @@ esp32:
     sdkconfig_options:
       COMPILER_OPTIMIZATION_SIZE: y
       CONFIG_BT_ENABLED: n
+      CONFIG_ESP_MAIN_TASK_STACK_SIZE: "8192"
 
 sensor:
   - platform: debug
