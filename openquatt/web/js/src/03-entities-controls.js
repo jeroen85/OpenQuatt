@@ -273,6 +273,7 @@
       "energy_hp_electric",
       "hpElectric",
       "hp_electric_wh",
+      "total_hp_electric_wh",
       "totalHpElectric",
     ],
     heatingInput: ["heating_input_wh", "heatingInputWh"],
@@ -283,6 +284,7 @@
       "energy_hp_heat",
       "hpHeat",
       "hp_heat_wh",
+      "total_hp_heat_wh",
       "totalHpHeat",
     ],
     heatpumpCoolingOutput: ["heatpump_cooling_output_wh", "heatpumpCoolingOutputWh"],
@@ -292,6 +294,7 @@
       "energy_boiler_heat",
       "boilerHeat",
       "boiler_heat_wh",
+      "total_boiler_heat_wh",
       "totalBoilerHeat",
     ],
     systemHeatOutput: ["system_heat_output_wh", "systemHeatOutputWh"],
@@ -323,11 +326,14 @@
     let month = 0;
     let day = 0;
     const compactMatch = text.match(/^(\d{4})(\d{2})(\d{2})$/);
-    const dashedMatch = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    const timestampParts = parseEnergyHistoryImportTimestampParts(text);
+    const dashedMatch = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (compactMatch) {
       year = Number(compactMatch[1]);
       month = Number(compactMatch[2]);
       day = Number(compactMatch[3]);
+    } else if (timestampParts) {
+      return timestampParts.dateKey;
     } else if (dashedMatch) {
       year = Number(dashedMatch[1]);
       month = Number(dashedMatch[2]);
@@ -361,6 +367,49 @@
 
   function getEnergyHistoryImportTimestampValue(record) {
     return record.timestamp ?? record.time ?? record.datetime ?? record.date_time ?? record.dateTime;
+  }
+
+  function parseEnergyHistoryImportTimestampParts(value) {
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+    const text = String(value).trim();
+    const match = text.match(
+      /^(\d{4})-(\d{2})-(\d{2})[T\s](\d{1,2})(?::(\d{2}))?(?::(\d{2})(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?$/i,
+    );
+    if (!match) {
+      return null;
+    }
+
+    const hasZone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(text);
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const hour = Number(match[4]);
+    const minute = Number(match[5] || "0");
+    const second = Number(match[6] || "0");
+    if ([year, month, day, hour, minute, second].some((part) => Number.isNaN(part))) {
+      return null;
+    }
+
+    const parsedDate = hasZone
+      ? new Date(text)
+      : new Date(year, month - 1, day, hour, minute, second, 0);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return null;
+    }
+
+    const localYear = parsedDate.getFullYear();
+    const localMonth = parsedDate.getMonth() + 1;
+    const localDay = parsedDate.getDate();
+    const localHour = parsedDate.getHours();
+    if (localYear < 2020 || localYear > 2099 || localMonth < 1 || localMonth > 12 || localDay < 1 || localDay > 31) {
+      return null;
+    }
+    return {
+      dateKey: (localYear * 10000) + (localMonth * 100) + localDay,
+      hour: localHour,
+    };
   }
 
   function parseEnergyHistoryImportNumber(value) {
@@ -412,7 +461,7 @@
     const systemHeatOutputWh = parseEnergyHistoryImportWh(
       record,
       ENERGY_HISTORY_IMPORT_VALUE_KEYS.systemHeatOutput,
-      heatpumpHeatOutputWh + heatpumpCoolingOutputWh + boilerHeatOutputWh,
+      heatpumpHeatOutputWh + boilerHeatOutputWh,
     );
     const hasFullImportFields = hasEnergyHistoryImportWh(record, ENERGY_HISTORY_IMPORT_VALUE_KEYS.heatingInput) ||
       hasEnergyHistoryImportWh(record, ENERGY_HISTORY_IMPORT_VALUE_KEYS.coolingInput) ||
@@ -443,6 +492,10 @@
     const timestamp = getEnergyHistoryImportTimestampValue(record);
     if (timestamp) {
       const timestampText = String(timestamp).trim();
+      const timestampParts = parseEnergyHistoryImportTimestampParts(timestampText);
+      if (timestampParts) {
+        return timestampParts.hour;
+      }
       const parsedDate = new Date(timestampText);
       if (!Number.isNaN(parsedDate.getTime())) {
         return parsedDate.getHours();
@@ -525,11 +578,56 @@
     });
   }
 
+  function flattenEnergyHistoryImportDailyRecord(row) {
+    if (!row || typeof row !== "object" || Array.isArray(row) || !row.summary ||
+        typeof row.summary !== "object" || Array.isArray(row.summary)) {
+      return row;
+    }
+    return { ...row.summary, ...row };
+  }
+
+  function energyHistoryImportRecordHasHour(row) {
+    return Object.prototype.hasOwnProperty.call(row, "hour") ||
+      Object.prototype.hasOwnProperty.call(row, "hour_of_day") ||
+      Object.prototype.hasOwnProperty.call(row, "hourOfDay");
+  }
+
+  function energyHistoryImportRowsHaveTimestamp(rows) {
+    return rows.some((row) => getEnergyHistoryImportTimestampValue(row) !== undefined);
+  }
+
+  function energyHistoryImportRowsHaveMultipleRowsPerDay(rows) {
+    const seenDates = new Set();
+    for (const row of rows) {
+      const dateKey = parseEnergyHistoryImportDateKey(
+        row.date_key ?? row.dateKey ?? row.date ?? row.from ?? getEnergyHistoryImportTimestampValue(row),
+      );
+      if (!dateKey) {
+        continue;
+      }
+      if (seenDates.has(dateKey)) {
+        return true;
+      }
+      seenDates.add(dateKey);
+    }
+    return false;
+  }
+
+  function energyHistoryImportRowsLookHourly(rows) {
+    return rows.some(energyHistoryImportRecordHasHour) ||
+      (energyHistoryImportRowsHaveTimestamp(rows) && energyHistoryImportRowsHaveMultipleRowsPerDay(rows));
+  }
+
   function collectEnergyHistoryImportRows(payload) {
     const dailyRows = [];
     const hourlyRows = [];
     if (Array.isArray(payload)) {
-      dailyRows.push(...payload);
+      const rows = payload.map(flattenEnergyHistoryImportDailyRecord);
+      if (energyHistoryImportRowsLookHourly(rows)) {
+        hourlyRows.push(...rows);
+      } else {
+        dailyRows.push(...rows);
+      }
       return { dailyRows, hourlyRows, source: "JSON" };
     }
 
@@ -549,38 +647,17 @@
           ? payload.openquatt_import.hourly
           : [];
 
-    dailyRows.push(...days);
-    hourlyRows.push(...hourly);
+    dailyRows.push(...days.map(flattenEnergyHistoryImportDailyRecord));
+    hourlyRows.push(...hourly.map(flattenEnergyHistoryImportDailyRecord));
     days.forEach((day) => {
       if (!Array.isArray(day?.samples)) {
         return;
       }
       day.samples.forEach((sample) => {
-        hourlyRows.push({ ...sample, date: sample.date ?? day.date });
+        hourlyRows.push(flattenEnergyHistoryImportDailyRecord({ ...sample, date: sample.date ?? day.date }));
       });
     });
     return { dailyRows, hourlyRows, source };
-  }
-
-  function energyHistoryImportCsvHasTimestamp(rows) {
-    return rows.some((row) => getEnergyHistoryImportTimestampValue(row) !== undefined);
-  }
-
-  function energyHistoryImportCsvHasMultipleRowsPerDay(rows) {
-    const seenDates = new Set();
-    for (const row of rows) {
-      const dateKey = parseEnergyHistoryImportDateKey(
-        row.date_key ?? row.dateKey ?? row.date ?? row.from ?? getEnergyHistoryImportTimestampValue(row),
-      );
-      if (!dateKey) {
-        continue;
-      }
-      if (seenDates.has(dateKey)) {
-        return true;
-      }
-      seenDates.add(dateKey);
-    }
-    return false;
   }
 
   function parseEnergyHistoryImportPayload(fileName, text) {
@@ -599,12 +676,7 @@
       source = collected.source;
     } else {
       const rows = parseEnergyHistoryImportCsv(trimmed);
-      const hasHourColumn = rows.some((row) => Object.prototype.hasOwnProperty.call(row, "hour")
-        || Object.prototype.hasOwnProperty.call(row, "hour_of_day")
-        || Object.prototype.hasOwnProperty.call(row, "hourOfDay"));
-      const hasTimestampedHourlyRows = energyHistoryImportCsvHasTimestamp(rows) &&
-        energyHistoryImportCsvHasMultipleRowsPerDay(rows);
-      if (hasHourColumn || hasTimestampedHourlyRows || String(fileName || "").toLowerCase().includes("hour")) {
+      if (energyHistoryImportRowsLookHourly(rows) || String(fileName || "").toLowerCase().includes("hour")) {
         hourlyRows = rows;
       } else {
         dailyRows = rows;
