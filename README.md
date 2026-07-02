@@ -104,11 +104,10 @@ Compacte roadmap:
 Belangrijkste pagina's voor gebruikers:
 
 - [Installatie en ingebruikname](docs/installatie-en-ingebruikname.md) voor installeren en controle na de eerste start
-- [Web-app gebruiken](docs/web-app.md) voor Quick Start, instellingen, updates, backup en MQTT
+- [Web-app gebruiken](docs/web-app.md) voor Quick Start, instellingen, updates, backup en beveiliging
 - [Dashboard installeren](docs/dashboard/README.md) voor het importeren van dashboards
 - [Dashboard gebruiken](docs/dashboardoverzicht.md) voor dagelijkse controle in Home Assistant
 - [Verwarmen en koelen uitgelegd](docs/verwarmen-en-koelen.md) voor een eenvoudige uitleg van `Power House`, stooklijnregeling, koeling, `Single` en `Duo`
-- [MQTT gebruiken](docs/mqtt.md) voor de experimentele publish-only telemetry-export
 - [Problemen oplossen](docs/problemen-oplossen.md) voor diagnose zonder meteen te gaan tunen
 
 Meer heb je voor normaal gebruik meestal niet nodig.
