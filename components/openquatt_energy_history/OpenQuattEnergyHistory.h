@@ -141,7 +141,7 @@ class OpenQuattEnergyHistory : public Component {
   static uint32_t delta_wh_(uint32_t current, uint32_t previous);
   static std::string format_date_key_(uint32_t date_key);
   static std::string format_date_key_iso_(uint32_t date_key);
-  static uint32_t export_wh_(uint32_t value);
+  static bool write_export_wh_field_(ChunkedTextWriter *writer, const char *field, uint32_t value);
   static bool date_key_in_range_(uint32_t date_key, uint32_t from_date_key, uint32_t to_date_key);
   static uint16_t parse_hourly_retention_days_(const std::string &option);
   bool write_export_record_(ChunkedTextWriter *writer, uint32_t date_key, int16_t hour,

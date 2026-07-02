@@ -547,7 +547,15 @@ std::string OpenQuattEnergyHistory::format_date_key_iso_(uint32_t date_key) {
   return buffer;
 }
 
-uint32_t OpenQuattEnergyHistory::export_wh_(uint32_t value) { return value == UNKNOWN_WH ? 0U : value; }
+bool OpenQuattEnergyHistory::write_export_wh_field_(ChunkedTextWriter *writer, const char *field, uint32_t value) {
+  if (value == UNKNOWN_WH) {
+    return true;
+  }
+  if (writer == nullptr || field == nullptr) {
+    return false;
+  }
+  return writer->printf(",\"%s\":%u", field, static_cast<unsigned>(value));
+}
 
 bool OpenQuattEnergyHistory::date_key_in_range_(uint32_t date_key, uint32_t from_date_key, uint32_t to_date_key) {
   return date_key != 0U && (from_date_key == 0U || date_key >= from_date_key) &&
@@ -1330,13 +1338,12 @@ bool OpenQuattEnergyHistory::write_export_record_(ChunkedTextWriter *writer, uin
   if (hour >= 0 && !writer->printf(",\"hour\":%u", static_cast<unsigned>(hour))) {
     return false;
   }
-  return writer->printf(",\"energy_hp_electric\":%u", static_cast<unsigned>(export_wh_(values.electrical_input_wh))) &&
-         writer->printf(",\"energy_hp_heat\":%u", static_cast<unsigned>(export_wh_(values.heatpump_heat_output_wh))) &&
-         writer->printf(",\"energy_hp_cooling\":%u",
-                        static_cast<unsigned>(export_wh_(values.heatpump_cooling_output_wh))) &&
-         writer->printf(",\"energy_boiler_heat\":%u", static_cast<unsigned>(export_wh_(values.boiler_heat_output_wh))) &&
-         writer->printf(",\"heating_input_wh\":%u", static_cast<unsigned>(export_wh_(values.heating_input_wh))) &&
-         writer->printf(",\"cooling_input_wh\":%u", static_cast<unsigned>(export_wh_(values.cooling_input_wh))) &&
+  return write_export_wh_field_(writer, "energy_hp_electric", values.electrical_input_wh) &&
+         write_export_wh_field_(writer, "energy_hp_heat", values.heatpump_heat_output_wh) &&
+         write_export_wh_field_(writer, "energy_hp_cooling", values.heatpump_cooling_output_wh) &&
+         write_export_wh_field_(writer, "energy_boiler_heat", values.boiler_heat_output_wh) &&
+         write_export_wh_field_(writer, "heating_input_wh", values.heating_input_wh) &&
+         write_export_wh_field_(writer, "cooling_input_wh", values.cooling_input_wh) &&
          writer->printf("}");
 }
 
