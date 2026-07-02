@@ -70,6 +70,7 @@ class OpenQuattEnergyHistory : public Component {
   static constexpr size_t HOURLY_SLOT_COUNT = static_cast<size_t>(HOURLY_RETENTION_DAYS) * 24U;
   static constexpr uint16_t DEFAULT_FLASH_HOURLY_RETENTION_DAYS = 180;
   static constexpr uint16_t MAX_FLASH_HOURLY_RETENTION_DAYS = 365;
+  static constexpr size_t EXPORT_HOUR_DATE_COUNT = MAX_FLASH_HOURLY_RETENTION_DAYS + HOURLY_RETENTION_DAYS;
   static constexpr uint32_t UNKNOWN_WH = 0xFFFFFFFFU;
 
   struct __attribute__((packed)) EnergyHistoryValues {
@@ -146,6 +147,9 @@ class OpenQuattEnergyHistory : public Component {
   static uint16_t parse_hourly_retention_days_(const std::string &option);
   bool write_export_record_(ChunkedTextWriter *writer, uint32_t date_key, int16_t hour,
                             const EnergyHistoryValues &values, bool *first) const;
+  void clear_export_hour_marks_();
+  bool export_hour_marked_(uint32_t date_key, uint8_t hour) const;
+  bool mark_export_hour_(uint32_t date_key, uint8_t hour);
 
   void rotate_csrf_token_();
   EnergyHistoryValues pack_values_(float electrical_input_kwh, float heating_input_kwh, float cooling_input_kwh,
@@ -212,6 +216,8 @@ class OpenQuattEnergyHistory : public Component {
   uint8_t stored_day_bitmap_[DATE_BITMAP_BYTES]{};
   uint8_t stored_hour_day_bitmap_[DATE_BITMAP_BYTES]{};
   uint8_t export_date_bitmap_[DATE_BITMAP_BYTES]{};
+  uint32_t export_hour_date_keys_[EXPORT_HOUR_DATE_COUNT]{};
+  uint32_t export_hour_masks_[EXPORT_HOUR_DATE_COUNT]{};
 
   uint32_t next_sequence_{0};
   uint32_t record_count_{0};

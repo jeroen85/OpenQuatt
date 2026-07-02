@@ -1347,6 +1347,49 @@ bool OpenQuattEnergyHistory::write_export_record_(ChunkedTextWriter *writer, uin
          writer->printf("}");
 }
 
+void OpenQuattEnergyHistory::clear_export_hour_marks_() {
+  std::memset(this->export_hour_date_keys_, 0, sizeof(this->export_hour_date_keys_));
+  std::memset(this->export_hour_masks_, 0, sizeof(this->export_hour_masks_));
+}
+
+bool OpenQuattEnergyHistory::export_hour_marked_(uint32_t date_key, uint8_t hour) const {
+  if (!date_key_valid_(date_key) || hour > 23U) {
+    return false;
+  }
+
+  const uint32_t bit = 1UL << hour;
+  for (size_t index = 0; index < EXPORT_HOUR_DATE_COUNT; ++index) {
+    const uint32_t stored_date_key = this->export_hour_date_keys_[index];
+    if (stored_date_key == 0U) {
+      return false;
+    }
+    if (stored_date_key == date_key) {
+      return (this->export_hour_masks_[index] & bit) != 0U;
+    }
+  }
+  return false;
+}
+
+bool OpenQuattEnergyHistory::mark_export_hour_(uint32_t date_key, uint8_t hour) {
+  if (!date_key_valid_(date_key) || hour > 23U) {
+    return false;
+  }
+
+  const uint32_t bit = 1UL << hour;
+  for (size_t index = 0; index < EXPORT_HOUR_DATE_COUNT; ++index) {
+    if (this->export_hour_date_keys_[index] == date_key) {
+      this->export_hour_masks_[index] |= bit;
+      return true;
+    }
+    if (this->export_hour_date_keys_[index] == 0U) {
+      this->export_hour_date_keys_[index] = date_key;
+      this->export_hour_masks_[index] = bit;
+      return true;
+    }
+  }
+  return false;
+}
+
 void OpenQuattEnergyHistory::write_history_export(httpd_req_t *req) {
   if (req == nullptr) {
     return;
@@ -1386,25 +1429,36 @@ void OpenQuattEnergyHistory::write_history_export(httpd_req_t *req) {
 
   bool first_day = true;
   std::memset(this->export_date_bitmap_, 0, sizeof(this->export_date_bitmap_));
-  if (include_days && this->flash_slot_count_ > 0U) {
-    const uint32_t slot_count = static_cast<uint32_t>(this->flash_slot_count_);
-    const uint32_t start_sequence = this->next_sequence_ > slot_count ? this->next_sequence_ - slot_count : 0U;
-    for (uint32_t sequence = this->next_sequence_; sequence > start_sequence; --sequence) {
-      const uint32_t record_sequence = sequence - 1U;
-      const uint32_t slot_index = record_sequence % slot_count;
-      EnergyHistoryRecord record{};
-      if (!this->read_record_(slot_index, &record) || !this->record_valid_(record) ||
-          record.sequence != record_sequence ||
-          !date_key_in_range_(record.date_key, from_date_key, to_date_key)) {
-        continue;
-      }
-      if (date_bitmap_get_(this->export_date_bitmap_, record.date_key)) {
-        continue;
-      }
-      date_bitmap_set_(this->export_date_bitmap_, record.date_key);
-      if (!this->write_export_record_(&writer, record.date_key, -1, record.values, &first_day)) {
-        ESP_LOGW(TAG, "Failed to write energy history export day record");
+  if (include_days) {
+    if (this->has_current_day_ && record_has_values_(this->current_values_) &&
+        date_key_in_range_(this->active_date_key_, from_date_key, to_date_key)) {
+      if (!this->write_export_record_(&writer, this->active_date_key_, -1, this->current_values_, &first_day)) {
+        ESP_LOGW(TAG, "Failed to write current energy export day record");
         return;
+      }
+      date_bitmap_set_(this->export_date_bitmap_, this->active_date_key_);
+    }
+
+    if (this->flash_slot_count_ > 0U) {
+      const uint32_t slot_count = static_cast<uint32_t>(this->flash_slot_count_);
+      const uint32_t start_sequence = this->next_sequence_ > slot_count ? this->next_sequence_ - slot_count : 0U;
+      for (uint32_t sequence = this->next_sequence_; sequence > start_sequence; --sequence) {
+        const uint32_t record_sequence = sequence - 1U;
+        const uint32_t slot_index = record_sequence % slot_count;
+        EnergyHistoryRecord record{};
+        if (!this->read_record_(slot_index, &record) || !this->record_valid_(record) ||
+            record.sequence != record_sequence ||
+            !date_key_in_range_(record.date_key, from_date_key, to_date_key)) {
+          continue;
+        }
+        if (date_bitmap_get_(this->export_date_bitmap_, record.date_key)) {
+          continue;
+        }
+        date_bitmap_set_(this->export_date_bitmap_, record.date_key);
+        if (!this->write_export_record_(&writer, record.date_key, -1, record.values, &first_day)) {
+          ESP_LOGW(TAG, "Failed to write energy history export day record");
+          return;
+        }
       }
     }
   }
@@ -1416,7 +1470,25 @@ void OpenQuattEnergyHistory::write_history_export(httpd_req_t *req) {
 
   bool first_hour = true;
   if (include_hours) {
-    std::memset(this->export_date_bitmap_, 0, sizeof(this->export_date_bitmap_));
+    this->clear_export_hour_marks_();
+
+    const uint32_t live_slot_count = static_cast<uint32_t>(HOURLY_SLOT_COUNT);
+    const uint32_t live_start_sequence =
+        this->next_hour_sequence_ > live_slot_count ? this->next_hour_sequence_ - live_slot_count : 0U;
+    for (uint32_t sequence = live_start_sequence; sequence < this->next_hour_sequence_; ++sequence) {
+      const auto &record = this->hour_records_[sequence % live_slot_count];
+      if (!record.valid || !record_has_values_(record.values) || record.sequence != sequence ||
+          !date_key_in_range_(record.date_key, from_date_key, to_date_key) ||
+          this->export_hour_marked_(record.date_key, record.hour)) {
+        continue;
+      }
+      if (!this->write_export_record_(&writer, record.date_key, record.hour, record.values, &first_hour)) {
+        ESP_LOGW(TAG, "Failed to write live energy hour export record");
+        return;
+      }
+      this->mark_export_hour_(record.date_key, record.hour);
+    }
+
     if (this->hour_flash_slot_count_ > 0U) {
       const uint32_t slot_count = static_cast<uint32_t>(this->hour_flash_slot_count_);
       const uint32_t start_sequence =
@@ -1429,45 +1501,19 @@ void OpenQuattEnergyHistory::write_history_export(httpd_req_t *req) {
             record.sequence != record_sequence || !date_key_in_range_(record.date_key, from_date_key, to_date_key)) {
           continue;
         }
-        if (date_bitmap_get_(this->export_date_bitmap_, record.date_key)) {
-          continue;
-        }
-        date_bitmap_set_(this->export_date_bitmap_, record.date_key);
         for (uint8_t hour = 0; hour < 24U; ++hour) {
           if ((record.hour_mask & (1UL << hour)) == 0U || !record_has_values_(record.hours[hour])) {
             continue;
           }
-          bool live_hour_exists = false;
-          for (const auto &live_record : this->hour_records_) {
-            if (live_record.valid && live_record.date_key == record.date_key && live_record.hour == hour &&
-                record_has_values_(live_record.values)) {
-              live_hour_exists = true;
-              break;
-            }
-          }
-          if (live_hour_exists) {
+          if (this->export_hour_marked_(record.date_key, hour)) {
             continue;
           }
           if (!this->write_export_record_(&writer, record.date_key, hour, record.hours[hour], &first_hour)) {
             ESP_LOGW(TAG, "Failed to write persisted energy hour export record");
             return;
           }
+          this->mark_export_hour_(record.date_key, hour);
         }
-      }
-    }
-
-    const uint32_t slot_count = static_cast<uint32_t>(HOURLY_SLOT_COUNT);
-    const uint32_t start_sequence = this->next_hour_sequence_ > slot_count ? this->next_hour_sequence_ - slot_count : 0U;
-    for (uint32_t sequence = start_sequence; sequence < this->next_hour_sequence_; ++sequence) {
-      const auto &record = this->hour_records_[sequence % slot_count];
-      if (!record.valid || !record_has_values_(record.values) ||
-          record.sequence != sequence ||
-          !date_key_in_range_(record.date_key, from_date_key, to_date_key)) {
-        continue;
-      }
-      if (!this->write_export_record_(&writer, record.date_key, record.hour, record.values, &first_hour)) {
-        ESP_LOGW(TAG, "Failed to write live energy hour export record");
-        return;
       }
     }
   }
