@@ -60,6 +60,10 @@
     energyHistoryImportProgressPercent: 0,
     energyHistoryImportError: "",
     energyHistoryImportNotice: "",
+    energyHistoryExportMode: "days_and_hours",
+    energyHistoryExportBusy: false,
+    energyHistoryExportError: "",
+    energyHistoryExportNotice: "",
     settingsStorageDetailsOpen: false,
     energyHistoryPeriodSelection: {
       day: "",

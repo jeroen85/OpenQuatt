@@ -122,8 +122,23 @@ Belangrijke veldnamen en units:
 - `energy_hp_heat`: warmteproductie warmtepomp in Wh.
 - `energy_boiler_heat`: warmteproductie ketel in Wh.
 
+Een export die direct vanuit de OpenQuatt web-app wordt gemaakt gebruikt hetzelfde JSON-schema.
+Daarbij zijn drie keuzes mogelijk:
+
+- alleen dagtotalen;
+- dagtotalen + uurdetail;
+- alleen uurdetail.
+
+OpenQuatt kan in dat bestand extra velden toevoegen die niet in de Quatt-cloudexport zitten:
+
+- `energy_hp_cooling`: koelafgifte warmtepomp in Wh.
+- `heating_input_wh`: elektrisch verbruik dat aan verwarmen is toegewezen in Wh.
+- `cooling_input_wh`: elektrisch verbruik dat aan koelen is toegewezen in Wh.
+
+`system_heat_output_wh` wordt niet geëxporteerd. Systeemwarmte is afleidbaar uit `energy_hp_heat` + `energy_boiler_heat`.
+
 `missing_days` bevat dagen in de gevraagde periode waarvoor Quatt geen dagregel teruggeeft.
 Toekomstige dagen worden niet als ontbrekend gemarkeerd.
 
 De CSV bevat dezelfde dagregels als platte tabel.
-Een toekomstige OpenQuatt-import kan eerst dit JSON-schema ondersteunen; CSV blijft vooral handig voor analyse en debugging.
+OpenQuatt kan JSON en CSV importeren; JSON is het handigst voor overdracht tussen OpenQuatt-devices.

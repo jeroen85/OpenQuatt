@@ -3714,6 +3714,17 @@
   gap: 8px;
 }
 
+.oq-settings-storage-export-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.oq-settings-storage-export-select {
+  min-width: 220px;
+}
+
 .oq-settings-storage-import-notice {
   color: #166534 !important;
   font-weight: 700;

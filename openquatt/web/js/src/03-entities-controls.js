@@ -259,6 +259,11 @@
 
   const ENERGY_HISTORY_IMPORT_SCHEMA_LINE = "@schema|openquatt.energy_history_import.v1";
   const ENERGY_HISTORY_IMPORT_MAX_BODY_CHARS = 850;
+  const ENERGY_HISTORY_EXPORT_MODES = [
+    { id: "days", label: "Alleen dagtotalen", fileLabel: "daily" },
+    { id: "days_and_hours", label: "Dagtotalen + uurdetail", fileLabel: "daily-hourly" },
+    { id: "hours", label: "Alleen uurdetail", fileLabel: "hourly" },
+  ];
   const ENERGY_HISTORY_IMPORT_ERROR_LABELS = {
     forbidden: "Beveiligingstoken ontbreekt of is verlopen. Vernieuw de pagina en probeer opnieuw.",
     partition_unavailable: "Niet beschikbaar op deze Flash-indeling. Flash de controller eenmalig via USB met de nieuwe indeling.",
@@ -287,7 +292,15 @@
       "total_hp_heat_wh",
       "totalHpHeat",
     ],
-    heatpumpCoolingOutput: ["heatpump_cooling_output_wh", "heatpumpCoolingOutputWh"],
+    heatpumpCoolingOutput: [
+      "heatpump_cooling_output_wh",
+      "heatpumpCoolingOutputWh",
+      "energy_hp_cooling",
+      "hpCooling",
+      "hp_cooling_wh",
+      "total_hp_cooling_wh",
+      "totalHpCooling",
+    ],
     boilerHeatOutput: [
       "boiler_heat_output_wh",
       "boilerHeatOutputWh",
@@ -299,6 +312,74 @@
     ],
     systemHeatOutput: ["system_heat_output_wh", "systemHeatOutputWh"],
   };
+
+  function normalizeEnergyHistoryExportMode(value) {
+    const mode = String(value || "").trim();
+    return ENERGY_HISTORY_EXPORT_MODES.some((option) => option.id === mode) ? mode : "days_and_hours";
+  }
+
+  function getEnergyHistoryExportModeMeta(value) {
+    const mode = normalizeEnergyHistoryExportMode(value);
+    return ENERGY_HISTORY_EXPORT_MODES.find((option) => option.id === mode) || ENERGY_HISTORY_EXPORT_MODES[1];
+  }
+
+  function getEnergyHistoryExportFileName(value) {
+    const meta = getEnergyHistoryExportModeMeta(value);
+    const stamp = new Date().toISOString().slice(0, 10);
+    return `openquatt-energy-history-${meta.fileLabel}-${stamp}.json`;
+  }
+
+  function downloadEnergyHistoryExportBlob(blob, fileName) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    window.setTimeout(() => {
+      URL.revokeObjectURL(url);
+      link.remove();
+    }, 0);
+  }
+
+  async function exportEnergyHistoryRecords() {
+    if (state.energyHistoryExportBusy) {
+      return;
+    }
+
+    const mode = normalizeEnergyHistoryExportMode(state.energyHistoryExportMode);
+    const meta = getEnergyHistoryExportModeMeta(mode);
+    state.energyHistoryExportMode = mode;
+    state.energyHistoryExportBusy = true;
+    state.energyHistoryExportError = "";
+    state.energyHistoryExportNotice = "";
+    render();
+
+    if (isDevPreviewEnvironmentForFetches()) {
+      state.energyHistoryExportBusy = false;
+      state.energyHistoryExportNotice = `Preview: ${meta.label.toLowerCase()} zou als JSON worden gedownload.`;
+      render();
+      return;
+    }
+
+    try {
+      const response = await fetch(`${getBasePath()}/energy/history/export?mode=${encodeURIComponent(mode)}`, {
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const blob = await response.blob();
+      downloadEnergyHistoryExportBlob(blob, getEnergyHistoryExportFileName(mode));
+      state.energyHistoryExportNotice = `${meta.label} geëxporteerd.`;
+    } catch (error) {
+      state.energyHistoryExportError = `Exporteren mislukt. ${error.message}`;
+    } finally {
+      state.energyHistoryExportBusy = false;
+      render();
+    }
+  }
 
   function resetEnergyHistoryImportState(keepNotice = false) {
     const notice = keepNotice ? state.energyHistoryImportNotice : "";
@@ -3692,6 +3773,14 @@
       return;
     }
 
+    if (event.target.dataset.oqEnergyHistoryExportMode !== undefined) {
+      state.energyHistoryExportMode = normalizeEnergyHistoryExportMode(event.target.value);
+      state.energyHistoryExportError = "";
+      state.energyHistoryExportNotice = "";
+      render();
+      return;
+    }
+
     const field = event.target.dataset.oqField;
     if (!field) {
       return;
@@ -4090,6 +4179,11 @@
 
     if (action === "import-energy-history-file") {
       void importEnergyHistoryRecords();
+      return;
+    }
+
+    if (action === "export-energy-history") {
+      void exportEnergyHistoryRecords();
       return;
     }
 

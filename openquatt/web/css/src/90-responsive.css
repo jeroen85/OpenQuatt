@@ -420,12 +420,15 @@ esp-app.oq-native-app.oq-native-app--collapsed {
   }
 
   .oq-settings-storage-action-stack,
-  .oq-settings-storage-import-actions {
+  .oq-settings-storage-import-actions,
+  .oq-settings-storage-export-controls {
     justify-content: stretch;
   }
 
   .oq-settings-storage-action-stack .oq-helper-button,
-  .oq-settings-storage-import-actions .oq-helper-button {
+  .oq-settings-storage-import-actions .oq-helper-button,
+  .oq-settings-storage-export-controls .oq-helper-button,
+  .oq-settings-storage-export-select {
     flex: 1 1 150px;
   }
 

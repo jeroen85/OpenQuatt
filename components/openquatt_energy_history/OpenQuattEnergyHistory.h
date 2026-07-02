@@ -38,6 +38,7 @@ class OpenQuattEnergyHistory : public Component {
   void clear_history();
   void refresh_hourly_retention();
   void write_history(httpd_req_t *req);
+  void write_history_export(httpd_req_t *req);
   std::string import_history_records(const std::string &records);
   const std::string &get_csrf_token() const { return this->csrf_token_; }
   std::string get_available_label() const;
@@ -139,8 +140,12 @@ class OpenQuattEnergyHistory : public Component {
   static uint32_t add_wh_(uint32_t base, uint32_t delta);
   static uint32_t delta_wh_(uint32_t current, uint32_t previous);
   static std::string format_date_key_(uint32_t date_key);
+  static std::string format_date_key_iso_(uint32_t date_key);
+  static uint32_t export_wh_(uint32_t value);
   static bool date_key_in_range_(uint32_t date_key, uint32_t from_date_key, uint32_t to_date_key);
   static uint16_t parse_hourly_retention_days_(const std::string &option);
+  bool write_export_record_(ChunkedTextWriter *writer, uint32_t date_key, int16_t hour,
+                            const EnergyHistoryValues &values, bool *first) const;
 
   void rotate_csrf_token_();
   EnergyHistoryValues pack_values_(float electrical_input_kwh, float heating_input_kwh, float cooling_input_kwh,

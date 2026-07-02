@@ -3647,6 +3647,41 @@
     `;
   }
 
+  function renderSettingsEnergyHistoryExportPanel() {
+    if (!hasEntity("lifetimeEnergyHistoryEnabled")) {
+      return "";
+    }
+
+    const mode = normalizeEnergyHistoryExportMode(state.energyHistoryExportMode);
+    const options = ENERGY_HISTORY_EXPORT_MODES.map((option) => `
+      <option value="${escapeHtml(option.id)}" ${option.id === mode ? "selected" : ""}>
+        ${escapeHtml(option.label)}
+      </option>
+    `).join("");
+    const exportLabel = state.energyHistoryExportBusy ? "Exporteren..." : "Exporteren";
+
+    return `
+      <div class="oq-settings-storage-import oq-settings-storage-export">
+        <div class="oq-settings-storage-import-head">
+          <div>
+            <h4>Historie exporteren</h4>
+            <p>Download bewaarde energiegegevens om ze later op een andere OpenQuatt te importeren.</p>
+          </div>
+          <div class="oq-settings-storage-export-controls">
+            <select class="oq-helper-select oq-settings-storage-export-select" data-oq-energy-history-export-mode="true" ${state.energyHistoryExportBusy ? "disabled" : ""}>
+              ${options}
+            </select>
+            <button class="oq-helper-button oq-helper-button--primary" type="button" data-oq-action="export-energy-history" ${state.energyHistoryExportBusy ? "disabled" : ""}>
+              ${escapeHtml(exportLabel)}
+            </button>
+          </div>
+        </div>
+        ${state.energyHistoryExportNotice ? `<p class="oq-settings-storage-import-notice">${escapeHtml(state.energyHistoryExportNotice)}</p>` : ""}
+        ${state.energyHistoryExportError ? `<p class="oq-settings-storage-import-error">${escapeHtml(state.energyHistoryExportError)}</p>` : ""}
+      </div>
+    `;
+  }
+
   function renderSettingsHistoryStorageModal() {
     const trendHistoryEnabled = hasEntity("trendHistoryEnabled") && isEntityActive("trendHistoryEnabled");
     const trendHistoryFlashEnabled = trendHistoryEnabled && hasEntity("trendHistoryFlashEnabled") && isEntityActive("trendHistoryFlashEnabled");
@@ -3809,6 +3844,7 @@
                   "Kies hoelang OpenQuatt detail per uur mag bewaren voor de daggrafiek.",
                   "Geavanceerd"
                 )}
+                ${renderSettingsEnergyHistoryExportPanel()}
                 ${renderSettingsEnergyHistoryImportPanel()}
                 ${showLifetimeActions ? `
                   <div class="oq-settings-storage-inline-action oq-settings-storage-inline-action--split">
