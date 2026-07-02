@@ -1268,12 +1268,74 @@
     return [...keys];
   }
 
+  function getQuickStartStepHydrationKeys(stepId = state.currentStep) {
+    const base = ["setupComplete", "strategy", ...HEADER_ENTITY_KEYS];
+    if (stepId === "generation") {
+      return [...new Set([...base, "installationTopology", ...TOPOLOGY_HINT_KEYS, "hpGeneration"])];
+    }
+    if (stepId === "flow-source") {
+      return [...new Set([...base, "hpGeneration", ...QUICK_START_FLOW_SOURCE_KEYS])];
+    }
+    if (stepId === "thermostat-source") {
+      return [...new Set([...base, ...QUICK_START_THERMOSTAT_SOURCE_KEYS])];
+    }
+    if (stepId === "boiler") {
+      return [...new Set([...base, "boilerCvAssistEnabled", "boilerRatedHeatPower"])];
+    }
+    if (stepId === "strategy") {
+      return [...new Set([...base, "strategy"])];
+    }
+    if (stepId === "heating") {
+      return [...new Set([...base, ...POWER_HOUSE_KEYS, ...CURVE_SETTING_KEYS, "dayMax", "silentMax"])];
+    }
+    if (stepId === "flow") {
+      return [...new Set([...base, ...FLOW_SETTING_KEYS, ...FLOW_TUNING_KEYS])];
+    }
+    if (stepId === "water") {
+      return [...new Set([...base, "maxWater"])];
+    }
+    if (stepId === "silent") {
+      return [...new Set([...base, ...SILENT_SETTING_KEYS])];
+    }
+    if (stepId === "confirm") {
+      return [...new Set([
+        ...base,
+        "installationTopology",
+        "hpGeneration",
+        "boilerCvAssistEnabled",
+        "boilerRatedHeatPower",
+        ...QUICK_START_FLOW_SOURCE_KEYS,
+        ...QUICK_START_THERMOSTAT_SOURCE_KEYS,
+        ...FLOW_SETTING_KEYS,
+        ...FLOW_TUNING_KEYS,
+        ...POWER_HOUSE_KEYS,
+        ...CURVE_SETTING_KEYS,
+        "maxWater",
+        ...SILENT_SETTING_KEYS,
+      ])];
+    }
+    return base;
+  }
+
+  async function refreshQuickStartStepHydration(stepId = state.currentStep) {
+    const keys = getQuickStartStepHydrationKeys(stepId);
+    try {
+      await refreshEntities(keys, "all", { concurrency: FAST_VIEW_ENTITY_REFRESH_CONCURRENCY });
+      if (state.quickStartModalOpen && state.currentStep === stepId && !state.nativeOpen) {
+        render();
+      }
+    } catch (_error) {
+      // A normal poll will retry; keep step navigation responsive.
+    }
+  }
+
   function getOverviewLikeHydrationKeys(view, options = {}) {
     const forceFast = options.forceFast === true;
     const includeBulk = options.includeBulk === true;
     if (view === "energy" || view === "results") {
       return [...new Set([
         ...getPrimeBaseKeys(),
+        ...(view === "energy" ? INITIAL_OVERVIEW_READY_KEYS : []),
         ...getEnergyViewEntityKeys(),
         ...(view === "results" ? ENERGY_HISTORY_VIEW_KEYS : []),
       ])];
@@ -2557,6 +2619,7 @@
 
     try {
       const rawText = await file.text();
+      await refreshEntities(SETTINGS_BACKUP_KEYS, "all");
       const snapshot = parseSettingsBackupPayload(rawText, file.name || "");
       state.settingsBackupDraft = snapshot;
       state.systemModal = "settings-backup-restore";
@@ -4433,6 +4496,7 @@
     if (action === "select-step") {
       state.currentStep = button.dataset.stepId || "generation";
       render();
+      void refreshQuickStartStepHydration(state.currentStep);
       return;
     }
 
@@ -4464,12 +4528,14 @@
     if (action === "previous-step") {
       selectQuickStepByOffset(-1);
       render();
+      void refreshQuickStartStepHydration(state.currentStep);
       return;
     }
 
     if (action === "next-step") {
       selectQuickStepByOffset(1);
       render();
+      void refreshQuickStartStepHydration(state.currentStep);
       return;
     }
 
