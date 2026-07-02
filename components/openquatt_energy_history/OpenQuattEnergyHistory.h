@@ -211,6 +211,7 @@ class OpenQuattEnergyHistory : public Component {
   uint8_t hour_flash_slot_buffer_[HOUR_FLASH_SLOT_SIZE]{};
   uint8_t stored_day_bitmap_[DATE_BITMAP_BYTES]{};
   uint8_t stored_hour_day_bitmap_[DATE_BITMAP_BYTES]{};
+  uint8_t export_date_bitmap_[DATE_BITMAP_BYTES]{};
 
   uint32_t next_sequence_{0};
   uint32_t record_count_{0};

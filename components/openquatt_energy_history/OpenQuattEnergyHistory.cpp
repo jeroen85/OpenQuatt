@@ -1378,16 +1378,23 @@ void OpenQuattEnergyHistory::write_history_export(httpd_req_t *req) {
   }
 
   bool first_day = true;
+  std::memset(this->export_date_bitmap_, 0, sizeof(this->export_date_bitmap_));
   if (include_days && this->flash_slot_count_ > 0U) {
     const uint32_t slot_count = static_cast<uint32_t>(this->flash_slot_count_);
     const uint32_t start_sequence = this->next_sequence_ > slot_count ? this->next_sequence_ - slot_count : 0U;
-    for (uint32_t sequence = start_sequence; sequence < this->next_sequence_; ++sequence) {
-      const uint32_t slot_index = sequence % slot_count;
+    for (uint32_t sequence = this->next_sequence_; sequence > start_sequence; --sequence) {
+      const uint32_t record_sequence = sequence - 1U;
+      const uint32_t slot_index = record_sequence % slot_count;
       EnergyHistoryRecord record{};
-      if (!this->read_record_(slot_index, &record) || !this->record_valid_(record) || record.sequence != sequence ||
+      if (!this->read_record_(slot_index, &record) || !this->record_valid_(record) ||
+          record.sequence != record_sequence ||
           !date_key_in_range_(record.date_key, from_date_key, to_date_key)) {
         continue;
       }
+      if (date_bitmap_get_(this->export_date_bitmap_, record.date_key)) {
+        continue;
+      }
+      date_bitmap_set_(this->export_date_bitmap_, record.date_key);
       if (!this->write_export_record_(&writer, record.date_key, -1, record.values, &first_day)) {
         ESP_LOGW(TAG, "Failed to write energy history export day record");
         return;
@@ -1402,19 +1409,36 @@ void OpenQuattEnergyHistory::write_history_export(httpd_req_t *req) {
 
   bool first_hour = true;
   if (include_hours) {
+    std::memset(this->export_date_bitmap_, 0, sizeof(this->export_date_bitmap_));
     if (this->hour_flash_slot_count_ > 0U) {
       const uint32_t slot_count = static_cast<uint32_t>(this->hour_flash_slot_count_);
       const uint32_t start_sequence =
           this->next_hour_flash_sequence_ > slot_count ? this->next_hour_flash_sequence_ - slot_count : 0U;
-      for (uint32_t sequence = start_sequence; sequence < this->next_hour_flash_sequence_; ++sequence) {
-        const uint32_t slot_index = sequence % slot_count;
+      for (uint32_t sequence = this->next_hour_flash_sequence_; sequence > start_sequence; --sequence) {
+        const uint32_t record_sequence = sequence - 1U;
+        const uint32_t slot_index = record_sequence % slot_count;
         auto &record = this->hour_flash_record_buffer_;
         if (!this->read_hour_day_record_(slot_index, &record) || !this->hour_day_record_valid_(record) ||
-            record.sequence != sequence || !date_key_in_range_(record.date_key, from_date_key, to_date_key)) {
+            record.sequence != record_sequence || !date_key_in_range_(record.date_key, from_date_key, to_date_key)) {
           continue;
         }
+        if (date_bitmap_get_(this->export_date_bitmap_, record.date_key)) {
+          continue;
+        }
+        date_bitmap_set_(this->export_date_bitmap_, record.date_key);
         for (uint8_t hour = 0; hour < 24U; ++hour) {
           if ((record.hour_mask & (1UL << hour)) == 0U || !record_has_values_(record.hours[hour])) {
+            continue;
+          }
+          bool live_hour_exists = false;
+          for (const auto &live_record : this->hour_records_) {
+            if (live_record.valid && live_record.date_key == record.date_key && live_record.hour == hour &&
+                record_has_values_(live_record.values)) {
+              live_hour_exists = true;
+              break;
+            }
+          }
+          if (live_hour_exists) {
             continue;
           }
           if (!this->write_export_record_(&writer, record.date_key, hour, record.hours[hour], &first_hour)) {
@@ -1425,8 +1449,12 @@ void OpenQuattEnergyHistory::write_history_export(httpd_req_t *req) {
       }
     }
 
-    for (const auto &record : this->hour_records_) {
+    const uint32_t slot_count = static_cast<uint32_t>(HOURLY_SLOT_COUNT);
+    const uint32_t start_sequence = this->next_hour_sequence_ > slot_count ? this->next_hour_sequence_ - slot_count : 0U;
+    for (uint32_t sequence = start_sequence; sequence < this->next_hour_sequence_; ++sequence) {
+      const auto &record = this->hour_records_[sequence % slot_count];
       if (!record.valid || !record_has_values_(record.values) ||
+          record.sequence != sequence ||
           !date_key_in_range_(record.date_key, from_date_key, to_date_key)) {
         continue;
       }
