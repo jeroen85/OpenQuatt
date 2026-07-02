@@ -184,19 +184,19 @@
   }
 
   function renderSettingsTrendStatsField() {
-    if (!isEntityActive("trendHistoryEnabled") || !hasEntity("trendHistoryFlashAvailable")) {
+    if (!isEntityActive("trendHistoryEnabled")) {
       return "";
     }
 
     const detailStats = [
-      { key: "trendHistoryFlashOldest", label: "Eerste meting" },
-      { key: "trendHistoryFlashNewest", label: "Laatste meting" },
-      { key: "trendHistoryFlashLastFlush", label: "Laatst opgeslagen" },
+      { key: "trendHistoryFlashOldest", label: "Eerste meting", value: getSettingsStorageStatOrFallback("trendHistoryFlashOldest", "Geen data") },
+      { key: "trendHistoryFlashNewest", label: "Laatste meting", value: getSettingsStorageStatOrFallback("trendHistoryFlashNewest", "Geen data") },
+      { key: "trendHistoryFlashLastFlush", label: "Laatst opgeslagen", value: getSettingsStorageStatOrFallback("trendHistoryFlashLastFlush", "Geen data") },
     ];
-    const availableValue = getSettingsStatValue("trendHistoryFlashAvailable");
-    const newestValue = getSettingsStatValue("trendHistoryFlashNewest");
-    const storageValue = getSettingsStatValue("trendHistoryFlashSize");
-    const writesValue = getSettingsStatValue("trendHistoryFlashWrites");
+    const availableValue = getSettingsStorageStatOrFallback("trendHistoryFlashAvailable", "Alleen live");
+    const newestValue = getSettingsStorageStatOrFallback("trendHistoryFlashNewest", "Geen data");
+    const storageValue = getSettingsStorageStatOrFallback("trendHistoryFlashSize");
+    const writesValue = getSettingsStorageStatOrFallback("trendHistoryFlashWrites", "0");
 
     const controlMarkup = `
         <div class="oq-settings-trend-stats-shell">
@@ -221,7 +221,7 @@
           ${detailStats.map((stat) => `
             <div class="oq-settings-trend-stat">
               <span class="oq-settings-trend-stat-label">${escapeHtml(stat.label)}</span>
-              <strong class="oq-settings-trend-stat-value">${escapeHtml(getSettingsStatValue(stat.key))}</strong>
+              <strong class="oq-settings-trend-stat-value">${escapeHtml(stat.value)}</strong>
             </div>
           `).join("")}
         </div>
@@ -241,19 +241,19 @@
   }
 
   function renderSettingsEnergyHistoryStatsField() {
-    if (!hasEntity("lifetimeEnergyHistoryAvailable")) {
+    if (!hasEntity("lifetimeEnergyHistoryEnabled")) {
       return "";
     }
 
     const detailStats = [
-      { key: "lifetimeEnergyHistoryOldest", label: "Eerste dag" },
-      { key: "lifetimeEnergyHistoryNewest", label: "Laatste dag" },
-      { key: "lifetimeEnergyHistoryLastWrite", label: "Laatst opgeslagen" },
+      { key: "lifetimeEnergyHistoryOldest", label: "Eerste dag", value: getSettingsStorageStatOrFallback("lifetimeEnergyHistoryOldest", "Geen data") },
+      { key: "lifetimeEnergyHistoryNewest", label: "Laatste dag", value: getSettingsStorageStatOrFallback("lifetimeEnergyHistoryNewest", "Geen data") },
+      { key: "lifetimeEnergyHistoryLastWrite", label: "Laatst opgeslagen", value: getSettingsStorageStatOrFallback("lifetimeEnergyHistoryLastWrite", "Geen data") },
     ];
-    const availableValue = getSettingsStatValue("lifetimeEnergyHistoryAvailable");
-    const newestValue = getSettingsStatValue("lifetimeEnergyHistoryNewest");
-    const storageValue = getSettingsStatValue("lifetimeEnergyHistorySize");
-    const writesValue = getSettingsStatValue("lifetimeEnergyHistoryWrites");
+    const availableValue = getSettingsStorageStatOrFallback("lifetimeEnergyHistoryAvailable", "Geen data");
+    const newestValue = getSettingsStorageStatOrFallback("lifetimeEnergyHistoryNewest", "Geen data");
+    const storageValue = getSettingsStorageStatOrFallback("lifetimeEnergyHistorySize");
+    const writesValue = getSettingsStorageStatOrFallback("lifetimeEnergyHistoryWrites", "0");
 
     const controlMarkup = `
       <div class="oq-settings-trend-stats-shell">
@@ -278,7 +278,7 @@
           ${detailStats.map((stat) => `
             <div class="oq-settings-trend-stat">
               <span class="oq-settings-trend-stat-label">${escapeHtml(stat.label)}</span>
-              <strong class="oq-settings-trend-stat-value">${escapeHtml(getSettingsStatValue(stat.key))}</strong>
+              <strong class="oq-settings-trend-stat-value">${escapeHtml(stat.value)}</strong>
             </div>
           `).join("")}
         </div>
@@ -416,8 +416,114 @@
     `;
   }
 
+  function getSettingsTrendHistoryMetadata() {
+    return state.trendHistoryMetadata && typeof state.trendHistoryMetadata === "object"
+      ? state.trendHistoryMetadata
+      : {};
+  }
+
+  function hasSettingsTrendHistoryMetadata() {
+    return Boolean(state.trendHistoryMetadataSignature);
+  }
+
+  function hasSettingsEnergyHistoryMetadata() {
+    return Boolean(state.energyHistoryRaw || state.energyHistorySignature);
+  }
+
+  function getSettingsStorageLoadingLabel(error) {
+    return error ? "Niet geladen" : "Laden...";
+  }
+
   function getSettingsStorageStatOrFallback(key, fallback = "—") {
-    return hasEntity(key) ? getSettingsStatValue(key) : fallback;
+    if (hasEntity(key)) {
+      return getSettingsStatValue(key);
+    }
+    const metadataValue = getSettingsStorageMetadataStat(key);
+    return metadataValue === null || metadataValue === undefined || metadataValue === "" ? fallback : metadataValue;
+  }
+
+  function getSettingsStorageMetadataStat(key) {
+    const trendMetadata = getSettingsTrendHistoryMetadata();
+    if (key === "trendHistoryFlashAvailable") {
+      if (!hasSettingsTrendHistoryMetadata()) {
+        return getSettingsStorageLoadingLabel(state.trendHistoryMetadataError);
+      }
+      return trendMetadata.available || "Alleen live";
+    }
+    if (key === "trendHistoryFlashOldest") {
+      if (!hasSettingsTrendHistoryMetadata()) {
+        return getSettingsStorageLoadingLabel(state.trendHistoryMetadataError);
+      }
+      return trendMetadata.oldest || "Geen data";
+    }
+    if (key === "trendHistoryFlashNewest") {
+      if (!hasSettingsTrendHistoryMetadata()) {
+        return getSettingsStorageLoadingLabel(state.trendHistoryMetadataError);
+      }
+      return trendMetadata.newest || "Geen data";
+    }
+    if (key === "trendHistoryFlashLastFlush") {
+      if (!hasSettingsTrendHistoryMetadata()) {
+        return getSettingsStorageLoadingLabel(state.trendHistoryMetadataError);
+      }
+      return trendMetadata.lastFlush || "Geen data";
+    }
+    if (key === "trendHistoryFlashSize") {
+      if (!hasSettingsTrendHistoryMetadata()) {
+        return getSettingsStorageLoadingLabel(state.trendHistoryMetadataError);
+      }
+      return formatSettingsStorageKb(trendMetadata.sizeKb);
+    }
+    if (key === "trendHistoryFlashWrites") {
+      if (!hasSettingsTrendHistoryMetadata()) {
+        return getSettingsStorageLoadingLabel(state.trendHistoryMetadataError);
+      }
+      return formatSettingsStorageCount(trendMetadata.writes);
+    }
+
+    const energyMetadata = getSettingsEnergyHistoryMetadata();
+    const energyRaw = String(state.energyHistoryRaw || "");
+    const hasDayRetentionMetadata = energyRaw.includes("@day_retention|");
+    if (key === "lifetimeEnergyHistoryAvailable") {
+      if (!hasSettingsEnergyHistoryMetadata()) {
+        return getSettingsStorageLoadingLabel(state.energyHistoryError);
+      }
+      if (hasDayRetentionMetadata && !energyMetadata.dayPartitionAvailable) {
+        return "Niet beschikbaar";
+      }
+      return formatSettingsStorageDayCount(energyMetadata.storedDayCount, "Geen data");
+    }
+    if (key === "lifetimeEnergyHistoryOldest") {
+      if (!hasSettingsEnergyHistoryMetadata()) {
+        return getSettingsStorageLoadingLabel(state.energyHistoryError);
+      }
+      return formatSettingsStorageDateKey(energyMetadata.oldestDateKey);
+    }
+    if (key === "lifetimeEnergyHistoryNewest") {
+      if (!hasSettingsEnergyHistoryMetadata()) {
+        return getSettingsStorageLoadingLabel(state.energyHistoryError);
+      }
+      return formatSettingsStorageDateKey(energyMetadata.newestDateKey);
+    }
+    if (key === "lifetimeEnergyHistoryLastWrite") {
+      if (!hasSettingsEnergyHistoryMetadata()) {
+        return getSettingsStorageLoadingLabel(state.energyHistoryError);
+      }
+      return formatSettingsStorageTimestamp(energyMetadata.dayLastWriteTimestampS);
+    }
+    if (key === "lifetimeEnergyHistorySize") {
+      if (!hasSettingsEnergyHistoryMetadata()) {
+        return getSettingsStorageLoadingLabel(state.energyHistoryError);
+      }
+      return formatSettingsStorageKb(energyMetadata.dayStorageKb);
+    }
+    if (key === "lifetimeEnergyHistoryWrites") {
+      if (!hasSettingsEnergyHistoryMetadata()) {
+        return getSettingsStorageLoadingLabel(state.energyHistoryError);
+      }
+      return formatSettingsStorageCount(energyMetadata.dayWriteCount);
+    }
+    return null;
   }
 
   function formatSettingsStorageDayCount(value, fallback = "Geen data") {
@@ -3529,12 +3635,14 @@
 
     const trendHistoryEnabled = isEntityActive("trendHistoryEnabled");
     const trendHistoryFlashEnabled = trendHistoryEnabled && isEntityActive("trendHistoryFlashEnabled");
-    const showTrendHistoryFlashStats = trendHistoryEnabled && hasEntity("trendHistoryFlashAvailable");
     const lifetimeEnergyHistoryAvailable = hasEntity("lifetimeEnergyHistoryEnabled");
     const lifetimeEnergyHistoryEnabled = lifetimeEnergyHistoryAvailable && isEntityActive("lifetimeEnergyHistoryEnabled");
-    const showLifetimeEnergyHistoryStats = hasEntity("lifetimeEnergyHistoryAvailable");
-    const trendAvailableValue = showTrendHistoryFlashStats ? getSettingsStatValue("trendHistoryFlashAvailable") : "Alleen live";
-    const lifetimeAvailableValue = showLifetimeEnergyHistoryStats ? formatSettingsStoredDaysLabel(getSettingsStatValue("lifetimeEnergyHistoryAvailable")) : "Geen data";
+    const trendAvailableValue = trendHistoryFlashEnabled
+      ? getSettingsStorageStatOrFallback("trendHistoryFlashAvailable", "Alleen live")
+      : "Alleen live";
+    const lifetimeAvailableValue = lifetimeEnergyHistoryAvailable
+      ? formatSettingsStoredDaysLabel(getSettingsStorageStatOrFallback("lifetimeEnergyHistoryAvailable", "Geen data"))
+      : "Geen data";
     return renderSettingsSection(
       "Diagnose",
       "Gegevens bewaren",
@@ -3667,8 +3775,8 @@
     const trendHistoryFlashEnabled = trendHistoryEnabled && hasEntity("trendHistoryFlashEnabled") && isEntityActive("trendHistoryFlashEnabled");
     const lifetimeEnergyHistoryAvailable = hasEntity("lifetimeEnergyHistoryEnabled");
     const lifetimeEnergyHistoryEnabled = lifetimeEnergyHistoryAvailable && isEntityActive("lifetimeEnergyHistoryEnabled");
-    const lifetimeAvailableLabel = hasEntity("lifetimeEnergyHistoryAvailable")
-      ? getSettingsStatValue("lifetimeEnergyHistoryAvailable")
+    const lifetimeAvailableLabel = lifetimeEnergyHistoryAvailable
+      ? getSettingsStorageStatOrFallback("lifetimeEnergyHistoryAvailable", "Geen data")
       : "Geen data";
     const canClearLifetime = hasEntity("lifetimeEnergyHistoryClear")
       && lifetimeAvailableLabel !== "Geen data"

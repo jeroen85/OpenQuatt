@@ -382,28 +382,6 @@ script:
             system_heat_output_kwh
           );
 
-  - id: oq_publish_energy_history_stats
-    mode: single
-    then:
-      - lambda: |-
-          id(oq_lifetime_energy_history_available).publish_state(id(oq_energy_history_endpoint).get_available_label());
-          id(oq_lifetime_energy_history_oldest).publish_state(id(oq_energy_history_endpoint).get_oldest_day_label());
-          id(oq_lifetime_energy_history_newest).publish_state(id(oq_energy_history_endpoint).get_newest_day_label());
-          id(oq_lifetime_energy_history_last_write).publish_state(id(oq_energy_history_endpoint).get_last_write_label());
-          id(oq_lifetime_energy_history_size).publish_state(id(oq_energy_history_endpoint).get_storage_kib());
-          id(oq_lifetime_energy_history_writes).publish_state(id(oq_energy_history_endpoint).get_write_count());
-
-  - id: oq_publish_trend_history_stats
-    mode: single
-    then:
-      - lambda: |-
-          id(oq_trend_history_flash_available).publish_state(id(oq_trends_endpoint).get_flash_available_label());
-          id(oq_trend_history_flash_oldest).publish_state(id(oq_trends_endpoint).get_flash_oldest_point_label());
-          id(oq_trend_history_flash_newest).publish_state(id(oq_trends_endpoint).get_flash_newest_point_label());
-          id(oq_trend_history_flash_last_flush).publish_state(id(oq_trends_endpoint).get_flash_last_flush_label());
-          id(oq_trend_history_flash_size).publish_state(id(oq_trends_endpoint).get_flash_storage_kib());
-          id(oq_trend_history_flash_writes).publish_state(id(oq_trends_endpoint).get_flash_write_count());
-
 openquatt_trends:
   id: oq_trends_endpoint
   capture_switch: oq_trend_history_enabled_switch
@@ -708,8 +686,6 @@ button:
       - script.wait: oq_capture_overview_trend_sample
       - lambda: |-
           id(oq_trends_endpoint).force_flush();
-      - script.execute: oq_publish_trend_history_stats
-      - script.wait: oq_publish_trend_history_stats
 
   - platform: template
     id: oq_lifetime_energy_history_clear_button
@@ -723,8 +699,6 @@ button:
     on_press:
       - lambda: |-
           id(oq_energy_history_endpoint).clear_history();
-      - script.execute: oq_publish_energy_history_stats
-      - script.wait: oq_publish_energy_history_stats
 
   - platform: template
     id: oq_lifetime_energy_history_capture_button
@@ -740,8 +714,6 @@ button:
       - script.wait: oq_capture_energy_history_sample
       - lambda: |-
           id(oq_energy_history_endpoint).force_flush();
-      - script.execute: oq_publish_energy_history_stats
-      - script.wait: oq_publish_energy_history_stats
 
   - platform: template
     id: oq_check_firmware_updates
@@ -922,64 +894,6 @@ sensor:
     web_server:
       sorting_group_id: oq_system_diagnostics
 
-  - platform: template
-    id: oq_trend_history_flash_size
-    name: Trendhistorie grootte
-    internal: true
-    disabled_by_default: true
-    icon: mdi:database-outline
-    unit_of_measurement: kB
-    accuracy_decimals: 1
-    update_interval: 60s
-    entity_category: diagnostic
-    lambda: |-
-      return id(oq_trends_endpoint).get_flash_storage_kib();
-    web_server:
-      sorting_group_id: oq_system_diagnostics
-
-  - platform: template
-    id: oq_trend_history_flash_writes
-    name: Trendhistorie schrijfacties
-    internal: true
-    disabled_by_default: true
-    icon: mdi:pencil-box-multiple-outline
-    accuracy_decimals: 0
-    update_interval: 60s
-    entity_category: diagnostic
-    lambda: |-
-      return id(oq_trends_endpoint).get_flash_write_count();
-    web_server:
-      sorting_group_id: oq_system_diagnostics
-
-  - platform: template
-    id: oq_lifetime_energy_history_size
-    name: Lifetime energiehistorie grootte
-    internal: true
-    disabled_by_default: true
-    icon: mdi:database-outline
-    unit_of_measurement: kB
-    accuracy_decimals: 1
-    update_interval: 60s
-    entity_category: diagnostic
-    lambda: |-
-      return id(oq_energy_history_endpoint).get_storage_kib();
-    web_server:
-      sorting_group_id: oq_system_diagnostics
-
-  - platform: template
-    id: oq_lifetime_energy_history_writes
-    name: Lifetime energiehistorie schrijfacties
-    internal: true
-    disabled_by_default: true
-    icon: mdi:pencil-box-multiple-outline
-    accuracy_decimals: 0
-    update_interval: 60s
-    entity_category: diagnostic
-    lambda: |-
-      return id(oq_energy_history_endpoint).get_write_count();
-    web_server:
-      sorting_group_id: oq_system_diagnostics
-
 text_sensor:
   - platform: template
     id: oq_firmware_update_status
@@ -1005,110 +919,6 @@ text_sensor:
         default:
           return {"Idle"};
       }
-    web_server:
-      sorting_group_id: oq_system_diagnostics
-
-  - platform: template
-    id: oq_trend_history_flash_available
-    name: Trendhistorie beschikbaar
-    internal: true
-    disabled_by_default: true
-    icon: mdi:calendar-range
-    entity_category: diagnostic
-    update_interval: 60s
-    lambda: |-
-      return id(oq_trends_endpoint).get_flash_available_label();
-    web_server:
-      sorting_group_id: oq_system_diagnostics
-
-  - platform: template
-    id: oq_trend_history_flash_oldest
-    name: Trendhistorie oudste punt
-    internal: true
-    disabled_by_default: true
-    icon: mdi:calendar-start
-    entity_category: diagnostic
-    update_interval: 60s
-    lambda: |-
-      return id(oq_trends_endpoint).get_flash_oldest_point_label();
-    web_server:
-      sorting_group_id: oq_system_diagnostics
-
-  - platform: template
-    id: oq_trend_history_flash_newest
-    name: Trendhistorie nieuwste punt
-    internal: true
-    disabled_by_default: true
-    icon: mdi:clock-end
-    entity_category: diagnostic
-    update_interval: 60s
-    lambda: |-
-      return id(oq_trends_endpoint).get_flash_newest_point_label();
-    web_server:
-      sorting_group_id: oq_system_diagnostics
-
-  - platform: template
-    id: oq_trend_history_flash_last_flush
-    name: Trendhistorie laatste opslag
-    internal: true
-    disabled_by_default: true
-    icon: mdi:content-save-clock-outline
-    entity_category: diagnostic
-    update_interval: 60s
-    lambda: |-
-      return id(oq_trends_endpoint).get_flash_last_flush_label();
-    web_server:
-      sorting_group_id: oq_system_diagnostics
-
-  - platform: template
-    id: oq_lifetime_energy_history_available
-    name: Lifetime energiehistorie beschikbaar
-    internal: true
-    disabled_by_default: true
-    icon: mdi:calendar-range
-    entity_category: diagnostic
-    update_interval: 60s
-    lambda: |-
-      return id(oq_energy_history_endpoint).get_available_label();
-    web_server:
-      sorting_group_id: oq_system_diagnostics
-
-  - platform: template
-    id: oq_lifetime_energy_history_oldest
-    name: Lifetime energiehistorie oudste dag
-    internal: true
-    disabled_by_default: true
-    icon: mdi:calendar-start
-    entity_category: diagnostic
-    update_interval: 60s
-    lambda: |-
-      return id(oq_energy_history_endpoint).get_oldest_day_label();
-    web_server:
-      sorting_group_id: oq_system_diagnostics
-
-  - platform: template
-    id: oq_lifetime_energy_history_newest
-    name: Lifetime energiehistorie nieuwste dag
-    internal: true
-    disabled_by_default: true
-    icon: mdi:clock-end
-    entity_category: diagnostic
-    update_interval: 60s
-    lambda: |-
-      return id(oq_energy_history_endpoint).get_newest_day_label();
-    web_server:
-      sorting_group_id: oq_system_diagnostics
-
-  - platform: template
-    id: oq_lifetime_energy_history_last_write
-    name: Lifetime energiehistorie laatste opslag
-    internal: true
-    disabled_by_default: true
-    icon: mdi:content-save-clock-outline
-    entity_category: diagnostic
-    update_interval: 60s
-    lambda: |-
-      return id(oq_energy_history_endpoint).get_last_write_label();
     web_server:
       sorting_group_id: oq_system_diagnostics
 

@@ -1551,6 +1551,10 @@ void OpenQuattEnergyHistory::write_history(httpd_req_t *req) {
                      static_cast<unsigned>(this->hour_flash_stored_day_count_),
                      static_cast<unsigned>(this->hour_flash_oldest_date_key_),
                      static_cast<unsigned>(this->hour_flash_newest_date_key_)) ||
+      !writer.printf("@day_retention|%u|%u|%u|%u\n", this->is_partition_ready_() ? 1U : 0U,
+                     static_cast<unsigned>(this->flash_total_bytes_ / 1024U),
+                     static_cast<unsigned>(this->next_sequence_),
+                     static_cast<unsigned>(this->last_write_timestamp_s_)) ||
       !writer.printf("@hour_retention|%u|%u|%u|%u|%u|%u|%u\n",
                      static_cast<unsigned>(this->hour_flash_requested_retention_days_),
                      static_cast<unsigned>(this->hour_flash_slot_count_),

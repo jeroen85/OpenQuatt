@@ -155,10 +155,15 @@ class OpenQuattTrendsRequestHandler : public AsyncWebHandler {
     const std::string hours_arg = request->arg("hours");
     const uint32_t window_hours = hours_arg.empty() ? parse_window_hours_from_url(url_buf)
                                                     : parse_window_hours_value(hours_arg.c_str());
+    const std::string meta_arg = request->arg("meta");
     httpd_req_t *req = *request;
     httpd_resp_set_status(req, HTTPD_200);
     httpd_resp_set_type(req, "text/plain; charset=utf-8");
     httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+    if (meta_arg == "1" || meta_arg == "true") {
+      this->parent_->write_metadata(req);
+      return;
+    }
     this->parent_->write_history(req, window_hours);
   }
 
@@ -1129,6 +1134,28 @@ void OpenQuattTrends::write_history(httpd_req_t *req, uint32_t window_hours) {
   this->write_samples_for_history_(&writer, window_hours);
   if (!writer.flush() || httpd_resp_send_chunk(req, nullptr, 0) != ESP_OK) {
     ESP_LOGW(TAG, "Failed to terminate trend history response");
+  }
+}
+
+void OpenQuattTrends::write_metadata(httpd_req_t *req) {
+  if (req == nullptr) {
+    return;
+  }
+
+  const uint64_t now_ms = this->current_time_ms_();
+  const std::string available = this->get_flash_available_label();
+  const std::string oldest = this->get_flash_oldest_point_label();
+  const std::string newest = this->get_flash_newest_point_label();
+  const std::string last_flush = this->get_flash_last_flush_label();
+  const uint32_t size_kib_x10 = static_cast<uint32_t>(std::round(this->get_flash_storage_kib() * 10.0f));
+  ChunkedTextWriter writer(req);
+  if (!writer.printf("@now|%llu\n", static_cast<unsigned long long>(now_ms)) ||
+      !writer.printf("@flash|%s|%s|%s|%s|%u.%u|%u\n", available.c_str(), oldest.c_str(), newest.c_str(),
+                     last_flush.c_str(), static_cast<unsigned>(size_kib_x10 / 10U),
+                     static_cast<unsigned>(size_kib_x10 % 10U),
+                     static_cast<unsigned>(this->get_flash_write_count())) ||
+      !writer.flush() || httpd_resp_send_chunk(req, nullptr, 0) != ESP_OK) {
+    ESP_LOGW(TAG, "Failed to write trend history metadata response");
   }
 }
 

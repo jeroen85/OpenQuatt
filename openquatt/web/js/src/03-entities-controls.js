@@ -212,33 +212,15 @@
     "trendHistoryEnabled",
     "trendHistoryFlashEnabled",
     "trendHistoryFlush",
-    "trendHistoryFlashAvailable",
-    "trendHistoryFlashOldest",
-    "trendHistoryFlashNewest",
-    "trendHistoryFlashLastFlush",
-    "trendHistoryFlashSize",
-    "trendHistoryFlashWrites",
     "lifetimeEnergyHistoryEnabled",
     "lifetimeEnergyHourRetention",
     "lifetimeEnergyHistoryCapture",
     "lifetimeEnergyHistoryClear",
-    "lifetimeEnergyHistoryAvailable",
-    "lifetimeEnergyHistoryOldest",
-    "lifetimeEnergyHistoryNewest",
-    "lifetimeEnergyHistoryLastWrite",
-    "lifetimeEnergyHistorySize",
-    "lifetimeEnergyHistoryWrites",
   ];
 
   const TREND_HISTORY_VIEW_KEYS = [
     "trendHistoryEnabled",
     "trendHistoryFlashEnabled",
-    "trendHistoryFlashAvailable",
-    "trendHistoryFlashOldest",
-    "trendHistoryFlashNewest",
-    "trendHistoryFlashLastFlush",
-    "trendHistoryFlashSize",
-    "trendHistoryFlashWrites",
   ];
 
   const ENERGY_HISTORY_VIEW_KEYS = [
@@ -246,16 +228,94 @@
     "lifetimeEnergyHourRetention",
     "lifetimeEnergyHistoryCapture",
     "lifetimeEnergyHistoryClear",
-    "lifetimeEnergyHistoryAvailable",
-    "lifetimeEnergyHistoryOldest",
-    "lifetimeEnergyHistoryNewest",
-    "lifetimeEnergyHistoryLastWrite",
-    "lifetimeEnergyHistorySize",
-    "lifetimeEnergyHistoryWrites",
   ];
 
   function getSettingsStorageRefreshKeys() {
     return [...new Set(SETTINGS_STORAGE_KEYS)];
+  }
+
+  function getEmptyTrendHistoryMetadata() {
+    return {
+      available: "Alleen live",
+      oldest: "Geen data",
+      newest: "Geen data",
+      lastFlush: "Geen data",
+      sizeKb: 0,
+      writes: 0,
+      nowMs: Number.NaN,
+    };
+  }
+
+  function parseTrendHistoryMetadata(raw) {
+    const metadata = getEmptyTrendHistoryMetadata();
+    String(raw || "").split(/\r?\n/).forEach((line) => {
+      if (line.startsWith("@now|")) {
+        metadata.nowMs = Number(line.slice(5));
+        return;
+      }
+      if (!line.startsWith("@flash|")) {
+        return;
+      }
+      const parts = line.split("|");
+      metadata.available = parts[1] || metadata.available;
+      metadata.oldest = parts[2] || metadata.oldest;
+      metadata.newest = parts[3] || metadata.newest;
+      metadata.lastFlush = parts[4] || metadata.lastFlush;
+      metadata.sizeKb = Number(parts[5]) || 0;
+      metadata.writes = Number(parts[6]) || 0;
+    });
+    return metadata;
+  }
+
+  async function refreshTrendHistoryMetadata(options = {}) {
+    if (!hasEntity("trendHistoryEnabled") && !isDevPreviewEnvironmentForFetches()) {
+      const changed = Boolean(state.trendHistoryMetadataSignature || state.trendHistoryMetadataError);
+      state.trendHistoryMetadata = {};
+      state.trendHistoryMetadataError = "";
+      state.trendHistoryMetadataSignature = "";
+      state.trendHistoryMetadataLastFetchAt = 0;
+      return changed;
+    }
+
+    const force = options.force === true;
+    const now = Date.now();
+    if (!force && state.trendHistoryMetadataFetchPromise) {
+      return state.trendHistoryMetadataFetchPromise;
+    }
+    if (!force && (state.trendHistoryMetadataSignature || state.trendHistoryMetadataError) &&
+        (now - Number(state.trendHistoryMetadataLastFetchAt || 0)) < TREND_HISTORY_REFRESH_INTERVAL_MS) {
+      return false;
+    }
+
+    state.trendHistoryMetadataFetchPromise = (async () => {
+      const response = await fetch(`${getBasePath()}/trends/history?meta=1`, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const raw = await response.text();
+      const metadata = parseTrendHistoryMetadata(raw);
+      const signature = `${raw.length}|${raw.slice(0, 120)}|${raw.slice(-120)}`;
+      const changed = signature !== state.trendHistoryMetadataSignature || state.trendHistoryMetadataError !== "";
+      state.trendHistoryMetadata = metadata;
+      state.trendHistoryMetadataError = "";
+      state.trendHistoryMetadataSignature = signature;
+      state.trendHistoryMetadataLastFetchAt = Date.now();
+      return changed;
+    })();
+
+    try {
+      return await state.trendHistoryMetadataFetchPromise;
+    } catch (error) {
+      const nextError = `Trendhistorie metadata kon niet worden geladen. ${error.message}`;
+      const changed = state.trendHistoryMetadataError !== nextError;
+      state.trendHistoryMetadata = {};
+      state.trendHistoryMetadataError = nextError;
+      state.trendHistoryMetadataSignature = "";
+      state.trendHistoryMetadataLastFetchAt = Date.now();
+      return changed;
+    } finally {
+      state.trendHistoryMetadataFetchPromise = null;
+    }
   }
 
   async function refreshSettingsStorageState(options = {}) {
@@ -263,16 +323,23 @@
       concurrency: FAST_VIEW_ENTITY_REFRESH_CONCURRENCY,
       forceMissing: options.forceMissing === true,
     });
-    await refreshEnergyHistoryData({ force: options.forceEnergyHistory === true, metaOnly: true });
+    await Promise.all([
+      refreshTrendHistoryMetadata({ force: options.forceTrendHistory === true }),
+      refreshEnergyHistoryData({ force: options.forceEnergyHistory === true, metaOnly: true }),
+    ]);
   }
 
-  function refreshSettingsStorageStateSoon(delays = [250, 1000, 2500]) {
+  function refreshSettingsStorageStateSoon(delays = [250, 1000, 2500], options = {}) {
     delays.forEach((delayMs) => {
       window.setTimeout(() => {
         if (state.nativeOpen || state.appView !== "settings") {
           return;
         }
-        void refreshSettingsStorageState({ forceMissing: delayMs === 0 }).finally(() => {
+        void refreshSettingsStorageState({
+          forceMissing: delayMs === 0,
+          forceTrendHistory: options.forceTrendHistory === true,
+          forceEnergyHistory: options.forceEnergyHistory === true,
+        }).finally(() => {
           if (state.appView === "settings" && state.mounted && !state.nativeOpen) {
             render();
           }
@@ -1106,6 +1173,10 @@
     return state.appView === "settings" && state.settingsGroup === "system";
   }
 
+  function shouldRefreshSettingsStorageForCurrentSurface() {
+    return isSystemSettingsGroupActive() || (state.appView === "settings" && state.systemModal === "history-storage");
+  }
+
   function isIntegrationsSettingsGroupActive() {
     return state.appView === "settings" && state.settingsGroup === "integrations";
   }
@@ -1348,7 +1419,7 @@
   }
 
   function getSupplementaryPrimeDelayMs(view = state.appView) {
-    return view === "diagnosis" || view === "results"
+    return view === "diagnosis" || view === "results" || (view === "settings" && isSystemSettingsGroupActive())
       ? HISTORY_VIEW_SUPPLEMENTARY_PRIME_DELAY_MS
       : SUPPLEMENTARY_PRIME_DELAY_MS;
   }
@@ -3079,7 +3150,10 @@
       }
       await refreshAuthStatus({ force: true });
       if (isSystemSettingsGroupActive()) {
-        await refreshApiSecurityStatus({ force: true });
+        await Promise.all([
+          refreshApiSecurityStatus({ force: true }),
+          refreshSettingsStorageState({ forceTrendHistory: true, forceEnergyHistory: true }),
+        ]);
       }
     } finally {
       if (state.mounted && !state.nativeOpen) {
@@ -3160,7 +3234,7 @@
     const quickStartThermostatSourceKeys = state.quickStartModalOpen && state.currentStep === "thermostat-source"
       ? QUICK_START_THERMOSTAT_SOURCE_KEYS
       : [];
-    const settingsStorageKeys = state.appView === "settings" && state.systemModal === "history-storage"
+    const settingsStorageKeys = shouldRefreshSettingsStorageForCurrentSurface()
       ? getSettingsStorageRefreshKeys()
       : [];
     const keys = isPrefetchOverview
@@ -3231,6 +3305,14 @@
         : state.appView === "results"
           ? await refreshEnergyHistoryData()
           : false;
+      const settingsStorageChanged = shouldDeferSupplementary
+        ? false
+        : shouldRefreshSettingsStorageForCurrentSurface()
+          ? (await Promise.all([
+              refreshTrendHistoryMetadata(),
+              refreshEnergyHistoryData({ metaOnly: true }),
+            ])).some(Boolean)
+          : false;
       const authChanged = shouldDeferSupplementary || !shouldRefreshAuthStatusForCurrentSurface() ? false : await refreshAuthStatus();
       const apiSecurityChanged = shouldDeferSupplementary || !shouldRefreshApiSecurityStatusForCurrentSurface() ? false : await refreshApiSecurityStatus();
       const nextHeaderSignature = getHeaderRenderSignature();
@@ -3246,6 +3328,10 @@
         return;
       }
       if (energyHistoryChanged && state.appView === "results" && !state.root?.querySelector(".oq-energy-history")) {
+        render();
+        return;
+      }
+      if (settingsStorageChanged && state.appView === "settings") {
         render();
         return;
       }
@@ -3930,7 +4016,7 @@
         refreshKeys: getSettingsStorageRefreshKeys(),
         refreshDelayMs: 500,
       }).then(() => {
-        refreshSettingsStorageStateSoon();
+        refreshSettingsStorageStateSoon(undefined, { forceTrendHistory: true });
       });
       return;
     }
@@ -3998,7 +4084,7 @@
     if (action === "open-history-storage-modal") {
       state.systemModal = "history-storage";
       render();
-      void refreshSettingsStorageState({ forceMissing: true }).finally(() => {
+      void refreshSettingsStorageState({ forceMissing: true, forceTrendHistory: true, forceEnergyHistory: true }).finally(() => {
         if (state.systemModal === "history-storage") {
           render();
         }

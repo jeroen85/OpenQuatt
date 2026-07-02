@@ -37,6 +37,7 @@ class OpenQuattTrends : public Component {
   bool force_flush();
   void clear_history();
   void write_history(httpd_req_t *req, uint32_t window_hours);
+  void write_metadata(httpd_req_t *req);
   std::string get_flash_available_label() const;
   std::string get_flash_oldest_point_label() const;
   std::string get_flash_newest_point_label() const;

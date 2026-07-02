@@ -160,9 +160,13 @@
       hourWriteCount: 0,
       hourStorageKb: 0,
       hourLastWriteTimestampS: 0,
+      dayPartitionAvailable: false,
+      dayStorageKb: 0,
+      dayWriteCount: 0,
+      dayLastWriteTimestampS: 0,
     };
     raw.split(/\r?\n/).forEach((line) => {
-      if (!line.startsWith("@bounds|") && !line.startsWith("@hour_retention|")) {
+      if (!line.startsWith("@bounds|") && !line.startsWith("@day_retention|") && !line.startsWith("@hour_retention|")) {
         return;
       }
       const parts = line.split("|");
@@ -173,6 +177,11 @@
         metadata.hourStoredDayCount = Number(parts[4]) || 0;
         metadata.hourOldestDateKey = Number(parts[5]) || null;
         metadata.hourNewestDateKey = Number(parts[6]) || null;
+      } else if (line.startsWith("@day_retention|")) {
+        metadata.dayPartitionAvailable = Number(parts[1]) === 1;
+        metadata.dayStorageKb = Number(parts[2]) || 0;
+        metadata.dayWriteCount = Number(parts[3]) || 0;
+        metadata.dayLastWriteTimestampS = Number(parts[4]) || 0;
       } else if (line.startsWith("@hour_retention|")) {
         metadata.hourRequestedRetentionDays = Number(parts[1]) || 0;
         metadata.hourSlotCount = Number(parts[2]) || 0;
