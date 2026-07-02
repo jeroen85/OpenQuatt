@@ -1139,23 +1139,6 @@
   };
   const INITIAL_SETTINGS_READY_TIMEOUT_MS = 5000;
   const INITIAL_SETTINGS_READY_POLL_MS = 250;
-  const INITIAL_CORE_UI_KEYS = [
-    "installationTopology",
-    ...TOPOLOGY_HINT_KEYS,
-    "hpGeneration",
-    "openquattEnabled",
-    ...QUICK_START_FLOW_SOURCE_KEYS,
-    ...QUICK_START_THERMOSTAT_SOURCE_KEYS,
-    "boilerCvAssistEnabled",
-    "boilerRatedHeatPower",
-    "strategy",
-    ...POWER_HOUSE_KEYS,
-    ...CURVE_SETTING_KEYS,
-    ...FLOW_SETTING_KEYS,
-    "maxWater",
-    ...SILENT_SETTING_KEYS,
-    "minRuntime",
-  ];
   const SETTINGS_GROUP_KEY_MAP = {
     installation: [
       "setupComplete",
@@ -1233,6 +1216,43 @@
   function getInitialSettingsReadyKeys() {
     const normalized = SETTINGS_GROUP_IDS.has(state.settingsGroup) ? state.settingsGroup : SETTINGS_GROUPS[0].id;
     return [...new Set(INITIAL_SETTINGS_READY_KEY_MAP[normalized] || INITIAL_SETTINGS_READY_KEY_MAP.installation)];
+  }
+
+  const DEFERRED_ENTITY_PRIME_DELAY_MS = 1200;
+  const SUPPLEMENTARY_PRIME_DELAY_MS = 1800;
+  const OVERVIEW_BULK_FOLLOWUP_DELAY_MS = 3500;
+
+  function getPrimeBaseKeys() {
+    return ["setupComplete", "strategy", ...HEADER_ENTITY_KEYS];
+  }
+
+  function getEnergyViewEntityKeys() {
+    const keys = new Set();
+    OVERVIEW_ENERGY_COLUMN_CONFIGS.forEach((column) => {
+      (column.categories || []).forEach((category) => {
+        (category.groups || []).forEach((group) => {
+          (group.rows || []).forEach((row) => {
+            const key = Array.isArray(row) ? row[1] : "";
+            if (key) {
+              keys.add(key);
+            }
+          });
+        });
+      });
+    });
+    return [...keys];
+  }
+
+  function getOverviewLikeHydrationKeys(view, options = {}) {
+    const forceFast = options.forceFast === true;
+    const includeBulk = options.includeBulk === true;
+    if (view === "energy" || view === "results") {
+      return [...new Set([...getPrimeBaseKeys(), ...getEnergyViewEntityKeys()])];
+    }
+    return [...new Set([
+      ...getPrimeBaseKeys(),
+      ...(forceFast || !includeBulk ? FAST_OVERVIEW_KEYS : OVERVIEW_KEYS),
+    ])];
   }
 
   function queuePendingEntitySyncOptions(options = {}) {
@@ -2848,15 +2868,15 @@
   }
 
   function getInitialPrimeKeys() {
-    const base = ["setupComplete", "strategy", ...HEADER_ENTITY_KEYS, ...INITIAL_CORE_UI_KEYS];
+    const base = getPrimeBaseKeys();
     if (state.appView === "settings") {
       return [...new Set([...base, ...getSettingsGroupHydrationKeys()])];
     }
-    if (state.appView === "energy") {
-      return [...new Set([...base, ...OVERVIEW_KEYS])];
+    if (state.appView === "energy" || state.appView === "results") {
+      return getOverviewLikeHydrationKeys(state.appView, { forceFast: true });
     }
     if (state.appView === "overview" || state.appView === "diagnosis") {
-      return [...new Set([...base, ...FAST_OVERVIEW_KEYS])];
+      return getOverviewLikeHydrationKeys(state.appView, { forceFast: true });
     }
     return [...new Set(base)];
   }
@@ -2864,10 +2884,11 @@
   function getDeferredPrimeKeys(initialKeys = []) {
     const initial = new Set(initialKeys);
     const fullKeys = state.appView === "settings"
-      ? [...new Set(["setupComplete", "strategy", ...HEADER_ENTITY_KEYS, ...getSettingsRefreshKeys()])]
-      : state.appView === "overview" || state.appView === "diagnosis" ||
-          state.appView === "energy" || state.appView === "results"
-        ? [...new Set(["setupComplete", "strategy", ...HEADER_ENTITY_KEYS, ...OVERVIEW_KEYS, ...FIRMWARE_ENTITY_KEYS])]
+      ? getSettingsGroupHydrationKeys()
+      : state.appView === "overview" || state.appView === "diagnosis"
+        ? [...new Set([...getOverviewLikeHydrationKeys(state.appView, { includeBulk: true }), ...FIRMWARE_ENTITY_KEYS])]
+        : state.appView === "energy" || state.appView === "results"
+        ? [...new Set([...getOverviewLikeHydrationKeys(state.appView, { forceFast: true }), ...FIRMWARE_ENTITY_KEYS])]
         : [...new Set(["setupComplete", "strategy", ...HEADER_ENTITY_KEYS])];
     return fullKeys.filter((key) => !initial.has(key));
   }
@@ -2985,8 +3006,10 @@
     const deferredDetail = state.appView === "settings" ? "all" : "state";
     window.setTimeout(() => {
       void primeDeferredEntities(deferredKeys, deferredDetail);
+    }, DEFERRED_ENTITY_PRIME_DELAY_MS);
+    window.setTimeout(() => {
       void primeSupplementaryData();
-    }, 0);
+    }, SUPPLEMENTARY_PRIME_DELAY_MS);
   }
 
   async function syncEntities(options = {}) {
@@ -3039,9 +3062,7 @@
         ]
       : isOverviewLike
       ? [
-          ...(forceFast ? FAST_OVERVIEW_KEYS : isBulkDue ? OVERVIEW_KEYS : FAST_OVERVIEW_KEYS),
-          ...HEADER_ENTITY_KEYS,
-          "setupComplete",
+          ...getOverviewLikeHydrationKeys(syncView, { forceFast, includeBulk: isBulkDue }),
           ...staticKeys,
         ]
       : appView === "settings"
@@ -3076,7 +3097,7 @@
         concurrency: forceFast && isOverviewLike ? FAST_VIEW_ENTITY_REFRESH_CONCURRENCY : ENTITY_REFRESH_CONCURRENCY,
       });
       state.lastFastEntitySyncAt = Date.now();
-      if (isBulkDue && isOverviewLike && !isPrefetchOverview) {
+      if (isBulkDue && (syncView === "overview" || syncView === "diagnosis") && !isPrefetchOverview) {
         state.lastBulkEntitySyncAt = state.lastFastEntitySyncAt;
       }
       if (staticKeys.length) {
@@ -3203,10 +3224,10 @@
           void syncEntities(pendingOptions);
         }, 0);
       }
-      if (forceFast && isOverviewLike && !isPrefetchOverview && !state.nativeOpen && !pendingOptions && isBulkEntitySyncDue(Date.now())) {
+      if (forceFast && (syncView === "overview" || syncView === "diagnosis") && !isPrefetchOverview && !state.nativeOpen && !pendingOptions && isBulkEntitySyncDue(Date.now())) {
         window.setTimeout(() => {
           void syncEntities({ forceBulk: true });
-        }, 0);
+        }, OVERVIEW_BULK_FOLLOWUP_DELAY_MS);
       }
     }
   }
@@ -3680,9 +3701,7 @@
       const nextView = button.dataset.viewId || "overview";
       setAppView(nextView, { syncMode: "push" });
       render();
-      syncEntities(nextView === "settings" || nextView === "energy" || nextView === "results"
-        ? { forceBulk: true }
-        : { forceFast: true });
+      syncEntities({ forceFast: true });
       return;
     }
 
@@ -3727,7 +3746,7 @@
     if (action === "select-settings-group") {
       setSettingsGroup(button.dataset.groupId || SETTINGS_GROUPS[0].id);
       render();
-      syncEntities({ forceBulk: true });
+      syncEntities({ forceFast: true });
       return;
     }
 
@@ -3987,7 +4006,7 @@
       setAppView("settings");
       setSettingsGroup("service");
       render();
-      syncEntities({ forceBulk: true });
+      syncEntities({ forceFast: true });
       return;
     }
 
@@ -3996,7 +4015,7 @@
       setAppView("settings");
       setSettingsGroup("service");
       render();
-      syncEntities({ forceBulk: true });
+      syncEntities({ forceFast: true });
       return;
     }
 
@@ -4005,7 +4024,7 @@
       if (["autotune", "boiler", "purge", "manual-flow", "manual-hp", "hp-water-calibration"].includes(taskKey)) {
         state.systemModal = `service-task-${taskKey}`;
         render();
-        syncEntities({ forceBulk: true });
+        syncEntities({ forceFast: true });
       }
       return;
     }
