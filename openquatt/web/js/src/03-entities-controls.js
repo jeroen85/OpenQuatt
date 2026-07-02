@@ -230,6 +230,30 @@
     "lifetimeEnergyHistoryWrites",
   ];
 
+  const TREND_HISTORY_VIEW_KEYS = [
+    "trendHistoryEnabled",
+    "trendHistoryFlashEnabled",
+    "trendHistoryFlashAvailable",
+    "trendHistoryFlashOldest",
+    "trendHistoryFlashNewest",
+    "trendHistoryFlashLastFlush",
+    "trendHistoryFlashSize",
+    "trendHistoryFlashWrites",
+  ];
+
+  const ENERGY_HISTORY_VIEW_KEYS = [
+    "lifetimeEnergyHistoryEnabled",
+    "lifetimeEnergyHourRetention",
+    "lifetimeEnergyHistoryCapture",
+    "lifetimeEnergyHistoryClear",
+    "lifetimeEnergyHistoryAvailable",
+    "lifetimeEnergyHistoryOldest",
+    "lifetimeEnergyHistoryNewest",
+    "lifetimeEnergyHistoryLastWrite",
+    "lifetimeEnergyHistorySize",
+    "lifetimeEnergyHistoryWrites",
+  ];
+
   function getSettingsStorageRefreshKeys() {
     return [...new Set(SETTINGS_STORAGE_KEYS)];
   }
@@ -1220,6 +1244,7 @@
 
   const DEFERRED_ENTITY_PRIME_DELAY_MS = 1200;
   const SUPPLEMENTARY_PRIME_DELAY_MS = 1800;
+  const HISTORY_VIEW_SUPPLEMENTARY_PRIME_DELAY_MS = 0;
   const OVERVIEW_BULK_FOLLOWUP_DELAY_MS = 3500;
 
   function getPrimeBaseKeys() {
@@ -1247,12 +1272,36 @@
     const forceFast = options.forceFast === true;
     const includeBulk = options.includeBulk === true;
     if (view === "energy" || view === "results") {
-      return [...new Set([...getPrimeBaseKeys(), ...getEnergyViewEntityKeys()])];
+      return [...new Set([
+        ...getPrimeBaseKeys(),
+        ...getEnergyViewEntityKeys(),
+        ...(view === "results" ? ENERGY_HISTORY_VIEW_KEYS : []),
+      ])];
     }
     return [...new Set([
       ...getPrimeBaseKeys(),
       ...(forceFast || !includeBulk ? FAST_OVERVIEW_KEYS : OVERVIEW_KEYS),
+      ...(view === "diagnosis" ? TREND_HISTORY_VIEW_KEYS : []),
     ])];
+  }
+
+  function getSupplementaryPrimeDelayMs(view = state.appView) {
+    return view === "diagnosis" || view === "results"
+      ? HISTORY_VIEW_SUPPLEMENTARY_PRIME_DELAY_MS
+      : SUPPLEMENTARY_PRIME_DELAY_MS;
+  }
+
+  function schedulePrimeSupplementaryData(delayMs = getSupplementaryPrimeDelayMs()) {
+    if (state.nativeOpen) {
+      return;
+    }
+    if (state.supplementaryPrimeTimer) {
+      window.clearTimeout(state.supplementaryPrimeTimer);
+    }
+    state.supplementaryPrimeTimer = window.setTimeout(() => {
+      state.supplementaryPrimeTimer = null;
+      void primeSupplementaryData();
+    }, delayMs);
   }
 
   function queuePendingEntitySyncOptions(options = {}) {
@@ -3007,9 +3056,7 @@
     window.setTimeout(() => {
       void primeDeferredEntities(deferredKeys, deferredDetail);
     }, DEFERRED_ENTITY_PRIME_DELAY_MS);
-    window.setTimeout(() => {
-      void primeSupplementaryData();
-    }, SUPPLEMENTARY_PRIME_DELAY_MS);
+    schedulePrimeSupplementaryData(getSupplementaryPrimeDelayMs());
   }
 
   async function syncEntities(options = {}) {
@@ -3124,6 +3171,9 @@
       const authChanged = shouldDeferSupplementary || !shouldRefreshAuthStatusForCurrentSurface() ? false : await refreshAuthStatus();
       const apiSecurityChanged = shouldDeferSupplementary || !shouldRefreshApiSecurityStatusForCurrentSurface() ? false : await refreshApiSecurityStatus();
       const nextHeaderSignature = getHeaderRenderSignature();
+      if (shouldDeferSupplementary && !state.nativeOpen) {
+        schedulePrimeSupplementaryData(getSupplementaryPrimeDelayMs(syncView));
+      }
       if (reconnectChanged) {
         render();
         return;
@@ -3204,11 +3254,6 @@
       }
       if (!patchOverviewDom()) {
         render();
-      }
-      if (shouldDeferSupplementary && !state.nativeOpen) {
-        window.setTimeout(() => {
-          void primeSupplementaryData();
-        }, 0);
       }
     } catch (error) {
       if (!isPrefetchOverview) {

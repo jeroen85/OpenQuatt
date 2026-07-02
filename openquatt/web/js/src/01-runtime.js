@@ -8,6 +8,7 @@
     nativeFrontendLoaded: false,
     nativeFrontendLoading: false,
     pollTimer: null,
+    supplementaryPrimeTimer: null,
     entitySyncInFlight: false,
     pendingEntitySyncOptions: null,
     lastEntitySyncAttemptAt: 0,
