@@ -3696,7 +3696,6 @@
     const lifetimeAvailableDaysLabel = formatSettingsStoredDaysLabel(lifetimeAvailableLabel);
     const canFlushTrend = trendHistoryEnabled && hasEntity("trendHistoryFlush");
     const canCaptureLifetime = hasEntity("lifetimeEnergyHistoryCapture");
-    const showLifetimeActions = canCaptureLifetime || hasEntity("lifetimeEnergyHistoryClear");
     const energyMetadata = getSettingsEnergyHistoryMetadata();
     const hasHourMetadata = String(state.energyHistoryRaw || "").includes("@hour_retention|");
     const hourFlashUnavailable = hasHourMetadata && !energyMetadata.hourPartitionAvailable;
@@ -3844,9 +3843,7 @@
                   "Kies hoelang OpenQuatt detail per uur mag bewaren voor de daggrafiek.",
                   "Geavanceerd"
                 )}
-                ${renderSettingsEnergyHistoryExportPanel()}
-                ${renderSettingsEnergyHistoryImportPanel()}
-                ${showLifetimeActions ? `
+                ${canCaptureLifetime ? `
                   <div class="oq-settings-storage-inline-action oq-settings-storage-inline-action--split">
                     <div>
                       <h4>Vandaag alvast opslaan</h4>
@@ -3864,6 +3861,10 @@
                       )}
                     </div>
                   </div>
+                ` : ""}
+                ${renderSettingsEnergyHistoryExportPanel()}
+                ${renderSettingsEnergyHistoryImportPanel()}
+                ${hasEntity("lifetimeEnergyHistoryClear") ? `
                   <div class="oq-settings-storage-inline-action oq-settings-storage-inline-action--danger">
                     <div>
                       <h4>Energiehistorie wissen</h4>
