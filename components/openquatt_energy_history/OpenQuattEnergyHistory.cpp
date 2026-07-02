@@ -761,6 +761,7 @@ bool OpenQuattEnergyHistory::write_hour_day_import_record_(uint32_t date_key, ui
   const uint32_t sequence = this->next_hour_flash_sequence_;
   const uint32_t slot_index = sequence % static_cast<uint32_t>(this->hour_flash_slot_count_);
   const uint32_t slot_offset = HOUR_FLASH_BASE_OFFSET + (slot_index * HOUR_FLASH_SLOT_SIZE);
+  bool sector_erased = false;
   if ((slot_offset - HOUR_FLASH_BASE_OFFSET) % FLASH_SECTOR_SIZE == 0) {
     const esp_err_t erase_result = esp_partition_erase_range(this->flash_partition_, slot_offset, FLASH_SECTOR_SIZE);
     if (erase_result != ESP_OK) {
@@ -769,6 +770,7 @@ bool OpenQuattEnergyHistory::write_hour_day_import_record_(uint32_t date_key, ui
                esp_err_to_name(erase_result));
       return false;
     }
+    sector_erased = true;
   }
 
   auto &record = this->hour_flash_record_buffer_;
@@ -791,10 +793,13 @@ bool OpenQuattEnergyHistory::write_hour_day_import_record_(uint32_t date_key, ui
   if (write_result != ESP_OK) {
     ESP_LOGW(TAG, "Could not write imported energy hour history slot %u: %s", static_cast<unsigned>(slot_index),
              esp_err_to_name(write_result));
+    if (sector_erased && !rescan) {
+      this->scan_hour_archive_();
+    }
     return false;
   }
 
-  if (rescan) {
+  if (rescan || sector_erased) {
     this->scan_hour_archive_();
   } else {
     ++this->next_hour_flash_sequence_;
