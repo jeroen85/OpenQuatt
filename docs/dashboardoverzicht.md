@@ -153,5 +153,4 @@ Dat is belangrijk, omdat er meerdere bronnen mogelijk zijn voor dezelfde meting.
 - Uitleg van verwarmen en koelen: [Verwarmen en koelen uitgelegd](verwarmen-en-koelen.md)
 - Web-app gebruiken: [Web-app gebruiken](web-app.md)
 - Problemen oplossen: [Problemen oplossen](problemen-oplossen.md)
-- MQTT gebruiken: [MQTT gebruiken](mqtt.md)
 - Technische verdieping: [Instellingen en meetwaarden](instellingen-en-meetwaarden.md)

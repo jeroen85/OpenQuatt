@@ -35,11 +35,10 @@ class RenderedPage:
 PAGES = [
     Page(PurePosixPath("README.md"), PurePosixPath("index.html"), "OpenQuatt", "Project", "Projectoverzicht, snelle start en hoofdroute."),
     Page(PurePosixPath("docs/installatie-en-ingebruikname.md"), PurePosixPath("installatie-en-ingebruikname.html"), "Installatie en ingebruikname", "Docs", "Installeren via de installer en daarna Quick Start in de web-app."),
-    Page(PurePosixPath("docs/web-app.md"), PurePosixPath("web-app.html"), "Web-app gebruiken", "Handleiding", "Quick Start, instellingen, updates, backup, beveiliging en MQTT via openquatt.local."),
+    Page(PurePosixPath("docs/web-app.md"), PurePosixPath("web-app.html"), "Web-app gebruiken", "Handleiding", "Quick Start, instellingen, updates, backup en beveiliging via openquatt.local."),
     Page(PurePosixPath("docs/dashboard/README.md"), PurePosixPath("dashboard/index.html"), "Dashboard installeren", "Docs", "Importeer het juiste dashboardbestand voor Single of Duo."),
     Page(PurePosixPath("docs/dashboardoverzicht.md"), PurePosixPath("dashboardoverzicht.html"), "Dashboard gebruiken", "Handleiding", "Dagelijkse controle en diagnosevolgorde in Home Assistant."),
     Page(PurePosixPath("docs/verwarmen-en-koelen.md"), PurePosixPath("verwarmen-en-koelen.html"), "Verwarmen en koelen uitgelegd", "Uitleg", "Heldere uitleg van Power House, stooklijnregeling, koeling, Single en Duo."),
-    Page(PurePosixPath("docs/mqtt.md"), PurePosixPath("mqtt.html"), "MQTT gebruiken", "Integratie", "Experimentele publish-only MQTT-export instellen via de web-app."),
     Page(PurePosixPath("docs/problemen-oplossen.md"), PurePosixPath("problemen-oplossen.html"), "Problemen oplossen", "Handleiding", "Rustige diagnosevolgorde bij installatie- en regelproblemen."),
     Page(PurePosixPath("docs/power-house.md"), PurePosixPath("power-house.html"), "Power House", "Docs", "Uitleg van huismodel, comfortlogica en Single/Duo-gedrag."),
     Page(PurePosixPath("docs/water-temperature-control.md"), PurePosixPath("water-temperature-control.html"), "Water Temperature Control", "Docs", "Uitleg van stooklijn, PID en Single/Duo-gedrag in curve-modus."),
@@ -67,7 +66,6 @@ SIDEBAR_GROUPS = [
         [
             PurePosixPath("docs/dashboardoverzicht.md"),
             PurePosixPath("docs/verwarmen-en-koelen.md"),
-            PurePosixPath("docs/mqtt.md"),
         ],
     ),
     (

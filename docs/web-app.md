@@ -12,7 +12,6 @@ Gebruik de web-app voor alles wat direct op OpenQuatt zelf hoort:
 - koeling en dauwpuntbeveiliging instellen;
 - firmware-updatekanaal en updates beheren;
 - backup en restore van OpenQuatt-instellingen;
-- MQTT-configuratie;
 - web-login, API-beveiliging, logboek en herstarten.
 
 Home Assistant blijft de prettigste plek voor dagelijks meekijken en dashboards. De web-app is de plek waar je de module zelf inricht, beheert en veilig terugvindt als er iets niet klopt.
@@ -22,11 +21,10 @@ Home Assistant blijft de prettigste plek voor dagelijks meekijken en dashboards.
 | Plek | Gebruik je vooral voor |
 |---|---|
 | Installer | Eerste flash, keuze voor `Single` of `Duo`, hardwareprofiel en verbinding. |
-| Web-app | Quick Start, installatiekeuzes, instellingen, updates, backup, beveiliging en MQTT. |
+| Web-app | Quick Start, installatiekeuzes, instellingen, updates, backup en beveiliging. |
 | Home Assistant | Dagelijks meekijken, dashboards, bronselectie en optionele dynamische bronnen. |
-| MQTT | Extra publish-only telemetrie voor Node-RED, logging, scripts of eigen dashboards. |
 
-De normale volgorde is dus: installer, web-app, daarna Home Assistant. MQTT komt alleen erbij als je naast Home Assistant nog een extra datastroom nodig hebt.
+De normale volgorde is dus: installer, web-app, daarna Home Assistant.
 
 ## Openen
 
@@ -169,7 +167,6 @@ Hier vind je beheerfuncties:
 - trendopslag;
 - firmware-updates en updatekanaal;
 - web-login en API-beveiliging;
-- MQTT;
 - backup en restore;
 - systeemstatus;
 - logboek;
@@ -195,20 +192,6 @@ De web-app toont update-informatie via de firmware-updatefunctie. Normaal volg j
 Gebruik een dev-kanaal alleen als je bewust test en weet dat de firmware nog kan veranderen. Voor releasegebruik is het stabiele kanaal de route.
 
 Bij de Heatpump Controller Q kan de OTA-modal ook de verbinding wisselen tussen Wi-Fi en Ethernet. Dat is geen gewone update: de web-app installeert dan dezelfde `Single`- of `Duo`-build voor de andere netwerkverbinding. Controleer bij `Wi-Fi -> Ethernet` eerst of de netwerkkabel is aangesloten. Bij `Ethernet -> Wi-Fi` verdwijnt Ethernet na de herstart; als er geen Wi-Fi-gegevens bekend zijn, start de Wi-Fi-build het OpenQuatt fallback access point.
-
-## MQTT instellen
-
-MQTT stel je in via:
-
-```text
-Instellingen -> Systeem -> MQTT
-```
-
-Daar vul je broker, poort, gebruiker, wachtwoord, base topic, publish-profiel en intervals in. MQTT staat standaard uit en probeert pas te verbinden nadat je de configuratie opslaat en inschakelt.
-
-Gebruik voor Home Assistant normaal de native ESPHome API. MQTT is vooral bedoeld voor extra dashboards, Node-RED, logging of eigen scripts.
-
-Lees verder in [MQTT gebruiken](mqtt.md).
 
 ## Web-login en API-beveiliging
 
