@@ -260,6 +260,7 @@
   const ENERGY_HISTORY_IMPORT_SCHEMA_LINE = "@schema|openquatt.energy_history_import.v1";
   const ENERGY_HISTORY_IMPORT_MAX_BODY_CHARS = 850;
   const ENERGY_HISTORY_IMPORT_ERROR_LABELS = {
+    forbidden: "Beveiligingstoken ontbreekt of is verlopen. Vernieuw de pagina en probeer opnieuw.",
     partition_unavailable: "Niet beschikbaar op deze Flash-indeling. Flash de controller eenmalig via USB met de nieuwe indeling.",
     time_unavailable: "De controller heeft nog geen geldige tijd. Probeer opnieuw zodra de tijdsync klaar is.",
     empty_records: "Er zijn geen records verstuurd.",
@@ -730,6 +731,9 @@
   function buildEnergyHistoryImportRequestBody(lines) {
     const body = new URLSearchParams();
     body.set("records", [ENERGY_HISTORY_IMPORT_SCHEMA_LINE, ...lines].join("\n"));
+    if (state.energyHistoryCsrfToken) {
+      body.set("csrf_token", state.energyHistoryCsrfToken);
+    }
     return body;
   }
 
@@ -795,6 +799,26 @@
       throw new Error(ENERGY_HISTORY_IMPORT_ERROR_LABELS[errorCode] || errorCode || `HTTP ${response.status}`);
     }
     return payload;
+  }
+
+  function readEnergyHistoryCsrfToken(raw) {
+    const line = String(raw || "").split(/\r?\n/).find((entry) => entry.startsWith("@csrf|"));
+    return line ? line.slice(6) : "";
+  }
+
+  async function refreshEnergyHistoryImportCsrfToken() {
+    if (isDevPreviewEnvironmentForFetches()) {
+      return;
+    }
+    const response = await fetch(`${getBasePath()}/energy/history?meta=1`, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const token = readEnergyHistoryCsrfToken(await response.text());
+    if (!token) {
+      throw new Error("Beveiligingstoken ontbreekt. Vernieuw de pagina en probeer opnieuw.");
+    }
+    state.energyHistoryCsrfToken = token;
   }
 
   function updateEnergyHistoryImportProgress(done, total) {
@@ -869,10 +893,11 @@
       return;
     }
 
-    const batches = getEnergyHistoryImportLineBatches(lines);
     const totals = { written: 0, hourWritten: 0, duplicates: 0, skipped: 0, invalid: 0, unsupported: 0 };
     let processedLines = 0;
     try {
+      await refreshEnergyHistoryImportCsrfToken();
+      const batches = getEnergyHistoryImportLineBatches(lines);
       for (const batch of batches) {
         const result = await postEnergyHistoryImportLines(batch);
         totals.written += Number(result.written || 0);
@@ -2811,6 +2836,7 @@
       state.energyHistoryLastFetchAt = 0;
       state.energyHistoryRequestQuery = "";
       state.energyHistoryFetchQuery = "";
+      state.energyHistoryCsrfToken = "";
       return changed;
     }
 
@@ -2849,6 +2875,7 @@
         }
       }
       const lines = raw.split(/\r?\n/);
+      const nextCsrfToken = readEnergyHistoryCsrfToken(raw) || state.energyHistoryCsrfToken;
       let nowMs = Number.NaN;
       lines.forEach((line) => {
         if (line.startsWith("@now|")) {
@@ -2862,13 +2889,15 @@
         ? !currentNowValid || state.energyHistoryNowMs !== nowMs
         : currentNowValid;
       const changed = raw !== state.energyHistoryRaw || state.energyHistoryError !== "" ||
-        state.energyHistorySignature !== signature || nowChanged;
+        state.energyHistorySignature !== signature || nowChanged ||
+        nextCsrfToken !== state.energyHistoryCsrfToken;
       state.energyHistoryRaw = raw;
       state.energyHistoryError = "";
       state.energyHistorySignature = signature;
       state.energyHistoryNowMs = Number.isFinite(nowMs) ? nowMs : Number.NaN;
       state.energyHistoryLastFetchAt = Date.now();
       state.energyHistoryRequestQuery = finalQuery;
+      state.energyHistoryCsrfToken = nextCsrfToken;
       return changed;
     })();
 
@@ -2883,6 +2912,7 @@
       state.energyHistoryNowMs = Number.NaN;
       state.energyHistoryLastFetchAt = Date.now();
       state.energyHistoryRequestQuery = query;
+      state.energyHistoryCsrfToken = "";
       return changed;
     } finally {
       state.energyHistoryFetchPromise = null;

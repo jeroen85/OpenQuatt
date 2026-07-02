@@ -45,6 +45,7 @@
     energyHistoryRequestQuery: "",
     energyHistoryFetchQuery: "",
     energyHistoryFetchPromise: null,
+    energyHistoryCsrfToken: "",
     energyHistoryView: "day",
     energyHistoryImportFileName: "",
     energyHistoryImportSource: "",

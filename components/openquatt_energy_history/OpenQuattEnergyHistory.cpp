@@ -1,6 +1,7 @@
 #include "OpenQuattEnergyHistory.h"
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <cstdarg>
 #include <cmath>
@@ -8,6 +9,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "esp_random.h"
 #include "esphome/core/log.h"
 
 namespace esphome {
@@ -16,6 +18,54 @@ namespace openquatt_energy_history {
 static const char *const TAG = "openquatt.energy_history";
 
 namespace {
+
+static std::string base64_encode_bytes_(const uint8_t *data, size_t length) {
+  static constexpr char TABLE[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  std::string out;
+  out.reserve(((length + 2U) / 3U) * 4U);
+
+  for (size_t i = 0; i < length; i += 3U) {
+    const uint32_t byte_a = data[i];
+    const uint32_t byte_b = i + 1U < length ? data[i + 1U] : 0U;
+    const uint32_t byte_c = i + 2U < length ? data[i + 2U] : 0U;
+    const uint32_t triple = (byte_a << 16U) | (byte_b << 8U) | byte_c;
+
+    out.push_back(TABLE[(triple >> 18U) & 0x3FU]);
+    out.push_back(TABLE[(triple >> 12U) & 0x3FU]);
+    out.push_back(i + 1U < length ? TABLE[(triple >> 6U) & 0x3FU] : '=');
+    out.push_back(i + 2U < length ? TABLE[triple & 0x3FU] : '=');
+  }
+
+  return out;
+}
+
+static void fill_random_token_(std::array<uint8_t, 32> *key) {
+  if (key == nullptr) {
+    return;
+  }
+  for (size_t i = 0; i < key->size(); i += sizeof(uint32_t)) {
+    const uint32_t rnd = esp_random();
+    for (size_t byte_index = 0; byte_index < sizeof(uint32_t) && i + byte_index < key->size(); ++byte_index) {
+      (*key)[i + byte_index] = static_cast<uint8_t>(rnd >> (byte_index * 8U));
+    }
+  }
+}
+
+static bool header_matches_host_(const std::string &header_value, const std::string &host) {
+  if (host.empty() || header_value.empty()) {
+    return false;
+  }
+
+  size_t authority_start = 0;
+  const size_t scheme_pos = header_value.find("://");
+  if (scheme_pos != std::string::npos) {
+    authority_start = scheme_pos + 3U;
+  }
+  const size_t authority_end = header_value.find_first_of("/?#", authority_start);
+  const std::string authority = header_value.substr(
+      authority_start, authority_end == std::string::npos ? std::string::npos : authority_end - authority_start);
+  return authority == host;
+}
 
 static bool url_path_matches(const char *url, const char *path) {
   if (url == nullptr || path == nullptr) {
@@ -100,6 +150,30 @@ class OpenQuattEnergyHistoryRequestHandler : public AsyncWebHandler {
  public:
   explicit OpenQuattEnergyHistoryRequestHandler(OpenQuattEnergyHistory *parent) : parent_(parent) {}
 
+  bool passes_same_origin_(AsyncWebServerRequest *request) const {
+    const auto host = request->get_header("Host");
+    if (!host.has_value() || host->empty()) {
+      return false;
+    }
+
+    const auto origin = request->get_header("Origin");
+    if (origin.has_value() && !header_matches_host_(origin.value(), host.value())) {
+      return false;
+    }
+
+    const auto referer = request->get_header("Referer");
+    if (referer.has_value() && !header_matches_host_(referer.value(), host.value())) {
+      return false;
+    }
+
+    return true;
+  }
+
+  bool passes_csrf_(AsyncWebServerRequest *request) const {
+    const std::string csrf_token = request->arg("csrf_token");
+    return !csrf_token.empty() && csrf_token == this->parent_->get_csrf_token();
+  }
+
   bool canHandle(AsyncWebServerRequest *request) const override {
     char url_buf[AsyncWebServerRequest::URL_BUF_SIZE];
     request->url_to(url_buf);
@@ -113,6 +187,10 @@ class OpenQuattEnergyHistoryRequestHandler : public AsyncWebHandler {
     char url_buf[AsyncWebServerRequest::URL_BUF_SIZE];
     request->url_to(url_buf);
     if (url_path_matches(url_buf, "/energy/history/import")) {
+      if (!this->passes_same_origin_(request) || !this->passes_csrf_(request)) {
+        request->send(409, "application/json", R"({"ok":false,"error":"forbidden"})");
+        return;
+      }
       const std::string response = this->parent_->import_history_records(request->arg("records"));
       request->send(200, "application/json", response.c_str());
       return;
@@ -130,6 +208,8 @@ class OpenQuattEnergyHistoryRequestHandler : public AsyncWebHandler {
 };
 
 void OpenQuattEnergyHistory::setup() {
+  this->rotate_csrf_token_();
+
   if (web_server_base::global_web_server_base == nullptr) {
     ESP_LOGE(TAG, "global_web_server_base is unavailable");
     return;
@@ -160,6 +240,12 @@ void OpenQuattEnergyHistory::setup() {
 }
 
 void OpenQuattEnergyHistory::loop() {}
+
+void OpenQuattEnergyHistory::rotate_csrf_token_() {
+  std::array<uint8_t, 32> token_bytes{};
+  fill_random_token_(&token_bytes);
+  this->csrf_token_ = base64_encode_bytes_(token_bytes.data(), token_bytes.size());
+}
 
 void OpenQuattEnergyHistory::on_shutdown() {
   if (this->enabled_() && this->has_current_day_ && record_has_values_(this->current_values_)) {
@@ -1172,6 +1258,7 @@ void OpenQuattEnergyHistory::write_history(httpd_req_t *req) {
   ChunkedTextWriter writer(req);
   const uint32_t hour_count = this->get_hour_record_count_();
   if (!writer.printf("@schema|3\n") || !writer.printf("@enabled|%u\n", this->enabled_() ? 1U : 0U) ||
+      !writer.printf("@csrf|%s\n", this->csrf_token_.c_str()) ||
       !writer.printf("@now|%llu\n", static_cast<unsigned long long>(this->current_time_ms_())) ||
       !writer.printf("@records|%u\n", static_cast<unsigned>(this->record_count_)) ||
       !writer.printf("@hours|%u|%u\n", static_cast<unsigned>(hour_count), static_cast<unsigned>(HOURLY_RETENTION_DAYS)) ||

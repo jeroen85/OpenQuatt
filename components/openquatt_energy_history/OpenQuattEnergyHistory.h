@@ -39,6 +39,7 @@ class OpenQuattEnergyHistory : public Component {
   void refresh_hourly_retention();
   void write_history(httpd_req_t *req);
   std::string import_history_records(const std::string &records);
+  const std::string &get_csrf_token() const { return this->csrf_token_; }
   std::string get_available_label() const;
   std::string get_oldest_day_label() const;
   std::string get_newest_day_label() const;
@@ -141,6 +142,7 @@ class OpenQuattEnergyHistory : public Component {
   static bool date_key_in_range_(uint32_t date_key, uint32_t from_date_key, uint32_t to_date_key);
   static uint16_t parse_hourly_retention_days_(const std::string &option);
 
+  void rotate_csrf_token_();
   EnergyHistoryValues pack_values_(float electrical_input_kwh, float heating_input_kwh, float cooling_input_kwh,
                                    float heatpump_heat_output_kwh, float heatpump_cooling_output_kwh,
                                    float boiler_heat_output_kwh, float system_heat_output_kwh) const;
@@ -169,6 +171,7 @@ class OpenQuattEnergyHistory : public Component {
   select::Select *hourly_retention_select_{nullptr};
   time::RealTimeClock *clock_{nullptr};
   const esp_partition_t *flash_partition_{nullptr};
+  std::string csrf_token_;
 
   bool partition_available_{false};
   size_t flash_sector_count_{0};
