@@ -396,6 +396,7 @@ sensor:
   - platform: template
     id: cooling_fallback_night_min_outdoor_temp
     name: "Cooling Fallback Night Minimum Outdoor Temp"
+    internal: true
     disabled_by_default: true
     icon: mdi:weather-night
     unit_of_measurement: "°C"
@@ -421,6 +422,7 @@ sensor:
   - platform: template
     id: cooling_fallback_min_supply_temp
     name: "Cooling Fallback Minimum Supply Temp"
+    internal: true
     disabled_by_default: true
     icon: mdi:thermometer-chevron-down
     unit_of_measurement: "°C"

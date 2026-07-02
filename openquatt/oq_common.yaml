@@ -492,6 +492,7 @@ select:
     name: "Firmware Update Target"
     id: oq_firmware_update_target
     icon: mdi:swap-horizontal
+    internal: true
     disabled_by_default: true
     web_server:
       sorting_group_id: oq_system_diagnostics
@@ -745,6 +746,7 @@ button:
   - platform: template
     id: oq_install_firmware_update_target
     name: Install Firmware Update Target
+    internal: true
     disabled_by_default: true
     icon: mdi:swap-horizontal-bold
     entity_category: diagnostic
@@ -820,12 +822,14 @@ sensor:
   - platform: debug
     free:
       name: "Heap Free"
+      internal: true
       icon: mdi:memory
       entity_category: diagnostic
       disabled_by_default: true
       accuracy_decimals: 0
     block:
       name: "Heap Max Block"
+      internal: true
       icon: mdi:memory
       entity_category: diagnostic
       disabled_by_default: true
@@ -838,6 +842,7 @@ sensor:
       accuracy_decimals: 0
     fragmentation:
       name: "Heap Fragmentation"
+      internal: true
       icon: mdi:memory
       entity_category: diagnostic
       disabled_by_default: true
@@ -846,6 +851,7 @@ sensor:
   - platform: template
     name: Firmware Update Progress
     id: oq_firmware_update_progress
+    internal: true
     icon: mdi:progress-upload
     unit_of_measurement: "%"
     accuracy_decimals: 0
@@ -898,6 +904,7 @@ text_sensor:
   - platform: template
     id: oq_firmware_update_status
     name: Firmware Update Status
+    internal: true
     icon: mdi:upload-network-outline
     entity_category: diagnostic
     update_interval: never
@@ -935,6 +942,7 @@ text_sensor:
   - platform: template
     id: oq_installation_topology_text
     name: OpenQuatt Installation Topology
+    internal: true
     icon: mdi:home-analytics
     entity_category: diagnostic
     update_interval: never
@@ -949,6 +957,7 @@ text_sensor:
   - platform: template
     id: oq_hardware_profile_text
     name: OpenQuatt Hardware Profile
+    internal: true
     icon: mdi:developer-board
     entity_category: diagnostic
     update_interval: never
@@ -959,6 +968,7 @@ text_sensor:
   - platform: template
     id: oq_connection_text
     name: OpenQuatt Connection
+    internal: true
     icon: mdi:lan-connect
     entity_category: diagnostic
     update_interval: never

@@ -142,6 +142,7 @@ text_sensor:
   - platform: template
     id: oq_strategy_phase_text
     name: "Strategy phase"
+    internal: true
     icon: mdi:state-machine
     update_interval: never
     entity_category: diagnostic

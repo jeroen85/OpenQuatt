@@ -117,6 +117,7 @@ sensor:
   - platform: template
     id: cic_backoff_s
     name: "CIC - Polling interval"
+    internal: true
     unit_of_measurement: "s"
     device_class: duration
     state_class: measurement
@@ -130,6 +131,7 @@ sensor:
   - platform: template
     id: cic_last_success_age_s
     name: "CIC - Last success age"
+    internal: true
     unit_of_measurement: "s"
     device_class: duration
     state_class: measurement

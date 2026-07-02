@@ -323,6 +323,7 @@ sensor:
   - platform: template
     id: oq_phouse_comfort_memory_c_sensor
     name: "Power House – comfort memory"
+    internal: true
     icon: mdi:thermometer-plus
     unit_of_measurement: "°C"
     device_class: temperature
@@ -339,6 +340,7 @@ sensor:
   - platform: template
     id: oq_phouse_effective_room_target_c_sensor
     name: "Power House – effective room target"
+    internal: true
     icon: mdi:target
     unit_of_measurement: "°C"
     device_class: temperature
